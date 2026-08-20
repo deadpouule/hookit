@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+import {ProtocolConstants} from "./ProtocolConstants.sol";
+
+/// @title BitmaskConfig
+/// @notice Packs/unpacks per-pool launch modules into a single `uint256`.
+/// @dev Layout:
+///      bit 0        ANTI_SNIPE_ENABLED
+///      bit 1        BACKED_FLOOR_ENABLED
+///      bit 2        ANTI_MEV_COOLDOWN_ENABLED
+///      bit 3        MAX_TX_ENABLED
+///      bit 4        MAX_WALLET_ENABLED
+///      bit 5        DYNAMIC_FEES_ENABLED
+///      bit 6        BUYBACK_VESTING_ENABLED
+///      bits 7-22    creatorTaxBps (uint16)
+///      bits 23-38   antiSnipeDurationSeconds (uint16)
+///      bits 39-54   maxTxBps (uint16)
+///      bits 55-70   maxWalletBps (uint16)
+///      bits 71-94   floorAllocationBps (uint24)
+///      bits 95-110  initialSnipeTaxBps (uint16)
+library BitmaskConfig {
+    uint256 internal constant ANTI_SNIPE_ENABLED = 1 << 0;
+    uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
+    uint256 internal constant ANTI_MEV_COOLDOWN_ENABLED = 1 << 2;
+    uint256 internal constant MAX_TX_ENABLED = 1 << 3;
+    uint256 internal constant MAX_WALLET_ENABLED = 1 << 4;
+    uint256 internal constant DYNAMIC_FEES_ENABLED = 1 << 5;
+    uint256 internal constant BUYBACK_VESTING_ENABLED = 1 << 6;
+
+    uint256 internal constant CREATOR_TAX_SHIFT = 7;
+    uint256 internal constant SNIPE_DURATION_SHIFT = 23;
+    uint256 internal constant MAX_TX_SHIFT = 39;
+    uint256 internal constant MAX_WALLET_SHIFT = 55;
+    uint256 internal constant FLOOR_ALLOC_SHIFT = 71;
+    uint256 internal constant INITIAL_SNIPE_TAX_SHIFT = 95;
+
+    uint256 internal constant UINT16_MASK = 0xFFFF;
+    uint256 internal constant UINT24_MASK = 0xFFFFFF;
+
+    struct Modules {
+        bool antiSnipe;
+        bool backedFloor;
+        bool antiMev;
+        bool maxTx;
+        bool maxWallet;
+        bool dynamicFees;
+        bool buybackVesting;
+        uint16 creatorTaxBps;
+        uint16 antiSnipeDurationSeconds;
+        uint16 maxTxBps;
+        uint16 maxWalletBps;
+        uint24 floorAllocationBps;
+        uint16 initialSnipeTaxBps;
+    }
+
+    function pack(Modules memory m) internal pure returns (uint256 packed) {
+        _validate(m);
+        packed = (m.antiSnipe ? ANTI_SNIPE_ENABLED : 0)
+            | (m.backedFloor ? BACKED_FLOOR_ENABLED : 0)
+            | (m.antiMev ? ANTI_MEV_COOLDOWN_ENABLED : 0)
+            | (m.maxTx ? MAX_TX_ENABLED : 0)
+            | (m.maxWallet ? MAX_WALLET_ENABLED : 0)
+            | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0)
+            | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0)
+            | (uint256(m.creatorTaxBps) << CREATOR_TAX_SHIFT)
+            | (uint256(m.antiSnipeDurationSeconds) << SNIPE_DURATION_SHIFT)
+            | (uint256(m.maxTxBps) << MAX_TX_SHIFT)
+            | (uint256(m.maxWalletBps) << MAX_WALLET_SHIFT)
+            | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
+            | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT);
+    }
+
+    function unpack(uint256 packed) internal pure returns (Modules memory m) {
+        m.antiSnipe = packed & ANTI_SNIPE_ENABLED != 0;
+        m.backedFloor = packed & BACKED_FLOOR_ENABLED != 0;
+        m.antiMev = packed & ANTI_MEV_COOLDOWN_ENABLED != 0;
+        m.maxTx = packed & MAX_TX_ENABLED != 0;
+        m.maxWallet = packed & MAX_WALLET_ENABLED != 0;
+        m.dynamicFees = packed & DYNAMIC_FEES_ENABLED != 0;
+        m.buybackVesting = packed & BUYBACK_VESTING_ENABLED != 0;
+        m.creatorTaxBps = uint16((packed >> CREATOR_TAX_SHIFT) & UINT16_MASK);
+        m.antiSnipeDurationSeconds = uint16((packed >> SNIPE_DURATION_SHIFT) & UINT16_MASK);
+        m.maxTxBps = uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
+        m.maxWalletBps = uint16((packed >> MAX_WALLET_SHIFT) & UINT16_MASK);
+        m.floorAllocationBps = uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
+        m.initialSnipeTaxBps = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
+    }
+
+    function enabled(uint256 packed, uint256 flag) internal pure returns (bool) {
+        return packed & flag != 0;
+    }
+
+    function creatorTaxBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> CREATOR_TAX_SHIFT) & UINT16_MASK);
+    }
+
+    function antiSnipeDurationSeconds(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> SNIPE_DURATION_SHIFT) & UINT16_MASK);
+    }
+
+    function maxTxBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
+    }
+
+    function maxWalletBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> MAX_WALLET_SHIFT) & UINT16_MASK);
+    }
+
+    function floorAllocationBps(uint256 packed) internal pure returns (uint24) {
+        return uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
+    }
+
+    function initialSnipeTaxBps(uint256 packed) internal pure returns (uint16) {
+        uint16 tax = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
+        if (tax == 0 && packed & ANTI_SNIPE_ENABLED != 0) {
+            return ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;
+        }
+        return tax;
+    }
+
+    function _validate(Modules memory m) private pure {
+        if (m.creatorTaxBps > ProtocolConstants.MAX_CREATOR_TAX_BPS) revert CreatorTaxTooHigh();
+        if (m.initialSnipeTaxBps > ProtocolConstants.MAX_SNIPE_TAX_BPS) revert SnipeTaxTooHigh();
+        if (m.maxTxBps > ProtocolConstants.MAX_TX_BPS) revert MaxTxTooHigh();
+        if (m.maxWalletBps > ProtocolConstants.MAX_WALLET_BPS) revert MaxWalletTooHigh();
+        if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
+    }
+
+    error CreatorTaxTooHigh();
+    error SnipeTaxTooHigh();
+    error MaxTxTooHigh();
+    error MaxWalletTooHigh();
+    error FloorAllocTooHigh();
+}

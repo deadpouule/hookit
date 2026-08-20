@@ -1,0 +1,41 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+
+import { CosmicBackground } from "@/components/layout/CosmicBackground";
+import { Navbar } from "@/components/layout/Navbar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "hook it — Uniswap v4 Launchpad on Base",
+  description:
+    "Permissionless modular launchpad. Atomic token deploy, locked LP, quote-only fees, backed floor ratchet.",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col">
+        <TooltipProvider>
+          <CosmicBackground />
+          <Navbar />
+          <main className="flex-1">{children}</main>
+        </TooltipProvider>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-cosmic: #000000;
+  --color-surface: #111113;
+  --color-surface-raised: #18181b;
+  --color-base-blue: #0052ff;
+  --color-neon-lime: #d4ff00;
+  --color-chrome: #c8d0e0;
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+:root {
+  --background: #000000;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #09090b;
+  --secondary: #18181b;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #71717a;
+  --accent: #18181b;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.06);
+  --ring: rgb(255 255 255 / 0.15);
+  --radius: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply scroll-smooth font-sans antialiased;
+  }
+  body {
+    @apply bg-cosmic text-foreground;
+  }
+}
+
+@layer utilities {
+  .page-shell {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+  }
+
+  .form-shell {
+    @apply mx-auto w-full max-w-2xl px-4 pb-24 sm:px-6;
+  }
+
+  .panel {
+    @apply rounded-2xl border border-white/[0.08] bg-surface;
+  }
+
+  .panel-inset {
+    @apply rounded-xl border border-white/[0.06] bg-black/40;
+  }
+
+  .section-label {
+    @apply text-[13px] font-medium tracking-wide text-zinc-500;
+  }
+
+  .field-input {
+    @apply h-11 w-full rounded-xl border border-white/[0.08] bg-black/50 px-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 transition focus:border-white/20 focus:outline-none focus:ring-0;
+  }
+
+  .field-textarea {
+    @apply min-h-[88px] w-full resize-none rounded-xl border border-white/[0.08] bg-black/50 px-3.5 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 transition focus:border-white/20 focus:outline-none;
+  }
+
+  .pill-nav {
+    @apply rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-zinc-300 backdrop-blur-md transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white;
+  }
+
+  .pill-nav-active {
+    @apply border-white/20 bg-white/10 text-white;
+  }
+
+  .chrome-emblem {
+    background: linear-gradient(145deg, #ffffff 0%, #b8c4d4 22%, #6b7a90 48%, #e2e8f0 72%, #ffffff 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.8),
+      inset 0 -2px 6px rgb(0 0 0 / 0.25),
+      0 8px 24px rgb(0 82 255 / 0.15);
+  }
+
+  .chrome-text {
+    background: linear-gradient(135deg, #ffffff 0%, #c8d0e0 45%, #8b95a8 55%, #ffffff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  .star-field {
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgb(255 255 255 / 0.35), transparent),
+      radial-gradient(1px 1px at 30% 65%, rgb(255 255 255 / 0.2), transparent),
+      radial-gradient(1px 1px at 70% 30%, rgb(255 255 255 / 0.25), transparent),
+      radial-gradient(1px 1px at 90% 80%, rgb(255 255 255 / 0.15), transparent);
+    background-size: 100% 100%;
+  }
+
+  .card-banner {
+    @apply relative aspect-[2.4/1] w-full overflow-hidden rounded-t-2xl;
+  }
+}
