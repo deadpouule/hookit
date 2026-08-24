@@ -1,10 +1,11 @@
 "use client";
 
-import { Loader2, Rocket } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
+import { accentForTag } from "@/lib/hook-modules";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -48,121 +49,108 @@ export function LaunchSummary({
     : form.hookMode === "custom" && phase === "deploying-hook"
       ? "Deploying hook…"
       : isPending
-        ? "Confirm in wallet…"
+        ? "Confirm in wallet"
         : form.hookMode === "custom"
-          ? "Deploy hook & launch"
-          : "Launch token";
+          ? "Deploy & launch"
+          : "Launch";
 
   return (
-    <aside className="panel sticky top-20 flex flex-col gap-4 p-5 lg:top-24">
+    <aside className="panel ink-glow gel-surface-active sticky top-20 flex flex-col gap-4 p-5 lg:top-24">
       <div>
-        <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Summary</p>
-        <h2 className="mt-1 text-lg font-medium text-white">
-          {form.name || "Untitled token"}
+        <p className="text-xs text-zinc-600">Overview</p>
+        <h2 className="ink-headline mt-1 text-lg">
+          {form.name || "New token"}
           {form.ticker && (
-            <span className="ml-2 font-mono text-sm text-zinc-500">${form.ticker}</span>
+            <span className="ml-2 font-mono text-sm font-normal text-zinc-500">${form.ticker}</span>
           )}
         </h2>
       </div>
 
-      <dl className="space-y-2.5 text-sm">
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Launch FDV</dt>
-          <dd className="font-mono text-zinc-200">${TARGET_LAUNCH_MCAP_USD.toLocaleString()}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Supply</dt>
-          <dd className="font-mono text-zinc-200">1B</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Hook</dt>
-          <dd className="text-zinc-200">
-            {form.hookMode === "custom" ? "Custom (your code)" : "Master"}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Network</dt>
-          <dd className="text-zinc-200">Base Sepolia</dd>
-        </div>
-        <div className="flex justify-between gap-4 border-t border-white/[0.06] pt-2.5">
-          <dt className="text-zinc-500">Launch fee</dt>
-          <dd className="font-mono text-zinc-200">{launchFeeEth} ETH</dd>
+      <dl className="space-y-2 text-sm">
+        <Row label="FDV" value={`$${TARGET_LAUNCH_MCAP_USD.toLocaleString()}`} mono />
+        <Row label="Supply" value="1,000,000,000" mono />
+        <Row label="Hook" value={form.hookMode === "custom" ? "Custom" : "Master"} />
+        <Row label="Chain" value="Base Sepolia" />
+        <div className="border-t border-white/[0.05] pt-2">
+          <Row label="Fee" value={`${launchFeeEth} ETH`} mono />
         </div>
       </dl>
 
       {activeTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {activeTags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-zinc-400"
-            >
-              {tag}
-            </span>
-          ))}
+          {activeTags.map((tag) => {
+            const accent = accentForTag(tag);
+            return (
+              <span
+                key={tag}
+                className="rounded-full border px-2 py-0.5 text-[10px] text-zinc-400"
+                style={{
+                  borderColor: `${accent.color}40`,
+                  color: accent.color,
+                  background: `${accent.color}12`,
+                }}
+              >
+                {tag}
+              </span>
+            );
+          })}
         </div>
       )}
 
       {isPending && (
-        <ol className="space-y-2 rounded-xl border border-white/[0.06] bg-black/40 px-3 py-3 text-xs">
+        <ol className="space-y-2 text-xs text-zinc-500">
           {form.hookMode === "custom" && (
-            <li
-              className={cn(
-                "flex items-center gap-2",
-                phase === "deploying-hook" ? "text-base-blue" : phase === "idle" ? "text-zinc-600" : "text-emerald-400",
-              )}
-            >
+            <li className={cn("flex items-center gap-2", phase === "deploying-hook" && "text-ink-lavender")}>
               {phase === "deploying-hook" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                <span className="h-1 w-1 rounded-full bg-current" />
               )}
-              Mine & deploy hook
+              Deploy hook
             </li>
           )}
-          <li
-            className={cn(
-              "flex items-center gap-2",
-              phase === "launching" ? "text-base-blue" : phase === "done" ? "text-emerald-400" : "text-zinc-600",
-            )}
-          >
+          <li className={cn("flex items-center gap-2", phase === "launching" && "text-ink-lavender")}>
             {phase === "launching" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              <span className="h-1 w-1 rounded-full bg-current" />
             )}
-            Create pool & token
+            Mint token & pool
           </li>
         </ol>
       )}
 
       {!walletReady ? (
-        <div className="space-y-3">
-          <p className="text-xs text-zinc-500">Connect a wallet on Base Sepolia to launch.</p>
-          <ConnectButton className="w-full justify-center py-2.5" />
+        <div className="space-y-2">
+          <p className="text-xs text-zinc-600">Wallet required on Base Sepolia.</p>
+          <ConnectButton className="w-full justify-center !py-2.5" />
         </div>
       ) : (
         <button
           type="button"
           onClick={onLaunch}
           disabled={!canLaunch}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn-primary w-full flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Rocket className="h-4 w-4" />
-          )}
+          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {ctaLabel}
         </button>
       )}
 
       {!factoryConfigured && (
-        <p className="text-xs text-amber-200/80">
-          Set <code className="font-mono">NEXT_PUBLIC_LAUNCH_FACTORY</code> in{" "}
-          <code className="font-mono">.env.local</code>
+        <p className="text-xs text-zinc-600">
+          Set <code className="text-zinc-500">NEXT_PUBLIC_LAUNCH_FACTORY</code> in .env.local
         </p>
       )}
     </aside>
+  );
+}
+
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt className="text-zinc-600">{label}</dt>
+      <dd className={cn("text-zinc-300", mono && "font-mono text-xs")}>{value}</dd>
+    </div>
   );
 }

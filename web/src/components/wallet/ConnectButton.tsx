@@ -43,11 +43,11 @@ export function ConnectButton({ className }: { className?: string }) {
           onClick={() => switchChain({ chainId: baseSepolia.id })}
           disabled={switching}
           className={cn(
-            "rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition hover:bg-amber-500/20",
+            "rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm text-amber-100",
             className,
           )}
         >
-          {switching ? "Switching…" : "Switch to Base Sepolia"}
+          {switching ? "Switching…" : "Switch network"}
         </button>
       );
     }
@@ -56,17 +56,17 @@ export function ConnectButton({ className }: { className?: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm text-zinc-100 transition hover:bg-white/[0.08] data-[state=open]:bg-white/[0.08]",
+            "inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-black/40 px-3 py-1.5 font-mono text-sm text-zinc-300 transition hover:border-ink-purple/30",
             className,
           )}
         >
-          <span className="h-2 w-2 rounded-full bg-neon-lime shadow-[0_0_8px_rgba(212,255,0,0.5)]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-degen-pink shadow-[0_0_8px_#ff2bd6]" />
           {truncate(address)}
-          <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
+          <ChevronDown className="h-3.5 w-3.5 text-zinc-600" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52 border-white/10 bg-zinc-950">
-          <DropdownMenuItem onClick={copyAddress} className="gap-2">
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+        <DropdownMenuContent align="end" className="w-48 border-white/[0.08] bg-ink-elevated">
+          <DropdownMenuItem onClick={copyAddress} className="gap-2 text-zinc-400">
+            {copied ? <Check className="h-4 w-4 text-ink-lavender" /> : <Copy className="h-4 w-4" />}
             {copied ? "Copied" : "Copy address"}
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
@@ -74,14 +74,14 @@ export function ConnectButton({ className }: { className?: string }) {
               href={`${BASE_SEPOLIA_EXPLORER}/address/${address}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="gap-2"
+              className="gap-2 text-zinc-400"
             >
               <ExternalLink className="h-4 w-4" />
-              View on Basescan
+              Basescan
             </a>
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-white/10" />
-          <DropdownMenuItem onClick={() => disconnect()} className="gap-2 text-red-300">
+          <DropdownMenuSeparator className="bg-white/[0.06]" />
+          <DropdownMenuItem onClick={() => disconnect()} className="gap-2 text-zinc-500">
             <LogOut className="h-4 w-4" />
             Disconnect
           </DropdownMenuItem>
@@ -98,11 +98,11 @@ export function ConnectButton({ className }: { className?: string }) {
       disabled={!connector || isPending}
       onClick={() => connector && connect({ connector })}
       className={cn(
-        "rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-white/[0.08] disabled:opacity-50",
+        "rounded-xl border border-white/[0.08] bg-black/40 px-4 py-1.5 text-sm text-zinc-300 transition hover:border-ink-purple/30 disabled:opacity-50",
         className,
       )}
     >
-      {isPending ? "Connecting…" : "Connect wallet"}
+      {isPending ? "Connecting…" : "Connect"}
     </button>
   );
 }

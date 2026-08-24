@@ -30,12 +30,11 @@ export function CustomHookEditor({ source, fileName, onChange }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-base-blue/20 bg-base-blue/[0.06] px-4 py-3">
-        <p className="text-sm text-zinc-200">Bring your own Uniswap v4 hook</p>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          Paste or upload your <code className="text-zinc-400">.sol</code> file. Hookit mines the
-          CREATE2 address and deploys your hook automatically when you launch — no address to
-          copy.
+      <div className="rounded-xl border border-white/[0.06] bg-black/40 px-4 py-3">
+        <p className="text-sm text-zinc-300">Custom hook</p>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+          Upload or paste your <code className="text-ink-lavender/80">.sol</code>. Deployed
+          automatically at launch via CREATE2.
         </p>
       </div>
 

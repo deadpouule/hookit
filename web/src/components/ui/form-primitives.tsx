@@ -15,7 +15,7 @@ export function FormPanel({
 }
 
 export function FormDivider() {
-  return <div className="my-6 border-t border-white/[0.06]" />;
+  return <div className="my-6 border-t border-white/[0.05]" />;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -32,17 +32,17 @@ export function SegmentedControl<T extends string>({
   className,
 }: SegmentedControlProps<T>) {
   return (
-    <div className={cn("flex flex-wrap gap-1 rounded-xl border border-white/[0.06] bg-black/50 p-1", className)}>
+    <div className={cn("gel-segment", className)}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "flex-1 rounded-lg px-3 py-2.5 text-center text-sm font-medium transition",
+            "gel-segment-pill",
             value === opt.value
-              ? "bg-white text-black shadow-sm"
-              : "text-zinc-500 hover:text-zinc-300",
+              ? "gel-segment-pill-active"
+              : "text-zinc-600 hover:text-zinc-400",
           )}
         >
           {opt.label}
@@ -54,7 +54,7 @@ export function SegmentedControl<T extends string>({
 
 export function FeeBreakdown({ creator, protocol }: { creator: string; protocol: string }) {
   return (
-    <p className="mt-1.5 text-xs text-zinc-500">
+    <p className="mt-1.5 text-xs text-zinc-600">
       Creator {creator} · Protocol {protocol}
     </p>
   );
@@ -74,11 +74,11 @@ export function ModuleRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-white/[0.05] py-4 last:border-0 last:pb-0">
+    <div className="border-b border-white/[0.04] py-4 last:border-0 last:pb-0">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm text-zinc-200">{label}</p>
-          {description && <p className="mt-0.5 text-xs text-zinc-500">{description}</p>}
+          {description && <p className="mt-0.5 text-xs text-zinc-600">{description}</p>}
         </div>
         <button
           type="button"
@@ -86,14 +86,14 @@ export function ModuleRow({
           aria-checked={enabled}
           onClick={() => onToggle(!enabled)}
           className={cn(
-            "relative h-6 w-11 shrink-0 rounded-full transition",
-            enabled ? "bg-base-blue" : "bg-zinc-700",
+            "relative h-6 w-10 shrink-0 rounded-full transition",
+            enabled ? "bg-white/15" : "bg-zinc-800",
           )}
         >
           <span
             className={cn(
               "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform",
-              enabled && "translate-x-5",
+              enabled && "translate-x-4",
             )}
           />
         </button>

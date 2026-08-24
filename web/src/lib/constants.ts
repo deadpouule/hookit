@@ -183,6 +183,5 @@ export const MOCK_POOLS: TokenPool[] = [
 export const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/launch", label: "Create" },
-  { href: "/floor", label: "Floor" },
   { href: "https://github.com/deadpouule/hookit", label: "GitHub", external: true },
 ] as const;

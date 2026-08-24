@@ -75,27 +75,22 @@ export function ExplorePage() {
     <div className="page-shell py-10 sm:py-14">
       <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
-            Base Sepolia
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Explore hooks
+          <p className="text-xs text-zinc-600">Base Sepolia</p>
+          <h1 className="ink-headline mt-1 text-3xl sm:text-4xl">
+            <span className="text-degen">Pools</span>
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-zinc-500">
-            Live Uniswap v4 launches with modular or custom Solidity hooks ·{" "}
-            <span className="font-mono text-zinc-400">
+          <p className="mt-2 max-w-md text-sm text-zinc-600">
+            Tokens launched through Hookit.{" "}
+            <span className="font-mono text-zinc-500">
               ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
             </span>{" "}
-            launch FDV
+            starting FDV.
           </p>
         </div>
 
-        <Link
-          href="/launch"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-        >
+        <Link href="/launch" className="btn-primary gap-2">
           <Plus className="h-4 w-4" />
-          Create token
+          Create
         </Link>
       </div>
 
@@ -121,10 +116,10 @@ export function ExplorePage() {
                 setPage(1);
               }}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                "rounded-lg px-3 py-1.5 text-xs transition",
                 category === f.id
-                  ? "bg-white text-black"
-                  : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300",
+                  ? "bg-white/10 text-white"
+                  : "text-zinc-600 hover:bg-white/[0.04] hover:text-zinc-400",
               )}
             >
               {f.label}

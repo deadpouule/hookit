@@ -1,85 +1,89 @@
 import Link from "next/link";
-import { ArrowRight, Code2, Layers, Shield, Zap } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
+import { BrandMark } from "@/components/layout/BrandMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { HOOK_MODULE_ACCENTS } from "@/lib/hook-modules";
 
 const FEATURES = [
   {
-    icon: Zap,
-    title: "Atomic launch",
-    description: "Token, pool, and liquidity in one transaction on Uniswap v4.",
+    title: "One transaction",
+    description: "Token mint, v4 pool, and LP lock — no staging, no follow-up txs.",
+    accent: HOOK_MODULE_ACCENTS.swapFee,
   },
   {
-    icon: Shield,
-    title: "Master modules",
-    description: "Anti-snipe, backed floor, anti-MEV — configured without writing Solidity.",
+    title: "Master hook",
+    description: "Anti-snipe, floor vault, anti-MEV. Pick what you need.",
+    accent: HOOK_MODULE_ACCENTS.antiMev,
   },
   {
-    icon: Code2,
-    title: "Custom hooks",
-    description: "Paste your own v4 hook source. Hookit mines CREATE2 and deploys at launch.",
+    title: "Custom Solidity",
+    description: "Paste your hook source. We mine CREATE2 and deploy at launch.",
+    accent: HOOK_MODULE_ACCENTS.creatorTax,
   },
   {
-    icon: Layers,
-    title: "Quote-only fees",
-    description: "Swap fees taken in ETH — zero sell pressure on your token.",
+    title: "Quote fees",
+    description: "Swap fees in ETH. Your token supply stays untouched.",
+    accent: HOOK_MODULE_ACCENTS.backedFloor,
   },
 ];
 
 export default function HomePage() {
   return (
     <>
-      <div className="page-shell py-16 sm:py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-neon-lime" />
-            Live on Base Sepolia testnet
-          </p>
+      <div className="page-shell relative py-20 sm:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="max-w-xl">
+            <div className="mb-8 flex items-center gap-3">
+              <BrandMark className="flex h-11 w-11 items-center justify-center rounded-2xl" />
+              <p className="text-xs text-zinc-500">Uniswap v4 · Base Sepolia</p>
+            </div>
 
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Launch tokens with{" "}
-            <span className="chrome-text">programmable hooks</span>
-          </h1>
+            <h1 className="ink-headline text-4xl leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
+              Launch a token
+              <br />
+              <span className="text-degen">with hooks.</span>
+            </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-zinc-500 sm:text-lg">
-            Permissionless Uniswap v4 launchpad. Fixed{" "}
-            <span className="font-mono text-zinc-300">
-              ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
-            </span>{" "}
-            FDV, locked LP, and modular or custom hook architecture.
-          </p>
+            <p className="mt-6 text-base leading-relaxed text-zinc-500">
+              Hookit deploys your pool at{" "}
+              <span className="font-mono text-ink-lavender">
+                ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
+              </span>{" "}
+              FDV. Modular protections built in, or bring your own v4 hook contract.
+            </p>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/launch"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 sm:w-auto"
-            >
-              Create token
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/explore"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-6 py-3.5 text-sm text-zinc-200 transition hover:bg-white/5 sm:w-auto"
-            >
-              Explore pools
-            </Link>
-          </div>
+            <div className="mt-10 flex flex-wrap gap-3">
+              <Link href="/launch" className="btn-primary gap-2">
+                Create token
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/explore" className="btn-ghost">
+                View pools
+              </Link>
+            </div>
 
-          <div className="mt-8 flex justify-center">
-            <ConnectButton />
+            <div className="mt-8">
+              <ConnectButton />
+            </div>
           </div>
         </div>
 
-        <div className="mt-20 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="panel p-5 transition hover:border-white/[0.14]">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                <Icon className="h-4 w-4 text-zinc-300" />
-              </div>
-              <h3 className="text-sm font-medium text-white">{title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">{description}</p>
+        <div className="mt-24 grid gap-3 sm:grid-cols-2">
+          {FEATURES.map(({ title, description, accent }) => (
+            <div
+              key={title}
+              className="gel-surface gel-surface-active p-5"
+              style={{
+                boxShadow: `inset 3px 0 0 0 ${accent.color}, 0 0 32px -16px ${accent.glow}`,
+              }}
+            >
+              <h3 className="text-sm font-medium" style={{ color: accent.color }}>
+                {title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-600">{description}</p>
             </div>
           ))}
         </div>

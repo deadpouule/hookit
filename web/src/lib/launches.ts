@@ -7,11 +7,11 @@ import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import type { TokenPool } from "@/lib/types";
 
 const GRADIENTS = [
-  "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-  "linear-gradient(135deg, #2d1b69 0%, #11998e 100%)",
-  "linear-gradient(135deg, #434343 0%, #000000 100%)",
-  "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
-  "linear-gradient(135deg, #141e30 0%, #243b55 100%)",
+  "linear-gradient(135deg, #0a0a0f 0%, #1a1028 45%, #0c0c10 100%)",
+  "linear-gradient(145deg, #050505 0%, #1e1030 50%, #0a0812 100%)",
+  "linear-gradient(160deg, #08080c 0%, #2d1b4e 40%, #050505 100%)",
+  "linear-gradient(135deg, #0c0a10 0%, #3b1d5c 35%, #0a0a0f 100%)",
+  "linear-gradient(150deg, #050505 0%, #1a0f2e 55%, #12101a 100%)",
 ];
 
 function shortenAddress(address: string): string {

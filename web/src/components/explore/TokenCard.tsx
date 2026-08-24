@@ -43,7 +43,7 @@ export function TokenCard({ pool }: TokenCardProps) {
     >
       <Link
         href={`/explore/${pool.id}`}
-        className="group panel block overflow-hidden transition hover:border-white/[0.16] hover:shadow-[0_8px_32px_rgba(0,82,255,0.08)]"
+        className="group panel gel-surface-active block overflow-hidden transition"
       >
         <div className="card-banner" style={{ background: pool.bannerGradient }}>
           <div className="absolute inset-0 bg-gradient-to-t from-[#111113] via-black/20 to-transparent" />
@@ -123,7 +123,7 @@ function HookChip({ label, accent }: { label: string; accent?: boolean }) {
   return (
     <span
       className={cn(
-        "rounded-md border px-1.5 py-0.5 text-[10px]",
+        "gel-chip border px-1.5 py-0.5 text-[10px]",
         accent
           ? "border-amber-500/20 text-amber-300/80"
           : "border-white/[0.06] text-zinc-500",

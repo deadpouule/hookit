@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { CosmicBackground } from "@/components/layout/CosmicBackground";
+import { InkGelBackground } from "@/components/layout/InkGelBackground";
+import { InkSvgFilters } from "@/components/layout/InkSvgFilters";
 import { Navbar } from "@/components/layout/Navbar";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,7 +34,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-full flex-col">
         <Web3Provider>
           <TooltipProvider>
-            <CosmicBackground />
+            <InkGelBackground />
+            <InkSvgFilters />
             <Navbar />
             <main className="flex-1">{children}</main>
           </TooltipProvider>
