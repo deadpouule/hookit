@@ -125,5 +125,64 @@ library FixedPointMath {
         return TickMath.getSqrtPriceAtTick(tick);
     }
 
+    /// @notice Converts a USD FDV (1e18-scaled) into quote wei using an ETH/USD price (1e18-scaled).
+    function mcapQuoteFromUsd(uint256 mcapUsdX18, uint256 quoteUsdX18) internal pure returns (uint256) {
+        if (quoteUsdX18 == 0) revert InvalidPrice();
+        return FullMath.mulDiv(mcapUsdX18, 1e18, quoteUsdX18);
+    }
+
+    /// @notice Starting tick so spot FDV in quote equals `mcapQuoteWei` for a unilateral launch position.
+    /// @param tokenIsCurrency1 True when the launched token is `currency1` (native-ETH quote launches).
+    function startingTickForMcap(
+        uint256 totalSupply,
+        uint256 mcapQuoteWei,
+        int24 tickSpacing,
+        bool tokenIsCurrency1
+    ) internal pure returns (int24) {
+        if (totalSupply == 0 || mcapQuoteWei == 0) revert InvalidPrice();
+
+        if (tokenIsCurrency1) {
+            return _startingTickTokenIsCurrency1(totalSupply, mcapQuoteWei, tickSpacing);
+        }
+        return _startingTickTokenIsCurrency0(totalSupply, mcapQuoteWei, tickSpacing);
+    }
+
+    function _startingTickTokenIsCurrency1(uint256 totalSupply, uint256 mcapQuoteWei, int24 tickSpacing)
+        private
+        pure
+        returns (int24)
+    {
+        int24 lo = TickMath.minUsableTick(tickSpacing);
+        int24 hi = TickMath.maxUsableTick(tickSpacing);
+
+        while (lo < hi) {
+            int24 mid = int24(int256(lo) + (int256(hi) - int256(lo) + 1) / 2);
+            uint256 mcapAt = quoteFromToken(totalSupply, TickMath.getSqrtPriceAtTick(mid), false);
+            if (mcapAt >= mcapQuoteWei) lo = mid;
+            else hi = mid - 1;
+        }
+
+        return alignTickDown(lo, tickSpacing);
+    }
+
+    function _startingTickTokenIsCurrency0(uint256 totalSupply, uint256 mcapQuoteWei, int24 tickSpacing)
+        private
+        pure
+        returns (int24)
+    {
+        int24 lo = TickMath.minUsableTick(tickSpacing);
+        int24 hi = TickMath.maxUsableTick(tickSpacing);
+
+        while (lo < hi) {
+            int24 mid = int24(int256(lo) + (int256(hi) - int256(lo) + 1) / 2);
+            uint256 mcapAt = quoteFromToken(totalSupply, TickMath.getSqrtPriceAtTick(mid), true);
+            if (mcapAt >= mcapQuoteWei) lo = mid;
+            else hi = mid - 1;
+        }
+
+        return alignTickUp(lo, tickSpacing);
+    }
+
     error LiquidityOverflow();
+    error InvalidPrice();
 }

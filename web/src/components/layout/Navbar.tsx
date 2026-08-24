@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Code2 } from "lucide-react";
 
+import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -84,12 +85,7 @@ export function Navbar() {
             <span className="h-1.5 w-1.5 rounded-full bg-neon-lime" />
             Base Sepolia
           </span>
-          <button
-            type="button"
-            className="rounded-full border border-white/15 bg-transparent px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-white/5"
-          >
-            Connect
-          </button>
+          <ConnectButton />
         </div>
       </div>
     </header>

@@ -18,6 +18,9 @@ interface PriceChartProps {
   marketCap: number;
   hookType: string;
   volume24h: number;
+  liveSeries?: number[];
+  liveFromPool?: boolean;
+  priceLoading?: boolean;
 }
 
 function buildPath(values: number[], width: number, height: number, pad = 8): string {
@@ -39,13 +42,27 @@ function buildArea(path: string, width: number, height: number): string {
   return `${path} L ${width - 8} ${height - 8} L 8 ${height - 8} Z`;
 }
 
-export function PriceChart({ poolId, priceEth, marketCap, hookType, volume24h }: PriceChartProps) {
+export function PriceChart({
+  poolId,
+  priceEth,
+  marketCap,
+  hookType,
+  volume24h,
+  liveSeries,
+  liveFromPool,
+  priceLoading,
+}: PriceChartProps) {
   const [timeframe, setTimeframe] = useState<ChartTimeframe>("1D");
 
-  const series = useMemo(
-    () => generateChartSeries(poolId, timeframe),
-    [poolId, timeframe],
-  );
+  const series = useMemo(() => {
+    if (liveFromPool && liveSeries && liveSeries.length >= 2) {
+      return liveSeries;
+    }
+    if (liveFromPool && priceEth > 0) {
+      return [priceEth, priceEth];
+    }
+    return generateChartSeries(poolId, timeframe);
+  }, [liveFromPool, liveSeries, priceEth, poolId, timeframe]);
 
   const width = 640;
   const height = 200;
@@ -56,11 +73,16 @@ export function PriceChart({ poolId, priceEth, marketCap, hookType, volume24h }:
     <div className="panel p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-zinc-500">Price</p>
+          <p className="text-xs text-zinc-500">
+            Price{liveFromPool ? " (live pool)" : ""}
+          </p>
           <p className="mt-0.5 font-mono text-lg text-white sm:text-xl">
-            {formatPriceEth(priceEth)}
+            {priceLoading && liveFromPool
+              ? "Loading…"
+              : formatPriceEth(priceEth)}
           </p>
         </div>
+        {!liveFromPool && (
         <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-black/40 p-0.5">
           {TIMEFRAMES.map((tf) => (
             <button
@@ -78,6 +100,7 @@ export function PriceChart({ poolId, priceEth, marketCap, hookType, volume24h }:
             </button>
           ))}
         </div>
+        )}
       </div>
 
       <motion.div
@@ -115,9 +138,11 @@ export function PriceChart({ poolId, priceEth, marketCap, hookType, volume24h }:
         <div>
           <p className="text-xs text-zinc-500">Market cap</p>
           <p className="mt-0.5 font-mono text-sm text-zinc-200">
-            {marketCap >= 1_000_000
-              ? `$${(marketCap / 1_000_000).toFixed(2)}M`
-              : `$${(marketCap / 1_000).toFixed(0)}K`}
+            {liveFromPool
+              ? `$${marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+              : marketCap >= 1_000_000
+                ? `$${(marketCap / 1_000_000).toFixed(2)}M`
+                : `$${(marketCap / 1_000).toFixed(0)}K`}
           </p>
         </div>
         <div>

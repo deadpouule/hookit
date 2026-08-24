@@ -7,7 +7,11 @@ import { useState } from "react";
 import { PriceChart } from "@/components/token/PriceChart";
 import { SwapPanel } from "@/components/token/SwapPanel";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { usePoolSpotPrice, usePriceHistory } from "@/hooks/usePoolPrice";
+import { marketCapUsd } from "@/lib/pool-price";
 import { getPoolById } from "@/lib/pools";
+import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
+import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +32,14 @@ function TokenAvatar({ pool }: { pool: TokenPool }) {
 
 export function TokenDetailView({ pool }: TokenDetailViewProps) {
   const [copied, setCopied] = useState(false);
-  const enriched = getPoolById(pool.id)!;
-  const fullAddress = enriched.contractAddress ?? pool.address;
+  const enriched = getPoolById(pool.id) ?? pool;
+  const fullAddress = pool.contractAddress ?? enriched.contractAddress ?? pool.address;
+  const { data: spotPrice, isLoading: priceLoading } = usePoolSpotPrice(pool.poolId);
+  const priceHistory = usePriceHistory(pool.poolId, spotPrice);
+  const priceEth = spotPrice ?? enriched.priceEth ?? 0;
+  const marketCap = pool.poolId
+    ? marketCapUsd(priceEth, DEFAULT_LAUNCH_ETH_USD)
+    : pool.marketCap;
 
   const copyAddress = async () => {
     await navigator.clipboard.writeText(fullAddress);
@@ -66,11 +76,11 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                 {copied && <span className="text-emerald-500">Copied</span>}
               </button>
               <a
-                href="https://x.com"
+                href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 transition hover:text-zinc-400"
-                aria-label="X profile"
+                aria-label="Basescan"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
@@ -95,10 +105,13 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
         <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
           <PriceChart
             poolId={pool.id}
-            priceEth={enriched.priceEth ?? 1e-9}
-            marketCap={pool.marketCap}
+            priceEth={priceEth}
+            marketCap={marketCap}
             hookType={pool.hookType}
             volume24h={enriched.volume24h ?? pool.liquidity * 0.15}
+            liveSeries={priceHistory.map((p) => p.priceEth)}
+            liveFromPool={!!pool.poolId}
+            priceLoading={priceLoading}
           />
           <SwapPanel pool={pool} />
         </div>

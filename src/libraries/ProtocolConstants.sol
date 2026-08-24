@@ -30,4 +30,13 @@ library ProtocolConstants {
     int24 internal constant DEFAULT_TICK_SPACING = 60;
 
     uint24 internal constant DYNAMIC_FEE_FLAG = 0x800000;
+
+    /// @dev Fixed fully-diluted valuation at launch ($4,000 with 18-decimal USD scale).
+    uint256 internal constant TARGET_LAUNCH_MCAP_USD_X18 = 4_000e18;
+
+    /// @dev Default ETH/USD used to convert the $4k FDV into quote (ETH) at launch.
+    uint256 internal constant DEFAULT_LAUNCH_ETH_USD_X18 = 4_000e18;
+
+    /// @dev Canonical launch supply (1 billion tokens, 18 decimals).
+    uint256 internal constant DEFAULT_LAUNCH_SUPPLY = 1_000_000_000e18;
 }

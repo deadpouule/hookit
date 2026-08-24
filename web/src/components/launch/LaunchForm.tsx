@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ImagePlus } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatEther } from "viem";
 
 import {
   FeeBreakdown,
@@ -15,11 +16,15 @@ import {
 } from "@/components/ui/form-primitives";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { useWalletReady } from "@/components/wallet/ConnectButton";
+import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
   MAX_CREATOR_TAX_BPS,
+  TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
+import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,8 +32,20 @@ import { cn } from "@/lib/utils";
 export function LaunchForm() {
   const [form, setForm] = useState<LaunchFormState>(DEFAULT_LAUNCH_STATE);
   const [socialsOpen, setSocialsOpen] = useState(false);
-  const [launching, setLaunching] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const walletReady = useWalletReady();
+  const {
+    factoryConfigured,
+    launchFee,
+    launch,
+    isPending,
+    error,
+    setError,
+    result,
+    resetResult,
+  } = useLaunchToken();
+
+  const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
 
   const updateField = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -45,6 +62,7 @@ export function LaunchForm() {
   const floorEst = estimateFloorPrice(form.modules.floorAllocation, devBuy);
 
   const activeTags = useMemo(() => {
+    if (form.hookMode === "custom") return ["Custom Hook"];
     const tags: string[] = [];
     if (form.modules.antiSnipe) tags.push("Anti-Snipe");
     if (form.modules.backedFloor) tags.push("Backed Floor");
@@ -52,13 +70,17 @@ export function LaunchForm() {
     if (form.modules.maxWallet) tags.push("Max Wallet");
     if (form.modules.maxTx) tags.push("Max TX");
     return tags;
-  }, [form.modules]);
+  }, [form.hookMode, form.modules]);
 
   const handleLaunch = async () => {
-    setLaunching(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setLaunching(false);
-    alert(`Launch queued for $${form.ticker || "TOKEN"} on Base Sepolia`);
+    setError(null);
+    try {
+      await launch(form);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Transaction failed — check your wallet";
+      setError(message);
+    }
   };
 
   const handleImage = (file: File | undefined) => {
@@ -77,9 +99,76 @@ export function LaunchForm() {
         Back
       </Link>
 
-      <h1 className="mb-10 text-center text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+      <h1 className="mb-3 text-center text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         Create Hooked Token
       </h1>
+      <p className="mb-10 text-center text-sm text-zinc-500">
+        Fixed launch valuation{" "}
+        <span className="font-mono text-zinc-300">${TARGET_LAUNCH_MCAP_USD.toLocaleString()}</span> FDV
+        · 1B supply
+      </p>
+
+      {!factoryConfigured && (
+        <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p className="font-medium">LaunchFactory not configured</p>
+          <p className="mt-1 text-amber-200/80">
+            Deploy contracts to Base Sepolia, then set{" "}
+            <code className="rounded bg-black/30 px-1 font-mono text-xs">
+              NEXT_PUBLIC_LAUNCH_FACTORY
+            </code>{" "}
+            in <code className="font-mono text-xs">web/.env.local</code>.
+          </p>
+        </div>
+      )}
+
+      {result && (
+        <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
+          <p className="font-medium">Token launched on Base Sepolia</p>
+          <dl className="mt-3 space-y-2 font-mono text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <dt className="text-emerald-200/70">Token</dt>
+              <dd>{result.token}</dd>
+              <a
+                href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
+              >
+                Basescan <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <dt className="text-emerald-200/70">Tx</dt>
+              <dd className="truncate">{result.txHash}</dd>
+              <a
+                href={`${BASE_SEPOLIA_EXPLORER}/tx/${result.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
+              >
+                View <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <div>
+              <span className="text-emerald-200/70">Launch ID </span>
+              {result.launchId.toString()}
+            </div>
+          </dl>
+          <button
+            type="button"
+            onClick={resetResult}
+            className="mt-4 text-xs text-emerald-300 underline-offset-2 hover:underline"
+          >
+            Launch another token
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          {error}
+        </div>
+      )}
 
       <FormPanel>
         <SectionLabel>Token</SectionLabel>
@@ -200,19 +289,73 @@ export function LaunchForm() {
             onChange={(mode) => setForm((p) => ({ ...p, hookMode: mode }))}
             options={[
               { value: "master", label: "Master Hook" },
-              { value: "custom", label: "Custom address" },
+              { value: "custom", label: "Custom hook" },
             ]}
           />
         </div>
-        {form.hookMode === "custom" && (
-          <input
-            className="field-input mt-3 font-mono"
-            placeholder="0x… hook contract"
-            value={form.customHookAddress}
-            onChange={(e) => updateField("customHookAddress", e.target.value)}
-          />
+
+        {form.hookMode === "custom" ? (
+          <div className="mt-4 space-y-4">
+            <p className="text-xs text-zinc-500">
+              Upload your Uniswap v4 hook source. Hookit modules are disabled — your contract owns
+              all swap logic. Deploy with{" "}
+              <code className="font-mono text-zinc-400">MineHookAddress.s.sol</code>, then paste
+              the mined address below.
+            </p>
+
+            <div>
+              <Label className="mb-1.5 block text-xs text-zinc-500">Hook source (.sol)</Label>
+              <input
+                type="file"
+                accept=".sol"
+                className="field-input cursor-pointer file:mr-3 file:rounded-md file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-xs file:text-zinc-200"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const text = await file.text();
+                  setForm((p) => ({
+                    ...p,
+                    customHookSource: text,
+                    customHookFileName: file.name,
+                  }));
+                }}
+              />
+              {form.customHookFileName && (
+                <p className="mt-1 text-xs text-zinc-600">{form.customHookFileName} loaded</p>
+              )}
+            </div>
+
+            <div>
+              <Label className="mb-1.5 block text-xs text-zinc-500">Or paste Solidity</Label>
+              <textarea
+                className="field-textarea min-h-[140px] font-mono text-xs"
+                placeholder="// SPDX-License-Identifier: MIT&#10;pragma solidity ^0.8.26;&#10;..."
+                value={form.customHookSource}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, customHookSource: e.target.value, customHookFileName: "" }))
+                }
+              />
+            </div>
+
+            <div>
+              <Label className="mb-1.5 block text-xs text-zinc-500">Deployed hook address</Label>
+              <input
+                className="field-input font-mono"
+                placeholder="0x… after forge script deploy"
+                value={form.customHookAddress}
+                onChange={(e) => updateField("customHookAddress", e.target.value)}
+              />
+            </div>
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-zinc-600">
+            Uses the Hookit MasterLaunchHook — anti-snipe, backed floor, anti-MEV, and quote-only
+            fees configured below.
+          </p>
         )}
 
+        {form.hookMode === "master" && (
+          <>
         <FormDivider />
 
         <SectionLabel>Hook modules</SectionLabel>
@@ -357,11 +500,17 @@ export function LaunchForm() {
             <FeeBreakdown creator="100%" protocol="0%" />
           </div>
         </div>
+          </>
+        )}
 
         <FormDivider />
 
         <SectionLabel>Initial buy</SectionLabel>
-        <div className="mt-3 flex gap-3">
+        <p className="mt-1 text-xs text-amber-500/80">
+          Dev buy is not bundled in the launch tx yet — extra ETH is refunded. Swap on the pool
+          after launch.
+        </p>
+        <div className="mt-3 flex gap-3 opacity-50">
           <div className="relative flex-1">
             <input
               type="number"
@@ -369,6 +518,7 @@ export function LaunchForm() {
               step="0.0001"
               placeholder="0"
               value={form.devBuyEth}
+              disabled
               onChange={(e) => updateField("devBuyEth", e.target.value)}
               className="field-input pr-14 font-mono"
             />
@@ -376,14 +526,19 @@ export function LaunchForm() {
           </div>
           <button
             type="button"
+            disabled
             onClick={() => updateField("devBuyEth", "1")}
-            className="rounded-xl border border-white/10 px-4 text-sm text-zinc-400 transition hover:border-white/20 hover:text-zinc-200"
+            className="rounded-xl border border-white/10 px-4 text-sm text-zinc-400"
           >
             Max
           </button>
         </div>
         <div className="mt-3 space-y-1 text-xs text-zinc-500">
-          <p>Minimum {LAUNCH_FEE_ETH} ETH launch fee</p>
+          <p>
+            Launch fee:{" "}
+            <span className="font-mono text-zinc-400">{launchFeeEth} ETH</span>
+            {launchFee ? " (on-chain)" : " (default)"}
+          </p>
           <p>
             Estimated tokens = <span className="font-mono text-zinc-400">{estimatedTokens}</span>
           </p>
@@ -408,10 +563,20 @@ export function LaunchForm() {
         <button
           type="button"
           onClick={handleLaunch}
-          disabled={launching || !form.name || !form.ticker}
+          disabled={
+            isPending ||
+            !form.name ||
+            !form.ticker ||
+            !walletReady ||
+            !factoryConfigured
+          }
           className="mt-8 flex w-full items-center justify-center rounded-xl bg-white py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {launching ? "Launching…" : "Hook it & launch"}
+          {!walletReady
+            ? "Connect wallet on Base Sepolia"
+            : isPending
+              ? "Confirm in wallet…"
+              : "Hook it & launch"}
         </button>
       </FormPanel>
     </div>

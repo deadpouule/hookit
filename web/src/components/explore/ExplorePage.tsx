@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from "lucide-react";
 
 import { TokenCard } from "@/components/explore/TokenCard";
+import { useLaunches } from "@/hooks/useLaunches";
 import { MOCK_POOLS } from "@/lib/constants";
-import type { ExploreCategory } from "@/lib/types";
+import { getLaunchFactoryAddress } from "@/lib/contracts/config";
+import type { ExploreCategory, TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const FILTERS: { id: ExploreCategory; label: string }[] = [
@@ -17,7 +19,7 @@ const FILTERS: { id: ExploreCategory; label: string }[] = [
 ];
 
 function filterPools(
-  pools: typeof MOCK_POOLS,
+  pools: TokenPool[],
   category: ExploreCategory,
   query: string,
 ) {
@@ -42,7 +44,8 @@ function filterPools(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.ticker.toLowerCase().includes(q) ||
-        p.address.toLowerCase().includes(q),
+        p.address.toLowerCase().includes(q) ||
+        p.contractAddress?.toLowerCase().includes(q),
     );
   }
   return result;
@@ -52,10 +55,14 @@ export function ExplorePage() {
   const [category, setCategory] = useState<ExploreCategory>("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const factoryConfigured = !!getLaunchFactoryAddress();
+  const { data: onChainPools, isLoading } = useLaunches();
+
+  const pools = factoryConfigured ? (onChainPools ?? []) : MOCK_POOLS;
 
   const filtered = useMemo(
-    () => filterPools(MOCK_POOLS, category, query),
-    [category, query],
+    () => filterPools(pools, category, query),
+    [pools, category, query],
   );
 
   const perPage = 9;
@@ -141,12 +148,16 @@ export function ExplorePage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {pageItems.map((pool) => (
-          <TokenCard key={pool.id} pool={pool} />
-        ))}
+        {isLoading && factoryConfigured ? (
+          <p className="col-span-full py-20 text-center text-sm text-zinc-500">
+            Loading launches from Base Sepolia…
+          </p>
+        ) : (
+          pageItems.map((pool) => <TokenCard key={pool.id} pool={pool} />)
+        )}
       </div>
 
-      {pageItems.length === 0 && (
+      {!isLoading && pageItems.length === 0 && (
         <p className="py-20 text-center text-sm text-zinc-500">No hooks match your search.</p>
       )}
     </div>

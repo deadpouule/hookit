@@ -4,13 +4,6 @@ pragma solidity ^0.8.26;
 import {Script, console} from "forge-std/Script.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
-import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 import {HookMiner} from "../src/libraries/HookMiner.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
@@ -20,12 +13,10 @@ import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {LaunchToken} from "../src/LaunchToken.sol";
-import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
-import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Deploys the full Hookit protocol on Base Sepolia, then performs a smoke-test launch + swap.
-contract DeployBaseSepoliaScript is Script {
+/// @notice Deploys Hookit core contracts on Base Sepolia (no smoke launch — lower ETH cost).
+contract DeployHookitCoreScript is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
@@ -64,54 +55,6 @@ contract DeployBaseSepoliaScript is Script {
         distributor.setNativeToken(address(nativeToken), vault);
         vault.setOperator(address(distributor), true);
 
-        uint256 bitmask = BitmaskConfig.pack(
-            BitmaskConfig.Modules({
-                antiSnipe: true,
-                backedFloor: true,
-                antiMev: true,
-                maxTx: false,
-                maxWallet: false,
-                dynamicFees: false,
-                buybackVesting: false,
-                creatorTaxBps: 50,
-                antiSnipeDurationSeconds: 600,
-                maxTxBps: 0,
-                maxWalletBps: 0,
-                floorAllocationBps: 2_000,
-                initialSnipeTaxBps: 5_000
-            })
-        );
-
-        (uint256 launchId, address token, PoolId poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
-            LaunchFactory.LaunchParams({
-                name: "Hookit Smoke",
-                symbol: "SMOKE",
-                metadataURI: "ipfs://hookit-smoke",
-                totalSupply: 1_000_000_000e18,
-                quote: Currency.wrap(address(0)),
-                tickSpacing: 60,
-                startingTick: 0,
-                bitmask: bitmask,
-                customHook: IHooks(address(0))
-            })
-        );
-
-        PoolSwapTest swapper = PoolSwapTest(BaseSepoliaAddresses.POOL_SWAP_TEST);
-        PoolKey memory key = PoolKey({
-            currency0: Currency.wrap(address(0)),
-            currency1: Currency.wrap(token),
-            fee: 0,
-            tickSpacing: 60,
-            hooks: IHooks(address(hook))
-        });
-
-        swapper.swap{value: 0.001 ether}(
-            key,
-            SwapParams({zeroForOne: true, amountSpecified: -0.001 ether, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
-            abi.encode(deployer)
-        );
-
         vm.stopBroadcast();
 
         console.log("FloorVault", address(vault));
@@ -121,8 +64,5 @@ contract DeployBaseSepoliaScript is Script {
         console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
         console.log("Native HOOK", address(nativeToken));
-        console.log("Smoke token", token);
-        console.log("Launch id", launchId);
-        console.logBytes32(PoolId.unwrap(poolId));
     }
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { CosmicBackground } from "@/components/layout/CosmicBackground";
 import { Navbar } from "@/components/layout/Navbar";
+import { Web3Provider } from "@/components/providers/Web3Provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -30,11 +31,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <TooltipProvider>
-          <CosmicBackground />
-          <Navbar />
-          <main className="flex-1">{children}</main>
-        </TooltipProvider>
+        <Web3Provider>
+          <TooltipProvider>
+            <CosmicBackground />
+            <Navbar />
+            <main className="flex-1">{children}</main>
+          </TooltipProvider>
+        </Web3Provider>
       </body>
     </html>
   );

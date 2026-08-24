@@ -1,6 +1,8 @@
 import type { LaunchFormState, ProtocolMetrics, TokenPool } from "./types";
 
 export const LAUNCH_FEE_ETH = 0.0005;
+export const TARGET_LAUNCH_MCAP_USD = 4_000;
+export const DEFAULT_LAUNCH_ETH_USD = 4_000;
 export const BASE_FEE_BPS = 100;
 export const CREATOR_SHARE_BPS = 7000;
 export const PROTOCOL_SHARE_BPS = 3000;
@@ -16,6 +18,8 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   imagePreview: null,
   hookMode: "master",
   customHookAddress: "",
+  customHookSource: "",
+  customHookFileName: "",
   modules: {
     antiSnipe: true,
     antiSnipeDuration: 5,

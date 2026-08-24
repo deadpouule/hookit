@@ -28,8 +28,11 @@ export interface LaunchFormState {
   telegram: string;
   website: string;
   imagePreview: string | null;
-  hookMode: HookMode;
+  hookMode: "master" | "custom";
   customHookAddress: string;
+  /** Solidity source uploaded/pasted for custom hooks (deployed separately). */
+  customHookSource: string;
+  customHookFileName: string;
   modules: LaunchModules;
   creatorTaxBps: number;
   devBuyEth: string;
@@ -59,6 +62,8 @@ export interface TokenPool {
   priceEth?: number;
   volume24h?: number;
   contractAddress?: string;
+  poolId?: `0x${string}`;
+  tokenIsCurrency0?: boolean;
 }
 
 export interface ProtocolMetrics {

@@ -39,6 +39,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
     uint256 public launchFee = ProtocolConstants.LAUNCH_FEE_WEI;
     uint256 public launchCount;
 
+    /// @notice ETH/USD price with 18 decimals — used to convert the fixed $4k FDV into ETH at launch.
+    uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
+
     struct LaunchParams {
         string name;
         string symbol;
@@ -67,6 +70,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     event LaunchFeeSet(uint256 fee);
     event TreasurySet(address indexed treasury);
+    event EthUsdPriceSet(uint256 ethUsdPriceX18);
     event TokenLaunched(
         uint256 indexed launchId,
         address indexed token,
@@ -105,6 +109,17 @@ contract LaunchFactory is Owned, IUnlockCallback {
     function setTreasury(address treasury_) external onlyOwner {
         treasury = treasury_;
         emit TreasurySet(treasury_);
+    }
+
+    function setEthUsdPrice(uint256 ethUsdPriceX18_) external onlyOwner {
+        if (ethUsdPriceX18_ == 0) revert InvalidQuote();
+        ethUsdPriceX18 = ethUsdPriceX18_;
+        emit EthUsdPriceSet(ethUsdPriceX18_);
+    }
+
+    /// @notice Target launch FDV in quote wei (ETH for native launches).
+    function launchMcapQuoteWei() public view returns (uint256) {
+        return FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, ethUsdPriceX18);
     }
 
     /// @notice Create a token, initialize its Uniswap v4 pool, and lock 100% of supply as a unilateral position.
@@ -156,10 +171,15 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickLower;
         int24 tickUpper;
         uint160 sqrtPriceX96;
+        bool tokenIsCurrency1 = !tokenIsCurrency0;
+        uint256 mcapQuote = launchMcapQuoteWei();
+        int24 startingTick = FixedPointMath.startingTickForMcap(
+            params.totalSupply, mcapQuote, spacing, tokenIsCurrency1
+        );
         int24 startAligned;
         if (tokenIsCurrency0) {
             // 100% token0 when price is below the range.
-            startAligned = FixedPointMath.alignTickUp(params.startingTick, spacing);
+            startAligned = FixedPointMath.alignTickUp(startingTick, spacing);
             tickLower = startAligned;
             tickUpper = TickMath.maxUsableTick(spacing);
             if (tickUpper <= tickLower) tickLower = tickUpper - spacing;
@@ -167,7 +187,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
             sqrtPriceX96 = lowerSqrt <= TickMath.MIN_SQRT_PRICE + 1 ? TickMath.MIN_SQRT_PRICE + 1 : lowerSqrt - 1;
         } else {
             // 100% token1 when price is above the range.
-            startAligned = FixedPointMath.alignTickDown(params.startingTick, spacing);
+            startAligned = FixedPointMath.alignTickDown(startingTick, spacing);
             tickLower = TickMath.minUsableTick(spacing);
             tickUpper = startAligned;
             if (tickUpper <= tickLower) tickUpper = tickLower + spacing;
