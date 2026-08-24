@@ -12,6 +12,7 @@ import {
   launchToTokenPool,
   type OnChainLaunch,
 } from "@/lib/launches";
+import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches() {
@@ -24,7 +25,8 @@ export function useLaunches() {
     queryFn: async () => {
       if (!factory || !publicClient) return [];
       const launches = await fetchAllLaunches(publicClient, factory);
-      return launches.map(launchToTokenPool);
+      const pools = launches.map(launchToTokenPool);
+      return enrichPoolsWithSpotPrices(publicClient, pools);
     },
     refetchInterval: 15_000,
   });

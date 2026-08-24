@@ -32,16 +32,16 @@ export function SegmentedControl<T extends string>({
   className,
 }: SegmentedControlProps<T>) {
   return (
-    <div className={cn("flex flex-wrap gap-1 rounded-xl bg-black/50 p-1", className)}>
+    <div className={cn("flex flex-wrap gap-1 rounded-xl border border-white/[0.06] bg-black/50 p-1", className)}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "flex-1 rounded-lg px-3 py-2 text-center text-sm transition",
+            "flex-1 rounded-lg px-3 py-2.5 text-center text-sm font-medium transition",
             value === opt.value
-              ? "bg-zinc-800 text-white"
+              ? "bg-white text-black shadow-sm"
               : "text-zinc-500 hover:text-zinc-300",
           )}
         >

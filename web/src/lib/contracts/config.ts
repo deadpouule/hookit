@@ -12,8 +12,8 @@ export function getLaunchFactoryAddress(): Address | undefined {
   return raw as Address;
 }
 
+export const BASE_SEPOLIA_EXPLORER = "https://sepolia.basescan.org";
+
 export const DEFAULT_TOTAL_SUPPLY = BigInt("1000000000000000000000000000");
 export const DEFAULT_TICK_SPACING = 60;
 export const DEFAULT_STARTING_TICK = 0;
-
-export const BASE_SEPOLIA_EXPLORER = "https://sepolia.basescan.org";

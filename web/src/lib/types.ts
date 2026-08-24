@@ -29,8 +29,7 @@ export interface LaunchFormState {
   website: string;
   imagePreview: string | null;
   hookMode: "master" | "custom";
-  customHookAddress: string;
-  /** Solidity source uploaded/pasted for custom hooks (deployed separately). */
+  /** Solidity source uploaded/pasted for custom hooks — deployed automatically at launch. */
   customHookSource: string;
   customHookFileName: string;
   modules: LaunchModules;

@@ -1,4 +1,5 @@
 import { LaunchForm } from "@/components/launch/LaunchForm";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export const metadata = {
   title: "Create | hook it",
@@ -6,5 +7,10 @@ export const metadata = {
 };
 
 export default function LaunchRoute() {
-  return <LaunchForm />;
+  return (
+    <>
+      <LaunchForm />
+      <SiteFooter />
+    </>
+  );
 }

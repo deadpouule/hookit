@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import {
   decodeEventLog,
-  isAddress,
   type Address,
   zeroAddress,
 } from "viem";
@@ -13,6 +12,7 @@ import {
   useWriteContract,
 } from "wagmi";
 
+import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { packLaunchBitmask } from "@/lib/bitmask";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
@@ -21,14 +21,18 @@ import {
   DEFAULT_TOTAL_SUPPLY,
   getLaunchFactoryAddress,
 } from "@/lib/contracts/config";
+import { deployCustomHook } from "@/lib/deploy-custom-hook";
 import { buildMetadataUri } from "@/lib/launch-metadata";
 import type { LaunchFormState } from "@/lib/types";
+
+import type { LaunchPhase } from "@/components/launch/LaunchSummary";
 
 export type LaunchResult = {
   launchId: bigint;
   token: Address;
   poolId: `0x${string}`;
   txHash: `0x${string}`;
+  customHookAddress?: Address;
 };
 
 export function useLaunchToken() {
@@ -37,6 +41,7 @@ export function useLaunchToken() {
   const { writeContractAsync, isPending } = useWriteContract();
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LaunchResult | null>(null);
+  const [phase, setPhase] = useState<LaunchPhase>("idle");
 
   const { data: onChainLaunchFee } = useReadContract({
     address: factory,
@@ -49,6 +54,7 @@ export function useLaunchToken() {
     async (form: LaunchFormState) => {
       setError(null);
       setResult(null);
+      setPhase("idle");
 
       if (!factory) {
         throw new Error(
@@ -61,27 +67,27 @@ export function useLaunchToken() {
       if (form.quoteAsset !== "ETH") {
         throw new Error("Only native ETH quote is supported in the UI for now");
       }
+
+      let customHookAddress: Address | undefined;
+
       if (form.hookMode === "custom") {
-        if (!form.customHookSource.trim()) {
-          throw new Error("Upload or paste your custom hook Solidity source");
+        const analysis = analyzeCustomHookSource(form.customHookSource);
+        if (!analysis.valid) {
+          throw new Error(analysis.errors[0] ?? "Fix your hook source before launching");
         }
-        if (!form.customHookAddress || !isAddress(form.customHookAddress)) {
-          throw new Error(
-            "Deploy your custom hook first (MineHookAddress.s.sol), then paste its address",
-          );
-        }
+
+        setPhase("deploying-hook");
+        customHookAddress = await deployCustomHook(form.customHookSource);
       }
 
       const bitmask =
         form.hookMode === "custom" ? BigInt(0) : packLaunchBitmask(form.modules, form.creatorTaxBps);
       const metadataURI = buildMetadataUri(form);
-      const customHook =
-        form.hookMode === "custom" && isAddress(form.customHookAddress)
-          ? (form.customHookAddress as Address)
-          : zeroAddress;
+      const customHook = customHookAddress ?? zeroAddress;
 
-      const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000); // 0.0005 ETH fallback
+      const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
 
+      setPhase("launching");
       const hash = await writeContractAsync({
         address: factory,
         abi: launchFactoryAbi,
@@ -127,21 +133,34 @@ export function useLaunchToken() {
         }
       }
 
-      const out: LaunchResult = { launchId, token, poolId, txHash: hash };
+      setPhase("done");
+      const out: LaunchResult = {
+        launchId,
+        token,
+        poolId,
+        txHash: hash,
+        customHookAddress,
+      };
       setResult(out);
       return out;
     },
     [factory, onChainLaunchFee, publicClient, writeContractAsync],
   );
 
+  const resetResult = useCallback(() => {
+    setResult(null);
+    setPhase("idle");
+  }, []);
+
   return {
     factoryConfigured: !!factory,
     launchFee: onChainLaunchFee,
     launch,
     isPending,
+    phase,
     error,
     setError,
     result,
-    resetResult: () => setResult(null),
+    resetResult,
   };
 }

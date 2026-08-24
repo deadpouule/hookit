@@ -1,4 +1,5 @@
 import { ExplorePage } from "@/components/explore/ExplorePage";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export const metadata = {
   title: "Explore | hook it",
@@ -6,5 +7,10 @@ export const metadata = {
 };
 
 export default function ExploreRoute() {
-  return <ExplorePage />;
+  return (
+    <>
+      <ExplorePage />
+      <SiteFooter />
+    </>
+  );
 }

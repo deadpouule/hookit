@@ -81,6 +81,10 @@
     @apply mx-auto w-full max-w-2xl px-4 pb-24 sm:px-6;
   }
 
+  .launch-shell {
+    @apply mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6;
+  }
+
   .panel {
     @apply rounded-2xl border border-white/[0.08] bg-surface;
   }

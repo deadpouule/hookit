@@ -15,28 +15,54 @@ function ChromeHookLogo() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-white/[0.06] py-8">
-      <div className="page-shell flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-        <Link href="/explore" className="flex items-center gap-2 text-sm text-zinc-400">
-          <ChromeHookLogo />
-          hook it
-        </Link>
-        <div className="flex flex-wrap gap-6 text-sm text-zinc-500">
-          <Link href="/explore" className="transition hover:text-zinc-300">
-            Product
+    <footer className="mt-auto border-t border-white/[0.06] py-10">
+      <div className="page-shell flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link href="/" className="flex items-center gap-2 text-sm text-zinc-300">
+            <ChromeHookLogo />
+            hook it
           </Link>
-          <Link href="/launch" className="transition hover:text-zinc-300">
-            Create
-          </Link>
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition hover:text-zinc-300"
-          >
-            Docs
-          </a>
-          <span className="text-zinc-600">Risk notice</span>
+          <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-600">
+            Uniswap v4 launchpad on Base. Modular master hooks or bring your own Solidity.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] text-zinc-600 uppercase">Product</span>
+            <Link href="/explore" className="text-zinc-400 transition hover:text-zinc-200">
+              Explore
+            </Link>
+            <Link href="/launch" className="text-zinc-400 transition hover:text-zinc-200">
+              Create
+            </Link>
+            <Link href="/floor" className="text-zinc-400 transition hover:text-zinc-200">
+              Floor
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] text-zinc-600 uppercase">Resources</span>
+            <a
+              href="https://github.com/deadpouule/hookit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 transition hover:text-zinc-200"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://docs.uniswap.org/contracts/v4/overview"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 transition hover:text-zinc-200"
+            >
+              Uniswap v4
+            </a>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] text-zinc-600 uppercase">Network</span>
+            <span className="text-zinc-500">Base Sepolia</span>
+            <span className="text-[11px] text-zinc-600">Testnet only</span>
+          </div>
         </div>
       </div>
     </footer>

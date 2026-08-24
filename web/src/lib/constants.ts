@@ -17,7 +17,6 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   website: "",
   imagePreview: null,
   hookMode: "master",
-  customHookAddress: "",
   customHookSource: "",
   customHookFileName: "",
   modules: {
@@ -185,5 +184,5 @@ export const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/launch", label: "Create" },
   { href: "/floor", label: "Floor" },
-  { href: "https://github.com", label: "Docs", external: true },
+  { href: "https://github.com/deadpouule/hookit", label: "GitHub", external: true },
 ] as const;

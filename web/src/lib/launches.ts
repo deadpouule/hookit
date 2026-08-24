@@ -96,17 +96,29 @@ export async function fetchLaunchById(
   const [token, creator, hooks, customHook, poolId, tickLower, tickUpper, liquidity] =
     launch;
 
-  const results = (await publicClient.multicall({
+  const tokenMeta = (await publicClient.multicall({
     contracts: [
       { address: token, abi: erc20Abi, functionName: "name" },
       { address: token, abi: erc20Abi, functionName: "symbol" },
-      { address: hooks, abi: masterLaunchHookAbi, functionName: "configs", args: [poolId] },
     ],
   })) as { result?: unknown; status: string }[];
 
-  const name = (results[0]?.result as string | undefined) ?? "Unknown";
-  const symbol = (results[1]?.result as string | undefined) ?? "???";
-  const bitmask = (results[2]?.result as bigint | undefined) ?? BigInt(0);
+  const name = (tokenMeta[0]?.result as string | undefined) ?? "Unknown";
+  const symbol = (tokenMeta[1]?.result as string | undefined) ?? "???";
+
+  let bitmask = BigInt(0);
+  if (!customHook) {
+    try {
+      bitmask = (await publicClient.readContract({
+        address: hooks,
+        abi: masterLaunchHookAbi,
+        functionName: "configs",
+        args: [poolId],
+      })) as bigint;
+    } catch {
+      bitmask = BigInt(0);
+    }
+  }
 
   return {
     launchId,

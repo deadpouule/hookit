@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Copy, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Layers } from "lucide-react";
 import { useState } from "react";
 
 import { PriceChart } from "@/components/token/PriceChart";
@@ -11,7 +11,7 @@ import { usePoolSpotPrice, usePriceHistory } from "@/hooks/usePoolPrice";
 import { marketCapUsd } from "@/lib/pool-price";
 import { getPoolById } from "@/lib/pools";
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
-import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +39,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
   const priceEth = spotPrice ?? enriched.priceEth ?? 0;
   const marketCap = pool.poolId
     ? marketCapUsd(priceEth, DEFAULT_LAUNCH_ETH_USD)
-    : pool.marketCap;
+    : pool.marketCap || TARGET_LAUNCH_MCAP_USD;
 
   const copyAddress = async () => {
     await navigator.clipboard.writeText(fullAddress);
@@ -90,15 +90,23 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
             </p>
 
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {pool.hooks.backedFloor && (
-                <HookPill label="Backed Floor" />
-              )}
+              {pool.hooks.backedFloor && <HookPill label="Backed Floor" />}
               {pool.hooks.antiSnipe && <HookPill label="Anti-Snipe" />}
               {pool.hooks.antiMev && <HookPill label="Anti-MEV" />}
-              {pool.hooks.customHook && (
-                <HookPill label="Custom Hook" variant="warn" />
-              )}
+              {pool.hooks.customHook && <HookPill label="Custom Solidity" variant="warn" />}
+              <HookPill label={pool.hookType} variant={pool.hookType === "Custom" ? "warn" : undefined} />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto lg:min-w-[280px]">
+            <StatBox label="FDV" value={`$${marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+            <StatBox label="Quote" value={pool.quoteAsset ?? "ETH"} />
+            <StatBox label="Hook" value={pool.hookType} />
+            <StatBox
+              label="Pool"
+              value={pool.poolId ? "Live" : "—"}
+              accent={!!pool.poolId}
+            />
           </div>
         </header>
 
@@ -115,6 +123,22 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
           />
           <SwapPanel pool={pool} />
         </div>
+
+        {pool.poolId && (
+          <div className="mt-6 panel-inset flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-zinc-500">
+            <Layers className="h-3.5 w-3.5 text-zinc-600" />
+            <span className="font-mono text-zinc-400">poolId</span>
+            <span className="truncate font-mono text-zinc-600">{pool.poolId}</span>
+            <a
+              href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200"
+            >
+              View contract <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
       </div>
       <SiteFooter />
     </>
@@ -133,5 +157,24 @@ function HookPill({ label, variant }: { label: string; variant?: "warn" }) {
     >
       {label}
     </span>
+  );
+}
+
+function StatBox({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="panel-inset px-3 py-2.5">
+      <p className="text-[10px] text-zinc-600 uppercase">{label}</p>
+      <p className={cn("mt-0.5 font-mono text-sm", accent ? "text-emerald-400" : "text-zinc-200")}>
+        {value}
+      </p>
+    </div>
   );
 }

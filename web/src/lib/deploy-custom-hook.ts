@@ -26,3 +26,19 @@ export function buildMetadataUri(form: LaunchFormState): string {
   }
   return `data:application/json;base64,${Buffer.from(json, "utf-8").toString("base64")}`;
 }
+
+async function deployCustomHook(source: string): Promise<`0x${string}`> {
+  const res = await fetch("/api/hooks/deploy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source }),
+  });
+
+  const data = (await res.json()) as { address?: string; error?: string };
+  if (!res.ok || !data.address) {
+    throw new Error(data.error ?? "Failed to deploy custom hook");
+  }
+  return data.address as `0x${string}`;
+}
+
+export { deployCustomHook };
