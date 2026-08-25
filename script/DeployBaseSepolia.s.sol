@@ -75,12 +75,16 @@ contract DeployBaseSepoliaScript is Script {
                 maxWallet: false,
                 dynamicFees: false,
                 buybackVesting: false,
+                autoBurn: false,
+                lpDonate: false,
                 creatorTaxBps: 50,
                 antiSnipeDurationSeconds: 600,
                 maxTxBps: 0,
                 maxWalletBps: 0,
                 floorAllocationBps: 2_000,
-                initialSnipeTaxBps: 5_000
+                initialSnipeTaxBps: 5_000,
+                autoBurnBps: 0,
+                lpDonateBps: 0
             })
         );
 

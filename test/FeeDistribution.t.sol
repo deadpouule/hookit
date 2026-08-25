@@ -49,23 +49,31 @@ contract FeeDistributionTest is Test {
             maxWallet: true,
             dynamicFees: true,
             buybackVesting: true,
+            autoBurn: true,
+            lpDonate: true,
             creatorTaxBps: 250,
             antiSnipeDurationSeconds: 3600,
             maxTxBps: 100,
             maxWalletBps: 200,
             floorAllocationBps: 1_500,
-            initialSnipeTaxBps: 4_000
+            initialSnipeTaxBps: 4_000,
+            autoBurnBps: 1_000,
+            lpDonateBps: 1_000
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
         assertTrue(out.antiSnipe);
         assertTrue(out.backedFloor);
+        assertTrue(out.autoBurn);
+        assertTrue(out.lpDonate);
         assertEq(out.creatorTaxBps, 250);
         assertEq(out.antiSnipeDurationSeconds, 3600);
         assertEq(out.maxTxBps, 100);
         assertEq(out.maxWalletBps, 200);
         assertEq(out.floorAllocationBps, 1_500);
         assertEq(out.initialSnipeTaxBps, 4_000);
+        assertEq(out.autoBurnBps, 1_000);
+        assertEq(out.lpDonateBps, 1_000);
     }
 
     function packModules(BitmaskConfig.Modules memory m) public pure returns (uint256) {
@@ -76,6 +84,27 @@ contract FeeDistributionTest is Test {
         BitmaskConfig.Modules memory m;
         m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS + 1;
         vm.expectRevert(BitmaskConfig.CreatorTaxTooHigh.selector);
+        this.packModules(m);
+    }
+
+    function testFeeRouteCap() public {
+        BitmaskConfig.Modules memory m;
+        m.backedFloor = true;
+        m.autoBurn = true;
+        m.lpDonate = true;
+        m.floorAllocationBps = 5_000;
+        m.autoBurnBps = 4_000;
+        m.lpDonateBps = 2_000;
+        vm.expectRevert(BitmaskConfig.FeeRouteTooHigh.selector);
+        this.packModules(m);
+    }
+
+    function testOpenFeeCap() public {
+        BitmaskConfig.Modules memory m;
+        m.antiSnipe = true;
+        m.initialSnipeTaxBps = 9_900;
+        m.creatorTaxBps = 100;
+        vm.expectRevert(BitmaskConfig.OpenFeeTooHigh.selector);
         this.packModules(m);
     }
 

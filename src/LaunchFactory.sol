@@ -53,6 +53,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
     /// @notice Optional Chainlink ETH/USD feed; anyone may `syncEthUsdPrice`.
     address public ethUsdFeed;
 
+    struct QuoteConfig {
+        bool allowed;
+        uint8 decimals;
+        uint256 usdPriceX18;
+        address usdFeed;
+    }
+
+    /// @notice ERC-20 quotes (USDC, tokenized stocks, …). Native ETH is always allowed.
+    mapping(address => QuoteConfig) public quoteConfigs;
+
     struct LaunchParams {
         string name;
         string symbol;
@@ -87,6 +97,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     event LaunchFeeSet(uint256 fee);
     event TreasurySet(address indexed treasury);
     event EthUsdPriceSet(uint256 ethUsdPriceX18);
+    event QuoteSet(address indexed token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed);
     event LaunchConfigured(
         uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee
     );
@@ -119,6 +130,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         poolManager = _poolManager;
         masterHook = _masterHook;
         treasury = treasury_;
+        _setQuote(BaseSepoliaAddresses.USDC, true, 6, 1e18, address(0));
     }
 
     receive() external payable {}
@@ -143,18 +155,29 @@ contract LaunchFactory is Owned, IUnlockCallback {
         ethUsdFeed = feed;
     }
 
+    /// @notice Allow or revoke an ERC-20 quote (USDC, B20 stocks, …). Native ETH cannot be set here.
+    function setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed)
+        external
+        onlyOwner
+    {
+        _setQuote(token, allowed, decimals, usdPriceX18, usdFeed);
+    }
+
+    function isQuoteAllowed(address token) public view returns (bool) {
+        if (token == address(0)) return true;
+        return quoteConfigs[token].allowed;
+    }
+
+    /// @notice Target FDV in the quote's native wei ($4k at the configured USD price).
+    function mcapQuoteFor(address token) public view returns (uint256) {
+        return _mcapQuote(Currency.wrap(token));
+    }
+
     /// @notice Pull ETH/USD from Chainlink into `ethUsdPriceX18` (8-decimal feeds scaled to 18).
     function syncEthUsdPrice() public {
         if (ethUsdFeed == address(0)) revert InvalidFeed();
-        (, int256 answer,, uint256 updatedAt,) = IAggregatorV3(ethUsdFeed).latestRoundData();
-        if (answer <= 0) revert InvalidQuote();
-        if (updatedAt == 0 || updatedAt + 1 days < block.timestamp) revert StalePrice();
-        uint8 dec = IAggregatorV3(ethUsdFeed).decimals();
-        uint256 price = uint256(answer);
-        if (dec < 18) price *= 10 ** (18 - dec);
-        else if (dec > 18) price /= 10 ** (dec - 18);
-        ethUsdPriceX18 = price;
-        emit EthUsdPriceSet(price);
+        ethUsdPriceX18 = _usdFromFeed(ethUsdFeed, 1 days);
+        emit EthUsdPriceSet(ethUsdPriceX18);
     }
 
     /// @notice Target launch FDV in quote wei (ETH for native launches).
@@ -163,11 +186,37 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     function _mcapQuote(Currency quote) internal view returns (uint256) {
-        if (quote.isAddressZero()) return launchMcapQuoteWei();
-        if (Currency.unwrap(quote) == BaseSepoliaAddresses.USDC) {
-            return 4_000 * 1e6;
-        }
-        revert InvalidQuote();
+        address token = Currency.unwrap(quote);
+        if (token == address(0)) return launchMcapQuoteWei();
+        QuoteConfig memory q = quoteConfigs[token];
+        if (!q.allowed) revert InvalidQuote();
+        uint256 usd = q.usdFeed != address(0) ? _usdFromFeed(q.usdFeed, 3 days) : q.usdPriceX18;
+        if (usd == 0) revert InvalidQuote();
+        return FixedPointMath.mcapQuoteWei(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, usd, q.decimals);
+    }
+
+    function _setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed) private {
+        if (token == address(0)) revert InvalidQuote();
+        if (allowed && (decimals == 0 || decimals > 18)) revert InvalidQuote();
+        if (allowed && usdFeed == address(0) && usdPriceX18 == 0) revert InvalidQuote();
+        quoteConfigs[token] = QuoteConfig({
+            allowed: allowed,
+            decimals: decimals,
+            usdPriceX18: usdPriceX18,
+            usdFeed: usdFeed
+        });
+        emit QuoteSet(token, allowed, decimals, usdPriceX18, usdFeed);
+    }
+
+    function _usdFromFeed(address feed, uint256 maxAge) internal view returns (uint256) {
+        (, int256 answer,, uint256 updatedAt,) = IAggregatorV3(feed).latestRoundData();
+        if (answer <= 0) revert InvalidQuote();
+        if (updatedAt == 0 || updatedAt + maxAge < block.timestamp) revert StalePrice();
+        uint8 dec = IAggregatorV3(feed).decimals();
+        uint256 price = uint256(answer);
+        if (dec < 18) price *= 10 ** (18 - dec);
+        else if (dec > 18) price /= 10 ** (dec - 18);
+        return price;
     }
 
     /// @notice Paginated launches for indexers / the app. `startId` is 1-indexed.

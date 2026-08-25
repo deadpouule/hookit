@@ -15,6 +15,7 @@ import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol"
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {LaunchToken} from "../src/LaunchToken.sol";
 import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
+import {StockQuotes} from "../src/libraries/StockQuotes.sol";
 
 /// @notice Deploys Hookit core contracts on Base Sepolia (no smoke launch — lower ETH cost).
 contract DeployHookitCoreScript is Script {
@@ -46,6 +47,12 @@ contract DeployHookitCoreScript is Script {
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
         factory.setEthUsdFeed(BaseSepoliaAddresses.CHAINLINK_ETH_USD);
         try factory.syncEthUsdPrice() {} catch {}
+        if (block.chainid == StockQuotes.BASE_MAINNET) {
+            StockQuotes.Listing[] memory stocks = StockQuotes.listings();
+            for (uint256 i; i < stocks.length; ++i) {
+                factory.setQuote(stocks[i].token, true, stocks[i].decimals, 0, stocks[i].usdFeed);
+            }
+        }
         HookitSwapRouter router = new HookitSwapRouter(manager);
 
         hook.setFactory(address(factory));

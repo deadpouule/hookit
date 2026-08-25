@@ -125,10 +125,18 @@ library FixedPointMath {
         return TickMath.getSqrtPriceAtTick(tick);
     }
 
-    /// @notice Converts a USD FDV (1e18-scaled) into quote wei using an ETH/USD price (1e18-scaled).
+    /// @notice Converts a USD FDV (1e18-scaled) into 18-decimal quote wei using a USD price (1e18-scaled).
     function mcapQuoteFromUsd(uint256 mcapUsdX18, uint256 quoteUsdX18) internal pure returns (uint256) {
+        return mcapQuoteWei(mcapUsdX18, quoteUsdX18, 18);
+    }
+
+    /// @notice `$4k` FDV in the quote token's native decimals.
+    function mcapQuoteWei(uint256 mcapUsdX18, uint256 quoteUsdX18, uint8 decimals) internal pure returns (uint256) {
         if (quoteUsdX18 == 0) revert InvalidPrice();
-        return FullMath.mulDiv(mcapUsdX18, 1e18, quoteUsdX18);
+        uint256 tokensX18 = FullMath.mulDiv(mcapUsdX18, 1e18, quoteUsdX18);
+        if (decimals == 18) return tokensX18;
+        if (decimals < 18) return tokensX18 / (10 ** (18 - decimals));
+        return tokensX18 * (10 ** (decimals - 18));
     }
 
     /// @notice Starting tick so spot FDV in quote equals `mcapQuoteWei` for a unilateral launch position.

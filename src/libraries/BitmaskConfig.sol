@@ -19,6 +19,10 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bits 55-70   maxWalletBps (uint16)
 ///      bits 71-94   floorAllocationBps (uint24)
 ///      bits 95-110  initialSnipeTaxBps (uint16)
+///      bit 111      AUTO_BURN_ENABLED
+///      bit 112      LP_DONATE_ENABLED
+///      bits 113-128 autoBurnBps (uint16)
+///      bits 129-144 lpDonateBps (uint16)
 library BitmaskConfig {
     uint256 internal constant ANTI_SNIPE_ENABLED = 1 << 0;
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
@@ -27,6 +31,8 @@ library BitmaskConfig {
     uint256 internal constant MAX_WALLET_ENABLED = 1 << 4;
     uint256 internal constant DYNAMIC_FEES_ENABLED = 1 << 5;
     uint256 internal constant BUYBACK_VESTING_ENABLED = 1 << 6;
+    uint256 internal constant AUTO_BURN_ENABLED = 1 << 111;
+    uint256 internal constant LP_DONATE_ENABLED = 1 << 112;
 
     uint256 internal constant CREATOR_TAX_SHIFT = 7;
     uint256 internal constant SNIPE_DURATION_SHIFT = 23;
@@ -34,6 +40,8 @@ library BitmaskConfig {
     uint256 internal constant MAX_WALLET_SHIFT = 55;
     uint256 internal constant FLOOR_ALLOC_SHIFT = 71;
     uint256 internal constant INITIAL_SNIPE_TAX_SHIFT = 95;
+    uint256 internal constant AUTO_BURN_BPS_SHIFT = 113;
+    uint256 internal constant LP_DONATE_BPS_SHIFT = 129;
 
     uint256 internal constant UINT16_MASK = 0xFFFF;
     uint256 internal constant UINT24_MASK = 0xFFFFFF;
@@ -46,12 +54,16 @@ library BitmaskConfig {
         bool maxWallet;
         bool dynamicFees;
         bool buybackVesting;
+        bool autoBurn;
+        bool lpDonate;
         uint16 creatorTaxBps;
         uint16 antiSnipeDurationSeconds;
         uint16 maxTxBps;
         uint16 maxWalletBps;
         uint24 floorAllocationBps;
         uint16 initialSnipeTaxBps;
+        uint16 autoBurnBps;
+        uint16 lpDonateBps;
     }
 
     function pack(Modules memory m) internal pure returns (uint256 packed) {
@@ -63,12 +75,16 @@ library BitmaskConfig {
             | (m.maxWallet ? MAX_WALLET_ENABLED : 0)
             | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0)
             | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0)
+            | (m.autoBurn ? AUTO_BURN_ENABLED : 0)
+            | (m.lpDonate ? LP_DONATE_ENABLED : 0)
             | (uint256(m.creatorTaxBps) << CREATOR_TAX_SHIFT)
             | (uint256(m.antiSnipeDurationSeconds) << SNIPE_DURATION_SHIFT)
             | (uint256(m.maxTxBps) << MAX_TX_SHIFT)
             | (uint256(m.maxWalletBps) << MAX_WALLET_SHIFT)
             | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
-            | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT);
+            | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
+            | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT)
+            | (uint256(m.lpDonateBps) << LP_DONATE_BPS_SHIFT);
     }
 
     function unpack(uint256 packed) internal pure returns (Modules memory m) {
@@ -79,12 +95,16 @@ library BitmaskConfig {
         m.maxWallet = packed & MAX_WALLET_ENABLED != 0;
         m.dynamicFees = packed & DYNAMIC_FEES_ENABLED != 0;
         m.buybackVesting = packed & BUYBACK_VESTING_ENABLED != 0;
+        m.autoBurn = packed & AUTO_BURN_ENABLED != 0;
+        m.lpDonate = packed & LP_DONATE_ENABLED != 0;
         m.creatorTaxBps = uint16((packed >> CREATOR_TAX_SHIFT) & UINT16_MASK);
         m.antiSnipeDurationSeconds = uint16((packed >> SNIPE_DURATION_SHIFT) & UINT16_MASK);
         m.maxTxBps = uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
         m.maxWalletBps = uint16((packed >> MAX_WALLET_SHIFT) & UINT16_MASK);
         m.floorAllocationBps = uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
         m.initialSnipeTaxBps = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
+        m.autoBurnBps = uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
+        m.lpDonateBps = uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
     }
 
     function enabled(uint256 packed, uint256 flag) internal pure returns (bool) {
@@ -111,6 +131,14 @@ library BitmaskConfig {
         return uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
     }
 
+    function autoBurnBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
+    }
+
+    function lpDonateBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
+    }
+
     function initialSnipeTaxBps(uint256 packed) internal pure returns (uint16) {
         uint16 tax = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         if (tax == 0 && packed & ANTI_SNIPE_ENABLED != 0) {
@@ -125,6 +153,16 @@ library BitmaskConfig {
         if (m.maxTxBps > ProtocolConstants.MAX_TX_BPS) revert MaxTxTooHigh();
         if (m.maxWalletBps > ProtocolConstants.MAX_WALLET_BPS) revert MaxWalletTooHigh();
         if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
+        if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
+        if (m.lpDonateBps > ProtocolConstants.MAX_LP_DONATE_BPS) revert LpDonateTooHigh();
+        uint256 routed;
+        if (m.backedFloor) routed += m.floorAllocationBps;
+        if (m.autoBurn) routed += m.autoBurnBps;
+        if (m.lpDonate) routed += m.lpDonateBps;
+        if (routed > ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteTooHigh();
+        uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.creatorTaxBps;
+        if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
+        if (openFee > ProtocolConstants.BPS_DENOMINATOR) revert OpenFeeTooHigh();
     }
 
     error CreatorTaxTooHigh();
@@ -132,4 +170,8 @@ library BitmaskConfig {
     error MaxTxTooHigh();
     error MaxWalletTooHigh();
     error FloorAllocTooHigh();
+    error AutoBurnTooHigh();
+    error LpDonateTooHigh();
+    error FeeRouteTooHigh();
+    error OpenFeeTooHigh();
 }

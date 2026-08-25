@@ -14,6 +14,7 @@ import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 
 interface IERC20Supply {
     function totalSupply() external view returns (uint256);
@@ -22,6 +23,7 @@ interface IERC20Supply {
 }
 
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
+import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
@@ -32,7 +34,8 @@ import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "./BuybackVault.sol";
 
 /// @title MasterLaunchHook
-/// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV, backed floor.
+/// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV,
+///         backed floor, auto-burn (buyback + burn), and LP donate.
 contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -55,13 +58,25 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     mapping(PoolId => uint256) public override configs;
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
+    mapping(PoolId => uint256) public pendingAutoBurn;
+    mapping(PoolId => uint256) public pendingLpDonate;
+
+    bytes32 private constant FEE_ACTION_SLOT = keccak256("hookit.feeAction");
 
     event FactorySet(address indexed factory);
     event LaunchPrepared(PoolId indexed poolId, address indexed creator, address indexed token, uint256 bitmask);
     event FeesDistributed(
-        PoolId indexed poolId, uint256 creatorAmount, uint256 protocolAmount, uint256 floorAmount, uint256 buybackAmount
+        PoolId indexed poolId,
+        uint256 creatorAmount,
+        uint256 protocolAmount,
+        uint256 floorAmount,
+        uint256 buybackAmount,
+        uint256 autoBurnAmount,
+        uint256 lpDonateAmount
     );
     event FloorFill(PoolId indexed poolId, uint256 tokenIn, uint256 quoteOut);
+    event AutoBurn(PoolId indexed poolId, uint256 quoteIn, uint256 tokenBurned);
+    event LpDonated(PoolId indexed poolId, uint256 quoteAmount);
 
     error OnlyFactory();
     error AlreadyPrepared();
@@ -141,7 +156,6 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         PoolId id = params.key.toId();
         if (_launchState[id].creator != address(0)) revert AlreadyPrepared();
 
-        BitmaskConfig.unpack(params.bitmask); // validates packed ranges via unpack; pack already validated at factory
         configs[id] = params.bitmask;
         _launchState[id] = LaunchState({
             creator: params.creator,
@@ -197,6 +211,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         returns (bytes4, BeforeSwapDelta, uint24)
     {
         PoolId id = key.toId();
+        if (_inFeeAction()) {
+            return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+        }
         LaunchState storage st = _launchState[id];
         if (!st.initialized) revert UnknownPool();
 
@@ -222,6 +239,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(packed.creatorTaxBps()) + uint256(snipeBps);
+        if (totalFeeBps > ProtocolConstants.BPS_DENOMINATOR) {
+            snipeBps = uint16(
+                ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.creatorTaxBps()
+            );
+            totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
+        }
 
         (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(id);
 
@@ -247,7 +270,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         st.quote.take(poolManager, address(this), feeAmount, true);
-        _distributeFees(id, st, packed, feeAmount);
+        _distributeFees(id, st, packed, feeAmount, snipeBps);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
@@ -265,17 +288,29 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
     function _afterSwap(address, PoolKey calldata key, SwapParams calldata, BalanceDelta, bytes calldata hookData)
         internal
-        view
         override
         returns (bytes4, int128)
     {
+        if (_inFeeAction()) return (this.afterSwap.selector, 0);
+
         PoolId id = key.toId();
         uint256 packed = configs[id];
+        LaunchState storage st = _launchState[id];
         if (packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
             address recipient = hookData.length >= 32 ? abi.decode(hookData, (address)) : tx.origin;
-            LaunchState storage st = _launchState[id];
             uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), packed.maxWalletBps());
             if (cap > 0 && IERC20Supply(st.token).balanceOf(recipient) > cap) revert MaxWalletExceeded();
+        }
+
+        uint256 burnCut = pendingAutoBurn[id];
+        uint256 donateCut = pendingLpDonate[id];
+        if (burnCut > 0) {
+            pendingAutoBurn[id] = 0;
+            _autoBurn(key, st, burnCut);
+        }
+        if (donateCut > 0) {
+            pendingLpDonate[id] = 0;
+            _lpDonate(key, st, donateCut);
         }
         return (this.afterSwap.selector, 0);
     }
@@ -333,13 +368,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, st.tokenIsCurrency0);
     }
 
-    function _distributeFees(PoolId id, LaunchState storage st, uint256 packed, uint256 feeAmount) private {
+    function _distributeFees(
+        PoolId id,
+        LaunchState storage st,
+        uint256 packed,
+        uint256 feeAmount,
+        uint16 snipeBps
+    ) private {
         uint16 taxBps = packed.creatorTaxBps();
-        uint16 snipeBps = packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)
-            ? FixedPointMath.snipeTaxBps(
-                packed.initialSnipeTaxBps(), st.launchTimestamp, packed.antiSnipeDurationSeconds(), block.timestamp
-            )
-            : 0;
         uint256 totalBps =
             uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(taxBps) + uint256(snipeBps);
         if (totalBps == 0) return;
@@ -350,9 +386,24 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 floorCut = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
             ? FixedPointMath.applyBps(splitPool, packed.floorAllocationBps())
             : 0;
-        uint256 afterFloor = splitPool - floorCut;
-        uint256 creatorShare = FixedPointMath.applyBps(afterFloor, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = afterFloor - creatorShare;
+        uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
+            ? FixedPointMath.applyBps(splitPool, packed.autoBurnBps())
+            : 0;
+        uint256 lpDonateCut = packed.enabled(BitmaskConfig.LP_DONATE_ENABLED)
+            ? FixedPointMath.applyBps(splitPool, packed.lpDonateBps())
+            : 0;
+        uint256 routed = floorCut + autoBurnCut + lpDonateCut;
+        if (routed > splitPool) {
+            lpDonateCut = 0;
+            routed = floorCut + autoBurnCut;
+            if (routed > splitPool) {
+                autoBurnCut = 0;
+                routed = floorCut;
+            }
+        }
+        uint256 afterRoute = splitPool - routed;
+        uint256 creatorShare = FixedPointMath.applyBps(afterRoute, ProtocolConstants.CREATOR_SHARE_BPS);
+        uint256 protocolShare = afterRoute - creatorShare;
 
         uint256 buybackAmt;
         uint256 creatorEscrowAmt = creatorTaxAmount + creatorShare;
@@ -373,7 +424,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         _pushQuote(st.quote, address(vault), floorCut);
         if (floorCut > 0) vault.depositInternal(st.token, st.quote, floorCut);
 
-        emit FeesDistributed(id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt);
+        pendingAutoBurn[id] = autoBurnCut;
+        pendingLpDonate[id] = lpDonateCut;
+
+        emit FeesDistributed(
+            id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut
+        );
     }
 
     function _pushQuote(Currency quote, address to, uint256 amount) private {
@@ -404,6 +460,74 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         bool tokenIsSpecified = isBuy ? !exactInput : exactInput;
         if (tokenIsSpecified) {
             if (specifiedAbs > cap) revert MaxTxExceeded();
+        }
+    }
+
+    function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private {
+        bool zeroForOne = !st.tokenIsCurrency0;
+        _setFeeAction(true);
+        BalanceDelta delta;
+        try poolManager.swap(
+            key,
+            SwapParams({
+                zeroForOne: zeroForOne,
+                amountSpecified: -int256(quoteAmount),
+                sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+            }),
+            ""
+        ) returns (BalanceDelta d) {
+            delta = d;
+        } catch {
+            _setFeeAction(false);
+            _quoteToFloor(st, quoteAmount);
+            return;
+        }
+        _setFeeAction(false);
+
+        int128 quoteDelta = zeroForOne ? delta.amount0() : delta.amount1();
+        int128 tokenDelta = zeroForOne ? delta.amount1() : delta.amount0();
+        uint256 quotePaid = quoteDelta < 0 ? uint256(uint128(-quoteDelta)) : 0;
+        uint256 tokenOut = tokenDelta > 0 ? uint256(uint128(tokenDelta)) : 0;
+        if (quotePaid > 0) st.quote.settle(poolManager, address(this), quotePaid, true);
+        if (tokenOut > 0) {
+            Currency.wrap(st.token).take(poolManager, address(this), tokenOut, false);
+            ILaunchToken(st.token).burn(tokenOut);
+        }
+        emit AutoBurn(key.toId(), quotePaid, tokenOut);
+    }
+
+    function _lpDonate(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private {
+        if (poolManager.getLiquidity(key.toId()) == 0) {
+            _quoteToFloor(st, quoteAmount);
+            return;
+        }
+        uint256 amount0 = st.tokenIsCurrency0 ? 0 : quoteAmount;
+        uint256 amount1 = st.tokenIsCurrency0 ? quoteAmount : 0;
+        try poolManager.donate(key, amount0, amount1, "") {
+            st.quote.settle(poolManager, address(this), quoteAmount, true);
+            emit LpDonated(key.toId(), quoteAmount);
+        } catch {
+            _quoteToFloor(st, quoteAmount);
+        }
+    }
+
+    function _quoteToFloor(LaunchState storage st, uint256 quoteAmount) private {
+        if (quoteAmount == 0) return;
+        _pushQuote(st.quote, address(vault), quoteAmount);
+        vault.depositInternal(st.token, st.quote, quoteAmount);
+    }
+
+    function _inFeeAction() private view returns (bool flagged) {
+        bytes32 slot = FEE_ACTION_SLOT;
+        assembly {
+            flagged := tload(slot)
+        }
+    }
+
+    function _setFeeAction(bool flagged) private {
+        bytes32 slot = FEE_ACTION_SLOT;
+        assembly {
+            tstore(slot, flagged)
         }
     }
 }

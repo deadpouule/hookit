@@ -73,6 +73,29 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertEq(escrow.balanceOf(address(this), Currency.wrap(token)), 0);
     }
 
+    function testSellDuringSnipeSplitsWithoutSnipeTax() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.antiSnipe = true;
+        m.antiSnipeDurationSeconds = 1_000;
+        m.initialSnipeTaxBps = 8_800;
+        m.creatorTaxBps = 100;
+        (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+
+        buyExactIn(key, 5 ether);
+        vm.roll(block.number + 1);
+
+        uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        uint256 protoBefore = distributor.pending(Currency.wrap(address(0)));
+        uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
+        sellExactIn(key, token, bal / 10);
+
+        uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
+        uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
+        // Sell fee is base + creator tax only. Creator should get ~85% (tax slice + 70% of remainder),
+        // not ~70% as if the 99% snipe tax were still in the split denominator.
+        assertGt(creatorDelta, protoDelta * 4);
+    }
+
     function testAntiSnipeDecays() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.antiSnipe = true;

@@ -79,12 +79,16 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             maxWallet: false,
             dynamicFees: false,
             buybackVesting: false,
+            autoBurn: false,
+            lpDonate: false,
             creatorTaxBps: 0,
             antiSnipeDurationSeconds: 0,
             maxTxBps: 0,
             maxWalletBps: 0,
             floorAllocationBps: 0,
-            initialSnipeTaxBps: 0
+            initialSnipeTaxBps: 0,
+            autoBurnBps: 0,
+            lpDonateBps: 0
         });
     }
 

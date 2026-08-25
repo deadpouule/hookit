@@ -23,6 +23,8 @@ library ProtocolConstants {
     uint16 internal constant MAX_TX_BPS = 10_000;
     uint16 internal constant MAX_WALLET_BPS = 10_000;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
+    uint16 internal constant MAX_AUTO_BURN_BPS = 5_000; // 50% of quote-fee pool
+    uint16 internal constant MAX_LP_DONATE_BPS = 5_000;
 
     uint16 internal constant DEFAULT_INITIAL_SNIPE_TAX_BPS = 5_000;
     uint256 internal constant BUYBACK_VESTING_DURATION = 5 * 365 days;
