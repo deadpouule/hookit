@@ -52,6 +52,8 @@ contract DeployBaseSepoliaScript is Script {
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
+        factory.setEthUsdFeed(BaseSepoliaAddresses.CHAINLINK_ETH_USD);
+        try factory.syncEthUsdPrice() {} catch {}
 
         hook.setFactory(address(factory));
         vault.setOperator(address(hook), true);

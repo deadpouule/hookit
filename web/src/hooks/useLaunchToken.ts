@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef, useState } from "react";
 import {
   decodeEventLog,
   type Address,
   zeroAddress,
 } from "viem";
 import {
+  useAccount,
   usePublicClient,
   useReadContract,
   useWriteContract,
@@ -20,10 +22,12 @@ import {
   DEFAULT_TICK_SPACING,
   DEFAULT_TOTAL_SUPPLY,
   getLaunchFactoryAddress,
+  USDC_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
 import { buildMetadataUri } from "@/lib/launch-metadata";
 import type { LaunchFormState } from "@/lib/types";
+import { requestLaunchVerification, type VerifyStatus } from "@/lib/verify-launch";
 
 import type { LaunchPhase } from "@/components/launch/LaunchSummary";
 
@@ -35,13 +39,20 @@ export type LaunchResult = {
   customHookAddress?: Address;
 };
 
+export type { VerifyStatus };
+
 export function useLaunchToken() {
   const factory = getLaunchFactoryAddress();
   const publicClient = usePublicClient();
+  const { address: creator } = useAccount();
+  const queryClient = useQueryClient();
   const { writeContractAsync, isPending } = useWriteContract();
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LaunchResult | null>(null);
   const [phase, setPhase] = useState<LaunchPhase>("idle");
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>("idle");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const verifyGen = useRef(0);
 
   const { data: onChainLaunchFee } = useReadContract({
     address: factory,
@@ -55,6 +66,8 @@ export function useLaunchToken() {
       setError(null);
       setResult(null);
       setPhase("idle");
+      setVerifyStatus("idle");
+      setVerifyError(null);
 
       if (!factory) {
         throw new Error(
@@ -64,8 +77,8 @@ export function useLaunchToken() {
       if (!publicClient) {
         throw new Error("Wallet RPC not ready");
       }
-      if (form.quoteAsset !== "ETH") {
-        throw new Error("Only native ETH quote is supported in the UI for now");
+      if (form.quoteAsset !== "ETH" && form.quoteAsset !== "USDC") {
+        throw new Error("Quote must be ETH or USDC");
       }
 
       let customHookAddress: Address | undefined;
@@ -98,7 +111,7 @@ export function useLaunchToken() {
             symbol: form.ticker.trim().toUpperCase(),
             metadataURI,
             totalSupply: DEFAULT_TOTAL_SUPPLY,
-            quote: zeroAddress,
+            quote: form.quoteAsset === "USDC" ? USDC_ADDRESS : zeroAddress,
             tickSpacing: DEFAULT_TICK_SPACING,
             startingTick: DEFAULT_STARTING_TICK,
             bitmask,
@@ -142,14 +155,42 @@ export function useLaunchToken() {
         customHookAddress,
       };
       setResult(out);
+      await queryClient.invalidateQueries({ queryKey: ["launches"] });
+
+      if (token !== zeroAddress && creator) {
+        const gen = ++verifyGen.current;
+        setVerifyStatus("verifying");
+        void requestLaunchVerification({
+          token,
+          name: form.name.trim(),
+          symbol: form.ticker.trim().toUpperCase(),
+          totalSupply: DEFAULT_TOTAL_SUPPLY.toString(),
+          creator,
+          factory,
+          metadataURI,
+          customHook: customHookAddress,
+        })
+          .then(() => {
+            if (verifyGen.current === gen) setVerifyStatus("verified");
+          })
+          .catch((err) => {
+            if (verifyGen.current !== gen) return;
+            setVerifyStatus("failed");
+            setVerifyError(err instanceof Error ? err.message : "Verification failed");
+          });
+      }
+
       return out;
     },
-    [factory, onChainLaunchFee, publicClient, writeContractAsync],
+    [creator, factory, onChainLaunchFee, publicClient, queryClient, writeContractAsync],
   );
 
   const resetResult = useCallback(() => {
+    verifyGen.current += 1;
     setResult(null);
     setPhase("idle");
+    setVerifyStatus("idle");
+    setVerifyError(null);
   }, []);
 
   return {
@@ -162,5 +203,7 @@ export function useLaunchToken() {
     setError,
     result,
     resetResult,
+    verifyStatus,
+    verifyError,
   };
 }

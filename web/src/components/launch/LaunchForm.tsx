@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus, Loader2, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
@@ -47,6 +47,8 @@ export function LaunchForm() {
     setError,
     result,
     resetResult,
+    verifyStatus,
+    verifyError,
   } = useLaunchToken();
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
@@ -84,9 +86,17 @@ export function LaunchForm() {
   };
 
   const handleImage = (file: File | undefined) => {
-    if (file?.type.startsWith("image/")) {
-      setForm((p) => ({ ...p, imagePreview: URL.createObjectURL(file) }));
+    if (!file?.type.startsWith("image/")) return;
+    if (file.size > 60_000) {
+      setError("Logo must be under 60KB to store on-chain");
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : null;
+      setForm((p) => ({ ...p, imagePreview: result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -100,7 +110,7 @@ export function LaunchForm() {
       </Link>
 
       <div className="mb-10">
-        <p className="text-xs text-zinc-600">Base Sepolia</p>
+        <p className="text-xs text-zinc-600">Hookit-native · Base Sepolia</p>
         <h1 className="ink-headline mt-1 text-3xl sm:text-4xl">
           Create <span className="text-degen">token</span>
         </h1>
@@ -109,7 +119,8 @@ export function LaunchForm() {
           <span className="font-mono text-zinc-300">
             ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
           </span>{" "}
-          FDV · 1B supply · Uniswap v4 pool in one transaction.
+          FDV · 1B supply · Uniswap v4 pool, swapped on Hookit. Custom Solidity is compiled
+          and CREATE2-mined at launch.
         </p>
       </div>
 
@@ -135,7 +146,7 @@ export function LaunchForm() {
                 <dt className="text-emerald-200/70">Hook</dt>
                 <dd>{result.customHookAddress}</dd>
                 <a
-                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.customHookAddress}`}
+                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.customHookAddress}#code`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -148,7 +159,7 @@ export function LaunchForm() {
               <dt className="text-emerald-200/70">Token</dt>
               <dd>{result.token}</dd>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}`}
+                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}#code`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -172,7 +183,44 @@ export function LaunchForm() {
               <span className="text-emerald-200/70">Launch ID </span>
               {result.launchId.toString()}
             </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {verifyStatus === "verifying" && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin text-emerald-300" />
+                  <span className="text-emerald-200/80">Verifying contract source…</span>
+                </>
+              )}
+              {verifyStatus === "verified" && (
+                <>
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+                  <span className="text-emerald-100">Source verified</span>
+                  <a
+                    href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}#code`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
+                  >
+                    View source <ExternalLink className="h-3 w-3" />
+                  </a>
+                </>
+              )}
+              {verifyStatus === "failed" && (
+                <span className="text-amber-200/90">
+                  Launch succeeded, but source verification failed
+                  {verifyError ? `: ${verifyError.slice(0, 160)}` : "."} You can still
+                  verify later on Basescan.
+                </span>
+              )}
+            </div>
           </dl>
+          {result.token && result.token !== "0x0000000000000000000000000000000000000000" && (
+            <Link
+              href={`/explore/${result.token}`}
+              className="btn-primary mt-4 inline-flex text-xs"
+            >
+              Trade ${form.ticker || "token"}
+            </Link>
+          )}
           <button
             type="button"
             onClick={resetResult}
@@ -302,6 +350,23 @@ export function LaunchForm() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          <FormDivider />
+
+          <SectionLabel>Quote</SectionLabel>
+          <div className="mt-3">
+            <SegmentedControl<"ETH" | "USDC">
+              value={form.quoteAsset}
+              onChange={(quoteAsset) => setForm((p) => ({ ...p, quoteAsset }))}
+              options={[
+                { value: "ETH", label: "ETH" },
+                { value: "USDC", label: "USDC" },
+              ]}
+            />
+          </div>
+          <p className="mt-2 text-xs text-zinc-600">
+            Pair against native ETH or Base Sepolia USDC. Hook fees are taken in the quote.
+          </p>
 
           <FormDivider />
 

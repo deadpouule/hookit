@@ -79,9 +79,77 @@ export const launchFactoryAbi = [
   },
   {
     type: "function",
+    name: "ethUsdFeed",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "syncEthUsdPrice",
+    inputs: [],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "launchQuote",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "masterHook",
     inputs: [],
     outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getLaunchPage",
+    inputs: [
+      { name: "startId", type: "uint256" },
+      { name: "limit", type: "uint256" },
+    ],
+    outputs: [
+      {
+        name: "infos",
+        type: "tuple[]",
+        components: [
+          { name: "token", type: "address" },
+          { name: "creator", type: "address" },
+          { name: "hooks", type: "address" },
+          { name: "customHook", type: "bool" },
+          { name: "poolId", type: "bytes32" },
+          { name: "tickLower", type: "int24" },
+          { name: "tickUpper", type: "int24" },
+          { name: "liquidity", type: "uint128" },
+        ],
+      },
+      { name: "bitmasks", type: "uint256[]" },
+      { name: "timestamps", type: "uint64[]" },
+      { name: "total", type: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "poolKeyOf",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+    ],
     stateMutability: "view",
   },
   {

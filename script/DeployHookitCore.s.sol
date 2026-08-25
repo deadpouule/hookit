@@ -8,6 +8,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {HookMiner} from "../src/libraries/HookMiner.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
+import {HookitSwapRouter} from "../src/HookitSwapRouter.sol";
 import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
@@ -43,6 +44,9 @@ contract DeployHookitCoreScript is Script {
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
+        factory.setEthUsdFeed(BaseSepoliaAddresses.CHAINLINK_ETH_USD);
+        try factory.syncEthUsdPrice() {} catch {}
+        HookitSwapRouter router = new HookitSwapRouter(manager);
 
         hook.setFactory(address(factory));
         vault.setOperator(address(hook), true);
@@ -63,6 +67,7 @@ contract DeployHookitCoreScript is Script {
         console.log("BuybackVault", address(buybacks));
         console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
+        console.log("HookitSwapRouter", address(router));
         console.log("Native HOOK", address(nativeToken));
     }
 }

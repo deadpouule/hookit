@@ -20,12 +20,12 @@ const FEATURES = [
   },
   {
     title: "Custom Solidity",
-    description: "Paste your hook source. We mine CREATE2 and deploy at launch.",
+    description: "We compile your hook, mine CREATE2 flags, and deploy it at launch.",
     accent: HOOK_MODULE_ACCENTS.creatorTax,
   },
   {
     title: "Quote fees",
-    description: "Swap fees in ETH. Your token supply stays untouched.",
+    description: "1% in ETH via hook delta. Token supply is never taxed.",
     accent: HOOK_MODULE_ACCENTS.backedFloor,
   },
 ];
@@ -38,7 +38,7 @@ export default function HomePage() {
           <div className="max-w-xl">
             <div className="mb-8 flex items-center gap-3">
               <BrandMark className="flex h-11 w-11 items-center justify-center rounded-2xl" />
-              <p className="text-xs text-zinc-500">Uniswap v4 · Base Sepolia</p>
+              <p className="text-xs text-zinc-500">Uniswap v4 · Hookit-native · Base Sepolia</p>
             </div>
 
             <h1 className="ink-headline text-4xl leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
@@ -48,11 +48,12 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-6 text-base leading-relaxed text-zinc-500">
-              Hookit deploys your pool at{" "}
+              Hookit is the venue. Pools settle on Uniswap v4 with quote-only hook
+              accounting — fees stay in ETH, LP is locked, floor fills work. Launch FDV is{" "}
               <span className="font-mono text-ink-lavender">
                 ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
-              </span>{" "}
-              FDV. Modular protections built in, or bring your own v4 hook contract.
+              </span>
+              . We do not chase Uniswap.org auto-routing.
             </p>
 
             <div className="mt-10 flex flex-wrap gap-3">

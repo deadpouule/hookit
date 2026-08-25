@@ -1,11 +1,6 @@
 export type HookMode = "master" | "custom";
 
-export type ExploreCategory =
-  | "all"
-  | "backed-floor"
-  | "anti-snipe"
-  | "custom-hooks"
-  | "top-gainers";
+export type ExploreCategory = "top" | "trending" | "newest" | "custom";
 
 export interface LaunchModules {
   antiSnipe: boolean;
@@ -63,6 +58,16 @@ export interface TokenPool {
   contractAddress?: string;
   poolId?: `0x${string}`;
   tokenIsCurrency0?: boolean;
+  creator?: `0x${string}`;
+  earnings?: number;
+  launchId?: number;
+  launchedAt?: number;
+  hooksAddress?: `0x${string}`;
+  quoteAddress?: `0x${string}`;
+  tickSpacing?: number;
+  lpFee?: number;
+  priceSeries?: number[];
+  trades24h?: number;
 }
 
 export interface ProtocolMetrics {

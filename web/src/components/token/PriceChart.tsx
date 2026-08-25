@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
+import { formatUsd } from "@/lib/format";
 import {
   type ChartTimeframe,
   formatPriceEth,
@@ -151,11 +152,7 @@ export function PriceChart({
         </div>
         <div>
           <p className="text-xs text-zinc-500">Volume 1D</p>
-          <p className="mt-0.5 font-mono text-sm text-zinc-200">
-            {volume24h >= 1_000_000
-              ? `$${(volume24h / 1_000_000).toFixed(2)}M`
-              : `$${(volume24h / 1_000).toFixed(0)}K`}
-          </p>
+          <p className="mt-0.5 font-mono text-sm text-zinc-200">{formatUsd(volume24h)}</p>
         </div>
         <div>
           <p className="text-xs text-zinc-500">Swap fee</p>

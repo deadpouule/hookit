@@ -7,26 +7,25 @@ import { usePublicClient } from "wagmi";
 import { getLaunchFactoryAddress } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
-  fetchAllLaunches,
   fetchLaunchById,
   launchToTokenPool,
   type OnChainLaunch,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
+import { readEthUsd } from "@/lib/eth-usd";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches() {
   const factory = getLaunchFactoryAddress();
-  const publicClient = usePublicClient();
 
   return useQuery({
     queryKey: ["launches", factory],
-    enabled: !!factory && !!publicClient,
-    queryFn: async () => {
-      if (!factory || !publicClient) return [];
-      const launches = await fetchAllLaunches(publicClient, factory);
-      const pools = launches.map(launchToTokenPool);
-      return enrichPoolsWithSpotPrices(publicClient, pools);
+    enabled: !!factory,
+    queryFn: async (): Promise<TokenPool[]> => {
+      const res = await fetch("/api/launches", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch launches");
+      const body = (await res.json()) as { pools?: TokenPool[] };
+      return body.pools ?? [];
     },
     refetchInterval: 15_000,
   });
@@ -56,7 +55,10 @@ export function useLaunchPool(id: string) {
         launch = await fetchLaunchById(publicClient, factory, BigInt(id));
       }
 
-      return launch ? launchToTokenPool(launch) : null;
+      if (!launch) return null;
+      const ethUsd = await readEthUsd(publicClient);
+      const [pool] = await enrichPoolsWithSpotPrices(publicClient, [launchToTokenPool(launch)], ethUsd);
+      return pool;
     },
   });
 }

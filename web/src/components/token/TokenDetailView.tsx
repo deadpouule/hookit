@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { PriceChart } from "@/components/token/PriceChart";
 import { SwapPanel } from "@/components/token/SwapPanel";
+import { CreatorActions } from "@/components/token/CreatorActions";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { usePoolSpotPrice, usePriceHistory } from "@/hooks/usePoolPrice";
 import { marketCapUsd } from "@/lib/pool-price";
@@ -25,7 +26,12 @@ function TokenAvatar({ pool }: { pool: TokenPool }) {
       className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 sm:h-20 sm:w-20"
       style={{ background: pool.bannerGradient }}
     >
-      <span className="text-2xl font-bold text-white/90 sm:text-3xl">{pool.ticker[0]}</span>
+      {pool.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={pool.image} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-2xl font-bold text-white/90 sm:text-3xl">{pool.ticker[0]}</span>
+      )}
     </div>
   );
 }
@@ -36,6 +42,10 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
   const fullAddress = pool.contractAddress ?? enriched.contractAddress ?? pool.address;
   const { data: spotPrice, isLoading: priceLoading } = usePoolSpotPrice(pool.poolId);
   const priceHistory = usePriceHistory(pool.poolId, spotPrice);
+  const liveSeries =
+    pool.priceSeries && pool.priceSeries.length >= 2
+      ? pool.priceSeries
+      : priceHistory.map((p) => p.priceEth);
   const priceEth = spotPrice ?? enriched.priceEth ?? 0;
   const marketCap = pool.poolId
     ? marketCapUsd(priceEth, DEFAULT_LAUNCH_ETH_USD)
@@ -76,12 +86,13 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                 {copied && <span className="text-emerald-500">Copied</span>}
               </button>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
+                href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}#code`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-600 transition hover:text-zinc-400"
-                aria-label="Basescan"
+                className="inline-flex items-center gap-1 text-zinc-600 transition hover:text-zinc-400"
+                aria-label="View contract source on Basescan"
               >
+                Source
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
@@ -116,12 +127,15 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
             priceEth={priceEth}
             marketCap={marketCap}
             hookType={pool.hookType}
-            volume24h={enriched.volume24h ?? pool.liquidity * 0.15}
-            liveSeries={priceHistory.map((p) => p.priceEth)}
+            volume24h={pool.volume24h ?? 0}
+            liveSeries={liveSeries}
             liveFromPool={!!pool.poolId}
             priceLoading={priceLoading}
           />
-          <SwapPanel pool={pool} />
+          <div className="space-y-4">
+            <SwapPanel pool={pool} />
+            <CreatorActions pool={pool} />
+          </div>
         </div>
 
         {pool.poolId && (

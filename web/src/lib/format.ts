@@ -10,7 +10,14 @@ export function formatEth(value: number): string {
 
 export function formatPercent(value: number, signed = false): string {
   const prefix = signed && value > 0 ? "+" : "";
-  return `${prefix}${value.toFixed(1)}%`;
+  const abs = Math.abs(value);
+  if (abs >= 100) return `${prefix}${value >= 0 ? "" : "-"}${abs.toFixed(0)}%`;
+  return `${prefix}${value.toFixed(2)}%`;
+}
+
+export function shortenAddress(address: string, chars = 4): string {
+  if (address.length < 10) return address;
+  return `${address.slice(0, 6)}...${address.slice(-chars)}`;
 }
 
 export function formatBps(bps: number): string {

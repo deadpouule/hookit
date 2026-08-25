@@ -12,7 +12,7 @@ export function SiteFooter() {
             hookit
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-zinc-600">
-            Uniswap v4 launchpad on Base Sepolia.
+            Hookit-native Uniswap v4 launchpad on Base Sepolia.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
@@ -23,6 +23,9 @@ export function SiteFooter() {
             </Link>
             <Link href="/launch" className="text-zinc-500 transition hover:text-zinc-300">
               Create
+            </Link>
+            <Link href="/floor" className="text-zinc-500 transition hover:text-zinc-300">
+              Floor
             </Link>
           </div>
           <div className="flex flex-col gap-2">

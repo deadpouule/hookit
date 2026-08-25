@@ -42,6 +42,10 @@ export function analyzeCustomHookSource(source: string): CustomHookValidation {
     warnings.push("Constructor should accept IPoolManager — Hookit wires the canonical pool manager");
   }
 
+  if (/forge-std|\bvm\.|\bffi\b|selfdestruct|delegatecall/i.test(trimmed)) {
+    errors.push("Remove cheatcodes, ffi, selfdestruct, and delegatecall from hook source");
+  }
+
   if (trimmed.length > 48_000) {
     errors.push("Source is too large — keep the hook under ~48 KB for metadata storage");
   }

@@ -20,7 +20,16 @@ import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
+import {BaseSepoliaAddresses} from "./libraries/BaseSepoliaAddresses.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
+
+interface IAggregatorV3 {
+    function decimals() external view returns (uint8);
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);
+}
 
 /// @title LaunchFactory
 /// @notice Permissionless factory: mint ERC-20, init a v4 pool, and seed a locked unilateral position atomically.
@@ -41,6 +50,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice ETH/USD price with 18 decimals — used to convert the fixed $4k FDV into ETH at launch.
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
+    /// @notice Optional Chainlink ETH/USD feed; anyone may `syncEthUsdPrice`.
+    address public ethUsdFeed;
 
     struct LaunchParams {
         string name;
@@ -67,10 +78,18 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     mapping(uint256 => LaunchInfo) public launches;
     mapping(address => uint256) public tokenLaunchId;
+    mapping(uint256 => uint256) public launchBitmasks;
+    mapping(uint256 => uint64) public launchedAt;
+    mapping(uint256 => Currency) public launchQuote;
+    mapping(uint256 => int24) public launchTickSpacing;
+    mapping(uint256 => uint24) public launchFeeFlag;
 
     event LaunchFeeSet(uint256 fee);
     event TreasurySet(address indexed treasury);
     event EthUsdPriceSet(uint256 ethUsdPriceX18);
+    event LaunchConfigured(
+        uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee
+    );
     event TokenLaunched(
         uint256 indexed launchId,
         address indexed token,
@@ -90,6 +109,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error NativeNotAccepted();
     error NotPoolManager();
     error UnknownAction();
+    error UnknownLaunch();
+    error InvalidFeed();
+    error StalePrice();
 
     constructor(IPoolManager _poolManager, MasterLaunchHook _masterHook, address owner_, address treasury_)
         Owned(owner_)
@@ -117,9 +139,73 @@ contract LaunchFactory is Owned, IUnlockCallback {
         emit EthUsdPriceSet(ethUsdPriceX18_);
     }
 
+    function setEthUsdFeed(address feed) external onlyOwner {
+        ethUsdFeed = feed;
+    }
+
+    /// @notice Pull ETH/USD from Chainlink into `ethUsdPriceX18` (8-decimal feeds scaled to 18).
+    function syncEthUsdPrice() public {
+        if (ethUsdFeed == address(0)) revert InvalidFeed();
+        (, int256 answer,, uint256 updatedAt,) = IAggregatorV3(ethUsdFeed).latestRoundData();
+        if (answer <= 0) revert InvalidQuote();
+        if (updatedAt == 0 || updatedAt + 1 days < block.timestamp) revert StalePrice();
+        uint8 dec = IAggregatorV3(ethUsdFeed).decimals();
+        uint256 price = uint256(answer);
+        if (dec < 18) price *= 10 ** (18 - dec);
+        else if (dec > 18) price /= 10 ** (dec - 18);
+        ethUsdPriceX18 = price;
+        emit EthUsdPriceSet(price);
+    }
+
     /// @notice Target launch FDV in quote wei (ETH for native launches).
     function launchMcapQuoteWei() public view returns (uint256) {
         return FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, ethUsdPriceX18);
+    }
+
+    function _mcapQuote(Currency quote) internal view returns (uint256) {
+        if (quote.isAddressZero()) return launchMcapQuoteWei();
+        if (Currency.unwrap(quote) == BaseSepoliaAddresses.USDC) {
+            return 4_000 * 1e6;
+        }
+        revert InvalidQuote();
+    }
+
+    /// @notice Paginated launches for indexers / the app. `startId` is 1-indexed.
+    function getLaunchPage(uint256 startId, uint256 limit)
+        external
+        view
+        returns (LaunchInfo[] memory infos, uint256[] memory bitmasks, uint64[] memory timestamps, uint256 total)
+    {
+        total = launchCount;
+        if (startId == 0 || startId > total || limit == 0) {
+            return (new LaunchInfo[](0), new uint256[](0), new uint64[](0), total);
+        }
+        uint256 end = startId + limit - 1;
+        if (end > total) end = total;
+        uint256 n = end - startId + 1;
+        infos = new LaunchInfo[](n);
+        bitmasks = new uint256[](n);
+        timestamps = new uint64[](n);
+        for (uint256 i; i < n; ++i) {
+            uint256 id = startId + i;
+            infos[i] = launches[id];
+            bitmasks[i] = launchBitmasks[id];
+            timestamps[i] = launchedAt[id];
+        }
+    }
+
+    function poolKeyOf(uint256 launchId) external view returns (PoolKey memory key) {
+        LaunchInfo storage info = launches[launchId];
+        if (info.token == address(0)) revert UnknownLaunch();
+        Currency quote = launchQuote[launchId];
+        bool tokenIs0 = uint160(info.token) < uint160(Currency.unwrap(quote));
+        key = PoolKey({
+            currency0: tokenIs0 ? Currency.wrap(info.token) : quote,
+            currency1: tokenIs0 ? quote : Currency.wrap(info.token),
+            fee: launchFeeFlag[launchId],
+            tickSpacing: launchTickSpacing[launchId],
+            hooks: info.hooks
+        });
     }
 
     /// @notice Create a token, initialize its Uniswap v4 pool, and lock 100% of supply as a unilateral position.
@@ -172,7 +258,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickUpper;
         uint160 sqrtPriceX96;
         bool tokenIsCurrency1 = !tokenIsCurrency0;
-        uint256 mcapQuote = launchMcapQuoteWei();
+        uint256 mcapQuote = _mcapQuote(params.quote);
         int24 startingTick = FixedPointMath.startingTickForMcap(
             params.totalSupply, mcapQuote, spacing, tokenIsCurrency1
         );
@@ -234,7 +320,13 @@ contract LaunchFactory is Owned, IUnlockCallback {
             liquidity: liquidity
         });
         tokenLaunchId[token] = launchId;
+        launchBitmasks[launchId] = packed;
+        launchedAt[launchId] = uint64(block.timestamp);
+        launchQuote[launchId] = params.quote;
+        launchTickSpacing[launchId] = spacing;
+        launchFeeFlag[launchId] = fee;
 
+        emit LaunchConfigured(launchId, packed, params.quote, spacing, fee);
         emit TokenLaunched(launchId, token, msg.sender, poolId, hooks, useCustom, tickLower, tickUpper, liquidity);
     }
 

@@ -1,17 +1,19 @@
 import type { PublicClient } from "viem";
 
+import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import {
   STATE_VIEW_ADDRESS,
   ethPerTokenFromSqrtPrice,
   marketCapUsd,
   stateViewAbi,
 } from "@/lib/pool-price";
-import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+import { loadSwapsForPools, quoteVolumeUsd, statsFromSwaps } from "@/lib/swap-index";
 import type { TokenPool } from "@/lib/types";
 
 export async function enrichPoolsWithSpotPrices(
   publicClient: PublicClient,
   pools: TokenPool[],
+  ethUsd = DEFAULT_LAUNCH_ETH_USD,
 ): Promise<TokenPool[]> {
   const withPool = pools.filter((p) => p.poolId);
   if (withPool.length === 0) return pools;
@@ -30,16 +32,47 @@ export async function enrichPoolsWithSpotPrices(
     const row = results[i];
     if (row.status !== "success" || !row.result) return;
     const [sqrtPriceX96] = row.result as readonly [bigint, number, number, number];
-    const priceEth = ethPerTokenFromSqrtPrice(sqrtPriceX96, false);
-    if (priceEth > 0) priceByPoolId.set(pool.poolId!, priceEth);
+    const price = ethPerTokenFromSqrtPrice(sqrtPriceX96, pool.tokenIsCurrency0 ?? false);
+    if (price > 0) priceByPoolId.set(pool.poolId!, price);
   });
+
+  let swapStats = new Map<string, ReturnType<typeof statsFromSwaps>>();
+  try {
+    const swaps = await loadSwapsForPools(
+      publicClient,
+      withPool.map((p) => p.poolId!),
+    );
+    for (const pool of withPool) {
+      const id = pool.poolId!.toLowerCase();
+      swapStats.set(id, statsFromSwaps(swaps.get(id) ?? [], pool.tokenIsCurrency0 ?? false));
+    }
+  } catch {
+    swapStats = new Map();
+  }
 
   return pools.map((pool) => {
     if (!pool.poolId) return pool;
     const priceEth = priceByPoolId.get(pool.poolId) ?? pool.priceEth ?? 0;
+    const stats = swapStats.get(pool.poolId.toLowerCase());
+    const quoteIsEth = (pool.quoteAsset ?? "ETH") !== "USDC";
     const marketCap =
-      priceEth > 0 ? marketCapUsd(priceEth, DEFAULT_LAUNCH_ETH_USD) : pool.marketCap;
-    return { ...pool, priceEth, marketCap };
+      priceEth > 0
+        ? quoteIsEth
+          ? marketCapUsd(priceEth, ethUsd)
+          : priceEth * 1_000_000_000
+        : pool.marketCap;
+    const volume24h = stats
+      ? quoteVolumeUsd(stats.volumeQuoteWei, quoteIsEth, ethUsd)
+      : 0;
+    return {
+      ...pool,
+      priceEth,
+      marketCap,
+      volume24h,
+      change24h: stats?.change24h ?? pool.change24h,
+      priceSeries: stats?.series?.length ? stats.series : pool.priceSeries,
+      trades24h: stats?.trades ?? 0,
+    };
   });
 }
 

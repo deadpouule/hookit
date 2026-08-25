@@ -70,7 +70,8 @@ export function LaunchSummary({
         <Row label="FDV" value={`$${TARGET_LAUNCH_MCAP_USD.toLocaleString()}`} mono />
         <Row label="Supply" value="1,000,000,000" mono />
         <Row label="Hook" value={form.hookMode === "custom" ? "Custom" : "Master"} />
-        <Row label="Chain" value="Base Sepolia" />
+        <Row label="Quote" value={form.quoteAsset} />
+        <Row label="Venue" value="Hookit" />
         <div className="border-t border-white/[0.05] pt-2">
           <Row label="Fee" value={`${launchFeeEth} ETH`} mono />
         </div>
