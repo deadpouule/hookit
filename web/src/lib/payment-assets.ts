@@ -1,6 +1,7 @@
 import { type Address, zeroAddress } from "viem";
 
-import { USDC_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS, USDG_INK_ADDRESS } from "@/lib/contracts/config";
+import { resolveHookitChainKey } from "@/lib/chains";
 import { INK_XSTOCKS } from "@/lib/xstocks";
 import type { TokenPool } from "@/lib/types";
 
@@ -15,17 +16,22 @@ export type PaymentAsset = {
 
 export const PAYMENT_ASSETS: PaymentAsset[] = [
   { id: "ETH", label: "ETH", address: zeroAddress, decimals: 18 },
-  { id: "USDC", label: "USDC", address: USDC_ADDRESS, decimals: 6 },
+  { id: "USDC", label: stableQuoteLabel(), address: STABLE_QUOTE_ADDRESS, decimals: 6 },
 ];
 
 export function poolQuoteAddress(pool: TokenPool): Address {
   return (pool.quoteAddress ?? zeroAddress) as Address;
 }
 
+export function stableQuoteLabel(): string {
+  return resolveHookitChainKey() === "ink" ? "USDG" : "USDC";
+}
+
 export function poolQuoteLabel(pool: TokenPool): string {
   const quote = poolQuoteAddress(pool);
   if (quote === zeroAddress) return "ETH";
-  if (quote.toLowerCase() === USDC_ADDRESS.toLowerCase()) return "USDC";
+  if (quote.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()) return stableQuoteLabel();
+  if (quote.toLowerCase() === USDG_INK_ADDRESS.toLowerCase()) return "USDG";
   const x = INK_XSTOCKS.find((s) => s.address.toLowerCase() === quote.toLowerCase());
   return x?.symbol ?? `${quote.slice(0, 6)}…${quote.slice(-4)}`;
 }

@@ -54,7 +54,7 @@ export async function enrichPoolsWithSpotPrices(
     if (!pool.poolId) return pool;
     const priceEth = priceByPoolId.get(pool.poolId) ?? pool.priceEth ?? 0;
     const stats = swapStats.get(pool.poolId.toLowerCase());
-    const quoteIsEth = (pool.quoteAsset ?? "ETH") !== "USDC";
+    const quoteIsEth = (pool.quoteAsset ?? "ETH") === "ETH";
     const marketCap =
       priceEth > 0
         ? quoteIsEth

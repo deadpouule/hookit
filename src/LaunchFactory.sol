@@ -59,7 +59,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         address usdFeed;
     }
 
-    /// @notice ERC-20 quotes (USDC, xStocks, …). Native ETH is always allowed.
+    /// @notice ERC-20 quotes (USDG, xStocks, …). Native ETH is always allowed.
     mapping(address => QuoteConfig) public quoteConfigs;
 
     struct LaunchParams {
@@ -153,7 +153,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         ethUsdFeed = feed;
     }
 
-    /// @notice Allow or revoke an ERC-20 quote (USDC, chain-native ERC-20s, …). Native ETH cannot be set here.
+    /// @notice Allow or revoke an ERC-20 quote (USDG, xStocks, …). Native ETH cannot be set here.
     function setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed)
         external
         onlyOwner

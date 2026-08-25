@@ -18,7 +18,8 @@ library UniswapV4Deployments {
         address universalRouter;
         address permit2;
         address create2Deployer;
-        address usdc;
+        /// @notice Allowed ERC-20 quote at deploy: USDG on Ink, Base Sepolia USDC (testnet stand-in).
+        address stableQuote;
         address ethUsdFeed;
         address poolSwapTest;
     }
@@ -38,7 +39,7 @@ library UniswapV4Deployments {
                 universalRouter: 0x492E6456D9528771018DeB9E87ef7750EF184104,
                 permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
                 create2Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C,
-                usdc: 0x036CbD53842c5426634e7929541eC2318f3dCF7e,
+                stableQuote: 0x036CbD53842c5426634e7929541eC2318f3dCF7e,
                 ethUsdFeed: 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1,
                 poolSwapTest: 0x8B5bcC363ddE2614281aD875bad385E0A785D3B9
             });
@@ -53,7 +54,7 @@ library UniswapV4Deployments {
                 universalRouter: 0x112908daC86e20e7241B0927479Ea3Bf935d1fa0,
                 permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
                 create2Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C,
-                usdc: 0x2D270e6886d130D724215A266106e6832161EAEd,
+                stableQuote: 0xe343167631d89B6Ffc58B88d6b7fB0228795491D, // USDG (Paxos)
                 ethUsdFeed: 0xdFc720E1ef024bfc768ed9E6F0e7Fc80E28f8CFA,
                 poolSwapTest: address(0)
             });

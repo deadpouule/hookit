@@ -116,17 +116,13 @@ Uniswap v4 on **Ink mainnet**:
 | PoolManager | `0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32` |
 | PositionManager | `0x1b35d13a2E2528f192637F14B05f0Dc0e7dEB566` |
 | Universal Router | `0x112908daC86e20e7241B0927479Ea3Bf935d1fa0` |
-| USDC | `0x2D270e6886d130D724215A266106e6832161EAEd` |
+| USDG (stable quote) | `0xe343167631d89B6Ffc58B88d6b7fB0228795491D` |
 
-### Pay with USDC (composite buy)
+### Composite buy (deferred)
 
-Pools are quoted in ETH, USDC, or xStocks — but users can **pay with ETH or USDC** on the swap panel. When payment ≠ pool quote, `HookitSwapRouter.swapExactInComposite` runs:
+Pools are quoted in **ETH**, **USDG**, or **xStocks**. Pay-with-stable composite swaps (`swapExactInComposite`) are implemented but **not enabled in prod** until Uniswap v4 bridge liquidity on Ink is sufficient.
 
-1. Bridge leg on a standard v4 pool (no hook): e.g. USDC → ETH  
-2. Hook leg on the launch pool: ETH → TOKEN (hook fees in quote)
-
-Requires `HookitSwapRouter` deployed and `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` set. Bridge pools are discovered via `V4Quoter` (fee tiers 0 / 500 / 3000).
-
+When enabled, leg 1 bridges payment stable → pool quote on a zero-hook v4 pool; leg 2 swaps on the Hookit pool.
 
 Production stock pairs use **[xStocks](https://docs.xstocks.fi/docs)** (Backed), not Coinbase B20. `DeployHookitCore` seeds 11 majors via `XStockQuotes` (AAPLx, NVDAx, TSLAx, …). USD prices are bootstrap snapshots — refresh from the [xStocks API](https://api.xstocks.fi/api/v2/public/assets/{symbol}/price-data?network=Ink) with `script/SeedXStockQuotes.s.sol` or `LaunchFactory.setQuote`. Base Sepolia tests use `MockQuoteToken` stand-ins (`DeploySepoliaStockQuotes.s.sol`).
 

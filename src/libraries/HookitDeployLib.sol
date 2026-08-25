@@ -10,7 +10,7 @@ import {UniswapV4Deployments} from "./UniswapV4Deployments.sol";
 library HookitDeployLib {
     function seedQuotes(LaunchFactory factory) internal {
         UniswapV4Deployments.Deployment memory d = UniswapV4Deployments.get(block.chainid);
-        factory.setQuote(d.usdc, true, 6, 1e18, address(0));
+        factory.setQuote(d.stableQuote, true, 6, 1e18, address(0));
         factory.setEthUsdFeed(d.ethUsdFeed);
         try factory.syncEthUsdPrice() {} catch {}
 

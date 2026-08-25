@@ -16,6 +16,6 @@ library BaseSepoliaAddresses {
     address internal constant POOL_MODIFY_LIQUIDITY_TEST = 0x37429cD17Cb1454C34E7F50b09725202Fd533039;
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address internal constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-    address internal constant USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    address internal constant USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e; // testnet stand-in for USDG
     address internal constant CHAINLINK_ETH_USD = 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
 }

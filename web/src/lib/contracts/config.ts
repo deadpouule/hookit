@@ -2,6 +2,9 @@ import { type Address, zeroAddress } from "viem";
 
 import { resolveHookitChainKey } from "@/lib/chains";
 
+/** Paxos USDG on Ink mainnet (6 decimals). */
+export const USDG_INK_ADDRESS = "0xe343167631d89B6Ffc58B88d6b7fB0228795491D" as const;
+
 export type ChainDeployment = {
   chainId: number;
   poolManager: Address;
@@ -9,7 +12,8 @@ export type ChainDeployment = {
   v4Quoter: Address;
   universalRouter: Address;
   poolSwapTest: Address;
-  usdc: Address;
+  /** USDG on Ink; Base Sepolia USDC as 6-decimal testnet stand-in. */
+  stableQuote: Address;
   ethUsdFeed: Address;
   explorer: string;
   networkLabel: string;
@@ -22,7 +26,7 @@ const BASE_SEPOLIA: ChainDeployment = {
   v4Quoter: "0x4A6513c898fe1B2d0E78d3b0e0A4a151589B1cBa",
   universalRouter: "0x492E6456D9528771018DeB9E87ef7750EF184104",
   poolSwapTest: "0x8B5bcC363ddE2614281aD875bad385E0A785D3B9",
-  usdc: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  stableQuote: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   ethUsdFeed: "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1",
   explorer: "https://sepolia.basescan.org",
   networkLabel: "Base Sepolia",
@@ -35,7 +39,7 @@ const INK_MAINNET: ChainDeployment = {
   v4Quoter: "0x3972C00f7ed4885e145823eb7C655375d275A1C5",
   universalRouter: "0x112908daC86e20e7241B0927479Ea3Bf935d1fa0",
   poolSwapTest: zeroAddress,
-  usdc: "0x2D270e6886d130D724215A266106e6832161EAEd",
+  stableQuote: USDG_INK_ADDRESS,
   ethUsdFeed: "0xdFc720E1ef024bfc768ed9E6F0e7Fc80E28f8CFA",
   explorer: "https://explorer.inkonchain.com",
   networkLabel: "Ink",
@@ -61,7 +65,9 @@ export const STATE_VIEW_ADDRESS = getChainDeployment().stateView;
 export const V4_QUOTER_ADDRESS = getChainDeployment().v4Quoter;
 export const UNIVERSAL_ROUTER_ADDRESS = getChainDeployment().universalRouter;
 export const POOL_SWAP_TEST_ADDRESS = getChainDeployment().poolSwapTest;
-export const USDC_ADDRESS = getChainDeployment().usdc;
+export const STABLE_QUOTE_ADDRESS = getChainDeployment().stableQuote;
+/** @deprecated use STABLE_QUOTE_ADDRESS */
+export const USDC_ADDRESS = STABLE_QUOTE_ADDRESS;
 export const CHAINLINK_ETH_USD = getChainDeployment().ethUsdFeed;
 
 export const chainlinkAggregatorAbi = [
