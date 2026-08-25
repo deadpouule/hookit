@@ -2,7 +2,8 @@ import type { Address, PublicClient } from "viem";
 import { zeroAddress } from "viem";
 
 import { unpackLaunchBitmask } from "@/lib/bitmask";
-import { DEFAULT_TICK_SPACING, USDC_ADDRESS } from "@/lib/contracts/config";
+import { DEFAULT_TICK_SPACING } from "@/lib/contracts/config";
+import { poolQuoteLabel } from "@/lib/payment-assets";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
@@ -76,7 +77,9 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
   const token = launch.token.toLowerCase() as Address;
   const quote = (launch.quote ?? zeroAddress).toLowerCase() as Address;
   const tokenIsCurrency0 = BigInt(launch.token) < BigInt(quote);
-  const quoteIsUsdc = quote === USDC_ADDRESS.toLowerCase();
+  const quoteLabel = poolQuoteLabel({
+    quoteAddress: quote,
+  } as TokenPool);
 
   return {
     id: token,
@@ -92,10 +95,12 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       antiSnipe: modules.antiSnipe,
       backedFloor: modules.backedFloor,
       antiMev: modules.antiMev,
+      autoBurn: modules.autoBurn,
+      lpDonate: modules.lpDonate,
       customHook: launch.customHook,
     },
     address: shortenAddress(token),
-    quoteAsset: quoteIsUsdc ? "USDC" : "ETH",
+    quoteAsset: quoteLabel,
     hookType: launch.customHook ? "Custom" : "Master",
     bannerGradient: gradientForAddress(token),
     contractAddress: launch.token,

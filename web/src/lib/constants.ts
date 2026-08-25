@@ -22,7 +22,7 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   modules: {
     antiSnipe: true,
     antiSnipeDuration: 5,
-    antiSnipeInitialTax: 99,
+    antiSnipeInitialTax: 98,
     backedFloor: true,
     floorAllocation: 10,
     antiMev: true,
@@ -30,6 +30,10 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     maxWalletBps: 200,
     maxTx: false,
     maxTxBps: 100,
+    autoBurn: false,
+    autoBurnPct: 20,
+    lpDonate: false,
+    lpDonatePct: 20,
   },
   creatorTaxBps: 50,
   devBuyEth: "",
@@ -227,6 +231,7 @@ export const MOCK_POOLS: TokenPool[] = [
 
 export const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
+  { href: "/builder", label: "Builder" },
   { href: "/launch", label: "Create" },
   { href: "/floor", label: "Floor" },
   { href: "https://github.com/deadpouule/hookit", label: "GitHub", external: true },

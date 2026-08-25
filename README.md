@@ -2,7 +2,7 @@
 
 Permissionless Uniswap v4 launchpad: token creation, concentrated unilateral liquidity, and live trading in a single transaction. There is no external bonding curve and no migration step.
 
-Primary target: **Base Sepolia (chain ID 84532)**.
+Primary target: **Ink mainnet (chain ID 57073)**. Integration tests run on **Base Sepolia (84532)** because Ink Sepolia has no Uniswap v4 Universal Router.
 
 ## Design
 
@@ -59,7 +59,7 @@ forge install
 cp .env.example .env
 ```
 
-RPC defaults to `https://sepolia.base.org`. EVM: **cancun** (TSTORE/TLOAD). Solc: **0.8.26**.
+RPC defaults to `https://sepolia.base.org` for tests; set `INK_RPC_URL` for Ink deploys. EVM: **cancun** (TSTORE/TLOAD). Solc: **0.8.26**.
 
 ### Tests
 
@@ -79,22 +79,58 @@ Swap-path gas (local v4-core deploy):
 | Anti-snipe buy | ~1.76M |
 | Floor-fill sell | ~1.92M |
 
-### Mine + deploy (Base Sepolia)
+### Mine + deploy
+
+**Base Sepolia (integration / CI)**
 
 ```bash
-# 1. Deploy vaults first (or use DeployBaseSepolia which mines in-place)
-forge script script/MineHookAddress.s.sol:MineHookAddressScript \
-  --rpc-url $BASE_SEPOLIA_RPC_URL -vv
-
-forge script script/DeployBaseSepolia.s.sol:DeployBaseSepoliaScript \
+forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
   --rpc-url $BASE_SEPOLIA_RPC_URL \
   --broadcast \
   --verify \
-  --etherscan-api-key $BASESCAN_API_KEY \
-  --chain 84532
+  --etherscan-api-key $BASESCAN_API_KEY
 ```
 
-Uniswap v4 on Base Sepolia:
+**Ink mainnet (production)**
+
+```bash
+forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
+  --rpc-url $INK_RPC_URL \
+  --broadcast \
+  --verify \
+  --etherscan-api-key $INK_EXPLORER_API_KEY
+```
+
+Smoke launch + swap (Base Sepolia only):
+
+```bash
+forge script script/DeployBaseSepolia.s.sol:DeployBaseSepoliaScript \
+  --rpc-url $BASE_SEPOLIA_RPC_URL \
+  --broadcast
+```
+
+Uniswap v4 on **Ink mainnet**:
+
+| Contract | Address |
+| --- | --- |
+| PoolManager | `0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32` |
+| PositionManager | `0x1b35d13a2E2528f192637F14B05f0Dc0e7dEB566` |
+| Universal Router | `0x112908daC86e20e7241B0927479Ea3Bf935d1fa0` |
+| USDC | `0x2D270e6886d130D724215A266106e6832161EAEd` |
+
+### Pay with USDC (composite buy)
+
+Pools are quoted in ETH, USDC, or xStocks — but users can **pay with ETH or USDC** on the swap panel. When payment ≠ pool quote, `HookitSwapRouter.swapExactInComposite` runs:
+
+1. Bridge leg on a standard v4 pool (no hook): e.g. USDC → ETH  
+2. Hook leg on the launch pool: ETH → TOKEN (hook fees in quote)
+
+Requires `HookitSwapRouter` deployed and `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` set. Bridge pools are discovered via `V4Quoter` (fee tiers 0 / 500 / 3000).
+
+
+Production stock pairs use **[xStocks](https://docs.xstocks.fi/docs)** (Backed), not Coinbase B20. `DeployHookitCore` seeds 11 majors via `XStockQuotes` (AAPLx, NVDAx, TSLAx, …). USD prices are bootstrap snapshots — refresh from the [xStocks API](https://api.xstocks.fi/api/v2/public/assets/{symbol}/price-data?network=Ink) with `script/SeedXStockQuotes.s.sol` or `LaunchFactory.setQuote`. Base Sepolia tests use `MockQuoteToken` stand-ins (`DeploySepoliaStockQuotes.s.sol`).
+
+Uniswap v4 on **Base Sepolia** (testnet):
 
 | Contract | Address |
 | --- | --- |
@@ -107,7 +143,7 @@ Uniswap v4 on Base Sepolia:
 ```
 src/          protocol contracts, interfaces, libraries
 web/          Next.js front-end (Launch Studio + Explore)
-script/       CREATE2 miner + Base Sepolia deploy
+script/       CREATE2 miner + chain-aware deploy (Ink / Base Sepolia)
 test/         unit, invariant (ΔP_floor ≥ 0), fork
 ```
 

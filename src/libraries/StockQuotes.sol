@@ -2,9 +2,8 @@
 pragma solidity ^0.8.26;
 
 /// @title StockQuotes
-/// @notice Coinbase tokenized stocks (B20) on Base mainnet + Chainlink total-return feeds.
-/// @dev Addresses from https://docs.base.org/base-chain/asset-issuance/tokenized-stocks-on-base
-///      These precompiles exist on Base (8453), not Base Sepolia. Seed via `LaunchFactory.setQuote`.
+/// @notice Legacy Coinbase B20 tokenized stocks on Base mainnet (not used for Hookit on Ink).
+/// @dev Superseded on Ink by `XStockQuotes` (Backed xStocks). Kept for reference / optional Base deploys.
 library StockQuotes {
     uint256 internal constant BASE_MAINNET = 8453;
 

@@ -13,6 +13,10 @@ export interface LaunchModules {
   maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
+  autoBurn: boolean;
+  autoBurnPct: number;
+  lpDonate: boolean;
+  lpDonatePct: number;
 }
 
 export interface LaunchFormState {
@@ -47,6 +51,8 @@ export interface TokenPool {
     antiSnipe: boolean;
     backedFloor: boolean;
     antiMev: boolean;
+    autoBurn?: boolean;
+    lpDonate?: boolean;
     customHook: boolean;
   };
   address: string;

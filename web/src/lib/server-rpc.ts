@@ -1,13 +1,11 @@
 import { createPublicClient, http } from "viem";
-import { baseSepolia } from "viem/chains";
+
+import { getActiveChain, getDefaultRpcUrl } from "@/lib/chains";
 
 export function createServerPublicClient() {
+  const chain = getActiveChain();
   return createPublicClient({
-    chain: baseSepolia,
-    transport: http(
-      process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
-        process.env.BASE_SEPOLIA_RPC_URL ??
-        "https://sepolia.base.org",
-    ),
+    chain,
+    transport: http(getDefaultRpcUrl()),
   });
 }

@@ -4,6 +4,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { encodeAbiParameters, type Hex } from "viem";
 
+import { getDefaultRpcUrl } from "@/lib/chains";
 import { POOL_MANAGER_ADDRESS } from "@/lib/contracts/config";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { forgeVerifyContract, loadRepoEnv, REPO_ROOT } from "@/lib/forge-env";
@@ -46,7 +47,10 @@ export async function POST(request: Request) {
   }
 
   const rpcUrl =
-    process.env.BASE_SEPOLIA_RPC_URL ?? process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ?? "https://sepolia.base.org";
+    process.env.INK_RPC_URL ??
+    process.env.BASE_SEPOLIA_RPC_URL ??
+    process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
+    getDefaultRpcUrl();
 
   let prepared: string;
   try {

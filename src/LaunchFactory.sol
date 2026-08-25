@@ -20,7 +20,6 @@ import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
-import {BaseSepoliaAddresses} from "./libraries/BaseSepoliaAddresses.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 
 interface IAggregatorV3 {
@@ -60,7 +59,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         address usdFeed;
     }
 
-    /// @notice ERC-20 quotes (USDC, tokenized stocks, …). Native ETH is always allowed.
+    /// @notice ERC-20 quotes (USDC, xStocks, …). Native ETH is always allowed.
     mapping(address => QuoteConfig) public quoteConfigs;
 
     struct LaunchParams {
@@ -130,7 +129,6 @@ contract LaunchFactory is Owned, IUnlockCallback {
         poolManager = _poolManager;
         masterHook = _masterHook;
         treasury = treasury_;
-        _setQuote(BaseSepoliaAddresses.USDC, true, 6, 1e18, address(0));
     }
 
     receive() external payable {}
@@ -155,7 +153,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         ethUsdFeed = feed;
     }
 
-    /// @notice Allow or revoke an ERC-20 quote (USDC, B20 stocks, …). Native ETH cannot be set here.
+    /// @notice Allow or revoke an ERC-20 quote (USDC, chain-native ERC-20s, …). Native ETH cannot be set here.
     function setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed)
         external
         onlyOwner

@@ -21,16 +21,20 @@ import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol"
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {LaunchToken} from "../src/LaunchToken.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
-import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
+import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
+import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Deploys the full Hookit protocol on Base Sepolia, then performs a smoke-test launch + swap.
+/// @notice Deploys the full Hookit protocol, then performs a smoke-test launch + swap.
+/// @dev Base Sepolia only — Ink Sepolia has no v4 Universal Router.
 contract DeployBaseSepoliaScript is Script {
     function run() public {
+        require(block.chainid == UniswapV4Deployments.BASE_SEPOLIA, "Base Sepolia smoke deploy only");
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
         address ops = vm.envOr("OPS_TREASURY", deployer);
-        IPoolManager manager = IPoolManager(BaseSepoliaAddresses.POOL_MANAGER);
+        UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
+        IPoolManager manager = IPoolManager(v4.poolManager);
 
         vm.startBroadcast(pk);
 
@@ -52,8 +56,7 @@ contract DeployBaseSepoliaScript is Script {
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
-        factory.setEthUsdFeed(BaseSepoliaAddresses.CHAINLINK_ETH_USD);
-        try factory.syncEthUsdPrice() {} catch {}
+        HookitDeployLib.seedQuotes(factory);
 
         hook.setFactory(address(factory));
         vault.setOperator(address(hook), true);
@@ -102,7 +105,7 @@ contract DeployBaseSepoliaScript is Script {
             })
         );
 
-        PoolSwapTest swapper = PoolSwapTest(BaseSepoliaAddresses.POOL_SWAP_TEST);
+        PoolSwapTest swapper = PoolSwapTest(v4.poolSwapTest);
         PoolKey memory key = PoolKey({
             currency0: Currency.wrap(address(0)),
             currency1: Currency.wrap(token),

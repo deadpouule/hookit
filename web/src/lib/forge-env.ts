@@ -4,6 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { getActiveChainId } from "@/lib/chains";
+import { getChainDeployment } from "@/lib/contracts/config";
+
 const execFileAsync = promisify(execFile);
 
 function resolveRepoRoot(): string {
@@ -41,10 +44,20 @@ export function loadRepoEnv() {
   }
 }
 
-export function basescanApiKey(): string | undefined {
+export function explorerApiKey(): string | undefined {
   loadRepoEnv();
+  const deployment = getChainDeployment();
+  if (deployment.chainId === 57073) {
+    const ink = process.env.INK_EXPLORER_API_KEY?.trim();
+    if (ink) return ink;
+  }
   const key = process.env.BASESCAN_API_KEY?.trim();
   return key || undefined;
+}
+
+/** @deprecated use explorerApiKey */
+export function basescanApiKey(): string | undefined {
+  return explorerApiKey();
 }
 
 export async function forgeVerifyContract(opts: {
@@ -52,7 +65,8 @@ export async function forgeVerifyContract(opts: {
   contract: string;
   constructorArgsHex?: string;
 }): Promise<{ ok: boolean; alreadyVerified: boolean; output: string }> {
-  const apiKey = basescanApiKey();
+  const apiKey = explorerApiKey();
+  const chainId = String(getActiveChainId());
 
   const baseArgs = [
     "verify-contract",
@@ -61,7 +75,7 @@ export async function forgeVerifyContract(opts: {
     "--root",
     REPO_ROOT,
     "--chain",
-    "84532",
+    chainId,
     "--watch",
     "--via-ir",
   ];
@@ -122,7 +136,7 @@ export async function forgeVerifyContract(opts: {
       if (/already verified/i.test(output)) return asResult(output);
       const hint = apiKey
         ? output
-        : `${output}\nBASESCAN_API_KEY is not set in the repo root .env — Sourcify fallback also failed.`;
+        : `${output}\nSet INK_EXPLORER_API_KEY (Ink) or BASESCAN_API_KEY (Base Sepolia) in the repo root .env — Sourcify fallback also failed.`;
       throw new Error(hint.slice(0, 2000));
     }
   } finally {

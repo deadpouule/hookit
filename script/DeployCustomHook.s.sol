@@ -7,13 +7,14 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 import {HookMiner} from "../src/libraries/HookMiner.sol";
 import {HookitCustomHook} from "../src/examples/HookitCustomHook.sol";
-import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
+import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 
-/// @notice Mines and deploys `HookitCustomHook` on Base Sepolia.
+/// @notice Mines and deploys `HookitCustomHook` on the active v4 chain.
 contract DeployCustomHookScript is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");
-        IPoolManager manager = IPoolManager(BaseSepoliaAddresses.POOL_MANAGER);
+        UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
+        IPoolManager manager = IPoolManager(v4.poolManager);
 
         uint160 flags = uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG);
 

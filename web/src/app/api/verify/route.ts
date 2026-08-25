@@ -1,5 +1,6 @@
 import { encodeAbiParameters, isAddress } from "viem";
 
+import { getBlockExplorerUrl } from "@/lib/chains";
 import { POOL_MANAGER_ADDRESS } from "@/lib/contracts/config";
 import { forgeVerifyContract, loadRepoEnv } from "@/lib/forge-env";
 
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
       verified: tokenResult.ok,
       alreadyVerified: tokenResult.alreadyVerified,
       hookVerified: hookResult?.ok,
-      explorer: `https://sepolia.basescan.org/address/${token}#code`,
+      explorer: `${getBlockExplorerUrl()}/address/${token}#code`,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Verification failed";

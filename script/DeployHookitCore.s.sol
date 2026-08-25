@@ -14,16 +14,17 @@ import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {LaunchToken} from "../src/LaunchToken.sol";
-import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
-import {StockQuotes} from "../src/libraries/StockQuotes.sol";
+import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
+import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 
-/// @notice Deploys Hookit core contracts on Base Sepolia (no smoke launch — lower ETH cost).
+/// @notice Deploys Hookit core contracts. Use Base Sepolia for integration tests; Ink mainnet for production.
 contract DeployHookitCoreScript is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
         address ops = vm.envOr("OPS_TREASURY", deployer);
-        IPoolManager manager = IPoolManager(BaseSepoliaAddresses.POOL_MANAGER);
+        UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
+        IPoolManager manager = IPoolManager(v4.poolManager);
 
         vm.startBroadcast(pk);
 
@@ -45,14 +46,7 @@ contract DeployHookitCoreScript is Script {
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
-        factory.setEthUsdFeed(BaseSepoliaAddresses.CHAINLINK_ETH_USD);
-        try factory.syncEthUsdPrice() {} catch {}
-        if (block.chainid == StockQuotes.BASE_MAINNET) {
-            StockQuotes.Listing[] memory stocks = StockQuotes.listings();
-            for (uint256 i; i < stocks.length; ++i) {
-                factory.setQuote(stocks[i].token, true, stocks[i].decimals, 0, stocks[i].usdFeed);
-            }
-        }
+        HookitDeployLib.seedQuotes(factory);
         HookitSwapRouter router = new HookitSwapRouter(manager);
 
         hook.setFactory(address(factory));

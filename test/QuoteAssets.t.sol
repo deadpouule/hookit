@@ -12,20 +12,23 @@ import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
-import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
 import {MockQuoteToken} from "./mocks/MockQuoteToken.sol";
 
 contract QuoteAssetsTest is LaunchpadTestBase {
     using StateLibrary for IPoolManager;
 
+    MockQuoteToken internal usdc;
+
     function setUp() public {
         deployProtocol();
+        usdc = new MockQuoteToken("USD Coin", "USDC", 6);
+        factory.setQuote(address(usdc), true, 6, 1e18, address(0));
     }
 
     function testUsdcIsAllowedByDefault() public view {
         assertTrue(factory.isQuoteAllowed(address(0)));
-        assertTrue(factory.isQuoteAllowed(BaseSepoliaAddresses.USDC));
-        assertEq(factory.mcapQuoteFor(BaseSepoliaAddresses.USDC), 4_000 * 1e6);
+        assertTrue(factory.isQuoteAllowed(address(usdc)));
+        assertEq(factory.mcapQuoteFor(address(usdc)), 4_000 * 1e6);
     }
 
     function testUnknownErc20QuoteReverts() public {

@@ -10,12 +10,13 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
-import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
+import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 
 /// @notice Mines a CREATE2 salt so MasterLaunchHook encodes the required v4 permission flags.
 contract MineHookAddressScript is Script {
     function run() public {
-        address poolManager = BaseSepoliaAddresses.POOL_MANAGER;
+        UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
+        address poolManager = v4.poolManager;
         address deployer = vm.envOr("HOOK_DEPLOYER", HookMiner.CREATE2_DEPLOYER);
         address owner = vm.envOr("OPS_TREASURY", address(this));
 

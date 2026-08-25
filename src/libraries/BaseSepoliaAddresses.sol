@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 /// @title BaseSepoliaAddresses
 /// @notice Canonical Uniswap v4 deployments on Base Sepolia (chainid 84532).
+/// @dev Testnet only. Production is Ink — see `UniswapV4Deployments`.
 library BaseSepoliaAddresses {
     uint256 internal constant CHAIN_ID = 84532;
 

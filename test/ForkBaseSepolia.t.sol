@@ -14,6 +14,7 @@ import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 
 import {BaseSepoliaAddresses} from "../src/libraries/BaseSepoliaAddresses.sol";
+import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {FloorVault} from "../src/FloorVault.sol";
@@ -81,6 +82,7 @@ contract ForkBaseSepoliaTest is Test {
         hook = MasterLaunchHook(payable(flagsAddr));
 
         factory = new LaunchFactory(manager, hook, address(this), ops);
+        HookitDeployLib.seedQuotes(factory);
         hook.setFactory(address(factory));
         vault.setOperator(address(hook), true);
         escrow.setOperator(address(hook), true);

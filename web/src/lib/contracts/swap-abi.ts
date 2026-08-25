@@ -22,6 +22,43 @@ export const hookitSwapRouterAbi = [
     outputs: [{ name: "amountOut", type: "uint256" }],
     stateMutability: "payable",
   },
+  {
+    type: "function",
+    name: "swapExactInComposite",
+    inputs: [
+      {
+        name: "bridgeKey",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      { name: "bridgeZeroForOne", type: "bool" },
+      { name: "amountIn", type: "uint256" },
+      {
+        name: "hookKey",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+      { name: "hookZeroForOne", type: "bool" },
+      { name: "quoteCurrency", type: "address" },
+      { name: "minAmountOut", type: "uint256" },
+      { name: "bridgeSqrtLimit", type: "uint160" },
+      { name: "hookSqrtLimit", type: "uint160" },
+    ],
+    outputs: [{ name: "amountOut", type: "uint256" }],
+    stateMutability: "payable",
+  },
 ] as const;
 
 export const poolSwapTestAbi = [
