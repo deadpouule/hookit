@@ -36,7 +36,7 @@ export function SiteFooter() {
               Create
             </Link>
             <Link href="/floor" className="text-zinc-400 transition hover:text-zinc-200">
-              Floor
+              Stats
             </Link>
           </div>
           <div className="flex flex-col gap-2">

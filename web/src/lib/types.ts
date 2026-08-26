@@ -18,6 +18,10 @@ export interface LaunchModules {
   maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
+  dynamicFees: boolean;
+  buybackVesting: boolean;
+  autoBurn: boolean;
+  lpDonate: boolean;
 }
 
 export interface LaunchFormState {

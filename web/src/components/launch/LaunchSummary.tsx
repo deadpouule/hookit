@@ -2,9 +2,11 @@
 
 import { Loader2, Rocket } from "lucide-react";
 
+import { HookChip } from "@/components/hooks/HookMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
+import type { HookId } from "@/lib/hook-marks";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -12,24 +14,26 @@ export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "done";
 
 type Props = {
   form: LaunchFormState;
+  variant?: "classic" | "custom";
   launchFee?: bigint;
   launchFeeEth: number;
   walletReady: boolean;
   factoryConfigured: boolean;
   isPending: boolean;
   phase: LaunchPhase;
-  activeTags: string[];
+  activeHooks: HookId[];
   onLaunch: () => void;
 };
 
 export function LaunchSummary({
   form,
+  variant = "custom",
   launchFeeEth,
   walletReady,
   factoryConfigured,
   isPending,
   phase,
-  activeTags,
+  activeHooks,
   onLaunch,
 }: Props) {
   const hookAnalysis =
@@ -77,7 +81,11 @@ export function LaunchSummary({
         <div className="flex justify-between gap-4">
           <dt className="text-zinc-500">Hook</dt>
           <dd className="text-zinc-200">
-            {form.hookMode === "custom" ? "Custom (your code)" : "Master"}
+            {variant === "classic"
+              ? "Classic"
+              : form.hookMode === "custom"
+                ? "Custom (your code)"
+                : "Master"}
           </dd>
         </div>
         <div className="flex justify-between gap-4">
@@ -90,15 +98,10 @@ export function LaunchSummary({
         </div>
       </dl>
 
-      {activeTags.length > 0 && (
+      {activeHooks.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {activeTags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-zinc-400"
-            >
-              {tag}
-            </span>
+          {activeHooks.map((id) => (
+            <HookChip key={id} id={id} />
           ))}
         </div>
       )}

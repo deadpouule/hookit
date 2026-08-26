@@ -1,180 +1,130 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Copy, ExternalLink, Layers } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useState } from "react";
 
-import { PriceChart } from "@/components/token/PriceChart";
-import { SwapPanel } from "@/components/token/SwapPanel";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { usePoolSpotPrice, usePriceHistory } from "@/hooks/usePoolPrice";
-import { marketCapUsd } from "@/lib/pool-price";
-import { getPoolById } from "@/lib/pools";
+import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
+import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
+import { TokenSwapCard } from "@/components/token/TokenSwapCard";
+import { TokenTxTable } from "@/components/token/TokenTxTable";
+import { useLiveToken } from "@/hooks/useLiveToken";
+import { copyToClipboard } from "@/lib/clipboard";
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
-import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { formatCompactUsd } from "@/lib/format";
 import type { TokenPool } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 interface TokenDetailViewProps {
   pool: TokenPool;
 }
 
-function TokenAvatar({ pool }: { pool: TokenPool }) {
+export function TokenDetailView({ pool }: TokenDetailViewProps) {
+  const live = useLiveToken(pool);
+  const [copied, setCopied] = useState(false);
+  const [interval, setInterval] = useState<ChartInterval>("1h");
+  const [tab, setTab] = useState<"swaps" | "holders">("swaps");
+  const contractAddress = pool.contractAddress ?? pool.address;
+  const trending = live.change1h >= 0;
+
+  const copyAddress = async () => {
+    if (!(await copyToClipboard(contractAddress))) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
   return (
-    <div
-      className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 sm:h-20 sm:w-20"
-      style={{ background: pool.bannerGradient }}
-    >
-      <span className="text-2xl font-bold text-white/90 sm:text-3xl">{pool.ticker[0]}</span>
+    <div className="market-shell bg-black py-4 pb-8">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1.5 text-[13px] text-zinc-400 transition hover:text-zinc-200"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to pools
+      </Link>
+
+      <div className="token-desk mt-4">
+        <div className="min-w-0 space-y-4">
+          <header className="flex flex-wrap items-start gap-3">
+            <div
+              className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-16 sm:w-16"
+              style={{ background: pool.bannerGradient }}
+            >
+              <span className="text-2xl font-bold text-white/90">
+                {pool.image || pool.ticker[0]}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                  {pool.name}
+                </h1>
+                <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
+                {trending && (
+                  <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
+                    <Flame className="h-3.5 w-3.5" />
+                    Trend
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={copyAddress}
+                  className="inline-flex items-center gap-1.5 font-mono text-xs text-zinc-500 transition hover:text-zinc-300"
+                >
+                  {pool.address}
+                  <Copy className="h-3 w-3" />
+                  {copied && <span className="text-[#10b981]">Copied</span>}
+                </button>
+                <a
+                  href={`${BASE_SEPOLIA_EXPLORER}/address/${contractAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-600 transition hover:text-[#03b1ed]"
+                  aria-label="Explorer"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+                <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
+                  Born 13 hours ago
+                </span>
+              </div>
+            </div>
+          </header>
+
+          <div className="grid grid-cols-2 gap-4 border-b border-white/10 pb-4 sm:grid-cols-4">
+            <Metric label="Market Cap" value={formatCompactUsd(live.marketCap)} />
+            <Metric label="Vol 24h" value={formatCompactUsd(live.volume24h)} />
+            <Metric label="Liquidity" value={formatCompactUsd(live.liquidity)} />
+            <Metric label="Holders" value={live.holders.toString()} />
+          </div>
+
+          <TokenCandleChart candles={live.candles} interval={interval} onInterval={setInterval} />
+          <TokenTxTable
+            tab={tab}
+            onTab={setTab}
+            swaps={live.swaps}
+            holders={live.holderRows}
+            ticker={pool.ticker}
+          />
+        </div>
+
+        <aside className="space-y-3">
+          <TokenSwapCard ticker={pool.ticker} />
+          <TokenSidebarStats live={live} contractAddress={contractAddress} />
+        </aside>
+      </div>
     </div>
   );
 }
 
-export function TokenDetailView({ pool }: TokenDetailViewProps) {
-  const [copied, setCopied] = useState(false);
-  const enriched = getPoolById(pool.id) ?? pool;
-  const fullAddress = pool.contractAddress ?? enriched.contractAddress ?? pool.address;
-  const { data: spotPrice, isLoading: priceLoading } = usePoolSpotPrice(pool.poolId);
-  const priceHistory = usePriceHistory(pool.poolId, spotPrice);
-  const priceEth = spotPrice ?? enriched.priceEth ?? 0;
-  const marketCap = pool.poolId
-    ? marketCapUsd(priceEth, DEFAULT_LAUNCH_ETH_USD)
-    : pool.marketCap || TARGET_LAUNCH_MCAP_USD;
-
-  const copyAddress = async () => {
-    await navigator.clipboard.writeText(fullAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <>
-      <div className="page-shell py-6 sm:py-8">
-        <Link
-          href="/explore"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Explore
-        </Link>
-
-        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-          <TokenAvatar pool={pool} />
-          <div className="min-w-0 flex-1">
-            <p className="font-mono text-sm text-zinc-500">${pool.ticker}</p>
-            <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              {pool.name}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={copyAddress}
-                className="flex items-center gap-1.5 font-mono text-xs text-zinc-500 transition hover:text-zinc-300"
-              >
-                {pool.address}
-                <Copy className="h-3 w-3" />
-                {copied && <span className="text-emerald-500">Copied</span>}
-              </button>
-              <a
-                href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-600 transition hover:text-zinc-400"
-                aria-label="Basescan"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-            <p className="mt-2 font-mono text-xs text-zinc-600">
-              ${pool.quoteAsset ?? "ETH"}
-            </p>
-
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {pool.hooks.backedFloor && <HookPill label="Backed Floor" />}
-              {pool.hooks.antiSnipe && <HookPill label="Anti-Snipe" />}
-              {pool.hooks.antiMev && <HookPill label="Anti-MEV" />}
-              {pool.hooks.customHook && <HookPill label="Custom Solidity" variant="warn" />}
-              <HookPill label={pool.hookType} variant={pool.hookType === "Custom" ? "warn" : undefined} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto lg:min-w-[280px]">
-            <StatBox label="FDV" value={`$${marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-            <StatBox label="Quote" value={pool.quoteAsset ?? "ETH"} />
-            <StatBox label="Hook" value={pool.hookType} />
-            <StatBox
-              label="Pool"
-              value={pool.poolId ? "Live" : "—"}
-              accent={!!pool.poolId}
-            />
-          </div>
-        </header>
-
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
-          <PriceChart
-            poolId={pool.id}
-            priceEth={priceEth}
-            marketCap={marketCap}
-            hookType={pool.hookType}
-            volume24h={enriched.volume24h ?? pool.liquidity * 0.15}
-            liveSeries={priceHistory.map((p) => p.priceEth)}
-            liveFromPool={!!pool.poolId}
-            priceLoading={priceLoading}
-          />
-          <SwapPanel pool={pool} />
-        </div>
-
-        {pool.poolId && (
-          <div className="mt-6 panel-inset flex flex-wrap items-center gap-3 px-4 py-3 text-xs text-zinc-500">
-            <Layers className="h-3.5 w-3.5 text-zinc-600" />
-            <span className="font-mono text-zinc-400">poolId</span>
-            <span className="truncate font-mono text-zinc-600">{pool.poolId}</span>
-            <a
-              href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200"
-            >
-              View contract <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        )}
-      </div>
-      <SiteFooter />
-    </>
-  );
-}
-
-function HookPill({ label, variant }: { label: string; variant?: "warn" }) {
-  return (
-    <span
-      className={cn(
-        "rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-        variant === "warn"
-          ? "border-amber-500/25 text-amber-400/90"
-          : "border-white/10 text-zinc-500",
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function StatBox({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="panel-inset px-3 py-2.5">
-      <p className="text-[10px] text-zinc-600 uppercase">{label}</p>
-      <p className={cn("mt-0.5 font-mono text-sm", accent ? "text-emerald-400" : "text-zinc-200")}>
-        {value}
-      </p>
+    <div>
+      <p className="text-[12px] text-zinc-500">{label}</p>
+      <p className="mt-1 font-mono text-lg text-white sm:text-xl">{value}</p>
     </div>
   );
 }

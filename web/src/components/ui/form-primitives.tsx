@@ -65,20 +65,25 @@ export function ModuleRow({
   description,
   enabled,
   onToggle,
+  mark,
   children,
 }: {
   label: string;
   description?: string;
   enabled: boolean;
   onToggle: (v: boolean) => void;
+  mark?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   return (
     <div className="border-b border-white/[0.05] py-4 last:border-0 last:pb-0">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-zinc-200">{label}</p>
-          {description && <p className="mt-0.5 text-xs text-zinc-500">{description}</p>}
+        <div className="flex min-w-0 items-center gap-3">
+          {mark}
+          <div>
+            <p className="text-sm text-zinc-200">{label}</p>
+            {description && <p className="mt-0.5 text-xs text-zinc-500">{description}</p>}
+          </div>
         </div>
         <button
           type="button"

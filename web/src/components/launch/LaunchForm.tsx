@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
+import { HookMark } from "@/components/hooks/HookMark";
 import {
   FeeBreakdown,
   FormDivider,
@@ -21,6 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
 import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
+  DEFAULT_CLASSIC_LAUNCH_STATE,
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
   MAX_CREATOR_TAX_BPS,
@@ -28,11 +31,19 @@ import {
 } from "@/lib/constants";
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
+import type { HookId } from "@/lib/hook-marks";
+import { withMasterHookEnabled } from "@/lib/master-hooks";
 import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function LaunchForm() {
-  const [form, setForm] = useState<LaunchFormState>(DEFAULT_LAUNCH_STATE);
+export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "custom" }) {
+  const searchParams = useSearchParams();
+  const [form, setForm] = useState<LaunchFormState>(() =>
+    withMasterHookEnabled(
+      variant === "classic" ? DEFAULT_CLASSIC_LAUNCH_STATE : DEFAULT_LAUNCH_STATE,
+      variant === "custom" ? searchParams.get("hook") : null,
+    ),
+  );
   const [socialsOpen, setSocialsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const walletReady = useWalletReady();
@@ -60,14 +71,14 @@ export function LaunchForm() {
 
   const floorEst = estimateFloorPrice(form.modules.floorAllocation, 0);
 
-  const activeTags = useMemo(() => {
-    if (form.hookMode === "custom") return ["Custom Hook", "Auto-deploy"];
-    const tags: string[] = [];
-    if (form.modules.antiSnipe) tags.push("Anti-Snipe");
-    if (form.modules.backedFloor) tags.push("Backed Floor");
-    if (form.modules.antiMev) tags.push("Anti-MEV");
-    if (form.modules.maxWallet) tags.push("Max Wallet");
-    if (form.modules.maxTx) tags.push("Max TX");
+  const activeHooks = useMemo(() => {
+    if (form.hookMode === "custom") return ["custom"] as HookId[];
+    const tags: HookId[] = ["quoteFee"];
+    if (form.modules.antiSnipe) tags.push("antiSnipe");
+    if (form.modules.backedFloor) tags.push("backedFloor");
+    if (form.modules.antiMev) tags.push("antiMev");
+    if (form.modules.maxWallet) tags.push("maxWallet");
+    if (form.modules.maxTx) tags.push("maxTx");
     return tags;
   }, [form.hookMode, form.modules]);
 
@@ -91,19 +102,19 @@ export function LaunchForm() {
   return (
     <div className="launch-shell pt-6 sm:pt-10">
       <Link
-        href="/explore"
+        href="/launch"
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to explore
+        Back to launch models
       </Link>
 
       <div className="mb-10 text-center">
         <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
-          Launch Studio
+          {variant === "classic" ? "Classic launch" : "Custom launch"}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Create a hooked token
+          {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500">
           Atomic Uniswap v4 launch on Base Sepolia ·{" "}
@@ -306,6 +317,20 @@ export function LaunchForm() {
 
           <FormDivider />
 
+          {variant === "classic" ? (
+            <>
+              <SectionLabel>Fees</SectionLabel>
+              <p className="mt-1 text-xs text-zinc-600">
+                Standard 1% quote-only swap fee. No extra hook modules.
+              </p>
+              <div className="mt-4">
+                <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
+                <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
+                <FeeBreakdown creator="0.70%" protocol="0.30%" />
+              </div>
+            </>
+          ) : (
+            <>
           <SectionLabel>Hook architecture</SectionLabel>
           <div className="mt-3">
             <SegmentedControl<HookMode>
@@ -350,6 +375,7 @@ export function LaunchForm() {
                   description="Decay tax on buys at launch"
                   enabled={form.modules.antiSnipe}
                   onToggle={(v) => updateModules({ antiSnipe: v })}
+                  mark={<HookMark id="antiSnipe" />}
                 >
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -390,6 +416,7 @@ export function LaunchForm() {
                   description="Collateralized ratchet floor"
                   enabled={form.modules.backedFloor}
                   onToggle={(v) => updateModules({ backedFloor: v })}
+                  mark={<HookMark id="backedFloor" />}
                 >
                   <div>
                     <div className="mb-2 flex justify-between text-xs text-zinc-500">
@@ -418,12 +445,14 @@ export function LaunchForm() {
                   description="Same-block opposing swap cooldown"
                   enabled={form.modules.antiMev}
                   onToggle={(v) => updateModules({ antiMev: v })}
+                  mark={<HookMark id="antiMev" />}
                 />
 
                 <ModuleRow
                   label="Max wallet"
                   enabled={form.modules.maxWallet}
                   onToggle={(v) => updateModules({ maxWallet: v })}
+                  mark={<HookMark id="maxWallet" />}
                 >
                   <div className="mb-2 flex justify-between text-xs text-zinc-500">
                     <span>Cap</span>
@@ -444,6 +473,7 @@ export function LaunchForm() {
                   label="Max transaction"
                   enabled={form.modules.maxTx}
                   onToggle={(v) => updateModules({ maxTx: v })}
+                  mark={<HookMark id="maxTx" />}
                 >
                   <div className="mb-2 flex justify-between text-xs text-zinc-500">
                     <span>Cap</span>
@@ -459,6 +489,34 @@ export function LaunchForm() {
                     step={0.1}
                   />
                 </ModuleRow>
+
+                <ModuleRow
+                  label="Dynamic fees"
+                  description="Swap fee ramps with flow"
+                  enabled={form.modules.dynamicFees}
+                  onToggle={(v) => updateModules({ dynamicFees: v })}
+                />
+
+                <ModuleRow
+                  label="Buyback vesting"
+                  description="Creator proceeds vest linearly over 5 years"
+                  enabled={form.modules.buybackVesting}
+                  onToggle={(v) => updateModules({ buybackVesting: v })}
+                />
+
+                <ModuleRow
+                  label="Auto-burn"
+                  description="1% of token output sent to the dead address"
+                  enabled={form.modules.autoBurn}
+                  onToggle={(v) => updateModules({ autoBurn: v })}
+                />
+
+                <ModuleRow
+                  label="LP donate"
+                  description="0.25% of buys donated to in-range LPs"
+                  enabled={form.modules.lpDonate}
+                  onToggle={(v) => updateModules({ lpDonate: v })}
+                />
               </div>
 
               <FormDivider />
@@ -493,17 +551,20 @@ export function LaunchForm() {
               </div>
             </>
           )}
+            </>
+          )}
         </FormPanel>
 
         <LaunchSummary
           form={form}
+          variant={variant}
           launchFee={launchFee}
           launchFeeEth={launchFeeEth}
           walletReady={walletReady}
           factoryConfigured={factoryConfigured}
           isPending={isPending}
           phase={phase}
-          activeTags={activeTags}
+          activeHooks={activeHooks}
           onLaunch={handleLaunch}
         />
       </div>

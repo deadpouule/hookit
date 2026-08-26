@@ -30,10 +30,34 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     maxWalletBps: 200,
     maxTx: false,
     maxTxBps: 100,
+    dynamicFees: false,
+    buybackVesting: false,
+    autoBurn: false,
+    lpDonate: false,
   },
   creatorTaxBps: 50,
   devBuyEth: "",
   quoteAsset: "ETH",
+};
+
+export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
+  ...DEFAULT_LAUNCH_STATE,
+  modules: {
+    antiSnipe: false,
+    antiSnipeDuration: 5,
+    antiSnipeInitialTax: 99,
+    backedFloor: false,
+    floorAllocation: 10,
+    antiMev: false,
+    maxWallet: false,
+    maxWalletBps: 200,
+    maxTx: false,
+    maxTxBps: 100,
+    dynamicFees: false,
+    buybackVesting: false,
+    autoBurn: false,
+    lpDonate: false,
+  },
 };
 
 export const MOCK_METRICS: ProtocolMetrics = {
@@ -180,9 +204,11 @@ export const MOCK_POOLS: TokenPool[] = [
   },
 ];
 
+export const GITHUB_REPO_URL = "https://github.com/deadpouule/hookit";
+
 export const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/launch", label: "Create" },
-  { href: "/floor", label: "Floor" },
+  { href: "/floor", label: "Stats" },
   { href: "https://github.com/deadpouule/hookit", label: "GitHub", external: true },
 ] as const;

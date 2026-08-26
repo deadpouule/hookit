@@ -5,6 +5,8 @@ const FLAG_BACKED_FLOOR = BigInt(1) << BigInt(1);
 const FLAG_ANTI_MEV = BigInt(1) << BigInt(2);
 const FLAG_MAX_TX = BigInt(1) << BigInt(3);
 const FLAG_MAX_WALLET = BigInt(1) << BigInt(4);
+const FLAG_DYNAMIC_FEES = BigInt(1) << BigInt(5);
+const FLAG_BUYBACK_VESTING = BigInt(1) << BigInt(6);
 
 const SHIFT_CREATOR_TAX = BigInt(7);
 const SHIFT_SNIPE_DURATION = BigInt(23);
@@ -38,6 +40,8 @@ export function packLaunchBitmask(
   if (modules.antiMev) packed |= FLAG_ANTI_MEV;
   if (modules.maxTx) packed |= FLAG_MAX_TX;
   if (modules.maxWallet) packed |= FLAG_MAX_WALLET;
+  if (modules.dynamicFees) packed |= FLAG_DYNAMIC_FEES;
+  if (modules.buybackVesting) packed |= FLAG_BUYBACK_VESTING;
 
   packed |= BigInt(creatorTaxBps) << SHIFT_CREATOR_TAX;
   packed |= BigInt(modules.antiSnipeDuration) << SHIFT_SNIPE_DURATION;
@@ -64,6 +68,8 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const antiMev = (packed & FLAG_ANTI_MEV) !== BigInt(0);
   const maxTx = (packed & FLAG_MAX_TX) !== BigInt(0);
   const maxWallet = (packed & FLAG_MAX_WALLET) !== BigInt(0);
+  const dynamicFees = (packed & FLAG_DYNAMIC_FEES) !== BigInt(0);
+  const buybackVesting = (packed & FLAG_BUYBACK_VESTING) !== BigInt(0);
 
   const creatorTaxBps = Number((packed >> SHIFT_CREATOR_TAX) & UINT16_MASK);
   const antiSnipeDuration = Number((packed >> SHIFT_SNIPE_DURATION) & UINT16_MASK);
@@ -86,6 +92,10 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       maxWalletBps,
       maxTx,
       maxTxBps,
+      dynamicFees,
+      buybackVesting,
+      autoBurn: false,
+      lpDonate: false,
     },
   };
 }
