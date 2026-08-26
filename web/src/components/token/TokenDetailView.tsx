@@ -11,9 +11,10 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { usePoolSpotPrice, usePriceHistory } from "@/hooks/usePoolPrice";
 import { marketCapUsd } from "@/lib/pool-price";
 import { getPoolById } from "@/lib/pools";
-import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
+import { getBlockExplorerUrl } from "@/lib/chains";
 import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import type { TokenPool } from "@/lib/types";
+import { accentForTag } from "@/lib/hook-modules";
 import { cn } from "@/lib/utils";
 
 interface TokenDetailViewProps {
@@ -86,7 +87,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                 {copied && <span className="text-emerald-500">Copied</span>}
               </button>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}#code`}
+                href={`${getBlockExplorerUrl()}/address/${fullAddress}#code`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-zinc-600 transition hover:text-zinc-400"
@@ -104,6 +105,8 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
               {pool.hooks.backedFloor && <HookPill label="Backed Floor" />}
               {pool.hooks.antiSnipe && <HookPill label="Anti-Snipe" />}
               {pool.hooks.antiMev && <HookPill label="Anti-MEV" />}
+              {pool.hooks.autoBurn && <HookPill label="Auto Burn" />}
+              {pool.hooks.lpDonate && <HookPill label="LP Donate" />}
               {pool.hooks.customHook && <HookPill label="Custom Solidity" variant="warn" />}
               <HookPill label={pool.hookType} variant={pool.hookType === "Custom" ? "warn" : undefined} />
             </div>
@@ -144,7 +147,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
             <span className="font-mono text-zinc-400">poolId</span>
             <span className="truncate font-mono text-zinc-600">{pool.poolId}</span>
             <a
-              href={`${BASE_SEPOLIA_EXPLORER}/address/${fullAddress}`}
+              href={`${getBlockExplorerUrl()}/address/${fullAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-auto inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200"
@@ -160,14 +163,22 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
 }
 
 function HookPill({ label, variant }: { label: string; variant?: "warn" }) {
+  const accent = accentForTag(label);
+  if (variant === "warn") {
+    return (
+      <span className="rounded-md border border-amber-500/25 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-400/90">
+        {label}
+      </span>
+    );
+  }
   return (
     <span
-      className={cn(
-        "rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-        variant === "warn"
-          ? "border-amber-500/25 text-amber-400/90"
-          : "border-white/10 text-zinc-500",
-      )}
+      className="rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+      style={{
+        borderColor: `${accent.color}40`,
+        color: accent.color,
+        background: `${accent.color}12`,
+      }}
     >
       {label}
     </span>

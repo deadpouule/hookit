@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/layout/BrandMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { getNetworkSubtitle } from "@/lib/chains";
 import { HOOK_MODULE_ACCENTS } from "@/lib/hook-modules";
 
 const FEATURES = [
@@ -14,8 +15,8 @@ const FEATURES = [
     accent: HOOK_MODULE_ACCENTS.swapFee,
   },
   {
-    title: "Master hook",
-    description: "Anti-snipe, floor vault, anti-MEV. Pick what you need.",
+    title: "Hook builder",
+    description: "Click-to-add modules on a buy circuit. Same bitmask the master hook already runs.",
     accent: HOOK_MODULE_ACCENTS.antiMev,
   },
   {
@@ -38,7 +39,7 @@ export default function HomePage() {
           <div className="max-w-xl">
             <div className="mb-8 flex items-center gap-3">
               <BrandMark className="flex h-11 w-11 items-center justify-center rounded-2xl" />
-              <p className="text-xs text-zinc-500">Uniswap v4 · Hookit-native · Base Sepolia</p>
+              <p className="text-xs text-zinc-500">{getNetworkSubtitle()}</p>
             </div>
 
             <h1 className="ink-headline text-4xl leading-[1.08] sm:text-5xl lg:text-[3.5rem]">
@@ -60,6 +61,9 @@ export default function HomePage() {
               <Link href="/launch" className="btn-primary gap-2">
                 Create token
                 <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/builder" className="btn-ghost">
+                Build a hook
               </Link>
               <Link href="/explore" className="btn-ghost">
                 View pools

@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+import {IERC20} from "forge-std/interfaces/IERC20.sol";
+import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+
+import {InkForkTestBase} from "./utils/InkForkTestBase.sol";
+import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
+import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
+import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
+import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
+import {FeeEthRail} from "../src/FeeEthRail.sol";
+import {EthUsdgBridgeLib} from "../src/libraries/EthUsdgBridgeLib.sol";
+import {EthUsdgBridgeSeeder} from "../src/EthUsdgBridgeSeeder.sol";
+
+/// @notice Ink fork: Master + Classic rails coexist; shared escrow/distributor; fee rail smoke.
+contract ForkInkDualRailTest is InkForkTestBase {
+    using CurrencyLibrary for Currency;
+
+    function testFork_DualRail_MasterAndBonding_SameProtocol() public onlyFork {
+        // Master kitchen sink on ETH.
+        BitmaskConfig.Modules memory m = ModuleMatrix.kitchenSink();
+        InkForkTestBase.LaunchResult memory master = _launch(
+            creator,
+            Currency.wrap(address(0)),
+            m,
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Master",
+            "MST"
+        );
+        _routerBuy(trader, master.key, master.token, 0.2 ether);
+        assertGt(_tokenBalance(master.token, trader), 0);
+        assertGt(vault.reserve(master.token), 0);
+
+        // Classic bonding → graduate on ETH.
+        BondingResult memory classic = _bondingLaunch(creator, Currency.wrap(address(0)), 50, "Bond", "BND");
+        _bondingBuyToGraduate(trader, classic.launchId, classic.quote);
+        assertEq(uint8(_bondingPhase(classic.launchId)), uint8(BondingLaunchFactory.Phase.Graduated));
+
+        PoolKey memory gKey = bonding.poolKeyOf(classic.launchId);
+        _routerBuy(trader, gKey, classic.token, 0.05 ether);
+        assertGt(_tokenBalance(classic.token, trader), 0);
+
+        // Protocol fee sinks shared.
+        (uint128 streamed,,) = buybacks.streams(creator, Currency.wrap(address(0)));
+        assertTrue(escrow.balanceOf(creator, Currency.wrap(address(0))) > 0 || streamed > 0);
+    }
+
+    function testFork_DualRail_MasterUsdg_BondingUsdg() public onlyFork {
+        InkForkTestBase.LaunchResult memory master = _launch(
+            creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MU", "MU"
+        );
+        _routerBuy(trader, master.key, master.token, 1_000e6);
+
+        BondingResult memory classic = _bondingLaunch(creator, usdg, 0, "BU", "BU");
+        _bondingBuyToGraduate(trader, classic.launchId, usdg);
+        assertEq(uint8(_bondingPhase(classic.launchId)), uint8(BondingLaunchFactory.Phase.Graduated));
+
+        _routerBuy(trader, bonding.poolKeyOf(classic.launchId), classic.token, 100e6);
+        assertGt(_tokenBalance(classic.token, trader), 0);
+    }
+
+    function testFork_DualRail_FeeCap_BothRails() public onlyFork {
+        BitmaskConfig.Modules memory m = _defaultModules();
+        m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS;
+        BitmaskConfig.pack(m);
+        _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Cap", "CAP");
+
+        BondingResult memory r =
+            _bondingLaunch(creator, Currency.wrap(address(0)), ProtocolConstants.MAX_CREATOR_TAX_BPS, "CapB", "CAPB");
+        assertEq(r.graduationQuote, 4.2 ether);
+    }
+
+    function testFork_DualRail_FeeRail_WithBondingGraduated() public onlyFork {
+        FeeEthRail feeRail = new FeeEthRail(deployer, manager, Currency.unwrap(usdg));
+        distributor.setFeeRail(feeRail);
+        EthUsdgBridgeLib.initializeEmpty(manager, Currency.unwrap(usdg));
+        EthUsdgBridgeLib.wireLive(manager, feeRail, EthUsdgBridgeLib.poolKey(Currency.unwrap(usdg)), address(0));
+        EthUsdgBridgeSeeder seeder = new EthUsdgBridgeSeeder(manager);
+
+        deal(Currency.unwrap(usdg), address(this), 2_000_000e6);
+        IERC20(Currency.unwrap(usdg)).approve(address(seeder), type(uint256).max);
+        seeder.seed{value: 20 ether}(Currency.unwrap(usdg), 2_000_000e6, -600, 600, 1e18);
+
+        BondingResult memory classic = _bondingLaunch(creator, Currency.wrap(address(0)), 0, "Rail", "RAIL");
+        _bondingBuyToGraduate(trader, classic.launchId, classic.quote);
+
+        // Protocol pending from bonding curve fees should be distributable as ETH path exists.
+        if (distributor.pending(Currency.wrap(address(0))) > 0) {
+            uint256 opsBefore = ops.balance;
+            distributor.distribute(Currency.wrap(address(0)));
+            assertGt(ops.balance, opsBefore);
+        }
+    }
+}

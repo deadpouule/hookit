@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   Coins,
+  Droplets,
+  Flame,
   Percent,
   Shield,
   ShieldAlert,
@@ -92,6 +94,26 @@ export const HOOK_MODULE_ACCENTS = {
     text: "text-[#d4b3ff]",
     icon: Coins,
   },
+  autoBurn: {
+    id: "auto-burn",
+    label: "Auto Burn",
+    color: "#ff5c5c",
+    glow: "rgba(255, 92, 92, 0.55)",
+    bg: "bg-[#ff5c5c]/12",
+    border: "border-[#ff5c5c]/40",
+    text: "text-[#ff8a8a]",
+    icon: Flame,
+  },
+  lpDonate: {
+    id: "lp-donate",
+    label: "LP Donate",
+    color: "#6ee7b7",
+    glow: "rgba(110, 231, 183, 0.5)",
+    bg: "bg-[#6ee7b7]/10",
+    border: "border-[#6ee7b7]/40",
+    text: "text-[#9ff5d0]",
+    icon: Droplets,
+  },
 } as const satisfies Record<string, HookModuleAccent>;
 
 const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
@@ -100,6 +122,9 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Anti-MEV": HOOK_MODULE_ACCENTS.antiMev,
   "Max Wallet": HOOK_MODULE_ACCENTS.maxWallet,
   "Max TX": HOOK_MODULE_ACCENTS.maxTx,
+  "Creator Tax": HOOK_MODULE_ACCENTS.creatorTax,
+  "Auto Burn": HOOK_MODULE_ACCENTS.autoBurn,
+  "LP Donate": HOOK_MODULE_ACCENTS.lpDonate,
   "Custom Hook": {
     ...HOOK_MODULE_ACCENTS.creatorTax,
     id: "custom",

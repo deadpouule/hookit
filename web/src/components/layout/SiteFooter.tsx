@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandMark } from "@/components/layout/BrandMark";
+import { getNetworkLabel, getNetworkSubtitle } from "@/lib/chains";
 
 export function SiteFooter() {
   return (
@@ -12,7 +13,7 @@ export function SiteFooter() {
             hookit
           </Link>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-zinc-600">
-            Hookit-native Uniswap v4 launchpad on Base Sepolia.
+            {getNetworkSubtitle()}.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
@@ -23,6 +24,9 @@ export function SiteFooter() {
             </Link>
             <Link href="/launch" className="text-zinc-500 transition hover:text-zinc-300">
               Create
+            </Link>
+            <Link href="/builder" className="text-zinc-500 transition hover:text-zinc-300">
+              Builder
             </Link>
             <Link href="/floor" className="text-zinc-500 transition hover:text-zinc-300">
               Floor
@@ -49,7 +53,7 @@ export function SiteFooter() {
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-xs text-zinc-700">Network</span>
-            <span className="text-zinc-600">Base Sepolia</span>
+            <span className="text-zinc-600">{getNetworkLabel()}</span>
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
+import {QuotronBridge} from "./libraries/QuotronBridge.sol";
 
 /// @title HookitSwapRouter
 /// @notice Thin v4 swap router with exact-in, slippage, native refunds, hookData = recipient,
@@ -27,6 +28,7 @@ contract HookitSwapRouter is IUnlockCallback {
     error NativeNotAccepted();
     error ZeroAmount();
     error QuoteMismatch();
+    error UnauthorizedBridgeHook();
 
     struct SwapCall {
         address payer;
@@ -95,7 +97,7 @@ contract HookitSwapRouter is IUnlockCallback {
         if (leftover > 0) CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, leftover);
     }
 
-    /// @notice Pay with `bridgeKey` (hooks must be zero), receive launch token from `hookKey` in one tx.
+    /// @notice Pay with `bridgeKey` (zero-hook or Quotrons), receive launch token from `hookKey` in one tx.
     /// @dev `quoteCurrency` must match the quote side of `hookKey` and the output of the bridge leg.
     function swapExactInComposite(
         PoolKey calldata bridgeKey,
@@ -109,7 +111,7 @@ contract HookitSwapRouter is IUnlockCallback {
         uint160 hookSqrtLimit
     ) external payable returns (uint256 amountOut) {
         if (amountIn == 0) revert ZeroAmount();
-        if (address(bridgeKey.hooks) != address(0)) revert QuoteMismatch();
+        if (!QuotronBridge.isAllowedBridgeHook(address(bridgeKey.hooks))) revert UnauthorizedBridgeHook();
 
         Currency bridgeIn = bridgeZeroForOne ? bridgeKey.currency0 : bridgeKey.currency1;
         if (bridgeIn.isAddressZero()) {
@@ -163,18 +165,8 @@ contract HookitSwapRouter is IUnlockCallback {
         int256 d0 = poolManager.currencyDelta(address(this), call.key.currency0);
         int256 d1 = poolManager.currencyDelta(address(this), call.key.currency1);
 
-        if (d0 < 0) {
-            call.key.currency0.settle(poolManager, call.payer, uint256(-d0), false);
-        }
-        if (d1 < 0) {
-            call.key.currency1.settle(poolManager, call.payer, uint256(-d1), false);
-        }
-        if (d0 > 0) {
-            call.key.currency0.take(poolManager, call.recipient, uint256(d0), false);
-        }
-        if (d1 > 0) {
-            call.key.currency1.take(poolManager, call.recipient, uint256(d1), false);
-        }
+        _settleCurrencyDelta(call.key.currency0, call.payer, call.recipient);
+        _settleCurrencyDelta(call.key.currency1, call.payer, call.recipient);
 
         uint256 amountOut = call.params.zeroForOne
             ? (d1 > 0 ? uint256(d1) : 0)
@@ -241,6 +233,23 @@ contract HookitSwapRouter is IUnlockCallback {
         if (amountOut < call.minAmountOut) revert InsufficientOutput();
 
         return abi.encode(amountOut);
+    }
+
+    /// @dev Settle router deltas; buffer rebasing ERC-20 quotes and refund surpluses.
+    function _settleCurrencyDelta(Currency currency, address payer, address recipient) internal {
+        int256 delta = poolManager.currencyDelta(address(this), currency);
+        if (delta < 0) {
+            uint256 owe = uint256(-delta);
+            if (currency.isAddressZero()) {
+                currency.settle(poolManager, payer, owe, false);
+            } else {
+                currency.settleWithBuffer(poolManager, payer, owe);
+            }
+        }
+        delta = poolManager.currencyDelta(address(this), currency);
+        if (delta > 0) {
+            currency.take(poolManager, recipient, uint256(delta), false);
+        }
     }
 
     function _assertQuoteCurrency(PoolKey memory hookKey, Currency quoteCurrency) internal pure {

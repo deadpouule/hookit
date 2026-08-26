@@ -246,18 +246,27 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
-        (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(id);
+        (uint160 sqrtPriceX96,, uint128 liquidity,) = poolManager.getSlot0(id);
 
         bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
 
-        // Floor intercept: sell that would print below P_floor is filled from the vault.
-        if (
-            !isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
-                && FixedPointMath.spotAtOrBelowFloor(
-                    sqrtPriceX96, tokenIs0, vault.reserve(st.token), IERC20Supply(st.token).totalSupply()
+        // Floor intercept: sell that is already at/below floor OR would cross the floor in this swap.
+        if (!isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
+            uint256 tokenAmt = exactInput
+                ? specifiedAbs
+                : FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, tokenIs0);
+            if (
+                FixedPointMath.sellWouldBreachFloor(
+                    sqrtPriceX96,
+                    liquidity,
+                    tokenIs0,
+                    vault.reserve(st.token),
+                    IERC20Supply(st.token).totalSupply(),
+                    tokenAmt
                 )
-        ) {
-            return _floorFill(key, st, params, exactInput, specifiedAbs);
+            ) {
+                return _floorFill(key, st, params, exactInput, specifiedAbs);
+            }
         }
 
         uint256 quoteNotional = _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
@@ -407,16 +416,22 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 buybackAmt;
         uint256 creatorEscrowAmt = creatorTaxAmount + creatorShare;
-        if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED) && creatorEscrowAmt > 0) {
+
+        // HKIT (protocol native token): creator tax + 70% share → buyback pot (not FeeEscrow).
+        if (st.token == distributor.nativeToken() && distributor.nativeToken() != address(0)) {
+            buybackAmt = creatorEscrowAmt;
+            _pushQuote(st.quote, address(distributor), buybackAmt);
+            if (buybackAmt > 0) distributor.notifyBuybackInternal(st.quote, buybackAmt);
+            creatorEscrowAmt = 0;
+        } else if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED) && creatorEscrowAmt > 0) {
             buybackAmt = creatorEscrowAmt;
             creatorEscrowAmt = 0;
+            _pushQuote(st.quote, address(buybacks), buybackAmt);
+            if (buybackAmt > 0) buybacks.creditInternal(st.creator, st.quote, buybackAmt);
+        } else {
+            _pushQuote(st.quote, address(escrow), creatorEscrowAmt);
+            if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);
         }
-
-        _pushQuote(st.quote, address(escrow), creatorEscrowAmt);
-        if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);
-
-        _pushQuote(st.quote, address(buybacks), buybackAmt);
-        if (buybackAmt > 0) buybacks.creditInternal(st.creator, st.quote, buybackAmt);
 
         _pushQuote(st.quote, address(distributor), protocolShare);
         if (protocolShare > 0) distributor.notifyInternal(st.quote, protocolShare);
@@ -443,8 +458,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 dir = isBuy ? 1 : 2;
         uint256 packedBlock = lastSwapPacked[id][origin];
         uint256 lastBlock = packedBlock >> 8;
-        uint256 lastDir = packedBlock & 0xFF;
-        if (lastBlock == block.number && lastDir != 0 && lastDir != dir) revert SandwichBlocked();
+        // One swap per origin per pool per block — blocks classic same-block sandwich legs.
+        if (lastBlock == block.number) revert SandwichBlocked();
         lastSwapPacked[id][origin] = (block.number << 8) | dir;
     }
 

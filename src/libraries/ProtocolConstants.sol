@@ -14,12 +14,21 @@ library ProtocolConstants {
     uint16 internal constant CREATOR_SHARE_BPS = 7_000;
     uint16 internal constant PROTOCOL_SHARE_BPS = 3_000;
 
-    /// @dev Protocol flywheel: 20% ops / 80% native-token floor.
+    /// @dev Protocol flywheel: 20% ops / 80% HKIT buyback (or legacy floor mode).
     uint16 internal constant OPS_SHARE_BPS = 2_000;
     uint16 internal constant FLYWHEEL_SHARE_BPS = 8_000;
 
-    uint16 internal constant MAX_CREATOR_TAX_BPS = 1_000; // 10%
+    /// @dev Steady swap fee hard cap: `BASE_FEE_BPS + creatorTaxBps` ≤ 10% (both rails).
+    uint16 internal constant MAX_TOTAL_FEE_BPS = 1_000;
+    /// @dev Max creator tax so base (1%) + tax ≤ 10%.
+    uint16 internal constant MAX_CREATOR_TAX_BPS = 900;
     uint16 internal constant MAX_SNIPE_TAX_BPS = 9_900;
+
+    /// @dev Classic bonding graduation target: 4.2 ETH (or USD-equivalent in quote decimals).
+    uint256 internal constant GRADUATION_ETH_WEI = 4.2 ether;
+
+    /// @dev Max Chainlink age for launch FDV / bonding graduation pricing.
+    uint256 internal constant ORACLE_MAX_AGE = 1 hours;
     uint16 internal constant MAX_TX_BPS = 10_000;
     uint16 internal constant MAX_WALLET_BPS = 10_000;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
@@ -41,4 +50,10 @@ library ProtocolConstants {
 
     /// @dev Canonical launch supply (1 billion tokens, 18 decimals).
     uint256 internal constant DEFAULT_LAUNCH_SUPPLY = 1_000_000_000e18;
+
+    /// @dev Default anti-snipe window for HKIT fair launch.
+    uint16 internal constant HKIT_ANTI_SNIPE_DURATION_SECONDS = 3600;
+    /// @dev LP donate share of the quote-fee pool for HKIT.
+    uint16 internal constant HKIT_LP_DONATE_BPS = 1_000; // 10%
 }
+

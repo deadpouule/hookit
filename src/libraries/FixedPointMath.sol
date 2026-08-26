@@ -55,6 +55,11 @@ library FixedPointMath {
         return FullMath.mulDiv(floorReserve, 1e18, circulatingSupply);
     }
 
+    /// @dev `sqrtPriceX96 ** 2` via 512-bit math — raw multiply overflows at high ticks.
+    function _priceX192(uint160 sqrtPriceX96) private pure returns (uint256) {
+        return FullMath.mulDiv(uint256(sqrtPriceX96), uint256(sqrtPriceX96), 1);
+    }
+
     /// @notice Quote value of `tokenAmount` at the current pool sqrt price.
     /// @param tokenIsCurrency0 True when the launched token is `currency0`.
     function quoteFromToken(uint256 tokenAmount, uint160 sqrtPriceX96, bool tokenIsCurrency0)
@@ -63,12 +68,13 @@ library FixedPointMath {
         returns (uint256)
     {
         if (tokenAmount == 0 || sqrtPriceX96 == 0) return 0;
-        uint256 priceX192 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
         if (tokenIsCurrency0) {
             // quote (currency1) per token (currency0) = sqrtP^2 / 2^192
-            return FullMath.mulDiv(tokenAmount, priceX192, Q192);
+            uint256 step = FullMath.mulDiv(tokenAmount, uint256(sqrtPriceX96), FixedPoint96.Q96);
+            return FullMath.mulDiv(step, uint256(sqrtPriceX96), FixedPoint96.Q96);
         }
         // quote (currency0) per token (currency1) = 2^192 / sqrtP^2
+        uint256 priceX192 = _priceX192(sqrtPriceX96);
         return FullMath.mulDiv(tokenAmount, Q192, priceX192);
     }
 
@@ -79,11 +85,83 @@ library FixedPointMath {
         returns (uint256)
     {
         if (quoteAmount == 0 || sqrtPriceX96 == 0) return 0;
-        uint256 priceX192 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
         if (tokenIsCurrency0) {
+            uint256 priceX192 = _priceX192(sqrtPriceX96);
             return FullMath.mulDiv(quoteAmount, Q192, priceX192);
         }
-        return FullMath.mulDiv(quoteAmount, priceX192, Q192);
+        uint256 step = FullMath.mulDiv(quoteAmount, uint256(sqrtPriceX96), FixedPoint96.Q96);
+        return FullMath.mulDiv(step, uint256(sqrtPriceX96), FixedPoint96.Q96);
+    }
+
+    /// @notice True when spot is at/below floor, or a sell of `tokenAmount` would push spot through the floor.
+    /// @dev Uses current pool liquidity to estimate tokens needed to reach the floor sqrt price.
+    function sellWouldBreachFloor(
+        uint160 sqrtPriceX96,
+        uint128 liquidity,
+        bool tokenIsCurrency0,
+        uint256 floorReserve,
+        uint256 supply,
+        uint256 tokenAmount
+    ) internal pure returns (bool) {
+        if (spotAtOrBelowFloor(sqrtPriceX96, tokenIsCurrency0, floorReserve, supply)) return true;
+        if (supply == 0 || floorReserve == 0 || tokenAmount == 0 || liquidity == 0 || sqrtPriceX96 == 0) {
+            return false;
+        }
+        uint160 sqrtFloor = _sqrtPriceAtFloor(floorReserve, supply, tokenIsCurrency0);
+        if (sqrtFloor == 0) return false;
+
+        // Selling token moves price toward the floor (token cheaper in quote).
+        if (tokenIsCurrency0) {
+            // token0 sell = zeroForOne → price down. Floor is below spot when spot > floor.
+            if (sqrtPriceX96 <= sqrtFloor) return true;
+            uint256 tokensToFloor = _amount0Delta(sqrtFloor, sqrtPriceX96, liquidity);
+            return tokenAmount >= tokensToFloor;
+        } else {
+            // token1 sell = oneForZero → price up. Floor (quote/token) below spot means higher sqrt when token is c1.
+            // spot quote/token = 2^192/priceX192; floor below spot ⇒ sqrtPrice above floorSqrt for token=c1.
+            if (sqrtPriceX96 >= sqrtFloor) return true;
+            uint256 tokensToFloor = _amount1Delta(sqrtPriceX96, sqrtFloor, liquidity);
+            return tokenAmount >= tokensToFloor;
+        }
+    }
+
+    function _sqrtPriceAtFloor(uint256 floorReserve, uint256 supply, bool tokenIsCurrency0)
+        private
+        pure
+        returns (uint160)
+    {
+        // floor price as currency1/currency0 ratio → encode sqrt.
+        // token=c0: quote=c1, price = quote/token = reserve/supply
+        // token=c1: quote=c0, price = token/quote = supply/reserve → invert
+        if (tokenIsCurrency0) {
+            if (supply == 0) return 0;
+            uint256 ratioX192 = FullMath.mulDiv(floorReserve, Q192, supply);
+            return uint160(_sqrt(ratioX192));
+        } else {
+            if (floorReserve == 0) return 0;
+            uint256 ratioX192 = FullMath.mulDiv(supply, Q192, floorReserve);
+            return uint160(_sqrt(ratioX192));
+        }
+    }
+
+    function _amount0Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) private pure returns (uint256) {
+        if (sqrtA > sqrtB) (sqrtA, sqrtB) = (sqrtB, sqrtA);
+        return FullMath.mulDiv(uint256(liquidity) << 96, sqrtB - sqrtA, uint256(sqrtB) * uint256(sqrtA));
+    }
+
+    function _amount1Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) private pure returns (uint256) {
+        if (sqrtA > sqrtB) (sqrtA, sqrtB) = (sqrtB, sqrtA);
+        return FullMath.mulDiv(liquidity, sqrtB - sqrtA, FixedPoint96.Q96);
+    }
+
+    function _sqrt(uint256 x) private pure returns (uint256 y) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
     }
 
     /// @notice True when spot quote-per-token is at or below the backed floor.
@@ -93,14 +171,15 @@ library FixedPointMath {
         returns (bool)
     {
         if (supply == 0 || floorReserve == 0 || sqrtPriceX96 == 0) return false;
-        uint256 priceX192 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
         if (tokenIsCurrency0) {
             // spot = priceX192 / 2^192 ; floor = reserve / supply
             // spot <= floor  <=>  priceX192 * supply <= 2^192 * reserve
-            return FullMath.mulDiv(priceX192, supply, Q192) <= floorReserve;
+            uint256 step = FullMath.mulDiv(supply, uint256(sqrtPriceX96), FixedPoint96.Q96);
+            return FullMath.mulDiv(step, uint256(sqrtPriceX96), FixedPoint96.Q96) <= floorReserve;
         }
         // spot = 2^192 / priceX192 ; floor = reserve / supply
         // spot <= floor  <=>  2^192 * supply <= priceX192 * reserve
+        uint256 priceX192 = _priceX192(sqrtPriceX96);
         return FullMath.mulDiv(Q192, supply, priceX192) <= floorReserve;
     }
 
@@ -181,11 +260,15 @@ library FixedPointMath {
         int24 lo = TickMath.minUsableTick(tickSpacing);
         int24 hi = TickMath.maxUsableTick(tickSpacing);
 
+        // Lowest tick where spot FDV meets target — price sits just below `tickLower`.
         while (lo < hi) {
-            int24 mid = int24(int256(lo) + (int256(hi) - int256(lo) + 1) / 2);
+            int24 mid = int24(int256(lo) + (int256(hi) - int256(lo)) / 2);
             uint256 mcapAt = quoteFromToken(totalSupply, TickMath.getSqrtPriceAtTick(mid), true);
-            if (mcapAt >= mcapQuoteWei) lo = mid;
-            else hi = mid - 1;
+            if (mcapAt >= mcapQuoteWei) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
         }
 
         return alignTickUp(lo, tickSpacing);

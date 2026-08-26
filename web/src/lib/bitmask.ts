@@ -17,7 +17,8 @@ const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
 const SHIFT_LP_DONATE_BPS = BigInt(129);
 
-const MAX_CREATOR_TAX_BPS = BigInt(1000);
+const MAX_CREATOR_TAX_BPS = BigInt(900);
+const MAX_TOTAL_FEE_BPS = BigInt(1000);
 const MAX_SNIPE_TAX_BPS = BigInt(9900);
 
 /** Packs UI module config into the on-chain uint256 bitmask (matches BitmaskConfig.sol). */
@@ -26,7 +27,10 @@ export function packLaunchBitmask(
   creatorTaxBps: number,
 ): bigint {
   if (creatorTaxBps > Number(MAX_CREATOR_TAX_BPS)) {
-    throw new Error("Creator tax exceeds protocol maximum (10%)");
+    throw new Error("Creator tax exceeds protocol maximum (9%, so base+tax ≤ 10%)");
+  }
+  if (100 + creatorTaxBps > Number(MAX_TOTAL_FEE_BPS)) {
+    throw new Error("Base fee + creator tax cannot exceed 10%");
   }
 
   const initialSnipeTaxBps = BigInt(Math.min(modules.antiSnipeInitialTax * 100, 9900));

@@ -3,8 +3,10 @@
 import { Loader2 } from "lucide-react";
 
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { getNetworkLabel } from "@/lib/chains";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
+import { feeRoutePct, buyOverheadBps } from "@/lib/hook-builder";
 import { accentForTag } from "@/lib/hook-modules";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,10 @@ export function LaunchSummary({
 }: Props) {
   const hookAnalysis =
     form.hookMode === "custom" ? analyzeCustomHookSource(form.customHookSource) : null;
+  const routed = feeRoutePct(form.modules);
+  const routeOk = form.hookMode !== "master" || routed <= 100;
+  const openOk =
+    form.hookMode !== "master" || buyOverheadBps(form.modules, form.creatorTaxBps).atOpen <= 10_000;
 
   const canLaunch =
     !!form.name &&
@@ -42,6 +48,8 @@ export function LaunchSummary({
     walletReady &&
     factoryConfigured &&
     !isPending &&
+    routeOk &&
+    openOk &&
     (form.hookMode !== "custom" || (hookAnalysis?.valid ?? false));
 
   const ctaLabel = !walletReady
@@ -67,11 +75,17 @@ export function LaunchSummary({
       </div>
 
       <dl className="space-y-2 text-sm">
-        <Row label="FDV" value={`$${TARGET_LAUNCH_MCAP_USD.toLocaleString()}`} mono />
+        <Row label="FDV" value={`$${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")}`} mono />
         <Row label="Supply" value="1,000,000,000" mono />
         <Row label="Hook" value={form.hookMode === "custom" ? "Custom" : "Master"} />
         <Row label="Quote" value={form.quoteAsset} />
         <Row label="Venue" value="Hookit" />
+        {form.hookMode === "master" && routed > 0 ? (
+          <Row
+            label="Fee route"
+            value={routeOk ? `${routed}% of quote fees` : `${routed}% — over 100%`}
+          />
+        ) : null}
         <div className="border-t border-white/[0.05] pt-2">
           <Row label="Fee" value={`${launchFeeEth} ETH`} mono />
         </div>
@@ -123,7 +137,7 @@ export function LaunchSummary({
 
       {!walletReady ? (
         <div className="space-y-2">
-          <p className="text-xs text-zinc-600">Wallet required on Base Sepolia.</p>
+          <p className="text-xs text-zinc-600">Wallet required on {getNetworkLabel()}.</p>
           <ConnectButton className="w-full justify-center !py-2.5" />
         </div>
       ) : (
@@ -136,6 +150,19 @@ export function LaunchSummary({
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {ctaLabel}
         </button>
+      )}
+
+      {!openOk && (
+        <p className="text-xs leading-relaxed text-red-300/90">
+          Anti-snipe + base fee + creator tax cannot exceed 100% at open.
+        </p>
+      )}
+
+      {!routeOk && (
+        <p className="text-xs leading-relaxed text-red-300/90">
+          Floor + Auto Burn + LP Donate cannot exceed 100% of quote fees. Lower a slider in
+          the circuit.
+        </p>
       )}
 
       {!factoryConfigured && (

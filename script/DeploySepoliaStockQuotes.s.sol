@@ -6,7 +6,7 @@ import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {MockQuoteToken} from "../test/mocks/MockQuoteToken.sol";
 
 /// @notice Deploys mock xStock-style quotes on Base Sepolia and registers them on the factory.
-/// @dev Real xStocks live on Ink mainnet (`XStockQuotes`). Sepolia uses `MockQuoteToken` stand-ins.
+/// @dev Real stock quotes on Ink are Quotrons wrapped equities (`QuotronStockQuotes`). Sepolia uses `MockQuoteToken` stand-ins.
 contract DeploySepoliaStockQuotesScript is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");

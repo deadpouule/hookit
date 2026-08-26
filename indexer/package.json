@@ -1,0 +1,21 @@
+{
+  "name": "@hookit/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts serve",
+    "serve": "tsx src/main.ts serve",
+    "poll": "tsx src/main.ts poll",
+    "tick": "tsx src/main.ts tick",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.55.19"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.20.5",
+    "typescript": "^5"
+  }
+}

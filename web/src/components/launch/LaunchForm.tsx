@@ -1,17 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus, Loader2, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
-import { AccentSlider } from "@/components/launch/AccentSlider";
-import { HookModuleCard } from "@/components/launch/HookModuleCard";
+import { HookBuilder } from "@/components/builder/HookBuilder";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import {
-  FeeBreakdown,
   FormDivider,
   FormPanel,
   SectionLabel,
@@ -23,13 +21,11 @@ import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
-  MAX_CREATOR_TAX_BPS,
   TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
-import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
-import { estimateFloorPrice, formatBps } from "@/lib/format";
-import { HOOK_MODULE_ACCENTS } from "@/lib/hook-modules";
-import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
+import { getBlockExplorerUrl, getNetworkLabel, getNetworkSubtitle } from "@/lib/chains";
+import { loadBuilderDraft } from "@/lib/hook-builder";
+import type { HookMode, LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function LaunchForm() {
@@ -57,11 +53,23 @@ export function LaunchForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  const updateModules = (patch: Partial<LaunchModules>) => {
-    setForm((prev) => ({ ...prev, modules: { ...prev.modules, ...patch } }));
-  };
+  const [circuitReady, setCircuitReady] = useState(false);
 
-  const floorEst = estimateFloorPrice(form.modules.floorAllocation, 0);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") === "builder") {
+      const draft = loadBuilderDraft();
+      if (draft) {
+        setForm((prev) => ({
+          ...prev,
+          hookMode: "master",
+          modules: draft.modules,
+          creatorTaxBps: draft.creatorTaxBps,
+        }));
+      }
+    }
+    setCircuitReady(true);
+  }, []);
 
   const activeTags = useMemo(() => {
     if (form.hookMode === "custom") return ["Custom Hook", "Auto-deploy"];
@@ -71,8 +79,11 @@ export function LaunchForm() {
     if (form.modules.antiMev) tags.push("Anti-MEV");
     if (form.modules.maxWallet) tags.push("Max Wallet");
     if (form.modules.maxTx) tags.push("Max TX");
+    if (form.modules.autoBurn) tags.push("Auto Burn");
+    if (form.modules.lpDonate) tags.push("LP Donate");
+    if (form.creatorTaxBps > 0) tags.push("Creator Tax");
     return tags;
-  }, [form.hookMode, form.modules]);
+  }, [form.hookMode, form.modules, form.creatorTaxBps]);
 
   const handleLaunch = async () => {
     setError(null);
@@ -110,17 +121,20 @@ export function LaunchForm() {
       </Link>
 
       <div className="mb-10">
-        <p className="text-xs text-zinc-600">Hookit-native · Base Sepolia</p>
+        <p className="text-xs text-zinc-600">{getNetworkSubtitle()}</p>
         <h1 className="ink-headline mt-1 text-3xl sm:text-4xl">
           Create <span className="text-degen">token</span>
         </h1>
         <p className="mt-3 max-w-lg text-sm text-zinc-500">
           Fixed{" "}
           <span className="font-mono text-zinc-300">
-            ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
+            ${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")}
           </span>{" "}
-          FDV · 1B supply · Uniswap v4 pool, swapped on Hookit. Custom Solidity is compiled
-          and CREATE2-mined at launch.
+          FDV · 1B supply · Uniswap v4 pool, swapped on Hookit. Compose modules in the{" "}
+          <Link href="/builder" className="text-zinc-400 underline-offset-2 hover:underline">
+            hook builder
+          </Link>
+          , or paste custom Solidity.
         </p>
       </div>
 
@@ -128,7 +142,7 @@ export function LaunchForm() {
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
           <p className="font-medium">LaunchFactory not configured</p>
           <p className="mt-1 text-amber-200/80">
-            Deploy contracts to Base Sepolia, then set{" "}
+            Deploy contracts to {getNetworkLabel()}, then set{" "}
             <code className="rounded bg-black/30 px-1 font-mono text-xs">
               NEXT_PUBLIC_LAUNCH_FACTORY
             </code>{" "}
@@ -139,14 +153,14 @@ export function LaunchForm() {
 
       {result && (
         <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
-          <p className="font-medium">Token launched on Base Sepolia</p>
+          <p className="font-medium">Token launched on {getNetworkLabel()}</p>
           <dl className="mt-3 space-y-2 font-mono text-xs">
             {result.customHookAddress && (
               <div className="flex flex-wrap items-center gap-2">
                 <dt className="text-emerald-200/70">Hook</dt>
                 <dd>{result.customHookAddress}</dd>
                 <a
-                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.customHookAddress}#code`}
+                  href={`${getBlockExplorerUrl()}/address/${result.customHookAddress}#code`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -159,7 +173,7 @@ export function LaunchForm() {
               <dt className="text-emerald-200/70">Token</dt>
               <dd>{result.token}</dd>
               <a
-                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}#code`}
+                  href={`${getBlockExplorerUrl()}/address/${result.token}#code`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -171,7 +185,7 @@ export function LaunchForm() {
               <dt className="text-emerald-200/70">Tx</dt>
               <dd className="truncate">{result.txHash}</dd>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/tx/${result.txHash}`}
+                href={`${getBlockExplorerUrl()}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -195,7 +209,7 @@ export function LaunchForm() {
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
                   <span className="text-emerald-100">Source verified</span>
                   <a
-                    href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}#code`}
+                    href={`${getBlockExplorerUrl()}/address/${result.token}#code`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -365,7 +379,7 @@ export function LaunchForm() {
             />
           </div>
           <p className="mt-2 text-xs text-zinc-600">
-            Pair against native ETH or Base Sepolia USDC. Hook fees are taken in the quote.
+            Pair against native ETH or {getNetworkLabel()} USDC. Hook fees are taken in the quote.
           </p>
 
           <FormDivider />
@@ -398,214 +412,28 @@ export function LaunchForm() {
             </div>
           ) : (
             <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-              Toggle modules below. Fees are collected in ETH, not your token.
+              Compose live modules in the circuit. Fees stay in the quote asset.{" "}
+              <Link href="/builder" className="text-zinc-400 underline-offset-2 hover:underline">
+                Open full builder
+              </Link>
             </p>
           )}
 
-          {form.hookMode === "master" && (
+          {form.hookMode === "master" && circuitReady && (
             <>
               <FormDivider />
-
-              <SectionLabel>Pool modules</SectionLabel>
-              <div className="mt-3 space-y-2.5">
-                <HookModuleCard
-                  accent={HOOK_MODULE_ACCENTS.antiSnipe}
-                  label="Anti-snipe"
-                  description="Decay tax on buys at launch"
-                  enabled={form.modules.antiSnipe}
-                  onToggle={(v) => updateModules({ antiSnipe: v })}
-                >
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                        <span>Duration</span>
-                        <span
-                          className="font-mono"
-                          style={{ color: HOOK_MODULE_ACCENTS.antiSnipe.color }}
-                        >
-                          {form.modules.antiSnipeDuration}s
-                        </span>
-                      </div>
-                      <AccentSlider
-                        accentColor={HOOK_MODULE_ACCENTS.antiSnipe.color}
-                        value={[form.modules.antiSnipeDuration]}
-                        onValueChange={([v]) => updateModules({ antiSnipeDuration: v })}
-                        min={1}
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                        <span>Initial tax</span>
-                        <span
-                          className="font-mono"
-                          style={{ color: HOOK_MODULE_ACCENTS.antiSnipe.color }}
-                        >
-                          {form.modules.antiSnipeInitialTax}%
-                        </span>
-                      </div>
-                      <AccentSlider
-                        accentColor={HOOK_MODULE_ACCENTS.antiSnipe.color}
-                        value={[form.modules.antiSnipeInitialTax]}
-                        onValueChange={([v]) => updateModules({ antiSnipeInitialTax: v })}
-                        min={50}
-                        max={99}
-                        step={1}
-                      />
-                    </div>
-                  </div>
-                </HookModuleCard>
-
-                <HookModuleCard
-                  accent={HOOK_MODULE_ACCENTS.backedFloor}
-                  label="Backed floor"
-                  description="Swap fees collateralize a ratchet floor"
-                  enabled={form.modules.backedFloor}
-                  onToggle={(v) => updateModules({ backedFloor: v })}
-                >
-                  <div>
-                    <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                      <span>Fee to floor</span>
-                      <span
-                        className="font-mono"
-                        style={{ color: HOOK_MODULE_ACCENTS.backedFloor.color }}
-                      >
-                        {form.modules.floorAllocation}%
-                      </span>
-                    </div>
-                    <AccentSlider
-                      accentColor={HOOK_MODULE_ACCENTS.backedFloor.color}
-                      value={[form.modules.floorAllocation]}
-                      onValueChange={([v]) => updateModules({ floorAllocation: v })}
-                      min={0}
-                      max={50}
-                      step={1}
-                    />
-                    {floorEst > 0 && (
-                      <p
-                        className="mt-2 font-mono text-xs"
-                        style={{ color: `${HOOK_MODULE_ACCENTS.backedFloor.color}cc` }}
-                      >
-                        Est. floor ≈ {floorEst.toFixed(6)} ETH / token
-                      </p>
-                    )}
-                  </div>
-                </HookModuleCard>
-
-                <HookModuleCard
-                  accent={HOOK_MODULE_ACCENTS.antiMev}
-                  label="Anti-MEV"
-                  description="Cooldown on same-block opposing swaps"
-                  enabled={form.modules.antiMev}
-                  onToggle={(v) => updateModules({ antiMev: v })}
+              <SectionLabel>Hook circuit</SectionLabel>
+              <p className="mt-1 text-xs text-zinc-600">
+                1% base quote fee always. Extra rules pack into the MasterLaunchHook bitmask.
+              </p>
+              <div className="mt-4">
+                <HookBuilder
+                  modules={form.modules}
+                  creatorTaxBps={form.creatorTaxBps}
+                  onChange={({ modules, creatorTaxBps }) =>
+                    setForm((p) => ({ ...p, modules, creatorTaxBps }))
+                  }
                 />
-
-                <HookModuleCard
-                  accent={HOOK_MODULE_ACCENTS.maxWallet}
-                  label="Max wallet"
-                  description="Per-wallet holding cap"
-                  enabled={form.modules.maxWallet}
-                  onToggle={(v) => updateModules({ maxWallet: v })}
-                >
-                  <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                    <span>Cap</span>
-                    <span
-                      className="font-mono"
-                      style={{ color: HOOK_MODULE_ACCENTS.maxWallet.color }}
-                    >
-                      {(form.modules.maxWalletBps / 100).toFixed(1)}% supply
-                    </span>
-                  </div>
-                  <AccentSlider
-                    accentColor={HOOK_MODULE_ACCENTS.maxWallet.color}
-                    value={[form.modules.maxWalletBps / 100]}
-                    onValueChange={([v]) => updateModules({ maxWalletBps: Math.round(v * 100) })}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                  />
-                </HookModuleCard>
-
-                <HookModuleCard
-                  accent={HOOK_MODULE_ACCENTS.maxTx}
-                  label="Max transaction"
-                  description="Per-swap size cap"
-                  enabled={form.modules.maxTx}
-                  onToggle={(v) => updateModules({ maxTx: v })}
-                >
-                  <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                    <span>Cap</span>
-                    <span
-                      className="font-mono"
-                      style={{ color: HOOK_MODULE_ACCENTS.maxTx.color }}
-                    >
-                      {(form.modules.maxTxBps / 100).toFixed(1)}% supply
-                    </span>
-                  </div>
-                  <AccentSlider
-                    accentColor={HOOK_MODULE_ACCENTS.maxTx.color}
-                    value={[form.modules.maxTxBps / 100]}
-                    onValueChange={([v]) => updateModules({ maxTxBps: Math.round(v * 100) })}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                  />
-                </HookModuleCard>
-              </div>
-
-              <FormDivider />
-
-              <SectionLabel>Fees</SectionLabel>
-              <p className="mt-1 text-xs text-zinc-600">Quote asset only.</p>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div
-                  className={cn(
-                    "rounded-xl border p-4",
-                    HOOK_MODULE_ACCENTS.swapFee.border,
-                    HOOK_MODULE_ACCENTS.swapFee.bg,
-                  )}
-                  style={{ boxShadow: `0 0 28px -12px ${HOOK_MODULE_ACCENTS.swapFee.glow}` }}
-                >
-                  <Label className="mb-1.5 flex items-center gap-2 text-xs text-zinc-400">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ background: HOOK_MODULE_ACCENTS.swapFee.color }}
-                    />
-                    Base swap fee
-                  </Label>
-                  <div className="font-mono text-lg text-white">1.00%</div>
-                  <FeeBreakdown creator="0.70%" protocol="0.30%" />
-                </div>
-                <div
-                  className={cn(
-                    "rounded-xl border p-4",
-                    HOOK_MODULE_ACCENTS.creatorTax.border,
-                    HOOK_MODULE_ACCENTS.creatorTax.bg,
-                  )}
-                  style={{ boxShadow: `0 0 28px -12px ${HOOK_MODULE_ACCENTS.creatorTax.glow}` }}
-                >
-                  <Label className="mb-1.5 flex items-center gap-2 text-xs text-zinc-400">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ background: HOOK_MODULE_ACCENTS.creatorTax.color }}
-                    />
-                    Creator tax
-                  </Label>
-                  <div className="font-mono text-lg text-white">{formatBps(form.creatorTaxBps)}</div>
-                  <div className="mt-3">
-                    <AccentSlider
-                      accentColor={HOOK_MODULE_ACCENTS.creatorTax.color}
-                      value={[form.creatorTaxBps]}
-                      onValueChange={([v]) => setForm((p) => ({ ...p, creatorTaxBps: v }))}
-                      min={0}
-                      max={MAX_CREATOR_TAX_BPS}
-                      step={10}
-                    />
-                  </div>
-                  <FeeBreakdown creator="100%" protocol="0%" />
-                </div>
               </div>
             </>
           )}

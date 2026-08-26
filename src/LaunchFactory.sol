@@ -20,6 +20,7 @@ import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
+import {QuotronBridge} from "./libraries/QuotronBridge.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 
 interface IAggregatorV3 {
@@ -59,7 +60,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         address usdFeed;
     }
 
-    /// @notice ERC-20 quotes (USDG, xStocks, …). Native ETH is always allowed.
+    /// @notice ERC-20 quotes (USDG, Quotrons wStocks, …). Native ETH is always allowed.
     mapping(address => QuoteConfig) public quoteConfigs;
 
     struct LaunchParams {
@@ -93,10 +94,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
     mapping(uint256 => int24) public launchTickSpacing;
     mapping(uint256 => uint24) public launchFeeFlag;
 
+    /// @notice When true, only hooks in `allowedCustomHooks` may be used (Master always allowed).
+    bool public customHookAllowlistEnabled;
+    mapping(address => bool) public allowedCustomHooks;
+
     event LaunchFeeSet(uint256 fee);
     event TreasurySet(address indexed treasury);
     event EthUsdPriceSet(uint256 ethUsdPriceX18);
     event QuoteSet(address indexed token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed);
+    event CustomHookAllowlistEnabled(bool enabled);
+    event CustomHookAllowed(address indexed hook, bool allowed);
     event LaunchConfigured(
         uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee
     );
@@ -122,6 +129,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error UnknownLaunch();
     error InvalidFeed();
     error StalePrice();
+    error CustomHookNotAllowed();
 
     constructor(IPoolManager _poolManager, MasterLaunchHook _masterHook, address owner_, address treasury_)
         Owned(owner_)
@@ -143,6 +151,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
         emit TreasurySet(treasury_);
     }
 
+    function setCustomHookAllowlistEnabled(bool enabled) external onlyOwner {
+        customHookAllowlistEnabled = enabled;
+        emit CustomHookAllowlistEnabled(enabled);
+    }
+
+    function setCustomHookAllowed(address hook, bool allowed) external onlyOwner {
+        allowedCustomHooks[hook] = allowed;
+        emit CustomHookAllowed(hook, allowed);
+    }
+
     function setEthUsdPrice(uint256 ethUsdPriceX18_) external onlyOwner {
         if (ethUsdPriceX18_ == 0) revert InvalidQuote();
         ethUsdPriceX18 = ethUsdPriceX18_;
@@ -153,7 +171,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         ethUsdFeed = feed;
     }
 
-    /// @notice Allow or revoke an ERC-20 quote (USDG, xStocks, …). Native ETH cannot be set here.
+    /// @notice Allow or revoke an ERC-20 quote (USDG, Quotrons wStocks, …). Native ETH cannot be set here.
     function setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed)
         external
         onlyOwner
@@ -171,10 +189,18 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return _mcapQuote(Currency.wrap(token));
     }
 
+    /// @notice USD price (1e18) used for quote sizing — live Quotrons sqrtPrice for wStocks when available.
+    function quoteUsdPriceX18(address token) public view returns (uint256) {
+        if (token == address(0)) return ethUsdPriceX18;
+        QuoteConfig memory q = quoteConfigs[token];
+        if (!q.allowed) revert InvalidQuote();
+        return _quoteUsdX18(token, q);
+    }
+
     /// @notice Pull ETH/USD from Chainlink into `ethUsdPriceX18` (8-decimal feeds scaled to 18).
     function syncEthUsdPrice() public {
         if (ethUsdFeed == address(0)) revert InvalidFeed();
-        ethUsdPriceX18 = _usdFromFeed(ethUsdFeed, 1 days);
+        ethUsdPriceX18 = _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE);
         emit EthUsdPriceSet(ethUsdPriceX18);
     }
 
@@ -188,15 +214,29 @@ contract LaunchFactory is Owned, IUnlockCallback {
         if (token == address(0)) return launchMcapQuoteWei();
         QuoteConfig memory q = quoteConfigs[token];
         if (!q.allowed) revert InvalidQuote();
-        uint256 usd = q.usdFeed != address(0) ? _usdFromFeed(q.usdFeed, 3 days) : q.usdPriceX18;
+        uint256 usd = _quoteUsdX18(token, q);
         if (usd == 0) revert InvalidQuote();
         return FixedPointMath.mcapQuoteWei(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, usd, q.decimals);
+    }
+
+    /// @dev Quotrons wStocks: live pool sqrtPrice (USDG≈$1). Else Chainlink feed, else stored snapshot.
+    function _quoteUsdX18(address token, QuoteConfig memory q) internal view returns (uint256) {
+        if (QuotronBridge.isQuotronStock(token)) {
+            uint256 live = QuotronBridge.usdPriceX18(poolManager, token);
+            if (live != 0) return live;
+        }
+        if (q.usdFeed != address(0)) {
+            return _usdFromFeed(q.usdFeed, ProtocolConstants.ORACLE_MAX_AGE);
+        }
+        return q.usdPriceX18;
     }
 
     function _setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed) private {
         if (token == address(0)) revert InvalidQuote();
         if (allowed && (decimals == 0 || decimals > 18)) revert InvalidQuote();
-        if (allowed && usdFeed == address(0) && usdPriceX18 == 0) revert InvalidQuote();
+        // Quotrons stocks may omit snapshot — live sqrtPrice is preferred at launch time.
+        bool needsPrice = usdFeed == address(0) && usdPriceX18 == 0 && !QuotronBridge.isQuotronStock(token);
+        if (allowed && needsPrice) revert InvalidQuote();
         quoteConfigs[token] = QuoteConfig({
             allowed: allowed,
             decimals: decimals,
@@ -282,6 +322,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
         Currency currency1 = tokenIsCurrency0 ? params.quote : Currency.wrap(token);
 
         bool useCustom = address(params.customHook) != address(0) && address(params.customHook) != address(masterHook);
+        if (useCustom && customHookAllowlistEnabled && !allowedCustomHooks[address(params.customHook)]) {
+            revert CustomHookNotAllowed();
+        }
         IHooks hooks = useCustom ? params.customHook : IHooks(address(masterHook));
 
         uint256 packed = params.bitmask;

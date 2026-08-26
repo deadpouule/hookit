@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 /// @title StockQuotes
 /// @notice Legacy Coinbase B20 tokenized stocks on Base mainnet (not used for Hookit on Ink).
-/// @dev Superseded on Ink by `XStockQuotes` (Backed xStocks). Kept for reference / optional Base deploys.
+/// @dev Superseded on Ink by `QuotronStockQuotes` (wrapped Quotrons equities). Kept for reference / optional Base deploys.
 library StockQuotes {
     uint256 internal constant BASE_MAINNET = 8453;
 

@@ -155,6 +155,10 @@ library BitmaskConfig {
         if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
         if (m.lpDonateBps > ProtocolConstants.MAX_LP_DONATE_BPS) revert LpDonateTooHigh();
+        // Steady fees (base + creator tax) capped at 10% on every Master launch.
+        if (
+            uint256(ProtocolConstants.BASE_FEE_BPS) + m.creatorTaxBps > ProtocolConstants.MAX_TOTAL_FEE_BPS
+        ) revert TotalFeeTooHigh();
         uint256 routed;
         if (m.backedFloor) routed += m.floorAllocationBps;
         if (m.autoBurn) routed += m.autoBurnBps;
@@ -166,6 +170,7 @@ library BitmaskConfig {
     }
 
     error CreatorTaxTooHigh();
+    error TotalFeeTooHigh();
     error SnipeTaxTooHigh();
     error MaxTxTooHigh();
     error MaxWalletTooHigh();

@@ -1,28 +1,89 @@
 import type { Address } from "viem";
 
-/** Curated xStocks on Ink mainnet — see https://docs.xstocks.fi/docs */
-export type XStockListing = {
+/** Quotrons wrapped equities on Ink — https://quotrons.cash/integration/xstocks-manifest.json */
+export type QuotronStockListing = {
   symbol: string;
   name: string;
   address: Address;
   decimals: 18;
+  /** Underlying xStocks API symbol for USD price refresh (e.g. AAPLx for wAAPLx). */
+  priceSymbol: string;
+  quotronPoolId: `0x${string}`;
 };
 
-export const INK_XSTOCKS: XStockListing[] = [
-  { symbol: "AAPLx", name: "Apple xStock", address: "0x9d275685dC284C8eB1C79f6ABA7a63Dc75ec890a", decimals: 18 },
-  { symbol: "NVDAx", name: "NVIDIA xStock", address: "0xc845b2894dBddd03858fd2D643B4eF725fE0849d", decimals: 18 },
-  { symbol: "TSLAx", name: "Tesla xStock", address: "0x8aD3c73F833d3F9A523aB01476625F269aEB7Cf0", decimals: 18 },
-  { symbol: "MSFTx", name: "Microsoft xStock", address: "0x5621737f42dAE558b81269FcB9E9E70c19Aa6b35", decimals: 18 },
-  { symbol: "GOOGLx", name: "Alphabet xStock", address: "0xe92f673Ca36C5E2Efd2DE7628f815f84807e803F", decimals: 18 },
-  { symbol: "AMZNx", name: "Amazon xStock", address: "0x3557Ba345B01EFa20A1bdDC61F573BFD87195081", decimals: 18 },
-  { symbol: "METAx", name: "Meta xStock", address: "0x96702be57Cd9777f835117a809C7124fe4ec989A", decimals: 18 },
-  { symbol: "COINx", name: "Coinbase xStock", address: "0x364f210f430eC2448Fc68A49203040F6124096F0", decimals: 18 },
-  { symbol: "MSTRx", name: "MicroStrategy xStock", address: "0xAE2f842EF90C0d5213259Ab82639D5BBF649b08E", decimals: 18 },
-  { symbol: "SPYx", name: "SPDR S&P 500 ETF xStock", address: "0x90A2a4c76b5D8c0bc892A69EA28Aa775a8f2dD48", decimals: 18 },
-  { symbol: "QQQx", name: "Invesco QQQ ETF xStock", address: "0xa753A7395cAe905Cd615Da0B82A53E0560f250af", decimals: 18 },
+export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
+  {
+    symbol: "wAAPLx",
+    name: "Apple",
+    address: "0x943BF64D566c32A2Bcd41AC92FB63C111cC9De8f",
+    decimals: 18,
+    priceSymbol: "AAPLx",
+    quotronPoolId: "0x0ef0fe35389f4104afef27864010022976ed1b924e8837b30f308255d07d3092",
+  },
+  {
+    symbol: "wAMZNx",
+    name: "Amazon",
+    address: "0x910cabdE3EBa7Fc1Ce64fD14bD680b9f60fA0F90",
+    decimals: 18,
+    priceSymbol: "AMZNx",
+    quotronPoolId: "0xc113916ee057276dfd79b4ff4a29be5e98703e410923e4a61e95ccf459223a38",
+  },
+  {
+    symbol: "wGOOGLx",
+    name: "Alphabet",
+    address: "0xf8c5308F80E459bb53d9EbE689854d9cBb2Caa6f",
+    decimals: 18,
+    priceSymbol: "GOOGLx",
+    quotronPoolId: "0x5ec6f9fc8178f8b3a9c09b56d073a4503a5ea3f127ece3e8a8d1579c0cf9c3b2",
+  },
+  {
+    symbol: "wMSTRx",
+    name: "Strategy",
+    address: "0x30987adF0B11dc698438a99BA04ec3a1AB2c7EaB",
+    decimals: 18,
+    priceSymbol: "MSTRx",
+    quotronPoolId: "0xb7add80f794d65c978346f9e929971d2f12b4f862c89f4c14201872819a39a7d",
+  },
+  {
+    symbol: "wNFLXx",
+    name: "Netflix",
+    address: "0x7d87fD6A379714194a797c0bBB8B40c30D250856",
+    decimals: 18,
+    priceSymbol: "NFLXx",
+    quotronPoolId: "0x9f11034d6b2a7bfea38a0c39548c590e4aabd215ffa2b6bbe9bacd29e40238b6",
+  },
+  {
+    symbol: "wNVDAx",
+    name: "NVIDIA",
+    address: "0xa8ddb5Cd96b5222AFe198316E9A57CAA642850D5",
+    decimals: 18,
+    priceSymbol: "NVDAx",
+    quotronPoolId: "0xebe5d3cc94d87cf07cf06c969ca82a67760697535c57800350e210df8547cd11",
+  },
+  {
+    symbol: "wSPYx",
+    name: "S&P 500 ETF",
+    address: "0xE7E553Cd128F0011777323A0b44a7b96EA1CB540",
+    decimals: 18,
+    priceSymbol: "SPYx",
+    quotronPoolId: "0x84b421dc355c6c003fcf4f8100691eddaa0319deb894acb7e9bbf633621694a7",
+  },
+  {
+    symbol: "wTSLAx",
+    name: "Tesla",
+    address: "0xc3FdBe3A68EE5dE461D30415a8165cf9Aefe1171",
+    decimals: 18,
+    priceSymbol: "TSLAx",
+    quotronPoolId: "0x131ebb0eb148451d7225a52e94a8257b69976e780ebce1615aadf47d8e2aaf19",
+  },
 ];
 
+export const QUOTRONS_HOOK = "0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc" as Address;
+export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
+
+/** @deprecated use INK_QUOTRON_STOCKS */
+export const INK_XSTOCKS = INK_QUOTRON_STOCKS;
 
 export async function fetchXStockUsdPrice(symbol: string): Promise<number | null> {
   try {
@@ -35,4 +96,8 @@ export async function fetchXStockUsdPrice(symbol: string): Promise<number | null
   } catch {
     return null;
   }
+}
+
+export async function fetchQuotronStockUsdPrice(listing: QuotronStockListing): Promise<number | null> {
+  return fetchXStockUsdPrice(listing.priceSymbol);
 }

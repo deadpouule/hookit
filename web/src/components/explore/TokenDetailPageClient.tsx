@@ -5,6 +5,7 @@ import { use } from "react";
 
 import { TokenDetailView } from "@/components/token/TokenDetailView";
 import { useLaunchPool } from "@/hooks/useLaunches";
+import { getNetworkLabel } from "@/lib/chains";
 import { getPoolById } from "@/lib/pools";
 import { getLaunchFactoryAddress } from "@/lib/contracts/config";
 
@@ -18,7 +19,7 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
   if (isLoading && factoryConfigured) {
     return (
       <div className="page-shell py-20 text-center text-sm text-zinc-500">
-        Loading token from Base Sepolia…
+        Loading token from {getNetworkLabel()}…
       </div>
     );
   }

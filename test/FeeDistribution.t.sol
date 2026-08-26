@@ -34,6 +34,7 @@ contract FeeDistributionTest is Test {
         vault.setOperator(address(distributor), true);
         distributor.setOperator(address(this), true);
         distributor.setNativeToken(address(nativeToken), vault);
+        distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.DepositFloor);
         buybacks.setOperator(address(this), true);
 
         vm.deal(address(this), 100 ether);

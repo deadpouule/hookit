@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
-import { baseSepolia } from "wagmi/chains";
 import { Check, ChevronDown, Copy, ExternalLink, LogOut } from "lucide-react";
 
 import {
@@ -12,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BASE_SEPOLIA_CHAIN_ID, BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
+import { getActiveChain, getBlockExplorerUrl, getNetworkLabel } from "@/lib/chains";
+import { HOOKIT_CHAIN_ID } from "@/lib/contracts/config";
 import { cn } from "@/lib/utils";
 
 function truncate(addr: string) {
@@ -26,7 +26,10 @@ export function ConnectButton({ className }: { className?: string }) {
   const { switchChain, isPending: switching } = useSwitchChain();
   const [copied, setCopied] = useState(false);
 
-  const wrongNetwork = isConnected && chainId !== BASE_SEPOLIA_CHAIN_ID;
+  const targetChain = getActiveChain();
+  const explorer = getBlockExplorerUrl();
+  const explorerName = getNetworkLabel() === "Ink" ? "Ink Explorer" : "Basescan";
+  const wrongNetwork = isConnected && chainId !== HOOKIT_CHAIN_ID;
 
   const copyAddress = async () => {
     if (!address) return;
@@ -40,14 +43,14 @@ export function ConnectButton({ className }: { className?: string }) {
       return (
         <button
           type="button"
-          onClick={() => switchChain({ chainId: baseSepolia.id })}
+          onClick={() => switchChain({ chainId: targetChain.id })}
           disabled={switching}
           className={cn(
             "rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-sm text-amber-100",
             className,
           )}
         >
-          {switching ? "Switching…" : "Switch network"}
+          {switching ? "Switching…" : `Switch to ${getNetworkLabel()}`}
         </button>
       );
     }
@@ -71,13 +74,13 @@ export function ConnectButton({ className }: { className?: string }) {
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <a
-              href={`${BASE_SEPOLIA_EXPLORER}/address/${address}`}
+              href={`${explorer}/address/${address}`}
               target="_blank"
               rel="noopener noreferrer"
               className="gap-2 text-zinc-400"
             >
               <ExternalLink className="h-4 w-4" />
-              Basescan
+              {explorerName}
             </a>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-white/[0.06]" />
@@ -96,7 +99,7 @@ export function ConnectButton({ className }: { className?: string }) {
     <button
       type="button"
       disabled={!connector || isPending}
-      onClick={() => connector && connect({ connector })}
+      onClick={() => connector && connect({ connector, chainId: targetChain.id })}
       className={cn(
         "rounded-xl border border-white/[0.08] bg-black/40 px-4 py-1.5 text-sm text-zinc-300 transition hover:border-ink-purple/30 disabled:opacity-50",
         className,
@@ -109,5 +112,5 @@ export function ConnectButton({ className }: { className?: string }) {
 
 export function useWalletReady() {
   const { isConnected, chainId } = useAccount();
-  return isConnected && chainId === BASE_SEPOLIA_CHAIN_ID;
+  return isConnected && chainId === HOOKIT_CHAIN_ID;
 }

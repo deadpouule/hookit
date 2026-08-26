@@ -193,7 +193,7 @@ contract ForkCompositeSwapTest is Test {
         usdc.transfer(trader, 100e6);
         vm.startPrank(trader);
         usdc.approve(address(router), 100e6);
-        vm.expectRevert(HookitSwapRouter.QuoteMismatch.selector);
+        vm.expectRevert(HookitSwapRouter.UnauthorizedBridgeHook.selector);
         router.swapExactInComposite(
             bridgeKey,
             false,

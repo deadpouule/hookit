@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
@@ -68,6 +69,25 @@ contract QuoteAssetsTest is LaunchpadTestBase {
         MockQuoteToken usd = new MockQuoteToken("USD Coin", "USDC", 6);
         factory.setQuote(address(usd), true, 6, 1e18, address(0));
         assertEq(factory.mcapQuoteFor(address(usd)), 4_000 * 1e6);
+    }
+
+    function testSixDecimalStableLaunch() public {
+        MockQuoteToken usd = new MockQuoteToken("USD Coin", "USDC", 6);
+        factory.setQuote(address(usd), true, 6, 1e18, address(0));
+        (address token, PoolId poolId) = _launch(Currency.wrap(address(usd)), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        assertGt(uint160(token), 0);
+        assertTrue(PoolId.unwrap(poolId) != bytes32(0));
+
+        bool tokenIs0 = uint160(token) < uint160(address(usd));
+        (uint160 sqrtPriceX96,,,) = manager.getSlot0(poolId);
+        uint256 spotMcap = FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
+        assertApproxEqRel(spotMcap, factory.mcapQuoteFor(address(usd)), 0.02e18);
+    }
+
+    function testStartingTickCurrency0Path() public pure {
+        int24 tick = FixedPointMath.startingTickForMcap(1_000_000_000e18, 4_000e6, 60, false);
+        assertLt(int256(tick), int256(TickMath.maxUsableTick(60)));
+        assertGt(int256(tick), int256(TickMath.minUsableTick(60)));
     }
 
     function testDisableStockQuote() public {

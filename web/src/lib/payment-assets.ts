@@ -2,7 +2,7 @@ import { type Address, zeroAddress } from "viem";
 
 import { STABLE_QUOTE_ADDRESS, USDG_INK_ADDRESS } from "@/lib/contracts/config";
 import { resolveHookitChainKey } from "@/lib/chains";
-import { INK_XSTOCKS } from "@/lib/xstocks";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 import type { TokenPool } from "@/lib/types";
 
 export type PaymentAssetId = "ETH" | "USDC";
@@ -32,8 +32,8 @@ export function poolQuoteLabel(pool: TokenPool): string {
   if (quote === zeroAddress) return "ETH";
   if (quote.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()) return stableQuoteLabel();
   if (quote.toLowerCase() === USDG_INK_ADDRESS.toLowerCase()) return "USDG";
-  const x = INK_XSTOCKS.find((s) => s.address.toLowerCase() === quote.toLowerCase());
-  return x?.symbol ?? `${quote.slice(0, 6)}…${quote.slice(-4)}`;
+  const stock = INK_QUOTRON_STOCKS.find((s) => s.address.toLowerCase() === quote.toLowerCase());
+  return stock?.symbol ?? `${quote.slice(0, 6)}…${quote.slice(-4)}`;
 }
 
 export function paymentAssetById(id: PaymentAssetId): PaymentAsset {

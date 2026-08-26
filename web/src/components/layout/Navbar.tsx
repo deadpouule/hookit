@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { getNetworkLabel } from "@/lib/chains";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +65,7 @@ export function Navbar() {
           </Link>
           <span className="hidden items-center gap-1.5 text-[11px] text-zinc-500 lg:flex">
             <span className="h-1 w-1 rounded-full bg-ink-lavender shadow-[0_0_6px_#c084fc]" />
-            Base Sepolia
+            {getNetworkLabel()}
           </span>
           <ConnectButton />
           <button

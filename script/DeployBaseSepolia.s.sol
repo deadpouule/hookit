@@ -19,13 +19,15 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
-import {LaunchToken} from "../src/LaunchToken.sol";
+import {HkitBuyback} from "../src/HkitBuyback.sol";
+import {FeeEthRail} from "../src/FeeEthRail.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
+import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Deploys the full Hookit protocol, then performs a smoke-test launch + swap.
+/// @notice Deploys the full Hookit protocol, fair-launches HKIT, then a smoke meme launch + swap.
 /// @dev Base Sepolia only — Ink Sepolia has no v4 Universal Router.
 contract DeployBaseSepoliaScript is Script {
     function run() public {
@@ -57,6 +59,8 @@ contract DeployBaseSepoliaScript is Script {
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
         HookitDeployLib.seedQuotes(factory);
+        FeeEthRail feeRail = new FeeEthRail(deployer, manager, v4.stableQuote);
+        HkitBuyback hkitBuyback = new HkitBuyback(deployer, manager, distributor);
 
         hook.setFactory(address(factory));
         vault.setOperator(address(hook), true);
@@ -64,10 +68,11 @@ contract DeployBaseSepoliaScript is Script {
         escrow.setOperator(address(hook), true);
         distributor.setOperator(address(hook), true);
         buybacks.setOperator(address(hook), true);
+        distributor.setFeeRail(feeRail);
+        // Live Quotrons/Ink USDG↔ETH liquidity only — no proprietary seed.
 
-        LaunchToken nativeToken = new LaunchToken("Hookit", "HOOK", 1_000_000_000e18, deployer, deployer, "");
-        distributor.setNativeToken(address(nativeToken), vault);
-        vault.setOperator(address(distributor), true);
+        (uint256 hkitLaunchId, address hkit,,) =
+            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "ipfs://hookit-hkit");
 
         uint256 bitmask = BitmaskConfig.pack(
             BitmaskConfig.Modules({
@@ -129,7 +134,10 @@ contract DeployBaseSepoliaScript is Script {
         console.log("BuybackVault", address(buybacks));
         console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
-        console.log("Native HOOK", address(nativeToken));
+        console.log("FeeEthRail", address(feeRail));
+        console.log("HkitBuyback", address(hkitBuyback));
+        console.log("HKIT", hkit);
+        console.log("HKIT launchId", hkitLaunchId);
         console.log("Smoke token", token);
         console.log("Launch id", launchId);
         console.logBytes32(PoolId.unwrap(poolId));

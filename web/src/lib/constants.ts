@@ -6,7 +6,10 @@ export const DEFAULT_LAUNCH_ETH_USD = 4_000;
 export const BASE_FEE_BPS = 100;
 export const CREATOR_SHARE_BPS = 7000;
 export const PROTOCOL_SHARE_BPS = 3000;
-export const MAX_CREATOR_TAX_BPS = 500;
+/** Max creator tax so base (1%) + tax ≤ 10% total steady fee. */
+export const MAX_CREATOR_TAX_BPS = 900;
+export const MAX_TOTAL_FEE_BPS = 1000;
+export const GRADUATION_ETH = 4.2;
 
 export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   name: "",
