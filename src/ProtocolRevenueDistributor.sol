@@ -136,10 +136,9 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
         emit Notified(currency, amount);
     }
 
-    /// @dev HKIT creator fees → 100% buyback pot (no ops cut). ETH quote only.
+/// @dev HKIT creator fees → 100% buyback pot (no ops cut). ETH accrues in `buybackEth`; ERC-20 → `buybackExecutor`.
     function notifyBuybackInternal(Currency currency, uint256 amount) external onlyOperator {
         if (amount == 0) revert ZeroAmount();
-        if (!currency.isAddressZero()) revert NativeMismatch();
         pendingBuyback[currency] += amount;
         emit BuybackNotified(currency, amount);
     }
@@ -197,19 +196,31 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
 
     /// @inheritdoc IHkitBuybackSource
     function flushBuybackEth() public override returns (uint256 flushed) {
-        Currency eth = Currency.wrap(address(0));
-        flushed = pendingBuyback[eth];
+        return flushBuyback(Currency.wrap(address(0)));
+    }
+
+    /// @notice Flush HKIT creator-fee buyback credits for any currency.
+    /// @dev ETH → `buybackEth` pot; USDG / other ERC-20 → `buybackExecutor` (manual ETH conversion off-chain).
+    function flushBuyback(Currency currency) public returns (uint256 flushed) {
+        flushed = pendingBuyback[currency];
         if (flushed == 0) return 0;
-        pendingBuyback[eth] = 0;
+        pendingBuyback[currency] = 0;
 
         uint256 claims = address(claimsManager) == address(0)
             ? 0
-            : claimsManager.balanceOf(address(this), eth.toId());
+            : claimsManager.balanceOf(address(this), currency.toId());
         if (claims >= flushed) {
-            _redeemClaims(eth, address(this), flushed);
+            _redeemClaims(currency, address(this), flushed);
         }
-        buybackEth += flushed;
-        emit BuybackFlushed(flushed);
+
+        if (currency.isAddressZero()) {
+            buybackEth += flushed;
+            emit BuybackFlushed(flushed);
+        } else {
+            if (buybackExecutor == address(0)) revert NoBuybackWallet();
+            currency.transfer(buybackExecutor, flushed);
+            emit BuybackUsdgSent(flushed, buybackExecutor);
+        }
     }
 
     /// @inheritdoc IHkitBuybackSource

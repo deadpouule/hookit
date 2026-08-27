@@ -15,6 +15,17 @@ export const launchFactoryAbi = [
     ],
   },
   {
+    type: "event",
+    name: "LaunchConfigured",
+    inputs: [
+      { name: "launchId", type: "uint256", indexed: true },
+      { name: "packed", type: "uint256", indexed: false },
+      { name: "quote", type: "address", indexed: false },
+      { name: "tickSpacing", type: "int24", indexed: false },
+      { name: "fee", type: "uint24", indexed: false },
+    ],
+  },
+  {
     type: "function",
     name: "launchQuote",
     inputs: [{ name: "launchId", type: "uint256" }],

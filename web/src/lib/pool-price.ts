@@ -1,7 +1,9 @@
-import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
-import { STATE_VIEW_ADDRESS as STATE_VIEW } from "@/lib/contracts/config";
+import { type Address } from "viem";
 
-export const STATE_VIEW_ADDRESS = STATE_VIEW;
+import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+
+export const STATE_VIEW_ADDRESS =
+  "0x571291b572ed32ce6751a2Cb2486EbEe8DEfB9B4" as Address;
 
 export const stateViewAbi = [
   {

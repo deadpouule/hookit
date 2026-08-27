@@ -160,4 +160,19 @@ contract FeeDistributionTest is Test {
         buybacks.claim(Currency.wrap(address(0)));
         assertEq(creator.balance, vested);
     }
+
+    function testFlushBuybackUsdgToWallet() public {
+        address buybackWallet = address(0xB007);
+        distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn);
+        distributor.setBuybackExecutor(buybackWallet);
+
+        LaunchToken usdg = new LaunchToken("USDG", "USDG", 1_000_000e18, address(this), address(this), "");
+        usdg.transfer(address(distributor), 2 ether);
+
+        distributor.notifyBuybackInternal(Currency.wrap(address(usdg)), 2 ether);
+        distributor.flushBuyback(Currency.wrap(address(usdg)));
+
+        assertEq(usdg.balanceOf(buybackWallet), 2 ether);
+        assertEq(distributor.pendingBuyback(Currency.wrap(address(usdg))), 0);
+    }
 }

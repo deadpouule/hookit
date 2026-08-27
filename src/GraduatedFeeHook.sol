@@ -10,6 +10,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import {BeforeSwapDelta, BeforeSwapDeltaLibrary, toBeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
@@ -18,12 +19,13 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
+import {BondingConstants} from "./libraries/BondingConstants.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 
 /// @title GraduatedFeeHook
 /// @notice Minimal Pons-style v4 hook for classic (bonding→graduate) launches.
-/// @dev `fee = 0` on the pool; this hook takes swap fees on the unspecified currency in `afterSwap`.
+/// @dev `fee = 0` on the pool; quote-notional fees in `beforeSwap` (MasterLaunchHook parity).
 ///      No trade gates, no transfer tax, no LP locks (graduation LP lives in `LiquidityLocker`).
 contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     using PoolIdLibrary for PoolKey;
@@ -33,7 +35,7 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     using StateLibrary for IPoolManager;
 
     uint160 public constant HOOK_FLAGS = uint160(
-        Hooks.BEFORE_INITIALIZE_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+        Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
     );
 
     struct LaunchConfig {
@@ -111,12 +113,12 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
             afterAddLiquidity: false,
             beforeRemoveLiquidity: false,
             afterRemoveLiquidity: false,
-            beforeSwap: false,
-            afterSwap: true,
+            beforeSwap: true,
+            afterSwap: false,
             beforeDonate: false,
             afterDonate: false,
-            beforeSwapReturnDelta: false,
-            afterSwapReturnDelta: true,
+            beforeSwapReturnDelta: true,
+            afterSwapReturnDelta: false,
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
@@ -154,30 +156,35 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         return this.beforeInitialize.selector;
     }
 
-    function _afterSwap(
-        address,
-        PoolKey calldata key,
-        SwapParams calldata params,
-        BalanceDelta delta,
-        bytes calldata
-    ) internal override returns (bytes4, int128) {
+    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata)
+        internal
+        override
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
         PoolId id = key.toId();
         LaunchConfig storage cfg = launches[id];
         if (!cfg.registered) revert NotRegistered();
 
         uint16 taxBps = cfg.creatorTaxBps;
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(taxBps);
-        if (totalBps == 0) return (this.afterSwap.selector, 0);
+        if (totalBps == 0) return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 
-        bool specifiedTokenIs0 = (params.amountSpecified < 0) == params.zeroForOne;
-        (Currency feeCurrency, int128 swapAmount) =
-            specifiedTokenIs0 ? (key.currency1, delta.amount1()) : (key.currency0, delta.amount0());
-        if (swapAmount < 0) swapAmount = -swapAmount;
+        bool tokenIs0 = cfg.tokenIsCurrency0;
+        bool isBuy = tokenIs0 ? !params.zeroForOne : params.zeroForOne;
+        bool exactInput = params.amountSpecified < 0;
+        bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
+        uint256 specifiedAbs =
+            exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
 
-        uint256 feeAmount = uint256(uint128(swapAmount)) * totalBps / ProtocolConstants.BPS_DENOMINATOR;
-        if (feeAmount == 0) return (this.afterSwap.selector, 0);
+        (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(id);
+        uint256 quoteNotional = quoteIsSpecified
+            ? specifiedAbs
+            : FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, tokenIs0);
+        uint256 feeAmount = quoteNotional * totalBps / ProtocolConstants.BPS_DENOMINATOR;
+        if (feeAmount == 0) return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 
-        poolManager.take(feeCurrency, address(this), feeAmount);
+        Currency quoteCur = Currency.wrap(cfg.quote);
+        quoteCur.take(poolManager, address(this), feeAmount, true);
 
         uint256 creatorTaxAmount = feeAmount * uint256(taxBps) / totalBps;
         uint256 splitPool = feeAmount - creatorTaxAmount;
@@ -185,11 +192,20 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         uint256 protocolShare = splitPool - creatorShare;
         uint256 creatorTotal = creatorTaxAmount + creatorShare;
 
-        pendingCreatorTax[id][feeCurrency] += creatorTotal;
-        pendingFees[id][feeCurrency] += protocolShare;
+        pendingCreatorTax[id][quoteCur] += creatorTotal;
+        pendingFees[id][quoteCur] += protocolShare;
 
-        emit FeesAccrued(id, feeCurrency, creatorTotal, protocolShare);
-        return (this.afterSwap.selector, feeAmount.toInt128());
+        emit FeesAccrued(id, quoteCur, creatorTotal, protocolShare);
+
+        int128 specifiedDelta;
+        int128 unspecifiedDelta;
+        if (quoteIsSpecified) {
+            specifiedDelta = feeAmount.toInt128();
+        } else {
+            unspecifiedDelta = feeAmount.toInt128();
+        }
+
+        return (this.beforeSwap.selector, toBeforeSwapDelta(specifiedDelta, unspecifiedDelta), 0);
     }
 
     /// @notice Distribute quote-denominated pending fees. Anyone may call when no conversion is needed.
@@ -260,7 +276,14 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         int128 quoteDelta = tokenIsCurrency0 ? delta.amount1() : delta.amount0();
         // When selling token, we receive quote (positive take).
         uint256 quoteOut = quoteDelta > 0 ? uint256(uint128(quoteDelta)) : 0;
-        if (quoteOut < minQuoteOut) revert ImpactTooHigh();
+
+        (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(key.toId());
+        uint256 fairQuote = FixedPointMath.quoteFromToken(tokenIn, sqrtPriceX96, tokenIsCurrency0);
+        uint256 minByImpact = fairQuote == 0
+            ? 0
+            : fairQuote * (ProtocolConstants.BPS_DENOMINATOR - BondingConstants.MAX_SWEEP_IMPACT_BPS)
+                / ProtocolConstants.BPS_DENOMINATOR;
+        if (quoteOut < minQuoteOut || quoteOut < minByImpact) revert ImpactTooHigh();
 
         Currency quoteCur = tokenIsCurrency0 ? key.currency1 : key.currency0;
         quoteCur.take(poolManager, address(this), quoteOut, false);
@@ -288,16 +311,7 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
 
     function _push(Currency currency, address to, uint256 amount) private {
         if (amount == 0) return;
-        if (currency.isAddressZero()) {
-            CurrencyLibrary.ADDRESS_ZERO.transfer(to, amount);
-        } else {
-            // solmate-style; IERC20Minimal has no return check helpers here
-            require(
-                Currency.unwrap(currency) != address(0)
-                    && _erc20Transfer(Currency.unwrap(currency), to, amount),
-                "TRANSFER"
-            );
-        }
+        poolManager.transfer(to, currency.toId(), amount);
     }
 
     function _erc20Transfer(address token, address to, uint256 amount) private returns (bool) {

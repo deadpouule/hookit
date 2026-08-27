@@ -20,7 +20,7 @@ async function proxy(req: NextRequest, path: string[]) {
       status: upstream.status,
       headers: {
         "content-type": upstream.headers.get("content-type") ?? "application/json",
-        "cache-control": "public, s-maxage=8, stale-while-revalidate=30",
+        "cache-control": "no-store",
       },
     });
   } catch {

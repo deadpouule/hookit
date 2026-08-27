@@ -44,7 +44,7 @@ contract BondingLaunchTest is Test, Deployers {
         distributor = new ProtocolRevenueDistributor(address(this), ops, manager);
 
         uint160 flags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         address hookAddr = address(flags | (uint160(0xB0AD) << 144));
         bytes memory args = abi.encode(manager, escrow, distributor, address(this));
@@ -136,7 +136,8 @@ contract BondingLaunchTest is Test, Deployers {
             + feeHook.pendingCreatorTax(poolId, Currency.wrap(address(0)));
         uint256 pendingTok =
             feeHook.pendingFees(poolId, Currency.wrap(token)) + feeHook.pendingCreatorTax(poolId, Currency.wrap(token));
-        assertGt(pendingEth + pendingTok, 0);
+        assertGt(pendingEth, 0);
+        assertEq(pendingTok, 0);
     }
 
     function test_BondingSellBeforeGraduate() public {

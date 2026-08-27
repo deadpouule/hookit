@@ -40,8 +40,30 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   },
   creatorTaxBps: 50,
   devBuyEth: "",
-  quoteAsset: "ETH",
+  quoteAsset: "eth",
 };
+
+export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
+  ...DEFAULT_LAUNCH_STATE,
+  modules: {
+    antiSnipe: false,
+    antiSnipeDuration: 5,
+    antiSnipeInitialTax: 98,
+    backedFloor: false,
+    floorAllocation: 10,
+    antiMev: false,
+    maxWallet: false,
+    maxWalletBps: 200,
+    maxTx: false,
+    maxTxBps: 100,
+    autoBurn: false,
+    autoBurnPct: 20,
+    lpDonate: false,
+    lpDonatePct: 20,
+  },
+};
+
+export const GITHUB_REPO_URL = "https://github.com/deadpouule/hookit";
 
 export const MOCK_METRICS: ProtocolMetrics = {
   totalVolume: 12_847_392,

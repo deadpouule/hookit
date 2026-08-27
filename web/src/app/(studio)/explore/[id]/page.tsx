@@ -1,5 +1,5 @@
 import { TokenDetailPageClient } from "@/components/explore/TokenDetailPageClient";
-import { getAllPoolIds, getPoolById } from "@/lib/pools";
+import { getAllPoolIds, getDetailPool } from "@/lib/pools";
 
 export const dynamicParams = true;
 
@@ -9,7 +9,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const pool = getPoolById(id);
+  const pool = getDetailPool(id);
   if (!pool) {
     return {
       title: "Token | hook it",

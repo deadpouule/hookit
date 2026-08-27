@@ -133,7 +133,7 @@ abstract contract InkForkTestBase is Test {
 
     function _deployBondingRail() internal {
         uint160 gFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         address gAddr = address(gFlags | (uint160(0xB0AD) << 144));
         bytes memory gArgs = abi.encode(manager, escrow, distributor, deployer);

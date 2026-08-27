@@ -22,12 +22,14 @@ import {
   DEFAULT_TICK_SPACING,
   DEFAULT_TOTAL_SUPPLY,
   getLaunchFactoryAddress,
-  USDC_ADDRESS,
+  STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
 import { buildMetadataUri } from "@/lib/launch-metadata";
+import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { LaunchFormState } from "@/lib/types";
 import { requestLaunchVerification, type VerifyStatus } from "@/lib/verify-launch";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 import type { LaunchPhase } from "@/components/launch/LaunchSummary";
 
@@ -77,8 +79,9 @@ export function useLaunchToken() {
       if (!publicClient) {
         throw new Error("Wallet RPC not ready");
       }
-      if (form.quoteAsset !== "ETH" && form.quoteAsset !== "USDC") {
-        throw new Error("Quote must be ETH or USDC");
+      const quote = resolveLaunchQuote(form.quoteAsset);
+      if (!quote) {
+        throw new Error(`Unsupported quote asset: ${form.quoteAsset}`);
       }
 
       let customHookAddress: Address | undefined;
@@ -111,7 +114,7 @@ export function useLaunchToken() {
             symbol: form.ticker.trim().toUpperCase(),
             metadataURI,
             totalSupply: DEFAULT_TOTAL_SUPPLY,
-            quote: form.quoteAsset === "USDC" ? USDC_ADDRESS : zeroAddress,
+            quote,
             tickSpacing: DEFAULT_TICK_SPACING,
             startingTick: DEFAULT_STARTING_TICK,
             bitmask,
@@ -206,4 +209,11 @@ export function useLaunchToken() {
     verifyStatus,
     verifyError,
   };
+}
+
+function resolveLaunchQuote(id: PairingTokenId): Address | null {
+  if (id === "eth") return zeroAddress;
+  if (id === "usdg") return STABLE_QUOTE_ADDRESS as Address;
+  const stock = INK_QUOTRON_STOCKS.find((s) => s.symbol.toLowerCase() === id);
+  return stock?.address ?? null;
 }

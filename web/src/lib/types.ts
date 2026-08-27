@@ -1,6 +1,17 @@
+import type { PairingTokenId } from "./pairing-tokens";
+
 export type HookMode = "master" | "custom";
 
-export type ExploreCategory = "top" | "trending" | "newest" | "custom";
+export type ExploreCategory =
+  | "top"
+  | "trending"
+  | "newest"
+  | "custom"
+  | "all"
+  | "backed-floor"
+  | "anti-snipe"
+  | "custom-hooks"
+  | "top-gainers";
 
 export interface LaunchModules {
   antiSnipe: boolean;
@@ -13,6 +24,10 @@ export interface LaunchModules {
   maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
+  /** UI toggle — not packed into Master bitmask yet. */
+  dynamicFees?: boolean;
+  /** UI toggle — not packed into Master bitmask yet. */
+  buybackVesting?: boolean;
   autoBurn: boolean;
   autoBurnPct: number;
   lpDonate: boolean;
@@ -34,7 +49,7 @@ export interface LaunchFormState {
   modules: LaunchModules;
   creatorTaxBps: number;
   devBuyEth: string;
-  quoteAsset: "ETH" | "USDC";
+  quoteAsset: PairingTokenId;
 }
 
 export interface TokenPool {

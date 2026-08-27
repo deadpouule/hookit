@@ -6,7 +6,7 @@ Backend-only. The Next.js front consumes these HTTP routes — no subgraph requi
 
 ```bash
 cd indexer
-cp .env.example .env   # set LAUNCH_FACTORY (+ optional BONDING_FACTORY)
+cp .env.example .env   # set LAUNCH_FACTORY (+ BONDING_FACTORY)
 npm install
 npm run serve          # polls chain + serves API on :8787
 ```
@@ -17,14 +17,28 @@ npm run serve          # polls chain + serves API on :8787
 | --- | --- | --- |
 | `LAUNCH_FACTORY` | yes* | Master `LaunchFactory` |
 | `BONDING_FACTORY` | no | Classic rail when deployed |
+| `INDEXER_RPC_URL` | no | Dedicated RPC (falls back to `INK_RPC_URL`) |
 | `HOOKIT_CHAIN` | no | `ink` (default) or `baseSepolia` |
-| `INK_RPC_URL` / `BASE_SEPOLIA_RPC_URL` | no | RPC |
+| `POOL_MANAGER` | no | Ink v4 PoolManager default baked in |
 | `INDEXER_PORT` | no | default `8787` |
 | `INDEXER_POLL_MS` | no | default `12000` |
-| `INDEXER_START_BLOCK` | no | 0 = look back ~80k blocks on first run |
-| `INDEXER_DATA_DIR` | no | JSON store directory |
+| `INDEXER_CHUNK` | no | blocks per `getLogs` batch (default `2000`) |
+| `INDEXER_CONFIRMATIONS` | no | reorg safety — index through `latest - N` (default `12`) |
+| `INDEXER_START_BLOCK` | no | factory deploy block (recommended prod); else ~80k lookback |
+| `INDEXER_DATA_DIR` | no | JSON store v2 directory |
+| `INDEXER_EXCLUDE` | no | comma-separated addresses excluded from holder rankings |
 
 \* At least one factory address.
+
+## Store v2
+
+- Trade dedupe via `(txHash, logIndex)`
+- Bonding + pool prices normalized to quote-per-token
+- `launchIdToToken` cache (no N× contract reads per bonding trade)
+- Master `LaunchConfigured` bitmask indexed
+- Classic bonding phase / `tokensSold` / graduation fields
+- 24h volume / trades / change on token summary
+- Batched block timestamps + chunked pool swap filters
 
 ## API (front wires here)
 
@@ -34,47 +48,48 @@ Base URL: `http://127.0.0.1:8787` (or `INDEXER_URL` behind the Next proxy).
 GET /health
 GET /v1/tokens
 GET /v1/tokens/:address
-GET /v1/tokens/:address/trades?limit=50
+GET /v1/tokens/:address/trades?limit=50&offset=0
 GET /v1/tokens/:address/holders?limit=50
-GET /v1/tokens/:address/candles?limit=200   # 5m OHLC, Pons-style chart
+GET /v1/tokens/:address/candles?limit=200   # 5m OHLC
 ```
+
+`/health` includes RPC lag (`lagBlocks`), last poll error, token count.
 
 ### Example trade
 
 ```json
 {
+  "id": "0x…-12",
   "txHash": "0x…",
+  "logIndex": 12,
   "blockNumber": 123,
   "timestamp": 1710000000,
   "side": "buy",
   "quoteAmount": "100000000000000000",
   "tokenAmount": "…",
   "price": "0.00000014",
-  "sqrtPriceX96": "…"
+  "sqrtPriceX96": "…",
+  "actor": "0x…"
 }
 ```
 
-### Example holder
-
-```json
-{ "address": "0x…", "balance": "…", "pct": 12.34 }
-```
-
 ## Next.js proxy
-
-With the indexer running, the web app exposes the same paths under:
 
 ```
 /api/indexer/health
 /api/indexer/v1/tokens
 /api/indexer/v1/tokens/:address
-/api/indexer/v1/tokens/:address/trades
-/api/indexer/v1/tokens/:address/holders
-/api/indexer/v1/tokens/:address/candles
 ```
 
 Set `INDEXER_URL=http://127.0.0.1:8787` in `web/.env.local`.
 
-## Precision
+Client: `web/src/lib/indexer-client.ts` (`fetchIndexerTokens`, `fetchIndexerHealth`, …).
 
-Intentionally approximate (good enough for launchpad UX): buy/sell side from swap deltas, holders from `Transfer` (includes PoolManager / lockers), candles are 5m buckets. Not Dexscreener-grade.
+## Commands
+
+```bash
+npm run serve   # API + poll loop
+npm run poll    # poll only
+npm run tick    # one indexing pass
+npm run typecheck
+```

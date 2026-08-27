@@ -106,7 +106,7 @@ contract DryRunInkScript is Script {
         HookitDeployLib.seedQuotes(d.factory);
 
         uint160 gFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         bytes memory gArgs = abi.encode(manager, d.escrow, d.distributor, deployer);
         (address gPredicted, bytes32 gSalt) =

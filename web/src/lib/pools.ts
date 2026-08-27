@@ -1,4 +1,5 @@
 import { MOCK_POOLS } from "./constants";
+import { MARKET_TOKENS } from "./market-tokens";
 import type { TokenPool } from "./types";
 
 export type ChartTimeframe = "1H" | "1D" | "1W" | "ALL";
@@ -30,7 +31,36 @@ export function getPoolById(id: string): TokenPool | undefined {
 }
 
 export function getAllPoolIds(): string[] {
-  return MOCK_POOLS.map((p) => p.id);
+  return [...MOCK_POOLS.map((p) => p.id), ...MARKET_TOKENS.map((t) => t.id)];
+}
+
+export function getDetailPool(id: string): TokenPool | undefined {
+  const pool = getPoolById(id);
+  if (pool) return pool;
+  const token = MARKET_TOKENS.find((item) => item.id === id);
+  if (!token) return undefined;
+  return {
+    id: token.id,
+    name: token.name,
+    ticker: token.ticker,
+    image: token.emoji,
+    banner: "",
+    bannerGradient: token.art,
+    marketCap: token.marketCap,
+    floorValue: token.marketCap * 0.08,
+    liquidity: token.marketCap * 0.4,
+    change24h: token.change24h,
+    hooks: {
+      antiSnipe: true,
+      backedFloor: token.kind === "pool",
+      antiMev: true,
+      customHook: token.kind === "sushi",
+    },
+    address: `${token.creator.slice(0, 6)}...${token.creator.slice(-4)}`,
+    contractAddress: token.creator,
+    hookType: token.kind === "sushi" ? "Custom" : "Master",
+    volume24h: token.volume,
+  };
 }
 
 /** Deterministic pseudo-random chart series for mock UI. */

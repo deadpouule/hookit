@@ -4,7 +4,9 @@
  */
 
 export type IndexerTrade = {
+  id: string;
   txHash: `0x${string}`;
+  logIndex: number;
   blockNumber: number;
   timestamp: number;
   side: "buy" | "sell";
@@ -12,6 +14,7 @@ export type IndexerTrade = {
   tokenAmount: string;
   price: string;
   sqrtPriceX96: string;
+  actor?: string;
 };
 
 export type IndexerHolder = {
@@ -38,16 +41,39 @@ export type IndexerTokenSummary = {
   name: string;
   symbol: string;
   decimals: number;
+  quoteDecimals: number;
   totalSupply: string;
   creator: string;
   launchedAt: number;
   launchId: number;
   rail: "master" | "classic";
+  metadataURI: string | null;
+  hookModules: string | null;
+  bondingPhase: number | null;
+  tokensSold: string | null;
+  graduationQuote: string | null;
+  realQuote: string | null;
+  graduatedAt: number | null;
   price: string | null;
   lastTradeAt: number | null;
   tradesIndexed: number;
   holdersIndexed: number;
   candles5m: number;
+  volume24h: string;
+  trades24h: number;
+  change24h: number | null;
+};
+
+export type IndexerHealth = {
+  ok: boolean;
+  chainId: number;
+  cursor: string;
+  updatedAt: number;
+  lastPollAt: number | null;
+  lastPollError: string | null;
+  latestBlock: string | null;
+  lagBlocks: number | null;
+  tokens: number;
 };
 
 const base = () => "/api/indexer";
@@ -61,13 +87,21 @@ async function getJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export function fetchIndexerHealth() {
+  return getJson<IndexerHealth>("/health");
+}
+
+export function fetchIndexerTokens() {
+  return getJson<{ tokens: IndexerTokenSummary[] }>("/v1/tokens");
+}
+
 export function fetchIndexerToken(address: string) {
   return getJson<IndexerTokenSummary>(`/v1/tokens/${address}`);
 }
 
-export function fetchIndexerTrades(address: string, limit = 50) {
+export function fetchIndexerTrades(address: string, limit = 50, offset = 0) {
   return getJson<{ token: string; trades: IndexerTrade[] }>(
-    `/v1/tokens/${address}/trades?limit=${limit}`,
+    `/v1/tokens/${address}/trades?limit=${limit}&offset=${offset}`,
   );
 }
 

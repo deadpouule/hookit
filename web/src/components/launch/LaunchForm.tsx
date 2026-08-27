@@ -1,35 +1,50 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus, Loader2, ShieldCheck } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
-import { HookBuilder } from "@/components/builder/HookBuilder";
+import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
+import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
+  FeeBreakdown,
   FormDivider,
   FormPanel,
   SectionLabel,
   SegmentedControl,
 } from "@/components/ui/form-primitives";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
 import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
+  DEFAULT_CLASSIC_LAUNCH_STATE,
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
+  MAX_CREATOR_TAX_BPS,
   TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
-import { getBlockExplorerUrl, getNetworkLabel, getNetworkSubtitle } from "@/lib/chains";
-import { loadBuilderDraft } from "@/lib/hook-builder";
-import type { HookMode, LaunchFormState } from "@/lib/types";
+import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
+import { estimateFloorPrice, formatBps } from "@/lib/format";
+import type { HookId } from "@/lib/hook-marks";
+import { HOOK_MODULE_FIELD, withMasterHookEnabled } from "@/lib/master-hooks";
+import type { PairingTokenId } from "@/lib/pairing-tokens";
+import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function LaunchForm() {
-  const [form, setForm] = useState<LaunchFormState>(DEFAULT_LAUNCH_STATE);
+export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "custom" }) {
+  const searchParams = useSearchParams();
+  const [form, setForm] = useState<LaunchFormState>(() =>
+    withMasterHookEnabled(
+      variant === "classic" ? DEFAULT_CLASSIC_LAUNCH_STATE : DEFAULT_LAUNCH_STATE,
+      variant === "custom" ? searchParams.get("hook") : null,
+    ),
+  );
   const [socialsOpen, setSocialsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const walletReady = useWalletReady();
@@ -43,8 +58,6 @@ export function LaunchForm() {
     setError,
     result,
     resetResult,
-    verifyStatus,
-    verifyError,
   } = useLaunchToken();
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
@@ -53,37 +66,22 @@ export function LaunchForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  const [circuitReady, setCircuitReady] = useState(false);
+  const updateModules = (patch: Partial<LaunchModules>) => {
+    setForm((prev) => ({ ...prev, modules: { ...prev.modules, ...patch } }));
+  };
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("from") === "builder") {
-      const draft = loadBuilderDraft();
-      if (draft) {
-        setForm((prev) => ({
-          ...prev,
-          hookMode: "master",
-          modules: draft.modules,
-          creatorTaxBps: draft.creatorTaxBps,
-        }));
-      }
-    }
-    setCircuitReady(true);
-  }, []);
+  const floorEst = estimateFloorPrice(form.modules.floorAllocation, 0);
 
-  const activeTags = useMemo(() => {
-    if (form.hookMode === "custom") return ["Custom Hook", "Auto-deploy"];
-    const tags: string[] = [];
-    if (form.modules.antiSnipe) tags.push("Anti-Snipe");
-    if (form.modules.backedFloor) tags.push("Backed Floor");
-    if (form.modules.antiMev) tags.push("Anti-MEV");
-    if (form.modules.maxWallet) tags.push("Max Wallet");
-    if (form.modules.maxTx) tags.push("Max TX");
-    if (form.modules.autoBurn) tags.push("Auto Burn");
-    if (form.modules.lpDonate) tags.push("LP Donate");
-    if (form.creatorTaxBps > 0) tags.push("Creator Tax");
+  const activeHooks = useMemo(() => {
+    if (form.hookMode === "custom") return ["custom"] as HookId[];
+    const tags: HookId[] = ["quoteFee"];
+    if (form.modules.antiSnipe) tags.push("antiSnipe");
+    if (form.modules.backedFloor) tags.push("backedFloor");
+    if (form.modules.antiMev) tags.push("antiMev");
+    if (form.modules.maxWallet) tags.push("maxWallet");
+    if (form.modules.maxTx) tags.push("maxTx");
     return tags;
-  }, [form.hookMode, form.modules, form.creatorTaxBps]);
+  }, [form.hookMode, form.modules]);
 
   const handleLaunch = async () => {
     setError(null);
@@ -97,44 +95,34 @@ export function LaunchForm() {
   };
 
   const handleImage = (file: File | undefined) => {
-    if (!file?.type.startsWith("image/")) return;
-    if (file.size > 60_000) {
-      setError("Logo must be under 60KB to store on-chain");
-      return;
+    if (file?.type.startsWith("image/")) {
+      setForm((p) => ({ ...p, imagePreview: URL.createObjectURL(file) }));
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null;
-      setForm((p) => ({ ...p, imagePreview: result }));
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
     <div className="launch-shell pt-6 sm:pt-10">
       <Link
-        href="/explore"
+        href="/launch"
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to explore
+        Back to launch models
       </Link>
 
-      <div className="mb-10">
-        <p className="text-xs text-zinc-600">{getNetworkSubtitle()}</p>
-        <h1 className="ink-headline mt-1 text-3xl sm:text-4xl">
-          Create <span className="text-degen">token</span>
+      <div className="mb-10 text-center">
+        <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
+          {variant === "classic" ? "Classic launch" : "Custom launch"}
+        </p>
+        <h1 className="terminal-title text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
-        <p className="mt-3 max-w-lg text-sm text-zinc-500">
-          Fixed{" "}
+        <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500">
+          Atomic Uniswap v4 launch on Base Sepolia ·{" "}
           <span className="font-mono text-zinc-300">
-            ${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")}
+            ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
           </span>{" "}
-          FDV · 1B supply · Uniswap v4 pool, swapped on Hookit. Compose modules in the{" "}
-          <Link href="/builder" className="text-zinc-400 underline-offset-2 hover:underline">
-            hook builder
-          </Link>
-          , or paste custom Solidity.
+          FDV · 1B supply
         </p>
       </div>
 
@@ -142,7 +130,7 @@ export function LaunchForm() {
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
           <p className="font-medium">LaunchFactory not configured</p>
           <p className="mt-1 text-amber-200/80">
-            Deploy contracts to {getNetworkLabel()}, then set{" "}
+            Deploy contracts to Base Sepolia, then set{" "}
             <code className="rounded bg-black/30 px-1 font-mono text-xs">
               NEXT_PUBLIC_LAUNCH_FACTORY
             </code>{" "}
@@ -153,14 +141,14 @@ export function LaunchForm() {
 
       {result && (
         <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
-          <p className="font-medium">Token launched on {getNetworkLabel()}</p>
+          <p className="font-medium">Token launched on Base Sepolia</p>
           <dl className="mt-3 space-y-2 font-mono text-xs">
             {result.customHookAddress && (
               <div className="flex flex-wrap items-center gap-2">
                 <dt className="text-emerald-200/70">Hook</dt>
                 <dd>{result.customHookAddress}</dd>
                 <a
-                  href={`${getBlockExplorerUrl()}/address/${result.customHookAddress}#code`}
+                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.customHookAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -173,7 +161,7 @@ export function LaunchForm() {
               <dt className="text-emerald-200/70">Token</dt>
               <dd>{result.token}</dd>
               <a
-                  href={`${getBlockExplorerUrl()}/address/${result.token}#code`}
+                href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -185,7 +173,7 @@ export function LaunchForm() {
               <dt className="text-emerald-200/70">Tx</dt>
               <dd className="truncate">{result.txHash}</dd>
               <a
-                href={`${getBlockExplorerUrl()}/tx/${result.txHash}`}
+                href={`${BASE_SEPOLIA_EXPLORER}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -197,44 +185,7 @@ export function LaunchForm() {
               <span className="text-emerald-200/70">Launch ID </span>
               {result.launchId.toString()}
             </div>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {verifyStatus === "verifying" && (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin text-emerald-300" />
-                  <span className="text-emerald-200/80">Verifying contract source…</span>
-                </>
-              )}
-              {verifyStatus === "verified" && (
-                <>
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
-                  <span className="text-emerald-100">Source verified</span>
-                  <a
-                    href={`${getBlockExplorerUrl()}/address/${result.token}#code`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-                  >
-                    View source <ExternalLink className="h-3 w-3" />
-                  </a>
-                </>
-              )}
-              {verifyStatus === "failed" && (
-                <span className="text-amber-200/90">
-                  Launch succeeded, but source verification failed
-                  {verifyError ? `: ${verifyError.slice(0, 160)}` : "."} You can still
-                  verify later on Basescan.
-                </span>
-              )}
-            </div>
           </dl>
-          {result.token && result.token !== "0x0000000000000000000000000000000000000000" && (
-            <Link
-              href={`/explore/${result.token}`}
-              className="btn-primary mt-4 inline-flex text-xs"
-            >
-              Trade ${form.ticker || "token"}
-            </Link>
-          )}
           <button
             type="button"
             onClick={resetResult}
@@ -252,7 +203,7 @@ export function LaunchForm() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-        <FormPanel className="ink-glow">
+        <FormPanel>
           <SectionLabel>Token details</SectionLabel>
 
           <div className="mt-4 flex flex-col gap-5 sm:flex-row">
@@ -367,23 +318,27 @@ export function LaunchForm() {
 
           <FormDivider />
 
-          <SectionLabel>Quote</SectionLabel>
-          <div className="mt-3">
-            <SegmentedControl<"ETH" | "USDC">
-              value={form.quoteAsset}
-              onChange={(quoteAsset) => setForm((p) => ({ ...p, quoteAsset }))}
-              options={[
-                { value: "ETH", label: "ETH" },
-                { value: "USDC", label: "USDC" },
-              ]}
-            />
-          </div>
-          <p className="mt-2 text-xs text-zinc-600">
-            Pair against native ETH or {getNetworkLabel()} USDC. Hook fees are taken in the quote.
-          </p>
+          <PairingPicker
+            value={form.quoteAsset}
+            onChange={(id: PairingTokenId) => setForm((p) => ({ ...p, quoteAsset: id }))}
+          />
 
           <FormDivider />
 
+          {variant === "classic" ? (
+            <>
+              <SectionLabel>Fees</SectionLabel>
+              <p className="mt-1 text-xs text-zinc-600">
+                Standard 1% quote-only swap fee. No extra hook modules.
+              </p>
+              <div className="mt-4">
+                <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
+                <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
+                <FeeBreakdown creator="0.70%" protocol="0.30%" />
+              </div>
+            </>
+          ) : (
+            <>
           <SectionLabel>Hook architecture</SectionLabel>
           <div className="mt-3">
             <SegmentedControl<HookMode>
@@ -412,42 +367,68 @@ export function LaunchForm() {
             </div>
           ) : (
             <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-              Compose live modules in the circuit. Fees stay in the quote asset.{" "}
-              <Link href="/builder" className="text-zinc-400 underline-offset-2 hover:underline">
-                Open full builder
-              </Link>
+              Pre-built Hookit modules — anti-snipe, backed floor, anti-MEV, and quote-only fees.
+              Configure below.
             </p>
           )}
 
-          {form.hookMode === "master" && circuitReady && (
+          {form.hookMode === "master" && (
             <>
               <FormDivider />
-              <SectionLabel>Hook circuit</SectionLabel>
+
+              <HookModulePicker
+                modules={form.modules}
+                onToggle={(id, next) => updateModules({ [HOOK_MODULE_FIELD[id]]: next })}
+                onUpdate={updateModules}
+                floorEst={floorEst}
+              />
+
+              <FormDivider />
+
+              <SectionLabel>Fees & rewards</SectionLabel>
               <p className="mt-1 text-xs text-zinc-600">
-                1% base quote fee always. Extra rules pack into the MasterLaunchHook bitmask.
+                Fees deducted in quote asset only — zero sell pressure on your token.
               </p>
-              <div className="mt-4">
-                <HookBuilder
-                  modules={form.modules}
-                  creatorTaxBps={form.creatorTaxBps}
-                  onChange={({ modules, creatorTaxBps }) =>
-                    setForm((p) => ({ ...p, modules, creatorTaxBps }))
-                  }
-                />
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
+                  <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
+                  <FeeBreakdown creator="0.70%" protocol="0.30%" />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Creator tax</Label>
+                  <div className="field-input flex items-center justify-between bg-black/60">
+                    <span className="font-mono">{formatBps(form.creatorTaxBps)}</span>
+                  </div>
+                  <div className="mt-2">
+                    <Slider
+                      value={[form.creatorTaxBps]}
+                      onValueChange={([v]) => setForm((p) => ({ ...p, creatorTaxBps: v }))}
+                      min={0}
+                      max={MAX_CREATOR_TAX_BPS}
+                      step={10}
+                    />
+                  </div>
+                  <FeeBreakdown creator="100%" protocol="0%" />
+                </div>
               </div>
+            </>
+          )}
             </>
           )}
         </FormPanel>
 
         <LaunchSummary
           form={form}
+          variant={variant}
           launchFee={launchFee}
           launchFeeEth={launchFeeEth}
           walletReady={walletReady}
           factoryConfigured={factoryConfigured}
           isPending={isPending}
           phase={phase}
-          activeTags={activeTags}
+          activeHooks={activeHooks}
           onLaunch={handleLaunch}
         />
       </div>

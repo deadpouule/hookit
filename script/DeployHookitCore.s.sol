@@ -56,7 +56,7 @@ contract DeployHookitCoreScript is Script {
         HookitDeployLib.seedQuotes(factory);
 
         uint160 gradFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_SWAP_RETURNS_DELTA_FLAG
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         bytes memory gradArgs = abi.encode(manager, escrow, distributor, deployer);
         (address gradPredicted, bytes32 gradSalt) =

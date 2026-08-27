@@ -13,6 +13,7 @@ function json(res: ServerResponse, status: number, body: unknown) {
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET, OPTIONS",
     "access-control-allow-headers": "content-type",
+    "cache-control": "no-store",
   });
   res.end(payload);
 }
@@ -36,6 +37,7 @@ function summarize(store: Store, address: Address) {
   if (!row) return null;
   const last = row.trades[row.trades.length - 1];
   const holders = Object.keys(row.holders).length;
+  const stats = store.stats24h(address);
   return {
     address: row.address,
     poolId: row.poolId,
@@ -44,20 +46,31 @@ function summarize(store: Store, address: Address) {
     name: row.name,
     symbol: row.symbol,
     decimals: row.decimals,
+    quoteDecimals: row.quoteDecimals,
     totalSupply: row.totalSupply,
     creator: row.creator,
     launchedAt: row.launchedAt,
     launchId: row.launchId,
     rail: row.rail,
+    metadataURI: row.metadataURI ?? null,
+    hookModules: row.hookModules ?? null,
+    bondingPhase: row.bondingPhase ?? null,
+    tokensSold: row.tokensSold ?? null,
+    graduationQuote: row.graduationQuote ?? null,
+    realQuote: row.realQuote ?? null,
+    graduatedAt: row.graduatedAt ?? null,
     price: last?.price ?? null,
     lastTradeAt: last?.timestamp ?? null,
     tradesIndexed: row.trades.length,
     holdersIndexed: holders,
     candles5m: row.candles5m.length,
+    volume24h: stats.volume24h,
+    trades24h: stats.trades24h,
+    change24h: stats.change24h,
   };
 }
 
-export function startApi(store: Store, cfg: IndexerConfig) {
+export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () => Promise<bigint>) {
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     if (!req.url || !req.method) {
       json(res, 400, { error: "bad request" });
@@ -75,19 +88,33 @@ export function startApi(store: Store, cfg: IndexerConfig) {
     const parts = pathParts(req.url);
     const u = new URL(req.url, "http://localhost");
 
-    // GET /health
     if (parts.length === 1 && parts[0] === "health") {
+      let latestBlock: string | null = null;
+      let lag: number | null = null;
+      if (getLatestBlock) {
+        try {
+          const latest = await getLatestBlock();
+          latestBlock = latest.toString();
+          const cursor = BigInt(store.data.cursor || "0");
+          lag = Number(latest > cursor ? latest - cursor : 0n);
+        } catch {
+          /* ignore */
+        }
+      }
       json(res, 200, {
-        ok: true,
+        ok: !store.data.lastPollError,
         chainId: cfg.chainId,
         cursor: store.data.cursor,
         updatedAt: store.data.updatedAt,
+        lastPollAt: store.data.lastPollAt ?? null,
+        lastPollError: store.data.lastPollError ?? null,
+        latestBlock,
+        lagBlocks: lag,
         tokens: Object.keys(store.data.tokens).length,
       });
       return;
     }
 
-    // GET /v1/tokens
     if (parts[0] === "v1" && parts[1] === "tokens" && parts.length === 2) {
       const list = Object.values(store.data.tokens)
         .map((t) => summarize(store, t.address)!)
@@ -96,7 +123,6 @@ export function startApi(store: Store, cfg: IndexerConfig) {
       return;
     }
 
-    // GET /v1/tokens/:address[/trades|holders|candles]
     if (parts[0] === "v1" && parts[1] === "tokens" && parts.length >= 3) {
       const token = parseToken(parts[2]);
       if (!token) {
@@ -108,7 +134,8 @@ export function startApi(store: Store, cfg: IndexerConfig) {
         return;
       }
 
-      const limit = Math.min(Number(u.searchParams.get("limit") ?? 50), 250);
+      const limit = Math.min(Math.max(Number(u.searchParams.get("limit") ?? 50), 1), 500);
+      const offset = Math.max(Number(u.searchParams.get("offset") ?? 0), 0);
 
       if (parts.length === 3) {
         json(res, 200, summarize(store, token));
@@ -116,7 +143,10 @@ export function startApi(store: Store, cfg: IndexerConfig) {
       }
 
       if (parts[3] === "trades") {
-        json(res, 200, { token: token.toLowerCase(), trades: store.trades(token, limit) });
+        json(res, 200, {
+          token: token.toLowerCase(),
+          trades: store.trades(token, limit, offset),
+        });
         return;
       }
       if (parts[3] === "holders") {
@@ -124,10 +154,10 @@ export function startApi(store: Store, cfg: IndexerConfig) {
         return;
       }
       if (parts[3] === "candles") {
-        // interval reserved for future; only 5m stored for now
+        const interval = u.searchParams.get("interval") ?? "5m";
         json(res, 200, {
           token: token.toLowerCase(),
-          interval: "5m",
+          interval: interval === "5m" ? "5m" : "5m",
           candles: store.candles(token, limit),
         });
         return;
@@ -140,7 +170,7 @@ export function startApi(store: Store, cfg: IndexerConfig) {
         "GET /health",
         "GET /v1/tokens",
         "GET /v1/tokens/:address",
-        "GET /v1/tokens/:address/trades?limit=50",
+        "GET /v1/tokens/:address/trades?limit=50&offset=0",
         "GET /v1/tokens/:address/holders?limit=50",
         "GET /v1/tokens/:address/candles?limit=200",
       ],

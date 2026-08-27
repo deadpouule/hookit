@@ -1,15 +1,14 @@
-/** Starter Uniswap v4 hook — compiled and CREATE2-mined at launch. */
+/** Starter Uniswap v4 hook — edit permissions and hook logic, then launch. */
 export const CUSTOM_HOOK_TEMPLATE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {BaseHook} from "../base/BaseHook.sol";
+import {BaseHook} from "@openzeppelin/uniswap-hooks/base/BaseHook.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 
 /// @title MyCustomHook
-/// @notice Your swap logic lives here — Hookit compiles & mines the address at launch.
+/// @notice Your swap logic lives here — Hookit deploys & mines the address at launch.
 contract MyCustomHook is BaseHook {
     constructor(IPoolManager poolManager_) BaseHook(poolManager_) {}
 
@@ -30,19 +29,6 @@ contract MyCustomHook is BaseHook {
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
         });
-    }
-
-    function _beforeInitialize(address, PoolKey calldata, uint160) internal pure override returns (bytes4) {
-        return this.beforeInitialize.selector;
-    }
-
-    function _beforeAddLiquidity(address, PoolKey calldata, ModifyLiquidityParams calldata, bytes calldata)
-        internal
-        pure
-        override
-        returns (bytes4)
-    {
-        return this.beforeAddLiquidity.selector;
     }
 }
 `;
