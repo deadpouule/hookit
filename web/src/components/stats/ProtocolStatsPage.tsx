@@ -1,235 +1,322 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 
+import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
+import { PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
-import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
-import { launchWithHookHref, MASTER_HOOKS } from "@/lib/master-hooks";
+import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
 import {
-  BURN_SERIES,
-  BURN_TXS,
-  protocolOverview,
-  type StatsChartPoint,
+  BUYBACK_BURNS,
+  CHART_WINDOWS,
+  FEE_BREAKDOWN,
+  LATEST_BURNS,
+  LATEST_BUYBACKS,
+  VOLUME_BY_WINDOW,
+  VOLUME_WINDOWS,
+  cumulativeSeries,
+  dailyBars,
+  type ChartWindow,
+  type VolumeWindow,
 } from "@/lib/protocol-stats";
 
-const W = 800;
-const H = 268;
-const PAD = { top: 16, right: 12, bottom: 32, left: 54 };
-
-function xAt(i: number, n: number) {
-  return PAD.left + (i / Math.max(n - 1, 1)) * (W - PAD.left - PAD.right);
-}
-
-function yAt(value: number, min: number, max: number) {
-  const span = Math.max(max - min, 0.001);
-  return PAD.top + (1 - (value - min) / span) * (H - PAD.top - PAD.bottom);
-}
-
-function stepPath(series: StatsChartPoint[], min: number, max: number) {
-  return series
-    .map((point, i) => {
-      const x = xAt(i, series.length).toFixed(1);
-      const y = yAt(point.value, min, max).toFixed(1);
-      return i === 0 ? `M ${x} ${y}` : `H ${x} V ${y}`;
-    })
-    .join(" ");
-}
-
-function areaPath(series: StatsChartPoint[], min: number, max: number) {
-  const line = stepPath(series, min, max);
-  const x0 = xAt(0, series.length).toFixed(1);
-  const xN = xAt(series.length - 1, series.length).toFixed(1);
-  const base = (H - PAD.bottom).toFixed(1);
-  return `${line} L ${xN} ${base} L ${x0} ${base} Z`;
-}
-
-function FlywheelChart({
-  series,
-  active,
-  onHover,
-}: {
-  series: StatsChartPoint[];
-  active: number;
-  onHover: (index: number) => void;
-}) {
-  const min = series[0]?.value ?? 0;
-  const max = series[series.length - 1]?.value ?? 1;
-  const yTicks = [min, min + (max - min) / 3, min + ((max - min) * 2) / 3, max];
-  const point = series[active] ?? series[0];
-  const px = xAt(active, series.length);
-  const py = yAt(point.value, min, max);
-  const midHour = series[Math.floor(series.length / 2)]?.hour ?? 0;
-  const lastHour = series[series.length - 1]?.hour ?? 0;
-
-  return (
-    <svg
-      className="stats-chart"
-      viewBox={`0 0 ${W} ${H}`}
-      role="img"
-      aria-label="Cumulative HOOK buyback and burn in ETH"
-      onPointerMove={(event) => {
-        const box = event.currentTarget.getBoundingClientRect();
-        const x = ((event.clientX - box.left) / box.width) * W;
-        const inner = W - PAD.left - PAD.right;
-        const i = Math.round(((x - PAD.left) / inner) * (series.length - 1));
-        onHover(Math.min(series.length - 1, Math.max(0, i)));
-      }}
-    >
-      <defs>
-        <linearGradient id="stats-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#03b1ed" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#03b1ed" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {yTicks.map((tick) => (
-        <g key={tick}>
-          <line
-            x1={PAD.left}
-            x2={W - PAD.right}
-            y1={yAt(tick, min, max)}
-            y2={yAt(tick, min, max)}
-            className="stats-grid"
-          />
-          <text x={6} y={yAt(tick, min, max) + 4} className="stats-axis">
-            {tick.toFixed(3)}
-          </text>
-        </g>
-      ))}
-      <path d={areaPath(series, min, max)} fill="url(#stats-fill)" />
-      <path d={stepPath(series, min, max)} className="stats-line" />
-      <line x1={px} x2={px} y1={PAD.top} y2={H - PAD.bottom} className="stats-cross" />
-      <circle cx={px} cy={py} r="5.5" className="stats-dot" />
-      <text x={PAD.left} y={H - 8} className="stats-axis">
-        0S
-      </text>
-      <text x={W / 2 - 14} y={H - 8} className="stats-axis">
-        {midHour}H
-      </text>
-      <text x={W - PAD.right - 40} y={H - 8} className="stats-axis">
-        {lastHour}H
-      </text>
-    </svg>
-  );
-}
+const BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
+const DEAD = "0x000000000000000000000000000000000000dEaD";
 
 export function ProtocolStatsPage() {
-  const overview = useMemo(() => protocolOverview(), []);
-  const [active, setActive] = useState(Math.floor(BURN_SERIES.length * 0.72));
-  const point = BURN_SERIES[active] ?? BURN_SERIES[0];
+  const [volumeWindow, setVolumeWindow] = useState<VolumeWindow>("all");
+  const [chartWindow, setChartWindow] = useState<ChartWindow>("all");
+  const [view, setView] = useState<"chart" | "table">("chart");
+  const [areaHover, setAreaHover] = useState<number | null>(null);
+  const [barHover, setBarHover] = useState<number | null>(null);
+
+  const volume = VOLUME_BY_WINDOW[volumeWindow];
+  const areaSeries = useMemo(() => cumulativeSeries(chartWindow), [chartWindow]);
+  const barSeries = useMemo(() => dailyBars(chartWindow), [chartWindow]);
+  const areaActive = Math.min(areaHover ?? areaSeries.length - 1, areaSeries.length - 1);
+  const barActive = Math.min(barHover ?? barSeries.length - 1, barSeries.length - 1);
+  const areaPoint = areaSeries[areaActive] ?? areaSeries[0];
+  const barPoint = barSeries[barActive] ?? barSeries[0];
+  const tableRows = [...areaSeries].reverse();
 
   return (
-    <div className="market-shell stats-page pt-6 pb-16">
+    <div className="market-shell stats-page">
       <header className="stats-head">
-        <p className="stats-kicker">Protocol</p>
-        <h1>Stats</h1>
-        <p>
-          Buyback and burn on HOOK, launch volume, and master modules. Figures are protocol-shaped
-          until the factory is live on-chain.
+        <div className="stats-title-halo" aria-hidden />
+        <h1 className="terminal-title">Stats</h1>
+        <p className="stats-lede">
+          Launch and swap fees on Hookit. {BUYBACK_PCT}% of protocol revenue buys HOOK on the
+          market and burns it. Creator share stays with the coin.
         </p>
       </header>
 
-      <div className="stats-metric-grid">
-        <Metric
-          label="Total volume"
-          value={formatCompactUsd(overview.launchVolumeUsd)}
-          hint="Tokens issued from Hookit launches"
-        />
-        <Metric
-          label="Supply burned"
-          value={`${overview.burnedPct.toFixed(2)}%`}
-          hint={`${formatTokenAmount(overview.burned)} / ${formatTokenAmount(overview.totalSupply)} HOOK`}
-        />
-        <Metric
-          label="Buyback + burn"
-          value={`${overview.buybackEth.toFixed(3)} ETH`}
-          hint={`${overview.buybacks.toLocaleString("en-US")} flywheel txs`}
-        />
-        <Metric
-          label="Master hooks"
-          value={String(overview.masterHooks)}
-          hint={`${overview.launches} launches on factory`}
-        />
-      </div>
-
-      <section className="stats-panel">
-        <div className="stats-panel-head">
-          <p className="stats-kicker">Buyback + burn</p>
-          <p className="stats-tooltip">
-            {point.label} — {point.value.toFixed(3)} ETH
-          </p>
+      <section className="stats-block">
+        <div className="stats-block-head">
+          <h2>Traded volume</h2>
+          <RangePills
+            value={volumeWindow}
+            options={VOLUME_WINDOWS}
+            labels={{ "24h": "24h", "7d": "7d", "30d": "30d", all: "All time" }}
+            onChange={setVolumeWindow}
+          />
         </div>
-        <FlywheelChart series={BURN_SERIES} active={active} onHover={setActive} />
-        <div className="stats-freq" aria-hidden>
-          {BURN_SERIES.map((row, i) => (
-            <span
-              key={row.hour}
-              className="stats-freq-bar"
-              style={{
-                height: `${8 + row.burns * 5}px`,
-                opacity: i === active ? 1 : 0.45,
+        <div className="stats-kpi-3">
+          <Kpi
+            label="Real volume"
+            value={formatFullUsd(volume.realVolumeUsd)}
+            hint="Organic launches and swaps"
+          />
+          <Kpi
+            label="Total volume (Buy / Sell)"
+            value={formatFullUsd(volume.buySellVolumeUsd)}
+            hint={`Buys ${formatCompactUsd(volume.buyVolumeUsd)} · Sells ${formatCompactUsd(volume.sellVolumeUsd)}`}
+          />
+          <Kpi
+            label="Total volume"
+            value={formatFullUsd(volume.totalVolumeUsd)}
+            hint="Real + buy/sell flow"
+          />
+        </div>
+        <div className="stats-kpi-3">
+          <Kpi
+            label="Total revenue"
+            value={formatFullUsd(volume.revenueUsd)}
+            hint="Protocol + creator fees"
+          />
+          <Kpi
+            label={`${BUYBACK_PCT}% buybacks`}
+            value={formatFullUsd(volume.buybackUsd)}
+            hint="Protocol share routed to HOOK"
+          />
+          <Kpi
+            label="HOOK earned"
+            value={formatTokenAmount(volume.hookEarned)}
+            hint="Bought back this window"
+          />
+        </div>
+      </section>
+
+      <section className="stats-block">
+        <div className="stats-block-head">
+          <h2>Cumulative buybacks</h2>
+          <div className="stats-toolbar">
+            <RangePills
+              value={chartWindow}
+              options={CHART_WINDOWS}
+              labels={{ "1d": "1D", "7d": "7D", "30d": "30D", "90d": "90D", all: "All" }}
+              onChange={(next) => {
+                setChartWindow(next);
+                setAreaHover(null);
+                setBarHover(null);
               }}
             />
-          ))}
+            <RangePills
+              value={view}
+              options={["chart", "table"] as const}
+              labels={{ chart: "Chart", table: "Table" }}
+              onChange={setView}
+            />
+          </div>
         </div>
-        <div className="stats-panel-foot">
-          <span>Latest {overview.latestWindow} burns</span>
-          <span>{overview.buybacks.toLocaleString("en-US")} total</span>
+        {view === "chart" ? (
+          <div className="stats-panel">
+            <p className="stats-tooltip">
+              {areaPoint?.label} — {formatFullUsd(areaPoint?.buybackUsd ?? 0)} buybacks
+            </p>
+            <StatsAreaChart
+              series={areaSeries}
+              active={areaActive}
+              onHover={setAreaHover}
+            />
+          </div>
+        ) : (
+          <div className="stats-table-wrap">
+            <table className="stats-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Cumulative buybacks</th>
+                  <th>Cumulative burns</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows.map((row) => (
+                  <tr key={row.label + row.buybackUsd}>
+                    <td>{row.label}</td>
+                    <td>{formatFullUsd(row.buybackUsd)}</td>
+                    <td>{formatFullUsd(row.burnUsd)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="stats-block">
+        <div className="stats-block-head">
+          <h2>Daily buyback &amp; burn</h2>
+          <div className="stats-legend">
+            <span>
+              <span className="stats-swatch stats-swatch-buy" /> buyback
+            </span>
+            <span>
+              <span className="stats-swatch stats-swatch-burn" /> burned
+            </span>
+            <span className="stats-legend-avg">dashed = avg buyback</span>
+          </div>
+        </div>
+        <div className="stats-panel">
+          <p className="stats-tooltip">
+            {barPoint?.label} — buyback {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burn{" "}
+            {formatFullUsd(barPoint?.burnUsd ?? 0)}
+          </p>
+          <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />
         </div>
       </section>
 
-      <section className="stats-panel">
-        <div className="stats-panel-head">
-          <p className="stats-kicker">Latest burns · scroll ↓</p>
-          <a
-            href={`${BASE_SEPOLIA_EXPLORER}/address/0x000000000000000000000000000000000000dEaD`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Dead address ↗
-          </a>
-        </div>
-        <div className="stats-tx-list">
-          {BURN_TXS.map((tx) => (
+      <div className="stats-feeds">
+        <section className="stats-feed">
+          <div className="stats-console-head">
+            <h2>Latest buybacks</h2>
+            <span>{LATEST_BUYBACKS.length} fills</span>
+          </div>
+          <div className="stats-feed-list">
+            {LATEST_BUYBACKS.map((tx) => (
+              <a
+                key={tx.hash}
+                href={`${BASE_SEPOLIA_EXPLORER}/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stats-feed-row"
+              >
+                <div>
+                  <p>
+                    {tx.spentEth} ETH → {formatTokenAmount(tx.hookOut)} HOOK
+                  </p>
+                  <p>
+                    {tx.ago} · View txn
+                  </p>
+                </div>
+                <strong>{formatCompactUsd(tx.usd)}</strong>
+              </a>
+            ))}
+          </div>
+        </section>
+        <section className="stats-feed">
+          <div className="stats-console-head">
+            <h2>Buyback burns</h2>
             <a
-              key={tx.hash}
-              href={`${BASE_SEPOLIA_EXPLORER}/tx/${tx.hash}`}
+              href={`${BASE_SEPOLIA_EXPLORER}/address/${DEAD}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="stats-tx-row"
             >
-              <span className="stats-tx-wallet">{tx.wallet}</span>
-              <span>{tx.heldFor}</span>
-              <span className="stats-tx-mult">{tx.multiple}</span>
-              <span className="stats-tx-amt">{formatTokenAmount(tx.amount)} HOOK</span>
+              dead ↗
             </a>
-          ))}
-        </div>
-      </section>
+          </div>
+          <div className="stats-feed-list">
+            {BUYBACK_BURNS.map((tx) => (
+              <a
+                key={tx.hash}
+                href={`${BASE_SEPOLIA_EXPLORER}/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stats-feed-row"
+              >
+                <div>
+                  <p>{formatTokenAmount(tx.amount)} HOOK</p>
+                  <p>
+                    {tx.ago} · View txn
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      </div>
 
-      <section className="stats-panel">
-        <div className="stats-panel-head">
-          <p className="stats-kicker">Master hooks available</p>
-          <Link href="/explore">{overview.masterHooks} modules ↗</Link>
+      <section className="stats-block">
+        <div className="stats-block-head">
+          <h2>Fees paid in HOOK</h2>
         </div>
-        <div className="stats-hook-row">
-          {MASTER_HOOKS.map((hook) => (
-            <Link key={hook.id} href={launchWithHookHref(hook.id)} className="stats-hook-chip">
-              {hook.number}. {hook.title}
-            </Link>
-          ))}
+        <div className="stats-kpi-4">
+          <Kpi label="HOOK earned" value={formatTokenAmount(FEE_BREAKDOWN.hookEarned)} />
+          <Kpi label="Sent to dead" value={formatTokenAmount(FEE_BREAKDOWN.sentToDead)} />
+          <Kpi label="Classic launches" value={formatTokenAmount(FEE_BREAKDOWN.classicLaunches)} />
+          <Kpi label="Custom launches" value={formatTokenAmount(FEE_BREAKDOWN.customLaunches)} />
+        </div>
+        <div className="stats-console stats-console-log">
+          <div className="stats-console-head">
+            <p className="stats-console-label">~/ latest burns</p>
+          </div>
+          <div className="stats-tx-list">
+            {LATEST_BURNS.map((tx) => (
+              <a
+                key={tx.hash}
+                href={`${BASE_SEPOLIA_EXPLORER}/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stats-tx-row"
+              >
+                <span className="stats-tx-prompt" aria-hidden>
+                  $
+                </span>
+                <span className="stats-tx-wallet">
+                  {formatTokenAmount(tx.amount)} HOOK burned
+                </span>
+                <span className="stats-tx-amt">{tx.ago}</span>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
     </div>
   );
 }
 
-function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
+function Kpi({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="stats-metric">
       <p>{label}</p>
       <p>{value}</p>
-      <p>{hint}</p>
+      {hint ? <span>{hint}</span> : null}
+    </div>
+  );
+}
+
+function RangePills<T extends string>({
+  value,
+  options,
+  labels,
+  onChange,
+}: {
+  value: T;
+  options: readonly T[];
+  labels: Record<T, string>;
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div className="stats-range" role="tablist">
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="tab"
+          aria-selected={value === option}
+          className={value === option ? "is-on" : undefined}
+          onClick={() => onChange(option)}
+        >
+          {labels[option]}
+        </button>
+      ))}
     </div>
   );
 }

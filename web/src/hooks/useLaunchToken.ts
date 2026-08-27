@@ -64,8 +64,10 @@ export function useLaunchToken() {
       if (!publicClient) {
         throw new Error("Wallet RPC not ready");
       }
-      if (form.quoteAsset !== "ETH") {
-        throw new Error("Only native ETH quote is supported in the UI for now");
+      if (form.quoteAsset !== "eth") {
+        throw new Error(
+          "On-chain launches currently quote in ETH. Wrapped stock pairs and USDG are selectable in the form but not wired to the factory yet.",
+        );
       }
 
       let customHookAddress: Address | undefined;

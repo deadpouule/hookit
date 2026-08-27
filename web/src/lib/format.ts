@@ -11,6 +11,14 @@ export function formatCompactUsd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
+export function formatFullUsd(value: number): string {
+  const rounded = Math.round(value);
+  const sign = rounded < 0 ? "-" : "";
+  const digits = String(Math.abs(rounded));
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${sign}$${grouped}`;
+}
+
 export function formatTokenAmount(value: number): string {
   if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;

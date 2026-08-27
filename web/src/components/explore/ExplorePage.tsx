@@ -35,8 +35,8 @@ export function ExplorePage() {
     <div className="market-shell space-y-6 bg-black pt-8 pb-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-xl space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Discover hooks
+          <h1 className="terminal-title text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Discover one click hooks
           </h1>
           <p className="text-sm text-zinc-400 sm:text-base">
             Browse our Hooks, pick your strategy, and deploy your token in one click
@@ -82,10 +82,6 @@ export function ExplorePage() {
           ))}
         </div>
       </div>
-
-      <p className="text-center text-sm text-zinc-500">
-        Master hooks available : {MASTER_HOOKS.length}
-      </p>
 
       <div className="hook-grid">
         {filtered.map((hook) => (

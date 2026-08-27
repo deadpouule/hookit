@@ -37,7 +37,7 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   },
   creatorTaxBps: 50,
   devBuyEth: "",
-  quoteAsset: "ETH",
+  quoteAsset: "eth",
 };
 
 export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {

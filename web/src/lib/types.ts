@@ -1,3 +1,5 @@
+import type { PairingTokenId } from "./pairing-tokens";
+
 export type HookMode = "master" | "custom";
 
 export type ExploreCategory =
@@ -39,7 +41,7 @@ export interface LaunchFormState {
   modules: LaunchModules;
   creatorTaxBps: number;
   devBuyEth: string;
-  quoteAsset: "ETH" | "USDC";
+  quoteAsset: PairingTokenId;
 }
 
 export interface TokenPool {

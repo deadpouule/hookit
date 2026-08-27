@@ -5,6 +5,7 @@ import { Loader2, Rocket } from "lucide-react";
 import { HookChip } from "@/components/hooks/HookMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
 import type { LaunchFormState } from "@/lib/types";
@@ -77,6 +78,10 @@ export function LaunchSummary({
         <div className="flex justify-between gap-4">
           <dt className="text-zinc-500">Supply</dt>
           <dd className="font-mono text-zinc-200">1B</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-zinc-500">Pair</dt>
+          <dd className="font-mono text-zinc-200">{formatPairingTicker(form.quoteAsset)}</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-zinc-500">Hook</dt>

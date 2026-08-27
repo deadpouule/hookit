@@ -8,13 +8,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
+import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
-import { HookMark } from "@/components/hooks/HookMark";
+import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
   FeeBreakdown,
   FormDivider,
   FormPanel,
-  ModuleRow,
   SectionLabel,
   SegmentedControl,
 } from "@/components/ui/form-primitives";
@@ -32,7 +32,8 @@ import {
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
-import { withMasterHookEnabled } from "@/lib/master-hooks";
+import { HOOK_MODULE_FIELD, withMasterHookEnabled } from "@/lib/master-hooks";
+import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -113,7 +114,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
         <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
           {variant === "classic" ? "Classic launch" : "Custom launch"}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        <h1 className="terminal-title text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500">
@@ -317,6 +318,13 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
           <FormDivider />
 
+          <PairingPicker
+            value={form.quoteAsset}
+            onChange={(id: PairingTokenId) => setForm((p) => ({ ...p, quoteAsset: id }))}
+          />
+
+          <FormDivider />
+
           {variant === "classic" ? (
             <>
               <SectionLabel>Fees</SectionLabel>
@@ -368,156 +376,12 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
             <>
               <FormDivider />
 
-              <SectionLabel>Hook modules</SectionLabel>
-              <div className="mt-2">
-                <ModuleRow
-                  label="Anti-snipe shield"
-                  description="Decay tax on buys at launch"
-                  enabled={form.modules.antiSnipe}
-                  onToggle={(v) => updateModules({ antiSnipe: v })}
-                  mark={<HookMark id="antiSnipe" />}
-                >
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                        <span>Duration</span>
-                        <span className="font-mono text-zinc-300">
-                          {form.modules.antiSnipeDuration}s
-                        </span>
-                      </div>
-                      <Slider
-                        value={[form.modules.antiSnipeDuration]}
-                        onValueChange={([v]) => updateModules({ antiSnipeDuration: v })}
-                        min={1}
-                        max={10}
-                        step={1}
-                      />
-                    </div>
-                    <div>
-                      <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                        <span>Initial tax</span>
-                        <span className="font-mono text-zinc-300">
-                          {form.modules.antiSnipeInitialTax}%
-                        </span>
-                      </div>
-                      <Slider
-                        value={[form.modules.antiSnipeInitialTax]}
-                        onValueChange={([v]) => updateModules({ antiSnipeInitialTax: v })}
-                        min={50}
-                        max={99}
-                        step={1}
-                      />
-                    </div>
-                  </div>
-                </ModuleRow>
-
-                <ModuleRow
-                  label="Backed floor vault"
-                  description="Collateralized ratchet floor"
-                  enabled={form.modules.backedFloor}
-                  onToggle={(v) => updateModules({ backedFloor: v })}
-                  mark={<HookMark id="backedFloor" />}
-                >
-                  <div>
-                    <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                      <span>Fee to floor</span>
-                      <span className="font-mono text-zinc-300">
-                        {form.modules.floorAllocation}%
-                      </span>
-                    </div>
-                    <Slider
-                      value={[form.modules.floorAllocation]}
-                      onValueChange={([v]) => updateModules({ floorAllocation: v })}
-                      min={0}
-                      max={50}
-                      step={1}
-                    />
-                    {floorEst > 0 && (
-                      <p className="mt-2 font-mono text-xs text-emerald-500/80">
-                        Est. floor ≈ {floorEst.toFixed(6)} ETH / token
-                      </p>
-                    )}
-                  </div>
-                </ModuleRow>
-
-                <ModuleRow
-                  label="Anti-MEV guard"
-                  description="Same-block opposing swap cooldown"
-                  enabled={form.modules.antiMev}
-                  onToggle={(v) => updateModules({ antiMev: v })}
-                  mark={<HookMark id="antiMev" />}
-                />
-
-                <ModuleRow
-                  label="Max wallet"
-                  enabled={form.modules.maxWallet}
-                  onToggle={(v) => updateModules({ maxWallet: v })}
-                  mark={<HookMark id="maxWallet" />}
-                >
-                  <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                    <span>Cap</span>
-                    <span className="font-mono text-zinc-300">
-                      {(form.modules.maxWalletBps / 100).toFixed(1)}% supply
-                    </span>
-                  </div>
-                  <Slider
-                    value={[form.modules.maxWalletBps / 100]}
-                    onValueChange={([v]) => updateModules({ maxWalletBps: Math.round(v * 100) })}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                  />
-                </ModuleRow>
-
-                <ModuleRow
-                  label="Max transaction"
-                  enabled={form.modules.maxTx}
-                  onToggle={(v) => updateModules({ maxTx: v })}
-                  mark={<HookMark id="maxTx" />}
-                >
-                  <div className="mb-2 flex justify-between text-xs text-zinc-500">
-                    <span>Cap</span>
-                    <span className="font-mono text-zinc-300">
-                      {(form.modules.maxTxBps / 100).toFixed(1)}% supply
-                    </span>
-                  </div>
-                  <Slider
-                    value={[form.modules.maxTxBps / 100]}
-                    onValueChange={([v]) => updateModules({ maxTxBps: Math.round(v * 100) })}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                  />
-                </ModuleRow>
-
-                <ModuleRow
-                  label="Dynamic fees"
-                  description="Swap fee ramps with flow"
-                  enabled={form.modules.dynamicFees}
-                  onToggle={(v) => updateModules({ dynamicFees: v })}
-                />
-
-                <ModuleRow
-                  label="Buyback vesting"
-                  description="Creator proceeds vest linearly over 5 years"
-                  enabled={form.modules.buybackVesting}
-                  onToggle={(v) => updateModules({ buybackVesting: v })}
-                />
-
-                <ModuleRow
-                  label="Auto-burn"
-                  description="1% of token output sent to the dead address"
-                  enabled={form.modules.autoBurn}
-                  onToggle={(v) => updateModules({ autoBurn: v })}
-                />
-
-                <ModuleRow
-                  label="LP donate"
-                  description="0.25% of buys donated to in-range LPs"
-                  enabled={form.modules.lpDonate}
-                  onToggle={(v) => updateModules({ lpDonate: v })}
-                />
-              </div>
+              <HookModulePicker
+                modules={form.modules}
+                onToggle={(id, next) => updateModules({ [HOOK_MODULE_FIELD[id]]: next })}
+                onUpdate={updateModules}
+                floorEst={floorEst}
+              />
 
               <FormDivider />
 

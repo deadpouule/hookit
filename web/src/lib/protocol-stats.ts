@@ -1,92 +1,246 @@
-import { MOCK_METRICS, MOCK_POOLS } from "@/lib/constants";
+import { MOCK_METRICS, MOCK_POOLS, PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import { MASTER_HOOKS } from "@/lib/master-hooks";
 
 export const NATIVE_TOKEN = "HOOK";
 export const NATIVE_SUPPLY = 1_000_000_000;
 export const NATIVE_BURNED = 24_180_440;
 
+export const VOLUME_WINDOWS = ["24h", "7d", "30d", "all"] as const;
+export type VolumeWindow = (typeof VOLUME_WINDOWS)[number];
+
+export const CHART_WINDOWS = ["1d", "7d", "30d", "90d", "all"] as const;
+export type ChartWindow = (typeof CHART_WINDOWS)[number];
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export interface StatsChartPoint {
-  hour: number;
-  value: number;
-  burns: number;
-  label: string;
+export interface VolumeSnapshot {
+  realVolumeUsd: number;
+  buyVolumeUsd: number;
+  sellVolumeUsd: number;
+  buySellVolumeUsd: number;
+  totalVolumeUsd: number;
+  revenueUsd: number;
+  buybackUsd: number;
+  hookEarned: number;
 }
 
-export interface BurnTx {
+export interface SeriesPoint {
+  label: string;
+  buybackUsd: number;
+  burnUsd: number;
+}
+
+export interface BuybackTx {
   hash: `0x${string}`;
-  wallet: string;
+  spentEth: number;
+  hookOut: number;
+  usd: number;
+  ago: string;
+}
+
+export interface BurnEvent {
+  hash: `0x${string}`;
   amount: number;
-  heldFor: string;
-  multiple: string;
-  at: string;
+  ago: string;
+}
+
+export interface FeeBreakdown {
+  hookEarned: number;
+  sentToDead: number;
+  classicLaunches: number;
+  customLaunches: number;
 }
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/** Deterministic CEST label (UTC+2) so SSR and client match. */
-function labelForHour(hour: number) {
-  const utcMs = Date.UTC(2026, 7, 16, 8, 0) + hour * 3_600_000;
-  const cest = new Date(utcMs + 2 * 3_600_000);
-  return `${cest.getUTCDate()} ${MONTHS[cest.getUTCMonth()]}, ${pad(cest.getUTCHours())}:${pad(cest.getUTCMinutes())} CEST`;
+function unit(n: number, salt = 1) {
+  const x = Math.sin(n * 12.9898 + salt * 78.233) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function buildBurnSeries(): StatsChartPoint[] {
-  const points: StatsChartPoint[] = [];
-  let value = 0.412;
-  for (let i = 0; i < 48; i++) {
-    value += i % 5 === 0 ? 0.014 : 0.0032;
-    if (i % 11 === 0) value += 0.018;
-    const hour = i * 5;
+function hashFor(n: number, salt: number): `0x${string}` {
+  const raw = `${n.toString(16)}${salt.toString(16)}deadhookitstats`.padEnd(64, "0");
+  return `0x${raw.slice(0, 64)}`;
+}
+
+function dayLabel(offset: number) {
+  const utc = Date.UTC(2026, 3, 30) + offset * 86_400_000;
+  const d = new Date(utc);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+}
+
+function buildDaily(count: number): SeriesPoint[] {
+  const points: SeriesPoint[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const buy = 5_800 + unit(i) * 8_400 + (i % 7 === 3 ? 12_200 : 0) + i * 28;
+    const burn = buy * (0.84 + unit(i, 2) * 0.14);
     points.push({
-      hour,
-      value: Number(value.toFixed(4)),
-      burns: 1 + (i % 5),
-      label: labelForHour(hour),
+      label: dayLabel(i),
+      buybackUsd: Math.round(buy),
+      burnUsd: Math.round(burn),
     });
   }
   return points;
 }
 
-export const BURN_SERIES = buildBurnSeries();
+function buildHourly(): SeriesPoint[] {
+  const points: SeriesPoint[] = [];
+  for (let h = 0; h < 24; h += 1) {
+    const buy = 180 + unit(h, 3) * 520 + (h === 14 || h === 21 ? 640 : 0);
+    const burn = buy * (0.82 + unit(h, 4) * 0.16);
+    points.push({
+      label: `${pad(h)}:00`,
+      buybackUsd: Math.round(buy),
+      burnUsd: Math.round(burn),
+    });
+  }
+  return points;
+}
 
-export const BURN_TXS: BurnTx[] = [
-  { hash: "0x7a1c9e2b4d88f01a3c55e90b12d4aa1098c3e21f0ab44c77d1e9083a6b2c4d11", wallet: "0x0789...22A4", amount: 182_400, heldFor: "3h 59m", multiple: "16x", at: "20 Aug, 22:10 CEST" },
-  { hash: "0x12b0aa4419c8e77d03f1b90e5c2a44d9810e33c7ab6f09d1c4e8a2b7d6c5f001", wallet: "0xA31F...9c10", amount: 96_200, heldFor: "1h 12m", multiple: "9x", at: "20 Aug, 21:04 CEST" },
-  { hash: "0x98ee01c4d2aa11bf09c3d8e7a6b5c4012233445566778899aabbccddeeff0011", wallet: "0x44d0...1B8C", amount: 410_000, heldFor: "11h 02m", multiple: "35x", at: "20 Aug, 19:41 CEST" },
-  { hash: "0x0c55aa1199e8d7c6b5a443221100ffeeddccbbaa99887766554433221100aa11", wallet: "0xB017...6e2A", amount: 12_800, heldFor: "4m", multiple: "3x", at: "20 Aug, 18:22 CEST" },
-  { hash: "0x55aa11bb22cc33dd44ee55ff6677889900aabbccddeeff001122334455667788", wallet: "0x9fC2...04E1", amount: 221_050, heldFor: "6h 18m", multiple: "12x", at: "20 Aug, 16:55 CEST" },
-  { hash: "0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899", wallet: "0x2e90...C71d", amount: 8_440, heldFor: "1s", multiple: "2x", at: "20 Aug, 16:11 CEST" },
-  { hash: "0x111122223333444455556666777788889999aaaabbbbccccddddeeeeffff0001", wallet: "0x71Aa...B903", amount: 64_900, heldFor: "2h 07m", multiple: "7x", at: "20 Aug, 14:40 CEST" },
-  { hash: "0xdead000111122223333444455556666777788889999aaaabbbbccccddddeee1", wallet: "0xC4b8...11F0", amount: 305_600, heldFor: "1d 3h", multiple: "21x", at: "19 Aug, 23:08 CEST" },
-  { hash: "0xabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca", wallet: "0x08E4...77a2", amount: 19_330, heldFor: "22m", multiple: "4x", at: "19 Aug, 21:51 CEST" },
-  { hash: "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20", wallet: "0xF19c...D04b", amount: 150_000, heldFor: "8h 44m", multiple: "11x", at: "19 Aug, 18:02 CEST" },
-  { hash: "0x21f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100", wallet: "0x6d11...A8e3", amount: 47_200, heldFor: "5h 01m", multiple: "6x", at: "19 Aug, 15:20 CEST" },
-  { hash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", wallet: "0xE02b...4c19", amount: 88_750, heldFor: "14h 33m", multiple: "18x", at: "19 Aug, 11:48 CEST" },
-  { hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", wallet: "0x19c0...7F2e", amount: 3_110, heldFor: "41s", multiple: "1x", at: "19 Aug, 09:05 CEST" },
-  { hash: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", wallet: "0xB8aa...D031", amount: 260_400, heldFor: "2d 4h", multiple: "28x", at: "18 Aug, 22:17 CEST" },
-  { hash: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", wallet: "0x03e7...91Bb", amount: 51_900, heldFor: "9h 12m", multiple: "8x", at: "18 Aug, 19:40 CEST" },
-  { hash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", wallet: "0xAa14...C6d8", amount: 17_660, heldFor: "1h 55m", multiple: "5x", at: "18 Aug, 16:02 CEST" },
+const DAILY = buildDaily(120);
+const HOURLY = buildHourly();
+
+function sliceDaily(n: number) {
+  return DAILY.slice(-n);
+}
+
+function toCumulative(points: SeriesPoint[]): SeriesPoint[] {
+  let buy = 0;
+  let burn = 0;
+  return points.map((point) => {
+    buy += point.buybackUsd;
+    burn += point.burnUsd;
+    return {
+      label: point.label,
+      buybackUsd: buy,
+      burnUsd: burn,
+    };
+  });
+}
+
+export function dailyBars(window: ChartWindow): SeriesPoint[] {
+  if (window === "1d") return HOURLY;
+  if (window === "7d") return sliceDaily(7);
+  if (window === "30d") return sliceDaily(30);
+  if (window === "90d") return sliceDaily(90);
+  return DAILY;
+}
+
+export function cumulativeSeries(window: ChartWindow): SeriesPoint[] {
+  return toCumulative(dailyBars(window));
+}
+
+export const VOLUME_BY_WINDOW: Record<VolumeWindow, VolumeSnapshot> = {
+  "24h": {
+    realVolumeUsd: 218_440,
+    buyVolumeUsd: 94_210,
+    sellVolumeUsd: 101_880,
+    buySellVolumeUsd: 196_090,
+    totalVolumeUsd: 414_530,
+    revenueUsd: 3_523,
+    buybackUsd: 1_057,
+    hookEarned: 251_680,
+  },
+  "7d": {
+    realVolumeUsd: 1_162_880,
+    buyVolumeUsd: 488_410,
+    sellVolumeUsd: 531_220,
+    buySellVolumeUsd: 1_019_630,
+    totalVolumeUsd: 2_182_510,
+    revenueUsd: 18_551,
+    buybackUsd: 5_565,
+    hookEarned: 1_325_000,
+  },
+  "30d": {
+    realVolumeUsd: 4_218_990,
+    buyVolumeUsd: 1_774_200,
+    sellVolumeUsd: 1_966_410,
+    buySellVolumeUsd: 3_740_610,
+    totalVolumeUsd: 7_959_600,
+    revenueUsd: 67_656,
+    buybackUsd: 20_297,
+    hookEarned: 4_832_620,
+  },
+  all: {
+    realVolumeUsd: MOCK_METRICS.totalVolume,
+    buyVolumeUsd: 5_420_110,
+    sellVolumeUsd: 6_018_440,
+    buySellVolumeUsd: 11_438_550,
+    totalVolumeUsd: MOCK_METRICS.totalVolume + 11_438_550,
+    revenueUsd: 194_287,
+    buybackUsd: 58_286,
+    hookEarned: 13_877_620,
+  },
+};
+
+export const LATEST_BUYBACKS: BuybackTx[] = [
+  { hash: hashFor(1, 1), spentEth: 0.042, hookOut: 12_410, usd: 168.0, ago: "2m ago" },
+  { hash: hashFor(2, 1), spentEth: 0.118, hookOut: 34_880, usd: 472.0, ago: "7m ago" },
+  { hash: hashFor(3, 1), spentEth: 0.009, hookOut: 2_640, usd: 36.0, ago: "11m ago" },
+  { hash: hashFor(4, 1), spentEth: 0.255, hookOut: 75_200, usd: 1_020.0, ago: "18m ago" },
+  { hash: hashFor(5, 1), spentEth: 0.031, hookOut: 9_150, usd: 124.0, ago: "24m ago" },
+  { hash: hashFor(6, 1), spentEth: 0.087, hookOut: 25_700, usd: 348.0, ago: "41m ago" },
+  { hash: hashFor(7, 1), spentEth: 0.014, hookOut: 4_120, usd: 56.0, ago: "1h ago" },
+  { hash: hashFor(8, 1), spentEth: 0.19, hookOut: 56_040, usd: 760.0, ago: "1h ago" },
+  { hash: hashFor(9, 1), spentEth: 0.006, hookOut: 1_770, usd: 24.0, ago: "2h ago" },
+  { hash: hashFor(10, 1), spentEth: 0.072, hookOut: 21_300, usd: 288.0, ago: "3h ago" },
+  { hash: hashFor(11, 1), spentEth: 0.033, hookOut: 9_740, usd: 132.0, ago: "4h ago" },
+  { hash: hashFor(12, 1), spentEth: 0.21, hookOut: 62_100, usd: 840.0, ago: "5h ago" },
 ];
 
-export function protocolOverview() {
-  const burnedPct = (NATIVE_BURNED / NATIVE_SUPPLY) * 100;
-  const last = BURN_SERIES[BURN_SERIES.length - 1];
+export const BUYBACK_BURNS: BurnEvent[] = [
+  { hash: hashFor(1, 2), amount: 11_820, ago: "2m ago" },
+  { hash: hashFor(2, 2), amount: 33_410, ago: "7m ago" },
+  { hash: hashFor(3, 2), amount: 2_510, ago: "11m ago" },
+  { hash: hashFor(4, 2), amount: 71_900, ago: "18m ago" },
+  { hash: hashFor(5, 2), amount: 8_740, ago: "24m ago" },
+  { hash: hashFor(6, 2), amount: 24_600, ago: "41m ago" },
+  { hash: hashFor(7, 2), amount: 3_940, ago: "1h ago" },
+  { hash: hashFor(8, 2), amount: 53_280, ago: "1h ago" },
+  { hash: hashFor(9, 2), amount: 1_680, ago: "2h ago" },
+  { hash: hashFor(10, 2), amount: 20_150, ago: "3h ago" },
+  { hash: hashFor(11, 2), amount: 9_280, ago: "4h ago" },
+  { hash: hashFor(12, 2), amount: 59_400, ago: "5h ago" },
+];
 
+export const LATEST_BURNS: BurnEvent[] = [
+  ...BUYBACK_BURNS,
+  { hash: hashFor(13, 2), amount: 14_220, ago: "6h ago" },
+  { hash: hashFor(14, 2), amount: 7_110, ago: "8h ago" },
+  { hash: hashFor(15, 2), amount: 42_800, ago: "9h ago" },
+  { hash: hashFor(16, 2), amount: 3_050, ago: "11h ago" },
+  { hash: hashFor(17, 2), amount: 18_640, ago: "14h ago" },
+  { hash: hashFor(18, 2), amount: 27_900, ago: "18h ago" },
+  { hash: hashFor(19, 2), amount: 6_440, ago: "22h ago" },
+  { hash: hashFor(20, 2), amount: 31_200, ago: "1d ago" },
+];
+
+export const FEE_BREAKDOWN: FeeBreakdown = {
+  hookEarned: 13_877_620,
+  sentToDead: NATIVE_BURNED,
+  classicLaunches: 8_210_000,
+  customLaunches: 5_667_620,
+};
+
+export const PROTOCOL_BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
+
+export function protocolOverview() {
+  const all = VOLUME_BY_WINDOW.all;
+  const burnedPct = (NATIVE_BURNED / NATIVE_SUPPLY) * 100;
   return {
     nativeToken: NATIVE_TOKEN,
     totalSupply: NATIVE_SUPPLY,
     burned: NATIVE_BURNED,
     burnedPct,
     remaining: NATIVE_SUPPLY - NATIVE_BURNED,
-    launchVolumeUsd: MOCK_METRICS.totalVolume,
+    launchVolumeUsd: all.realVolumeUsd,
     launches: MOCK_POOLS.length,
     masterHooks: MASTER_HOOKS.length,
-    buybacks: 1_396,
+    buybacks: LATEST_BUYBACKS.length * 116,
     latestWindow: 100,
-    buybackEth: last?.value ?? 0,
+    buybackUsd: all.buybackUsd,
+    revenueUsd: all.revenueUsd,
   };
 }

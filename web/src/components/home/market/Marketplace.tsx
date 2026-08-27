@@ -16,7 +16,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   MARKET_TOKENS,
-  tokenAgeLabel,
   truncateCreator,
   type MarketToken,
 } from "@/lib/market-tokens";
@@ -52,6 +51,7 @@ export function Marketplace() {
         !q ||
         token.name.toLowerCase().includes(q) ||
         token.ticker.toLowerCase().includes(q) ||
+        token.description.toLowerCase().includes(q) ||
         token.creator.toLowerCase().includes(q);
       return matchesQuery;
     });
@@ -67,7 +67,7 @@ export function Marketplace() {
     <div className="space-y-5">
       <section id="party" className="scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Trending now</h2>
+          <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
           {trending.map((token) => (
@@ -260,10 +260,7 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
               <td className="px-4 py-3">
                 <BondMeter token={token} />
               </td>
-              <td className="px-4 py-3 font-mono text-xs text-zinc-500">
-                {truncateCreator(token.creator)}
-                <span className="ml-2 text-[10px] text-zinc-600">{tokenAgeLabel(token.launchedAt)}</span>
-              </td>
+              <td className="px-4 py-3 font-mono text-xs text-zinc-500">{truncateCreator(token.creator)}</td>
               <td className="px-4 py-3">
                 <QuickBuy size="sm" className="min-w-[220px]" />
               </td>

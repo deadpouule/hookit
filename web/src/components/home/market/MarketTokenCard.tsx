@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Copy, Lock } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 import { copyToClipboard } from "@/lib/clipboard";
@@ -10,7 +10,6 @@ import { formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
   isBonded,
-  tokenAgeLabel,
   truncateCreator,
   type MarketToken,
 } from "@/lib/market-tokens";
@@ -20,17 +19,8 @@ import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
 
 export function BondMeter({ token }: { token: MarketToken }) {
-  const bonded = isBonded(token);
+  if (isBonded(token)) return null;
   const progress = bondProgress(token);
-
-  if (bonded) {
-    return (
-      <p className="bond-done">
-        <Lock className="h-3 w-3" />
-        graduated · locked
-      </p>
-    );
-  }
 
   return (
     <div className="bond-meter">
@@ -57,32 +47,25 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
 
   return (
     <article
-      className="market-card token-card group relative cursor-pointer overflow-hidden border border-transparent transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_12px_rgba(149,20,209,0.45)]"
+      className="market-card group relative cursor-pointer overflow-hidden border border-transparent transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
       onClick={() => router.push(href)}
     >
       <TokenArt
         token={token}
-        className="pointer-events-none flex aspect-square items-center justify-center"
-        glyphClassName="text-3xl drop-shadow-lg sm:text-4xl"
+        className="token-thumb pointer-events-none flex items-center justify-center"
+        glyphClassName="text-4xl drop-shadow-lg"
       />
 
       <div className="token-card-body">
         <h3 className="pointer-events-none truncate">
-          {token.name}{" "}
-          <span>${token.ticker}</span>
+          {token.name} <span>${token.ticker}</span>
         </h3>
 
-        <p className="token-mcap pointer-events-none">{formatUsd(token.marketCap)}</p>
-
-        <div className="token-card-meta">
-          <button type="button" onClick={copy} className="relative z-20">
-            {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            copy ca
-          </button>
-          <span>{tokenAgeLabel(token.launchedAt)}</span>
-        </div>
-
         <dl className="pointer-events-none token-card-stats">
+          <div>
+            <dt>Mcap</dt>
+            <dd>{formatUsd(token.marketCap)}</dd>
+          </div>
           <div>
             <dt>Vol</dt>
             <dd>{formatUsd(token.volume)}</dd>
@@ -95,11 +78,13 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
 
         <BondMeter token={token} />
 
-        <QuickBuy size="sm" className="relative z-20 mt-1.5" />
+        <QuickBuy size="sm" className="relative z-20" />
 
-        <p className="token-card-creator pointer-events-none">
-          Creator {truncateCreator(token.creator)}
-        </p>
+        <button type="button" onClick={copy} className="token-card-creator relative z-20">
+          <span>Creator</span>
+          <span className="font-mono">{truncateCreator(token.creator)}</span>
+          {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-50" />}
+        </button>
       </div>
       <Link href={href} className="absolute inset-0 z-10" aria-label={`${token.name} $${token.ticker}`}>
         <span className="sr-only">

@@ -19,7 +19,7 @@ export function QuickBuy({
           className={cn("quick-buy-btn", size === "sm" && "py-1 text-[10px]")}
           onClick={(e) => e.stopPropagation()}
         >
-          [${amount}]
+          ${amount}
         </button>
       ))}
     </div>
