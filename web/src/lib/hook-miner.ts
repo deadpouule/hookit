@@ -1,6 +1,7 @@
 import { concat, getAddress, keccak256, pad, toHex, type Address, type Hex } from "viem";
 
 const CREATE2_DEPLOYER = "0x4e59b44847b379578588920cA78FbF26c0B4956C" as Address;
+export { CREATE2_DEPLOYER };
 const FLAG_MASK = BigInt(0x3fff);
 const MAX_LOOP = 200_000;
 

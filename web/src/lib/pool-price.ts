@@ -1,9 +1,9 @@
-import { type Address } from "viem";
+import { type Address, zeroAddress } from "viem";
 
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+import { getChainDeployment } from "@/lib/contracts/config";
 
-export const STATE_VIEW_ADDRESS =
-  "0x571291b572ed32ce6751a2Cb2486EbEe8DEfB9B4" as Address;
+export const STATE_VIEW_ADDRESS = getChainDeployment().stateView;
 
 export const stateViewAbi = [
   {
@@ -16,6 +16,13 @@ export const stateViewAbi = [
       { name: "protocolFee", type: "uint24" },
       { name: "lpFee", type: "uint24" },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getLiquidity",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [{ name: "liquidity", type: "uint128" }],
     stateMutability: "view",
   },
 ] as const;

@@ -37,10 +37,10 @@ export function TokenCandleChart({
   onInterval: (next: ChartInterval) => void;
 }) {
   const visible = useMemo(() => candles.slice(-VISIBLE[interval]), [candles, interval]);
-  const min = Math.min(...visible.map((c) => c.l));
-  const max = Math.max(...visible.map((c) => c.h));
+  const min = visible.length ? Math.min(...visible.map((c) => c.l)) : 0;
+  const max = visible.length ? Math.max(...visible.map((c) => c.h)) : 1;
   const span = Math.max(max - min, 1);
-  const labels = [max, min + span * 0.66, min + span * 0.33, min];
+  const labels = visible.length ? [max, min + span * 0.66, min + span * 0.33, min] : [];
 
   return (
     <div className="desk-card overflow-hidden">
@@ -78,6 +78,12 @@ export function TokenCandleChart({
 
       <div className="relative h-[340px] bg-[#0a0a0a] sm:h-[420px]">
         <div className="candle-grid absolute inset-0" />
+        {visible.length === 0 ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-zinc-500">
+            No trades indexed yet
+          </div>
+        ) : (
+          <>
         <div className="absolute inset-y-3 right-2 z-10 flex flex-col justify-between text-right font-mono text-[10px] text-zinc-600">
           {labels.map((value) => (
             <span key={value}>{formatCompactUsd(value)}</span>
@@ -117,6 +123,8 @@ export function TokenCandleChart({
             );
           })}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

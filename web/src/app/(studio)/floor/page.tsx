@@ -1,10 +1,10 @@
-import { ProtocolStatsPage } from "@/components/stats/ProtocolStatsPage";
+import { FloorPage } from "@/components/floor/FloorPage";
 
 export const metadata = {
-  title: "Stats | hook it",
-  description: "HOOK buyback and burn, launch volume, and master hooks.",
+  title: "Floor | hook it",
+  description: "Backed floor vaults — redeem at the ratchet.",
 };
 
-export default function StatsPage() {
-  return <ProtocolStatsPage />;
+export default function FloorRoutePage() {
+  return <FloorPage />;
 }

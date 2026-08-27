@@ -1,7 +1,35 @@
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { loadConfig } from "./config.js";
 import { createClient, tick } from "./poller.js";
 import { startApi } from "./api.js";
 import { Store } from "./store.js";
+
+/** Load indexer/.env into process.env (no dotenv dependency). */
+function loadDotEnv() {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const envPath = resolve(here, "../.env");
+  if (!existsSync(envPath)) return;
+  for (const line of readFileSync(envPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (process.env[key] === undefined) process.env[key] = val;
+  }
+}
+
+loadDotEnv();
 
 async function main() {
   const cmd = process.argv[2] ?? "serve";

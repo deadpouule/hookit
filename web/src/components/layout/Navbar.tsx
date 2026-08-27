@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { getNetworkLabel } from "@/lib/chains";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -82,7 +83,7 @@ export function Navbar() {
           </Link>
           <span className="hidden items-center gap-1.5 rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-zinc-400 lg:flex">
             <span className="h-1.5 w-1.5 rounded-full bg-neon-lime" />
-            Base Sepolia
+            {getNetworkLabel()}
           </span>
           <ConnectButton />
           <button

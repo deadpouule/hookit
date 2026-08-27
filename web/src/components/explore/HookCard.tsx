@@ -27,7 +27,12 @@ export function HookCard({ hook }: { hook: MasterHook }) {
 
       <div className="orb-footer">
         <p className="text-xs font-bold text-white">{hook.description}</p>
-        <span className="orb-use">Use this hook</span>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="font-mono text-[10px] text-zinc-500">
+            {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
+          </span>
+          <span className="orb-use">Use this hook</span>
+        </div>
       </div>
     </motion.a>
   );

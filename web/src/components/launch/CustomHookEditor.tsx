@@ -33,9 +33,9 @@ export function CustomHookEditor({ source, fileName, onChange }: Props) {
       <div className="rounded-xl border border-base-blue/20 bg-base-blue/[0.06] px-4 py-3">
         <p className="text-sm text-zinc-200">Bring your own Uniswap v4 hook</p>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          Paste or upload your <code className="text-zinc-400">.sol</code> file. Hookit mines the
-          CREATE2 address and deploys your hook automatically when you launch — no address to
-          copy.
+          Paste or upload your <code className="text-zinc-400">.sol</code> file. Hookit compiles,
+          mines a CREATE2 salt, and deploys from your wallet when you launch (server forge create
+          is the fallback).
         </p>
       </div>
 

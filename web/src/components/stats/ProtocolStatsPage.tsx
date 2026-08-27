@@ -1,18 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
+import { useLaunches } from "@/hooks/useLaunches";
 import { PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
 import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
+import { fetchIndexerTokens, type IndexerTokenSummary } from "@/lib/indexer-client";
+import {
+  computeLiveProtocolKpis,
+  volumeSnapshotForWindow,
+} from "@/lib/live-protocol-stats";
 import {
   BUYBACK_BURNS,
   CHART_WINDOWS,
   FEE_BREAKDOWN,
   LATEST_BURNS,
   LATEST_BUYBACKS,
-  VOLUME_BY_WINDOW,
   VOLUME_WINDOWS,
   cumulativeSeries,
   dailyBars,
@@ -29,8 +34,29 @@ export function ProtocolStatsPage() {
   const [view, setView] = useState<"chart" | "table">("chart");
   const [areaHover, setAreaHover] = useState<number | null>(null);
   const [barHover, setBarHover] = useState<number | null>(null);
+  const [indexerTokens, setIndexerTokens] = useState<IndexerTokenSummary[] | null>(null);
 
-  const volume = VOLUME_BY_WINDOW[volumeWindow];
+  const { data: pools } = useLaunches();
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchIndexerTokens()
+      .then((res) => {
+        if (!cancelled) setIndexerTokens(res.tokens);
+      })
+      .catch(() => {
+        if (!cancelled) setIndexerTokens(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const live = useMemo(
+    () => computeLiveProtocolKpis(pools ?? [], indexerTokens),
+    [pools, indexerTokens],
+  );
+  const volume = volumeSnapshotForWindow(volumeWindow, live);
   const areaSeries = useMemo(() => cumulativeSeries(chartWindow), [chartWindow]);
   const barSeries = useMemo(() => dailyBars(chartWindow), [chartWindow]);
   const areaActive = Math.min(areaHover ?? areaSeries.length - 1, areaSeries.length - 1);
@@ -52,6 +78,24 @@ export function ProtocolStatsPage() {
 
       <section className="stats-block">
         <div className="stats-block-head">
+          <h2>Live protocol</h2>
+          <span className="text-[11px] text-zinc-500">
+            {live.source === "live" ? "On-chain + indexer" : "Waiting for launches"}
+          </span>
+        </div>
+        <div className="stats-kpi-3">
+          <Kpi label="Launches" value={String(live.launches)} hint={`${live.masterLaunches} master · ${live.classicLaunches} classic`} />
+          <Kpi label="Liquidity" value={formatFullUsd(live.liquidityUsd)} hint="Sum of pool TVL" />
+          <Kpi
+            label="24h volume"
+            value={formatFullUsd(live.volume24hUsd)}
+            hint={`${live.trades24h} trades · ${live.tokensIndexed} indexed`}
+          />
+        </div>
+      </section>
+
+      <section className="stats-block">
+        <div className="stats-block-head">
           <h2>Traded volume</h2>
           <RangePills
             value={volumeWindow}
@@ -64,7 +108,11 @@ export function ProtocolStatsPage() {
           <Kpi
             label="Real volume"
             value={formatFullUsd(volume.realVolumeUsd)}
-            hint="Organic launches and swaps"
+            hint={
+              volumeWindow === "24h" && live.source === "live"
+                ? "Live indexer window"
+                : "Organic launches and swaps"
+            }
           />
           <Kpi
             label="Total volume (Buy / Sell)"
@@ -94,6 +142,11 @@ export function ProtocolStatsPage() {
             hint="Bought back this window"
           />
         </div>
+        {volumeWindow !== "24h" && (
+          <p className="mt-2 text-[11px] text-zinc-600">
+            Buyback / multi-day series stay illustrative until protocol fee events are indexed.
+          </p>
+        )}
       </section>
 
       <section className="stats-block">

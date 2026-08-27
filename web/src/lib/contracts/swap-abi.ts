@@ -153,6 +153,24 @@ export const feeEscrowAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
+  {
+    type: "function",
+    name: "claimAll",
+    inputs: [{ name: "currencies", type: "address[]" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+/** GraduatedFeeHook — Classic rail post-bonding. */
+export const graduatedFeeHookAbi = [
+  {
+    type: "function",
+    name: "escrow",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
 ] as const;
 
 export const floorVaultAbi = [

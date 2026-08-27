@@ -66,13 +66,15 @@ export interface TokenPool {
     antiSnipe: boolean;
     backedFloor: boolean;
     antiMev: boolean;
+    maxTx?: boolean;
+    maxWallet?: boolean;
     autoBurn?: boolean;
     lpDonate?: boolean;
     customHook: boolean;
   };
   address: string;
   quoteAsset?: string;
-  hookType: "Master" | "Custom";
+  hookType: "Master" | "Custom" | "Classic";
   bannerGradient: string;
   priceEth?: number;
   volume24h?: number;
@@ -87,8 +89,19 @@ export interface TokenPool {
   quoteAddress?: `0x${string}`;
   tickSpacing?: number;
   lpFee?: number;
+  /** Locked position range (Master / graduated Classic). */
+  tickLower?: number;
+  tickUpper?: number;
+  /** Raw Uniswap L (uint128) — not USD. */
+  liquidityRaw?: string;
   priceSeries?: number[];
   trades24h?: number;
+  /** Master atomic pool vs Classic bonding curve. */
+  rail?: "master" | "classic";
+  bondingPhase?: number;
+  tokensSold?: string;
+  graduationQuote?: string;
+  realQuote?: string;
 }
 
 export interface ProtocolMetrics {

@@ -54,7 +54,14 @@ export function TokenTxTable({
               </tr>
             </thead>
             <tbody>
-              {swaps.map((row) => (
+              {swaps.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-500">
+                    No on-chain swaps yet
+                  </td>
+                </tr>
+              ) : (
+                swaps.map((row) => (
                 <tr
                   key={row.id}
                   className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
@@ -84,7 +91,8 @@ export function TokenTxTable({
                     </span>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         ) : (
@@ -97,7 +105,14 @@ export function TokenTxTable({
               </tr>
             </thead>
             <tbody>
-              {holders.map((row) => (
+              {holders.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-10 text-center text-sm text-zinc-500">
+                    Holders appear once the indexer has caught up
+                  </td>
+                </tr>
+              ) : (
+                holders.map((row) => (
                 <tr
                   key={row.address}
                   className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
@@ -108,7 +123,8 @@ export function TokenTxTable({
                   </td>
                   <td className="px-4 py-2.5 font-mono text-zinc-200">{row.pct.toFixed(2)}%</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         )}

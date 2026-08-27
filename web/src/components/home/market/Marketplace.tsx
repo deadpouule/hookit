@@ -13,9 +13,12 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
+import { useLaunches } from "@/hooks/useLaunches";
+import { isFactoryConfigured } from "@/lib/contracts/config";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   MARKET_TOKENS,
+  poolToMarketToken,
   truncateCreator,
   type MarketToken,
 } from "@/lib/market-tokens";
@@ -43,10 +46,21 @@ export function Marketplace() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("top");
   const [layout, setLayout] = useState<LayoutMode>("grid");
+  const factoryConfigured = isFactoryConfigured();
+  const { data: onChainPools, isLoading, isError } = useLaunches();
+
+  const sourceTokens = useMemo(() => {
+    if (!factoryConfigured) return MARKET_TOKENS;
+    if (onChainPools && onChainPools.length > 0) {
+      return onChainPools.map(poolToMarketToken);
+    }
+    // While loading / empty / error — never mix demo cards into a live factory view.
+    return [];
+  }, [factoryConfigured, onChainPools]);
 
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = MARKET_TOKENS.filter((token) => {
+    const filtered = sourceTokens.filter((token) => {
       const matchesQuery =
         !q ||
         token.name.toLowerCase().includes(q) ||
@@ -56,15 +70,40 @@ export function Marketplace() {
       return matchesQuery;
     });
     return sortTokens(filtered, sort);
-  }, [query, sort]);
+  }, [query, sort, sourceTokens]);
 
   const trending = useMemo(
-    () => [...MARKET_TOKENS].sort((a, b) => b.change1h - a.change1h).slice(0, 8),
-    [],
+    () => [...sourceTokens].sort((a, b) => b.change1h - a.change1h).slice(0, 8),
+    [sourceTokens],
   );
 
   return (
     <div className="space-y-5">
+      {factoryConfigured && isLoading && (
+        <p className="text-xs text-zinc-500">Loading on-chain launches…</p>
+      )}
+      {factoryConfigured && isError && (
+        <p className="text-xs text-amber-400">
+          Could not load launches from the factory. Check RPC / factory address.
+        </p>
+      )}
+      {factoryConfigured && !isLoading && !isError && sourceTokens.length === 0 && (
+        <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+          No launches yet — be the first from{" "}
+          <Link href="/launch" className="text-zinc-200 underline">
+            Launch
+          </Link>
+          .
+        </p>
+      )}
+      {!factoryConfigured && (
+        <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+          Set <code className="text-zinc-200">NEXT_PUBLIC_LAUNCH_FACTORY</code> /{" "}
+          <code className="text-zinc-200">NEXT_PUBLIC_BONDING_FACTORY</code> after deploy to list live
+          tokens. Showing demo catalog.
+        </p>
+      )}
+
       <section id="party" className="scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
@@ -93,7 +132,7 @@ export function Marketplace() {
                     {formatPercent(token.change1h, true)}
                   </span>
                 </div>
-                <QuickBuy size="sm" className="relative z-20 mt-1.5" />
+                <QuickBuy tokenId={token.id} size="sm" className="relative z-20 mt-1.5" />
               </div>
               <Link
                 href={tokenHref(token.id)}
@@ -262,7 +301,7 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
               </td>
               <td className="px-4 py-3 font-mono text-xs text-zinc-500">{truncateCreator(token.creator)}</td>
               <td className="px-4 py-3">
-                <QuickBuy size="sm" className="min-w-[220px]" />
+                <QuickBuy tokenId={token.id} size="sm" className="min-w-[220px]" />
               </td>
             </tr>
           ))}

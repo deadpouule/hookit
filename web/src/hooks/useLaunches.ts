@@ -4,9 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, isAddress } from "viem";
 import { usePublicClient } from "wagmi";
 
-import { getLaunchFactoryAddress } from "@/lib/contracts/config";
+import {
+  getBondingFactoryAddress,
+  getLaunchFactoryAddress,
+  isFactoryConfigured,
+} from "@/lib/contracts/config";
+import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
+  fetchBondingLaunchById,
   fetchLaunchById,
   launchToTokenPool,
   type OnChainLaunch,
@@ -16,11 +22,11 @@ import { readEthUsd } from "@/lib/eth-usd";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches() {
-  const factory = getLaunchFactoryAddress();
+  const factoryConfigured = isFactoryConfigured();
 
   return useQuery({
-    queryKey: ["launches", factory],
-    enabled: !!factory,
+    queryKey: ["launches", getLaunchFactoryAddress(), getBondingFactoryAddress()],
+    enabled: factoryConfigured,
     queryFn: async (): Promise<TokenPool[]> => {
       const res = await fetch("/api/launches", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch launches");
@@ -33,31 +39,89 @@ export function useLaunches() {
 
 export function useLaunchPool(id: string) {
   const factory = getLaunchFactoryAddress();
+  const bonding = getBondingFactoryAddress();
   const publicClient = usePublicClient();
+  const ready = (!!factory || !!bonding) && !!publicClient && !!id;
 
   return useQuery({
-    queryKey: ["launch-pool", factory, id],
-    enabled: !!factory && !!publicClient && !!id,
+    queryKey: ["launch-pool", factory, bonding, id, publicClient?.chain?.id],
+    enabled: ready,
+    retry: 1,
     queryFn: async (): Promise<TokenPool | null> => {
-      if (!factory || !publicClient) return null;
+      if (!publicClient) return null;
 
-      let launch: OnChainLaunch | null = null;
+      let pool: TokenPool | null = null;
 
       if (isAddress(id)) {
-        const launchId = (await publicClient.readContract({
-          address: factory,
-          abi: launchFactoryAbi,
-          functionName: "tokenLaunchId",
-          args: [id as Address],
-        })) as bigint;
-        launch = await fetchLaunchById(publicClient, factory, launchId);
+        if (factory) {
+          const launchId = (await publicClient.readContract({
+            address: factory,
+            abi: launchFactoryAbi,
+            functionName: "tokenLaunchId",
+            args: [id as Address],
+          })) as bigint;
+          if (launchId > BigInt(0)) {
+            const launch = await fetchLaunchById(publicClient, factory, launchId);
+            if (launch) {
+              const ethUsd = await readEthUsd(publicClient);
+              const [enriched] = await enrichPoolsWithSpotPrices(
+                publicClient,
+                [launchToTokenPool(launch)],
+                ethUsd,
+              );
+              pool = enriched ?? null;
+            }
+          }
+        }
+        if (!pool && bonding) {
+          const launchId = (await publicClient.readContract({
+            address: bonding,
+            abi: bondingFactoryAbi,
+            functionName: "tokenLaunchId",
+            args: [id as Address],
+          })) as bigint;
+          if (launchId > BigInt(0)) {
+            pool = await fetchBondingLaunchById(publicClient, bonding, launchId);
+          }
+        }
       } else if (/^\d+$/.test(id)) {
-        launch = await fetchLaunchById(publicClient, factory, BigInt(id));
+        if (factory) {
+          const launch = await fetchLaunchById(publicClient, factory, BigInt(id));
+          if (launch) {
+            const ethUsd = await readEthUsd(publicClient);
+            const [enriched] = await enrichPoolsWithSpotPrices(
+              publicClient,
+              [launchToTokenPool(launch)],
+              ethUsd,
+            );
+            pool = enriched ?? null;
+          }
+        }
+        if (!pool && bonding) {
+          pool = await fetchBondingLaunchById(publicClient, bonding, BigInt(id));
+        }
       }
 
-      if (!launch) return null;
-      const ethUsd = await readEthUsd(publicClient);
-      const [pool] = await enrichPoolsWithSpotPrices(publicClient, [launchToTokenPool(launch)], ethUsd);
+      // Last resort: resolve from the launches API (same source as the marketplace).
+      if (!pool) {
+        try {
+          const res = await fetch("/api/launches", { cache: "no-store" });
+          if (res.ok) {
+            const body = (await res.json()) as { pools?: TokenPool[] };
+            const needle = id.toLowerCase();
+            pool =
+              body.pools?.find(
+                (p) =>
+                  p.id.toLowerCase() === needle ||
+                  p.contractAddress?.toLowerCase() === needle ||
+                  (p.launchId != null && String(p.launchId) === id),
+              ) ?? null;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
       return pool;
     },
   });

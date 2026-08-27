@@ -5,6 +5,7 @@ import { Loader2, Rocket } from "lucide-react";
 import { HookChip } from "@/components/hooks/HookMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
@@ -95,7 +96,7 @@ export function LaunchSummary({
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-zinc-500">Network</dt>
-          <dd className="text-zinc-200">Base Sepolia</dd>
+          <dd className="text-zinc-200">{getNetworkLabel()}</dd>
         </div>
         <div className="flex justify-between gap-4 border-t border-white/[0.06] pt-2.5">
           <dt className="text-zinc-500">Launch fee</dt>
@@ -146,7 +147,7 @@ export function LaunchSummary({
 
       {!walletReady ? (
         <div className="space-y-3">
-          <p className="text-xs text-zinc-500">Connect a wallet on Base Sepolia to launch.</p>
+          <p className="text-xs text-zinc-500">Connect a wallet on {getNetworkLabel()} to launch.</p>
           <ConnectButton className="w-full justify-center py-2.5" />
         </div>
       ) : (

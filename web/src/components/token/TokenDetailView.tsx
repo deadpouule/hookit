@@ -4,14 +4,16 @@ import Link from "next/link";
 import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useState } from "react";
 
+import { BondingProgress } from "@/components/token/BondingProgress";
+import { CreatorActions } from "@/components/token/CreatorActions";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
-import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
-import { formatCompactUsd } from "@/lib/format";
+import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import type { TokenPool } from "@/lib/types";
 
 interface TokenDetailViewProps {
@@ -25,6 +27,9 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
   const contractAddress = pool.contractAddress ?? pool.address;
   const trending = live.change1h >= 0;
+  const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
+    ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
+    : null;
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -60,6 +65,11 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                   {pool.name}
                 </h1>
                 <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
+                {pool.rail === "classic" && (
+                  <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
+                    {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
+                  </span>
+                )}
                 {trending && (
                   <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
                     <Flame className="h-3.5 w-3.5" />
@@ -79,7 +89,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                   {copied && <span className="text-[#10b981]">Copied</span>}
                 </button>
                 <a
-                  href={`${BASE_SEPOLIA_EXPLORER}/address/${contractAddress}`}
+                  href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-zinc-600 transition hover:text-[#03b1ed]"
@@ -87,9 +97,11 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
-                <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
-                  Born 13 hours ago
-                </span>
+                {ageSeconds != null && (
+                  <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
+                    Born {formatAge(ageSeconds)} ago
+                  </span>
+                )}
               </div>
             </div>
           </header>
@@ -112,8 +124,10 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
         </div>
 
         <aside className="space-y-3">
-          <TokenSwapCard ticker={pool.ticker} />
-          <TokenSidebarStats live={live} contractAddress={contractAddress} />
+          <TokenSwapCard pool={pool} />
+          <BondingProgress pool={pool} />
+          <CreatorActions pool={pool} />
+          <TokenSidebarStats live={live} pool={pool} contractAddress={contractAddress} />
         </aside>
       </div>
     </div>

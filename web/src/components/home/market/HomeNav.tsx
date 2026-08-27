@@ -40,7 +40,8 @@ function CloseMark() {
 const LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
-  { href: "/floor", label: "Stats" },
+  { href: "/floor", label: "Floor" },
+  { href: "/stats", label: "Stats" },
   { href: GITHUB_REPO_URL, label: "Docs", external: true },
 ] as const;
 

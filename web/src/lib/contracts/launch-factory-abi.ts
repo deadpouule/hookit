@@ -100,6 +100,13 @@ export const launchFactoryAbi = [
   },
   {
     type: "function",
+    name: "launchedAt",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint64" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "masterHook",
     inputs: [],
     outputs: [{ name: "", type: "address" }],

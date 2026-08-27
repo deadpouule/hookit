@@ -1,5 +1,11 @@
 import { defineChain } from "viem";
 
+/** Same CREATE2 Multicall3 used across OP-stack / Base / most EVM L2s. */
+const MULTICALL3 = {
+  address: "0xcA11bde05977b3631167028862bE2a173976CA11" as const,
+  blockCreated: 0,
+};
+
 /** Production mainnet — Uniswap v4 + Universal Router. */
 export const ink = defineChain({
   id: 57_073,
@@ -15,6 +21,9 @@ export const ink = defineChain({
       name: "Ink Explorer",
       url: "https://explorer.inkonchain.com",
     },
+  },
+  contracts: {
+    multicall3: MULTICALL3,
   },
 });
 
@@ -37,6 +46,9 @@ export const baseSepolia = defineChain({
       name: "Basescan",
       url: "https://sepolia.basescan.org",
     },
+  },
+  contracts: {
+    multicall3: MULTICALL3,
   },
   testnet: true,
 });

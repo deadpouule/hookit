@@ -16,11 +16,13 @@ import {
 
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { packLaunchBitmask } from "@/lib/bitmask";
+import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
   DEFAULT_STARTING_TICK,
   DEFAULT_TICK_SPACING,
   DEFAULT_TOTAL_SUPPLY,
+  getBondingFactoryAddress,
   getLaunchFactoryAddress,
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
@@ -29,9 +31,13 @@ import { buildMetadataUri } from "@/lib/launch-metadata";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { LaunchFormState } from "@/lib/types";
 import { requestLaunchVerification, type VerifyStatus } from "@/lib/verify-launch";
+import { wagmiConfig } from "@/lib/wagmi";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
+import { sendTransaction } from "wagmi/actions";
 
 import type { LaunchPhase } from "@/components/launch/LaunchSummary";
+
+export type LaunchRail = "master" | "classic";
 
 export type LaunchResult = {
   launchId: bigint;
@@ -39,12 +45,15 @@ export type LaunchResult = {
   poolId: `0x${string}`;
   txHash: `0x${string}`;
   customHookAddress?: Address;
+  rail: LaunchRail;
 };
 
 export type { VerifyStatus };
 
-export function useLaunchToken() {
-  const factory = getLaunchFactoryAddress();
+export function useLaunchToken(rail: LaunchRail = "master") {
+  const masterFactory = getLaunchFactoryAddress();
+  const bondingFactory = getBondingFactoryAddress();
+  const factory = rail === "classic" ? bondingFactory : masterFactory;
   const publicClient = usePublicClient();
   const { address: creator } = useAccount();
   const queryClient = useQueryClient();
@@ -58,7 +67,7 @@ export function useLaunchToken() {
 
   const { data: onChainLaunchFee } = useReadContract({
     address: factory,
-    abi: launchFactoryAbi,
+    abi: rail === "classic" ? bondingFactoryAbi : launchFactoryAbi,
     functionName: "launchFee",
     query: { enabled: !!factory },
   });
@@ -73,7 +82,9 @@ export function useLaunchToken() {
 
       if (!factory) {
         throw new Error(
-          "LaunchFactory not configured. Set NEXT_PUBLIC_LAUNCH_FACTORY in web/.env.local after deploying.",
+          rail === "classic"
+            ? "Bonding factory not configured. Set NEXT_PUBLIC_BONDING_FACTORY after deploying."
+            : "LaunchFactory not configured. Set NEXT_PUBLIC_LAUNCH_FACTORY after deploying.",
         );
       }
       if (!publicClient) {
@@ -84,45 +95,78 @@ export function useLaunchToken() {
         throw new Error(`Unsupported quote asset: ${form.quoteAsset}`);
       }
 
-      let customHookAddress: Address | undefined;
-
-      if (form.hookMode === "custom") {
-        const analysis = analyzeCustomHookSource(form.customHookSource);
-        if (!analysis.valid) {
-          throw new Error(analysis.errors[0] ?? "Fix your hook source before launching");
-        }
-
-        setPhase("deploying-hook");
-        customHookAddress = await deployCustomHook(form.customHookSource);
-      }
-
-      const bitmask =
-        form.hookMode === "custom" ? BigInt(0) : packLaunchBitmask(form.modules, form.creatorTaxBps);
       const metadataURI = buildMetadataUri(form);
-      const customHook = customHookAddress ?? zeroAddress;
-
       const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
+      let customHookAddress: Address | undefined;
+      let hash: `0x${string}`;
 
       setPhase("launching");
-      const hash = await writeContractAsync({
-        address: factory,
-        abi: launchFactoryAbi,
-        functionName: "launch",
-        args: [
-          {
-            name: form.name.trim(),
-            symbol: form.ticker.trim().toUpperCase(),
-            metadataURI,
-            totalSupply: DEFAULT_TOTAL_SUPPLY,
-            quote,
-            tickSpacing: DEFAULT_TICK_SPACING,
-            startingTick: DEFAULT_STARTING_TICK,
-            bitmask,
-            customHook,
-          },
-        ],
-        value: launchFee,
-      });
+
+      if (rail === "classic") {
+        hash = await writeContractAsync({
+          address: factory,
+          abi: bondingFactoryAbi,
+          functionName: "launch",
+          args: [
+            {
+              name: form.name.trim(),
+              symbol: form.ticker.trim().toUpperCase(),
+              metadataURI,
+              totalSupply: BigInt(0),
+              quote,
+              creatorTaxBps: form.creatorTaxBps,
+            },
+          ],
+          value: launchFee,
+        });
+      } else {
+        if (form.hookMode === "custom") {
+          const analysis = analyzeCustomHookSource(form.customHookSource);
+          if (!analysis.valid) {
+            throw new Error(analysis.errors[0] ?? "Fix your hook source before launching");
+          }
+          setPhase("deploying-hook");
+          try {
+            customHookAddress = await deployCustomHook(form.customHookSource, {
+              sendCreate2: async ({ to, data }) =>
+                sendTransaction(wagmiConfig, { to, data }),
+              waitForReceipt: async (txHash) => {
+                await publicClient.waitForTransactionReceipt({ hash: txHash });
+              },
+            });
+          } catch {
+            // Server forge create when wallet CREATE2 / prepare fails
+            customHookAddress = await deployCustomHook(form.customHookSource);
+          }
+          setPhase("launching");
+        }
+
+        const bitmask =
+          form.hookMode === "custom"
+            ? BigInt(0)
+            : packLaunchBitmask(form.modules, form.creatorTaxBps);
+        const customHook = customHookAddress ?? zeroAddress;
+
+        hash = await writeContractAsync({
+          address: factory,
+          abi: launchFactoryAbi,
+          functionName: "launch",
+          args: [
+            {
+              name: form.name.trim(),
+              symbol: form.ticker.trim().toUpperCase(),
+              metadataURI,
+              totalSupply: DEFAULT_TOTAL_SUPPLY,
+              quote,
+              tickSpacing: DEFAULT_TICK_SPACING,
+              startingTick: DEFAULT_STARTING_TICK,
+              bitmask,
+              customHook,
+            },
+          ],
+          value: launchFee,
+        });
+      }
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
@@ -133,16 +177,29 @@ export function useLaunchToken() {
       for (const log of receipt.logs) {
         if (log.address.toLowerCase() !== factory.toLowerCase()) continue;
         try {
-          const decoded = decodeEventLog({
-            abi: launchFactoryAbi,
-            data: log.data,
-            topics: log.topics,
-          });
-          if (decoded.eventName === "TokenLaunched") {
-            launchId = decoded.args.launchId as bigint;
-            token = decoded.args.token as Address;
-            poolId = decoded.args.poolId as `0x${string}`;
-            break;
+          if (rail === "classic") {
+            const decoded = decodeEventLog({
+              abi: bondingFactoryAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === "TokenLaunched") {
+              launchId = decoded.args.launchId as bigint;
+              token = decoded.args.token as Address;
+              break;
+            }
+          } else {
+            const decoded = decodeEventLog({
+              abi: launchFactoryAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === "TokenLaunched") {
+              launchId = decoded.args.launchId as bigint;
+              token = decoded.args.token as Address;
+              poolId = decoded.args.poolId as `0x${string}`;
+              break;
+            }
           }
         } catch {
           // unrelated log
@@ -156,11 +213,12 @@ export function useLaunchToken() {
         poolId,
         txHash: hash,
         customHookAddress,
+        rail,
       };
       setResult(out);
       await queryClient.invalidateQueries({ queryKey: ["launches"] });
 
-      if (token !== zeroAddress && creator) {
+      if (token !== zeroAddress && creator && rail === "master") {
         const gen = ++verifyGen.current;
         setVerifyStatus("verifying");
         void requestLaunchVerification({
@@ -185,7 +243,7 @@ export function useLaunchToken() {
 
       return out;
     },
-    [creator, factory, onChainLaunchFee, publicClient, queryClient, writeContractAsync],
+    [creator, factory, onChainLaunchFee, publicClient, queryClient, rail, writeContractAsync],
   );
 
   const resetResult = useCallback(() => {
@@ -208,6 +266,7 @@ export function useLaunchToken() {
     resetResult,
     verifyStatus,
     verifyError,
+    rail,
   };
 }
 

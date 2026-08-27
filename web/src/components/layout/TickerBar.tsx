@@ -1,5 +1,7 @@
+import { getNetworkLabel } from "@/lib/chains";
+
 const ITEMS = [
-  "Live on Base Sepolia",
+  `Live on ${getNetworkLabel()}`,
   "$4,000 launch FDV",
   "Locked LP · no migration",
   "Quote-only swap fees",

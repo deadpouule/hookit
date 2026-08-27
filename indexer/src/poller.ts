@@ -103,23 +103,27 @@ async function ensureMasterToken(
   if (store.getToken(args.token)) return;
   if (!cfg.launchFactory) return;
 
-  const [quote, launchedAt, meta] = await Promise.all([
-    client.readContract({
-      address: cfg.launchFactory,
-      abi: launchFactoryAbi,
-      functionName: "launchQuote",
-      args: [args.launchId],
-    }),
-    client.readContract({
-      address: cfg.launchFactory,
-      abi: launchFactoryAbi,
-      functionName: "launchedAt",
-      args: [args.launchId],
-    }),
+  const [quoteSettled, launchedAtSettled, meta] = await Promise.all([
+    client
+      .readContract({
+        address: cfg.launchFactory,
+        abi: launchFactoryAbi,
+        functionName: "launchQuote",
+        args: [args.launchId],
+      })
+      .catch(() => zeroAddress),
+    client
+      .readContract({
+        address: cfg.launchFactory,
+        abi: launchFactoryAbi,
+        functionName: "launchedAt",
+        args: [args.launchId],
+      })
+      .catch(() => BigInt(0)),
     metaForToken(client, args.token),
   ]);
 
-  const q = (quote as Address) ?? zeroAddress;
+  const q = ((quoteSettled as Address) ?? zeroAddress) as Address;
   const qd = q === zeroAddress ? 18 : await quoteDecimals(client, q);
   const row = baseTokenRow(
     {
@@ -134,10 +138,14 @@ async function ensureMasterToken(
     meta,
     qd,
   );
-  row.launchedAt = Number(launchedAt);
+  row.launchedAt = Number(launchedAtSettled);
+  if (row.launchedAt <= 1_000_000_000) {
+    const tsMap = await blockTimestamps(client, [args.blockNumber]);
+    const ts = tsMap.get(args.blockNumber.toString());
+    if (ts) row.launchedAt = ts;
+  }
   store.upsertToken(row);
   store.seedSupplyHolder(args.token, cfg.launchFactory, BigInt(meta.totalSupply));
-  void args.blockNumber;
 }
 
 async function ensureClassicToken(
@@ -181,8 +189,13 @@ async function ensureClassicToken(
     store.seedSupplyHolder(args.token, cfg.bondingFactory, BigInt(meta.totalSupply));
   }
 
+  if (!row.launchedAt || row.launchedAt <= 1_000_000_000) {
+    const tsMap = await blockTimestamps(client, [args.blockNumber]);
+    const ts = tsMap.get(args.blockNumber.toString());
+    if (ts) row.launchedAt = ts;
+  }
+
   store.upsertToken(row);
-  void args.blockNumber;
 }
 
 async function refreshBondingState(
@@ -201,7 +214,8 @@ async function refreshBondingState(
   target.tokensSold = launch.tokensSold;
   target.realQuote = launch.realQuote;
   target.graduationQuote = launch.graduationQuote;
-  target.launchedAt = launch.launchedAt;
+  const launchedAt = Number(launch.launchedAt);
+  if (launchedAt > 1_000_000_000) target.launchedAt = launchedAt;
   target.graduatedAt = launch.graduatedAt;
   if (launch.poolId !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
     target.poolId = launch.poolId;

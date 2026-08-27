@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getNetworkLabel, resolveHookitChainKey } from "@/lib/chains";
+
 function ChromeHookLogo() {
   return (
     <div className="chrome-emblem flex h-6 w-6 items-center justify-center rounded-md">
@@ -14,6 +16,9 @@ function ChromeHookLogo() {
 }
 
 export function SiteFooter() {
+  const network = getNetworkLabel();
+  const isTestnet = resolveHookitChainKey() !== "ink";
+
   return (
     <footer className="mt-auto border-t border-white/[0.06] py-10">
       <div className="page-shell flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
@@ -23,7 +28,7 @@ export function SiteFooter() {
             hook it
           </Link>
           <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-600">
-            Uniswap v4 launchpad on Base. Modular master hooks or bring your own Solidity.
+            Uniswap v4 launchpad on {network}. Modular master hooks or bring your own Solidity.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
@@ -36,6 +41,9 @@ export function SiteFooter() {
               Create
             </Link>
             <Link href="/floor" className="text-zinc-400 transition hover:text-zinc-200">
+              Floor
+            </Link>
+            <Link href="/stats" className="text-zinc-400 transition hover:text-zinc-200">
               Stats
             </Link>
           </div>
@@ -60,8 +68,8 @@ export function SiteFooter() {
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-zinc-600 uppercase">Network</span>
-            <span className="text-zinc-500">Base Sepolia</span>
-            <span className="text-[11px] text-zinc-600">Testnet only</span>
+            <span className="text-zinc-500">{network}</span>
+            <span className="text-[11px] text-zinc-600">{isTestnet ? "Testnet" : "Mainnet"}</span>
           </div>
         </div>
       </div>

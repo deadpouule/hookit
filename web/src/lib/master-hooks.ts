@@ -204,6 +204,46 @@ export function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+/** Count how many listed pools enable each master hook module. */
+export function countHookUsage(
+  pools: Array<{
+    hooks: {
+      antiSnipe?: boolean;
+      backedFloor?: boolean;
+      antiMev?: boolean;
+      maxTx?: boolean;
+      maxWallet?: boolean;
+      autoBurn?: boolean;
+      lpDonate?: boolean;
+      customHook?: boolean;
+    };
+    hookType?: string;
+  }>,
+): Record<MasterHookId, number> {
+  const counts: Record<MasterHookId, number> = {
+    "anti-snipe": 0,
+    "backed-floor": 0,
+    "anti-mev": 0,
+    "max-tx": 0,
+    "max-wallet": 0,
+    "dynamic-fees": 0,
+    "buyback-vesting": 0,
+    "auto-burn": 0,
+    "lp-donate": 0,
+  };
+  for (const pool of pools) {
+    if (pool.hookType === "Classic" || pool.hooks.customHook) continue;
+    if (pool.hooks.antiSnipe) counts["anti-snipe"] += 1;
+    if (pool.hooks.backedFloor) counts["backed-floor"] += 1;
+    if (pool.hooks.antiMev) counts["anti-mev"] += 1;
+    if (pool.hooks.maxTx) counts["max-tx"] += 1;
+    if (pool.hooks.maxWallet) counts["max-wallet"] += 1;
+    if (pool.hooks.autoBurn) counts["auto-burn"] += 1;
+    if (pool.hooks.lpDonate) counts["lp-donate"] += 1;
+  }
+  return counts;
+}
+
 export const HOOK_MODULE_FIELD: Record<
   MasterHookId,
   keyof import("@/lib/types").LaunchModules

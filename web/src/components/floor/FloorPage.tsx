@@ -64,7 +64,7 @@ export function FloorPage() {
             {floors.map((row) => (
               <li key={row.token}>
                 <Link
-                  href={`/explore/${row.token}`}
+                  href={`/token/${row.token}`}
                   className="panel flex items-center justify-between gap-4 p-4 transition hover:border-white/15"
                 >
                   <div>

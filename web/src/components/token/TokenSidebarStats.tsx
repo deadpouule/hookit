@@ -4,19 +4,26 @@ import { Check, Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 import { copyToClipboard } from "@/lib/clipboard";
-import { formatCompactUsd, formatPercent } from "@/lib/format";
+import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
+import { formatAge, formatCompactUsd, formatPercent, isValidLaunchTimestamp } from "@/lib/format";
 import type { LiveTokenState } from "@/lib/token-live";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const BLOCKSCOUT = "https://base-sepolia.blockscout.com";
 
 export function TokenSidebarStats({
   live,
+  pool,
   contractAddress,
 }: {
   live: LiveTokenState;
+  pool: TokenPool;
   contractAddress: string;
 }) {
+  const network = getChainDeployment().networkLabel;
+  const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
+    ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
+    : null;
+
   return (
     <>
       <div className="desk-card p-4">
@@ -50,37 +57,44 @@ export function TokenSidebarStats({
         </div>
 
         <dl className="mt-4 space-y-2 text-[13px]">
-          <Meta label="Created" value="13 hours ago" />
+          <Meta
+            label="Created"
+            value={ageSeconds != null ? `${formatAge(ageSeconds)} ago` : "—"}
+          />
           <div className="flex items-center justify-between">
             <dt className="text-zinc-500">Chain</dt>
             <dd className="inline-flex items-center gap-1 text-[#10b981]">
-              Base Sepolia
+              {network}
               <Check className="h-3.5 w-3.5" />
             </dd>
           </div>
           <CopyMeta label="CA" value={contractAddress} />
           <div className="flex items-center justify-between">
-            <dt className="text-zinc-500">Dev buy</dt>
-            <dd className="rounded-full bg-[#10b981]/15 px-2 py-0.5 text-[11px] font-medium text-[#10b981]">
-              Completed
+            <dt className="text-zinc-500">Rail</dt>
+            <dd className="text-zinc-200">
+              {pool.rail === "classic"
+                ? pool.bondingPhase === 0
+                  ? "Classic bonding"
+                  : "Classic graduated"
+                : pool.hookType}
             </dd>
           </div>
+          <div className="flex items-center justify-between">
+            <dt className="text-zinc-500">Quote</dt>
+            <dd className="font-mono text-zinc-200">{pool.quoteAsset ?? "ETH"}</dd>
+          </div>
         </dl>
-      </div>
-
-      <div className="desk-card px-4 py-5 text-[13px] text-zinc-500">
-        Sign in with wallet to see your resting orders.
       </div>
 
       <div className="desk-card p-4">
         <p className="text-[11px] tracking-wide text-zinc-500 uppercase">Links</p>
         <a
-          href={`${BLOCKSCOUT}/address/${contractAddress}`}
+          href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-3 inline-flex items-center gap-1.5 text-sm text-zinc-300 transition hover:text-[#03b1ed]"
         >
-          Blockscout
+          Explorer
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </div>

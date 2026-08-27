@@ -15,6 +15,10 @@ export interface MarketToken {
   creator: string;
   kind: MarketKind;
   launchedAt: number;
+  /** Classic bonding % toward graduation (0–100). Undefined for master / demo. */
+  bondPct?: number;
+  rail?: "master" | "classic";
+  bondingPhase?: number;
 }
 
 export const QUICK_BUY_AMOUNTS = [10, 25, 50, 100] as const;
@@ -272,11 +276,60 @@ export function truncateCreator(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+/** Map on-chain TokenPool → market card model. */
+export function poolToMarketToken(pool: import("@/lib/types").TokenPool): MarketToken {
+  const art = pool.bannerGradient || "linear-gradient(135deg, #1a0533 0%, #6d28d9 50%, #c026d3 100%)";
+  let bondPct: number | undefined;
+  if (pool.rail === "classic") {
+    if (pool.bondingPhase !== 0) {
+      bondPct = 100;
+    } else {
+      const real = BigInt(pool.realQuote ?? "0");
+      const goal = BigInt(pool.graduationQuote ?? "0");
+      bondPct =
+        goal === BigInt(0) ? 0 : Math.min(99, Math.round(Number((real * BigInt(100)) / goal)));
+    }
+  }
+  return {
+    id: pool.contractAddress ?? pool.id,
+    name: pool.name,
+    ticker: pool.ticker,
+    description:
+      pool.rail === "classic"
+        ? pool.bondingPhase === 0
+          ? "Classic bonding curve — graduating at 4.2 ETH-equiv"
+          : "Classic graduated pool"
+        : pool.hookType === "Custom"
+          ? "Custom Uniswap v4 hook"
+          : "Master launch with modules",
+    emoji: pool.image || pool.ticker.slice(0, 1).toUpperCase(),
+    art,
+    artAccent: "#e9d5ff",
+    marketCap: pool.marketCap || 4_000,
+    volume: pool.volume24h ?? 0,
+    change1h: pool.change24h * 0.25,
+    change24h: pool.change24h,
+    creator: pool.creator ?? pool.address,
+    kind: pool.hookType === "Custom" ? "sushi" : "pool",
+    launchedAt: (() => {
+      const ts = (pool.launchedAt ?? Date.now() / 1000) * 1000;
+      // pool.launchedAt is unix seconds when valid; market cards use ms.
+      if (pool.launchedAt && pool.launchedAt > 1_000_000_000) return pool.launchedAt * 1000;
+      return Date.now();
+    })(),
+    bondPct,
+    rail: pool.rail,
+    bondingPhase: pool.bondingPhase,
+  };
+}
+
 export function isBonded(token: MarketToken) {
+  if (token.bondPct != null) return token.bondPct >= 100;
   return token.marketCap >= BOND_GRADUATE_USD;
 }
 
 export function bondProgress(token: MarketToken) {
+  if (token.bondPct != null) return Math.max(0, Math.min(100, token.bondPct));
   if (isBonded(token)) return 100;
   return Math.max(0, Math.min(99, Math.round((token.marketCap / BOND_GRADUATE_USD) * 100)));
 }

@@ -19,7 +19,12 @@ import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
 
 export function BondMeter({ token }: { token: MarketToken }) {
-  if (isBonded(token)) return null;
+  // Master launches skip the bonding meter.
+  if (token.rail === "master") return null;
+  if (isBonded(token) && token.rail !== "classic") return null;
+  if (token.rail === "classic" && token.bondingPhase !== 0) {
+    return <p className="text-[11px] font-medium text-[#10b981]">Graduated</p>;
+  }
   const progress = bondProgress(token);
 
   return (
@@ -78,7 +83,7 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
 
         <BondMeter token={token} />
 
-        <QuickBuy size="sm" className="relative z-20" />
+        <QuickBuy tokenId={token.id} size="sm" className="relative z-20" />
 
         <button type="button" onClick={copy} className="token-card-creator relative z-20">
           <span>Creator</span>

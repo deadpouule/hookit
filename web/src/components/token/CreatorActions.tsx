@@ -1,15 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { formatEther, parseUnits, zeroAddress, type Address } from "viem";
+import { formatUnits, parseUnits, zeroAddress, type Address } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 
-import { getLaunchFactoryAddress } from "@/lib/contracts/config";
+import {
+  getBondingFactoryAddress,
+  getLaunchFactoryAddress,
+  STABLE_QUOTE_ADDRESS,
+} from "@/lib/contracts/config";
+import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
-import { feeEscrowAbi, floorVaultAbi } from "@/lib/contracts/swap-abi";
+import { feeEscrowAbi, floorVaultAbi, graduatedFeeHookAbi } from "@/lib/contracts/swap-abi";
+import { poolQuoteLabel } from "@/lib/payment-assets";
 import type { TokenPool } from "@/lib/types";
+
+function quoteDecimals(quote: Address): number {
+  if (quote === zeroAddress) return 18;
+  if (quote.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()) return 6;
+  return 18;
+}
 
 export function CreatorActions({ pool }: { pool: TokenPool }) {
   const { address } = useAccount();
@@ -17,35 +29,62 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   const { writeContractAsync, isPending } = useWriteContract();
   const [message, setMessage] = useState<string | null>(null);
   const [redeemAmount, setRedeemAmount] = useState("");
+
   const factory = getLaunchFactoryAddress();
-  const isCreator = !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
+  const bonding = getBondingFactoryAddress();
+  const isClassic = pool.rail === "classic";
+  const isCreator =
+    !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
+  const quote = (pool.quoteAddress ?? zeroAddress) as Address;
+  const quoteLabel = poolQuoteLabel(pool);
+  const decimals = quoteDecimals(quote);
 
   const { data: masterHook } = useReadContract({
     address: factory,
     abi: launchFactoryAbi,
     functionName: "masterHook",
-    query: { enabled: !!factory },
+    query: { enabled: !!factory && !isClassic },
   });
 
-  const { data: escrow } = useReadContract({
+  const { data: classicFeeHook } = useReadContract({
+    address: bonding,
+    abi: bondingFactoryAbi,
+    functionName: "feeHook",
+    query: { enabled: !!bonding && isClassic },
+  });
+
+  const feeHookAddr = isClassic
+    ? ((pool.hooksAddress as Address | undefined) ?? classicFeeHook)
+    : masterHook;
+
+  const { data: masterEscrow } = useReadContract({
     address: masterHook,
     abi: masterLaunchHookAbi,
     functionName: "feeEscrow",
-    query: { enabled: !!masterHook },
+    query: { enabled: !!masterHook && !isClassic },
   });
+
+  const { data: classicEscrow } = useReadContract({
+    address: feeHookAddr as Address | undefined,
+    abi: graduatedFeeHookAbi,
+    functionName: "escrow",
+    query: { enabled: !!feeHookAddr && isClassic },
+  });
+
+  const escrow = (isClassic ? classicEscrow : masterEscrow) as Address | undefined;
 
   const { data: vault } = useReadContract({
     address: masterHook,
     abi: masterLaunchHookAbi,
     functionName: "floorVault",
-    query: { enabled: !!masterHook && pool.hooks.backedFloor },
+    query: { enabled: !!masterHook && !isClassic && pool.hooks.backedFloor },
   });
 
   const { data: claimable, refetch: refetchClaimable } = useReadContract({
     address: escrow,
     abi: feeEscrowAbi,
     functionName: "balanceOf",
-    args: address ? [address, zeroAddress] : undefined,
+    args: address ? [address, quote] : undefined,
     query: { enabled: !!escrow && !!address },
   });
 
@@ -57,7 +96,9 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
     query: { enabled: !!vault && !!pool.contractAddress && pool.hooks.backedFloor },
   });
 
-  if (!pool.poolId || pool.hooks.customHook) return null;
+  // Master custom hooks have no protocol escrow path here.
+  if (!isClassic && pool.hooks.customHook) return null;
+  if (isClassic && pool.bondingPhase === 0) return null;
 
   const claim = async () => {
     if (!escrow) return;
@@ -67,11 +108,32 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
         address: escrow,
         abi: feeEscrowAbi,
         functionName: "claim",
-        args: [zeroAddress],
+        args: [quote],
       });
       await publicClient?.waitForTransactionReceipt({ hash });
       await refetchClaimable();
       setMessage("Fees claimed");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Claim failed");
+    }
+  };
+
+  const claimAllQuotes = async () => {
+    if (!escrow) return;
+    setMessage(null);
+    try {
+      const currencies = Array.from(
+        new Set([quote, zeroAddress, STABLE_QUOTE_ADDRESS].map((c) => c.toLowerCase())),
+      ) as Address[];
+      const hash = await writeContractAsync({
+        address: escrow,
+        abi: feeEscrowAbi,
+        functionName: "claimAll",
+        args: [currencies],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      await refetchClaimable();
+      setMessage("All quote fees claimed");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Claim failed");
     }
@@ -118,41 +180,54 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   if (!isCreator && reserveWei === BigInt(0)) return null;
 
   return (
-    <div className="panel mt-4 space-y-3 p-5">
+    <div className="desk-card mt-3 space-y-3 p-4">
       <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Protocol</p>
       {isCreator && (
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs text-zinc-500">Creator fees</p>
-            <p className="font-mono text-sm text-zinc-100">{formatEther(claimWei)} ETH</p>
+            <p className="font-mono text-sm text-zinc-100">
+              {formatUnits(claimWei, decimals)} {quoteLabel}
+            </p>
           </div>
-          <button
-            type="button"
-            disabled={!escrow || claimWei === BigInt(0) || isPending}
-            onClick={claim}
-            className="btn-ghost !px-3 !py-2 text-xs disabled:opacity-40"
-          >
-            Claim
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={!escrow || claimWei === BigInt(0) || isPending}
+              onClick={() => void claim()}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200 transition hover:border-[#9514d1] disabled:opacity-40"
+            >
+              Claim
+            </button>
+            <button
+              type="button"
+              disabled={!escrow || isPending}
+              onClick={() => void claimAllQuotes()}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400 transition hover:border-[#9514d1] disabled:opacity-40"
+              title="Claim ETH + stable quote balances"
+            >
+              Claim all
+            </button>
+          </div>
         </div>
       )}
       {pool.hooks.backedFloor && reserveWei > BigInt(0) && (
         <div className="space-y-2 border-t border-white/[0.05] pt-3">
           <p className="text-xs text-zinc-500">
-            Floor vault {formatEther(reserveWei)} ETH · redeem tokens at the ratchet
+            Floor vault {formatUnits(reserveWei, 18)} ETH · redeem tokens at the ratchet
           </p>
           <div className="flex gap-2">
             <input
               value={redeemAmount}
               onChange={(e) => setRedeemAmount(e.target.value)}
               placeholder={`${pool.ticker} amount`}
-              className="field-input h-9 flex-1 text-xs"
+              className="h-9 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 font-mono text-xs text-white outline-none focus:border-[#9514d1]/60"
             />
             <button
               type="button"
               disabled={!redeemAmount || isPending}
-              onClick={redeem}
-              className="btn-ghost !px-3 !py-2 text-xs disabled:opacity-40"
+              onClick={() => void redeem()}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200 transition hover:border-[#9514d1] disabled:opacity-40"
             >
               Redeem
             </button>

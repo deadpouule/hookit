@@ -13,7 +13,7 @@ const RAIL = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/launch", label: "Launch", icon: Rocket },
   { href: "/builder", label: "Builder", icon: Wrench },
-  { href: "/floor", label: "Stats", icon: Shield },
+  { href: "/floor", label: "Floor", icon: Shield },
 ] as const;
 
 export function AppRail() {

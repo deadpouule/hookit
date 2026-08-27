@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Plus, Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
+import { useLaunches } from "@/hooks/useLaunches";
 import {
   MASTER_HOOK_FILTERS,
   MASTER_HOOKS,
+  countHookUsage,
   type MasterHookCategory,
 } from "@/lib/master-hooks";
 import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
@@ -18,6 +20,9 @@ type HookFilter = "all" | MasterHookCategory;
 export function ExplorePage() {
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
+  const { data: pools } = useLaunches();
+
+  const usage = useMemo(() => countHookUsage(pools ?? []), [pools]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -28,8 +33,11 @@ export function ExplorePage() {
         hook.title.toLowerCase().includes(q) ||
         hook.description.toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
-    });
-  }, [category, query]);
+    }).map((hook) => ({
+      ...hook,
+      uses: usage[hook.id] ?? 0,
+    }));
+  }, [category, query, usage]);
 
   return (
     <div className="market-shell space-y-6 bg-black pt-8 pb-10">

@@ -51,14 +51,14 @@ export function getChainDeployment(): ChainDeployment {
 
 export const HOOKIT_CHAIN_ID = getChainDeployment().chainId;
 
-/** @deprecated use getChainDeployment().explorer */
+/** Active chain explorer (Ink or Base Sepolia). */
 export const BLOCK_EXPLORER_URL = getChainDeployment().explorer;
 
 /** @deprecated use HOOKIT_CHAIN_ID */
-export const BASE_SEPOLIA_CHAIN_ID = BASE_SEPOLIA.chainId;
+export const BASE_SEPOLIA_CHAIN_ID = HOOKIT_CHAIN_ID;
 
 /** @deprecated use BLOCK_EXPLORER_URL */
-export const BASE_SEPOLIA_EXPLORER = BASE_SEPOLIA.explorer;
+export const BASE_SEPOLIA_EXPLORER = BLOCK_EXPLORER_URL;
 
 export const POOL_MANAGER_ADDRESS = getChainDeployment().poolManager;
 export const STATE_VIEW_ADDRESS = getChainDeployment().stateView;
@@ -91,6 +91,17 @@ export function getLaunchFactoryAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_LAUNCH_FACTORY?.trim();
   if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
   return raw as Address;
+}
+
+/** Classic bonding rail. Set NEXT_PUBLIC_BONDING_FACTORY after deploy. */
+export function getBondingFactoryAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_BONDING_FACTORY?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
+export function isFactoryConfigured(): boolean {
+  return !!getLaunchFactoryAddress() || !!getBondingFactoryAddress();
 }
 
 /** Hookit router for hooked pools. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER after deploy. */

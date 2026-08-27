@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { TokenDetailPageClient } from "@/components/explore/TokenDetailPageClient";
 import { getAllPoolIds, getDetailPool } from "@/lib/pools";
 
@@ -22,6 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default function TokenDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  return <TokenDetailPageClient params={params} />;
+export default function ExploreTokenDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="market-shell py-20 text-center text-sm text-zinc-500">Loading token…</div>
+      }
+    >
+      <TokenDetailPageClient params={params} />
+    </Suspense>
+  );
 }

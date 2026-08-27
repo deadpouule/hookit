@@ -30,7 +30,15 @@ export function formatTokenAmount(value: number): string {
 export function formatAge(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-  return `${(Math.floor(seconds / 3600))}h`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  const days = Math.floor(seconds / 86400);
+  if (days < 60) return `${days}d`;
+  return `${Math.floor(days / 30)}mo`;
+}
+
+/** Unix seconds only — rejects launch ids / zero placeholders. */
+export function isValidLaunchTimestamp(ts?: number | null): ts is number {
+  return typeof ts === "number" && Number.isFinite(ts) && ts > 1_000_000_000;
 }
 
 export function formatEth(value: number): string {

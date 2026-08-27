@@ -1,33 +1,57 @@
-import type { LaunchFormState } from "@/lib/types";
+import { concat, type Hex } from "viem";
 
-/** On-chain metadata URI (data JSON). Image blobs are omitted — add IPFS later. */
-export function buildMetadataUri(form: LaunchFormState): string {
-  const payload: Record<string, unknown> = {
-    name: form.name,
-    description: form.description || undefined,
-    twitter: form.twitter || undefined,
-    telegram: form.telegram || undefined,
-    website: form.website || undefined,
-    app: "hookit",
-    version: 1,
+import { CREATE2_DEPLOYER } from "@/lib/hook-miner";
+
+export type PrepareHookResult = {
+  address: `0x${string}`;
+  salt: Hex;
+  deployer: `0x${string}`;
+  initCode: Hex;
+  contractName: string;
+};
+
+/** Compile + mine salt on the server (no broadcast). */
+export async function prepareCustomHook(source: string): Promise<PrepareHookResult> {
+  const res = await fetch("/api/hooks/prepare", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source }),
+  });
+  const data = (await res.json()) as PrepareHookResult & { error?: string };
+  if (!res.ok || !data.address || !data.salt || !data.initCode) {
+    throw new Error(data.error ?? "Failed to prepare custom hook");
+  }
+  return {
+    address: data.address,
+    salt: data.salt,
+    deployer: (data.deployer ?? CREATE2_DEPLOYER) as `0x${string}`,
+    initCode: data.initCode,
+    contractName: data.contractName,
   };
-
-  if (form.hookMode === "custom" && form.customHookSource.trim()) {
-    payload.hook = {
-      type: "custom",
-      fileName: form.customHookFileName || undefined,
-      source: form.customHookSource,
-    };
-  }
-
-  const json = JSON.stringify(payload, (_k, v) => (v === undefined ? undefined : v));
-  if (typeof window !== "undefined") {
-    return `data:application/json;base64,${btoa(unescape(encodeURIComponent(json)))}`;
-  }
-  return `data:application/json;base64,${Buffer.from(json, "utf-8").toString("base64")}`;
 }
 
-async function deployCustomHook(source: string): Promise<`0x${string}`> {
+/**
+ * Prefer wallet CREATE2 via prepare payload; fall back to server forge create
+ * when the wallet path is unavailable.
+ */
+async function deployCustomHook(
+  source: string,
+  opts?: {
+    sendCreate2?: (args: {
+      to: `0x${string}`;
+      data: Hex;
+    }) => Promise<`0x${string}`>;
+    waitForReceipt?: (hash: `0x${string}`) => Promise<void>;
+  },
+): Promise<`0x${string}`> {
+  if (opts?.sendCreate2 && opts.waitForReceipt) {
+    const prepared = await prepareCustomHook(source);
+    const data = concat([prepared.salt, prepared.initCode]);
+    const hash = await opts.sendCreate2({ to: prepared.deployer, data });
+    await opts.waitForReceipt(hash);
+    return prepared.address;
+  }
+
   const res = await fetch("/api/hooks/deploy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

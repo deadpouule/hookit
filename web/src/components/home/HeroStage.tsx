@@ -6,15 +6,16 @@ import { ArrowRight } from "lucide-react";
 
 import { HookTile } from "@/components/hooks/HookMark";
 import { useLaunches } from "@/hooks/useLaunches";
+import { getNetworkLabel } from "@/lib/chains";
 import { MOCK_POOLS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
-import { getLaunchFactoryAddress } from "@/lib/contracts/config";
+import { isFactoryConfigured } from "@/lib/contracts/config";
 import { SHOWCASE_HOOK_IDS } from "@/lib/hook-marks";
 import { formatUsd } from "@/lib/format";
 import { tokenHref } from "@/lib/routes";
 import type { TokenPool } from "@/lib/types";
 
 function StageLeaders() {
-  const factoryConfigured = !!getLaunchFactoryAddress();
+  const factoryConfigured = isFactoryConfigured();
   const { data } = useLaunches();
   const pools = (factoryConfigured ? (data ?? []) : MOCK_POOLS).slice(0, 3);
 
@@ -78,7 +79,7 @@ export function HeroStage() {
           </motion.div>
 
           <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-black/60 uppercase">
-            Uniswap v4 · Base Sepolia
+            Uniswap v4 · {getNetworkLabel()}
           </p>
           <h1 className="text-4xl font-semibold tracking-tight text-black sm:text-5xl">
             Launch with programmable hooks

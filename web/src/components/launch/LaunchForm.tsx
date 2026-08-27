@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,9 +29,10 @@ import {
   MAX_CREATOR_TAX_BPS,
   TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
-import { BASE_SEPOLIA_EXPLORER } from "@/lib/contracts/config";
+import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
+import { loadBuilderDraft } from "@/lib/hook-builder";
 import { HOOK_MODULE_FIELD, withMasterHookEnabled } from "@/lib/master-hooks";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
@@ -46,6 +47,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     ),
   );
   const [socialsOpen, setSocialsOpen] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const walletReady = useWalletReady();
   const {
@@ -58,9 +60,24 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     setError,
     result,
     resetResult,
-  } = useLaunchToken();
+  } = useLaunchToken(variant === "classic" ? "classic" : "master");
+
+  useEffect(() => {
+    if (variant !== "custom") return;
+    if (searchParams.get("from") !== "builder") return;
+    const draft = loadBuilderDraft();
+    if (!draft) return;
+    setForm((prev) => ({
+      ...prev,
+      hookMode: "master",
+      modules: { ...prev.modules, ...draft.modules },
+      creatorTaxBps: draft.creatorTaxBps,
+    }));
+    setDraftLoaded(true);
+  }, [searchParams, variant]);
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
+  const network = getChainDeployment().networkLabel;
 
   const updateField = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -118,21 +135,24 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500">
-          Atomic Uniswap v4 launch on Base Sepolia ·{" "}
+          Atomic Uniswap v4 launch on {network} ·{" "}
           <span className="font-mono text-zinc-300">
             ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
           </span>{" "}
           FDV · 1B supply
         </p>
+        {draftLoaded && (
+          <p className="mx-auto mt-2 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
+        )}
       </div>
 
       {!factoryConfigured && (
         <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-          <p className="font-medium">LaunchFactory not configured</p>
+          <p className="font-medium">Factory not configured</p>
           <p className="mt-1 text-amber-200/80">
-            Deploy contracts to Base Sepolia, then set{" "}
+            Deploy contracts, then set{" "}
             <code className="rounded bg-black/30 px-1 font-mono text-xs">
-              NEXT_PUBLIC_LAUNCH_FACTORY
+              {variant === "classic" ? "NEXT_PUBLIC_BONDING_FACTORY" : "NEXT_PUBLIC_LAUNCH_FACTORY"}
             </code>{" "}
             in <code className="font-mono text-xs">web/.env.local</code>.
           </p>
@@ -141,19 +161,19 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
       {result && (
         <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
-          <p className="font-medium">Token launched on Base Sepolia</p>
+          <p className="font-medium">Token launched on {network}</p>
           <dl className="mt-3 space-y-2 font-mono text-xs">
             {result.customHookAddress && (
               <div className="flex flex-wrap items-center gap-2">
                 <dt className="text-emerald-200/70">Hook</dt>
                 <dd>{result.customHookAddress}</dd>
                 <a
-                  href={`${BASE_SEPOLIA_EXPLORER}/address/${result.customHookAddress}`}
+                  href={`${BLOCK_EXPLORER_URL}/address/${result.customHookAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
                 >
-                  Basescan <ExternalLink className="h-3 w-3" />
+                  Explorer <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             )}
@@ -161,19 +181,19 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
               <dt className="text-emerald-200/70">Token</dt>
               <dd>{result.token}</dd>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/address/${result.token}`}
+                href={`${BLOCK_EXPLORER_URL}/address/${result.token}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
               >
-                Basescan <ExternalLink className="h-3 w-3" />
+                Explorer <ExternalLink className="h-3 w-3" />
               </a>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <dt className="text-emerald-200/70">Tx</dt>
               <dd className="truncate">{result.txHash}</dd>
               <a
-                href={`${BASE_SEPOLIA_EXPLORER}/tx/${result.txHash}`}
+                href={`${BLOCK_EXPLORER_URL}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
@@ -329,12 +349,30 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
             <>
               <SectionLabel>Fees</SectionLabel>
               <p className="mt-1 text-xs text-zinc-600">
-                Standard 1% quote-only swap fee. No extra hook modules.
+                Standard 1% quote-only swap fee on graduation. Creator tax accrues in quote only.
               </p>
-              <div className="mt-4">
-                <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
-                <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
-                <FeeBreakdown creator="0.70%" protocol="0.30%" />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
+                  <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
+                  <FeeBreakdown creator="0.70%" protocol="0.30%" />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Creator tax</Label>
+                  <div className="field-input flex items-center justify-between bg-black/60">
+                    <span className="font-mono">{formatBps(form.creatorTaxBps)}</span>
+                  </div>
+                  <div className="mt-2">
+                    <Slider
+                      value={[form.creatorTaxBps]}
+                      onValueChange={([v]) => setForm((p) => ({ ...p, creatorTaxBps: v }))}
+                      min={0}
+                      max={MAX_CREATOR_TAX_BPS}
+                      step={10}
+                    />
+                  </div>
+                  <FeeBreakdown creator="100%" protocol="0%" />
+                </div>
               </div>
             </>
           ) : (
