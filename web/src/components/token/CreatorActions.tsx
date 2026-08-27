@@ -15,6 +15,7 @@ import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { feeEscrowAbi, floorVaultAbi, graduatedFeeHookAbi } from "@/lib/contracts/swap-abi";
 import { poolQuoteLabel } from "@/lib/payment-assets";
+import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 
 function quoteDecimals(quote: Address): number {
@@ -113,8 +114,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       await publicClient?.waitForTransactionReceipt({ hash });
       await refetchClaimable();
       setMessage("Fees claimed");
+      toast.success("Fees claimed");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Claim failed");
+      const msg = err instanceof Error ? err.message : "Claim failed";
+      setMessage(msg);
+      toast.error("Claim failed", msg.slice(0, 120));
     }
   };
 
@@ -134,8 +138,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       await publicClient?.waitForTransactionReceipt({ hash });
       await refetchClaimable();
       setMessage("All quote fees claimed");
+      toast.success("All quote fees claimed");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Claim failed");
+      const msg = err instanceof Error ? err.message : "Claim failed";
+      setMessage(msg);
+      toast.error("Claim failed", msg.slice(0, 120));
     }
   };
 
@@ -169,8 +176,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       await publicClient?.waitForTransactionReceipt({ hash });
       setMessage("Floor redeemed");
       setRedeemAmount("");
+      toast.success("Floor redeemed");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Redeem failed");
+      const msg = err instanceof Error ? err.message : "Redeem failed";
+      setMessage(msg);
+      toast.error("Redeem failed", msg.slice(0, 120));
     }
   };
 

@@ -14,11 +14,13 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { useSwapToken } from "@/hooks/useSwapToken";
 import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
 import { paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
+import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Mode = "pro" | "instant";
 type Side = "buy" | "sell";
+type ProTab = "market" | "limit" | "stop";
 
 export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const ticker = pool.ticker;
@@ -34,6 +36,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const [amount, setAmount] = useState("");
   const [payWith, setPayWith] = useState<PaymentAssetId>("ETH");
   const [slippagePct, setSlippagePct] = useState(1);
+  const [proTab, setProTab] = useState<ProTab>("market");
   const [preset, setPreset] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,18 +62,21 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     decimalsIn: payDecimals,
     decimalsOut: 18,
     quoteExactIn: swap.quoteExactIn,
-    enabled: !onBonding && mode === "pro",
+    enabled: !onBonding && mode === "pro" && proTab === "market",
   });
 
+  const showTradeCta = mode === "instant" || proTab === "market";
+
   const canTrade = useMemo(
-    () => walletReady && !!pool.contractAddress && !!amount && Number(amount) > 0,
-    [walletReady, pool.contractAddress, amount],
+    () => walletReady && !!pool.contractAddress && !!amount && Number(amount) > 0 && showTradeCta,
+    [walletReady, pool.contractAddress, amount, showTradeCta],
   );
 
   const submit = async () => {
     setError(null);
     setStatus(null);
     if (!canTrade || !publicClient || !address) return;
+    const loadingId = toast.loading(side === "buy" ? "Buying…" : "Selling…");
 
     try {
       if (onBonding) {
@@ -99,6 +105,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
           });
           await publicClient.waitForTransactionReceipt({ hash });
           setStatus("Buy confirmed");
+          toast.dismiss(loadingId);
+          toast.success("Buy confirmed", hash.slice(0, 10) + "…");
         } else {
           const tokensIn = parseUnits(amount, 18);
           await writeContractAsync({
@@ -116,16 +124,25 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
           });
           await publicClient.waitForTransactionReceipt({ hash });
           setStatus("Sell confirmed");
+          toast.dismiss(loadingId);
+          toast.success("Sell confirmed", hash.slice(0, 10) + "…");
         }
         return;
       }
 
       setStatus(side === "buy" ? "Buying…" : "Selling…");
       const hash = await swap.swapExactIn(side, amount, slippagePct, payWith);
-      if (hash) setStatus("Trade confirmed");
+      toast.dismiss(loadingId);
+      if (hash) {
+        setStatus("Trade confirmed");
+        toast.success("Trade confirmed", hash.slice(0, 10) + "…");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Trade failed");
+      toast.dismiss(loadingId);
+      const msg = err instanceof Error ? err.message : "Trade failed";
+      setError(msg);
       setStatus(null);
+      toast.error("Trade failed", msg.slice(0, 120));
     }
   };
 
@@ -157,6 +174,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       {mode === "pro" ? (
         <TokenProSwap
           ticker={ticker}
+          tokenAddress={pool.contractAddress}
+          spotEth={pool.priceEth}
           quoteLabel={onBonding ? (pool.quoteAsset ?? "ETH") : "ETH"}
           sellAmount={amount}
           onSellAmount={(v) => {
@@ -171,6 +190,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
           payWith={payWith}
           onPayWith={setPayWith}
           showPayWith={!onBonding}
+          onOrderTabChange={setProTab}
         />
       ) : (
         <>
@@ -255,7 +275,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
           label="Connect to trade"
           className="launch-coin mt-4 flex w-full justify-center rounded-xl py-3 text-sm font-semibold"
         />
-      ) : (
+      ) : showTradeCta ? (
         <button
           type="button"
           disabled={!canTrade || writing || swap.isPending}
@@ -268,7 +288,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
               ? `Buy ${ticker}`
               : `Sell ${ticker}`}
         </button>
-      )}
+      ) : null}
 
       {status && <p className="mt-2 text-center text-[12px] text-emerald-400">{status}</p>}
       {(error || swap.error) && (

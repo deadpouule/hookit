@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { GITHUB_REPO_URL } from "@/lib/constants";
 
 function RocketMark() {
   return (
@@ -40,9 +39,9 @@ function CloseMark() {
 const LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
-  { href: "/floor", label: "Floor" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/stats", label: "Stats" },
-  { href: GITHUB_REPO_URL, label: "Docs", external: true },
+  { href: "/docs", label: "Docs" },
 ] as const;
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {

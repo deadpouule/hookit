@@ -14,6 +14,7 @@ import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
+import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 
 interface TokenDetailViewProps {
@@ -30,6 +31,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
     ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
     : null;
+  const media = resolveMediaUrl(pool.image);
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -54,9 +56,12 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
               className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-16 sm:w-16"
               style={{ background: pool.bannerGradient }}
             >
-              <span className="text-2xl font-bold text-white/90">
-                {pool.image || pool.ticker[0]}
-              </span>
+              {media ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={media} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-2xl font-bold text-white/90">{pool.ticker[0]}</span>
+              )}
             </div>
 
             <div className="min-w-0 flex-1">

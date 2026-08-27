@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Web3Provider } from "@/components/providers/Web3Provider";
+import { AppToaster } from "@/components/providers/AppToaster";
+import { Telemetry } from "@/components/providers/Telemetry";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -34,6 +36,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Web3Provider>
           <TooltipProvider>
             {children}
+            <AppToaster />
+            <Telemetry />
           </TooltipProvider>
         </Web3Provider>
       </body>

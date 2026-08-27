@@ -27,8 +27,9 @@ import {
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
-import { buildMetadataUri } from "@/lib/launch-metadata";
+import { buildMetadataUri, resolveLaunchImageUri } from "@/lib/launch-metadata";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
+import { toast } from "@/lib/toast";
 import type { LaunchFormState } from "@/lib/types";
 import { requestLaunchVerification, type VerifyStatus } from "@/lib/verify-launch";
 import { wagmiConfig } from "@/lib/wagmi";
@@ -95,13 +96,18 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         throw new Error(`Unsupported quote asset: ${form.quoteAsset}`);
       }
 
-      const metadataURI = buildMetadataUri(form);
+      const imageUri = await resolveLaunchImageUri(form.imagePreview);
+      const metadataURI = buildMetadataUri(form, { imageUri });
       const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
       let customHookAddress: Address | undefined;
       let hash: `0x${string}`;
 
       setPhase("launching");
+      const loadingId = toast.loading(
+        form.hookMode === "custom" ? "Preparing launch…" : "Launching token…",
+      );
 
+      try {
       if (rail === "classic") {
         hash = await writeContractAsync({
           address: factory,
@@ -217,6 +223,8 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       };
       setResult(out);
       await queryClient.invalidateQueries({ queryKey: ["launches"] });
+      toast.dismiss(loadingId);
+      toast.success("Token launched", `${form.ticker.trim().toUpperCase()} · ${hash.slice(0, 10)}…`);
 
       if (token !== zeroAddress && creator && rail === "master") {
         const gen = ++verifyGen.current;
@@ -242,6 +250,12 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       }
 
       return out;
+      } catch (err) {
+        toast.dismiss(loadingId);
+        const message = err instanceof Error ? err.message : "Launch failed";
+        toast.error("Launch failed", message.slice(0, 140));
+        throw err;
+      }
     },
     [creator, factory, onChainLaunchFee, publicClient, queryClient, rail, writeContractAsync],
   );

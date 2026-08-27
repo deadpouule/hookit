@@ -6,7 +6,6 @@ import {
   NATIVE_BURNED,
   NATIVE_SUPPLY,
   NATIVE_TOKEN,
-  VOLUME_BY_WINDOW,
   type VolumeSnapshot,
   type VolumeWindow,
 } from "@/lib/protocol-stats";
@@ -61,19 +60,27 @@ export function computeLiveProtocolKpis(
   };
 }
 
-/** Overlay live 24h volume onto the mock window table when indexer data exists. */
+/** Live volume windows — non-24h stay empty until indexer rollups exist. */
 export function volumeSnapshotForWindow(
   window: VolumeWindow,
   live: LiveProtocolKpis | null,
 ): VolumeSnapshot {
-  const base = VOLUME_BY_WINDOW[window];
-  if (!live || live.source !== "live" || window !== "24h") return base;
+  const empty: VolumeSnapshot = {
+    realVolumeUsd: 0,
+    buyVolumeUsd: 0,
+    sellVolumeUsd: 0,
+    buySellVolumeUsd: 0,
+    totalVolumeUsd: 0,
+    revenueUsd: 0,
+    buybackUsd: 0,
+    hookEarned: 0,
+  };
+  if (!live || live.source !== "live" || window !== "24h") return empty;
 
   const buy = live.volume24hUsd * 0.55;
   const sell = live.volume24hUsd * 0.45;
   const revenue = live.volume24hUsd * (PROTOCOL_SHARE_BPS / 10_000);
   return {
-    ...base,
     realVolumeUsd: live.volume24hUsd,
     buyVolumeUsd: buy,
     sellVolumeUsd: sell,
@@ -81,7 +88,7 @@ export function volumeSnapshotForWindow(
     totalVolumeUsd: live.volume24hUsd,
     revenueUsd: revenue,
     buybackUsd: revenue,
-    hookEarned: revenue > 0 ? revenue / 4 : 0,
+    hookEarned: 0,
   };
 }
 

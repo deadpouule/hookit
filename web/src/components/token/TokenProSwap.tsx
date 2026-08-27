@@ -4,8 +4,9 @@ import { formatUnits, parseEther, parseUnits } from "viem";
 import { ArrowDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { usePriceAlertWatcher, useTokenAlerts, type PriceAlertKind } from "@/lib/price-alerts";
 import type { PaymentAssetId } from "@/lib/payment-assets";
+import { cn } from "@/lib/utils";
 
 function EthMark() {
   return (
@@ -24,10 +25,13 @@ function TokenMark({ ticker }: { ticker: string }) {
 }
 
 const SLIPPAGE_PRESETS = [0.5, 1, 2] as const;
+type ProTab = "market" | "limit" | "stop";
 
-/** Market-order panel wired to the parent TokenSwapCard submit. */
+/** Market orders + client-side limit/stop price alerts. */
 export function TokenProSwap({
   ticker,
+  tokenAddress,
+  spotEth,
   quoteLabel = "ETH",
   sellAmount,
   onSellAmount,
@@ -39,8 +43,11 @@ export function TokenProSwap({
   payWith,
   onPayWith,
   showPayWith,
+  onOrderTabChange,
 }: {
   ticker: string;
+  tokenAddress?: string;
+  spotEth?: number;
   quoteLabel?: string;
   sellAmount: string;
   onSellAmount: (value: string) => void;
@@ -52,7 +59,17 @@ export function TokenProSwap({
   payWith?: PaymentAssetId;
   onPayWith?: (id: PaymentAssetId) => void;
   showPayWith?: boolean;
+  onOrderTabChange?: (tab: ProTab) => void;
 }) {
+  const [tab, setTab] = useState<ProTab>("market");
+  const [target, setTarget] = useState("");
+  const alerts = useTokenAlerts(tokenAddress);
+  usePriceAlertWatcher(tokenAddress, spotEth);
+
+  useEffect(() => {
+    onOrderTabChange?.(tab);
+  }, [tab, onOrderTabChange]);
+
   const sellTicker = ethOnTop
     ? payWith && payWith !== "ETH"
       ? payWith
@@ -60,91 +77,146 @@ export function TokenProSwap({
     : ticker;
   const buyTicker = ethOnTop ? ticker : quoteLabel;
 
+  const placeAlert = (kind: PriceAlertKind) => {
+    const n = Number(target);
+    if (!(n > 0)) return;
+    alerts.add(kind, n, ticker);
+    setTarget("");
+  };
+
   return (
     <div className="mt-4 space-y-2">
       <div className="flex flex-wrap items-center gap-3 border-b border-white/10 pb-2">
-        <span className="relative pb-1.5 text-[12px] font-medium text-white">
-          Market
-          <span className="absolute inset-x-0 bottom-0 h-px bg-[#9514d1]" />
-        </span>
-        <span className="pb-1.5 text-[12px] text-zinc-600" title="Coming soon">
-          Limit
-        </span>
-        <span className="pb-1.5 text-[12px] text-zinc-600" title="Coming soon">
-          Stop
-        </span>
-      </div>
-
-      <AssetBlock
-        label="You pay"
-        ticker={sellTicker}
-        amount={sellAmount}
-        onAmount={onSellAmount}
-      />
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          aria-label="Invert pair"
-          onClick={onInvert}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#1a1a1c] text-zinc-300 transition hover:border-[#9514d1] hover:bg-[#9514d1] hover:text-white hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
-        >
-          <ArrowDown className="h-4 w-4" />
-        </button>
-      </div>
-
-      <AssetBlock
-        label="You receive"
-        ticker={buyTicker}
-        amount={receiveAmount ?? ""}
-        onAmount={() => undefined}
-        readOnly
-      />
-
-      {showPayWith && ethOnTop && onPayWith && payWith && (
-        <label className="flex items-center justify-between text-[12px] text-zinc-500">
-          Pay with
-          <select
-            value={payWith}
-            onChange={(e) => onPayWith(e.target.value as PaymentAssetId)}
-            className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
+        {(["market", "limit", "stop"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              "relative pb-1.5 text-[12px] capitalize transition",
+              tab === id ? "font-medium text-white" : "text-zinc-600 hover:text-zinc-400",
+            )}
           >
-            <option value="ETH">ETH</option>
-            <option value="USDC">{quoteLabel === "USDG" ? "USDG" : "USDC"}</option>
-          </select>
-        </label>
-      )}
-
-      <div className="flex items-center justify-between gap-2 pt-1 text-[12px]">
-        <span className="text-zinc-500">Max slippage</span>
-        <div className="flex items-center gap-1">
-          {SLIPPAGE_PRESETS.map((pct) => (
-            <button
-              key={pct}
-              type="button"
-              onClick={() => onSlippagePct(pct)}
-              className={cn(
-                "rounded-md px-2 py-0.5 font-mono text-[11px] transition",
-                slippagePct === pct
-                  ? "bg-[#9514d1] text-white"
-                  : "bg-white/5 text-zinc-400 hover:text-white",
-              )}
-            >
-              {pct}%
-            </button>
-          ))}
-        </div>
+            {id}
+            {tab === id && <span className="absolute inset-x-0 bottom-0 h-px bg-[#9514d1]" />}
+          </button>
+        ))}
       </div>
 
-      <dl className="space-y-1.5 pt-1 text-[12px]">
-        <Detail label="Route" value={`${sellTicker} → ${buyTicker}`} />
-        <Detail label="Type" value="Market" />
-      </dl>
+      {tab === "market" ? (
+        <>
+          <AssetBlock label="You pay" ticker={sellTicker} amount={sellAmount} onAmount={onSellAmount} />
+          <div className="flex justify-center">
+            <button
+              type="button"
+              aria-label="Invert pair"
+              onClick={onInvert}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#1a1a1c] text-zinc-300 transition hover:border-[#9514d1] hover:bg-[#9514d1] hover:text-white"
+            >
+              <ArrowDown className="h-4 w-4" />
+            </button>
+          </div>
+          <AssetBlock
+            label="You receive"
+            ticker={buyTicker}
+            amount={receiveAmount ?? ""}
+            onAmount={() => undefined}
+            readOnly
+          />
+          {showPayWith && ethOnTop && onPayWith && payWith && (
+            <label className="flex items-center justify-between text-[12px] text-zinc-500">
+              Pay with
+              <select
+                value={payWith}
+                onChange={(e) => onPayWith(e.target.value as PaymentAssetId)}
+                className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
+              >
+                <option value="ETH">ETH</option>
+                <option value="USDC">{quoteLabel === "USDG" ? "USDG" : "USDC"}</option>
+              </select>
+            </label>
+          )}
+          <div className="flex items-center justify-between gap-2 pt-1 text-[12px]">
+            <span className="text-zinc-500">Max slippage</span>
+            <div className="flex items-center gap-1">
+              {SLIPPAGE_PRESETS.map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => onSlippagePct(pct)}
+                  className={cn(
+                    "rounded-md px-2 py-0.5 font-mono text-[11px] transition",
+                    slippagePct === pct
+                      ? "bg-[#9514d1] text-white"
+                      : "bg-white/5 text-zinc-400 hover:text-white",
+                  )}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
+          <dl className="space-y-1.5 pt-1 text-[12px]">
+            <Detail label="Route" value={`${sellTicker} → ${buyTicker}`} />
+            <Detail label="Type" value="Market" />
+          </dl>
+        </>
+      ) : (
+        <div className="space-y-3 rounded-lg bg-[#111111] p-3">
+          <p className="text-[12px] text-zinc-500">
+            Browser alert — toasts when spot crosses your{" "}
+            {tab === "limit" ? "limit (at or above)" : "stop (at or below)"}. Not an on-chain order.
+          </p>
+          {spotEth != null && spotEth > 0 && (
+            <p className="font-mono text-[11px] text-zinc-400">
+              Spot {spotEth.toExponential(4)} ETH
+            </p>
+          )}
+          <label className="block text-[11px] text-zinc-500">
+            Target price (ETH / token)
+            <input
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              placeholder="0.0"
+              inputMode="decimal"
+              className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-lg text-white outline-none focus:border-[#9514d1]/60"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => placeAlert(tab)}
+            disabled={!tokenAddress || !(Number(target) > 0)}
+            className="launch-coin w-full rounded-xl py-2.5 text-sm font-semibold disabled:opacity-50"
+          >
+            Set {tab} alert
+          </button>
+          {alerts.alerts.length > 0 && (
+            <ul className="space-y-1.5 pt-1">
+              {alerts.alerts.map((a) => (
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between text-[11px] text-zinc-400"
+                >
+                  <span className="font-mono">
+                    {a.kind} @ {a.targetEth.toExponential(3)}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-zinc-600 hover:text-zinc-300"
+                    onClick={() => alerts.remove(a.id)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-/** Debounced v4 quote helper used by TokenSwapCard. */
 export function useProQuoteAmount(opts: {
   amount: string;
   side: "buy" | "sell";

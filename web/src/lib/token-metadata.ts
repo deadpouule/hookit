@@ -26,3 +26,15 @@ export function clipImageForMetadata(image: string | null | undefined): string |
   }
   return undefined;
 }
+
+/** Resolve ipfs:// to an HTTP gateway URL for <img src>. */
+export function resolveMediaUrl(uri: string | undefined | null): string | undefined {
+  if (!uri) return undefined;
+  if (uri.startsWith("ipfs://")) {
+    const cid = uri.slice("ipfs://".length).replace(/^ipfs\//, "");
+    const gateway =
+      process.env.NEXT_PUBLIC_IPFS_GATEWAY?.replace(/\/$/, "") ?? "https://ipfs.io/ipfs";
+    return `${gateway}/${cid}`;
+  }
+  return uri;
+}
