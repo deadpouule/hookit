@@ -13,6 +13,8 @@ import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
 import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
+import { MasterHookFilterMenu } from "./MasterHookFilterMenu";
+import type { MasterHookId } from "@/lib/master-hooks";
 
 export type SortKey = "top" | "movers" | "almostBonded" | "live";
 export type CategoryKey = "all" | "master" | "customs" | "rwa";
@@ -24,6 +26,8 @@ type MarketplaceToolbarProps = {
   onSortChange: (sort: SortKey) => void;
   category: CategoryKey;
   onCategoryChange: (category: CategoryKey) => void;
+  masterHooks: MasterHookId[];
+  onMasterHooksChange: (hooks: MasterHookId[]) => void;
   layout: "grid" | "table";
   onLayoutChange: (layout: "grid" | "table") => void;
 };
@@ -35,6 +39,8 @@ export function MarketplaceToolbar({
   onSortChange,
   category,
   onCategoryChange,
+  masterHooks,
+  onMasterHooksChange,
   layout,
   onLayoutChange,
 }: MarketplaceToolbarProps) {
@@ -74,11 +80,11 @@ export function MarketplaceToolbar({
 
       <div className="market-toolbar-group market-toolbar-group--category">
         <FilterPill active={category === "all"} onClick={() => onCategoryChange("all")} label="All" />
-        <FilterPill
+        <MasterHookFilterMenu
           active={category === "master"}
-          onClick={() => onCategoryChange("master")}
-          glyph={<MasterHookGlyph />}
-          label="Master"
+          selectedHooks={masterHooks}
+          onSelectedHooksChange={onMasterHooksChange}
+          onOpenMasterCategory={() => onCategoryChange("master")}
         />
         <FilterPill
           active={category === "customs"}

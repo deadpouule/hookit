@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
 import { useLaunches } from "@/hooks/useLaunches";
+import { MOCK_POOLS } from "@/lib/constants";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import { formatPercent, formatUsd } from "@/lib/format";
@@ -13,6 +15,7 @@ import {
   poolToMarketToken,
   type MarketToken,
 } from "@/lib/market-tokens";
+import { parseHooksParam, serializeHooksParam } from "@/lib/market-hook-filter";
 import {
   buildMarketRankings,
   filterBySort,
@@ -20,8 +23,10 @@ import {
   sortTokens,
 } from "@/lib/market-rankings";
 import type { SortKey } from "@/lib/market-rankings";
+import { poolsMatchingAnyMasterHooks, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { tokenHref } from "@/lib/routes";
 import { annotateCopyFlags } from "@/lib/token-identity";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
@@ -45,14 +50,59 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketT
   return tokens;
 }
 
-export function Marketplace() {
+function parseCategoryParam(value: string | null): CategoryKey {
+  if (value === "master" || value === "customs" || value === "rwa") return value;
+  return "all";
+}
+
+function MarketplaceContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("top");
-  const [category, setCategory] = useState<CategoryKey>("all");
+  const [category, setCategory] = useState<CategoryKey>(() => parseCategoryParam(searchParams.get("category")));
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
   const liveLaunches = shouldFetchLiveLaunches();
   const { data: onChainPools, isLoading, isError } = useLaunches();
+
+  const selectedHooks = useMemo(
+    () => parseHooksParam(searchParams.get("hooks")),
+    [searchParams],
+  );
+
+  useEffect(() => {
+    setCategory(parseCategoryParam(searchParams.get("category")));
+  }, [searchParams]);
+
+  const syncFiltersToUrl = useCallback(
+    (nextCategory: CategoryKey, nextHooks: MasterHookId[]) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (nextCategory === "all") {
+        params.delete("category");
+        params.delete("hooks");
+      } else {
+        params.set("category", nextCategory);
+        if (nextCategory === "master" && nextHooks.length > 0) {
+          params.set("hooks", serializeHooksParam(nextHooks));
+        } else {
+          params.delete("hooks");
+        }
+      }
+
+      const qs = params.toString();
+      router.replace(qs ? `/?${qs}#tokens` : "/#tokens", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  const sourcePools = useMemo((): TokenPool[] => {
+    if (liveLaunches && onChainPools && onChainPools.length > 0) {
+      return onChainPools;
+    }
+    return MOCK_POOLS;
+  }, [liveLaunches, onChainPools]);
 
   const sourceTokens = useMemo(() => {
     const demoTokens = buildDemoMarketTokens();
@@ -74,7 +124,15 @@ export function Marketplace() {
 
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = sourceTokens.filter((token) => {
+
+    let scopedTokens = sourceTokens;
+    if (category === "master" && selectedHooks.length > 0) {
+      scopedTokens = annotateCopyFlags(
+        poolsMatchingAnyMasterHooks(sourcePools, selectedHooks).map(poolToMarketToken),
+      );
+    }
+
+    const filtered = scopedTokens.filter((token) => {
       const matchesQuery =
         !q ||
         token.name.toLowerCase().includes(q) ||
@@ -83,10 +141,21 @@ export function Marketplace() {
         token.creator.toLowerCase().includes(q);
       return matchesQuery;
     });
+
     const categorized = filterByCategory(filtered, category);
     const sortedScope = filterBySort(categorized, sort);
     return sortTokens(sortedScope, sort);
-  }, [query, sort, category, sourceTokens]);
+  }, [query, sort, category, selectedHooks, sourcePools, sourceTokens]);
+
+  const handleCategoryChange = (nextCategory: CategoryKey) => {
+    setCategory(nextCategory);
+    syncFiltersToUrl(nextCategory, nextCategory === "master" ? selectedHooks : []);
+  };
+
+  const handleMasterHooksChange = (nextHooks: MasterHookId[]) => {
+    setCategory("master");
+    syncFiltersToUrl("master", nextHooks);
+  };
 
   return (
     <div className="space-y-5">
@@ -136,10 +205,24 @@ export function Marketplace() {
           sort={sort}
           onSortChange={setSort}
           category={category}
-          onCategoryChange={setCategory}
+          onCategoryChange={handleCategoryChange}
+          masterHooks={selectedHooks}
+          onMasterHooksChange={handleMasterHooksChange}
           layout={layout}
           onLayoutChange={setLayout}
         />
+
+        {category === "master" && selectedHooks.length > 0 && (
+          <p className="text-xs text-zinc-500">
+            Showing tokens using{" "}
+            <span className="text-zinc-300">
+              {selectedHooks
+                .map((hookId) => MASTER_HOOKS.find((hook) => hook.id === hookId)?.title ?? hookId)
+                .join(", ")}
+            </span>
+            .
+          </p>
+        )}
 
         {tokens.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
@@ -156,6 +239,20 @@ export function Marketplace() {
         )}
       </section>
     </div>
+  );
+}
+
+export function Marketplace() {
+  return (
+    <Suspense
+      fallback={
+        <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
+          Loading marketplace…
+        </p>
+      }
+    >
+      <MarketplaceContent />
+    </Suspense>
   );
 }
 
