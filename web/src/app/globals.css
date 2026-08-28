@@ -1079,15 +1079,89 @@
     font-weight: 600;
     line-height: 1.4;
     color: rgb(212 212 216);
+    cursor: pointer;
+    text-decoration: none;
     transition:
       background 0.2s ease,
       color 0.2s ease,
-      border-color 0.2s ease;
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
-  .orb-card:hover .orb-use-badge {
-    border-color: rgb(255 255 255 / 0.2);
-    background: rgb(255 255 255 / 0.1);
+  .orb-card--fire .orb-use-badge:hover {
+    border-color: #ef4444;
+    background: rgb(239 68 68 / 0.12);
+    box-shadow: 0 0 12px rgb(239 68 68 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--gold .orb-use-badge:hover {
+    border-color: #f59e0b;
+    background: rgb(245 158 11 / 0.12);
+    box-shadow: 0 0 12px rgb(245 158 11 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--void .orb-use-badge:hover {
+    border-color: #e879f9;
+    background: rgb(232 121 249 / 0.12);
+    box-shadow: 0 0 12px rgb(232 121 249 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--nature .orb-use-badge:hover {
+    border-color: #10b981;
+    background: rgb(16 185 129 / 0.12);
+    box-shadow: 0 0 12px rgb(16 185 129 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--volt .orb-use-badge:hover {
+    border-color: #03b1ed;
+    background: rgb(3 177 237 / 0.12);
+    box-shadow: 0 0 12px rgb(3 177 237 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--ice .orb-use-badge:hover {
+    border-color: #38bdf8;
+    background: rgb(56 189 248 / 0.12);
+    box-shadow: 0 0 12px rgb(56 189 248 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--ember .orb-use-badge:hover {
+    border-color: #f97316;
+    background: rgb(249 115 22 / 0.12);
+    box-shadow: 0 0 12px rgb(249 115 22 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--rose .orb-use-badge:hover {
+    border-color: #f43f5e;
+    background: rgb(244 63 94 / 0.12);
+    box-shadow: 0 0 12px rgb(244 63 94 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--steel .orb-use-badge:hover {
+    border-color: #6366f1;
+    background: rgb(99 102 241 / 0.12);
+    box-shadow: 0 0 12px rgb(99 102 241 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--crimson .orb-use-badge:hover {
+    border-color: #dc2626;
+    background: rgb(220 38 38 / 0.12);
+    box-shadow: 0 0 12px rgb(220 38 38 / 0.55);
+    color: #fff;
+  }
+
+  .orb-card--lime .orb-use-badge:hover {
+    border-color: #84cc16;
+    background: rgb(132 204 22 / 0.12);
+    box-shadow: 0 0 12px rgb(132 204 22 / 0.55);
     color: #fff;
   }
 

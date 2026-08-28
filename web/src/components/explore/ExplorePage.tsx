@@ -6,6 +6,8 @@ import { Plus, Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
 import { useLaunches } from "@/hooks/useLaunches";
+import { MOCK_POOLS } from "@/lib/constants";
+import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import {
   MASTER_HOOK_FILTERS,
   MASTER_HOOKS,
@@ -13,6 +15,7 @@ import {
   type MasterHookCategory,
 } from "@/lib/master-hooks";
 import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type HookFilter = "all" | MasterHookCategory;
@@ -20,9 +23,16 @@ type HookFilter = "all" | MasterHookCategory;
 export function ExplorePage() {
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
-  const { data: pools } = useLaunches();
+  const { data: onChainPools } = useLaunches();
 
-  const usage = useMemo(() => countHookUsage(pools ?? []), [pools]);
+  const pools = useMemo((): TokenPool[] => {
+    if (shouldFetchLiveLaunches() && onChainPools && onChainPools.length > 0) {
+      return onChainPools;
+    }
+    return MOCK_POOLS;
+  }, [onChainPools]);
+
+  const usage = useMemo(() => countHookUsage(pools), [pools]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -93,7 +103,7 @@ export function ExplorePage() {
 
       <div className="hook-grid">
         {filtered.map((hook) => (
-          <HookCard key={hook.id} hook={hook} />
+          <HookCard key={hook.id} hook={hook} pools={pools} />
         ))}
       </div>
 

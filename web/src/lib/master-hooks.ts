@@ -305,6 +305,34 @@ export function countHookUsage(
   return counts;
 }
 
+const POOL_HOOK_BY_MASTER_ID: Partial<
+  Record<MasterHookId, keyof import("@/lib/types").TokenPool["hooks"]>
+> = {
+  "anti-snipe": "antiSnipe",
+  "backed-floor": "backedFloor",
+  "anti-mev": "antiMev",
+  "max-tx": "maxTx",
+  "max-wallet": "maxWallet",
+  "auto-burn": "autoBurn",
+  "lp-donate": "lpDonate",
+  "holder-airdrop": "holderAirdrop",
+  "creator-share-to-hook": "creatorShareToHook",
+};
+
+/** Master pools that enabled a given hook module (same rules as countHookUsage). */
+export function poolsUsingMasterHook(
+  pools: import("@/lib/types").TokenPool[],
+  hookId: MasterHookId,
+): import("@/lib/types").TokenPool[] {
+  const hookKey = POOL_HOOK_BY_MASTER_ID[hookId];
+  if (!hookKey) return [];
+
+  return pools.filter((pool) => {
+    if (pool.hookType === "Classic" || pool.hooks.customHook) return false;
+    return Boolean(pool.hooks[hookKey]);
+  });
+}
+
 export const HOOK_MODULE_FIELD: Record<
   MasterHookId,
   keyof import("@/lib/types").LaunchModules
