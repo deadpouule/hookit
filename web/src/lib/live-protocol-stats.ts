@@ -16,9 +16,11 @@ export type LiveProtocolKpis = {
   launches: number;
   masterLaunches: number;
   classicLaunches: number;
+  graduated: number;
   liquidityUsd: number;
   marketCapUsd: number;
   volume24hUsd: number;
+  volume24hEth: number;
   trades24h: number;
   tokensIndexed: number;
   source: "live" | "empty";
@@ -31,29 +33,36 @@ export function computeLiveProtocolKpis(
   const launches = pools.length;
   const masterLaunches = pools.filter((p) => p.hookType === "Master").length;
   const classicLaunches = pools.filter((p) => p.hookType === "Classic").length;
+  const graduated = pools.filter((p) => p.bondingPhase !== 0).length;
   const liquidityUsd = pools.reduce((sum, p) => sum + (p.liquidity || 0), 0);
   const marketCapUsd = pools.reduce((sum, p) => sum + (p.marketCap || 0), 0);
 
   let volume24hUsd = 0;
+  let volume24hEth = 0;
   let trades24h = 0;
   if (indexerTokens?.length) {
     for (const t of indexerTokens) {
       const volEth = Number(t.volume24h || 0);
-      // Indexer volume24h is quote units (ETH). Convert roughly to USD.
-      volume24hUsd += Number.isFinite(volEth) ? volEth * ETH_USD_FALLBACK : 0;
+      if (Number.isFinite(volEth)) {
+        volume24hEth += volEth;
+        volume24hUsd += volEth * ETH_USD_FALLBACK;
+      }
       trades24h += t.trades24h || 0;
     }
   } else {
     volume24hUsd = pools.reduce((sum, p) => sum + (p.volume24h || 0), 0);
+    volume24hEth = volume24hUsd / ETH_USD_FALLBACK;
   }
 
   return {
     launches,
     masterLaunches,
     classicLaunches,
+    graduated,
     liquidityUsd,
     marketCapUsd,
     volume24hUsd,
+    volume24hEth,
     trades24h,
     tokensIndexed: indexerTokens?.length ?? 0,
     source: launches > 0 || (indexerTokens?.length ?? 0) > 0 ? "live" : "empty",

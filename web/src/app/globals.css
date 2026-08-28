@@ -2353,8 +2353,110 @@
   .stats-page {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
     padding-top: 1.25rem;
     padding-bottom: 3rem;
+  }
+
+  .stats-holo-banner {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 1rem;
+    background: #0a0a0c;
+  }
+
+  .stats-holo-banner__fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .stats-holo-banner__caustics {
+    opacity: 0.72;
+  }
+
+  .stats-holo-banner__shine {
+    opacity: 0.85;
+  }
+
+  .stats-holo-banner__grid {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    mask-image: none;
+    -webkit-mask-image: none;
+    opacity: 0.45;
+  }
+
+  .stats-holo-banner__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.35) 0%,
+      rgb(0 0 0 / 0.62) 100%
+    );
+  }
+
+  .stats-holo-banner__content {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  @media (min-width: 768px) {
+    .stats-holo-banner__content {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .stats-holo-stat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+    padding: 1.1rem 1.25rem;
+    text-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .stats-holo-stat + .stats-holo-stat {
+      border-left: 1px solid rgb(255 255 255 / 0.08);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .stats-holo-stat:nth-child(odd) {
+      border-right: 1px solid rgb(255 255 255 / 0.06);
+    }
+
+    .stats-holo-stat:nth-child(-n + 2) {
+      border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    }
+  }
+
+  .stats-holo-stat__value {
+    margin: 0;
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: #d4ff00;
+  }
+
+  .stats-holo-stat__label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: rgb(255 255 255 / 0.82);
+    text-transform: lowercase;
   }
 
   .stats-head {
@@ -2941,6 +3043,8 @@
   .ticker-track,
   .lean-caustics,
   .lean-shine,
+  .stats-holo-banner__caustics,
+  .stats-holo-banner__shine,
   .liquid-blob-a,
   .liquid-blob-b,
   .liquid-blob-c,

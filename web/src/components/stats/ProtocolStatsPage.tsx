@@ -13,6 +13,8 @@ import {
 } from "@/lib/live-protocol-stats";
 import { VOLUME_WINDOWS, type VolumeWindow } from "@/lib/protocol-stats";
 
+import { StatsHoloBanner } from "./StatsHoloBanner";
+
 const BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 
@@ -53,6 +55,8 @@ export function ProtocolStatsPage() {
 
   return (
     <div className="market-shell stats-page">
+      <StatsHoloBanner live={live} />
+
       <header className="stats-head">
         <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Stats</h1>
