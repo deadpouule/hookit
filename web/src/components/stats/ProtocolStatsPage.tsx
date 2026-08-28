@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
-import { StatsHoloBanner } from "@/components/stats/StatsHoloBanner";
 import { useLaunches } from "@/hooks/useLaunches";
-import { PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
 import { fetchIndexerTokens, type IndexerTokenSummary } from "@/lib/indexer-client";
@@ -31,7 +29,6 @@ import {
   type VolumeWindow,
 } from "@/lib/protocol-stats";
 
-const BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 const CHART_METRICS = ["buybacks", "revenue", "burns", "fdv"] as const;
 const METRIC_LABELS: Record<ChartMetric, string> = {
@@ -109,14 +106,11 @@ export function ProtocolStatsPage() {
 
   return (
     <div className="market-shell stats-page">
-      <StatsHoloBanner live={live} />
-
       <header className="stats-head">
         <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Stats</h1>
         <p className="stats-lede">
-          Launch and swap fees on Hookit. {BUYBACK_PCT}% of protocol revenue buys {NATIVE_TOKEN} on
-          the market and burns it. Creator share stays with the coin.
+          80% of protocol revenu buy HKT on the market and burn it.
         </p>
       </header>
 
