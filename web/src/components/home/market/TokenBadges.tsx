@@ -17,7 +17,7 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
   }
   if (token.isOriginal) {
     return (
-      <span className="token-og-badge" title="Original launch — first of this name & ticker">
+      <span className="token-og-badge" title="Original launch — first token with this ticker">
         OG
       </span>
     );

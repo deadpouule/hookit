@@ -23,9 +23,9 @@ export interface MarketToken {
   quoteAsset?: string;
   quoteAddress?: string;
   isRwa?: boolean;
-  /** First launch of this name+ticker — gets the OG badge. */
+  /** First launch of this ticker when duplicates exist — gets the OG badge. */
   isOriginal?: boolean;
-  /** Later launch reusing name/ticker — gets the COPY flag. */
+  /** Later launch reusing the same ticker — gets the COPY flag. */
   isCopycat?: boolean;
 }
 

@@ -79,7 +79,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                   </span>
                 )}
                 {isOriginal && !isCopycat && (
-                  <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first of this name & ticker">
+                  <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first token with this ticker">
                     OG
                   </span>
                 )}
