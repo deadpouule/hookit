@@ -40,9 +40,6 @@ export function SiteFooter() {
             <Link href="/launch" className="text-zinc-400 transition hover:text-zinc-200">
               Create
             </Link>
-            <Link href="/portfolio" className="text-zinc-400 transition hover:text-zinc-200">
-              Portfolio
-            </Link>
             <Link href="/stats" className="text-zinc-400 transition hover:text-zinc-200">
               Stats
             </Link>

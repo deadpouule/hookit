@@ -40,7 +40,6 @@ function CloseMark() {
 const LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
-  { href: "/portfolio", label: "Portfolio" },
   { href: "/stats", label: "Stats" },
   { href: "/docs", label: "Docs" },
 ] as const;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Compass, Code2, Layers, Rocket, Wallet, Wrench } from "lucide-react";
+import { Compass, Code2, Layers, Rocket, Wrench } from "lucide-react";
 
 import { GITHUB_REPO_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,6 @@ const RAIL = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/launch", label: "Launch", icon: Rocket },
   { href: "/builder", label: "Builder", icon: Wrench },
-  { href: "/portfolio", label: "Portfolio", icon: Wallet },
 ] as const;
 
 export function AppRail() {
