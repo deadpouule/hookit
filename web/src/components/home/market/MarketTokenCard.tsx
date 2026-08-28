@@ -11,14 +11,14 @@ import {
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 
+import { CopyContractButton } from "./CopyContractButton";
 import { TokenArt } from "./TokenArt";
-import { TokenCopyBadge, TokenMetaLine, TokenTypeBadges } from "./TokenBadges";
+import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 export function BondMeter({ token }: { token: MarketToken }) {
-  // Bonding curve bar only for normal classic tokens still on the curve.
   if (token.rail !== "classic" || token.hookType !== "Classic") return null;
   if (token.bondingPhase !== 0) {
-    return <p className="text-[11px] font-medium text-[#10b981]">Graduated</p>;
+    return <p className="text-[10px] font-medium text-[#10b981]">Graduated</p>;
   }
   if (isBonded(token)) return null;
 
@@ -47,17 +47,24 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
         <TokenArt
           token={token}
           className="token-thumb pointer-events-none flex items-center justify-center"
-          glyphClassName="text-4xl drop-shadow-lg"
+          glyphClassName="text-3xl drop-shadow-lg"
         />
         <TokenCopyBadge token={token} />
       </div>
 
       <div className="token-card-body">
-        <h3 className="pointer-events-none truncate">
-          {token.name} <span>${token.ticker}</span>
-        </h3>
-
-        <TokenMetaLine token={token} />
+        <div className="token-card-head">
+          <h3 className="token-card-name truncate">{token.name}</h3>
+          <div className="token-card-ticker-row">
+            <p className="token-card-ticker truncate">
+              <span className="token-card-ticker-emoji" aria-hidden>
+                {token.emoji}
+              </span>
+              ${token.ticker}
+            </p>
+            <CopyContractButton token={token} />
+          </div>
+        </div>
 
         <TokenTypeBadges token={token} />
 
@@ -71,8 +78,10 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
             <dd>{formatUsd(token.volume)}</dd>
           </div>
           <div>
-            <dt>1h</dt>
-            <dd className={token.change1h >= 0 ? "up" : "down"}>{formatPercent(token.change1h, true)}</dd>
+            <dt>24h</dt>
+            <dd className={token.change24h >= 0 ? "up" : "down"}>
+              {formatPercent(token.change24h, true)}
+            </dd>
           </div>
         </dl>
 

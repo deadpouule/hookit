@@ -351,6 +351,15 @@ export function truncateCreator(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+const ETH_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
+
+/** Contract address used for copy-to-clipboard on market cards. */
+export function resolveTokenContractAddress(token: MarketToken): string {
+  if (ETH_ADDRESS.test(token.id)) return token.id;
+  if (ETH_ADDRESS.test(token.creator)) return token.creator;
+  return token.creator;
+}
+
 import { isRwaQuote } from "@/lib/token-identity";
 
 /** Map on-chain TokenPool → market card model. */

@@ -9,6 +9,8 @@ import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
+import { CopyContractButton } from "./CopyContractButton";
+import { HookAvatarBadge } from "./HookAvatarBadge";
 import { TokenArt } from "./TokenArt";
 
 export function TrendingTokenCard({ token }: { token: MarketToken }) {
@@ -18,7 +20,7 @@ export function TrendingTokenCard({ token }: { token: MarketToken }) {
 
   return (
     <article
-      className="trending-card group relative shrink-0 cursor-pointer"
+      className="trending-card group relative cursor-pointer"
       onClick={() => router.push(href)}
     >
       <span
@@ -31,11 +33,14 @@ export function TrendingTokenCard({ token }: { token: MarketToken }) {
       </span>
 
       <div className="trending-card-inner">
-        <TokenArt
-          token={token}
-          className="trending-card-avatar"
-          glyphClassName="text-xl"
-        />
+        <div className="trending-card-avatar-wrap">
+          <TokenArt
+            token={token}
+            className="trending-card-avatar"
+            glyphClassName="text-base"
+          />
+          <HookAvatarBadge />
+        </div>
 
         <div className="trending-card-text">
           <div className="trending-card-name-row">
@@ -43,12 +48,15 @@ export function TrendingTokenCard({ token }: { token: MarketToken }) {
             <Flame className="trending-card-flame" aria-hidden />
             <Trophy className="trending-card-trophy" aria-hidden />
           </div>
-          <p className="trending-card-ticker">
-            <span className="trending-card-ticker-emoji" aria-hidden>
-              {token.emoji}
-            </span>
-            ${token.ticker}
-          </p>
+          <div className="trending-card-ticker-row">
+            <p className="trending-card-ticker">
+              <span className="trending-card-ticker-emoji" aria-hidden>
+                {token.emoji}
+              </span>
+              ${token.ticker}
+            </p>
+            <CopyContractButton token={token} />
+          </div>
         </div>
       </div>
 

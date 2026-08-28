@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { bondProgress } from "@/lib/market-tokens";
 import { MarketplaceToolbar, type CategoryKey, type SortKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
-import { TrendingTokenCard } from "./TrendingTokenCard";
+import { TrendingCarousel } from "./TrendingCarousel";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
@@ -133,11 +133,7 @@ export function Marketplace() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
         </div>
-        <div className="no-scrollbar trending-strip">
-          {trending.map((token) => (
-            <TrendingTokenCard key={token.id} token={token} />
-          ))}
-        </div>
+        <TrendingCarousel tokens={trending} />
       </section>
 
       <section id="tokens" className="scroll-mt-24 space-y-4">
