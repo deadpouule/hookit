@@ -5,10 +5,18 @@ import { motion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
+import { accentForHookId } from "@/lib/hook-modules";
 import { launchWithHookHref, type MasterHook } from "@/lib/master-hooks";
+
+function capitalizeDescription(text: string) {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function HookCard({ hook }: { hook: MasterHook }) {
   const [isHovered, setIsHovered] = useState(false);
+  const accent = accentForHookId(hook.id);
+  const Icon = hook.icon;
 
   return (
     <motion.a
@@ -30,8 +38,19 @@ export function HookCard({ hook }: { hook: MasterHook }) {
       </div>
 
       <div className="orb-footer">
-        <p className="text-xs font-bold text-white">{hook.description}</p>
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <span
+          className="orb-hook-desc-badge"
+          style={{
+            borderColor: `${accent.color}66`,
+            background: `${accent.color}1a`,
+            color: accent.color,
+          }}
+        >
+          <Icon className="orb-hook-desc-badge-icon shrink-0" aria-hidden />
+          <span>{capitalizeDescription(hook.description)}</span>
+        </span>
+
+        <div className="orb-footer-actions">
           <span className="font-mono text-[10px] text-zinc-500">
             {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
           </span>
