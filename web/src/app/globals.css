@@ -1249,28 +1249,6 @@
     border-radius: 9999px;
   }
 
-  .hook-avatar-badge {
-    position: absolute;
-    right: -0.15rem;
-    bottom: -0.15rem;
-    z-index: 2;
-    display: inline-flex;
-    width: 0.85rem;
-    height: 0.85rem;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 0.2rem;
-    border: 1px solid rgb(0 0 0 / 0.65);
-    background: linear-gradient(145deg, #ffffff 0%, #b8c4d4 22%, #6b7a90 48%, #e2e8f0 72%, #ffffff 100%);
-    box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
-  }
-
-  .hook-avatar-badge-icon {
-    width: 0.55rem;
-    height: 0.55rem;
-  }
-
   .trending-card-text {
     min-width: 0;
     flex: 1;
