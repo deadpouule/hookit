@@ -75,7 +75,9 @@ contract DeployBaseSepoliaScript is Script {
         // Live Quotrons/Ink USDG↔ETH liquidity only — no proprietary seed.
 
         (uint256 hkitLaunchId, address hkit,,) =
-            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "ipfs://hookit-hkit");
+            HkitLaunchLib.fairLaunch(
+                factory, distributor, hkitBuyback, "HOOKIT", "HKIT", "ipfs://hookit-hkit"
+            );
 
         uint256 bitmask = BitmaskConfig.pack(
             BitmaskConfig.Modules({

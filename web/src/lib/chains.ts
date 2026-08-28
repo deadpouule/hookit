@@ -59,8 +59,7 @@ export function resolveHookitChainKey(): HookitChainKey {
   const raw = process.env.NEXT_PUBLIC_HOOKIT_CHAIN?.trim().toLowerCase();
   if (raw === "ink" || raw === "57073") return "ink";
   if (raw === "basesepolia" || raw === "base_sepolia" || raw === "84532") return "baseSepolia";
-  if (process.env.NODE_ENV === "production") return "ink";
-  return "baseSepolia";
+  return "ink";
 }
 
 export function getActiveChain() {

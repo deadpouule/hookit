@@ -3,9 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const INDEXER_URL = (process.env.INDEXER_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
+const INDEXER_URL = process.env.INDEXER_URL?.trim().replace(/\/$/, "") ?? "";
 
 async function proxy(req: NextRequest, path: string[]) {
+  if (!INDEXER_URL) {
+    return NextResponse.json(
+      {
+        error: "indexer not configured",
+        hint: "Set INDEXER_URL to a hosted indexer when ready (charts / trades / holders)",
+      },
+      { status: 503 },
+    );
+  }
+
   const suffix = path.length ? `/${path.join("/")}` : "/health";
   const target = new URL(`${INDEXER_URL}${suffix.startsWith("/") ? suffix : `/${suffix}`}`);
   target.search = req.nextUrl.search;
@@ -27,8 +37,10 @@ async function proxy(req: NextRequest, path: string[]) {
     return NextResponse.json(
       {
         error: "indexer unreachable",
-        hint: "Start `cd indexer && npm run serve` and set INDEXER_URL if needed",
-        indexerUrl: INDEXER_URL,
+        hint: INDEXER_URL
+          ? "Check INDEXER_URL is reachable from this deployment"
+          : "Set INDEXER_URL to a hosted indexer when ready (charts / trades / holders)",
+        indexerUrl: INDEXER_URL || null,
       },
       { status: 503 },
     );

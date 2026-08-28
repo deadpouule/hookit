@@ -14,30 +14,32 @@ import {HkitBuyback} from "../HkitBuyback.sol";
 import {IFloorVault} from "../interfaces/IFloorVault.sol";
 
 /// @title HkitLaunchLib
-/// @notice Fair-launch HOOKIT/HKIT as the protocol native token (ETH pair, buyback flywheel).
+/// @notice Fair-launch the protocol native token (ETH pair, buyback flywheel).
 library HkitLaunchLib {
     function defaultModules() internal pure returns (BitmaskConfig.Modules memory m) {
         m.antiSnipe = true;
         m.antiMev = true;
         m.lpDonate = true;
-        // 1% hook tax → 100% to LP donate (modules never touch the base 1% 70/30 split).
+        // 1% hook tax → max LP donate slice (50% of hook pot; remainder → protocol).
         m.hookTaxBps = 100;
         m.antiSnipeDurationSeconds = ProtocolConstants.HKIT_ANTI_SNIPE_DURATION_SECONDS;
         m.initialSnipeTaxBps = ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;
-        m.lpDonateBps = ProtocolConstants.BPS_DENOMINATOR;
+        m.lpDonateBps = ProtocolConstants.MAX_LP_DONATE_BPS;
     }
 
-    /// @notice Launch HKIT, register as native token, configure buyback executor.
+    /// @notice Launch native token, register flywheel, configure buyback executor.
     function fairLaunch(
         LaunchFactory factory,
         ProtocolRevenueDistributor distributor,
         HkitBuyback buyback,
+        string memory name,
+        string memory symbol,
         string memory metadataURI
     ) internal returns (uint256 launchId, address token, PoolId poolId, PoolKey memory key) {
         (launchId, token, poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({
-                name: "HOOKIT",
-                symbol: "HKIT",
+                name: name,
+                symbol: symbol,
                 metadataURI: metadataURI,
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
                 quote: Currency.wrap(address(0)),

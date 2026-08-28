@@ -26,12 +26,16 @@ import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
 import {EthUsdgBridgeLib} from "../src/libraries/EthUsdgBridgeLib.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Deploys Hookit dual-rail (Master + Classic) + fair-launches HKIT.
+/// @notice Deploys Hookit dual-rail (Master + Classic) + fair-launches the native token.
+/// @dev Ink soft launch defaults to HOOKTEST (override via NATIVE_TOKEN_* env).
 contract DeployHookitCoreScript is Script {
     function run() public {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
         address ops = vm.envOr("OPS_TREASURY", deployer);
+        string memory nativeName = vm.envOr("NATIVE_TOKEN_NAME", string("HOOKTEST"));
+        string memory nativeSymbol = vm.envOr("NATIVE_TOKEN_SYMBOL", string("HTST"));
+        string memory nativeUri = vm.envOr("NATIVE_TOKEN_URI", string("ipfs://hooktest-native"));
         UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
         IPoolManager manager = IPoolManager(v4.poolManager);
 
@@ -90,8 +94,9 @@ contract DeployHookitCoreScript is Script {
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
-        (uint256 launchId, address hkit, PoolId poolId, PoolKey memory key) =
-            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "ipfs://hookit-hkit");
+        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) = HkitLaunchLib.fairLaunch(
+            factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri
+        );
 
         vm.stopBroadcast();
 
@@ -109,10 +114,12 @@ contract DeployHookitCoreScript is Script {
         console.log("FeeEthRail", address(feeRail));
         console.log("FeeEthRail bridge set", feeRail.ethBridgeSet());
         console.log("HkitBuyback", address(hkitBuyback));
-        console.log("HKIT", hkit);
-        console.log("HKIT launchId", launchId);
+        console.log("NativeToken", nativeToken);
+        console.log("NativeToken name", nativeName);
+        console.log("NativeToken symbol", nativeSymbol);
+        console.log("NativeToken launchId", launchId);
         console.logBytes32(PoolId.unwrap(poolId));
-        console.log("HKIT pool fee", key.fee);
+        console.log("NativeToken pool fee", key.fee);
         console.log("launch fee wei", ProtocolConstants.LAUNCH_FEE_WEI);
     }
 }

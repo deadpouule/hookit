@@ -22,7 +22,8 @@ contract ForkInkHkitBuybackTest is InkForkTestBase {
         super.setUp();
         if (!forkReady) return;
 
-        (,,, hkitKey) = HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "ipfs://hkit");
+        (,,, hkitKey) =
+            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "HOOKTEST", "HTST", "ipfs://hooktest");
         hkit = distributor.nativeToken();
         nativeHook = hkit;
     }

@@ -141,7 +141,9 @@ contract DryRunInkScript is Script {
         EthUsdgBridgeLib.tryWireBest(manager, d.feeRail);
 
         (d.hkitLaunchId, d.hkit,, d.hkitKey) =
-            HkitLaunchLib.fairLaunch(d.factory, d.distributor, d.hkitBuyback, "ipfs://hookit-hkit-dry-run");
+            HkitLaunchLib.fairLaunch(
+                d.factory, d.distributor, d.hkitBuyback, "HOOKTEST", "HTST", "ipfs://hooktest-native-dry-run"
+            );
 
         vm.stopBroadcast();
     }

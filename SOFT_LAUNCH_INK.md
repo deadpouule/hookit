@@ -11,14 +11,16 @@ Prep only. Do **not** broadcast until every GO item is checked.
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
 | HookitSwapRouter required in web | Code rejects Ink swaps without `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
 | Ink factories deployed | **Not yet** |
-| Hosted indexer | **Not yet** |
+| Hosted indexer | **Not yet** (Vercel UI live: https://hookit-five.vercel.app/) |
 | WalletConnect project ID | **Set before public UI** |
 
 ## Before first broadcast
 
 1. Fund deployer with Ink ETH (gas for full `DeployHookitCore`).
 2. Set `OPS_TREASURY` (multisig preferred) in root `.env`.
-3. Confirm `INK_RPC_URL` = dedicated Alchemy (or other) endpoint.
+3. Set `PRIVATE_KEY` in root `.env` (never commit).
+4. Native token branding defaults to **HOOKTEST** / **HTST** (override `NATIVE_TOKEN_NAME`, `NATIVE_TOKEN_SYMBOL`, `NATIVE_TOKEN_URI`).
+5. Confirm `INK_RPC_URL` = dedicated Alchemy (or other) endpoint.
 4. Optional: `INK_EXPLORER_API_KEY` for `forge verify`.
 5. Re-run dry-run:
    ```bash
@@ -46,7 +48,9 @@ Then try `script/WireFeeEthRailInk.s.sol` if `ethBridgeSet()` is still false.
 
 ## Flip the stack to Ink (after addresses exist)
 
-### Web (`web/.env.local` / Vercel)
+**Production UI:** https://hookit-five.vercel.app/ — no local indexer (`127.0.0.1:8787`) required.
+
+### Vercel (Project → Environment Variables)
 
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
@@ -55,9 +59,11 @@ NEXT_PUBLIC_LAUNCH_FACTORY=0x…
 NEXT_PUBLIC_BONDING_FACTORY=0x…
 NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x…
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
-INDEXER_URL=https://<hosted-indexer>
+# INDEXER_URL=   # optional until hosted indexer
 PINATA_JWT=<optional but recommended>
 ```
+
+### Local web (`web/.env.local`)
 
 ### Indexer
 
