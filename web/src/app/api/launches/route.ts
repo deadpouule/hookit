@@ -14,6 +14,22 @@ import type { PublicClient } from "viem";
 
 export const revalidate = 12;
 
+const API_TIMEOUT_MS = 15_000;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function GET() {
   const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
@@ -23,12 +39,16 @@ export async function GET() {
 
   try {
     const client = createServerPublicClient() as PublicClient;
-    const ethUsd = await readEthUsd(client);
+    const ethUsd = await withTimeout(readEthUsd(client), API_TIMEOUT_MS, "readEthUsd");
 
-    const [masterRaw, classicPools] = await Promise.all([
-      factory ? fetchAllLaunches(client, factory) : Promise.resolve([]),
-      bonding ? fetchAllBondingLaunches(client, bonding) : Promise.resolve([]),
-    ]);
+    const [masterRaw, classicPools] = await withTimeout(
+      Promise.all([
+        factory ? fetchAllLaunches(client, factory) : Promise.resolve([]),
+        bonding ? fetchAllBondingLaunches(client, bonding) : Promise.resolve([]),
+      ]),
+      API_TIMEOUT_MS,
+      "fetchLaunches",
+    );
 
     const masterPools = await enrichPoolsWithSpotPrices(
       client,

@@ -37,6 +37,15 @@ export const BOND_GRADUATE_USD = 1_000_000;
 const T0 = 1_724_536_800_000;
 export const MARKET_NOW = T0;
 
+/** Demo catalog with hookType/rail filled in for marketplace badges. */
+export function buildDemoMarketTokens(): MarketToken[] {
+  return MARKET_TOKENS.map((t) => ({
+    ...t,
+    hookType: t.hookType ?? (t.kind === "sushi" ? ("Custom" as const) : ("Master" as const)),
+    rail: t.rail ?? ("master" as const),
+  }));
+}
+
 export const MARKET_TOKENS: MarketToken[] = [
   {
     id: "smingo-copy",

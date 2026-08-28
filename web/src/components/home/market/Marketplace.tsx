@@ -18,6 +18,7 @@ import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
+  buildDemoMarketTokens,
   MARKET_TOKENS,
   poolToMarketToken,
   truncateCreator,
@@ -65,24 +66,19 @@ export function Marketplace() {
   const { data: onChainPools, isLoading, isError } = useLaunches();
 
   const sourceTokens = useMemo(() => {
-    const demoTokens = MARKET_TOKENS.map((t) => ({
-      ...t,
-      hookType: t.hookType ?? (t.kind === "sushi" ? ("Custom" as const) : ("Master" as const)),
-      rail: t.rail ?? ("master" as const),
-    }));
+    const demoTokens = buildDemoMarketTokens();
 
-    let tokens: MarketToken[];
-    if (!factoryConfigured) {
-      tokens = demoTokens;
-    } else if (onChainPools && onChainPools.length > 0) {
-      tokens = onChainPools.map(poolToMarketToken);
-    } else if (!isLoading && process.env.NODE_ENV === "development") {
-      tokens = demoTokens;
-    } else {
-      tokens = [];
+    if (onChainPools && onChainPools.length > 0) {
+      return annotateCopyFlags(onChainPools.map(poolToMarketToken));
     }
-    return annotateCopyFlags(tokens);
-  }, [factoryConfigured, onChainPools, isLoading]);
+
+    // Never block the UI on a hanging RPC — show demo immediately in local dev.
+    if (!factoryConfigured || process.env.NODE_ENV === "development") {
+      return annotateCopyFlags(demoTokens);
+    }
+
+    return [];
+  }, [factoryConfigured, onChainPools]);
 
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -106,10 +102,19 @@ export function Marketplace() {
 
   return (
     <div className="space-y-5">
-      {factoryConfigured && isLoading && (
+      {factoryConfigured && isLoading && process.env.NODE_ENV === "development" && (
+        <p className="text-xs text-zinc-500">Syncing on-chain launches… (demo catalog shown meanwhile)</p>
+      )}
+      {factoryConfigured && isLoading && process.env.NODE_ENV !== "development" && (
         <p className="text-xs text-zinc-500">Loading on-chain launches…</p>
       )}
-      {factoryConfigured && isError && (
+      {factoryConfigured && isError && process.env.NODE_ENV === "development" && (
+        <p className="text-xs text-amber-400">
+          Could not sync on-chain launches — showing demo catalog. Check RPC / factory address in{" "}
+          <code className="text-zinc-200">.env.local</code>.
+        </p>
+      )}
+      {factoryConfigured && isError && process.env.NODE_ENV !== "development" && (
         <p className="text-xs text-amber-400">
           Could not load launches from the factory. Check RPC / factory address.
         </p>

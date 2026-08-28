@@ -6,6 +6,6 @@ export function createServerPublicClient() {
   const chain = getActiveChain();
   return createPublicClient({
     chain,
-    transport: http(getDefaultRpcUrl()),
+    transport: http(getDefaultRpcUrl(), { timeout: 12_000 }),
   });
 }
