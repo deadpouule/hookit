@@ -1397,14 +1397,6 @@
     color: #fff;
   }
 
-  .master-hook-filter-sheet {
-    color: #e4e4e7;
-  }
-
-  .master-hook-filter-sheet-list {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
   .category-hook-glyph,
   .filter-hook-glyph {
     display: inline-flex;
