@@ -66,16 +66,27 @@ export function MasterHookFilterMenu({
 }
 
 export function MasterHookBadgeMenu({
-  poolHookIds,
+  poolHookIds: _poolHookIds,
+  selectedHooks = [],
+  onSelectedHooksChange,
   onNavigate,
   className,
 }: {
-  poolHookIds: MasterHookId[];
-  onNavigate: (hookIds: MasterHookId[]) => void;
+  poolHookIds?: MasterHookId[];
+  selectedHooks?: MasterHookId[];
+  onSelectedHooksChange?: (hookIds: MasterHookId[]) => void;
+  onNavigate?: (hookIds: MasterHookId[]) => void;
   className?: string;
 }) {
-  const hookOptions =
-    poolHookIds.length > 0 ? poolHookIds : (MASTER_HOOKS.map((hook) => hook.id) as MasterHookId[]);
+  const hookOptions = MASTER_HOOKS.map((hook) => hook.id);
+
+  const applySelection = (hookIds: MasterHookId[]) => {
+    if (onSelectedHooksChange) {
+      onSelectedHooksChange(hookIds);
+      return;
+    }
+    onNavigate?.(hookIds);
+  };
 
   return (
     <DropdownMenu>
@@ -101,11 +112,29 @@ export function MasterHookBadgeMenu({
         </DropdownMenuLabel>
         <MasterHookCheckboxOptions
           hookOptions={hookOptions}
-          selectedHooks={[]}
-          onSelectedHooksChange={onNavigate}
+          selectedHooks={selectedHooks}
+          onSelectedHooksChange={applySelection}
         />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export function MasterHookTokenBadgeFilter({
+  selectedHooks,
+  onSelectedHooksChange,
+  className,
+}: {
+  selectedHooks: MasterHookId[];
+  onSelectedHooksChange: (hooks: MasterHookId[]) => void;
+  className?: string;
+}) {
+  return (
+    <MasterHookBadgeMenu
+      selectedHooks={selectedHooks}
+      onSelectedHooksChange={onSelectedHooksChange}
+      className={className}
+    />
   );
 }
 

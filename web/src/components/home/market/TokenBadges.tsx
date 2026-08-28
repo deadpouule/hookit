@@ -1,12 +1,16 @@
+"use client";
+
 import { AlertTriangle } from "lucide-react";
 import type { ReactNode } from "react";
 
+import type { MasterHookId } from "@/lib/master-hooks";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenAgeLabel } from "@/lib/market-tokens";
 import { pairingBadgeClassName, pairingCurveBadge } from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
 import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
+import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
 /** COPY / OG overlay on the token art — top-right corner. */
 export function TokenCopyBadge({ token }: { token: MarketToken }) {
@@ -28,15 +32,34 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
 }
 
 /** Type badges row — Master, Customs, RWA pools, pairing curve (colored). */
-export function TokenTypeBadges({ token }: { token: MarketToken }) {
+export function TokenTypeBadges({
+  token,
+  masterHookFilters,
+  onMasterHookFiltersChange,
+}: {
+  token: MarketToken;
+  masterHookFilters?: MasterHookId[];
+  onMasterHookFiltersChange?: (hooks: MasterHookId[]) => void;
+}) {
   const badges: ReactNode[] = [];
+  const isMaster =
+    token.hookType === "Master" || (token.rail === "master" && token.hookType !== "Custom");
 
-  if (token.hookType === "Master" || (token.rail === "master" && token.hookType !== "Custom")) {
+  if (isMaster) {
     badges.push(
-      <span key="master" className="token-type-badge token-type-badge--master">
-        <MasterHookGlyph className="token-type-badge-glyph" />
-        Master
-      </span>,
+      onMasterHookFiltersChange ? (
+        <MasterHookTokenBadgeFilter
+          key="master"
+          selectedHooks={masterHookFilters ?? []}
+          onSelectedHooksChange={onMasterHookFiltersChange}
+          className="token-type-badge token-type-badge--master relative z-20 cursor-pointer transition hover:brightness-110"
+        />
+      ) : (
+        <span key="master" className="token-type-badge token-type-badge--master">
+          <MasterHookGlyph className="token-type-badge-glyph" />
+          Master
+        </span>
+      ),
     );
   } else if (token.hookType === "Custom" || token.kind === "sushi") {
     badges.push(
@@ -74,7 +97,11 @@ export function TokenTypeBadges({ token }: { token: MarketToken }) {
 
   if (badges.length === 0) return null;
 
-  return <div className="token-type-badges">{badges}</div>;
+  return (
+    <div className={cn("token-type-badges", onMasterHookFiltersChange && "relative z-20")}>
+      {badges}
+    </div>
+  );
 }
 
 /** Compact meta line under the name — age + copy hint. */

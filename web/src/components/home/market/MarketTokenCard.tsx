@@ -35,7 +35,15 @@ export function BondMeter({ token }: { token: MarketToken }) {
   );
 }
 
-export function MarketTokenCard({ token }: { token: MarketToken }) {
+export function MarketTokenCard({
+  token,
+  masterHookFilters,
+  onMasterHookFiltersChange,
+}: {
+  token: MarketToken;
+  masterHookFilters?: import("@/lib/master-hooks").MasterHookId[];
+  onMasterHookFiltersChange?: (hooks: import("@/lib/master-hooks").MasterHookId[]) => void;
+}) {
   const router = useRouter();
   const href = tokenHref(token.id);
 
@@ -65,7 +73,11 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
           </div>
         </div>
 
-        <TokenTypeBadges token={token} />
+        <TokenTypeBadges
+          token={token}
+          masterHookFilters={masterHookFilters}
+          onMasterHookFiltersChange={onMasterHookFiltersChange}
+        />
 
         <dl className="pointer-events-none token-card-stats">
           <div>

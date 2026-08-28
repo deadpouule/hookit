@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Search, Sparkles } from "lucide-react";
 
+import { ExploreHookUsesView } from "@/components/explore/ExploreHookUsesView";
 import { HookCard } from "@/components/explore/HookCard";
 import { useLaunches } from "@/hooks/useLaunches";
 import { MOCK_POOLS } from "@/lib/constants";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
+import { parseHooksParam, parseUsesParam } from "@/lib/market-hook-filter";
 import {
   MASTER_HOOK_FILTERS,
   MASTER_HOOKS,
@@ -20,7 +23,14 @@ import { cn } from "@/lib/utils";
 
 type HookFilter = "all" | MasterHookCategory;
 
-export function ExplorePage() {
+function ExplorePageContent() {
+  const searchParams = useSearchParams();
+  const usesHookId = parseUsesParam(searchParams.get("uses"));
+  const selectedHooks = useMemo(
+    () => parseHooksParam(searchParams.get("hooks")),
+    [searchParams],
+  );
+
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
   const { data: onChainPools } = useLaunches();
@@ -33,6 +43,12 @@ export function ExplorePage() {
   }, [onChainPools]);
 
   const usage = useMemo(() => countHookUsage(pools), [pools]);
+
+  const usesHook = usesHookId ? MASTER_HOOKS.find((hook) => hook.id === usesHookId) : null;
+
+  if (usesHook) {
+    return <ExploreHookUsesView hook={usesHook} pools={pools} selectedHooks={selectedHooks} />;
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -124,5 +140,19 @@ export function ExplorePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export function ExplorePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="market-shell bg-black pt-8 pb-10">
+          <p className="text-sm text-zinc-500">Loading hooks…</p>
+        </div>
+      }
+    >
+      <ExplorePageContent />
+    </Suspense>
   );
 }
