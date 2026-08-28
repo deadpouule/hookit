@@ -1309,24 +1309,52 @@
 
   .market-toolbar {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    overflow-x: auto;
-    border-radius: 9999px;
+    flex-direction: column;
+    gap: 0.55rem;
+    overflow: visible;
+    border-radius: 1rem;
     border: 1px solid rgb(255 255 255 / 0.08);
     background: #141416;
-    padding: 0.35rem 0.45rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .market-toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .market-toolbar-row--primary {
+    gap: 0.65rem;
+  }
+
+  .market-toolbar-row--categories {
+    overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .market-toolbar::-webkit-scrollbar {
+  .market-toolbar-row--categories::-webkit-scrollbar {
     display: none;
+  }
+
+  .market-toolbar-separator {
+    height: 1px;
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .market-toolbar-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
   }
 
   .market-toolbar-search {
     display: flex;
-    min-width: 11rem;
-    flex: 1 1 13rem;
+    min-width: 0;
+    flex: 1 1 auto;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;
@@ -1649,21 +1677,13 @@
     }
   }
 
-  .market-toolbar-view-wrap {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
-  }
-
   .market-toolbar-view {
     display: flex;
     flex-shrink: 0;
     align-items: center;
     gap: 0.15rem;
     border-radius: 9999px;
-    background: transparent;
+    background: rgb(255 255 255 / 0.04);
     padding: 0.15rem;
   }
 
@@ -1691,13 +1711,19 @@
   }
 
   @media (max-width: 767px) {
-    .market-toolbar {
-      border-radius: 1rem;
-      flex-wrap: nowrap;
+    .market-toolbar-row--primary {
+      flex-wrap: wrap;
+    }
+
+    .market-toolbar-actions {
+      width: 100%;
+      justify-content: flex-end;
+      margin-left: 0;
     }
 
     .market-toolbar-search {
-      min-width: 9rem;
+      width: 100%;
+      flex-basis: 100%;
     }
   }
 

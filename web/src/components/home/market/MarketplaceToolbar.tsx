@@ -54,63 +54,66 @@ export function MarketplaceToolbar({
 }: MarketplaceToolbarProps) {
   return (
     <div className="market-toolbar" suppressHydrationWarning>
-      <label className="market-toolbar-search">
-        <Search className="pointer-events-none h-4 w-4 shrink-0 text-zinc-500" />
-        <input
-          {...SEARCH_FIELD_PROPS}
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search hookit tokens"
-          className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
-        />
-      </label>
+      <div className="market-toolbar-row market-toolbar-row--primary">
+        <label className="market-toolbar-search">
+          <Search className="pointer-events-none h-4 w-4 shrink-0 text-zinc-500" />
+          <input
+            {...SEARCH_FIELD_PROPS}
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search hookit tokens"
+            className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
+          />
+        </label>
 
-      <div className="market-toolbar-divider" aria-hidden />
+        <div className="market-toolbar-actions">
+          <div className="market-toolbar-group">
+            <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
+            <FilterPill
+              active={sort === "almostBonded"}
+              onClick={() => onSortChange("almostBonded")}
+              glyph={<AlmostBondedGlyph />}
+              label="Almost bonded"
+            />
+            <FilterPill active={sort === "live"} onClick={() => onSortChange("live")} live label="Live feed" />
+          </div>
 
-      <div className="market-toolbar-group">
-        <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
-        <FilterPill
-          active={sort === "almostBonded"}
-          onClick={() => onSortChange("almostBonded")}
-          glyph={<AlmostBondedGlyph />}
-          label="Almost bonded"
-        />
-        <FilterPill active={sort === "live"} onClick={() => onSortChange("live")} live label="Live feed" />
+          <div className="market-toolbar-divider" aria-hidden />
+
+          <div className="market-toolbar-view">
+            <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
+              <Table2 className="h-4 w-4" />
+            </IconToggle>
+            <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
+              <LayoutGrid className="h-4 w-4" />
+            </IconToggle>
+          </div>
+        </div>
       </div>
 
-      <div className="market-toolbar-divider" aria-hidden />
+      <div className="market-toolbar-separator" aria-hidden />
 
-      <div className="market-toolbar-group market-toolbar-group--category">
-        <FilterPill active={category === "all"} onClick={() => onCategoryChange("all")} label="All" />
-        <MasterHookFilterMenu
-          active={category === "master"}
-          selectedHooks={masterHooks}
-          onSelectedHooksChange={onMasterHooksChange}
-          onActivateMaster={onActivateMaster}
-        />
-        <FilterPill
-          active={category === "customs"}
-          onClick={() => onCategoryChange("customs")}
-          glyph={<CustomsGlyph />}
-          label="Customs"
-        />
-        <RwaFilterMenu
-          active={category === "rwa"}
-          selectedQuote={rwaQuote}
-          onSelectedQuoteChange={onRwaQuoteChange}
-          onActivateRwa={onActivateRwa}
-        />
-      </div>
-
-      <div className="market-toolbar-view-wrap">
-        <div className="market-toolbar-divider" aria-hidden />
-        <div className="market-toolbar-view">
-          <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
-            <Table2 className="h-4 w-4" />
-          </IconToggle>
-          <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
-            <LayoutGrid className="h-4 w-4" />
-          </IconToggle>
+      <div className="market-toolbar-row market-toolbar-row--categories">
+        <div className="market-toolbar-group market-toolbar-group--category">
+          <FilterPill active={category === "all"} onClick={() => onCategoryChange("all")} label="All" />
+          <MasterHookFilterMenu
+            active={category === "master"}
+            selectedHooks={masterHooks}
+            onSelectedHooksChange={onMasterHooksChange}
+            onActivateMaster={onActivateMaster}
+          />
+          <FilterPill
+            active={category === "customs"}
+            onClick={() => onCategoryChange("customs")}
+            glyph={<CustomsGlyph />}
+            label="Customs"
+          />
+          <RwaFilterMenu
+            active={category === "rwa"}
+            selectedQuote={rwaQuote}
+            onSelectedQuoteChange={onRwaQuoteChange}
+            onActivateRwa={onActivateRwa}
+          />
         </div>
       </div>
     </div>
