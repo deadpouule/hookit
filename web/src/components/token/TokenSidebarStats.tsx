@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
+import { dexScreenerPageUrl, getDexScreenerChainSlug, normalizeTokenAddress } from "@/lib/dexscreener";
 import { formatAge, formatCompactUsd, formatPercent, isValidLaunchTimestamp } from "@/lib/format";
 import type { LiveTokenState } from "@/lib/token-live";
 import type { TokenPool } from "@/lib/types";
@@ -20,6 +21,8 @@ export function TokenSidebarStats({
   contractAddress: string;
 }) {
   const network = getChainDeployment().networkLabel;
+  const dexToken = normalizeTokenAddress(contractAddress);
+  const dexUrl = dexToken ? dexScreenerPageUrl(getDexScreenerChainSlug(), dexToken) : null;
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
     ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
     : null;
@@ -97,6 +100,17 @@ export function TokenSidebarStats({
           Explorer
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
+        {dexUrl ? (
+          <a
+            href={dexUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 text-sm text-zinc-300 transition hover:text-[#03b1ed]"
+          >
+            DexScreener
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        ) : null}
       </div>
     </>
   );
