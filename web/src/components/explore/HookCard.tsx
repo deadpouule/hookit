@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
-import { exploreUsesHref } from "@/lib/market-hook-filter";
+import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
   launchWithHookHref,
   type MasterHook,
@@ -63,7 +63,7 @@ export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[]
               className="orb-use-badge"
               onClick={(event) => {
                 event.stopPropagation();
-                router.push(exploreUsesHref(hook.id));
+                router.push(marketplaceHrefForHook(hook.id));
               }}
             >
               {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
