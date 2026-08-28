@@ -718,24 +718,6 @@
     gap: 0.5rem;
   }
 
-  .orb-hook-title-badge {
-    width: auto;
-    max-width: calc(100% - 2rem);
-    align-items: center;
-    margin: 0;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 1.25;
-  }
-
-  .orb-hook-title-badge .orb-hook-desc-badge-glyph {
-    width: 1rem;
-    margin-top: 0;
-    font-size: 0.34rem;
-  }
-
   .hook-settings-trigger {
     display: inline-flex;
     width: 1.65rem;
@@ -1063,6 +1045,24 @@
     border-color: rgb(132 204 22 / 0.45);
     background: rgb(132 204 22 / 0.14);
     color: #bef264;
+  }
+
+  .orb-hook-desc-badge.orb-hook-title-badge {
+    width: auto;
+    max-width: calc(100% - 2rem);
+    align-items: center;
+    margin: 0;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .orb-hook-desc-badge.orb-hook-title-badge .orb-hook-desc-badge-glyph {
+    width: 1rem;
+    margin-top: 0;
+    font-size: 0.34rem;
   }
 
   .orb-use-badge {
