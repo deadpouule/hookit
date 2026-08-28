@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
+import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { launchWithHookHref, type MasterHook } from "@/lib/master-hooks";
 
 export function HookCard({ hook }: { hook: MasterHook }) {
@@ -19,7 +20,10 @@ export function HookCard({ hook }: { hook: MasterHook }) {
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
-      <h2>{hook.title}</h2>
+      <div className="orb-card-head">
+        <h2>{hook.title}</h2>
+        <HookSettingsTooltip hook={hook} />
+      </div>
 
       <div className="orb-stage my-2">
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={isHovered} />

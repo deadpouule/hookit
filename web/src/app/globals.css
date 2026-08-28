@@ -665,6 +665,88 @@
     color: #fff;
   }
 
+  .orb-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .hook-settings-trigger {
+    display: inline-flex;
+    width: 1.65rem;
+    height: 1.65rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: rgb(255 255 255 / 0.04);
+    color: #a1a1aa;
+    cursor: help;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .hook-settings-trigger:hover {
+    border-color: rgb(255 255 255 / 0.2);
+    background: rgb(255 255 255 / 0.08);
+    color: #fff;
+  }
+
+  .hook-settings-tooltip {
+    max-width: min(22rem, calc(100vw - 2rem));
+  }
+
+  .hook-settings-tooltip > svg {
+    display: none;
+  }
+
+  .hook-settings-panel {
+    border-radius: 0.75rem;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #141416;
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  }
+
+  .hook-settings-panel-title {
+    margin: 0 0 0.55rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a1a1aa;
+  }
+
+  .hook-settings-panel-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .hook-settings-panel-list li {
+    font-family: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+    color: #f4f4f5;
+    text-transform: uppercase;
+  }
+
+  .hook-settings-panel-meta {
+    margin: 0.55rem 0 0;
+    font-size: 0.625rem;
+    line-height: 1.35;
+    color: #71717a;
+  }
+
   .orb-stage {
     display: flex;
     flex: 1 1 auto;
