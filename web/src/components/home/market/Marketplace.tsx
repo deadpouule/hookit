@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { useLaunches } from "@/hooks/useLaunches";
@@ -20,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { bondProgress } from "@/lib/market-tokens";
 import { MarketplaceToolbar, type CategoryKey, type SortKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
+import { TrendingTokenCard } from "./TrendingTokenCard";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
@@ -53,7 +53,6 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketT
 }
 
 export function Marketplace() {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("top");
   const [category, setCategory] = useState<CategoryKey>("all");
@@ -134,41 +133,9 @@ export function Marketplace() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
         </div>
-        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+        <div className="no-scrollbar trending-strip">
           {trending.map((token) => (
-            <article
-              key={token.id}
-              className="relative flex min-w-[240px] shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-transparent bg-[#141416] px-3 py-2.5 transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
-              onClick={() => router.push(tokenHref(token.id))}
-            >
-              <TokenArt
-                token={token}
-                className="pointer-events-none flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                glyphClassName="text-lg"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="pointer-events-none flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-white">{token.name}</p>
-                  <span
-                    className={cn(
-                      "font-mono text-[11px]",
-                      token.change1h >= 0 ? "text-emerald-400" : "text-red-400",
-                    )}
-                  >
-                    {formatPercent(token.change1h, true)}
-                  </span>
-                </div>
-              </div>
-              <Link
-                href={tokenHref(token.id)}
-                className="absolute inset-0 z-10"
-                aria-label={`${token.name} $${token.ticker}`}
-              >
-                <span className="sr-only">
-                  {token.name} ${token.ticker}
-                </span>
-              </Link>
-            </article>
+            <TrendingTokenCard key={token.id} token={token} />
           ))}
         </div>
       </section>

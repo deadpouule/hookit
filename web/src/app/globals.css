@@ -1161,6 +1161,123 @@
     }
   }
 
+  .trending-strip {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+  }
+
+  .trending-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .trending-card {
+    min-width: 17.5rem;
+    border-radius: 1rem;
+    border: 1px solid transparent;
+    background: #141416;
+    padding: 0.75rem 0.85rem;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .trending-card:hover {
+    border-color: #9514d1;
+    box-shadow: 0 0 15px rgb(149 20 209 / 0.5);
+  }
+
+  .trending-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding-right: 2.75rem;
+  }
+
+  .trending-card-avatar {
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+  }
+
+  .trending-card-text {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .trending-card-name-row {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .trending-card-name {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .trending-card-flame {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: #fb923c;
+  }
+
+  .trending-card-trophy {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: #fbbf24;
+  }
+
+  .trending-card-ticker {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0.2rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #d4d4d8;
+  }
+
+  .trending-card-ticker-emoji {
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  .trending-card-pct {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.85rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .trending-card-pct--up {
+    color: #34d399;
+  }
+
+  .trending-card-pct--down {
+    color: #fb7185;
+  }
+
   .token-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
