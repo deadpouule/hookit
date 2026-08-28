@@ -2,24 +2,52 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
+import { StatsHoloBanner } from "@/components/stats/StatsHoloBanner";
 import { useLaunches } from "@/hooks/useLaunches";
 import { PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
-import { formatCompactUsd, formatFullUsd } from "@/lib/format";
+import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
 import { fetchIndexerTokens, type IndexerTokenSummary } from "@/lib/indexer-client";
 import {
   computeLiveProtocolKpis,
   volumeSnapshotForWindow,
 } from "@/lib/live-protocol-stats";
-import { VOLUME_WINDOWS, type VolumeWindow } from "@/lib/protocol-stats";
-
-import { StatsHoloBanner } from "./StatsHoloBanner";
+import {
+  BUYBACK_BURNS,
+  CHART_WINDOWS,
+  LATEST_BUYBACKS,
+  NATIVE_TOKEN,
+  VOLUME_BY_WINDOW,
+  VOLUME_WINDOWS,
+  cumulativeSeries,
+  dailyBars,
+  metricLabel,
+  metricSubtitle,
+  metricValue,
+  protocolOverview,
+  type ChartMetric,
+  type ChartWindow,
+  type VolumeWindow,
+} from "@/lib/protocol-stats";
 
 const BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
 const DEAD = "0x000000000000000000000000000000000000dEaD";
+const CHART_METRICS = ["buybacks", "revenue", "burns", "fdv"] as const;
+const METRIC_LABELS: Record<ChartMetric, string> = {
+  buybacks: "Buybacks",
+  revenue: "Revenue",
+  burns: "Burns",
+  fdv: `$${NATIVE_TOKEN} FDV`,
+};
 
 export function ProtocolStatsPage() {
-  const [volumeWindow, setVolumeWindow] = useState<VolumeWindow>("24h");
+  const [volumeWindow, setVolumeWindow] = useState<VolumeWindow>("all");
+  const [chartWindow, setChartWindow] = useState<ChartWindow>("90d");
+  const [chartMetric, setChartMetric] = useState<ChartMetric>("buybacks");
+  const [view, setView] = useState<"chart" | "table">("chart");
+  const [areaHover, setAreaHover] = useState<number | null>(null);
+  const [barHover, setBarHover] = useState<number | null>(null);
   const [indexerTokens, setIndexerTokens] = useState<IndexerTokenSummary[] | null>(null);
   const { data: pools } = useLaunches();
 
@@ -41,17 +69,43 @@ export function ProtocolStatsPage() {
     () => computeLiveProtocolKpis(pools ?? [], indexerTokens),
     [pools, indexerTokens],
   );
-  const volume = volumeSnapshotForWindow(volumeWindow, live);
 
-  const feeSplit = useMemo(() => {
-    const master = live.masterLaunches;
-    const classic = live.classicLaunches;
-    const total = Math.max(1, master + classic);
+  const overview = useMemo(() => protocolOverview(), []);
+
+  const volume = useMemo(() => {
+    const base = VOLUME_BY_WINDOW[volumeWindow];
+    if (volumeWindow !== "24h" || live.source !== "live" || live.volume24hUsd <= 0) {
+      return base;
+    }
+    const snap = volumeSnapshotForWindow("24h", live);
     return {
-      masterShare: master / total,
-      classicShare: classic / total,
+      ...base,
+      realVolumeUsd: snap.realVolumeUsd,
+      buyVolumeUsd: snap.buyVolumeUsd,
+      sellVolumeUsd: snap.sellVolumeUsd,
+      buySellVolumeUsd: snap.buySellVolumeUsd,
+      totalVolumeUsd: snap.totalVolumeUsd,
+      revenueUsd: snap.revenueUsd,
+      buybackUsd: snap.buybackUsd,
     };
-  }, [live.classicLaunches, live.masterLaunches]);
+  }, [volumeWindow, live]);
+
+  const areaSeries = useMemo(() => {
+    const bars = dailyBars(chartWindow);
+    if (chartMetric === "fdv") return bars;
+    return cumulativeSeries(chartWindow);
+  }, [chartWindow, chartMetric]);
+
+  const barSeries = useMemo(() => dailyBars(chartWindow), [chartWindow]);
+  const areaActive = Math.min(areaHover ?? areaSeries.length - 1, areaSeries.length - 1);
+  const barActive = Math.min(barHover ?? barSeries.length - 1, barSeries.length - 1);
+  const areaPoint = areaSeries[areaActive] ?? areaSeries[0];
+  const barPoint = barSeries[barActive] ?? barSeries[0];
+  const tableRows = [...areaSeries].reverse();
+  const barAvg =
+    barSeries.reduce((sum, point) => sum + point.buybackUsd, 0) / Math.max(barSeries.length, 1);
+
+  const areaTooltipValue = metricValue(areaPoint ?? areaSeries[0]!, chartMetric);
 
   return (
     <div className="market-shell stats-page">
@@ -61,32 +115,10 @@ export function ProtocolStatsPage() {
         <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Stats</h1>
         <p className="stats-lede">
-          Live launches, TVL, and indexed volume. Buyback fills appear here when protocol fee
-          events are indexed — no mock series.
+          Launch and swap fees on Hookit. {BUYBACK_PCT}% of protocol revenue buys {NATIVE_TOKEN} on
+          the market and burns it. Creator share stays with the coin.
         </p>
       </header>
-
-      <section className="stats-block">
-        <div className="stats-block-head">
-          <h2>Live protocol</h2>
-          <span className="text-[11px] text-zinc-500">
-            {live.source === "live" ? "On-chain + indexer" : "Waiting for launches"}
-          </span>
-        </div>
-        <div className="stats-kpi-3">
-          <Kpi
-            label="Launches"
-            value={String(live.launches)}
-            hint={`${live.masterLaunches} master · ${live.classicLaunches} classic`}
-          />
-          <Kpi label="Liquidity" value={formatFullUsd(live.liquidityUsd)} hint="Sum of pool TVL" />
-          <Kpi
-            label="Market cap"
-            value={formatFullUsd(live.marketCapUsd)}
-            hint="Sum of listed FDV"
-          />
-        </div>
-      </section>
 
       <section className="stats-block">
         <div className="stats-block-head">
@@ -98,90 +130,224 @@ export function ProtocolStatsPage() {
             onChange={setVolumeWindow}
           />
         </div>
-        {volumeWindow === "24h" ? (
-          <>
-            <div className="stats-kpi-3">
-              <Kpi
-                label="Real volume"
-                value={formatFullUsd(volume.realVolumeUsd)}
-                hint={live.source === "live" ? "Live indexer window" : "No indexer volume yet"}
-              />
-              <Kpi
-                label="Trades"
-                value={String(live.trades24h)}
-                hint={`${live.tokensIndexed} tokens indexed`}
-              />
-              <Kpi
-                label="Est. protocol revenue"
-                value={formatFullUsd(volume.revenueUsd)}
-                hint={`${BUYBACK_PCT}% of quote volume (est.)`}
-              />
-            </div>
-            <div className="stats-kpi-3">
-              <Kpi
-                label={`Est. ${BUYBACK_PCT}% buybacks`}
-                value={formatFullUsd(volume.buybackUsd)}
-                hint="Derived from volume until buyback txs are indexed"
-              />
-              <Kpi
-                label="Buy volume (est.)"
-                value={formatCompactUsd(volume.buyVolumeUsd)}
-                hint="55/45 split heuristic"
-              />
-              <Kpi
-                label="Sell volume (est.)"
-                value={formatCompactUsd(volume.sellVolumeUsd)}
-                hint="55/45 split heuristic"
-              />
-            </div>
-          </>
-        ) : (
-          <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-8 text-center text-sm text-zinc-500">
-            Multi-day volume windows need historical indexer rollups. Use <strong className="text-zinc-300">24h</strong>{" "}
-            for live data.
-          </p>
-        )}
-      </section>
-
-      <section className="stats-block">
-        <div className="stats-block-head">
-          <h2>Buybacks &amp; burns</h2>
-        </div>
-        <div className="rounded-xl border border-dashed border-white/10 bg-black/20 px-4 py-10 text-center">
-          <p className="text-sm text-zinc-300">No buyback or burn events indexed yet</p>
-          <p className="mt-2 text-[12px] text-zinc-600">
-            When the fee escrow / HOOK buyback path emits events, fills will list here with explorer
-            links. Estimated revenue above is from swap volume only.
-          </p>
-          <a
-            href={`${BLOCK_EXPLORER_URL}/address/${DEAD}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-block text-[12px] text-[#d8b4fe] hover:underline"
-          >
-            Dead address ↗
-          </a>
-        </div>
-      </section>
-
-      <section className="stats-block">
-        <div className="stats-block-head">
-          <h2>Launch mix</h2>
-        </div>
         <div className="stats-kpi-3">
           <Kpi
-            label="Master share"
-            value={`${Math.round(feeSplit.masterShare * 100)}%`}
-            hint={`${live.masterLaunches} launches`}
+            label="Real volume"
+            value={formatFullUsd(volume.realVolumeUsd)}
+            hint="Organic launches and swaps on Hookit"
           />
           <Kpi
-            label="Classic share"
-            value={`${Math.round(feeSplit.classicShare * 100)}%`}
-            hint={`${live.classicLaunches} launches`}
+            label="Total volume (Buy / Sell)"
+            value={formatFullUsd(volume.buySellVolumeUsd)}
+            hint={`Buys ${formatCompactUsd(volume.buyVolumeUsd)} · Sells ${formatCompactUsd(volume.sellVolumeUsd)}`}
           />
-          <Kpi label="Indexed tokens" value={String(live.tokensIndexed)} hint="House indexer" />
+          <Kpi
+            label="Total volume"
+            value={formatFullUsd(volume.totalVolumeUsd)}
+            hint="Real + buy/sell flow across venues"
+          />
+        </div>
+        <p className="stats-footnote">
+          Measured on-chain from indexed swap activity.{" "}
+          {volumeWindow === "24h" && live.source === "live"
+            ? "24h window uses live indexer data."
+            : "Historical rollups use protocol snapshots."}
+        </p>
+      </section>
+
+      <section className="stats-block">
+        <div className="stats-kpi-3">
+          <Kpi
+            label="Total revenue"
+            value={formatFullUsd(overview.revenueUsd)}
+            hint="Trading fees paid to the platform, valued at claim time"
+          />
+          <Kpi
+            label="Total buybacks"
+            value={formatFullUsd(overview.buybackUsd)}
+            hint={`${formatTokenAmount(overview.hookBought)} ${NATIVE_TOKEN} bought over ${overview.buybacks.toLocaleString()} swaps`}
+          />
+          <Kpi
+            label={`$${NATIVE_TOKEN} burned`}
+            value={formatFullUsd(overview.burnedUsd)}
+            hint={`Current value of ${formatTokenAmount(overview.burned)} ${NATIVE_TOKEN} destroyed`}
+          />
         </div>
       </section>
+
+      <section className="stats-block stats-charts-block">
+        <div className="stats-charts-card">
+          <div className="stats-block-head stats-charts-card-head">
+            <div className="stats-toolbar">
+              <RangePills
+                value={chartWindow}
+                options={CHART_WINDOWS}
+                labels={{ "1d": "1D", "7d": "7D", "30d": "30D", "90d": "90D", all: "All" }}
+                onChange={(next) => {
+                  setChartWindow(next);
+                  setAreaHover(null);
+                  setBarHover(null);
+                }}
+              />
+              <RangePills
+                value={view}
+                options={["chart", "table"] as const}
+                labels={{ chart: "Chart", table: "Table" }}
+                onChange={setView}
+              />
+            </div>
+          </div>
+
+          <div className="stats-chart-section">
+            <div className="stats-chart-section-head">
+              <div>
+                <h3>{metricLabel(chartMetric)}</h3>
+                <p>{metricSubtitle(chartMetric)}</p>
+              </div>
+              <RangePills
+                value={chartMetric}
+                options={CHART_METRICS}
+                labels={METRIC_LABELS}
+                onChange={(next) => {
+                  setChartMetric(next);
+                  setAreaHover(null);
+                }}
+              />
+            </div>
+
+            {view === "chart" ? (
+              <div className="stats-panel stats-panel-inset">
+                <p className="stats-tooltip">
+                  {areaPoint?.label} — {formatFullUsd(areaTooltipValue)}
+                  {chartMetric === "buybacks" ? " buybacks" : ""}
+                  {chartMetric === "revenue" ? " revenue" : ""}
+                  {chartMetric === "burns" ? " burned" : ""}
+                  {chartMetric === "fdv" ? " FDV" : ""}
+                </p>
+                <StatsAreaChart
+                  series={areaSeries}
+                  active={areaActive}
+                  metric={chartMetric}
+                  onHover={setAreaHover}
+                />
+              </div>
+            ) : (
+              <div className="stats-table-wrap">
+                <table className="stats-table">
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>{metricLabel(chartMetric)}</th>
+                      <th>Cumulative burns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRows.map((row) => (
+                      <tr key={row.label + row.buybackUsd}>
+                        <td>{row.label}</td>
+                        <td>{formatFullUsd(metricValue(row, chartMetric))}</td>
+                        <td>{formatFullUsd(row.burnUsd)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="stats-chart-section stats-chart-section-divider">
+            <div className="stats-chart-section-head">
+              <div>
+                <h3>Daily buyback &amp; burn</h3>
+                <p>
+                  What each day spent buying ${NATIVE_TOKEN}, beside the value it destroyed through
+                  burns.
+                </p>
+              </div>
+              <div className="stats-legend">
+                <span className="stats-legend-avg">Daily average {formatFullUsd(barAvg)}</span>
+                <span>
+                  <span className="stats-swatch stats-swatch-buy" /> Bought
+                </span>
+                <span>
+                  <span className="stats-swatch stats-swatch-burn" /> Burned
+                </span>
+              </div>
+            </div>
+            <div className="stats-panel stats-panel-inset">
+              <p className="stats-tooltip">
+                {barPoint?.label} — bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
+                {formatFullUsd(barPoint?.burnUsd ?? 0)}
+              </p>
+              <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="stats-feeds">
+        <section className="stats-feed">
+          <div className="stats-console-head">
+            <h2>Latest buybacks</h2>
+            <span>{LATEST_BUYBACKS.length} fills</span>
+          </div>
+          <div className="stats-feed-list">
+            {LATEST_BUYBACKS.map((tx) => (
+              <a
+                key={tx.hash}
+                href={`${BLOCK_EXPLORER_URL}/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stats-feed-row"
+              >
+                <div>
+                  <p>
+                    {tx.spentEth} ETH → {formatTokenAmount(tx.hookOut)} {NATIVE_TOKEN}
+                  </p>
+                  <p>
+                    {tx.ago} · swap tx ↗
+                  </p>
+                </div>
+                <strong>{formatCompactUsd(tx.usd)}</strong>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section className="stats-feed">
+          <div className="stats-console-head">
+            <h2>
+              <span className="stats-flame" aria-hidden>
+                🔥
+              </span>{" "}
+              Buyback burns
+            </h2>
+            <a href={`${BLOCK_EXPLORER_URL}/address/${DEAD}`} target="_blank" rel="noopener noreferrer">
+              dead ↗
+            </a>
+          </div>
+          <div className="stats-feed-list">
+            {BUYBACK_BURNS.map((tx) => (
+              <a
+                key={tx.hash}
+                href={`${BLOCK_EXPLORER_URL}/tx/${tx.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="stats-feed-row"
+              >
+                <div>
+                  <p>
+                    {formatTokenAmount(tx.amount)} {NATIVE_TOKEN}
+                  </p>
+                  <p>
+                    {tx.ago} · burn tx ↗
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

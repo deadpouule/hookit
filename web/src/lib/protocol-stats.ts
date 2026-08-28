@@ -24,11 +24,18 @@ export interface VolumeSnapshot {
   hookEarned: number;
 }
 
+export type ChartMetric = "buybacks" | "revenue" | "burns" | "fdv";
+
 export interface SeriesPoint {
   label: string;
   buybackUsd: number;
   burnUsd: number;
+  revenueUsd: number;
+  fdvUsd: number;
 }
+
+const REVENUE_RATIO = 10_000 / PROTOCOL_SHARE_BPS;
+export const HOOK_PRICE_USD = 0.0142;
 
 export interface BuybackTx {
   hash: `0x${string}`;
@@ -76,10 +83,14 @@ function buildDaily(count: number): SeriesPoint[] {
   for (let i = 0; i < count; i += 1) {
     const buy = 5_800 + unit(i) * 8_400 + (i % 7 === 3 ? 12_200 : 0) + i * 28;
     const burn = buy * (0.84 + unit(i, 2) * 0.14);
+    const revenue = buy * REVENUE_RATIO;
+    const fdv = 2_180_000 + i * 48_500 + unit(i, 5) * 320_000;
     points.push({
       label: dayLabel(i),
       buybackUsd: Math.round(buy),
       burnUsd: Math.round(burn),
+      revenueUsd: Math.round(revenue),
+      fdvUsd: Math.round(fdv),
     });
   }
   return points;
@@ -90,10 +101,14 @@ function buildHourly(): SeriesPoint[] {
   for (let h = 0; h < 24; h += 1) {
     const buy = 180 + unit(h, 3) * 520 + (h === 14 || h === 21 ? 640 : 0);
     const burn = buy * (0.82 + unit(h, 4) * 0.16);
+    const revenue = buy * REVENUE_RATIO;
+    const fdv = 7_420_000 + unit(h, 6) * 180_000;
     points.push({
       label: `${pad(h)}:00`,
       buybackUsd: Math.round(buy),
       burnUsd: Math.round(burn),
+      revenueUsd: Math.round(revenue),
+      fdvUsd: Math.round(fdv),
     });
   }
   return points;
@@ -109,15 +124,46 @@ function sliceDaily(n: number) {
 function toCumulative(points: SeriesPoint[]): SeriesPoint[] {
   let buy = 0;
   let burn = 0;
+  let revenue = 0;
   return points.map((point) => {
     buy += point.buybackUsd;
     burn += point.burnUsd;
+    revenue += point.revenueUsd;
     return {
       label: point.label,
       buybackUsd: buy,
       burnUsd: burn,
+      revenueUsd: revenue,
+      fdvUsd: point.fdvUsd,
     };
   });
+}
+
+export function metricValue(point: SeriesPoint, metric: ChartMetric): number {
+  if (metric === "buybacks") return point.buybackUsd;
+  if (metric === "revenue") return point.revenueUsd;
+  if (metric === "burns") return point.burnUsd;
+  return point.fdvUsd;
+}
+
+export function metricLabel(metric: ChartMetric): string {
+  if (metric === "buybacks") return "Cumulative buybacks";
+  if (metric === "revenue") return "Cumulative revenue";
+  if (metric === "burns") return "Cumulative burns";
+  return "$HOOK FDV";
+}
+
+export function metricSubtitle(metric: ChartMetric): string {
+  if (metric === "buybacks") {
+    return "Total USD deployed buying $HOOK on the open market, since launch.";
+  }
+  if (metric === "revenue") {
+    return "Trading fees paid to the protocol, valued at claim time.";
+  }
+  if (metric === "burns") {
+    return "USD value of $HOOK destroyed through buyback burns.";
+  }
+  return "Fully diluted valuation of $HOOK over the selected window.";
 }
 
 export function dailyBars(window: ChartWindow): SeriesPoint[] {
@@ -229,16 +275,21 @@ export const PROTOCOL_BUYBACK_PCT = PROTOCOL_SHARE_BPS / 100;
 export function protocolOverview() {
   const all = VOLUME_BY_WINDOW.all;
   const burnedPct = (NATIVE_BURNED / NATIVE_SUPPLY) * 100;
+  const hookBought = LATEST_BUYBACKS.reduce((sum, tx) => sum + tx.hookOut, 0) * 116;
+  const swapCount = LATEST_BUYBACKS.length * 116;
+  const burnedUsd = Math.round(NATIVE_BURNED * HOOK_PRICE_USD);
   return {
     nativeToken: NATIVE_TOKEN,
     totalSupply: NATIVE_SUPPLY,
     burned: NATIVE_BURNED,
     burnedPct,
+    burnedUsd,
     remaining: NATIVE_SUPPLY - NATIVE_BURNED,
     launchVolumeUsd: all.realVolumeUsd,
     launches: MOCK_POOLS.length,
     masterHooks: MASTER_HOOKS.length,
-    buybacks: LATEST_BUYBACKS.length * 116,
+    buybacks: swapCount,
+    hookBought,
     latestWindow: 100,
     buybackUsd: all.buybackUsd,
     revenueUsd: all.revenueUsd,

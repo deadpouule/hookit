@@ -3,12 +3,19 @@
 import type { PointerEvent } from "react";
 
 import { formatCompactUsd } from "@/lib/format";
-import type { SeriesPoint } from "@/lib/protocol-stats";
+import {
+  metricValue,
+  type ChartMetric,
+  type SeriesPoint,
+} from "@/lib/protocol-stats";
 
 const W = 920;
 const AREA_H = 320;
 const BAR_H = 280;
-const PAD = { top: 18, right: 16, bottom: 32, left: 56 };
+const PAD = { top: 18, right: 72, bottom: 32, left: 56 };
+
+const CHART_BLUE = "#38bdf8";
+const CHART_ORANGE = "#f97316";
 
 function xAt(i: number, n: number) {
   return PAD.left + (i / Math.max(n - 1, 1)) * (W - PAD.left - PAD.right);
@@ -19,10 +26,16 @@ function yAt(value: number, min: number, max: number, height: number) {
   return PAD.top + (1 - (value - min) / span) * (height - PAD.top - PAD.bottom);
 }
 
-function catmull(series: SeriesPoint[], min: number, max: number, height: number, key: "buybackUsd" | "burnUsd") {
+function catmull(
+  series: SeriesPoint[],
+  min: number,
+  max: number,
+  height: number,
+  metric: ChartMetric,
+) {
   const pts = series.map((point, i) => ({
     x: xAt(i, series.length),
-    y: yAt(point[key], min, max, height),
+    y: yAt(metricValue(point, metric), min, max, height),
   }));
   if (pts.length === 0) return "";
   let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
@@ -56,46 +69,57 @@ function axisLabels(series: SeriesPoint[]) {
   if (series.length < 5) {
     return series.map((point, i) => ({ i, label: point.label }));
   }
-  return [0, Math.floor((series.length - 1) / 2), series.length - 1].map((i) => ({
-    i,
-    label: series[i]!.label,
-  }));
+  const step = Math.max(1, Math.floor((series.length - 1) / 6));
+  const indices = new Set<number>([0, series.length - 1]);
+  for (let i = step; i < series.length - 1; i += step) {
+    indices.add(i);
+  }
+  return [...indices]
+    .sort((a, b) => a - b)
+    .map((i) => ({ i, label: series[i]!.label }));
 }
 
 export function StatsAreaChart({
   series,
   active,
+  metric,
   onHover,
 }: {
   series: SeriesPoint[];
   active: number;
+  metric: ChartMetric;
   onHover: (index: number) => void;
 }) {
-  const values = series.map((p) => p.buybackUsd);
+  const values = series.map((p) => metricValue(p, metric));
   const min = Math.min(...values, 0);
   const max = Math.max(...values, 1);
-  const line = catmull(series, min, max, AREA_H, "buybackUsd");
+  const line = catmull(series, min, max, AREA_H, metric);
   const x0 = xAt(0, series.length).toFixed(1);
   const xN = xAt(series.length - 1, series.length).toFixed(1);
   const base = (AREA_H - PAD.bottom).toFixed(1);
   const area = `${line} L ${xN} ${base} L ${x0} ${base} Z`;
   const point = series[active] ?? series[0];
+  const value = metricValue(point ?? series[0]!, metric);
   const px = xAt(active, series.length);
-  const py = yAt(point?.buybackUsd ?? 0, min, max, AREA_H);
+  const py = yAt(value, min, max, AREA_H);
+  const endValue = metricValue(series[series.length - 1] ?? series[0]!, metric);
+  const endX = xAt(series.length - 1, series.length);
+  const endY = yAt(endValue, min, max, AREA_H);
+  const gradientId = `stats-area-fill-${metric}`;
 
   return (
     <svg
       className="stats-chart"
       viewBox={`0 0 ${W} ${AREA_H}`}
       role="img"
-      aria-label="Cumulative HOOK buybacks in USD"
+      aria-label="Cumulative protocol chart"
       onPointerMove={(event) => onHover(pointerIndex(event, series.length))}
       onPointerLeave={() => onHover(series.length - 1)}
     >
       <defs>
-        <linearGradient id="stats-area-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#9514d1" stopOpacity="0.42" />
-          <stop offset="100%" stopColor="#9514d1" stopOpacity="0" />
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={CHART_BLUE} stopOpacity="0.38" />
+          <stop offset="100%" stopColor={CHART_BLUE} stopOpacity="0" />
         </linearGradient>
       </defs>
       {yTicks(min, max).map((tick) => {
@@ -108,10 +132,25 @@ export function StatsAreaChart({
           </g>
         );
       })}
-      <path d={area} fill="url(#stats-area-fill)" />
-      <path d={line} className="stats-line" />
+      <path d={area} fill={`url(#${gradientId})`} />
+      <path d={line} className="stats-line stats-line-blue" />
       <line x1={px} x2={px} y1={PAD.top} y2={AREA_H - PAD.bottom} className="stats-cross" />
-      <circle cx={px} cy={py} r="4" className="stats-dot" />
+      <circle cx={px} cy={py} r="4" className="stats-dot stats-dot-blue" />
+      {active === series.length - 1 ? (
+        <g className="stats-end-label">
+          <rect
+            x={endX + 6}
+            y={endY - 11}
+            width={64}
+            height={18}
+            rx={4}
+            className="stats-end-label-bg"
+          />
+          <text x={endX + 10} y={endY + 2} className="stats-end-label-text">
+            {formatCompactUsd(endValue)}
+          </text>
+        </g>
+      ) : null}
       {axisLabels(series).map(({ i, label }) => (
         <text key={`${label}-${i}`} x={xAt(i, series.length)} y={AREA_H - 8} className="stats-axis stats-axis-x">
           {label}
@@ -153,13 +192,10 @@ export function StatsBarChart({
           {formatCompactUsd(tick)}
         </text>
       ))}
-      <line
-        x1={PAD.left}
-        x2={W - PAD.right}
-        y1={avgY}
-        y2={avgY}
-        className="stats-avg"
-      />
+      <line x1={PAD.left} x2={W - PAD.right} y1={avgY} y2={avgY} className="stats-avg" />
+      <text x={W - PAD.right + 4} y={avgY + 3} className="stats-avg-label">
+        avg/day {formatCompactUsd(avg)}
+      </text>
       {series.map((point, i) => {
         const cx = PAD.left + slot * i + slot / 2;
         const buyH = (point.buybackUsd / max) * (BAR_H - PAD.top - PAD.bottom);
