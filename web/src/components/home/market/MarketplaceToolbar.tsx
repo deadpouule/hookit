@@ -72,7 +72,7 @@ export function MarketplaceToolbar({
 
       <div className="market-toolbar-divider" aria-hidden />
 
-      <div className="market-toolbar-group">
+      <div className="market-toolbar-group market-toolbar-group--category">
         <FilterPill active={category === "all"} onClick={() => onCategoryChange("all")} label="All" />
         <FilterPill
           active={category === "master"}
@@ -89,18 +89,21 @@ export function MarketplaceToolbar({
         <FilterPill
           active={category === "rwa"}
           onClick={() => onCategoryChange("rwa")}
-          icon={Landmark}
+          glyph={<RwaGlyph />}
           label="RWA pools"
         />
       </div>
 
-      <div className="market-toolbar-view">
-        <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
-          <Table2 className="h-4 w-4" />
-        </IconToggle>
-        <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
-          <LayoutGrid className="h-4 w-4" />
-        </IconToggle>
+      <div className="market-toolbar-view-wrap">
+        <div className="market-toolbar-divider" aria-hidden />
+        <div className="market-toolbar-view">
+          <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
+            <Table2 className="h-4 w-4" />
+          </IconToggle>
+          <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
+            <LayoutGrid className="h-4 w-4" />
+          </IconToggle>
+        </div>
       </div>
     </div>
   );
@@ -118,6 +121,10 @@ function MasterHookGlyph() {
 
 function CustomsGlyph() {
   return <Code2 className="h-3.5 w-3.5 text-amber-300" aria-hidden />;
+}
+
+function RwaGlyph() {
+  return <Landmark className="filter-rwa-icon h-3.5 w-3.5 shrink-0" aria-hidden />;
 }
 
 function AlmostBondedGlyph() {
@@ -156,7 +163,7 @@ function FilterPill({
       )}
     >
       {live ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        <span className="market-live-dot" />
       ) : glyph ? (
         glyph
       ) : Icon ? (

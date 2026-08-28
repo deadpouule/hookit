@@ -1014,6 +1014,13 @@
     gap: 0.2rem;
   }
 
+  .market-toolbar-group--category {
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.04);
+    padding: 0.15rem 0.2rem;
+    gap: 0.1rem;
+  }
+
   .market-filter-pill {
     display: inline-flex;
     align-items: center;
@@ -1075,14 +1082,48 @@
     background: linear-gradient(90deg, #9514d1, #03b1ed);
   }
 
+  .filter-rwa-icon {
+    color: #fde047;
+    filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
+  }
+
+  .market-live-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: #34d399;
+    animation: market-live-blink 1.1s ease-in-out infinite;
+  }
+
+  @keyframes market-live-blink {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgb(52 211 153 / 0.55);
+    }
+
+    50% {
+      opacity: 0.35;
+      box-shadow: 0 0 0 3px rgb(52 211 153 / 0);
+    }
+  }
+
+  .market-toolbar-view-wrap {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
   .market-toolbar-view {
     display: flex;
     flex-shrink: 0;
     align-items: center;
     gap: 0.15rem;
-    margin-left: auto;
     border-radius: 9999px;
-    background: rgb(255 255 255 / 0.04);
+    background: transparent;
     padding: 0.15rem;
   }
 
