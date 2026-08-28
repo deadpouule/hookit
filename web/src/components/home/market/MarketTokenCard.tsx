@@ -17,14 +17,16 @@ import { tokenHref } from "@/lib/routes";
 
 import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
+import { TokenCopyBadge, TokenMetaLine, TokenTypeBadges } from "./TokenBadges";
 
 export function BondMeter({ token }: { token: MarketToken }) {
-  // Master launches skip the bonding meter.
-  if (token.rail === "master") return null;
-  if (isBonded(token) && token.rail !== "classic") return null;
-  if (token.rail === "classic" && token.bondingPhase !== 0) {
+  // Bonding curve bar only for normal classic tokens still on the curve.
+  if (token.rail !== "classic" || token.hookType !== "Classic") return null;
+  if (token.bondingPhase !== 0) {
     return <p className="text-[11px] font-medium text-[#10b981]">Graduated</p>;
   }
+  if (isBonded(token)) return null;
+
   const progress = bondProgress(token);
 
   return (
@@ -55,16 +57,23 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
       className="market-card group relative cursor-pointer overflow-hidden border border-transparent transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
       onClick={() => router.push(href)}
     >
-      <TokenArt
-        token={token}
-        className="token-thumb pointer-events-none flex items-center justify-center"
-        glyphClassName="text-4xl drop-shadow-lg"
-      />
+      <div className="relative">
+        <TokenArt
+          token={token}
+          className="token-thumb pointer-events-none flex items-center justify-center"
+          glyphClassName="text-4xl drop-shadow-lg"
+        />
+        <TokenCopyBadge token={token} />
+      </div>
 
       <div className="token-card-body">
         <h3 className="pointer-events-none truncate">
           {token.name} <span>${token.ticker}</span>
         </h3>
+
+        <TokenMetaLine token={token} />
+
+        <TokenTypeBadges token={token} />
 
         <dl className="pointer-events-none token-card-stats">
           <div>

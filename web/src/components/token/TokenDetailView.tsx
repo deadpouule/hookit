@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useState } from "react";
 
 import { BondingProgress } from "@/components/token/BondingProgress";
@@ -20,9 +20,11 @@ import type { TokenPool } from "@/lib/types";
 
 interface TokenDetailViewProps {
   pool: TokenPool;
+  isOriginal?: boolean;
+  isCopycat?: boolean;
 }
 
-export function TokenDetailView({ pool }: TokenDetailViewProps) {
+export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailViewProps) {
   const live = useLiveToken(pool);
   const [copied, setCopied] = useState(false);
   const [interval, setInterval] = useState<ChartInterval>("1h");
@@ -71,6 +73,25 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
                   {pool.name}
                 </h1>
                 <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
+                {isCopycat && (
+                  <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
+                    COPY
+                  </span>
+                )}
+                {isOriginal && !isCopycat && (
+                  <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first of this name & ticker">
+                    OG
+                  </span>
+                )}
+                {pool.hookType === "Master" && (
+                  <span className="token-type-badge token-type-badge--master">Master</span>
+                )}
+                {pool.hookType === "Custom" && (
+                  <span className="token-type-badge token-type-badge--custom">
+                    Customs
+                    <AlertTriangle className="token-custom-warn" aria-hidden />
+                  </span>
+                )}
                 {pool.rail === "classic" && (
                   <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
                     {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}

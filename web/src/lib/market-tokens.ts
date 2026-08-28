@@ -19,6 +19,14 @@ export interface MarketToken {
   bondPct?: number;
   rail?: "master" | "classic";
   bondingPhase?: number;
+  hookType?: "Master" | "Custom" | "Classic";
+  quoteAsset?: string;
+  quoteAddress?: string;
+  isRwa?: boolean;
+  /** First launch of this name+ticker — gets the OG badge. */
+  isOriginal?: boolean;
+  /** Later launch reusing name/ticker — gets the COPY flag. */
+  isCopycat?: boolean;
 }
 
 export const QUICK_BUY_AMOUNTS = [10, 25, 50, 100] as const;
@@ -30,6 +38,64 @@ const T0 = 1_724_536_800_000;
 export const MARKET_NOW = T0;
 
 export const MARKET_TOKENS: MarketToken[] = [
+  {
+    id: "smingo-copy",
+    name: "Sushi Mingo",
+    ticker: "SMINGO",
+    description: "copycat launch — same name, different contract",
+    emoji: "🦩",
+    art: "linear-gradient(160deg, #52525b 0%, #3f3f46 40%, #27272a 100%)",
+    artAccent: "#a1a1aa",
+    marketCap: 42_000,
+    volume: 3_200,
+    change1h: -8.2,
+    change24h: -12.1,
+    creator: "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    kind: "sushi",
+    launchedAt: T0 - 1000 * 60 * 5,
+    hookType: "Custom",
+    rail: "master",
+  },
+  {
+    id: "marscoin",
+    name: "MarsCoin",
+    ticker: "MARS",
+    description: "classic bonding curve on ETH",
+    emoji: "🔴",
+    art: "linear-gradient(160deg, #7f1d1d 0%, #dc2626 40%, #450a0a 100%)",
+    artAccent: "#fca5a5",
+    marketCap: 88_000,
+    volume: 12_400,
+    change1h: 2.1,
+    change24h: 5.3,
+    creator: "0x7bE21a9c04d84e117b217b21c7bE21a9c04d7b22",
+    kind: "pool",
+    launchedAt: T0 - 1000 * 60 * 34 * 24,
+    hookType: "Classic",
+    rail: "classic",
+    bondingPhase: 0,
+    bondPct: 0,
+  },
+  {
+    id: "aapl-rwa",
+    name: "Apple Yield",
+    ticker: "APYLD",
+    description: "master launch paired against wAAPLx",
+    emoji: "🍎",
+    art: "linear-gradient(145deg, #1c1917 0%, #dc2626 50%, #1c1917 100%)",
+    artAccent: "#fca5a5",
+    marketCap: 560_000,
+    volume: 45_000,
+    change1h: 1.2,
+    change24h: 3.8,
+    creator: "0xabcabcabcabcabcabcabcabcabcabcabcabcabcc",
+    kind: "pool",
+    launchedAt: T0 - 1000 * 60 * 120,
+    hookType: "Master",
+    rail: "master",
+    quoteAsset: "wAAPLx",
+    isRwa: true,
+  },
   {
     id: "smingo",
     name: "Sushi Mingo",
@@ -276,6 +342,8 @@ export function truncateCreator(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+import { isRwaQuote } from "@/lib/token-identity";
+
 /** Map on-chain TokenPool → market card model. */
 export function poolToMarketToken(pool: import("@/lib/types").TokenPool): MarketToken {
   const art = pool.bannerGradient || "linear-gradient(135deg, #1a0533 0%, #6d28d9 50%, #c026d3 100%)";
@@ -320,6 +388,10 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     bondPct,
     rail: pool.rail,
     bondingPhase: pool.bondingPhase,
+    hookType: pool.hookType,
+    quoteAsset: pool.quoteAsset,
+    quoteAddress: pool.quoteAddress,
+    isRwa: isRwaQuote(pool.quoteAsset, pool.quoteAddress),
   };
 }
 

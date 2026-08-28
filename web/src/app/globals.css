@@ -1106,7 +1106,116 @@
     display: block;
     height: 100%;
     border-radius: 99px;
-    background: #9514d1;
+    background: #22c55e;
+  }
+
+  /* ── Token identity badges (COPY / OG) ── */
+  .token-copy-badge,
+  .token-og-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 20;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.3;
+    pointer-events: none;
+  }
+
+  .token-copy-badge {
+    background: rgb(0 0 0 / 0.75);
+    border: 1px solid rgb(239 68 68 / 0.5);
+    color: #fca5a5;
+  }
+
+  .token-og-badge {
+    background: rgb(0 0 0 / 0.75);
+    border: 1px solid rgb(34 197 94 / 0.5);
+    color: #86efac;
+  }
+
+  /* ── Token type badges (Master / Customs / RWA / curve) ── */
+  .token-type-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .token-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    line-height: 1.4;
+    border: 1px solid transparent;
+  }
+
+  .token-type-badge--master {
+    border-color: rgb(255 255 255 / 0.15);
+    background: rgb(0 0 0 / 0.4);
+    color: #d4d4d8;
+    text-transform: capitalize;
+  }
+
+  .token-type-badge--custom {
+    border-color: rgb(251 191 36 / 0.3);
+    background: rgb(251 191 36 / 0.1);
+    color: #fcd34d;
+    text-transform: capitalize;
+  }
+
+  .token-custom-warn {
+    width: 10px;
+    height: 10px;
+    color: #ef4444;
+    flex-shrink: 0;
+  }
+
+  .token-type-badge--rwa {
+    border-color: rgb(250 204 21 / 0.3);
+    background: rgb(250 204 21 / 0.08);
+    color: #fde047;
+  }
+
+  .token-type-badge--curve {
+    border-color: rgb(56 189 248 / 0.3);
+    background: rgb(56 189 248 / 0.08);
+    color: #7dd3fc;
+  }
+
+  /* ── Token meta line (age + copy hint) ── */
+  .token-meta-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 10px;
+    color: #71717a;
+  }
+
+  .token-meta-age {
+    color: #71717a;
+  }
+
+  .token-meta-copy {
+    color: #ef4444;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .bond-meter p {
+    color: #22c55e;
   }
 
   .terminal-title {

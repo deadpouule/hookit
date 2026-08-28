@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use } from "react";
+import { useMemo, use } from "react";
 import { isAddress } from "viem";
 import { usePublicClient } from "wagmi";
 
@@ -9,6 +9,8 @@ import { TokenDetailView } from "@/components/token/TokenDetailView";
 import { useLaunchPool, useLaunches } from "@/hooks/useLaunches";
 import { getChainDeployment, isFactoryConfigured } from "@/lib/contracts/config";
 import { getDetailPool } from "@/lib/pools";
+import { annotateCopyFlags } from "@/lib/token-identity";
+import { poolToMarketToken } from "@/lib/market-tokens";
 import type { TokenPool } from "@/lib/types";
 
 function resolveFromList(pools: TokenPool[] | undefined, id: string): TokenPool | undefined {
@@ -36,6 +38,16 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
   } = useLaunchPool(id);
 
   const { data: listedPools, isPending: listPending } = useLaunches();
+
+  const copyFlags = useMemo(() => {
+    if (!listedPools?.length) return { isOriginal: false, isCopycat: false };
+    const annotated = annotateCopyFlags(listedPools.map(poolToMarketToken));
+    const needle = id.toLowerCase();
+    const match = annotated.find(
+      (t) => t.id.toLowerCase() === needle,
+    );
+    return { isOriginal: match?.isOriginal ?? false, isCopycat: match?.isCopycat ?? false };
+  }, [listedPools, id]);
 
   const waitingOnChain =
     factoryConfigured &&
@@ -75,5 +87,5 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
     );
   }
 
-  return <TokenDetailView pool={pool} />;
+  return <TokenDetailView pool={pool} isOriginal={copyFlags.isOriginal} isCopycat={copyFlags.isCopycat} />;
 }

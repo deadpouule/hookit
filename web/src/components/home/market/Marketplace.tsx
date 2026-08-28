@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CircleDot,
-  Flame,
   LayoutGrid,
   Search,
+  Shield,
   Table2,
   Trophy,
+  AlertTriangle,
   TrendingUp,
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
@@ -24,38 +25,59 @@ import {
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
+import { annotateCopyFlags } from "@/lib/token-identity";
 import { cn } from "@/lib/utils";
 
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
+import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
-type SortKey = "top" | "trending" | "movers" | "live";
+type FilterKey = "top" | "master" | "customs" | "rwa" | "live";
 type LayoutMode = "grid" | "table";
 
-function sortTokens(tokens: MarketToken[], sort: SortKey) {
+function sortTokens(tokens: MarketToken[], filter: FilterKey) {
   const next = [...tokens];
-  if (sort === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
-  if (sort === "trending") return next.sort((a, b) => b.volume - a.volume);
-  if (sort === "movers") return next.sort((a, b) => Math.abs(b.change1h) - Math.abs(a.change1h));
-  return next.sort((a, b) => b.launchedAt - a.launchedAt);
+  if (filter === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
+  if (filter === "live") return next.sort((a, b) => b.launchedAt - a.launchedAt);
+  return next.sort((a, b) => b.marketCap - a.marketCap);
+}
+
+function filterByCategory(tokens: MarketToken[], filter: FilterKey): MarketToken[] {
+  if (filter === "master") {
+    return tokens.filter((t) => t.hookType === "Master" || (t.rail === "master" && t.hookType !== "Custom"));
+  }
+  if (filter === "customs") {
+    return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
+  }
+  if (filter === "rwa") {
+    return tokens.filter((t) => t.isRwa);
+  }
+  return tokens;
 }
 
 export function Marketplace() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("top");
+  const [filter, setFilter] = useState<FilterKey>("top");
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
   const { data: onChainPools, isLoading, isError } = useLaunches();
 
   const sourceTokens = useMemo(() => {
-    if (!factoryConfigured) return MARKET_TOKENS;
-    if (onChainPools && onChainPools.length > 0) {
-      return onChainPools.map(poolToMarketToken);
+    let tokens: MarketToken[];
+    if (!factoryConfigured) {
+      tokens = MARKET_TOKENS.map((t) => ({
+        ...t,
+        hookType: t.kind === "sushi" ? ("Custom" as const) : ("Master" as const),
+        rail: "master" as const,
+      }));
+    } else if (onChainPools && onChainPools.length > 0) {
+      tokens = onChainPools.map(poolToMarketToken);
+    } else {
+      tokens = [];
     }
-    // While loading / empty / error — never mix demo cards into a live factory view.
-    return [];
+    return annotateCopyFlags(tokens);
   }, [factoryConfigured, onChainPools]);
 
   const tokens = useMemo(() => {
@@ -69,8 +91,9 @@ export function Marketplace() {
         token.creator.toLowerCase().includes(q);
       return matchesQuery;
     });
-    return sortTokens(filtered, sort);
-  }, [query, sort, sourceTokens]);
+    const categorized = filterByCategory(filtered, filter);
+    return sortTokens(categorized, filter);
+  }, [query, filter, sourceTokens]);
 
   const trending = useMemo(
     () => [...sourceTokens].sort((a, b) => b.change1h - a.change1h).slice(0, 8),
@@ -166,13 +189,11 @@ export function Marketplace() {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1">
-              <FilterPill active={sort === "top"} onClick={() => setSort("top")} icon={Trophy} label="Top" />
-              <FilterPill active={sort === "trending"} onClick={() => setSort("trending")} icon={Flame} label="Trending" />
-              <FilterPill active={sort === "movers"} onClick={() => setSort("movers")} icon={TrendingUp} label="Movers" />
-              <FilterPill active={sort === "live"} onClick={() => setSort("live")} icon={CircleDot} label="Live feed" live />
-            </div>
-            <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1">
-              <FilterPill active label="All" onClick={() => undefined} />
+              <FilterPill active={filter === "top"} onClick={() => setFilter("top")} icon={Trophy} label="Top" />
+              <FilterPill active={filter === "master"} onClick={() => setFilter("master")} icon={Shield} label="Master" />
+              <FilterPill active={filter === "customs"} onClick={() => setFilter("customs")} icon={AlertTriangle} label="Customs" />
+              <FilterPill active={filter === "rwa"} onClick={() => setFilter("rwa")} icon={TrendingUp} label="RWA pools" />
+              <FilterPill active={filter === "live"} onClick={() => setFilter("live")} icon={CircleDot} label="Live feed" live />
             </div>
             <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1">
               <IconToggle active={layout === "table"} onClick={() => setLayout("table")} label="Table">
@@ -280,14 +301,18 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
             >
               <td className="px-4 py-3">
                 <Link href={tokenHref(token.id)} className="flex items-center gap-3">
-                  <TokenArt
-                    token={token}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl"
-                    glyphClassName="text-base"
-                  />
+                  <div className="relative">
+                    <TokenArt
+                      token={token}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl"
+                      glyphClassName="text-base"
+                    />
+                    <TokenCopyBadge token={token} />
+                  </div>
                   <div>
                     <p className="font-medium text-white">{token.name}</p>
                     <p className="font-mono text-[11px] text-zinc-500">${token.ticker}</p>
+                    <TokenTypeBadges token={token} />
                   </div>
                 </Link>
               </td>
