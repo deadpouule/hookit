@@ -4,7 +4,6 @@ import {
   LayoutGrid,
   Search,
   Table2,
-  TrendingUp,
   Trophy,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -12,11 +11,12 @@ import type { ReactNode } from "react";
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
-import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
+import { CustomsGlyph } from "./CategoryGlyphs";
 import { MasterHookFilterMenu } from "./MasterHookFilterMenu";
+import { RwaFilterMenu } from "./RwaFilterMenu";
 import type { MasterHookId } from "@/lib/master-hooks";
 
-export type SortKey = "top" | "movers" | "almostBonded" | "live";
+export type SortKey = "top" | "almostBonded" | "live";
 export type CategoryKey = "all" | "master" | "customs" | "rwa";
 
 type MarketplaceToolbarProps = {
@@ -29,6 +29,9 @@ type MarketplaceToolbarProps = {
   masterHooks: MasterHookId[];
   onMasterHooksChange: (hooks: MasterHookId[]) => void;
   onActivateMaster: () => void;
+  rwaQuote: string | null;
+  onRwaQuoteChange: (quote: string | null) => void;
+  onActivateRwa: () => void;
   layout: "grid" | "table";
   onLayoutChange: (layout: "grid" | "table") => void;
 };
@@ -43,6 +46,9 @@ export function MarketplaceToolbar({
   masterHooks,
   onMasterHooksChange,
   onActivateMaster,
+  rwaQuote,
+  onRwaQuoteChange,
+  onActivateRwa,
   layout,
   onLayoutChange,
 }: MarketplaceToolbarProps) {
@@ -63,12 +69,6 @@ export function MarketplaceToolbar({
 
       <div className="market-toolbar-group">
         <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
-        <FilterPill
-          active={sort === "movers"}
-          onClick={() => onSortChange("movers")}
-          icon={TrendingUp}
-          label="Movers"
-        />
         <FilterPill
           active={sort === "almostBonded"}
           onClick={() => onSortChange("almostBonded")}
@@ -94,11 +94,11 @@ export function MarketplaceToolbar({
           glyph={<CustomsGlyph />}
           label="Customs"
         />
-        <FilterPill
+        <RwaFilterMenu
           active={category === "rwa"}
-          onClick={() => onCategoryChange("rwa")}
-          glyph={<RwaGlyph />}
-          label="RWA pools"
+          selectedQuote={rwaQuote}
+          onSelectedQuoteChange={onRwaQuoteChange}
+          onActivateRwa={onActivateRwa}
         />
       </div>
 

@@ -15,7 +15,7 @@ import {
   poolToMarketToken,
   type MarketToken,
 } from "@/lib/market-tokens";
-import { parseHooksParam, serializeHooksParam } from "@/lib/market-hook-filter";
+import { parseHooksParam, parseQuoteParam, serializeHooksParam } from "@/lib/market-hook-filter";
 import {
   buildMarketRankings,
   filterBySort,
@@ -37,7 +37,7 @@ import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 type LayoutMode = "grid" | "table";
 
-function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketToken[] {
+function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote: string | null): MarketToken[] {
   if (category === "master") {
     return tokens.filter((t) => t.hookType === "Master" || (t.rail === "master" && t.hookType !== "Custom"));
   }
@@ -45,7 +45,10 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketT
     return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
   }
   if (category === "rwa") {
-    return tokens.filter((t) => t.isRwa);
+    const rwaTokens = tokens.filter((t) => t.isRwa);
+    if (!rwaQuote) return rwaTokens;
+    const quoteKey = rwaQuote.toLowerCase();
+    return rwaTokens.filter((t) => t.quoteAsset?.toLowerCase() === quoteKey);
   }
   return tokens;
 }
@@ -71,23 +74,42 @@ function MarketplaceContent() {
     [searchParams],
   );
 
+  const selectedRwaQuote = useMemo(
+    () => parseQuoteParam(searchParams.get("quote")),
+    [searchParams],
+  );
+
   useEffect(() => {
     setCategory(parseCategoryParam(searchParams.get("category")));
   }, [searchParams]);
 
   const syncFiltersToUrl = useCallback(
-    (nextCategory: CategoryKey, nextHooks: MasterHookId[]) => {
+    (nextCategory: CategoryKey, nextHooks: MasterHookId[], nextQuote: string | null) => {
       const params = new URLSearchParams(searchParams.toString());
 
       if (nextCategory === "all") {
         params.delete("category");
         params.delete("hooks");
+        params.delete("quote");
       } else {
         params.set("category", nextCategory);
-        if (nextCategory === "master" && nextHooks.length > 0) {
-          params.set("hooks", serializeHooksParam(nextHooks));
+        if (nextCategory === "master") {
+          params.delete("quote");
+          if (nextHooks.length > 0) {
+            params.set("hooks", serializeHooksParam(nextHooks));
+          } else {
+            params.delete("hooks");
+          }
+        } else if (nextCategory === "rwa") {
+          params.delete("hooks");
+          if (nextQuote) {
+            params.set("quote", nextQuote);
+          } else {
+            params.delete("quote");
+          }
         } else {
           params.delete("hooks");
+          params.delete("quote");
         }
       }
 
@@ -142,24 +164,34 @@ function MarketplaceContent() {
       return matchesQuery;
     });
 
-    const categorized = filterByCategory(filtered, category);
+    const categorized = filterByCategory(filtered, category, selectedRwaQuote);
     const sortedScope = filterBySort(categorized, sort);
     return sortTokens(sortedScope, sort);
-  }, [query, sort, category, selectedHooks, sourcePools, sourceTokens]);
+  }, [query, sort, category, selectedHooks, selectedRwaQuote, sourcePools, sourceTokens]);
 
   const handleCategoryChange = (nextCategory: CategoryKey) => {
     setCategory(nextCategory);
-    syncFiltersToUrl(nextCategory, []);
+    syncFiltersToUrl(nextCategory, [], null);
   };
 
   const handleActivateMaster = () => {
     setCategory("master");
-    syncFiltersToUrl("master", []);
+    syncFiltersToUrl("master", [], null);
   };
 
   const handleMasterHooksChange = (nextHooks: MasterHookId[]) => {
     setCategory("master");
-    syncFiltersToUrl("master", nextHooks);
+    syncFiltersToUrl("master", nextHooks, null);
+  };
+
+  const handleActivateRwa = () => {
+    setCategory("rwa");
+    syncFiltersToUrl("rwa", [], null);
+  };
+
+  const handleRwaQuoteChange = (nextQuote: string | null) => {
+    setCategory("rwa");
+    syncFiltersToUrl("rwa", [], nextQuote);
   };
 
   return (
@@ -214,6 +246,9 @@ function MarketplaceContent() {
           masterHooks={selectedHooks}
           onMasterHooksChange={handleMasterHooksChange}
           onActivateMaster={handleActivateMaster}
+          rwaQuote={selectedRwaQuote}
+          onRwaQuoteChange={handleRwaQuoteChange}
+          onActivateRwa={handleActivateRwa}
           layout={layout}
           onLayoutChange={setLayout}
         />
@@ -227,6 +262,12 @@ function MarketplaceContent() {
                 .join(", ")}
             </span>
             .
+          </p>
+        )}
+
+        {category === "rwa" && selectedRwaQuote && (
+          <p className="text-xs text-zinc-500">
+            Showing pools paired with <span className="text-zinc-300">{selectedRwaQuote}</span>.
           </p>
         )}
 

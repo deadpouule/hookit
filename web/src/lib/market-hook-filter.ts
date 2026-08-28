@@ -1,4 +1,5 @@
 import { isMasterHookId, type MasterHookId } from "@/lib/master-hooks";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 export function parseHooksParam(value: string | null | undefined): MasterHookId[] {
   if (!value) return [];
@@ -28,6 +29,23 @@ export function marketplaceHrefForHooks(hookIds: MasterHookId[]): string {
 
 export function marketplaceHrefForHook(hookId: MasterHookId): string {
   return marketplaceHrefForHooks([hookId]);
+}
+
+export function parseQuoteParam(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const match = INK_QUOTRON_STOCKS.find((stock) => stock.symbol.toLowerCase() === normalized.toLowerCase());
+  return match?.symbol ?? null;
+}
+
+export function marketplaceHrefForRwaQuote(quote: string | null): string {
+  const params = new URLSearchParams();
+  params.set("category", "rwa");
+  if (quote) {
+    params.set("quote", quote);
+  }
+  return `/?${params.toString()}#tokens`;
 }
 
 export function exploreUsesHref(hookId: MasterHookId, hookFilters: MasterHookId[] = []): string {

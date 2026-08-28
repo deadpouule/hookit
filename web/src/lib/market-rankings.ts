@@ -7,7 +7,7 @@ export const TRENDING_BADGE_MIN_CHANGE = 0;
 export const LIVE_FEED_WINDOW_MS = 1000 * 60 * 60 * 48;
 export const ALMOST_BONDED_MIN_PCT = 40;
 
-export type SortKey = "top" | "movers" | "almostBonded" | "live";
+export type SortKey = "top" | "almostBonded" | "live";
 
 export type MarketRankings = {
   topIds: Set<string>;
@@ -63,7 +63,7 @@ export function isAlmostBondedToken(token: MarketToken): boolean {
   return bondProgress(token) >= ALMOST_BONDED_MIN_PCT;
 }
 
-export function filterBySort(tokens: MarketToken[], sort: "top" | "movers" | "almostBonded" | "live"): MarketToken[] {
+export function filterBySort(tokens: MarketToken[], sort: SortKey): MarketToken[] {
   if (sort === "almostBonded") {
     return tokens.filter(isAlmostBondedToken);
   }
@@ -73,10 +73,9 @@ export function filterBySort(tokens: MarketToken[], sort: "top" | "movers" | "al
   return tokens;
 }
 
-export function sortTokens(tokens: MarketToken[], sort: "top" | "movers" | "almostBonded" | "live"): MarketToken[] {
+export function sortTokens(tokens: MarketToken[], sort: SortKey): MarketToken[] {
   const next = [...tokens];
   if (sort === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
-  if (sort === "movers") return next.sort((a, b) => Math.abs(b.change1h) - Math.abs(a.change1h));
   if (sort === "almostBonded") {
     return next.sort((a, b) => bondProgress(b) - bondProgress(a));
   }

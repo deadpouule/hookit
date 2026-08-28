@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
+import { CategorySplitFilter } from "@/components/home/market/CategorySplitFilter";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -10,10 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
-import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
-import { cn } from "@/lib/utils";
 
 type MasterHookFilterMenuProps = {
   active: boolean;
@@ -35,57 +32,32 @@ export function MasterHookFilterMenu({
   onSelectedHooksChange,
   onActivateMaster,
 }: MasterHookFilterMenuProps) {
-  const [open, setOpen] = useState(false);
-
   const label =
     selectedHooks.length === 0
       ? "Master"
       : selectedHooks.length === 1
-        ? MASTER_HOOKS.find((hook) => hook.id === selectedHooks[0])?.title ?? "Master"
+        ? (MASTER_HOOKS.find((hook) => hook.id === selectedHooks[0])?.title ?? "Master")
         : `Master (${selectedHooks.length})`;
 
-  const handleActivate = () => {
-    if (!active) {
-      onActivateMaster();
-    }
-  };
+  const items = MASTER_HOOKS.map((hook) => ({
+    id: hook.id,
+    title: hook.title,
+    subtitle: hook.keyword,
+    icon: <hook.icon className="h-4 w-4" aria-hidden />,
+  }));
 
   return (
-    <DropdownMenu
-      open={active ? open : false}
-      onOpenChange={(nextOpen) => {
-        if (!active) return;
-        setOpen(nextOpen);
-      }}
-      modal={false}
-    >
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          {...TOOLBAR_BUTTON_PROPS}
-          className={cn("market-filter-pill", active && "market-filter-pill--active")}
-          aria-expanded={active ? open : false}
-          aria-haspopup="menu"
-          onClick={handleActivate}
-        >
-          <MasterHookGlyph />
-          {label}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        {...DROPDOWN_CONTENT_PROPS}
-        className="master-hook-filter-menu w-64 border-white/10 bg-[#141416] p-1 text-zinc-200"
-      >
-        <DropdownMenuLabel className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-          Master hooks
-        </DropdownMenuLabel>
-        <MasterHookCheckboxOptions
-          hookOptions={MASTER_HOOKS.map((hook) => hook.id)}
-          selectedHooks={selectedHooks}
-          onSelectedHooksChange={onSelectedHooksChange}
-        />
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <CategorySplitFilter
+      active={active}
+      label={label}
+      allLabel="All master hooks"
+      searchPlaceholder="Search master hooks"
+      glyph={<MasterHookGlyph />}
+      items={items}
+      selectedIds={selectedHooks}
+      onActivate={onActivateMaster}
+      onSelectedIdsChange={(ids) => onSelectedHooksChange(ids as MasterHookId[])}
+    />
   );
 }
 
