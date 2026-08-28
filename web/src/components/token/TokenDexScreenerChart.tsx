@@ -64,8 +64,6 @@ export function TokenDexScreenerChart({ tokenAddress, className }: TokenDexScree
           </>
         )}
       </div>
-
-      <DexScreenerTrackedFooter href={pageUrl ?? `https://dexscreener.com`} />
     </div>
   );
 }
@@ -94,32 +92,5 @@ function ChartMessage({
         </a>
       ) : null}
     </div>
-  );
-}
-
-function DexScreenerTrackedFooter({ href }: { href: string }) {
-  return (
-    <div className="dexscreener-tracked">
-      <span className="text-zinc-600">Tracked by</span>
-      <a href={href} target="_blank" rel="noopener noreferrer" className="dexscreener-tracked__brand">
-        <DexScreenerMark />
-        DEXSCREENER
-      </a>
-    </div>
-  );
-}
-
-function DexScreenerMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" aria-hidden>
-      <rect x="2" y="4" width="20" height="16" rx="4" fill="#101010" stroke="#34d399" strokeWidth="1.5" />
-      <path
-        d="M7 9.5c1.2-1.1 2.4-.9 3.4.2 1.1 1.2 2.3 1.4 3.5.3M9 15.5c.8-.6 1.6-.6 2.4 0"
-        stroke="#34d399"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      <circle cx="16.5" cy="10" r="1" fill="#34d399" />
-    </svg>
   );
 }

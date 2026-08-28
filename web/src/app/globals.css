@@ -559,32 +559,6 @@
     background: #111111;
   }
 
-  .dexscreener-tracked {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    border-top: 1px solid rgb(255 255 255 / 0.08);
-    background: #0a0a0a;
-    padding: 0.6rem 0.75rem;
-    font-size: 0.6875rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .dexscreener-tracked__brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-weight: 700;
-    color: #d4d4d8;
-    transition: color 0.15s ease;
-  }
-
-  .dexscreener-tracked__brand:hover {
-    color: #fff;
-  }
-
   .desk-card:hover {
     border-color: rgb(3 177 237 / 0.28);
   }
