@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
-import { accentForHookId } from "@/lib/hook-modules";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { launchWithHookHref, type MasterHook } from "@/lib/master-hooks";
 
 function capitalizeDescription(text: string) {
@@ -15,8 +15,6 @@ function capitalizeDescription(text: string) {
 
 export function HookCard({ hook }: { hook: MasterHook }) {
   const [isHovered, setIsHovered] = useState(false);
-  const accent = accentForHookId(hook.id);
-  const Icon = hook.icon;
 
   return (
     <motion.a
@@ -38,15 +36,8 @@ export function HookCard({ hook }: { hook: MasterHook }) {
       </div>
 
       <div className="orb-footer">
-        <span
-          className="orb-hook-desc-badge"
-          style={{
-            borderColor: `${accent.color}66`,
-            background: `${accent.color}1a`,
-            color: accent.color,
-          }}
-        >
-          <Icon className="orb-hook-desc-badge-icon shrink-0" aria-hidden />
+        <span className="orb-hook-desc-badge">
+          <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
           <span>{capitalizeDescription(hook.description)}</span>
         </span>
 
