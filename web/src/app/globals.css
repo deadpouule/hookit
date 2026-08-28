@@ -823,6 +823,14 @@
     background-image: linear-gradient(160deg, #e0e7ff, #a5b4fc, #6366f1, #312e81, #a5b4fc);
   }
 
+  .ascii-shape--crimson {
+    background-image: linear-gradient(160deg, #fee2e2, #f87171, #dc2626, #7f1d1d, #ef4444);
+  }
+
+  .ascii-shape--lime {
+    background-image: linear-gradient(160deg, #ecfccb, #bef264, #84cc16, #365314, #a3e635);
+  }
+
   .orb-card:hover .ascii-shape--fire,
   .pick-card:hover .ascii-shape--fire,
   .pick-card.is-on .ascii-shape--fire,
@@ -884,6 +892,20 @@
   .pick-card.is-on .ascii-shape--steel,
   .ascii-shape--hot.ascii-shape--steel {
     filter: drop-shadow(0 0 12px rgb(99 102 241 / 0.8));
+  }
+
+  .orb-card:hover .ascii-shape--crimson,
+  .pick-card:hover .ascii-shape--crimson,
+  .pick-card.is-on .ascii-shape--crimson,
+  .ascii-shape--hot.ascii-shape--crimson {
+    filter: drop-shadow(0 0 12px rgb(220 38 38 / 0.85));
+  }
+
+  .orb-card:hover .ascii-shape--lime,
+  .pick-card:hover .ascii-shape--lime,
+  .pick-card.is-on .ascii-shape--lime,
+  .ascii-shape--hot.ascii-shape--lime {
+    filter: drop-shadow(0 0 12px rgb(132 204 22 / 0.85));
   }
 
   .orb-footer {
@@ -965,6 +987,18 @@
     border-color: rgb(99 102 241 / 0.45);
     background: rgb(99 102 241 / 0.14);
     color: #c7d2fe;
+  }
+
+  .orb-hook-desc-badge--crimson {
+    border-color: rgb(220 38 38 / 0.45);
+    background: rgb(220 38 38 / 0.14);
+    color: #fca5a5;
+  }
+
+  .orb-hook-desc-badge--lime {
+    border-color: rgb(132 204 22 / 0.45);
+    background: rgb(132 204 22 / 0.14);
+    color: #bef264;
   }
 
   .orb-footer-actions {

@@ -28,7 +28,18 @@ export type MasterHookId =
   | "holder-airdrop"
   | "creator-share-to-hook";
 
-export type HookTheme = "fire" | "gold" | "void" | "nature" | "volt" | "ice" | "ember" | "rose" | "steel";
+export type HookTheme =
+  | "fire"
+  | "gold"
+  | "void"
+  | "nature"
+  | "volt"
+  | "ice"
+  | "ember"
+  | "rose"
+  | "steel"
+  | "crimson"
+  | "lime";
 
 export interface MasterHook {
   id: MasterHookId;
@@ -161,7 +172,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "creator proceeds vest linearly over 5 years",
     category: "tokenomics",
     icon: Hourglass,
-    theme: "rose",
+    theme: "void",
     keyword: "VEST",
     creator: CREATOR,
     uses: 4,
@@ -177,7 +188,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "1% of actual token output sent directly to the dead address",
     category: "tokenomics",
     icon: Flame,
-    theme: "void",
+    theme: "crimson",
     keyword: "BURN",
     creator: CREATOR,
     uses: 4,
@@ -229,7 +240,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "send your 70% of the base 1% into the hook pot instead of claiming escrow",
     category: "rewards",
     icon: Percent,
-    theme: "rose",
+    theme: "lime",
     keyword: "CREATOR",
     creator: CREATOR,
     uses: 0,
