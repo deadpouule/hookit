@@ -1054,29 +1054,19 @@
     color: #bef264;
   }
 
+  .orb-use-badge {
+    width: auto;
+    flex-shrink: 0;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    white-space: nowrap;
+  }
+
   .orb-footer-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-  }
-
-  .orb-use {
-    flex-shrink: 0;
-    border-radius: 0.5rem;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: rgb(255 255 255 / 0.05);
-    padding: 0.35rem 0.7rem;
-    font-size: 11px;
-    color: rgb(212 212 216);
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-  }
-
-  .orb-use:hover {
-    border-color: rgb(255 255 255 / 0.2);
-    background: rgb(255 255 255 / 0.1);
-    color: #fff;
   }
 
   .hook-detail-window {

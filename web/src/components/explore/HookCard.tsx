@@ -46,7 +46,9 @@ export function HookCard({ hook }: { hook: MasterHook }) {
           <span className="font-mono text-[10px] text-zinc-500">
             {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
           </span>
-          <span className="orb-use">Use this hook</span>
+          <span className={cn("orb-hook-desc-badge orb-use-badge", `orb-hook-desc-badge--${hook.theme}`)}>
+            Use this hook
+          </span>
         </div>
       </div>
     </motion.a>
