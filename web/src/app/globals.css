@@ -1310,37 +1310,24 @@
   .market-toolbar {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.65rem;
     overflow: visible;
-    border-radius: 1rem;
-    border: 1px solid rgb(255 255 255 / 0.08);
-    background: #141416;
-    padding: 0.55rem 0.65rem;
   }
 
   .market-toolbar-row {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     min-width: 0;
   }
 
-  .market-toolbar-row--primary {
-    gap: 0.65rem;
+  .market-toolbar-row--search {
+    width: 100%;
   }
 
-  .market-toolbar-row--categories {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .market-toolbar-row--categories::-webkit-scrollbar {
-    display: none;
-  }
-
-  .market-toolbar-separator {
-    height: 1px;
-    background: rgb(255 255 255 / 0.08);
+  .market-toolbar-row--controls {
+    justify-content: space-between;
+    gap: 1.25rem;
+    overflow: visible;
   }
 
   .market-toolbar-actions {
@@ -1349,17 +1336,22 @@
     align-items: center;
     gap: 0.5rem;
     margin-left: auto;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: #141416;
+    padding: 0.2rem 0.35rem;
   }
 
   .market-toolbar-search {
     display: flex;
+    width: 100%;
     min-width: 0;
-    flex: 1 1 auto;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;
-    background: rgb(255 255 255 / 0.04);
-    padding: 0.45rem 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: #141416;
+    padding: 0.55rem 0.85rem;
   }
 
   .market-toolbar-divider {
@@ -1378,10 +1370,25 @@
   }
 
   .market-toolbar-group--category {
+    display: flex;
+    flex-shrink: 1;
+    min-width: 0;
+    align-items: center;
+    overflow-x: auto;
     border-radius: 9999px;
-    background: rgb(255 255 255 / 0.04);
-    padding: 0.15rem 0.2rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: #141416;
+    padding: 0.2rem 0.35rem;
     gap: 0.1rem;
+    scrollbar-width: none;
+  }
+
+  .market-toolbar-group--category::-webkit-scrollbar {
+    display: none;
+  }
+
+  .market-toolbar-group--sort {
+    gap: 0.2rem;
   }
 
   .market-filter-pill {
@@ -1501,18 +1508,19 @@
   }
 
   .category-split-menu {
-    position: absolute;
-    top: calc(100% + 0.4rem);
-    left: 0;
-    z-index: 40;
     display: flex;
-    width: min(18rem, calc(100vw - 2rem));
     flex-direction: column;
     overflow: hidden;
     border-radius: 0.9rem;
     border: 1px solid rgb(255 255 255 / 0.1);
     background: #141416;
-    box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+    box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  }
+
+  .category-split-menu--portal {
+    position: fixed;
+    z-index: 120;
+    width: min(18rem, calc(100vw - 1.5rem));
   }
 
   .category-split-menu__search {
@@ -1711,8 +1719,10 @@
   }
 
   @media (max-width: 767px) {
-    .market-toolbar-row--primary {
-      flex-wrap: wrap;
+    .market-toolbar-row--controls {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
     }
 
     .market-toolbar-actions {
@@ -1721,9 +1731,8 @@
       margin-left: 0;
     }
 
-    .market-toolbar-search {
+    .market-toolbar-group--category {
       width: 100%;
-      flex-basis: 100%;
     }
   }
 
