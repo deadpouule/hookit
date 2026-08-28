@@ -81,7 +81,7 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
           href="/"
           className="mt-6 inline-flex rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-200 transition hover:border-[#9514d1]"
         >
-          Back to pools
+          Back to explore
         </Link>
       </div>
     );

@@ -50,7 +50,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         className="inline-flex items-center gap-1.5 text-[13px] text-zinc-400 transition hover:text-zinc-200"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to pools
+        Back to explore
       </Link>
 
       <div className="token-desk mt-4">
