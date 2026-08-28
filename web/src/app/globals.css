@@ -1322,6 +1322,7 @@
 
   .market-toolbar-row--search {
     width: 100%;
+    justify-content: flex-start;
   }
 
   .market-toolbar-row--controls {
@@ -1344,8 +1345,9 @@
 
   .market-toolbar-search {
     display: flex;
-    width: 100%;
-    min-width: 0;
+    width: min(100%, 26rem);
+    min-width: 14rem;
+    flex: 0 1 auto;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;
