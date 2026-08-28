@@ -20,7 +20,7 @@ export function HookCard({ hook }: { hook: MasterHook }) {
   return (
     <motion.a
       href={launchWithHookHref(hook.id)}
-      className="orb-card"
+      className={cn("orb-card", `orb-card--${hook.theme}`)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ scale: 1.02, y: -4 }}
