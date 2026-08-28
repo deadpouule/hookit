@@ -1,16 +1,19 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search, Sparkles } from "lucide-react";
 
-import { ExploreHookUsesView } from "@/components/explore/ExploreHookUsesView";
 import { HookCard } from "@/components/explore/HookCard";
 import { useLaunches } from "@/hooks/useLaunches";
 import { MOCK_POOLS } from "@/lib/constants";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
-import { parseHooksParam, parseUsesParam } from "@/lib/market-hook-filter";
+import {
+  marketplaceHrefForHooks,
+  parseHooksParam,
+  parseUsesParam,
+} from "@/lib/market-hook-filter";
 import {
   MASTER_HOOK_FILTERS,
   MASTER_HOOKS,
@@ -24,12 +27,19 @@ import { cn } from "@/lib/utils";
 type HookFilter = "all" | MasterHookCategory;
 
 function ExplorePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const usesHookId = parseUsesParam(searchParams.get("uses"));
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
     [searchParams],
   );
+
+  useEffect(() => {
+    if (!usesHookId) return;
+    const hooks = selectedHooks.length > 0 ? selectedHooks : [usesHookId];
+    router.replace(marketplaceHrefForHooks(hooks));
+  }, [router, selectedHooks, usesHookId]);
 
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
@@ -43,12 +53,6 @@ function ExplorePageContent() {
   }, [onChainPools]);
 
   const usage = useMemo(() => countHookUsage(pools), [pools]);
-
-  const usesHook = usesHookId ? MASTER_HOOKS.find((hook) => hook.id === usesHookId) : null;
-
-  if (usesHook) {
-    return <ExploreHookUsesView hook={usesHook} pools={pools} selectedHooks={selectedHooks} />;
-  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,6 +68,14 @@ function ExplorePageContent() {
       uses: usage[hook.id] ?? 0,
     }));
   }, [category, query, usage]);
+
+  if (usesHookId) {
+    return (
+      <div className="market-shell bg-black pt-8 pb-10">
+        <p className="text-sm text-zinc-500">Opening Explore with hook filter…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="market-shell space-y-6 bg-black pt-8 pb-10">
