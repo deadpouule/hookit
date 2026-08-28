@@ -1161,15 +1161,15 @@
   }
 
   .token-type-badge--master {
-    border-color: rgb(255 255 255 / 0.15);
-    background: rgb(0 0 0 / 0.4);
-    color: #d4d4d8;
+    border-color: rgb(149 20 209 / 0.45);
+    background: rgb(149 20 209 / 0.14);
+    color: #e9d5ff;
     text-transform: capitalize;
   }
 
   .token-type-badge--custom {
-    border-color: rgb(251 191 36 / 0.3);
-    background: rgb(251 191 36 / 0.1);
+    border-color: rgb(251 191 36 / 0.45);
+    background: rgb(251 191 36 / 0.16);
     color: #fcd34d;
     text-transform: capitalize;
   }
@@ -1188,9 +1188,75 @@
   }
 
   .token-type-badge--curve {
-    border-color: rgb(56 189 248 / 0.3);
-    background: rgb(56 189 248 / 0.08);
+    border-color: rgb(56 189 248 / 0.45);
+    background: rgb(56 189 248 / 0.15);
     color: #7dd3fc;
+  }
+
+  .token-type-badge--pair-eth {
+    border-color: rgb(161 161 170 / 0.35);
+    background: rgb(161 161 170 / 0.12);
+    color: #e4e4e7;
+  }
+
+  .token-type-badge--pair-usdg {
+    border-color: rgb(52 211 153 / 0.45);
+    background: rgb(52 211 153 / 0.12);
+    color: #6ee7b7;
+  }
+
+  .token-type-badge--pair-waaplx {
+    border-color: rgb(248 113 113 / 0.5);
+    background: rgb(248 113 113 / 0.14);
+    color: #fca5a5;
+  }
+
+  .token-type-badge--pair-wamznx {
+    border-color: rgb(251 191 36 / 0.5);
+    background: rgb(251 191 36 / 0.14);
+    color: #fcd34d;
+  }
+
+  .token-type-badge--pair-wgooglx {
+    border-color: rgb(96 165 250 / 0.5);
+    background: rgb(96 165 250 / 0.14);
+    color: #93c5fd;
+  }
+
+  .token-type-badge--pair-wmstrx {
+    border-color: rgb(249 115 22 / 0.5);
+    background: rgb(249 115 22 / 0.14);
+    color: #fdba74;
+  }
+
+  .token-type-badge--pair-wnflxx {
+    border-color: rgb(239 68 68 / 0.5);
+    background: rgb(239 68 68 / 0.14);
+    color: #f87171;
+  }
+
+  .token-type-badge--pair-wnvdax {
+    border-color: rgb(74 222 128 / 0.5);
+    background: rgb(74 222 128 / 0.14);
+    color: #86efac;
+  }
+
+  .token-type-badge--pair-wspyx {
+    border-color: rgb(56 189 248 / 0.55);
+    background: rgb(56 189 248 / 0.16);
+    color: #bae6fd;
+  }
+
+  .token-type-badge--pair-wtslax {
+    border-color: rgb(244 63 94 / 0.5);
+    background: rgb(244 63 94 / 0.14);
+    color: #fb7185;
+  }
+
+  .token-type-badge--pair-stock {
+    border-color: rgb(250 204 21 / 0.45);
+    background: rgb(250 204 21 / 0.12);
+    color: #fde047;
   }
 
   /* ── Token meta line (age + copy hint) ── */

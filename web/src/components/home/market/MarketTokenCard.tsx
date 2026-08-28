@@ -2,21 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Copy } from "lucide-react";
-import { useState } from "react";
 
-import { copyToClipboard } from "@/lib/clipboard";
-import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
   isBonded,
-  truncateCreator,
   type MarketToken,
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 
-import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenMetaLine, TokenTypeBadges } from "./TokenBadges";
 
@@ -42,16 +36,7 @@ export function BondMeter({ token }: { token: MarketToken }) {
 
 export function MarketTokenCard({ token }: { token: MarketToken }) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
   const href = tokenHref(token.id);
-
-  const copy = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!(await copyToClipboard(token.creator))) return;
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
-  };
 
   return (
     <article
@@ -92,14 +77,6 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
         </dl>
 
         <BondMeter token={token} />
-
-        <QuickBuy tokenId={token.id} size="sm" className="relative z-20" />
-
-        <button type="button" onClick={copy} {...TOOLBAR_BUTTON_PROPS} className="token-card-creator relative z-20">
-          <span>Creator</span>
-          <span className="font-mono">{truncateCreator(token.creator)}</span>
-          {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-50" />}
-        </button>
       </div>
       <Link href={href} className="absolute inset-0 z-10" aria-label={`${token.name} $${token.ticker}`}>
         <span className="sr-only">

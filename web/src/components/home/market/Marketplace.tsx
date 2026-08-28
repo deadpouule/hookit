@@ -21,7 +21,6 @@ import { formatPercent, formatUsd } from "@/lib/format";
 import {
   buildDemoMarketTokens,
   poolToMarketToken,
-  truncateCreator,
   type MarketToken,
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
@@ -30,7 +29,6 @@ import { annotateCopyFlags } from "@/lib/token-identity";
 import { cn } from "@/lib/utils";
 
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
-import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
@@ -162,7 +160,6 @@ export function Marketplace() {
                     {formatPercent(token.change1h, true)}
                   </span>
                 </div>
-                <QuickBuy tokenId={token.id} size="sm" className="relative z-20 mt-1.5" />
               </div>
               <Link
                 href={tokenHref(token.id)}
@@ -290,7 +287,7 @@ function IconToggle({
 function TokenTable({ tokens }: { tokens: MarketToken[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#141416]">
-      <table className="w-full min-w-[760px] text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">
           <tr className="border-b border-white/[0.08]">
             <th className="px-4 py-3 font-medium">Token</th>
@@ -298,8 +295,6 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
             <th className="px-4 py-3 font-medium">Volume</th>
             <th className="px-4 py-3 font-medium">1h</th>
             <th className="px-4 py-3 font-medium">Bond</th>
-            <th className="px-4 py-3 font-medium">Creator</th>
-            <th className="px-4 py-3 font-medium">Buy</th>
           </tr>
         </thead>
         <tbody>
@@ -332,10 +327,6 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
               </td>
               <td className="px-4 py-3">
                 <BondMeter token={token} />
-              </td>
-              <td className="px-4 py-3 font-mono text-xs text-zinc-500">{truncateCreator(token.creator)}</td>
-              <td className="px-4 py-3">
-                <QuickBuy tokenId={token.id} size="sm" className="min-w-[220px]" />
               </td>
             </tr>
           ))}

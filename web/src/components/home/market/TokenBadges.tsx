@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenAgeLabel } from "@/lib/market-tokens";
+import { pairingBadgeClassName, pairingCurveBadge } from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
 /** COPY / OG overlay on the token art — top-right corner. */
@@ -24,7 +25,7 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
   return null;
 }
 
-/** Type badges row — Master, Customs, RWA. Normal classic tokens show no type badge. */
+/** Type badges row — Master, Customs, pairing curve (colored). */
 export function TokenTypeBadges({ token }: { token: MarketToken }) {
   const badges: ReactNode[] = [];
 
@@ -43,15 +44,14 @@ export function TokenTypeBadges({ token }: { token: MarketToken }) {
     );
   }
 
-  if (token.isRwa) {
+  const pairing = pairingCurveBadge(token.quoteAsset, token.quoteAddress);
+  if (pairing) {
     badges.push(
-      <span key="rwa" className="token-type-badge token-type-badge--rwa">
-        rwa
+      <span key="pairing" className={pairingBadgeClassName(pairing.tone)}>
+        {pairing.label}
       </span>,
     );
-  }
-
-  if (token.rail === "classic" && token.hookType === "Classic") {
+  } else if (token.rail === "classic" && token.hookType === "Classic") {
     badges.push(
       <span key="curve" className="token-type-badge token-type-badge--curve">
         curve
@@ -64,7 +64,7 @@ export function TokenTypeBadges({ token }: { token: MarketToken }) {
   return <div className="token-type-badges">{badges}</div>;
 }
 
-/** Compact meta line under the name — price hint + age. */
+/** Compact meta line under the name — age + copy hint. */
 export function TokenMetaLine({ token, className }: { token: MarketToken; className?: string }) {
   return (
     <p className={cn("token-meta-line", className)}>
