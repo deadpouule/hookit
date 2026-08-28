@@ -2775,7 +2775,7 @@
   }
 
   .stats-range button.is-on {
-    background: rgb(56 189 248 / 0.18);
+    background: rgb(149 20 209 / 0.22);
     color: #fff;
   }
 
@@ -2884,8 +2884,8 @@
   }
 
   .stats-metric:hover {
-    border-color: rgb(56 189 248 / 0.45);
-    box-shadow: 0 0 30px -10px rgb(56 189 248 / 0.35);
+    border-color: rgb(149 20 209 / 0.5);
+    box-shadow: 0 0 30px -10px rgb(149 20 209 / 0.4);
   }
 
   .stats-metric p:first-child {
@@ -2939,15 +2939,11 @@
 
   .stats-line {
     fill: none;
-    stroke: #38bdf8;
+    stroke: #9514d1;
     stroke-width: 2;
     stroke-linejoin: round;
     stroke-linecap: round;
-    filter: drop-shadow(0 0 8px rgb(56 189 248 / 0.55));
-  }
-
-  .stats-line-blue {
-    stroke: #38bdf8;
+    filter: drop-shadow(0 0 8px rgb(149 20 209 / 0.55));
   }
 
   .stats-axis {
@@ -2961,33 +2957,29 @@
   }
 
   .stats-cross {
-    stroke: rgb(56 189 248 / 0.35);
+    stroke: rgb(149 20 209 / 0.35);
     stroke-width: 1;
   }
 
   .stats-dot {
-    fill: #38bdf8;
-    filter: drop-shadow(0 0 8px #38bdf8);
-  }
-
-  .stats-dot-blue {
-    fill: #38bdf8;
+    fill: #9514d1;
+    filter: drop-shadow(0 0 8px #9514d1);
   }
 
   .stats-end-label-bg {
-    fill: rgb(15 23 42 / 0.92);
-    stroke: rgb(56 189 248 / 0.35);
+    fill: rgb(15 15 20 / 0.92);
+    stroke: rgb(149 20 209 / 0.35);
     stroke-width: 1;
   }
 
   .stats-end-label-text {
-    fill: #e0f2fe;
+    fill: #e9d5ff;
     font-size: 10px;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   .stats-avg {
-    stroke: rgb(56 189 248 / 0.55);
+    stroke: rgb(149 20 209 / 0.55);
     stroke-width: 1;
     stroke-dasharray: 5 4;
   }
@@ -2999,7 +2991,7 @@
   }
 
   .stats-bar-buy {
-    fill: #38bdf8;
+    fill: #9514d1;
   }
 
   .stats-bar-burn {
@@ -3030,7 +3022,7 @@
   }
 
   .stats-swatch-buy {
-    background: #38bdf8;
+    background: #9514d1;
   }
 
   .stats-swatch-burn {
@@ -3076,7 +3068,7 @@
   }
 
   .stats-table tbody tr:hover td {
-    background: rgb(56 189 248 / 0.08);
+    background: rgb(149 20 209 / 0.08);
   }
 
   .stats-feeds {

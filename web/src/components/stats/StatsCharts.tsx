@@ -14,7 +14,7 @@ const AREA_H = 320;
 const BAR_H = 280;
 const PAD = { top: 18, right: 72, bottom: 32, left: 56 };
 
-const CHART_BLUE = "#38bdf8";
+const CHART_PURPLE = "#9514d1";
 const CHART_ORANGE = "#f97316";
 
 function xAt(i: number, n: number) {
@@ -118,8 +118,8 @@ export function StatsAreaChart({
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={CHART_BLUE} stopOpacity="0.38" />
-          <stop offset="100%" stopColor={CHART_BLUE} stopOpacity="0" />
+          <stop offset="0%" stopColor={CHART_PURPLE} stopOpacity="0.42" />
+          <stop offset="100%" stopColor={CHART_PURPLE} stopOpacity="0" />
         </linearGradient>
       </defs>
       {yTicks(min, max).map((tick) => {
@@ -133,9 +133,9 @@ export function StatsAreaChart({
         );
       })}
       <path d={area} fill={`url(#${gradientId})`} />
-      <path d={line} className="stats-line stats-line-blue" />
+      <path d={line} className="stats-line" />
       <line x1={px} x2={px} y1={PAD.top} y2={AREA_H - PAD.bottom} className="stats-cross" />
-      <circle cx={px} cy={py} r="4" className="stats-dot stats-dot-blue" />
+      <circle cx={px} cy={py} r="4" className="stats-dot" />
       {active === series.length - 1 ? (
         <g className="stats-end-label">
           <rect
