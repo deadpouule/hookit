@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import Link from "next/link";
-import { Plus, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
 import { useLaunches } from "@/hooks/useLaunches";
@@ -51,22 +50,13 @@ function ExplorePageContent() {
 
   return (
     <div className="market-shell space-y-6 bg-black pt-8 pb-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="max-w-xl space-y-2">
-          <h1 className="terminal-title text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Discover one click hooks
-          </h1>
-          <p className="text-sm text-zinc-400 sm:text-base">
-            Browse our Hooks, pick your strategy, and deploy your token in one click
-          </p>
-        </div>
-        <Link
-          href="/launch"
-          className="launch-coin inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-        >
-          <Plus className="h-4 w-4" />
-          Create token
-        </Link>
+      <div className="max-w-xl space-y-2">
+        <h1 className="terminal-title text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          Discover one click hooks
+        </h1>
+        <p className="text-sm text-zinc-400 sm:text-base">
+          Browse our Hooks, pick your strategy, and deploy your token in one click
+        </p>
       </div>
 
       <div

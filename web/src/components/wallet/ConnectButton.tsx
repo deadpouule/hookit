@@ -114,7 +114,7 @@ export function ConnectButton({
               className,
             )}
           >
-            <span className="h-2 w-2 rounded-full bg-neon-lime shadow-[0_0_8px_rgba(212,255,0,0.5)]" />
+            <span className="h-2 w-2 rounded-full bg-[#9514d1] shadow-[0_0_8px_rgba(149,20,209,0.55)]" />
             {account.displayName}
           </button>
         );
