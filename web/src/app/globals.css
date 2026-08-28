@@ -898,13 +898,11 @@
     align-items: flex-start;
     gap: 0.4rem;
     border-radius: 0.5rem;
-    border: 1px solid rgb(149 20 209 / 0.45);
-    background: rgb(149 20 209 / 0.14);
+    border: 1px solid transparent;
     padding: 0.45rem 0.55rem;
     font-size: 11px;
     font-weight: 600;
     line-height: 1.4;
-    color: #e9d5ff;
   }
 
   .orb-hook-desc-badge-glyph.category-hook-glyph {
@@ -912,6 +910,61 @@
     margin-top: 0.1rem;
     flex-shrink: 0;
     font-size: 0.28rem;
+    color: inherit;
+  }
+
+  .orb-hook-desc-badge--fire {
+    border-color: rgb(239 68 68 / 0.45);
+    background: rgb(239 68 68 / 0.14);
+    color: #fb923c;
+  }
+
+  .orb-hook-desc-badge--gold {
+    border-color: rgb(245 158 11 / 0.45);
+    background: rgb(245 158 11 / 0.14);
+    color: #fde68a;
+  }
+
+  .orb-hook-desc-badge--void {
+    border-color: rgb(232 121 249 / 0.45);
+    background: rgb(232 121 249 / 0.14);
+    color: #f0abfc;
+  }
+
+  .orb-hook-desc-badge--nature {
+    border-color: rgb(16 185 129 / 0.45);
+    background: rgb(16 185 129 / 0.14);
+    color: #6ee7b7;
+  }
+
+  .orb-hook-desc-badge--volt {
+    border-color: rgb(3 177 237 / 0.45);
+    background: rgb(3 177 237 / 0.14);
+    color: #67e8f9;
+  }
+
+  .orb-hook-desc-badge--ice {
+    border-color: rgb(56 189 248 / 0.45);
+    background: rgb(56 189 248 / 0.14);
+    color: #bae6fd;
+  }
+
+  .orb-hook-desc-badge--ember {
+    border-color: rgb(249 115 22 / 0.45);
+    background: rgb(249 115 22 / 0.14);
+    color: #fdba74;
+  }
+
+  .orb-hook-desc-badge--rose {
+    border-color: rgb(244 63 94 / 0.45);
+    background: rgb(244 63 94 / 0.14);
+    color: #fda4af;
+  }
+
+  .orb-hook-desc-badge--steel {
+    border-color: rgb(99 102 241 / 0.45);
+    background: rgb(99 102 241 / 0.14);
+    color: #c7d2fe;
   }
 
   .orb-footer-actions {

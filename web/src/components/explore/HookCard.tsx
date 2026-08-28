@@ -7,6 +7,7 @@ import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { launchWithHookHref, type MasterHook } from "@/lib/master-hooks";
+import { cn } from "@/lib/utils";
 
 function capitalizeDescription(text: string) {
   if (!text) return text;
@@ -36,7 +37,7 @@ export function HookCard({ hook }: { hook: MasterHook }) {
       </div>
 
       <div className="orb-footer">
-        <span className="orb-hook-desc-badge">
+        <span className={cn("orb-hook-desc-badge", `orb-hook-desc-badge--${hook.theme}`)}>
           <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
           <span>{capitalizeDescription(hook.description)}</span>
         </span>
