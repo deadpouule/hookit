@@ -2,17 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  CircleDot,
-  LayoutGrid,
-  Search,
-  Shield,
-  Table2,
-  Trophy,
-  AlertTriangle,
-  TrendingUp,
-} from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 
 import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
@@ -24,32 +14,39 @@ import {
   type MarketToken,
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
-import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { annotateCopyFlags } from "@/lib/token-identity";
 import { cn } from "@/lib/utils";
 
+import { bondProgress } from "@/lib/market-tokens";
+import { MarketplaceToolbar, type CategoryKey, type SortKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
-type FilterKey = "top" | "master" | "customs" | "rwa" | "live";
 type LayoutMode = "grid" | "table";
 
-function sortTokens(tokens: MarketToken[], filter: FilterKey) {
+function sortTokens(tokens: MarketToken[], sort: SortKey) {
   const next = [...tokens];
-  if (filter === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
-  if (filter === "live") return next.sort((a, b) => b.launchedAt - a.launchedAt);
-  return next.sort((a, b) => b.marketCap - a.marketCap);
+  if (sort === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
+  if (sort === "movers") return next.sort((a, b) => Math.abs(b.change1h) - Math.abs(a.change1h));
+  if (sort === "almostBonded") {
+    return next.sort((a, b) => {
+      const aBond = a.rail === "classic" && a.hookType === "Classic" ? bondProgress(a) : -1;
+      const bBond = b.rail === "classic" && b.hookType === "Classic" ? bondProgress(b) : -1;
+      return bBond - aBond;
+    });
+  }
+  return next.sort((a, b) => b.launchedAt - a.launchedAt);
 }
 
-function filterByCategory(tokens: MarketToken[], filter: FilterKey): MarketToken[] {
-  if (filter === "master") {
+function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketToken[] {
+  if (category === "master") {
     return tokens.filter((t) => t.hookType === "Master" || (t.rail === "master" && t.hookType !== "Custom"));
   }
-  if (filter === "customs") {
+  if (category === "customs") {
     return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
   }
-  if (filter === "rwa") {
+  if (category === "rwa") {
     return tokens.filter((t) => t.isRwa);
   }
   return tokens;
@@ -58,7 +55,8 @@ function filterByCategory(tokens: MarketToken[], filter: FilterKey): MarketToken
 export function Marketplace() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("top");
+  const [sort, setSort] = useState<SortKey>("top");
+  const [category, setCategory] = useState<CategoryKey>("all");
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
   const liveLaunches = shouldFetchLiveLaunches();
@@ -89,9 +87,9 @@ export function Marketplace() {
         token.creator.toLowerCase().includes(q);
       return matchesQuery;
     });
-    const categorized = filterByCategory(filtered, filter);
-    return sortTokens(categorized, filter);
-  }, [query, filter, sourceTokens]);
+    const categorized = filterByCategory(filtered, category);
+    return sortTokens(categorized, sort);
+  }, [query, sort, category, sourceTokens]);
 
   const trending = useMemo(
     () => [...sourceTokens].sort((a, b) => b.change1h - a.change1h).slice(0, 8),
@@ -176,39 +174,16 @@ export function Marketplace() {
       </section>
 
       <section id="tokens" className="scroll-mt-24 space-y-4">
-        <div
-          className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
-          suppressHydrationWarning
-        >
-          <div className="relative w-full max-w-xl" suppressHydrationWarning>
-            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-            <input
-              {...SEARCH_FIELD_PROPS}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tokens"
-              className="h-11 w-full rounded-xl border border-white/10 bg-[#141416] pr-3 pl-10 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-white/20"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2" suppressHydrationWarning>
-            <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1" suppressHydrationWarning>
-              <FilterPill active={filter === "top"} onClick={() => setFilter("top")} icon={Trophy} label="Top" />
-              <FilterPill active={filter === "master"} onClick={() => setFilter("master")} icon={Shield} label="Master" />
-              <FilterPill active={filter === "customs"} onClick={() => setFilter("customs")} icon={AlertTriangle} label="Customs" />
-              <FilterPill active={filter === "rwa"} onClick={() => setFilter("rwa")} icon={TrendingUp} label="RWA pools" />
-              <FilterPill active={filter === "live"} onClick={() => setFilter("live")} icon={CircleDot} label="Live feed" live />
-            </div>
-            <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1">
-              <IconToggle active={layout === "table"} onClick={() => setLayout("table")} label="Table">
-                <Table2 className="h-4 w-4" />
-              </IconToggle>
-              <IconToggle active={layout === "grid"} onClick={() => setLayout("grid")} label="Grid">
-                <LayoutGrid className="h-4 w-4" />
-              </IconToggle>
-            </div>
-          </div>
-        </div>
+        <MarketplaceToolbar
+          query={query}
+          onQueryChange={setQuery}
+          sort={sort}
+          onSortChange={setSort}
+          category={category}
+          onCategoryChange={setCategory}
+          layout={layout}
+          onLayoutChange={setLayout}
+        />
 
         {layout === "grid" ? (
           <div className="token-grid">
@@ -221,66 +196,6 @@ export function Marketplace() {
         )}
       </section>
     </div>
-  );
-}
-
-function FilterPill({
-  active,
-  onClick,
-  label,
-  icon: Icon,
-  live,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  icon?: typeof Trophy;
-  live?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      {...TOOLBAR_BUTTON_PROPS}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
-        active ? "bg-[#2a2a2e] text-white" : "text-zinc-400 hover:text-white",
-      )}
-    >
-      {live ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-      ) : Icon ? (
-        <Icon className="h-3.5 w-3.5" />
-      ) : null}
-      {label}
-    </button>
-  );
-}
-
-function IconToggle({
-  active,
-  onClick,
-  label,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      {...TOOLBAR_BUTTON_PROPS}
-      className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
-        active ? "bg-[#2a2a2e] text-white" : "text-zinc-400 hover:text-white",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
