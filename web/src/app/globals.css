@@ -1047,6 +1047,7 @@
     color: #fff;
   }
 
+  .category-hook-glyph,
   .filter-hook-glyph {
     display: inline-flex;
     flex-direction: column;
@@ -1058,6 +1059,34 @@
     line-height: 0.95;
     letter-spacing: -0.02em;
     color: #c4b5fd;
+  }
+
+  .category-customs-icon,
+  .filter-customs-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: #fcd34d;
+  }
+
+  .category-rwa-icon,
+  .filter-rwa-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: #fde047;
+    filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
+  }
+
+  .token-type-badge-glyph.category-hook-glyph {
+    width: 0.72rem;
+    font-size: 0.24rem;
+  }
+
+  .token-type-badge-glyph.category-customs-icon,
+  .token-type-badge-glyph.category-rwa-icon {
+    width: 0.625rem;
+    height: 0.625rem;
   }
 
   .filter-bond-glyph {
@@ -1080,11 +1109,6 @@
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #9514d1, #03b1ed);
-  }
-
-  .filter-rwa-icon {
-    color: #fde047;
-    filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
   }
 
   .market-live-dot {
@@ -1595,9 +1619,10 @@
   }
 
   .token-type-badge--rwa {
-    border-color: rgb(250 204 21 / 0.3);
-    background: rgb(250 204 21 / 0.08);
+    border-color: rgb(250 204 21 / 0.45);
+    background: rgb(250 204 21 / 0.12);
     color: #fde047;
+    text-transform: capitalize;
   }
 
   .token-type-badge--curve {

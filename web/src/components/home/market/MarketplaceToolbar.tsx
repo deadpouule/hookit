@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  Code2,
-  Landmark,
   LayoutGrid,
   Search,
   Table2,
@@ -13,6 +11,8 @@ import type { ReactNode } from "react";
 
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
+
+import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
 
 export type SortKey = "top" | "movers" | "almostBonded" | "live";
 export type CategoryKey = "all" | "master" | "customs" | "rwa";
@@ -107,24 +107,6 @@ export function MarketplaceToolbar({
       </div>
     </div>
   );
-}
-
-function MasterHookGlyph() {
-  return (
-    <span className="filter-hook-glyph" aria-hidden>
-      <span>╱▔▔╲</span>
-      <span>│▣│</span>
-      <span>╲__╱</span>
-    </span>
-  );
-}
-
-function CustomsGlyph() {
-  return <Code2 className="h-3.5 w-3.5 text-amber-300" aria-hidden />;
-}
-
-function RwaGlyph() {
-  return <Landmark className="filter-rwa-icon h-3.5 w-3.5 shrink-0" aria-hidden />;
 }
 
 function AlmostBondedGlyph() {

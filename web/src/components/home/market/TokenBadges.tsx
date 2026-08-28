@@ -6,6 +6,8 @@ import { tokenAgeLabel } from "@/lib/market-tokens";
 import { pairingBadgeClassName, pairingCurveBadge } from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
+import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
+
 /** COPY / OG overlay on the token art — top-right corner. */
 export function TokenCopyBadge({ token }: { token: MarketToken }) {
   if (token.isCopycat) {
@@ -25,21 +27,32 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
   return null;
 }
 
-/** Type badges row — Master, Customs, pairing curve (colored). */
+/** Type badges row — Master, Customs, RWA pools, pairing curve (colored). */
 export function TokenTypeBadges({ token }: { token: MarketToken }) {
   const badges: ReactNode[] = [];
 
   if (token.hookType === "Master" || (token.rail === "master" && token.hookType !== "Custom")) {
     badges.push(
       <span key="master" className="token-type-badge token-type-badge--master">
+        <MasterHookGlyph className="token-type-badge-glyph" />
         Master
       </span>,
     );
   } else if (token.hookType === "Custom" || token.kind === "sushi") {
     badges.push(
       <span key="custom" className="token-type-badge token-type-badge--custom">
+        <CustomsGlyph className="token-type-badge-glyph" />
         Customs
         <AlertTriangle className="token-custom-warn" aria-hidden />
+      </span>,
+    );
+  }
+
+  if (token.isRwa) {
+    badges.push(
+      <span key="rwa" className="token-type-badge token-type-badge--rwa">
+        <RwaGlyph className="token-type-badge-glyph" />
+        RWA pools
       </span>,
     );
   }
