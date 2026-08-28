@@ -711,18 +711,24 @@
     box-shadow: 0 0 15px rgb(132 204 22 / 0.5);
   }
 
-  .orb-card h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: #fff;
-  }
-
   .orb-card-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
+  }
+
+  .orb-hook-title-badge {
+    width: auto;
+    max-width: calc(100% - 2rem);
+    align-items: center;
+    margin: 0;
+    font-size: 12px;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .orb-hook-title-badge .orb-hook-desc-badge-glyph {
+    margin-top: 0;
   }
 
   .hook-settings-trigger {

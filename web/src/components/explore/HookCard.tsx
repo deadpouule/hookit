@@ -28,7 +28,10 @@ export function HookCard({ hook }: { hook: MasterHook }) {
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <div className="orb-card-head">
-        <h2>{hook.title}</h2>
+        <h2 className={cn("orb-hook-desc-badge orb-hook-title-badge", `orb-hook-desc-badge--${hook.theme}`)}>
+          <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+          <span>{hook.title}</span>
+        </h2>
         <HookSettingsTooltip hook={hook} />
       </div>
 
