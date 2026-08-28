@@ -110,7 +110,7 @@ export function ProtocolStatsPage() {
         <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Stats</h1>
         <p className="stats-lede">
-          80% of protocol revenu buy HKT on the market and burn it.
+          80% of protocol revenue buys HKT on the market and burn it.
         </p>
       </header>
 
@@ -124,47 +124,26 @@ export function ProtocolStatsPage() {
             onChange={setVolumeWindow}
           />
         </div>
-        <div className="stats-kpi-3">
-          <Kpi
-            label="Real volume"
-            value={formatFullUsd(volume.realVolumeUsd)}
-            hint="Organic launches and swaps on Hookit"
-          />
-          <Kpi
-            label="Total volume (Buy / Sell)"
-            value={formatFullUsd(volume.buySellVolumeUsd)}
-            hint={`Buys ${formatCompactUsd(volume.buyVolumeUsd)} · Sells ${formatCompactUsd(volume.sellVolumeUsd)}`}
-          />
+        <div className="stats-kpi-4">
           <Kpi
             label="Total volume"
             value={formatFullUsd(volume.totalVolumeUsd)}
-            hint="Real + buy/sell flow across venues"
+            hint="All venues across the selected window"
           />
-        </div>
-        <p className="stats-footnote">
-          Measured on-chain from indexed swap activity.{" "}
-          {volumeWindow === "24h" && live.source === "live"
-            ? "24h window uses live indexer data."
-            : "Historical rollups use protocol snapshots."}
-        </p>
-      </section>
-
-      <section className="stats-block">
-        <div className="stats-kpi-3">
           <Kpi
             label="Total revenue"
-            value={formatFullUsd(overview.revenueUsd)}
+            value={formatFullUsd(volume.revenueUsd)}
             hint="Trading fees paid to the platform, valued at claim time"
           />
           <Kpi
             label="Total buybacks"
-            value={formatFullUsd(overview.buybackUsd)}
+            value={formatFullUsd(volume.buybackUsd)}
             hint={`${formatTokenAmount(overview.hookBought)} ${NATIVE_TOKEN} bought over ${overview.buybacks.toLocaleString()} swaps`}
           />
           <Kpi
-            label={`$${NATIVE_TOKEN} burned`}
+            label="$HKR burned"
             value={formatFullUsd(overview.burnedUsd)}
-            hint={`Current value of ${formatTokenAmount(overview.burned)} ${NATIVE_TOKEN} destroyed`}
+            hint={`Current value of ${formatTokenAmount(overview.burned)} HKR destroyed`}
           />
         </div>
       </section>
