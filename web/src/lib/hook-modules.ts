@@ -145,26 +145,6 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Auto-deploy": HOOK_MODULE_ACCENTS.swapFee,
 };
 
-import type { MasterHookId } from "@/lib/master-hooks";
-
-const HOOK_ID_TO_ACCENT: Record<MasterHookId, HookModuleAccent> = {
-  "anti-snipe": HOOK_MODULE_ACCENTS.antiSnipe,
-  "backed-floor": HOOK_MODULE_ACCENTS.backedFloor,
-  "anti-mev": HOOK_MODULE_ACCENTS.antiMev,
-  "max-tx": HOOK_MODULE_ACCENTS.maxTx,
-  "max-wallet": HOOK_MODULE_ACCENTS.maxWallet,
-  "dynamic-fees": HOOK_MODULE_ACCENTS.swapFee,
-  "buyback-vesting": HOOK_MODULE_ACCENTS.hookTax,
-  "auto-burn": HOOK_MODULE_ACCENTS.autoBurn,
-  "lp-donate": HOOK_MODULE_ACCENTS.lpDonate,
-  "holder-airdrop": HOOK_MODULE_ACCENTS.holderAirdrop,
-  "creator-share-to-hook": HOOK_MODULE_ACCENTS.hookTax,
-};
-
-export function accentForHookId(id: MasterHookId): HookModuleAccent {
-  return HOOK_ID_TO_ACCENT[id] ?? HOOK_MODULE_ACCENTS.swapFee;
-}
-
 export function accentForTag(tag: string): HookModuleAccent {
   return TAG_TO_ACCENT[tag] ?? HOOK_MODULE_ACCENTS.swapFee;
 }
