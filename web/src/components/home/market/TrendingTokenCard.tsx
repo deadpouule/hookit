@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Flame, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { HookitLogo } from "@/components/brand/HookitLogo";
 import { formatPercent } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
@@ -13,7 +14,13 @@ import { CopyContractButton } from "./CopyContractButton";
 import { HookAvatarBadge } from "./HookAvatarBadge";
 import { TokenArt } from "./TokenArt";
 
-export function TrendingTokenCard({ token }: { token: MarketToken }) {
+type TrendingTokenCardProps = {
+  token: MarketToken;
+  isTop: boolean;
+  isTrending: boolean;
+};
+
+export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCardProps) {
   const router = useRouter();
   const href = tokenHref(token.id);
   const positive = token.change1h >= 0;
@@ -45,14 +52,20 @@ export function TrendingTokenCard({ token }: { token: MarketToken }) {
         <div className="trending-card-text">
           <div className="trending-card-name-row">
             <p className="trending-card-name">{token.name}</p>
-            <Flame className="trending-card-flame" aria-hidden />
-            <Trophy className="trending-card-trophy" aria-hidden />
+            {isTrending && (
+              <span title="Trending">
+                <Flame className="trending-card-flame" aria-label="Trending" />
+              </span>
+            )}
+            {isTop && (
+              <span title="Top market cap">
+                <Trophy className="trending-card-trophy" aria-label="Top" />
+              </span>
+            )}
           </div>
           <div className="trending-card-ticker-row">
             <p className="trending-card-ticker">
-              <span className="trending-card-ticker-emoji" aria-hidden>
-                {token.emoji}
-              </span>
+              <HookitLogo size="xs" className="trending-card-brand-logo" />
               ${token.ticker}
             </p>
             <CopyContractButton token={token} />

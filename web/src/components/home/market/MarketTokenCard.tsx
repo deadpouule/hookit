@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { HookitLogo } from "@/components/brand/HookitLogo";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
@@ -57,9 +58,7 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
           <h3 className="token-card-name truncate">{token.name}</h3>
           <div className="token-card-ticker-row">
             <p className="token-card-ticker truncate">
-              <span className="token-card-ticker-emoji" aria-hidden>
-                {token.emoji}
-              </span>
+              <HookitLogo size="xs" className="token-card-brand-logo" />
               ${token.ticker}
             </p>
             <CopyContractButton token={token} />

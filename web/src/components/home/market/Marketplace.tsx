@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { HookitLogo } from "@/components/brand/HookitLogo";
 import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
@@ -12,32 +13,24 @@ import {
   poolToMarketToken,
   type MarketToken,
 } from "@/lib/market-tokens";
+import {
+  buildMarketRankings,
+  filterBySort,
+  selectTrendingTokens,
+  sortTokens,
+} from "@/lib/market-rankings";
+import type { SortKey } from "@/lib/market-rankings";
 import { tokenHref } from "@/lib/routes";
 import { annotateCopyFlags } from "@/lib/token-identity";
 import { cn } from "@/lib/utils";
 
-import { bondProgress } from "@/lib/market-tokens";
-import { MarketplaceToolbar, type CategoryKey, type SortKey } from "./MarketplaceToolbar";
+import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
-import { TrendingCarousel } from "./TrendingCarousel";
+import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 type LayoutMode = "grid" | "table";
-
-function sortTokens(tokens: MarketToken[], sort: SortKey) {
-  const next = [...tokens];
-  if (sort === "top") return next.sort((a, b) => b.marketCap - a.marketCap);
-  if (sort === "movers") return next.sort((a, b) => Math.abs(b.change1h) - Math.abs(a.change1h));
-  if (sort === "almostBonded") {
-    return next.sort((a, b) => {
-      const aBond = a.rail === "classic" && a.hookType === "Classic" ? bondProgress(a) : -1;
-      const bBond = b.rail === "classic" && b.hookType === "Classic" ? bondProgress(b) : -1;
-      return bBond - aBond;
-    });
-  }
-  return next.sort((a, b) => b.launchedAt - a.launchedAt);
-}
 
 function filterByCategory(tokens: MarketToken[], category: CategoryKey): MarketToken[] {
   if (category === "master") {
@@ -75,6 +68,10 @@ export function Marketplace() {
     return [];
   }, [liveLaunches, onChainPools]);
 
+  const rankings = useMemo(() => buildMarketRankings(sourceTokens), [sourceTokens]);
+
+  const trending = useMemo(() => selectTrendingTokens(sourceTokens), [sourceTokens]);
+
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = sourceTokens.filter((token) => {
@@ -87,13 +84,9 @@ export function Marketplace() {
       return matchesQuery;
     });
     const categorized = filterByCategory(filtered, category);
-    return sortTokens(categorized, sort);
+    const sortedScope = filterBySort(categorized, sort);
+    return sortTokens(sortedScope, sort);
   }, [query, sort, category, sourceTokens]);
-
-  const trending = useMemo(
-    () => [...sourceTokens].sort((a, b) => b.change1h - a.change1h).slice(0, 8),
-    [sourceTokens],
-  );
 
   return (
     <div className="space-y-5">
@@ -133,7 +126,7 @@ export function Marketplace() {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
         </div>
-        <TrendingCarousel tokens={trending} />
+        <TrendingStrip tokens={trending} rankings={rankings} />
       </section>
 
       <section id="tokens" className="scroll-mt-24 space-y-4">
@@ -148,7 +141,11 @@ export function Marketplace() {
           onLayoutChange={setLayout}
         />
 
-        {layout === "grid" ? (
+        {tokens.length === 0 ? (
+          <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
+            No tokens match this filter.
+          </p>
+        ) : layout === "grid" ? (
           <div className="token-grid">
             {tokens.map((token) => (
               <MarketTokenCard key={token.id} token={token} />
@@ -193,7 +190,10 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
                   </div>
                   <div>
                     <p className="font-medium text-white">{token.name}</p>
-                    <p className="font-mono text-[11px] text-zinc-500">${token.ticker}</p>
+                    <p className="flex items-center gap-1 font-mono text-[11px] text-zinc-500">
+                      <HookitLogo size="xs" />
+                      ${token.ticker}
+                    </p>
                     <TokenTypeBadges token={token} />
                   </div>
                 </Link>

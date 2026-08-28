@@ -83,7 +83,7 @@ export const MARKET_TOKENS: MarketToken[] = [
     hookType: "Classic",
     rail: "classic",
     bondingPhase: 0,
-    bondPct: 0,
+    bondPct: 78,
   },
   {
     id: "aapl-rwa",
