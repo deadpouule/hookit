@@ -8,8 +8,8 @@ type HookitLogoProps = {
 };
 
 const SIZES = {
-  xs: 12,
-  sm: 14,
+  xs: 14,
+  sm: 16,
 } as const;
 
 export function HookitLogo({ className, size = "xs" }: HookitLogoProps) {
@@ -21,6 +21,7 @@ export function HookitLogo({ className, size = "xs" }: HookitLogoProps) {
       alt=""
       width={px}
       height={px}
+      unoptimized
       className={cn("hookit-logo-img shrink-0 object-contain", className)}
       aria-hidden
     />
