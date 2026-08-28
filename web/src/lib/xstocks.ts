@@ -81,6 +81,11 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
 export const QUOTRONS_HOOK = "0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc" as Address;
 export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
+export const XSTOCKS_LOGO_BASE = "https://xstocks-metadata.backed.fi/logos/tokens";
+
+export function quotronStockLogoUrl(listing: Pick<QuotronStockListing, "priceSymbol">): string {
+  return `${XSTOCKS_LOGO_BASE}/${listing.priceSymbol}.png`;
+}
 
 /** @deprecated use INK_QUOTRON_STOCKS */
 export const INK_XSTOCKS = INK_QUOTRON_STOCKS;
