@@ -235,7 +235,7 @@ function MarketplaceContent() {
         <TrendingStrip tokens={trending} rankings={rankings} />
       </section>
 
-      <section id="tokens" className="scroll-mt-24 space-y-4">
+      <section id="tokens" className="scroll-mt-24 space-y-4 pb-48">
         <MarketplaceToolbar
           query={query}
           onQueryChange={setQuery}

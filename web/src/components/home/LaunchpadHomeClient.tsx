@@ -20,7 +20,7 @@ export function LaunchpadHomeClient() {
   }
 
   return (
-    <div className="min-h-screen bg-black pb-12">
+    <div className="min-h-screen bg-black pb-40">
       <HomeNav />
       <div className="market-shell space-y-6 pt-4">
         <LeanHero />

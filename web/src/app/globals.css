@@ -1593,6 +1593,25 @@
 
   .category-split-menu__avatar--icon {
     color: #c4b5fd;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .master-hook-ascii-icon {
+    display: inline-flex;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .master-hook-ascii-icon .ascii-shape {
+    font-size: 3.6px;
+    line-height: 1;
   }
 
   .category-split-menu__empty {

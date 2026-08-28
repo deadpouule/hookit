@@ -8,7 +8,7 @@ export function StaticDemoShell() {
   const tokens = buildDemoMarketTokens().slice(0, 8);
 
   return (
-    <div className="min-h-screen bg-black pb-12">
+    <div className="min-h-screen bg-black pb-40">
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black">
         <div className="market-shell flex h-16 items-center justify-between">
           <span className="text-sm font-semibold text-white">hook it</span>

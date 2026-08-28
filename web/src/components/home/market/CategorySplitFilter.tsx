@@ -278,7 +278,7 @@ function CategorySplitFilterItemVisual({ item }: { item: CategorySplitFilterItem
   }
 
   if (item.icon) {
-    return <span className="category-split-menu__avatar category-split-menu__avatar--icon">{item.icon}</span>;
+    return item.icon;
   }
 
   return null;

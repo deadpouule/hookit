@@ -2,6 +2,7 @@
 
 import { CategorySplitFilter } from "@/components/home/market/CategorySplitFilter";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
+import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -43,7 +44,7 @@ export function MasterHookFilterMenu({
     id: hook.id,
     title: hook.title,
     subtitle: hook.keyword,
-    icon: <hook.icon className="h-4 w-4" aria-hidden />,
+    icon: <MasterHookAsciiIcon hookId={hook.id} />,
   }));
 
   return (
