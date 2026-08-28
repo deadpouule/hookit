@@ -27,6 +27,8 @@ export interface MarketToken {
   isOriginal?: boolean;
   /** Later launch reusing the same ticker — gets the COPY flag. */
   isCopycat?: boolean;
+  /** Enabled master hook modules (on-chain pools only). */
+  masterHookIds?: import("@/lib/master-hooks").MasterHookId[];
 }
 
 export const QUICK_BUY_AMOUNTS = [10, 25, 50, 100] as const;
@@ -361,6 +363,7 @@ export function resolveTokenContractAddress(token: MarketToken): string {
 }
 
 import { isRwaQuote } from "@/lib/token-identity";
+import { masterHookIdsForPool } from "@/lib/master-hooks";
 
 /** Map on-chain TokenPool → market card model. */
 export function poolToMarketToken(pool: import("@/lib/types").TokenPool): MarketToken {
@@ -410,6 +413,7 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     quoteAsset: pool.quoteAsset,
     quoteAddress: pool.quoteAddress,
     isRwa: isRwaQuote(pool.quoteAsset, pool.quoteAddress),
+    masterHookIds: masterHookIdsForPool(pool),
   };
 }
 

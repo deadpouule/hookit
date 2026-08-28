@@ -231,11 +231,20 @@ function MarketplaceContent() {
         ) : layout === "grid" ? (
           <div className="token-grid">
             {tokens.map((token) => (
-              <MarketTokenCard key={token.id} token={token} />
+              <MarketTokenCard
+                key={token.id}
+                token={token}
+                masterHookFilters={selectedHooks}
+                onMasterHookFiltersChange={handleMasterHooksChange}
+              />
             ))}
           </div>
         ) : (
-          <TokenTable tokens={tokens} />
+          <TokenTable
+            tokens={tokens}
+            selectedHooks={selectedHooks}
+            onMasterHooksChange={handleMasterHooksChange}
+          />
         )}
       </section>
     </div>
@@ -256,7 +265,15 @@ export function Marketplace() {
   );
 }
 
-function TokenTable({ tokens }: { tokens: MarketToken[] }) {
+function TokenTable({
+  tokens,
+  selectedHooks,
+  onMasterHooksChange,
+}: {
+  tokens: MarketToken[];
+  selectedHooks: MasterHookId[];
+  onMasterHooksChange: (hooks: MasterHookId[]) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#141416]">
       <table className="w-full min-w-[640px] text-left text-sm">
@@ -291,7 +308,11 @@ function TokenTable({ tokens }: { tokens: MarketToken[] }) {
                       <HookitLogo size="xs" />
                       ${token.ticker}
                     </p>
-                    <TokenTypeBadges token={token} />
+                    <TokenTypeBadges
+                      token={token}
+                      masterHookFilters={selectedHooks}
+                      onMasterHookFiltersChange={onMasterHooksChange}
+                    />
                   </div>
                 </Link>
               </td>

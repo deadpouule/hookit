@@ -21,10 +21,18 @@ import { cn } from "@/lib/utils";
 interface TokenCardProps {
   pool: TokenPool;
   marketplaceHookFilter?: MasterHookId;
+  selectedHookFilters?: MasterHookId[];
+  onHookFilterChange?: (hookIds: MasterHookId[]) => void;
   onMarketplaceNavigate?: () => void;
 }
 
-export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }: TokenCardProps) {
+export function TokenCard({
+  pool,
+  marketplaceHookFilter,
+  selectedHookFilters = [],
+  onHookFilterChange,
+  onMarketplaceNavigate,
+}: TokenCardProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const fullAddress = pool.contractAddress ?? pool.id;
@@ -49,10 +57,22 @@ export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }
     onMarketplaceNavigate?.();
   };
 
+  const applyHookFilter = (hookIds: MasterHookId[]) => {
+    if (onHookFilterChange) {
+      onHookFilterChange(hookIds);
+      return;
+    }
+    navigateToMarketplace(hookIds);
+  };
+
   const handleCardClick = () => {
     if (marketplaceHookFilter) {
       const hookIds =
-        poolHookIds.length > 0 ? poolHookIds : [marketplaceHookFilter];
+        selectedHookFilters.length > 0
+          ? selectedHookFilters
+          : poolHookIds.length > 0
+            ? poolHookIds
+            : [marketplaceHookFilter];
       router.push(marketplaceHrefForHooks(hookIds));
       onMarketplaceNavigate?.();
       return;
@@ -60,10 +80,13 @@ export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }
     router.push(tokenHref(pool.id));
   };
 
+  const showMasterMenu = pool.hookType !== "Custom";
+
   const masterBadgeClassName = cn(
     "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm",
     "border-violet-400/45 bg-violet-500/10 text-violet-100",
     marketplaceHookFilter && "relative z-20 cursor-pointer transition hover:border-violet-300 hover:bg-violet-500/20",
+    showMasterMenu && !marketplaceHookFilter && "relative z-20 cursor-pointer",
   );
 
   return (
@@ -93,10 +116,12 @@ export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }
                 Custom
               </span>
             </span>
-          ) : marketplaceHookFilter ? (
+          ) : showMasterMenu ? (
             <MasterHookBadgeMenu
-              poolHookIds={poolHookIds.length > 0 ? poolHookIds : [marketplaceHookFilter]}
-              onNavigate={navigateToMarketplace}
+              poolHookIds={poolHookIds}
+              selectedHooks={selectedHookFilters}
+              onSelectedHooksChange={onHookFilterChange ? applyHookFilter : undefined}
+              onNavigate={onHookFilterChange ? undefined : navigateToMarketplace}
               className={masterBadgeClassName}
             />
           ) : (

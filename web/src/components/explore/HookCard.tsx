@@ -1,16 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
-import { HookLiveUsesSheet } from "@/components/explore/HookLiveUsesSheet";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
+import { exploreUsesHref } from "@/lib/market-hook-filter";
 import {
   launchWithHookHref,
-  poolsUsingMasterHook,
   type MasterHook,
 } from "@/lib/master-hooks";
 import type { TokenPool } from "@/lib/types";
@@ -24,15 +23,9 @@ function capitalizeDescription(text: string) {
 export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[] }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
-  const [usesOpen, setUsesOpen] = useState(false);
-  const matchingPools = useMemo(
-    () => poolsUsingMasterHook(pools, hook.id),
-    [pools, hook.id],
-  );
 
   return (
-    <>
-      <motion.article
+    <motion.article
         className={cn("orb-card", `orb-card--${hook.theme}`)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -70,7 +63,7 @@ export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[]
               className="orb-use-badge"
               onClick={(event) => {
                 event.stopPropagation();
-                setUsesOpen(true);
+                router.push(exploreUsesHref(hook.id));
               }}
             >
               {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
@@ -85,13 +78,5 @@ export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[]
           </div>
         </div>
       </motion.article>
-
-      <HookLiveUsesSheet
-        hook={hook}
-        pools={matchingPools}
-        open={usesOpen}
-        onOpenChange={setUsesOpen}
-      />
-    </>
   );
 }
