@@ -12,3 +12,12 @@ export const SEARCH_FIELD_PROPS = {
   "data-form-type": "other",
   "data-dashlane-ignored": "true",
 };
+
+/** Same extension guards for toolbar buttons — prevents Dashlane hydration mismatches. */
+export const TOOLBAR_BUTTON_PROPS = {
+  suppressHydrationWarning: true,
+  "data-1p-ignore": true,
+  "data-lpignore": "true",
+  "data-form-type": "other",
+  "data-dashlane-ignored": "true",
+} as const;

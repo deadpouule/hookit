@@ -24,7 +24,7 @@ import {
   type MarketToken,
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
-import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
+import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { annotateCopyFlags } from "@/lib/token-identity";
 import { cn } from "@/lib/utils";
 
@@ -65,20 +65,24 @@ export function Marketplace() {
   const { data: onChainPools, isLoading, isError } = useLaunches();
 
   const sourceTokens = useMemo(() => {
+    const demoTokens = MARKET_TOKENS.map((t) => ({
+      ...t,
+      hookType: t.hookType ?? (t.kind === "sushi" ? ("Custom" as const) : ("Master" as const)),
+      rail: t.rail ?? ("master" as const),
+    }));
+
     let tokens: MarketToken[];
     if (!factoryConfigured) {
-      tokens = MARKET_TOKENS.map((t) => ({
-        ...t,
-        hookType: t.kind === "sushi" ? ("Custom" as const) : ("Master" as const),
-        rail: "master" as const,
-      }));
+      tokens = demoTokens;
     } else if (onChainPools && onChainPools.length > 0) {
       tokens = onChainPools.map(poolToMarketToken);
+    } else if (!isLoading && process.env.NODE_ENV === "development") {
+      tokens = demoTokens;
     } else {
       tokens = [];
     }
     return annotateCopyFlags(tokens);
-  }, [factoryConfigured, onChainPools]);
+  }, [factoryConfigured, onChainPools, isLoading]);
 
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -110,13 +114,25 @@ export function Marketplace() {
           Could not load launches from the factory. Check RPC / factory address.
         </p>
       )}
-      {factoryConfigured && !isLoading && !isError && sourceTokens.length === 0 && (
+      {factoryConfigured && !isLoading && !isError && onChainPools?.length === 0 && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-          No launches yet — be the first from{" "}
-          <Link href="/launch" className="text-zinc-200 underline">
-            Launch
-          </Link>
-          .
+          {process.env.NODE_ENV === "development" ? (
+            <>
+              No on-chain launches yet — showing demo catalog for local dev. Launch from{" "}
+              <Link href="/launch" className="text-zinc-200 underline">
+                Launch
+              </Link>
+              .
+            </>
+          ) : (
+            <>
+              No launches yet — be the first from{" "}
+              <Link href="/launch" className="text-zinc-200 underline">
+                Launch
+              </Link>
+              .
+            </>
+          )}
         </p>
       )}
       {!factoryConfigured && (
@@ -187,8 +203,8 @@ export function Marketplace() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1">
+          <div className="flex flex-wrap items-center gap-2" suppressHydrationWarning>
+            <div className="flex items-center gap-1 rounded-full bg-[#141416] p-1" suppressHydrationWarning>
               <FilterPill active={filter === "top"} onClick={() => setFilter("top")} icon={Trophy} label="Top" />
               <FilterPill active={filter === "master"} onClick={() => setFilter("master")} icon={Shield} label="Master" />
               <FilterPill active={filter === "customs"} onClick={() => setFilter("customs")} icon={AlertTriangle} label="Customs" />
@@ -237,6 +253,7 @@ function FilterPill({
     <button
       type="button"
       onClick={onClick}
+      {...TOOLBAR_BUTTON_PROPS}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
         active ? "bg-[#2a2a2e] text-white" : "text-zinc-400 hover:text-white",
@@ -268,6 +285,7 @@ function IconToggle({
       type="button"
       onClick={onClick}
       aria-label={label}
+      {...TOOLBAR_BUTTON_PROPS}
       className={cn(
         "inline-flex h-8 w-8 items-center justify-center rounded-full transition",
         active ? "bg-[#2a2a2e] text-white" : "text-zinc-400 hover:text-white",

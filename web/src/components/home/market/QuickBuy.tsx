@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function QuickBuy({
         <button
           key={amount}
           type="button"
+          {...TOOLBAR_BUTTON_PROPS}
           className={cn("quick-buy-btn", size === "sm" && "py-1 text-[10px]")}
           onClick={(e) => {
             e.preventDefault();
