@@ -11,7 +11,7 @@ import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 import { CopyContractButton } from "./CopyContractButton";
-import { HookAvatarBadge } from "./HookAvatarBadge";
+import { InkAvatarBadge } from "./InkAvatarBadge";
 import { TokenArt } from "./TokenArt";
 
 type TrendingTokenCardProps = {
@@ -46,7 +46,7 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
             className="trending-card-avatar"
             glyphClassName="text-base"
           />
-          <HookAvatarBadge />
+          <InkAvatarBadge />
         </div>
 
         <div className="trending-card-text">

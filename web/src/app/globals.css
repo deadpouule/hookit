@@ -1189,10 +1189,22 @@
     }
   }
 
-  .hookit-logo {
+  .hookit-logo-img {
     flex-shrink: 0;
-    color: #fff;
-    filter: drop-shadow(0 0 4px rgb(255 255 255 / 0.55));
+  }
+
+  .ink-avatar-badge {
+    position: absolute;
+    right: -0.15rem;
+    bottom: -0.15rem;
+    z-index: 2;
+    display: inline-flex;
+    width: 0.85rem;
+    height: 0.85rem;
+    overflow: hidden;
+    border-radius: 0.2rem;
+    border: 1px solid rgb(0 0 0 / 0.65);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
   }
 
   .trending-card-brand-logo,
