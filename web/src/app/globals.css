@@ -1382,6 +1382,21 @@
     color: #fff;
   }
 
+  .master-hook-filter-menu {
+    color: #e4e4e7;
+  }
+
+  .master-hook-filter-item {
+    color: #e4e4e7;
+    border-radius: 0.5rem;
+  }
+
+  .master-hook-filter-item:focus,
+  .master-hook-filter-item:hover {
+    background: rgb(149 20 209 / 0.16);
+    color: #fff;
+  }
+
   .category-hook-glyph,
   .filter-hook-glyph {
     display: inline-flex;

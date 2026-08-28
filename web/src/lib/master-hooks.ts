@@ -333,6 +333,36 @@ export function poolsUsingMasterHook(
   });
 }
 
+/** Pools that match any of the selected master hook modules. */
+export function poolsMatchingAnyMasterHooks(
+  pools: import("@/lib/types").TokenPool[],
+  hookIds: MasterHookId[],
+): import("@/lib/types").TokenPool[] {
+  if (hookIds.length === 0) {
+    return pools.filter((pool) => pool.hookType !== "Classic" && !pool.hooks.customHook);
+  }
+
+  const seen = new Set<string>();
+  const matched: import("@/lib/types").TokenPool[] = [];
+
+  for (const hookId of hookIds) {
+    for (const pool of poolsUsingMasterHook(pools, hookId)) {
+      const key = pool.contractAddress ?? pool.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      matched.push(pool);
+    }
+  }
+
+  return matched;
+}
+
+export function masterHookIdsForPool(pool: import("@/lib/types").TokenPool): MasterHookId[] {
+  return (Object.entries(POOL_HOOK_BY_MASTER_ID) as [MasterHookId, keyof import("@/lib/types").TokenPool["hooks"]][])
+    .filter(([, hookKey]) => Boolean(pool.hooks[hookKey]))
+    .map(([hookId]) => hookId);
+}
+
 export const HOOK_MODULE_FIELD: Record<
   MasterHookId,
   keyof import("@/lib/types").LaunchModules

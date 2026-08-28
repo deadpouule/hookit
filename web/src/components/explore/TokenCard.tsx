@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Check, Code2, Copy, Shield } from "lucide-react";
+import { ArrowUpRight, Check, Code2, Copy } from "lucide-react";
 import { useState } from "react";
 
+import { MasterHookBadgeMenu } from "@/components/home/market/MasterHookFilterMenu";
 import { HookChip } from "@/components/hooks/HookMark";
 import { copyToClipboard } from "@/lib/clipboard";
 import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatUsd } from "@/lib/format";
+import { marketplaceHrefForHook, marketplaceHrefForHooks } from "@/lib/market-hook-filter";
+import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
 import { marketCapUsd } from "@/lib/pool-price";
 import { tokenHref } from "@/lib/routes";
 import type { TokenPool } from "@/lib/types";
@@ -17,12 +20,15 @@ import { cn } from "@/lib/utils";
 
 interface TokenCardProps {
   pool: TokenPool;
+  marketplaceHookFilter?: MasterHookId;
+  onMarketplaceNavigate?: () => void;
 }
 
-export function TokenCard({ pool }: TokenCardProps) {
+export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }: TokenCardProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const fullAddress = pool.contractAddress ?? pool.id;
+  const poolHookIds = masterHookIdsForPool(pool);
   const displayMcap =
     pool.marketCap > 0
       ? pool.marketCap
@@ -38,6 +44,26 @@ export function TokenCard({ pool }: TokenCardProps) {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const navigateToMarketplace = (hookIds: MasterHookId[]) => {
+    router.push(marketplaceHrefForHooks(hookIds));
+    onMarketplaceNavigate?.();
+  };
+
+  const handleCardClick = () => {
+    if (marketplaceHookFilter) {
+      router.push(marketplaceHrefForHook(marketplaceHookFilter));
+      onMarketplaceNavigate?.();
+      return;
+    }
+    router.push(tokenHref(pool.id));
+  };
+
+  const masterBadgeClassName = cn(
+    "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm",
+    "border-violet-400/45 bg-violet-500/10 text-violet-100",
+    marketplaceHookFilter && "relative z-20 cursor-pointer transition hover:border-violet-300 hover:bg-violet-500/20",
+  );
+
   return (
     <motion.article
       layout
@@ -45,34 +71,37 @@ export function TokenCard({ pool }: TokenCardProps) {
       whileHover={{ y: -3 }}
       transition={{ duration: 0.2 }}
       className="market-card group relative cursor-pointer overflow-hidden border border-transparent transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
-      onClick={() => router.push(tokenHref(pool.id))}
+      onClick={handleCardClick}
     >
       <div
         className="pointer-events-none flex aspect-square items-center justify-center overflow-hidden"
         style={{ background: pool.bannerGradient }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-[#141416] via-black/10 to-transparent" />
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          <span
-            className={cn(
-              "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm",
-              pool.hookType === "Custom"
-                ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
-                : "border-white/15 bg-black/40 text-zinc-300",
-            )}
-          >
-            {pool.hookType === "Custom" ? (
+        <div className="pointer-events-auto absolute top-3 left-3 z-20 flex gap-1.5">
+          {pool.hookType === "Custom" ? (
+            <span
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide backdrop-blur-sm",
+                "border-amber-400/30 bg-amber-500/10 text-amber-200",
+              )}
+            >
               <span className="inline-flex items-center gap-1">
                 <Code2 className="h-3 w-3" />
                 Custom
               </span>
-            ) : (
-              <span className="inline-flex items-center gap-1">
-                <Shield className="h-3 w-3" />
-                Master
-              </span>
-            )}
-          </span>
+            </span>
+          ) : marketplaceHookFilter ? (
+            <MasterHookBadgeMenu
+              poolHookIds={poolHookIds.length > 0 ? poolHookIds : [marketplaceHookFilter]}
+              onNavigate={navigateToMarketplace}
+              className={masterBadgeClassName}
+            />
+          ) : (
+            <span className={masterBadgeClassName}>
+              <span className="inline-flex items-center gap-1">Master</span>
+            </span>
+          )}
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-5xl font-bold text-white/25 transition group-hover:text-white/40">
@@ -100,6 +129,8 @@ export function TokenCard({ pool }: TokenCardProps) {
           {pool.hooks.antiSnipe && <HookChip id="antiSnipe" />}
           {pool.hooks.backedFloor && <HookChip id="backedFloor" />}
           {pool.hooks.antiMev && <HookChip id="antiMev" />}
+          {pool.hooks.maxTx && <HookChip id="maxTx" />}
+          {pool.hooks.maxWallet && <HookChip id="maxWallet" />}
           {pool.hooks.holderAirdrop && <HookChip id="holderAirdrop" />}
           {pool.hooks.customHook && <HookChip id="custom" />}
         </div>
@@ -120,15 +151,17 @@ export function TokenCard({ pool }: TokenCardProps) {
         </button>
         <span className="pointer-events-none text-[10px] text-zinc-600">{pool.quoteAsset ?? "ETH"}</span>
       </div>
-      <Link
-        href={tokenHref(pool.id)}
-        className="absolute inset-0 z-10"
-        aria-label={`${pool.name} $${pool.ticker}`}
-      >
-        <span className="sr-only">
-          {pool.name} ${pool.ticker}
-        </span>
-      </Link>
+      {!marketplaceHookFilter && (
+        <Link
+          href={tokenHref(pool.id)}
+          className="absolute inset-0 z-10"
+          aria-label={`${pool.name} $${pool.ticker}`}
+        >
+          <span className="sr-only">
+            {pool.name} ${pool.ticker}
+          </span>
+        </Link>
+      )}
     </motion.article>
   );
 }
