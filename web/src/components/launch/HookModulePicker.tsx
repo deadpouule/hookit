@@ -212,6 +212,27 @@ function HookSettings({
     );
   }
 
+  if (hookId === "holder-airdrop") {
+    return (
+      <div>
+        <div className="mb-2 flex justify-between text-xs text-zinc-500">
+          <span>Fee to holder airdrop</span>
+          <span className="font-mono text-zinc-300">{modules.holderAirdropPct}%</span>
+        </div>
+        <Slider
+          value={[modules.holderAirdropPct]}
+          onValueChange={([v]) => onUpdate({ holderAirdropPct: v })}
+          min={1}
+          max={50}
+          step={1}
+        />
+        <p className="mt-2 font-mono text-[11px] text-zinc-500">
+          Accrues in quote · permissionless push every 15 minutes · pro-rata by balance
+        </p>
+      </div>
+    );
+  }
+
   return (
     <ul className="space-y-1 font-mono text-[11px] text-zinc-500">
       {MASTER_HOOKS.find((hook) => hook.id === hookId)?.settings.map((line) => (

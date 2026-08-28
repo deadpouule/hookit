@@ -52,14 +52,17 @@ contract FeeDistributionTest is Test {
             buybackVesting: true,
             autoBurn: true,
             lpDonate: true,
-            creatorTaxBps: 250,
+            holderAirdrop: true,
+            creatorShareToHook: false,
+            hookTaxBps: 250,
             antiSnipeDurationSeconds: 3600,
             maxTxBps: 100,
             maxWalletBps: 200,
             floorAllocationBps: 1_500,
             initialSnipeTaxBps: 4_000,
             autoBurnBps: 1_000,
-            lpDonateBps: 1_000
+            lpDonateBps: 1_000,
+            holderAirdropBps: 2_000
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
@@ -67,7 +70,8 @@ contract FeeDistributionTest is Test {
         assertTrue(out.backedFloor);
         assertTrue(out.autoBurn);
         assertTrue(out.lpDonate);
-        assertEq(out.creatorTaxBps, 250);
+        assertTrue(out.holderAirdrop);
+        assertEq(out.hookTaxBps, 250);
         assertEq(out.antiSnipeDurationSeconds, 3600);
         assertEq(out.maxTxBps, 100);
         assertEq(out.maxWalletBps, 200);
@@ -75,6 +79,7 @@ contract FeeDistributionTest is Test {
         assertEq(out.initialSnipeTaxBps, 4_000);
         assertEq(out.autoBurnBps, 1_000);
         assertEq(out.lpDonateBps, 1_000);
+        assertEq(out.holderAirdropBps, 2_000);
     }
 
     function packModules(BitmaskConfig.Modules memory m) public pure returns (uint256) {
@@ -83,13 +88,14 @@ contract FeeDistributionTest is Test {
 
     function testCreatorTaxCap() public {
         BitmaskConfig.Modules memory m;
-        m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS + 1;
-        vm.expectRevert(BitmaskConfig.CreatorTaxTooHigh.selector);
+        m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS + 1;
+        vm.expectRevert(BitmaskConfig.HookTaxTooHigh.selector);
         this.packModules(m);
     }
 
     function testFeeRouteCap() public {
         BitmaskConfig.Modules memory m;
+        m.hookTaxBps = 200;
         m.backedFloor = true;
         m.autoBurn = true;
         m.lpDonate = true;
@@ -104,7 +110,7 @@ contract FeeDistributionTest is Test {
         BitmaskConfig.Modules memory m;
         m.antiSnipe = true;
         m.initialSnipeTaxBps = 9_900;
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         vm.expectRevert(BitmaskConfig.OpenFeeTooHigh.selector);
         this.packModules(m);
     }

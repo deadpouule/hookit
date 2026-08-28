@@ -32,6 +32,12 @@ export interface LaunchModules {
   autoBurnPct: number;
   lpDonate: boolean;
   lpDonatePct: number;
+  /** Quote-fee share accrued for periodic holder airdrops (Master). */
+  holderAirdrop: boolean;
+  /** Percent of hook pot routed to HolderAirdropVault (1–50). */
+  holderAirdropPct: number;
+  /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
+  creatorShareToHook: boolean;
 }
 
 export interface LaunchFormState {
@@ -47,7 +53,7 @@ export interface LaunchFormState {
   customHookSource: string;
   customHookFileName: string;
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
   devBuyEth: string;
   quoteAsset: PairingTokenId;
 }
@@ -70,6 +76,8 @@ export interface TokenPool {
     maxWallet?: boolean;
     autoBurn?: boolean;
     lpDonate?: boolean;
+    holderAirdrop?: boolean;
+    creatorShareToHook?: boolean;
     customHook: boolean;
   };
   address: string;

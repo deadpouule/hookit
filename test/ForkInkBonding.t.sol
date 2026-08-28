@@ -56,16 +56,38 @@ contract ForkInkBondingTest is InkForkTestBase {
         _fullClassicLifecycle(wspyx, 0);
     }
 
-    function testFork_Bonding_Eth_WithCreatorTax() public onlyFork {
-        _fullClassicLifecycle(Currency.wrap(address(0)), 200);
+    function testFork_Bonding_Eth_CreatorTaxDisabled() public onlyFork {
+        vm.prank(creator);
+        vm.expectRevert(BondingLaunchFactory.CreatorTaxTooHigh.selector);
+        bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            BondingLaunchFactory.LaunchParams({
+                name: "Tax",
+                symbol: "TAX",
+                metadataURI: "",
+                totalSupply: 0,
+                quote: Currency.wrap(address(0)),
+                creatorTaxBps: 200
+            })
+        );
     }
 
-    function testFork_Bonding_Usdg_WithMaxCreatorTax() public onlyFork {
-        _fullClassicLifecycle(usdg, ProtocolConstants.MAX_CREATOR_TAX_BPS);
+    function testFork_Bonding_Usdg_CreatorTaxDisabled() public onlyFork {
+        vm.prank(creator);
+        vm.expectRevert(BondingLaunchFactory.CreatorTaxTooHigh.selector);
+        bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            BondingLaunchFactory.LaunchParams({
+                name: "TaxU",
+                symbol: "TXU",
+                metadataURI: "",
+                totalSupply: 0,
+                quote: usdg,
+                creatorTaxBps: 1
+            })
+        );
     }
 
     function testFork_Bonding_SellBeforeGraduate() public onlyFork {
-        BondingResult memory r = _bondingLaunch(creator, Currency.wrap(address(0)), 100, "Pre", "PRE");
+        BondingResult memory r = _bondingLaunch(creator, Currency.wrap(address(0)), 0, "Pre", "PRE");
         _bondingBuy(trader, r.launchId, r.quote, 0.5 ether);
         assertEq(uint8(_bondingPhase(r.launchId)), uint8(BondingLaunchFactory.Phase.Bonding));
 
@@ -88,7 +110,7 @@ contract ForkInkBondingTest is InkForkTestBase {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: ProtocolConstants.MAX_CREATOR_TAX_BPS + 1
+                creatorTaxBps: 1
             })
         );
     }

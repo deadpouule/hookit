@@ -132,13 +132,18 @@ export function useSwapToken(pool: TokenPool) {
       const amountIn = parseUnits(amountHuman, payDecimals);
       if (amountIn <= BigInt(0)) throw new Error("Enter an amount");
 
-      const router = getSwapRouterAddress();
+      let router: Address;
+      try {
+        router = getSwapRouterAddress();
+      } catch (e) {
+        throw e instanceof Error ? e : new Error(String(e));
+      }
       const bps = Math.min(5_000, Math.max(1, Math.round(slippagePct * 100)));
 
       if (side === "buy" && !isDirectBuy(pool, payment)) {
         if (!supportsCompositeSwap()) {
           throw new Error(
-            "Pay-with-USDC needs HookitSwapRouter deployed. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER in env.",
+            "Pay-with needs HookitSwapRouter deployed. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER in env.",
           );
         }
         const bridge = await findBridgeRoute(

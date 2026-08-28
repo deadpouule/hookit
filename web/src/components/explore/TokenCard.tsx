@@ -100,6 +100,7 @@ export function TokenCard({ pool }: TokenCardProps) {
           {pool.hooks.antiSnipe && <HookChip id="antiSnipe" />}
           {pool.hooks.backedFloor && <HookChip id="backedFloor" />}
           {pool.hooks.antiMev && <HookChip id="antiMev" />}
+          {pool.hooks.holderAirdrop && <HookChip id="holderAirdrop" />}
           {pool.hooks.customHook && <HookChip id="custom" />}
         </div>
       </div>

@@ -18,6 +18,7 @@ import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
+import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {HkitBuyback} from "../src/HkitBuyback.sol";
 import {FeeEthRail} from "../src/FeeEthRail.sol";
@@ -44,17 +45,18 @@ contract DeployBaseSepoliaScript is Script {
         FeeEscrow escrow = new FeeEscrow(deployer, manager);
         ProtocolRevenueDistributor distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
         BuybackVault buybacks = new BuybackVault(deployer, manager);
+        HolderAirdropVault airdrops = new HolderAirdropVault(deployer, manager);
 
         uint160 flags = uint160(
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
                 | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
 
-        bytes memory ctorArgs = abi.encode(manager, vault, escrow, distributor, buybacks, deployer);
+        bytes memory ctorArgs = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         (address predicted, bytes32 salt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, flags, type(MasterLaunchHook).creationCode, ctorArgs);
 
-        MasterLaunchHook hook = new MasterLaunchHook{salt: salt}(manager, vault, escrow, distributor, buybacks, deployer);
+        MasterLaunchHook hook = new MasterLaunchHook{salt: salt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
@@ -68,6 +70,7 @@ contract DeployBaseSepoliaScript is Script {
         escrow.setOperator(address(hook), true);
         distributor.setOperator(address(hook), true);
         buybacks.setOperator(address(hook), true);
+        airdrops.setOperator(address(hook), true);
         distributor.setFeeRail(feeRail);
         // Live Quotrons/Ink USDG↔ETH liquidity only — no proprietary seed.
 
@@ -85,14 +88,17 @@ contract DeployBaseSepoliaScript is Script {
                 buybackVesting: false,
                 autoBurn: false,
                 lpDonate: false,
-                creatorTaxBps: 50,
+                holderAirdrop: false,
+                creatorShareToHook: false,
+                hookTaxBps: 50,
                 antiSnipeDurationSeconds: 600,
                 maxTxBps: 0,
                 maxWalletBps: 0,
                 floorAllocationBps: 2_000,
                 initialSnipeTaxBps: 5_000,
                 autoBurnBps: 0,
-                lpDonateBps: 0
+                lpDonateBps: 0,
+                holderAirdropBps: 0
             })
         );
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
+import { HolderAirdropCard } from "@/components/token/HolderAirdropCard";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
@@ -131,6 +132,7 @@ export function TokenDetailView({ pool }: TokenDetailViewProps) {
         <aside className="space-y-3">
           <TokenSwapCard pool={pool} />
           <BondingProgress pool={pool} />
+          <HolderAirdropCard pool={pool} />
           <CreatorActions pool={pool} />
           <TokenSidebarStats live={live} pool={pool} contractAddress={contractAddress} />
         </aside>

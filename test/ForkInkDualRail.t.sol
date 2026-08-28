@@ -35,7 +35,7 @@ contract ForkInkDualRailTest is InkForkTestBase {
         assertGt(vault.reserve(master.token), 0);
 
         // Classic bonding → graduate on ETH.
-        BondingResult memory classic = _bondingLaunch(creator, Currency.wrap(address(0)), 50, "Bond", "BND");
+        BondingResult memory classic = _bondingLaunch(creator, Currency.wrap(address(0)), 0, "Bond", "BND");
         _bondingBuyToGraduate(trader, classic.launchId, classic.quote);
         assertEq(uint8(_bondingPhase(classic.launchId)), uint8(BondingLaunchFactory.Phase.Graduated));
 
@@ -64,13 +64,23 @@ contract ForkInkDualRailTest is InkForkTestBase {
 
     function testFork_DualRail_FeeCap_BothRails() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS;
+        m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS;
         BitmaskConfig.pack(m);
         _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Cap", "CAP");
 
-        BondingResult memory r =
-            _bondingLaunch(creator, Currency.wrap(address(0)), ProtocolConstants.MAX_CREATOR_TAX_BPS, "CapB", "CAPB");
-        assertEq(r.graduationQuote, 4.2 ether);
+        // Classic: any creator tax reverts (base 1% only).
+        vm.prank(creator);
+        vm.expectRevert(BondingLaunchFactory.CreatorTaxTooHigh.selector);
+        bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            BondingLaunchFactory.LaunchParams({
+                name: "CapB",
+                symbol: "CAPB",
+                metadataURI: "",
+                totalSupply: 0,
+                quote: Currency.wrap(address(0)),
+                creatorTaxBps: 1
+            })
+        );
     }
 
     function testFork_DualRail_FeeRail_WithBondingGraduated() public onlyFork {

@@ -19,6 +19,7 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
+import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
@@ -40,16 +41,17 @@ contract DeployHookitCoreScript is Script {
         FeeEscrow escrow = new FeeEscrow(deployer, manager);
         ProtocolRevenueDistributor distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
         BuybackVault buybacks = new BuybackVault(deployer, manager);
+        HolderAirdropVault airdrops = new HolderAirdropVault(deployer, manager);
 
         uint160 masterFlags = uint160(
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
                 | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
-        bytes memory masterArgs = abi.encode(manager, vault, escrow, distributor, buybacks, deployer);
+        bytes memory masterArgs = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         (address masterPredicted, bytes32 masterSalt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, masterFlags, type(MasterLaunchHook).creationCode, masterArgs);
         MasterLaunchHook hook =
-            new MasterLaunchHook{salt: masterSalt}(manager, vault, escrow, distributor, buybacks, deployer);
+            new MasterLaunchHook{salt: masterSalt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         require(address(hook) == masterPredicted, "master hook mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
@@ -84,6 +86,7 @@ contract DeployHookitCoreScript is Script {
         distributor.setOperator(address(bonding), true);
         distributor.setOperator(address(graduated), true);
         buybacks.setOperator(address(hook), true);
+        airdrops.setOperator(address(hook), true);
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
@@ -96,6 +99,7 @@ contract DeployHookitCoreScript is Script {
         console.log("FeeEscrow", address(escrow));
         console.log("Distributor", address(distributor));
         console.log("BuybackVault", address(buybacks));
+        console.log("HolderAirdropVault", address(airdrops));
         console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
         console.log("GraduatedFeeHook", address(graduated));

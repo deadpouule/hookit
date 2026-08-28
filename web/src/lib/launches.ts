@@ -100,6 +100,8 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       maxWallet: modules.maxWallet,
       autoBurn: modules.autoBurn,
       lpDonate: modules.lpDonate,
+      holderAirdrop: modules.holderAirdrop,
+      creatorShareToHook: modules.creatorShareToHook,
       customHook: launch.customHook,
     },
     address: shortenAddress(token),
@@ -353,6 +355,7 @@ export type BondingLaunchRow = {
   creator: Address;
   quote: Address;
   phase: number;
+  /** Deprecated on-chain field — Classic always stores 0. */
   creatorTaxBps: number;
   totalSupply: bigint;
   curveSupply: bigint;

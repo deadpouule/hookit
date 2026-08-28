@@ -20,4 +20,11 @@ export const masterLaunchHookAbi = [
     outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "holderAirdropVault",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
 ] as const;

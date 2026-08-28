@@ -164,7 +164,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function testBuybackVesting_SkipsEscrow() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
-        m.creatorTaxBps = 200;
+        m.hookTaxBps = 200;
         (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
@@ -176,6 +176,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
     function testFeeRoutingTriple_FloorBurnDonate() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 300;
         m.backedFloor = true;
         m.autoBurn = true;
         m.lpDonate = true;

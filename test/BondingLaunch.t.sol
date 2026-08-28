@@ -68,13 +68,14 @@ contract BondingLaunchTest is Test, Deployers {
 
     function test_SteadyFeeCappedAt10Percent_MasterAndBonding() public {
         BitmaskConfig.Modules memory m;
-        m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS; // 9% → total 10%
+        m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS; // 9% → total 10%
         BitmaskConfig.pack(m);
 
-        m.creatorTaxBps = ProtocolConstants.MAX_CREATOR_TAX_BPS + 1;
-        vm.expectRevert(BitmaskConfig.CreatorTaxTooHigh.selector);
+        m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS + 1;
+        vm.expectRevert(BitmaskConfig.HookTaxTooHigh.selector);
         this.packModules(m);
 
+        // Classic rejects any creator tax (base 1% only).
         vm.prank(creator);
         vm.expectRevert(BondingLaunchFactory.CreatorTaxTooHigh.selector);
         bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
@@ -84,7 +85,7 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: ProtocolConstants.MAX_CREATOR_TAX_BPS + 1
+                creatorTaxBps: 1
             })
         );
     }
@@ -149,7 +150,7 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 100
+                creatorTaxBps: 0
             })
         );
 

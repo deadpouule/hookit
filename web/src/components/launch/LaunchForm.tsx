@@ -15,6 +15,7 @@ import {
   FeeBreakdown,
   FormDivider,
   FormPanel,
+  ModuleRow,
   SectionLabel,
   SegmentedControl,
 } from "@/components/ui/form-primitives";
@@ -26,7 +27,7 @@ import {
   DEFAULT_CLASSIC_LAUNCH_STATE,
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
-  MAX_CREATOR_TAX_BPS,
+  MAX_HOOK_TAX_BPS,
   TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
@@ -71,7 +72,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
       ...prev,
       hookMode: "master",
       modules: { ...prev.modules, ...draft.modules },
-      creatorTaxBps: draft.creatorTaxBps,
+      hookTaxBps: draft.hookTaxBps,
     }));
     setDraftLoaded(true);
   }, [searchParams, variant]);
@@ -97,6 +98,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     if (form.modules.antiMev) tags.push("antiMev");
     if (form.modules.maxWallet) tags.push("maxWallet");
     if (form.modules.maxTx) tags.push("maxTx");
+    if (form.modules.holderAirdrop) tags.push("holderAirdrop");
     return tags;
   }, [form.hookMode, form.modules]);
 
@@ -349,30 +351,12 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
             <>
               <SectionLabel>Fees</SectionLabel>
               <p className="mt-1 text-xs text-zinc-600">
-                Standard 1% quote-only swap fee on graduation. Creator tax accrues in quote only.
+                Standard 1% quote-only swap fee (70% creator / 30% protocol). Classic has no extra hook tax.
               </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
-                  <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
-                  <FeeBreakdown creator="0.70%" protocol="0.30%" />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Creator tax</Label>
-                  <div className="field-input flex items-center justify-between bg-black/60">
-                    <span className="font-mono">{formatBps(form.creatorTaxBps)}</span>
-                  </div>
-                  <div className="mt-2">
-                    <Slider
-                      value={[form.creatorTaxBps]}
-                      onValueChange={([v]) => setForm((p) => ({ ...p, creatorTaxBps: v }))}
-                      min={0}
-                      max={MAX_CREATOR_TAX_BPS}
-                      step={10}
-                    />
-                  </div>
-                  <FeeBreakdown creator="100%" protocol="0%" />
-                </div>
+              <div className="mt-4 max-w-xs">
+                <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
+                <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
+                <FeeBreakdown creator="0.70%" protocol="0.30%" />
               </div>
             </>
           ) : (
@@ -435,21 +419,37 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                   <FeeBreakdown creator="0.70%" protocol="0.30%" />
                 </div>
                 <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Creator tax</Label>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Hook tax</Label>
                   <div className="field-input flex items-center justify-between bg-black/60">
-                    <span className="font-mono">{formatBps(form.creatorTaxBps)}</span>
+                    <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
                   </div>
                   <div className="mt-2">
                     <Slider
-                      value={[form.creatorTaxBps]}
-                      onValueChange={([v]) => setForm((p) => ({ ...p, creatorTaxBps: v }))}
+                      value={[form.hookTaxBps]}
+                      onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
                       min={0}
-                      max={MAX_CREATOR_TAX_BPS}
+                      max={MAX_HOOK_TAX_BPS}
                       step={10}
                     />
                   </div>
-                  <FeeBreakdown creator="100%" protocol="0%" />
+                  <p className="mt-1.5 text-xs text-zinc-500">
+                    Extra fee for hook modules · leftover → protocol
+                  </p>
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/40 px-4">
+                <ModuleRow
+                  label="Creator → hook"
+                  description="Send your 70% of the base 1% into the hook pot (floor / burn / donate / airdrop) instead of claiming escrow."
+                  enabled={form.modules.creatorShareToHook}
+                  onToggle={(next) =>
+                    updateModules({
+                      creatorShareToHook: next,
+                      ...(next ? { buybackVesting: false } : {}),
+                    })
+                  }
+                />
               </div>
             </>
           )}

@@ -21,6 +21,7 @@ import {FloorVault} from "../../src/FloorVault.sol";
 import {FeeEscrow} from "../../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../../src/BuybackVault.sol";
+import {HolderAirdropVault} from "../../src/HolderAirdropVault.sol";
 import {GraduatedFeeHook} from "../../src/GraduatedFeeHook.sol";
 import {BondingLaunchFactory} from "../../src/BondingLaunchFactory.sol";
 import {BitmaskConfig} from "../../src/libraries/BitmaskConfig.sol";
@@ -43,6 +44,7 @@ abstract contract InkForkTestBase is Test {
     FeeEscrow internal escrow;
     ProtocolRevenueDistributor internal distributor;
     BuybackVault internal buybacks;
+    HolderAirdropVault internal airdrops;
     MasterLaunchHook internal hook;
     LaunchFactory internal factory;
     HookitSwapRouter internal router;
@@ -104,13 +106,14 @@ abstract contract InkForkTestBase is Test {
         escrow = new FeeEscrow(deployer, manager);
         distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
         buybacks = new BuybackVault(deployer, manager);
+        airdrops = new HolderAirdropVault(deployer, manager);
 
         uint160 flags = uint160(
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
                 | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         address flagsAddr = address(flags | (uint160(0x1BEEF) << 144));
-        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, deployer);
+        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         deployCodeTo("MasterLaunchHook.sol:MasterLaunchHook", args, flagsAddr);
         hook = MasterLaunchHook(payable(flagsAddr));
 
@@ -123,6 +126,7 @@ abstract contract InkForkTestBase is Test {
         escrow.setOperator(address(hook), true);
         distributor.setOperator(address(hook), true);
         buybacks.setOperator(address(hook), true);
+        airdrops.setOperator(address(hook), true);
 
         router = new HookitSwapRouter(manager);
         hkitBuyback = new HkitBuyback(deployer, manager, distributor);
@@ -185,14 +189,17 @@ abstract contract InkForkTestBase is Test {
             buybackVesting: false,
             autoBurn: false,
             lpDonate: false,
-            creatorTaxBps: 0,
+            holderAirdrop: false,
+            creatorShareToHook: false,
+            hookTaxBps: 0,
             antiSnipeDurationSeconds: 0,
             maxTxBps: 0,
             maxWalletBps: 0,
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
-            lpDonateBps: 0
+            lpDonateBps: 0,
+            holderAirdropBps: 0
         });
     }
 
@@ -306,8 +313,8 @@ abstract contract InkForkTestBase is Test {
     /// @notice Buy enough quote (gross of fees) to cross the 4.2 ETH-equivalent graduation threshold.
     function _bondingBuyToGraduate(address user, uint256 launchId, Currency quote) internal {
         uint256 target = bonding.graduationQuoteWei(quote);
-        (,,,, uint16 creatorTaxBps,,,,,,,,,,) = bonding.launches(launchId);
-        uint256 feeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(creatorTaxBps);
+        // Classic is base 1% only (creator tax removed).
+        uint256 feeBps = uint256(ProtocolConstants.BASE_FEE_BPS);
         // gross so that net = gross * (1 - feeBps/10000) >= target
         uint256 gross = (target * ProtocolConstants.BPS_DENOMINATOR) / (ProtocolConstants.BPS_DENOMINATOR - feeBps);
         gross += gross / 100; // +1% slack for rounding

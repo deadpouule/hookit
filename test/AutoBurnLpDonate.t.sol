@@ -18,6 +18,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
 
     function testAutoBurnReducesSupply() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 500;
         m.autoBurn = true;
         m.autoBurnBps = 5_000;
         (, address token, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
@@ -33,6 +34,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
 
     function testLpDonateAccruesFeeGrowth() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 500;
         m.lpDonate = true;
         m.lpDonateBps = 5_000;
         (, , PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
@@ -46,6 +48,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
 
     function testAutoBurnAndLpDonateTogether() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 400;
         m.autoBurn = true;
         m.lpDonate = true;
         m.autoBurnBps = 2_000;

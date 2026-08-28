@@ -9,7 +9,7 @@ library ModuleMatrix {
     uint16 internal constant MODULE_COUNT = 9;
     uint16 internal constant MASK_SPACE = 512;
 
-    /// @dev Bit order matches `BitmaskConfig` toggle fields (creator tax is always applied separately).
+    /// @dev Bit order matches `BitmaskConfig` toggle fields (hook tax is sized from fee sinks).
     uint16 internal constant BIT_ANTI_SNIPE = 1 << 0;
     uint16 internal constant BIT_BACKED_FLOOR = 1 << 1;
     uint16 internal constant BIT_ANTI_MEV = 1 << 2;
@@ -32,9 +32,6 @@ library ModuleMatrix {
         m.autoBurn = mask & BIT_AUTO_BURN != 0;
         m.lpDonate = mask & BIT_LP_DONATE != 0;
 
-        // Modest creator tax so fee-routing paths are exercised on every combo.
-        m.creatorTaxBps = 50;
-
         if (m.antiSnipe) {
             m.antiSnipeDurationSeconds = 900;
             m.initialSnipeTaxBps = 1_500;
@@ -44,6 +41,13 @@ library ModuleMatrix {
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.lpDonate) m.lpDonateBps = 1_000;
+
+        // Fee sinks are % of the hook-tax pot — enable a modest hook tax when any sink is on.
+        uint256 routed;
+        if (m.backedFloor) routed += m.floorAllocationBps;
+        if (m.autoBurn) routed += m.autoBurnBps;
+        if (m.lpDonate) routed += m.lpDonateBps;
+        if (routed > 0) m.hookTaxBps = 200;
     }
 
     function kitchenSink() internal pure returns (BitmaskConfig.Modules memory m) {
@@ -51,7 +55,7 @@ library ModuleMatrix {
     }
 
     function maxOpenFeeBps(BitmaskConfig.Modules memory m) internal pure returns (uint256) {
-        uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.creatorTaxBps;
+        uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
         if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
         return openFee;
     }

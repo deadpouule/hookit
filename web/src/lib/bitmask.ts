@@ -7,8 +7,10 @@ const FLAG_MAX_TX = BigInt(1) << BigInt(3);
 const FLAG_MAX_WALLET = BigInt(1) << BigInt(4);
 const FLAG_AUTO_BURN = BigInt(1) << BigInt(111);
 const FLAG_LP_DONATE = BigInt(1) << BigInt(112);
+const FLAG_HOLDER_AIRDROP = BigInt(1) << BigInt(145);
+const FLAG_CREATOR_SHARE_TO_HOOK = BigInt(1) << BigInt(162);
 
-const SHIFT_CREATOR_TAX = BigInt(7);
+const SHIFT_HOOK_TAX = BigInt(7);
 const SHIFT_SNIPE_DURATION = BigInt(23);
 const SHIFT_MAX_TX = BigInt(39);
 const SHIFT_MAX_WALLET = BigInt(55);
@@ -16,21 +18,19 @@ const SHIFT_FLOOR_ALLOC = BigInt(71);
 const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
 const SHIFT_LP_DONATE_BPS = BigInt(129);
+const SHIFT_HOLDER_AIRDROP_BPS = BigInt(146);
 
-const MAX_CREATOR_TAX_BPS = BigInt(900);
+const MAX_HOOK_TAX_BPS = BigInt(900);
 const MAX_TOTAL_FEE_BPS = BigInt(1000);
 const MAX_SNIPE_TAX_BPS = BigInt(9900);
 
 /** Packs UI module config into the on-chain uint256 bitmask (matches BitmaskConfig.sol). */
-export function packLaunchBitmask(
-  modules: LaunchModules,
-  creatorTaxBps: number,
-): bigint {
-  if (creatorTaxBps > Number(MAX_CREATOR_TAX_BPS)) {
-    throw new Error("Creator tax exceeds protocol maximum (9%, so base+tax ≤ 10%)");
+export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): bigint {
+  if (hookTaxBps > Number(MAX_HOOK_TAX_BPS)) {
+    throw new Error("Hook tax exceeds protocol maximum (9%, so base+tax ≤ 10%)");
   }
-  if (100 + creatorTaxBps > Number(MAX_TOTAL_FEE_BPS)) {
-    throw new Error("Base fee + creator tax cannot exceed 10%");
+  if (100 + hookTaxBps > Number(MAX_TOTAL_FEE_BPS)) {
+    throw new Error("Base fee + hook tax cannot exceed 10%");
   }
 
   const initialSnipeTaxBps = BigInt(Math.min(modules.antiSnipeInitialTax * 100, 9900));
@@ -39,26 +39,33 @@ export function packLaunchBitmask(
   }
 
   if (modules.antiSnipe) {
-    const openBps = 100 + creatorTaxBps + modules.antiSnipeInitialTax * 100;
+    const openBps = 100 + hookTaxBps + modules.antiSnipeInitialTax * 100;
     if (openBps > 10_000) {
-      throw new Error("Anti-snipe + base fee + creator tax cannot exceed 100% at open");
+      throw new Error("Anti-snipe + base fee + hook tax cannot exceed 100% at open");
     }
   }
 
-  if (modules.autoBurnPct > 50 || modules.lpDonatePct > 50) {
-    throw new Error("Auto Burn and LP Donate are capped at 50% of quote fees each");
+  if (modules.autoBurnPct > 50 || modules.lpDonatePct > 50 || modules.holderAirdropPct > 50) {
+    throw new Error("Auto Burn, LP Donate, and Holder Airdrop are capped at 50% of hook tax each");
   }
 
   const floorAllocationBps = BigInt(modules.floorAllocation * 100);
   const autoBurnBps = BigInt(modules.autoBurnPct * 100);
   const lpDonateBps = BigInt(modules.lpDonatePct * 100);
+  const holderAirdropBps = BigInt(modules.holderAirdropPct * 100);
 
   let routed = 0;
   if (modules.backedFloor) routed += modules.floorAllocation;
   if (modules.autoBurn) routed += modules.autoBurnPct;
   if (modules.lpDonate) routed += modules.lpDonatePct;
+  if (modules.holderAirdrop) routed += modules.holderAirdropPct;
   if (routed > 100) {
-    throw new Error("Floor + Auto Burn + LP Donate cannot exceed 100% of quote fees");
+    throw new Error("Floor + Auto Burn + LP Donate + Holder Airdrop cannot exceed 100% of hook tax");
+  }
+  if (routed > 0 && hookTaxBps === 0 && !modules.creatorShareToHook) {
+    throw new Error(
+      "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / donate / airdrop",
+    );
   }
 
   let packed = BigInt(0);
@@ -69,8 +76,10 @@ export function packLaunchBitmask(
   if (modules.maxWallet) packed |= FLAG_MAX_WALLET;
   if (modules.autoBurn) packed |= FLAG_AUTO_BURN;
   if (modules.lpDonate) packed |= FLAG_LP_DONATE;
+  if (modules.holderAirdrop) packed |= FLAG_HOLDER_AIRDROP;
+  if (modules.creatorShareToHook) packed |= FLAG_CREATOR_SHARE_TO_HOOK;
 
-  packed |= BigInt(creatorTaxBps) << SHIFT_CREATOR_TAX;
+  packed |= BigInt(hookTaxBps) << SHIFT_HOOK_TAX;
   packed |= BigInt(modules.antiSnipeDuration) << SHIFT_SNIPE_DURATION;
   packed |= BigInt(modules.maxTxBps) << SHIFT_MAX_TX;
   packed |= BigInt(modules.maxWalletBps) << SHIFT_MAX_WALLET;
@@ -78,6 +87,7 @@ export function packLaunchBitmask(
   packed |= initialSnipeTaxBps << SHIFT_INITIAL_SNIPE_TAX;
   packed |= autoBurnBps << SHIFT_AUTO_BURN_BPS;
   packed |= lpDonateBps << SHIFT_LP_DONATE_BPS;
+  packed |= holderAirdropBps << SHIFT_HOLDER_AIRDROP_BPS;
 
   return packed;
 }
@@ -87,7 +97,7 @@ const UINT24_MASK = BigInt(0xffffff);
 
 export interface UnpackedBitmask {
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
 }
 
 /** Unpacks on-chain bitmask into UI module config (matches BitmaskConfig.sol). */
@@ -99,8 +109,10 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const maxWallet = (packed & FLAG_MAX_WALLET) !== BigInt(0);
   const autoBurn = (packed & FLAG_AUTO_BURN) !== BigInt(0);
   const lpDonate = (packed & FLAG_LP_DONATE) !== BigInt(0);
+  const holderAirdrop = (packed & FLAG_HOLDER_AIRDROP) !== BigInt(0);
+  const creatorShareToHook = (packed & FLAG_CREATOR_SHARE_TO_HOOK) !== BigInt(0);
 
-  const creatorTaxBps = Number((packed >> SHIFT_CREATOR_TAX) & UINT16_MASK);
+  const hookTaxBps = Number((packed >> SHIFT_HOOK_TAX) & UINT16_MASK);
   const antiSnipeDuration = Number((packed >> SHIFT_SNIPE_DURATION) & UINT16_MASK);
   const maxTxBps = Number((packed >> SHIFT_MAX_TX) & UINT16_MASK);
   const maxWalletBps = Number((packed >> SHIFT_MAX_WALLET) & UINT16_MASK);
@@ -109,9 +121,10 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   if (initialSnipeTaxBps === 0 && antiSnipe) initialSnipeTaxBps = 5000;
   const autoBurnBps = Number((packed >> SHIFT_AUTO_BURN_BPS) & UINT16_MASK);
   const lpDonateBps = Number((packed >> SHIFT_LP_DONATE_BPS) & UINT16_MASK);
+  const holderAirdropBps = Number((packed >> SHIFT_HOLDER_AIRDROP_BPS) & UINT16_MASK);
 
   return {
-    creatorTaxBps,
+    hookTaxBps,
     modules: {
       antiSnipe,
       antiSnipeDuration,
@@ -127,6 +140,10 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       autoBurnPct: autoBurnBps === 0 ? 20 : Math.max(1, Math.round(autoBurnBps / 100)),
       lpDonate,
       lpDonatePct: lpDonateBps === 0 ? 20 : Math.max(1, Math.round(lpDonateBps / 100)),
+      holderAirdrop,
+      holderAirdropPct:
+        holderAirdropBps === 0 ? 50 : Math.max(1, Math.round(holderAirdropBps / 100)),
+      creatorShareToHook,
     },
   };
 }

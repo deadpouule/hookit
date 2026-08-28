@@ -58,9 +58,28 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         vm.stopPrank();
     }
 
+    function testCreatorShareToHook_FundsModulesNotEscrow() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 0;
+        m.creatorShareToHook = true;
+        m.backedFloor = true;
+        m.floorAllocationBps = 10_000; // 100% of hook pot → floor
+        (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+
+        uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        uint256 floorBefore = vault.reserve(token);
+        buyExactIn(key, 10 ether);
+
+        // Creator's 70% of base went to the hook pot → floor, not escrow.
+        assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), creatorBefore);
+        assertGt(vault.reserve(token), floorBefore);
+        // Protocol still gets 30% of base.
+        assertGt(distributor.pending(Currency.wrap(address(0))), 0);
+    }
+
     function testQuoteOnlyFeesCreditCreatorAndProtocol() public {
         BitmaskConfig.Modules memory m = defaultModules();
-        m.creatorTaxBps = 100; // +1%
+        m.hookTaxBps = 100; // +1%
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
@@ -78,7 +97,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         m.antiSnipe = true;
         m.antiSnipeDurationSeconds = 1_000;
         m.initialSnipeTaxBps = 8_800;
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         buyExactIn(key, 5 ether);
@@ -91,9 +110,10 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
         uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
         uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
-        // Sell fee is base + creator tax only. Creator should get ~85% (tax slice + 70% of remainder),
-        // not ~70% as if the 99% snipe tax were still in the split denominator.
-        assertGt(creatorDelta, protoDelta * 4);
+        // Sell fee = base 1% + hook tax 1%. Creator only gets 70% of the base slice; hook tax → protocol
+        // (no modules). Creator should still outpace protocol-from-base, but not the old ~85% creator-tax path.
+        assertGt(creatorDelta, 0);
+        assertGt(protoDelta, creatorDelta); // hook tax remainder tips protocol above creator
     }
 
     function testAntiSnipeDecays() public {
@@ -180,7 +200,9 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
     function testGasSnapshotFloorFillSell() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 100;
         m.backedFloor = true;
+        m.floorAllocationBps = 1_000;
         (, address token,, PoolKey memory key) = launchToken(m, 180_000, 1_000_000e18);
         vault.deposit{value: 50 ether}(token, Currency.wrap(address(0)), 50 ether);
         buyExactIn(key, 0.01 ether);

@@ -113,18 +113,36 @@ export function getHookitSwapRouterAddress(): Address | undefined {
   return raw as Address;
 }
 
-/** Production router if deployed; otherwise Universal Router (Ink) or PoolSwapTest (Sepolia). */
+/**
+ * Swap entrypoint for Hookit pools.
+ * - Prefer HookitSwapRouter when set (required on Ink; needed for hooked fee accounting).
+ * - Base Sepolia only: fall back to PoolSwapTest for local/integration without a router deploy.
+ * Never fall back to Universal Router — hooked pools need HookitSwapRouter.
+ */
 export function getSwapRouterAddress(): Address {
   const hookit = getHookitSwapRouterAddress();
   if (hookit) return hookit;
 
   const d = getChainDeployment();
-  if (d.chainId === INK_MAINNET.chainId) return d.universalRouter;
+  if (d.chainId === INK_MAINNET.chainId) {
+    throw new Error(
+      "HookitSwapRouter not configured. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER after DeployHookitCore on Ink.",
+    );
+  }
+  if (d.poolSwapTest === zeroAddress) {
+    throw new Error("No swap router: set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER or deploy PoolSwapTest.");
+  }
   return d.poolSwapTest;
 }
 
 export function isProductionSwapRouter(): boolean {
   return !!getHookitSwapRouterAddress();
+}
+
+/** True when this chain can swap without HookitSwapRouter (Base Sepolia PoolSwapTest only). */
+export function canUseDevSwapFallback(): boolean {
+  const d = getChainDeployment();
+  return d.chainId !== INK_MAINNET.chainId && d.poolSwapTest !== zeroAddress;
 }
 
 export function supportsCompositeSwap(): boolean {

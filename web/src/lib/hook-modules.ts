@@ -4,6 +4,7 @@ import {
   Coins,
   Droplets,
   Flame,
+  Gift,
   Percent,
   Shield,
   ShieldAlert,
@@ -74,9 +75,9 @@ export const HOOK_MODULE_ACCENTS = {
     text: "text-[#ff8cc4]",
     icon: ArrowLeftRight,
   },
-  creatorTax: {
-    id: "creator-tax",
-    label: "Creator Tax",
+  hookTax: {
+    id: "hook-tax",
+    label: "Hook Tax",
     color: "#ff2bd6",
     glow: "rgba(255, 43, 214, 0.6)",
     bg: "bg-[#ff2bd6]/12",
@@ -114,6 +115,16 @@ export const HOOK_MODULE_ACCENTS = {
     text: "text-[#9ff5d0]",
     icon: Droplets,
   },
+  holderAirdrop: {
+    id: "holder-airdrop",
+    label: "Holder Airdrop",
+    color: "#f5d76e",
+    glow: "rgba(245, 215, 110, 0.55)",
+    bg: "bg-[#f5d76e]/12",
+    border: "border-[#f5d76e]/40",
+    text: "text-[#ffe9a0]",
+    icon: Gift,
+  },
 } as const satisfies Record<string, HookModuleAccent>;
 
 const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
@@ -122,11 +133,12 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Anti-MEV": HOOK_MODULE_ACCENTS.antiMev,
   "Max Wallet": HOOK_MODULE_ACCENTS.maxWallet,
   "Max TX": HOOK_MODULE_ACCENTS.maxTx,
-  "Creator Tax": HOOK_MODULE_ACCENTS.creatorTax,
+  "Hook Tax": HOOK_MODULE_ACCENTS.hookTax,
   "Auto Burn": HOOK_MODULE_ACCENTS.autoBurn,
   "LP Donate": HOOK_MODULE_ACCENTS.lpDonate,
+  "Holder Airdrop": HOOK_MODULE_ACCENTS.holderAirdrop,
   "Custom Hook": {
-    ...HOOK_MODULE_ACCENTS.creatorTax,
+    ...HOOK_MODULE_ACCENTS.hookTax,
     id: "custom",
     label: "Custom",
   },

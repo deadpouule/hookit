@@ -11,6 +11,7 @@ library ProtocolConstants {
     uint16 internal constant BPS_DENOMINATOR = 10_000;
 
     /// @dev Split of the 1% base fee (+ snipe tax): 70% creator / 30% protocol.
+    ///      Hook tax is separate and never enters this split — it funds Master hook modules.
     uint16 internal constant CREATOR_SHARE_BPS = 7_000;
     uint16 internal constant PROTOCOL_SHARE_BPS = 3_000;
 
@@ -18,10 +19,10 @@ library ProtocolConstants {
     uint16 internal constant OPS_SHARE_BPS = 2_000;
     uint16 internal constant FLYWHEEL_SHARE_BPS = 8_000;
 
-    /// @dev Steady swap fee hard cap: `BASE_FEE_BPS + creatorTaxBps` ≤ 10% (both rails).
+    /// @dev Steady swap fee hard cap: `BASE_FEE_BPS + hookTaxBps` ≤ 10% (Master).
     uint16 internal constant MAX_TOTAL_FEE_BPS = 1_000;
-    /// @dev Max creator tax so base (1%) + tax ≤ 10%.
-    uint16 internal constant MAX_CREATOR_TAX_BPS = 900;
+    /// @dev Max hook tax so base (1%) + hook tax ≤ 10%. Routes to Master modules only.
+    uint16 internal constant MAX_HOOK_TAX_BPS = 900;
     uint16 internal constant MAX_SNIPE_TAX_BPS = 9_900;
 
     /// @dev Classic bonding graduation target: 4.2 ETH (or USD-equivalent in quote decimals).
@@ -34,6 +35,10 @@ library ProtocolConstants {
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
     uint16 internal constant MAX_AUTO_BURN_BPS = 5_000; // 50% of quote-fee pool
     uint16 internal constant MAX_LP_DONATE_BPS = 5_000;
+    /// @dev Max share of the quote-fee pool routed to holder airdrops (50%).
+    uint16 internal constant MAX_HOLDER_AIRDROP_BPS = 5_000;
+    /// @dev Minimum time between permissionless holder airdrops.
+    uint256 internal constant HOLDER_AIRDROP_EPOCH = 15 minutes;
 
     uint16 internal constant DEFAULT_INITIAL_SNIPE_TAX_BPS = 5_000;
     uint256 internal constant BUYBACK_VESTING_DURATION = 5 * 365 days;

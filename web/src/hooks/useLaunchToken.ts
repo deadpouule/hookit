@@ -120,7 +120,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
               metadataURI,
               totalSupply: BigInt(0),
               quote,
-              creatorTaxBps: form.creatorTaxBps,
+              creatorTaxBps: 0,
             },
           ],
           value: launchFee,
@@ -150,7 +150,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         const bitmask =
           form.hookMode === "custom"
             ? BigInt(0)
-            : packLaunchBitmask(form.modules, form.creatorTaxBps);
+            : packLaunchBitmask(form.modules, form.hookTaxBps);
         const customHook = customHookAddress ?? zeroAddress;
 
         hash = await writeContractAsync({

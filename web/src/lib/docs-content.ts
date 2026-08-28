@@ -4,6 +4,7 @@ import {
   GITHUB_REPO_URL,
   GRADUATION_ETH,
   LAUNCH_FEE_ETH,
+  MAX_HOOK_TAX_BPS,
   PROTOCOL_SHARE_BPS,
   TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
@@ -64,7 +65,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "trading", label: "Trading and pricing" },
       { id: "graduation", label: "Graduation" },
       { id: "fees", label: "Fees and flywheel" },
-      { id: "hooks", label: "Launch modules" },
+      { id: "hooks", label: "Master hook modules" },
       { id: "floor", label: "Backed floor" },
     ],
   },
@@ -124,11 +125,11 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             {
               term: "Classic (/launch/classic)",
-              text: "Bonding curve first, then graduation to a Uniswap pool. Similar to pump.fun-style launches. You set an optional extra creator tax.",
+              text: "Bonding curve first, then graduation to a Uniswap pool. Similar to pump.fun-style launches. Steady fee is the base 1% only (70% creator / 30% protocol).",
             },
             {
               term: "Custom (/launch/custom)",
-              text: "Master launch on-chain: token + pool + locked liquidity in one transaction. Pick optional modules (anti-snipe, floor, caps…) or paste your own hook code if you are a developer.",
+              text: "Master launch: token + Uniswap v4 pool + locked LP in one tx via MasterLaunchHook. Optional hook tax funds modules (anti-snipe, floor, auto-burn, airdrop…) or paste your own hook code.",
             },
           ],
         },
@@ -196,13 +197,48 @@ export function buildDocsSections(): DocsSection[] {
           text: "Custom launch (Master on-chain)",
         },
         {
+          type: "p",
+          text: "In the app this is /launch/custom. On-chain it uses LaunchFactory + MasterLaunchHook — a single Uniswap v4 hook shared by every Master pool.",
+        },
+        {
           type: "ul",
           items: [
             "1 billion tokens are minted (fixed supply, 18 decimals).",
-            `Starting price targets roughly $${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")} fully diluted market cap at launch (converted to ETH or your chosen quote using the chain price feed).`,
-            "A Uniswap v4 pool is created and seeded with liquidity in a locked price range — creators cannot pull that LP.",
-            "Trading starts immediately; buyers and sellers move the price like any AMM pool.",
-            "Optional modules (see Modular hooks) add rules such as launch-window taxes or a backed floor.",
+            `Starting price targets roughly $${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")} fully diluted market cap at launch (converted to ETH or your chosen quote using the chain price feed / Quotrons pool price for wStocks).`,
+            "A Uniswap v4 pool is created with LP fee tier 0%. Trading fees are charged by the hook instead (quote-only).",
+            "Liquidity is seeded in a locked price range — the creator cannot remove that LP (anti-rug).",
+            "Trading starts in the same transaction. Buyers and sellers move price like any AMM.",
+            "You pick optional modules at launch (anti-snipe, floor, airdrop, burns…). They are packed into a bitmask and cannot be changed later.",
+            "Quote asset can be ETH, USDG, or a Quotrons wrapped xStock (e.g. wNVDAx) when those markets are seeded on Ink.",
+          ],
+        },
+        {
+          type: "h3",
+          text: "What MasterLaunchHook does on every swap",
+        },
+        {
+          type: "steps",
+          steps: [
+            {
+              num: "01",
+              title: "Before swap",
+              text: "Applies anti-MEV / max-tx / max-wallet checks when enabled. Computes the quote-notional fee (base 1% + hook tax + temporary anti-snipe on buys).",
+            },
+            {
+              num: "02",
+              title: "Take fee in quote",
+              text: "The hook pulls the fee from the quote leg only — never from the memecoin amount as a token tax.",
+            },
+            {
+              num: "03",
+              title: "Route the fee pool",
+              text: "Hook tax (if any) funds Master modules (floor, auto-burn, LP donate, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol — modules never touch that split.",
+            },
+            {
+              num: "04",
+              title: "After swap",
+              text: "Runs pending auto-burn (buy + burn launch token) and LP donate if those modules left a balance to process.",
+            },
           ],
         },
         {
@@ -215,16 +251,16 @@ export function buildDocsSections(): DocsSection[] {
             "Same 1 billion supply, but 80% is sold on a bonding curve first; 20% is reserved for liquidity at graduation.",
             "Early buyers pay increasing prices as the curve fills. Sells are allowed on the curve with fees applied.",
             `When real quote collected hits ~${GRADUATION_ETH} ETH (or the stable equivalent), the token graduates automatically.`,
-            "After graduation, remaining tokens and collected quote seed a full Uniswap v4 pool. Trading continues there.",
+            "After graduation, remaining tokens and collected quote seed a full Uniswap v4 pool with GraduatedFeeHook (same quote-only fee idea as Master).",
           ],
         },
         {
           type: "callout",
-          title: "Launch protection (Master modules)",
+          title: "Master vs Classic in one line",
           items: [
-            "Anti-snipe — extra fee on buys right after launch that fades over minutes. Stops bots from buying everything at the opening price.",
-            "Max wallet / max trade — caps how much one address can hold or swap per transaction when enabled.",
-            "Custom hooks — third-party code; treat as unaudited unless you verified it yourself.",
+            "Master = pool + locked LP + modular hook from block one.",
+            "Classic = bonding curve first, then graduate into a simpler fee hook pool.",
+            "Custom Solidity hooks are an advanced Master path — unaudited by default.",
           ],
         },
       ],
@@ -337,7 +373,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Trading moves from the bonding contract to a normal Uniswap v4 pool.",
             "Leftover tokens (20% of supply) plus collected quote become locked liquidity in that pool.",
-            "Fees switch to the graduated fee hook — same base 1% + optional creator tax as Master.",
+            "Fees switch to the graduated fee hook — same base 1% quote-only fee, 70/30 creator/protocol (no hook tax on Classic).",
             "The token page chart and swap widget automatically use the new pool.",
           ],
         },
@@ -359,36 +395,74 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Every buy and sell pays a trading fee. Fees are always taken from the quote asset (ETH, USDC, USDG, etc.) — you never pay fees in the launched token.",
+          text: "Every buy and sell pays a trading fee. Fees are always taken from the quote asset (ETH, USDC, USDG, wStock, etc.) — you never pay fees in the launched memecoin itself.",
         },
         {
           type: "h3",
-          text: "Standard trading fee",
+          text: "Steady fee (every Master / graduated swap)",
         },
         {
           type: "defs",
           rows: [
             {
               term: `Base fee (${BASE_FEE_PCT}%)`,
-              text: "Applied on every swap. Split between creator and protocol.",
+              text: `Always on. Always splits ${CREATOR_FEE_PCT}% creator / ${PROTOCOL_FEE_PCT}% protocol. Creators can optionally route their ${CREATOR_FEE_PCT}% into the hook pot (“Creator → hook”).`,
             },
             {
-              term: `Creator share (${CREATOR_FEE_PCT}% of base)`,
-              text: "Goes to the launch creator. They can claim accumulated fees from the token page when the contract has a balance.",
+              term: "Hook tax (optional, Master)",
+              text: `Extra permanent fee (0–${MAX_HOOK_TAX_BPS / 100}% so base + tax ≤ 10%). Replaces the old creator tax: this cut funds Master modules (floor / burn / donate / airdrop). Unallocated → protocol.`,
             },
             {
-              term: `Protocol share (${PROTOCOL_FEE_PCT}% of base)`,
-              text: "Goes to hook it treasury / protocol contracts. Part may fund operations; part may buy back HOOK when that path is enabled on-chain.",
-            },
-            {
-              term: "Creator tax (optional)",
-              text: "Extra fee the creator adds at launch (Master module or Classic slider). Base + creator tax cannot exceed 10% total.",
-            },
-            {
-              term: "Anti-snipe tax (optional)",
-              text: "Temporary extra fee on buys right after a Master launch. Fades to zero over the launch window — not part of the permanent fee.",
+              term: "Anti-snipe (optional, Master)",
+              text: "Temporary extra fee on buys only, decaying to 0 over the launch window. Stacked on top of base + hook tax at open; its share follows the base 70/30 split.",
             },
           ],
+        },
+        {
+          type: "h3",
+          text: "How MasterLaunchHook splits the fee",
+        },
+        {
+          type: "steps",
+          steps: [
+            {
+              num: "01",
+              title: "Peel hook tax",
+              text: "If hook tax is set, that fraction of the fee pot goes into the hook pot for modules (leftover → protocol).",
+            },
+            {
+              num: "02",
+              title: "Optional: creator → hook",
+              text: "If enabled, the creator’s 70% of the base also joins the hook pot instead of FeeEscrow. Protocol still keeps its 30% of the base.",
+            },
+            {
+              num: "03",
+              title: "Module cuts",
+              text: "Of the hook pot (hook tax ± creator share), optional % go to floor, auto-burn, LP donate, and/or holder airdrop. Together ≤ 100%. Needs hook tax and/or creator→hook when any sink is on.",
+            },
+            {
+              num: "04",
+              title: "Base → creator / protocol",
+              text: `Unless creator→hook is on, the base (+ anti-snipe) portion splits ${CREATOR_FEE_PCT}% creator / ${PROTOCOL_FEE_PCT}% protocol as usual.`,
+            },
+          ],
+        },
+        {
+          type: "ul",
+          items: [
+            "Creator share (70% of base only) → FeeEscrow (claim on the token page), or BuybackVault if buyback-vesting is on, or HKIT buyback pot for the protocol native token.",
+            "Protocol share → ProtocolRevenueDistributor: 20% ops / 80% flywheel, plus any unallocated hook tax.",
+            "Classic launches: base 1% only (no hook tax / Master modules).",
+            "wStock protocol fees can be converted to USDG via Quotrons pools before buyback routing.",
+          ],
+        },
+        {
+          type: "h3",
+          text: "Example",
+        },
+        {
+          type: "p",
+          text: `Trade pays 1% base + 2% hook tax. Creator sets auto-burn 50% and floor 50% of the hook tax. Then 2% of the trade funds those sinks 50/50. The 1% base still splits ${CREATOR_FEE_PCT}/${PROTOCOL_FEE_PCT} creator/protocol.`,
         },
         {
           type: "h3",
@@ -396,15 +470,17 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `Creating a token costs ${LAUNCH_FEE_ETH} ETH (plus gas) paid to the factory contract. This is separate from trading fees and is not refundable.`,
+          text: `Creating a token costs ${LAUNCH_FEE_ETH} ETH (plus gas) paid to the factory. Separate from trading fees; not refundable.`,
         },
         {
-          type: "h3",
-          text: "Where fees go when modules are on",
-        },
-        {
-          type: "p",
-          text: "On Master launches, the creator can route part of the fee pool to optional sinks: backed floor vault, auto-burn (tokens bought and burned), or LP donations (extra liquidity). Percentages are set at launch and cannot be changed later.",
+          type: "callout",
+          title: "Remember",
+          items: [
+            "Pool LP fee tier is 0% — the hook charges instead.",
+            "Hook tax is for the hook modules — not an extra creator take.",
+            "Module % are of the hook-tax pot. Base fee stays a clean 70/30 for the creator.",
+            "Percentages are fixed at launch and cannot be edited later.",
+          ],
         },
         {
           type: "h3",
@@ -412,59 +488,112 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Protocol stats show live launch count, TVL, and indexer volume where available. Buyback and burn history only appear when those events are actually indexed on-chain — we do not fabricate transaction lists.",
+          text: "Protocol stats show live launch count, TVL, and indexer volume where available. Buyback and burn history only appear when those events are actually indexed — we do not fabricate lists.",
         },
       ],
     },
     {
       id: "hooks",
-      title: "Launch modules",
+      title: "Master hook modules",
       group: "Protocol",
       blocks: [
         {
           type: "p",
-          text: "Master launches can enable optional modules — rules baked into the pool at creation. You pick them in the launch form or Builder. Once set, they cannot be turned off.",
+          text: "MasterLaunchHook is the shared Uniswap v4 hook for every Custom/Master launch. Modules are optional rules packed into a uint256 bitmask at creation. You pick them in Launch Custom or Builder. Once the token is live, the bitmask cannot change.",
         },
         {
-          type: "defs",
-          rows: [
-            {
-              term: "Anti-snipe",
-              text: "High tax on buys immediately after launch that decreases over time (you choose duration and starting tax). Protects against bots sniping the opening price.",
-            },
-            {
-              term: "Backed floor",
-              text: "A slice of trading fees goes into a vault. Holders can later redeem tokens for quote at the floor price. The floor only goes up, never down.",
-            },
-            {
-              term: "Anti-MEV cooldown",
-              text: "Short delay between trades from the same wallet to reduce same-block bot spam.",
-            },
-            {
-              term: "Max trade size",
-              text: "Limits how large a single swap can be (% of total supply).",
-            },
-            {
-              term: "Max wallet",
-              text: "Limits how many tokens one address can hold (% of total supply).",
-            },
-            {
-              term: "Auto-burn",
-              text: "Uses part of fees to buy and burn tokens, reducing supply over time.",
-            },
-            {
-              term: "LP donate",
-              text: "Uses part of fees to add liquidity to the pool.",
-            },
-            {
-              term: "Creator tax",
-              text: "Permanent extra fee on swaps paid to the creator, on top of the base 1%.",
-            },
+          type: "callout",
+          title: "Important limits",
+          items: [
+            "Floor + auto-burn + LP donate + holder airdrop shares of the hook-tax pot cannot exceed 100%.",
+            "Auto-burn, LP donate, and holder airdrop are each capped at 50% of that pot.",
+            "Any fee sink requires hook tax > 0.",
+            "Base fee (1%) + hook tax cannot exceed 10%.",
+            "Anti-snipe only affects opening buys and fades out — it is not a permanent tax.",
+            "Classic launches do not use these Master modules (base 1% only).",
           ],
         },
         {
+          type: "h3",
+          text: "Anti-snipe",
+        },
+        {
           type: "p",
-          text: "Explore shows which modules each token uses and how many launches picked each one — useful to see what is popular, not what is safe.",
+          text: "Adds a high extra fee on buys right after launch. You set duration (seconds) and initial tax %. The tax decays linearly to zero over that window. Goal: make same-block snipes and instant dumps expensive for bots.",
+        },
+        {
+          type: "h3",
+          text: "Anti-MEV cooldown",
+        },
+        {
+          type: "p",
+          text: "One swap per wallet origin (tx.origin) per pool per block. A second swap from the same origin in the same block reverts. Reduces classic sandwich legs; not a private mempool.",
+        },
+        {
+          type: "h3",
+          text: "Max trade / max wallet",
+        },
+        {
+          type: "p",
+          text: "Max trade caps how large a single swap can be as a % of total supply. Max wallet caps how many tokens one address can hold after a buy. Both are optional and set at launch.",
+        },
+        {
+          type: "h3",
+          text: "Hook tax",
+        },
+        {
+          type: "p",
+          text: "Permanent extra quote fee on every swap. That slice funds Master modules (floor, auto-burn, LP donate, holder airdrop). Unallocated hook tax goes to the protocol. The creator’s take stays the 70% of the separate 1% base fee.",
+        },
+        {
+          type: "h3",
+          text: "Backed floor",
+        },
+        {
+          type: "p",
+          text: "Routes a % of the hook-tax pot into FloorVault as quote collateral. Holders can redeem launch tokens for quote at the floor price. The floor ratchets up and never decreases. See the Backed floor section for redeem details.",
+        },
+        {
+          type: "h3",
+          text: "Auto-burn",
+        },
+        {
+          type: "p",
+          text: "Routes a % of the hook-tax pot to buy the launched token from its own pool, then burns those tokens (LaunchToken.burn). The quote is spent; the memecoin supply shrinks. If the nested buy fails, the cut falls back to the floor vault.",
+        },
+        {
+          type: "h3",
+          text: "LP donate",
+        },
+        {
+          type: "p",
+          text: "Routes a % of the hook-tax pot as a Uniswap v4 donate into the pool (extra quote for in-range LPs). If the pool has no in-range liquidity yet, or donate fails, the cut falls back to the floor vault.",
+        },
+        {
+          type: "h3",
+          text: "Holder airdrop",
+        },
+        {
+          type: "p",
+          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every 15 minutes, once the window is open, a swap on the token can push the pot pro-rata to holders.",
+        },
+        {
+          type: "ul",
+          items: [
+            "Pro-rata uses each holder’s balance of the launched token.",
+            "System addresses (pool, hook, vaults) are excluded automatically.",
+            "The holder list must cover all circulating balances or the call reverts (keeps the airdrop fair).",
+            "Token page shows pending pot and countdown when the module is on.",
+            "No dedicated keeper bot — the Hookit swap path supplies the holder set from the indexer when the epoch is ready.",
+          ],
+        },
+        {
+          type: "h3",
+          text: "Buyback vesting (optional)",
+        },
+        {
+          type: "p",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault and vests over time instead of being immediately claimable. Used for longer-term creator alignment.",
         },
         {
           type: "h3",
@@ -472,7 +601,11 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Developers can paste Solidity hook code. hook it compiles it, finds a valid deploy address (Uniswap v4 requires specific address flags), and deploys from your wallet. Custom hooks are not reviewed by hook it. Read the code or treat the token as high risk.",
+          text: "Instead of MasterLaunchHook modules, developers can paste their own Uniswap v4 hook Solidity. hook it compiles it, mines a CREATE2 address with the required permission flags, and deploys from your wallet. Custom hooks are not reviewed by hook it — read the code or treat the token as high risk.",
+        },
+        {
+          type: "p",
+          text: "Explore lists which modules each token uses and live usage counts — popularity is not a safety signal.",
         },
       ],
     },
@@ -483,7 +616,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "If a Master launch enables Backed floor, a portion of each trade's fees (set at launch, e.g. 10%) is sent to a FloorVault — a separate contract that holds quote (ETH or stable) as collateral for that token only.",
+          text: "Backed floor is a MasterLaunchHook module. A percentage of each swap’s hook-tax pot (set at launch) is deposited into FloorVault for that token only.",
         },
         {
           type: "h3",
@@ -491,7 +624,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Floor price = vault balance ÷ token total supply. It tells you the minimum quote you would receive if you redeemed tokens at the floor. When new fees deposit into the vault, the floor can rise. It never falls — redemptions use math that protects remaining holders.",
+          text: "Floor price = vault quote balance ÷ token total supply. It is the redeem rate: how much quote you get per token if you redeem through the vault. New fee deposits can raise the floor. Redemptions use rounding that never lets the floor decrease for remaining holders.",
         },
         {
           type: "h3",
@@ -499,19 +632,28 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Token holders can redeem on the token page: you send tokens to the vault, they are burned, and you receive quote at the current floor price. You do not need to sell on the open market. Redeeming large amounts lowers the vault balance and can affect the floor for everyone left.",
+          text: "On the token page (when the module is on and the vault has reserves), holders send launch tokens to the vault. Tokens are burned; you receive quote at the current floor. This is separate from selling on the open market. Redeeming large amounts lowers vault reserves for everyone left.",
         },
         {
           type: "h3",
-          text: "Important limits",
+          text: "Floor vs market price",
         },
         {
           type: "ul",
           items: [
-            "The floor is only as strong as the fees flowing in. Low volume = slow or no floor growth.",
-            "Floor value is not the same as market price — market can trade above or below floor.",
-            "If the vault is empty, redemption returns nothing useful.",
-            "Classic launches do not use backed floor unless you graduate and use a custom setup — it is a Master module.",
+            "Market price can trade above or below the floor.",
+            "Low volume → slow floor growth.",
+            "Empty vault → redeem is useless until fees refill it.",
+            "Failed auto-burn / LP donate cuts can also land in the floor vault as fallback.",
+            "Classic launches do not include backed floor unless you use a custom setup after graduation.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Known limitation",
+          items: [
+            "Floor fills help when spot is already at/near the floor path the hook implements — it is not a guarantee that every market sell is caught at floor across all tick moves.",
+            "Always verify vault balance and token address before relying on floor as an exit.",
           ],
         },
       ],

@@ -22,25 +22,25 @@ import type { LaunchModules } from "@/lib/types";
 
 type Props = {
   modules: LaunchModules;
-  creatorTaxBps: number;
-  onChange: (next: { modules: LaunchModules; creatorTaxBps: number }) => void;
+  hookTaxBps: number;
+  onChange: (next: { modules: LaunchModules; hookTaxBps: number }) => void;
 };
 
-export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
+export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
   const [selected, setSelected] = useState<LiveBlockId | null>(
-    enabledLiveBlocks(modules, creatorTaxBps)[0] ?? null,
+    enabledLiveBlocks(modules, hookTaxBps)[0] ?? null,
   );
   const [soonNote, setSoonNote] = useState<{ label: string; description: string } | null>(null);
 
   const overhead = useMemo(
-    () => buyOverheadBps(modules, creatorTaxBps),
-    [modules, creatorTaxBps],
+    () => buyOverheadBps(modules, hookTaxBps),
+    [modules, hookTaxBps],
   );
   const gas = useMemo(
-    () => estimateBuyGas(modules, creatorTaxBps),
-    [modules, creatorTaxBps],
+    () => estimateBuyGas(modules, hookTaxBps),
+    [modules, hookTaxBps],
   );
-  const enabledIds = enabledLiveBlocks(modules, creatorTaxBps);
+  const enabledIds = enabledLiveBlocks(modules, hookTaxBps);
   const routed = feeRoutePct(modules);
   const routeOverflow = routed > 100;
   const openOverflow = overhead.atOpen > 10_000;
@@ -49,17 +49,17 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
 
   const commit = useCallback(
     (nextModules: LaunchModules, nextTax: number) => {
-      onChange({ modules: nextModules, creatorTaxBps: nextTax });
+      onChange({ modules: nextModules, hookTaxBps: nextTax });
     },
     [onChange],
   );
 
   const toggle = (id: LiveBlockId) => {
-    const enabled = isBlockEnabled(id, modules, creatorTaxBps);
-    const next = applyBlockToggle(id, !enabled, { modules, creatorTaxBps });
-    commit(next.modules, next.creatorTaxBps);
+    const enabled = isBlockEnabled(id, modules, hookTaxBps);
+    const next = applyBlockToggle(id, !enabled, { modules, hookTaxBps });
+    commit(next.modules, next.hookTaxBps);
     setSoonNote(null);
-    setSelected(!enabled ? id : enabledLiveBlocks(next.modules, next.creatorTaxBps)[0] ?? null);
+    setSelected(!enabled ? id : enabledLiveBlocks(next.modules, next.hookTaxBps)[0] ?? null);
   };
 
   return (
@@ -71,7 +71,7 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
           hint={
             modules.antiSnipe
               ? `Steady ${formatOverhead(overhead.steady)} after snipe decays`
-              : `Base ${formatBps(BASE_FEE_BPS)} + creator tax`
+              : `Base ${formatBps(BASE_FEE_BPS)} + hook tax`
           }
         />
         <Stat label="Est. buy gas" value={formatGas(gas)} hint="From hook snapshots, not a sim" />
@@ -89,7 +89,7 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
       {openOverflow ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
           Buy overhead at open is {formatOverhead(overhead.atOpen)}. Anti-snipe + 1% base +
-          creator tax cannot exceed 100%. Lower snipe tax or creator tax.
+          hook tax cannot exceed 100%. Lower snipe tax or hook tax.
         </p>
       ) : null}
 
@@ -97,14 +97,15 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
           Floor ({modules.backedFloor ? `${modules.floorAllocation}%` : "off"}) + Auto
           Burn ({modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + LP Donate (
-          {modules.lpDonate ? `${modules.lpDonatePct}%` : "off"}) = {routed}%. Lower a
+          {modules.lpDonate ? `${modules.lpDonatePct}%` : "off"}) + Airdrop (
+          {modules.holderAirdrop ? `${modules.holderAirdropPct}%` : "off"}) = {routed}%. Lower a
           slider before launch.
         </p>
       ) : null}
 
       <BuilderPalette
         modules={modules}
-        creatorTaxBps={creatorTaxBps}
+        hookTaxBps={hookTaxBps}
         selected={soonNote ? null : activeSelected}
         onToggle={toggle}
         onSelectSoon={(label, description) => {
@@ -116,7 +117,7 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
         <BuilderCircuit
           modules={modules}
-          creatorTaxBps={creatorTaxBps}
+          hookTaxBps={hookTaxBps}
           selected={soonNote ? null : activeSelected}
           onSelect={(id) => {
             setSoonNote(null);
@@ -127,13 +128,13 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
           selected={soonNote ? null : activeSelected}
           soonNote={soonNote}
           modules={modules}
-          creatorTaxBps={creatorTaxBps}
-          onModulesChange={(patch) => commit({ ...modules, ...patch }, creatorTaxBps)}
+          hookTaxBps={hookTaxBps}
+          onModulesChange={(patch) => commit({ ...modules, ...patch }, hookTaxBps)}
           onCreatorTaxChange={(bps) => commit(modules, bps)}
           onRemove={(id) => {
-            const next = applyBlockToggle(id, false, { modules, creatorTaxBps });
-            commit(next.modules, next.creatorTaxBps);
-            setSelected(enabledLiveBlocks(next.modules, next.creatorTaxBps)[0] ?? null);
+            const next = applyBlockToggle(id, false, { modules, hookTaxBps });
+            commit(next.modules, next.hookTaxBps);
+            setSelected(enabledLiveBlocks(next.modules, next.hookTaxBps)[0] ?? null);
           }}
         />
       </div>
@@ -161,7 +162,7 @@ export function HookBuilder({ modules, creatorTaxBps, onChange }: Props) {
             quote-fee pool (combined with floor, max 100%).
           </li>
           <li>
-            Buy overhead is quote-only: 1% base + creator tax + opening snipe tax. Token output
+            Buy overhead is quote-only: 1% base + hook tax + opening snipe tax. Token output
             is not taxed. Est. gas is a client figure from Foundry snapshots.
           </li>
           <li>

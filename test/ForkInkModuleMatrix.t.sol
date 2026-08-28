@@ -93,7 +93,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     function testFork_BuybackVesting_CreditsVault() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.buybackVesting = true;
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB"
         );

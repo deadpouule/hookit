@@ -30,12 +30,13 @@ import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
 import {FloorVault} from "./FloorVault.sol";
+import {HolderAirdropVault} from "./HolderAirdropVault.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "./BuybackVault.sol";
 
 /// @title MasterLaunchHook
 /// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV,
-///         backed floor, auto-burn (buyback + burn), and LP donate.
+///         backed floor, auto-burn (buyback + burn), LP donate, and holder quote airdrops.
 contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -54,6 +55,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     FeeEscrow public immutable escrow;
     ProtocolRevenueDistributor public immutable distributor;
     BuybackVault public immutable buybacks;
+    HolderAirdropVault public immutable airdropVault;
 
     mapping(PoolId => uint256) public override configs;
     mapping(PoolId => LaunchState) private _launchState;
@@ -72,7 +74,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 floorAmount,
         uint256 buybackAmount,
         uint256 autoBurnAmount,
-        uint256 lpDonateAmount
+        uint256 lpDonateAmount,
+        uint256 holderAirdropAmount
     );
     event FloorFill(PoolId indexed poolId, uint256 tokenIn, uint256 quoteOut);
     event AutoBurn(PoolId indexed poolId, uint256 quoteIn, uint256 tokenBurned);
@@ -98,12 +101,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         FeeEscrow _escrow,
         ProtocolRevenueDistributor _distributor,
         BuybackVault _buybacks,
+        HolderAirdropVault _airdropVault,
         address owner_
     ) BaseHook(_poolManager) Owned(owner_) {
         vault = _vault;
         escrow = _escrow;
         distributor = _distributor;
         buybacks = _buybacks;
+        airdropVault = _airdropVault;
     }
 
     receive() external payable {}
@@ -127,6 +132,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
     function buybackVault() external view returns (address) {
         return address(buybacks);
+    }
+
+    function holderAirdropVault() external view returns (address) {
+        return address(airdropVault);
     }
 
     function launchState(PoolId poolId) external view returns (LaunchState memory) {
@@ -178,6 +187,15 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         st.launchTimestamp = uint64(block.timestamp);
         st.initialized = true;
         vault.setQuote(st.token, st.quote);
+        if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
+            airdropVault.setExcluded(st.token, address(poolManager), true);
+            airdropVault.setExcluded(st.token, address(this), true);
+            airdropVault.setExcluded(st.token, address(vault), true);
+            airdropVault.setExcluded(st.token, address(airdropVault), true);
+            airdropVault.setExcluded(st.token, address(escrow), true);
+            airdropVault.setExcluded(st.token, address(buybacks), true);
+            airdropVault.setExcluded(st.token, address(0), true);
+        }
         return this.beforeInitialize.selector;
     }
 
@@ -238,10 +256,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             );
         }
 
-        uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(packed.creatorTaxBps()) + uint256(snipeBps);
+        uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(packed.hookTaxBps()) + uint256(snipeBps);
         if (totalFeeBps > ProtocolConstants.BPS_DENOMINATOR) {
             snipeBps = uint16(
-                ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.creatorTaxBps()
+                ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.hookTaxBps()
             );
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
@@ -384,41 +402,27 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 feeAmount,
         uint16 snipeBps
     ) private {
-        uint16 taxBps = packed.creatorTaxBps();
+        uint16 hookTaxBps_ = packed.hookTaxBps();
         uint256 totalBps =
-            uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(taxBps) + uint256(snipeBps);
+            uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
         if (totalBps == 0) return;
 
-        uint256 creatorTaxAmount = feeAmount * uint256(taxBps) / totalBps;
-        uint256 splitPool = feeAmount - creatorTaxAmount;
+        // Base (+ snipe) always computes 70/30. Hook tax is a separate pot for modules.
+        // Optional: creator can fold their 70% of base into that same hook pot.
+        uint256 hookTaxAmount = feeAmount * uint256(hookTaxBps_) / totalBps;
+        uint256 basePool = feeAmount - hookTaxAmount;
 
-        uint256 floorCut = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
-            ? FixedPointMath.applyBps(splitPool, packed.floorAllocationBps())
-            : 0;
-        uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
-            ? FixedPointMath.applyBps(splitPool, packed.autoBurnBps())
-            : 0;
-        uint256 lpDonateCut = packed.enabled(BitmaskConfig.LP_DONATE_ENABLED)
-            ? FixedPointMath.applyBps(splitPool, packed.lpDonateBps())
-            : 0;
-        uint256 routed = floorCut + autoBurnCut + lpDonateCut;
-        if (routed > splitPool) {
-            lpDonateCut = 0;
-            routed = floorCut + autoBurnCut;
-            if (routed > splitPool) {
-                autoBurnCut = 0;
-                routed = floorCut;
-            }
-        }
-        uint256 afterRoute = splitPool - routed;
-        uint256 creatorShare = FixedPointMath.applyBps(afterRoute, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = afterRoute - creatorShare;
+        uint256 creatorShare = FixedPointMath.applyBps(basePool, ProtocolConstants.CREATOR_SHARE_BPS);
+        uint256 protocolFromBase = basePool - creatorShare;
 
+        uint256 hookPot = hookTaxAmount;
+        uint256 creatorEscrowAmt = creatorShare;
         uint256 buybackAmt;
-        uint256 creatorEscrowAmt = creatorTaxAmount + creatorShare;
 
-        // HKIT (protocol native token): creator tax + 70% share → buyback pot (not FeeEscrow).
-        if (st.token == distributor.nativeToken() && distributor.nativeToken() != address(0)) {
+        if (packed.enabled(BitmaskConfig.CREATOR_SHARE_TO_HOOK_ENABLED)) {
+            hookPot += creatorShare;
+            creatorEscrowAmt = 0;
+        } else if (st.token == distributor.nativeToken() && distributor.nativeToken() != address(0)) {
             buybackAmt = creatorEscrowAmt;
             _pushQuote(st.quote, address(distributor), buybackAmt);
             if (buybackAmt > 0) distributor.notifyBuybackInternal(st.quote, buybackAmt);
@@ -433,17 +437,55 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);
         }
 
+        uint256 floorCut = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.floorAllocationBps())
+            : 0;
+        uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.autoBurnBps())
+            : 0;
+        uint256 lpDonateCut = packed.enabled(BitmaskConfig.LP_DONATE_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.lpDonateBps())
+            : 0;
+        uint256 airdropCut = packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.holderAirdropBps())
+            : 0;
+        uint256 routed = floorCut + autoBurnCut + lpDonateCut + airdropCut;
+        if (routed > hookPot) {
+            airdropCut = 0;
+            routed = floorCut + autoBurnCut + lpDonateCut;
+            if (routed > hookPot) {
+                lpDonateCut = 0;
+                routed = floorCut + autoBurnCut;
+                if (routed > hookPot) {
+                    autoBurnCut = 0;
+                    routed = floorCut;
+                }
+            }
+        }
+        // Unallocated hook pot → protocol.
+        uint256 protocolShare = protocolFromBase + (hookPot - routed);
+
         _pushQuote(st.quote, address(distributor), protocolShare);
         if (protocolShare > 0) distributor.notifyInternal(st.quote, protocolShare);
 
         _pushQuote(st.quote, address(vault), floorCut);
         if (floorCut > 0) vault.depositInternal(st.token, st.quote, floorCut);
 
+        _pushQuote(st.quote, address(airdropVault), airdropCut);
+        if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
+
         pendingAutoBurn[id] = autoBurnCut;
         pendingLpDonate[id] = lpDonateCut;
 
         emit FeesDistributed(
-            id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut
+            id,
+            creatorEscrowAmt + buybackAmt,
+            protocolShare,
+            floorCut,
+            buybackAmt,
+            autoBurnCut,
+            lpDonateCut,
+            airdropCut
         );
     }
 

@@ -67,10 +67,10 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   {
     slug: "hooks",
     href: "#hooks",
-    title: "Modular hooks",
-    description: "MasterLaunchHook modules and unverified custom hooks.",
+    title: "Master hook modules",
+    description: "MasterLaunchHook modules: anti-snipe, floor, auto-burn, airdrop, and custom hooks.",
     group: "Protocol",
-    keywords: "anti-snipe anti-mev max wallet custom hook bitmask",
+    keywords: "master launch hook anti-snipe anti-mev floor auto-burn holder airdrop bitmask",
   },
   {
     slug: "network",
@@ -208,7 +208,7 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
   hooks: [
     {
       type: "p",
-      text: "MasterLaunchHook packs modules into a uint256 bitmask (anti-snipe, backed floor, anti-MEV, max tx/wallet, auto-burn, LP donate, creator tax). Custom hooks must satisfy Uniswap v4 flag bits mined into the CREATE2 address.",
+      text: "MasterLaunchHook packs modules into a uint256 bitmask (anti-snipe, backed floor, anti-MEV, max tx/wallet, auto-burn, LP donate, hook tax). Custom hooks must satisfy Uniswap v4 flag bits mined into the CREATE2 address.",
     },
   ],
   network: [

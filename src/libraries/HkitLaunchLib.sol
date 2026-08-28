@@ -20,10 +20,11 @@ library HkitLaunchLib {
         m.antiSnipe = true;
         m.antiMev = true;
         m.lpDonate = true;
-        m.creatorTaxBps = 0;
+        // 1% hook tax → 100% to LP donate (modules never touch the base 1% 70/30 split).
+        m.hookTaxBps = 100;
         m.antiSnipeDurationSeconds = ProtocolConstants.HKIT_ANTI_SNIPE_DURATION_SECONDS;
         m.initialSnipeTaxBps = ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;
-        m.lpDonateBps = ProtocolConstants.HKIT_LP_DONATE_BPS;
+        m.lpDonateBps = ProtocolConstants.BPS_DENOMINATOR;
     }
 
     /// @notice Launch HKIT, register as native token, configure buyback executor.

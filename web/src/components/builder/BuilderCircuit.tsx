@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
   selected: LiveBlockId | null;
   onSelect: (id: LiveBlockId) => void;
 };
 
-export function BuilderCircuit({ modules, creatorTaxBps, selected, onSelect }: Props) {
-  const active = enabledLiveBlocks(modules, creatorTaxBps);
+export function BuilderCircuit({ modules, hookTaxBps, selected, onSelect }: Props) {
+  const active = enabledLiveBlocks(modules, hookTaxBps);
 
   return (
     <div className="gel-surface overflow-hidden p-4 sm:p-5">

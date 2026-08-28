@@ -15,10 +15,12 @@ export type LiveBlockId =
   | "antiMev"
   | "maxTx"
   | "antiSnipe"
-  | "creatorTax"
+  | "hookTax"
   | "backedFloor"
   | "autoBurn"
   | "lpDonate"
+  | "holderAirdrop"
+  | "creatorShareToHook"
   | "maxWallet";
 
 export type SoonBlockId = "surgeFees" | "nthBuy" | "royalty";
@@ -27,7 +29,7 @@ export type BuilderBlockId = LiveBlockId | SoonBlockId;
 
 export type BuilderDraft = {
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
 };
 
 export const EMPTY_BUILDER_MODULES: LaunchModules = {
@@ -45,11 +47,14 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   autoBurnPct: 20,
   lpDonate: false,
   lpDonatePct: 20,
+  holderAirdrop: false,
+  holderAirdropPct: 50,
+  creatorShareToHook: false,
 };
 
 export const EMPTY_BUILDER_DRAFT: BuilderDraft = {
   modules: EMPTY_BUILDER_MODULES,
-  creatorTaxBps: 0,
+  hookTaxBps: 0,
 };
 
 /** Fixed hook execution order. UI stacking is cosmetic; MasterLaunchHook always runs this sequence. */
@@ -57,10 +62,12 @@ export const EXECUTION_ORDER: LiveBlockId[] = [
   "antiMev",
   "maxTx",
   "antiSnipe",
-  "creatorTax",
+  "hookTax",
   "backedFloor",
   "autoBurn",
   "lpDonate",
+  "holderAirdrop",
+  "creatorShareToHook",
   "maxWallet",
 ];
 
@@ -119,6 +126,24 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     accent: HOOK_MODULE_ACCENTS.lpDonate,
   },
   {
+    id: "holderAirdrop",
+    live: true,
+    label: "Holder Airdrop",
+    short: "15m quote push",
+    description:
+      "A cut of the hook pot accrues; once the 15m window is open, a swap on the token pushes pro-rata quote to holders.",
+    accent: HOOK_MODULE_ACCENTS.holderAirdrop,
+  },
+  {
+    id: "creatorShareToHook",
+    live: true,
+    label: "Creator → Hook",
+    short: "70% into modules",
+    description:
+      "Send the creator’s 70% of the base 1% fee into the hook pot (floor / burn / donate / airdrop) instead of escrow.",
+    accent: HOOK_MODULE_ACCENTS.hookTax,
+  },
+  {
     id: "antiMev",
     live: true,
     label: "Anti-MEV",
@@ -143,12 +168,12 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     accent: HOOK_MODULE_ACCENTS.maxTx,
   },
   {
-    id: "creatorTax",
+    id: "hookTax",
     live: true,
-    label: "Creator Tax",
+    label: "Hook Tax",
     short: "extra quote cut",
-    description: "Extra quote-only fee, 100% to the launching wallet via escrow.",
-    accent: HOOK_MODULE_ACCENTS.creatorTax,
+    description: "Extra quote fee for Master modules (floor, burn, donate, airdrop) — not paid to the creator.",
+    accent: HOOK_MODULE_ACCENTS.hookTax,
   },
 ];
 
@@ -190,11 +215,11 @@ export const ALL_LIVE_BY_ID = Object.fromEntries(LIVE_BLOCKS.map((b) => [b.id, b
 export function isBlockEnabled(
   id: LiveBlockId,
   modules: LaunchModules,
-  creatorTaxBps: number,
+  hookTaxBps: number,
 ): boolean {
   switch (id) {
-    case "creatorTax":
-      return creatorTaxBps > 0;
+    case "hookTax":
+      return hookTaxBps > 0;
     case "antiMev":
       return modules.antiMev;
     case "maxTx":
@@ -207,32 +232,37 @@ export function isBlockEnabled(
       return modules.autoBurn;
     case "lpDonate":
       return modules.lpDonate;
+    case "holderAirdrop":
+      return modules.holderAirdrop;
+    case "creatorShareToHook":
+      return modules.creatorShareToHook;
     case "maxWallet":
       return modules.maxWallet;
   }
 }
 
-/** Share of the quote-fee pool routed to floor + auto-burn + LP donate (max 100). */
+/** Share of the quote-fee pool routed to floor + auto-burn + LP donate + holder airdrop (max 100). */
 export function feeRoutePct(modules: LaunchModules): number {
   let routed = 0;
   if (modules.backedFloor) routed += modules.floorAllocation;
   if (modules.autoBurn) routed += modules.autoBurnPct;
   if (modules.lpDonate) routed += modules.lpDonatePct;
+  if (modules.holderAirdrop) routed += modules.holderAirdropPct;
   return routed;
 }
 
 export function enabledLiveBlocks(
   modules: LaunchModules,
-  creatorTaxBps: number,
+  hookTaxBps: number,
 ): LiveBlockId[] {
-  return EXECUTION_ORDER.filter((id) => isBlockEnabled(id, modules, creatorTaxBps));
+  return EXECUTION_ORDER.filter((id) => isBlockEnabled(id, modules, hookTaxBps));
 }
 
-export function buyOverheadBps(modules: LaunchModules, creatorTaxBps: number): {
+export function buyOverheadBps(modules: LaunchModules, hookTaxBps: number): {
   atOpen: number;
   steady: number;
 } {
-  const steady = BASE_FEE_BPS + creatorTaxBps;
+  const steady = BASE_FEE_BPS + hookTaxBps;
   const snipe = modules.antiSnipe ? modules.antiSnipeInitialTax * 100 : 0;
   return { atOpen: steady + snipe, steady };
 }
@@ -243,8 +273,8 @@ export function formatOverhead(bps: number): string {
 }
 
 /** Rough client-side gas from MasterLaunchHook snapshots, not a simulation. */
-export function estimateBuyGas(modules: LaunchModules, creatorTaxBps: number): number {
-  const n = enabledLiveBlocks(modules, creatorTaxBps).length;
+export function estimateBuyGas(modules: LaunchModules, hookTaxBps: number): number {
+  const n = enabledLiveBlocks(modules, hookTaxBps).length;
   return 1_850_000 + n * 40_000;
 }
 
@@ -262,10 +292,10 @@ export function loadBuilderDraft(): BuilderDraft | null {
     const raw = sessionStorage.getItem(BUILDER_DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<BuilderDraft>;
-    if (!parsed.modules || typeof parsed.creatorTaxBps !== "number") return null;
+    if (!parsed.modules || typeof parsed.hookTaxBps !== "number") return null;
     return {
       modules: { ...EMPTY_BUILDER_MODULES, ...parsed.modules },
-      creatorTaxBps: parsed.creatorTaxBps,
+      hookTaxBps: parsed.hookTaxBps,
     };
   } catch {
     return null;
@@ -277,8 +307,23 @@ export function applyBlockToggle(
   enabled: boolean,
   draft: BuilderDraft,
 ): BuilderDraft {
-  if (id === "creatorTax") {
-    return { ...draft, creatorTaxBps: enabled ? Math.max(draft.creatorTaxBps, 50) : 0 };
+  if (id === "hookTax") {
+    return { ...draft, hookTaxBps: enabled ? Math.max(draft.hookTaxBps, 50) : 0 };
   }
-  return { ...draft, modules: { ...draft.modules, [id]: enabled } };
+  if (id === "creatorShareToHook") {
+    return {
+      ...draft,
+      modules: {
+        ...draft.modules,
+        creatorShareToHook: enabled,
+        buybackVesting: enabled ? false : draft.modules.buybackVesting,
+      },
+    };
+  }
+  const nextModules = { ...draft.modules, [id]: enabled };
+  let { hookTaxBps } = draft;
+  const feeSink =
+    id === "backedFloor" || id === "autoBurn" || id === "lpDonate" || id === "holderAirdrop";
+  if (enabled && feeSink && hookTaxBps === 0 && !nextModules.creatorShareToHook) hookTaxBps = 50;
+  return { ...draft, modules: nextModules, hookTaxBps };
 }

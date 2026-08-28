@@ -20,7 +20,7 @@ export function BuilderPage() {
     saveBuilderDraft(draft);
   };
   const routeOverflow = feeRoutePct(draft.modules) > 100;
-  const openOverflow = buyOverheadBps(draft.modules, draft.creatorTaxBps).atOpen > 10_000;
+  const openOverflow = buyOverheadBps(draft.modules, draft.hookTaxBps).atOpen > 10_000;
   const launchBlocked = routeOverflow || openOverflow;
 
   return (
@@ -56,7 +56,7 @@ export function BuilderPage() {
         <div className="mt-10">
           <HookBuilder
             modules={draft.modules}
-            creatorTaxBps={draft.creatorTaxBps}
+            hookTaxBps={draft.hookTaxBps}
             onChange={onChange}
           />
         </div>

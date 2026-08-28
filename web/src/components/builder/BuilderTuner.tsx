@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { AccentSlider } from "@/components/launch/AccentSlider";
-import { MAX_CREATOR_TAX_BPS } from "@/lib/constants";
+import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import { ALL_LIVE_BY_ID, type LiveBlockId } from "@/lib/hook-builder";
 import type { LaunchModules } from "@/lib/types";
@@ -13,7 +13,7 @@ type Props = {
   selected: LiveBlockId | null;
   soonNote: { label: string; description: string } | null;
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
   onModulesChange: (patch: Partial<LaunchModules>) => void;
   onCreatorTaxChange: (bps: number) => void;
   onRemove: (id: LiveBlockId) => void;
@@ -23,7 +23,7 @@ export function BuilderTuner({
   selected,
   soonNote,
   modules,
-  creatorTaxBps,
+  hookTaxBps,
   onModulesChange,
   onCreatorTaxChange,
   onRemove,
@@ -168,6 +168,26 @@ export function BuilderTuner({
           </div>
         ) : null}
 
+        {selected === "holderAirdrop" ? (
+          <div>
+            <SliderRow
+              label="Fee to holder airdrop"
+              valueLabel={`${modules.holderAirdropPct}%`}
+              color={def.accent.color}
+              value={modules.holderAirdropPct}
+              min={1}
+              max={50}
+              step={1}
+              onChange={(v) => onModulesChange({ holderAirdropPct: v })}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Quote fees accrue in a vault. Every 15 minutes anyone can push a pro-rata
+              airdrop to holders (in ETH / USDG / wStock). Floor + burn + LP + airdrop
+              cannot exceed 100%.
+            </p>
+          </div>
+        ) : null}
+
         {selected === "maxWallet" ? (
           <SliderRow
             label="Cap"
@@ -194,17 +214,24 @@ export function BuilderTuner({
           />
         ) : null}
 
-        {selected === "creatorTax" ? (
+        {selected === "hookTax" ? (
           <SliderRow
-            label="Creator tax"
-            valueLabel={formatBps(creatorTaxBps)}
+            label="Hook tax"
+            valueLabel={formatBps(hookTaxBps)}
             color={def.accent.color}
-            value={creatorTaxBps}
+            value={hookTaxBps}
             min={10}
-            max={MAX_CREATOR_TAX_BPS}
+            max={MAX_HOOK_TAX_BPS}
             step={10}
             onChange={onCreatorTaxChange}
           />
+        ) : null}
+
+        {selected === "creatorShareToHook" ? (
+          <p className="text-xs leading-relaxed text-zinc-600">
+            Your 70% of the base 1% joins the hook pot with hook tax (same module split). Protocol keeps
+            its 30%. Disable to claim creator fees from escrow instead.
+          </p>
         ) : null}
 
         {selected === "antiMev" ? (

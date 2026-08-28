@@ -49,7 +49,7 @@ contract BondingLaunchFactory is Owned {
         string metadataURI;
         uint256 totalSupply; // 0 → BondingConstants.TOTAL_SUPPLY
         Currency quote; // address(0) = ETH; else must be an allowed quote (USDG / wStock)
-        uint16 creatorTaxBps; // on top of BASE_FEE; base+tax ≤ 10%
+        uint16 creatorTaxBps; // deprecated — must be 0 (Classic is base 1% only)
     }
 
     struct Launch {
@@ -274,7 +274,7 @@ contract BondingLaunchFactory is Owned {
         if (paid == 0) revert ZeroAmount();
 
         uint256 available = l.curveSupply - l.tokensSold;
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(l.creatorTaxBps);
+        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS);
         uint256 quoteForCurve = paid - FixedPointMath.applyBps(paid, totalBps);
 
         (tokensOut,,) = BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteForCurve);
@@ -295,16 +295,16 @@ contract BondingLaunchFactory is Owned {
             refundGross = paid - grossNeeded;
             paid = grossNeeded;
             quoteForCurve = quoteNeeded;
-            (feeQuote,) = _splitFee(paid, l.creatorTaxBps);
+            (feeQuote,) = _splitFee(paid);
         } else {
-            (feeQuote, quoteForCurve) = _splitFee(paid, l.creatorTaxBps);
+            (feeQuote, quoteForCurve) = _splitFee(paid);
             (, l.virtualQuote, l.virtualToken) =
                 BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteForCurve);
         }
 
         if (tokensOut < minTokensOut) revert InsufficientOutput();
 
-        _payFees(l.creator, l.quote, l.creatorTaxBps, feeQuote);
+        _payFees(l.creator, l.quote, feeQuote);
 
         l.tokensSold += tokensOut;
         l.realQuote += quoteForCurve;
@@ -335,9 +335,9 @@ contract BondingLaunchFactory is Owned {
         l.realQuote -= quoteOut;
 
         uint256 netOut;
-        (feeQuote, netOut) = _splitFee(quoteOut, l.creatorTaxBps);
+        (feeQuote, netOut) = _splitFee(quoteOut);
         if (netOut < minQuoteOut) revert InsufficientOutput();
-        _payFees(l.creator, l.quote, l.creatorTaxBps, feeQuote);
+        _payFees(l.creator, l.quote, feeQuote);
         _pushQuote(l.quote, msg.sender, netOut);
 
         emit Sold(launchId, msg.sender, tokensIn, netOut, feeQuote);
@@ -375,7 +375,7 @@ contract BondingLaunchFactory is Owned {
         bool tokenIs0 = uint160(token) < uint160(quote);
         PoolKey memory key = poolKeyOf(launchId);
 
-        feeHook.registerLaunch(key, token, quote, l.creator, l.creatorTaxBps, tokenIs0);
+        feeHook.registerLaunch(key, token, quote, l.creator, tokenIs0);
 
         uint256 amount0 = tokenIs0 ? tokenLp : quoteLp;
         uint256 amount1 = tokenIs0 ? quoteLp : tokenLp;
@@ -403,10 +403,8 @@ contract BondingLaunchFactory is Owned {
     }
 
     function _validateFees(uint16 creatorTaxBps) private pure {
-        if (creatorTaxBps > ProtocolConstants.MAX_CREATOR_TAX_BPS) revert CreatorTaxTooHigh();
-        if (uint256(ProtocolConstants.BASE_FEE_BPS) + creatorTaxBps > ProtocolConstants.MAX_TOTAL_FEE_BPS) {
-            revert TotalFeeTooHigh();
-        }
+        // Classic rail: base 1% only. Extra creator tax removed (use Master hook tax instead).
+        if (creatorTaxBps != 0) revert CreatorTaxTooHigh();
     }
 
     function _assertQuoteAllowed(Currency quote) private view {
@@ -436,33 +434,24 @@ contract BondingLaunchFactory is Owned {
         }
     }
 
-    function _splitFee(uint256 amount, uint16 creatorTaxBps)
-        private
-        pure
-        returns (uint256 feeQuote, uint256 netAmount)
-    {
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(creatorTaxBps);
-        feeQuote = FixedPointMath.applyBps(amount, totalBps);
+    function _splitFee(uint256 amount) private pure returns (uint256 feeQuote, uint256 netAmount) {
+        feeQuote = FixedPointMath.applyBps(amount, ProtocolConstants.BASE_FEE_BPS);
         netAmount = amount - feeQuote;
     }
 
-    function _payFees(address creator, address quote, uint16 creatorTaxBps, uint256 feeQuote) private {
+    function _payFees(address creator, address quote, uint256 feeQuote) private {
         if (feeQuote == 0) return;
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(creatorTaxBps);
-        uint256 creatorTaxAmount = totalBps == 0 ? 0 : feeQuote * uint256(creatorTaxBps) / totalBps;
-        uint256 splitPool = feeQuote - creatorTaxAmount;
-        uint256 creatorShare = FixedPointMath.applyBps(splitPool, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolAmt = splitPool - creatorShare;
-        uint256 creatorAmt = creatorTaxAmount + creatorShare;
+        uint256 creatorShare = FixedPointMath.applyBps(feeQuote, ProtocolConstants.CREATOR_SHARE_BPS);
+        uint256 protocolAmt = feeQuote - creatorShare;
         Currency c = Currency.wrap(quote);
 
         if (quote == address(0)) {
-            if (creatorAmt > 0) escrow.credit{value: creatorAmt}(creator, c, creatorAmt);
+            if (creatorShare > 0) escrow.credit{value: creatorShare}(creator, c, creatorShare);
             if (protocolAmt > 0) distributor.notify{value: protocolAmt}(c, protocolAmt);
         } else {
-            if (creatorAmt > 0) {
-                if (!IERC20Minimal(quote).transfer(address(escrow), creatorAmt)) revert TransferFailed();
-                escrow.creditInternal(creator, c, creatorAmt);
+            if (creatorShare > 0) {
+                if (!IERC20Minimal(quote).transfer(address(escrow), creatorShare)) revert TransferFailed();
+                escrow.creditInternal(creator, c, creatorShare);
             }
             if (protocolAmt > 0) {
                 if (!IERC20Minimal(quote).transfer(address(distributor), protocolAmt)) revert TransferFailed();

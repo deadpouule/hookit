@@ -4,8 +4,10 @@ import {
   EyeOff,
   Flame,
   Gauge,
+  Gift,
   Hourglass,
   Layers,
+  Percent,
   Shield,
   TrendingUp,
   Wallet,
@@ -22,7 +24,9 @@ export type MasterHookId =
   | "dynamic-fees"
   | "buyback-vesting"
   | "auto-burn"
-  | "lp-donate";
+  | "lp-donate"
+  | "holder-airdrop"
+  | "creator-share-to-hook";
 
 export type HookTheme = "fire" | "gold" | "void" | "nature" | "volt" | "ice" | "ember" | "rose" | "steel";
 
@@ -198,6 +202,46 @@ export const MASTER_HOOKS: MasterHook[] = [
     summary: "1 active hook block • 0.25% LP share",
     settings: ["+ 0.25% OF BUYS", "+ DONATED TO IN-RANGE LPS", "+ RANGE CHECK ENFORCED"],
   },
+  {
+    id: "holder-airdrop",
+    number: 10,
+    title: "Holder airdrop",
+    description: "quote fees accrue; a swap pushes pro-rata to holders every 15 minutes",
+    category: "rewards",
+    icon: Gift,
+    theme: "gold",
+    keyword: "AIRDROP",
+    creator: CREATOR,
+    uses: 0,
+    royalty: "0% of hook fees",
+    savedAt: "Block —",
+    summary: "quote fee share • 15m epoch airdrop",
+    settings: [
+      "+ ROUTE QUOTE FEES TO VAULT",
+      "+ AIRDROP ON SWAP AFTER 15M",
+      "+ PRO-RATA BY TOKEN BALANCE",
+    ],
+  },
+  {
+    id: "creator-share-to-hook",
+    number: 11,
+    title: "Creator → hook",
+    description: "send your 70% of the base 1% into the hook pot instead of claiming escrow",
+    category: "rewards",
+    icon: Percent,
+    theme: "rose",
+    keyword: "CREATOR",
+    creator: CREATOR,
+    uses: 0,
+    royalty: "0% of hook fees",
+    savedAt: "Block —",
+    summary: "creator base share → hook modules",
+    settings: [
+      "+ BASE FEE STILL 1%",
+      "+ YOUR 70% JOINS HOOK POT",
+      "+ SAME MODULE SPLIT AS HOOK TAX",
+    ],
+  },
 ];
 
 export function shortAddress(address: string) {
@@ -215,6 +259,8 @@ export function countHookUsage(
       maxWallet?: boolean;
       autoBurn?: boolean;
       lpDonate?: boolean;
+      holderAirdrop?: boolean;
+      creatorShareToHook?: boolean;
       customHook?: boolean;
     };
     hookType?: string;
@@ -230,6 +276,8 @@ export function countHookUsage(
     "buyback-vesting": 0,
     "auto-burn": 0,
     "lp-donate": 0,
+    "holder-airdrop": 0,
+    "creator-share-to-hook": 0,
   };
   for (const pool of pools) {
     if (pool.hookType === "Classic" || pool.hooks.customHook) continue;
@@ -240,6 +288,8 @@ export function countHookUsage(
     if (pool.hooks.maxWallet) counts["max-wallet"] += 1;
     if (pool.hooks.autoBurn) counts["auto-burn"] += 1;
     if (pool.hooks.lpDonate) counts["lp-donate"] += 1;
+    if (pool.hooks.holderAirdrop) counts["holder-airdrop"] += 1;
+    if (pool.hooks.creatorShareToHook) counts["creator-share-to-hook"] += 1;
   }
   return counts;
 }
@@ -257,6 +307,8 @@ export const HOOK_MODULE_FIELD: Record<
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
   "lp-donate": "lpDonate",
+  "holder-airdrop": "holderAirdrop",
+  "creator-share-to-hook": "creatorShareToHook",
 };
 
 export function isMasterHookId(value: string | null): value is MasterHookId {

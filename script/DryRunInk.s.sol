@@ -22,6 +22,7 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
+import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
@@ -47,6 +48,7 @@ contract DryRunInkScript is Script {
         FeeEscrow escrow;
         ProtocolRevenueDistributor distributor;
         BuybackVault buybacks;
+        HolderAirdropVault airdrops;
         MasterLaunchHook hook;
         LaunchFactory factory;
         GraduatedFeeHook graduated;
@@ -95,11 +97,12 @@ contract DryRunInkScript is Script {
         d.escrow = new FeeEscrow(deployer, manager);
         d.distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
         d.buybacks = new BuybackVault(deployer, manager);
+        d.airdrops = new HolderAirdropVault(deployer, manager);
 
-        bytes memory ctorArgs = abi.encode(manager, d.vault, d.escrow, d.distributor, d.buybacks, deployer);
+        bytes memory ctorArgs = abi.encode(manager, d.vault, d.escrow, d.distributor, d.buybacks, d.airdrops, deployer);
         (address predicted, bytes32 salt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, EXPECTED_HOOK_FLAGS, type(MasterLaunchHook).creationCode, ctorArgs);
-        d.hook = new MasterLaunchHook{salt: salt}(manager, d.vault, d.escrow, d.distributor, d.buybacks, deployer);
+        d.hook = new MasterLaunchHook{salt: salt}(manager, d.vault, d.escrow, d.distributor, d.buybacks, d.airdrops, deployer);
         require(address(d.hook) == predicted, "hook address mismatch");
 
         d.factory = new LaunchFactory(manager, d.hook, deployer, ops);
@@ -133,6 +136,7 @@ contract DryRunInkScript is Script {
         d.distributor.setOperator(address(d.bonding), true);
         d.distributor.setOperator(address(d.graduated), true);
         d.buybacks.setOperator(address(d.hook), true);
+        d.airdrops.setOperator(address(d.hook), true);
         d.distributor.setFeeRail(d.feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, d.feeRail);
 

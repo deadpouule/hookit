@@ -42,7 +42,6 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         address token;
         address quote; // address(0) = ETH
         address creator;
-        uint16 creatorTaxBps;
         bool tokenIsCurrency0;
         bool registered;
     }
@@ -70,8 +69,6 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     error NotRegistered();
     error ZeroAmount();
     error ImpactTooHigh();
-    error CreatorTaxTooHigh();
-    error TotalFeeTooHigh();
 
     modifier onlyFactory() {
         if (msg.sender != factory) revert OnlyFactory();
@@ -130,21 +127,15 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         address token,
         address quote,
         address creator,
-        uint16 creatorTaxBps,
         bool tokenIsCurrency0
     ) external onlyFactory {
         PoolId id = key.toId();
         if (launches[id].registered) revert AlreadyRegistered();
-        if (creatorTaxBps > ProtocolConstants.MAX_CREATOR_TAX_BPS) revert CreatorTaxTooHigh();
-        if (uint256(ProtocolConstants.BASE_FEE_BPS) + creatorTaxBps > ProtocolConstants.MAX_TOTAL_FEE_BPS) {
-            revert TotalFeeTooHigh();
-        }
 
         launches[id] = LaunchConfig({
             token: token,
             quote: quote,
             creator: creator,
-            creatorTaxBps: creatorTaxBps,
             tokenIsCurrency0: tokenIsCurrency0,
             registered: true
         });
@@ -165,8 +156,7 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         LaunchConfig storage cfg = launches[id];
         if (!cfg.registered) revert NotRegistered();
 
-        uint16 taxBps = cfg.creatorTaxBps;
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(taxBps);
+        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS);
         if (totalBps == 0) return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 
         bool tokenIs0 = cfg.tokenIsCurrency0;
@@ -186,16 +176,13 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         Currency quoteCur = Currency.wrap(cfg.quote);
         quoteCur.take(poolManager, address(this), feeAmount, true);
 
-        uint256 creatorTaxAmount = feeAmount * uint256(taxBps) / totalBps;
-        uint256 splitPool = feeAmount - creatorTaxAmount;
-        uint256 creatorShare = FixedPointMath.applyBps(splitPool, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = splitPool - creatorShare;
-        uint256 creatorTotal = creatorTaxAmount + creatorShare;
+        uint256 creatorShare = FixedPointMath.applyBps(feeAmount, ProtocolConstants.CREATOR_SHARE_BPS);
+        uint256 protocolShare = feeAmount - creatorShare;
 
-        pendingCreatorTax[id][quoteCur] += creatorTotal;
+        pendingCreatorTax[id][quoteCur] += creatorShare;
         pendingFees[id][quoteCur] += protocolShare;
 
-        emit FeesAccrued(id, quoteCur, creatorTotal, protocolShare);
+        emit FeesAccrued(id, quoteCur, creatorShare, protocolShare);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
@@ -238,16 +225,12 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         uint256 quoteGained = quoteAfter - quoteBefore;
         if (quoteGained == 0) revert ZeroAmount();
 
-        // Re-split converted proceeds with the same policy.
-        uint16 taxBps = cfg.creatorTaxBps;
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(taxBps);
-        uint256 creatorTaxAmount = totalBps == 0 ? 0 : quoteGained * uint256(taxBps) / totalBps;
-        uint256 splitPool = quoteGained - creatorTaxAmount;
-        uint256 creatorShare = FixedPointMath.applyBps(splitPool, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = splitPool - creatorShare;
+        // Converted proceeds are already fee amounts — split 70/30 like base fee.
+        uint256 creatorShare = FixedPointMath.applyBps(quoteGained, ProtocolConstants.CREATOR_SHARE_BPS);
+        uint256 protocolShare = quoteGained - creatorShare;
 
         Currency quote = Currency.wrap(cfg.quote);
-        pendingCreatorTax[id][quote] += creatorTaxAmount + creatorShare;
+        pendingCreatorTax[id][quote] += creatorShare;
         pendingFees[id][quote] += protocolShare;
         _sweepCurrency(id, cfg, quote);
     }

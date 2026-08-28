@@ -20,6 +20,7 @@ import {FloorVault} from "../../src/FloorVault.sol";
 import {FeeEscrow} from "../../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../../src/BuybackVault.sol";
+import {HolderAirdropVault} from "../../src/HolderAirdropVault.sol";
 import {BitmaskConfig} from "../../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
 
@@ -28,6 +29,7 @@ abstract contract LaunchpadTestBase is Test, Deployers {
     FeeEscrow internal escrow;
     ProtocolRevenueDistributor internal distributor;
     BuybackVault internal buybacks;
+    HolderAirdropVault internal airdrops;
     MasterLaunchHook internal hook;
     LaunchFactory internal factory;
     address internal ops = address(0xB0B);
@@ -50,9 +52,10 @@ abstract contract LaunchpadTestBase is Test, Deployers {
         escrow = new FeeEscrow(address(this), manager);
         distributor = new ProtocolRevenueDistributor(address(this), ops, manager);
         buybacks = new BuybackVault(address(this), manager);
+        airdrops = new HolderAirdropVault(address(this), manager);
 
         address flags = hookFlags();
-        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, address(this));
+        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, address(this));
         deployCodeTo("MasterLaunchHook.sol:MasterLaunchHook", args, flags);
         hook = MasterLaunchHook(payable(flags));
 
@@ -68,6 +71,8 @@ abstract contract LaunchpadTestBase is Test, Deployers {
         distributor.setOperator(address(this), true);
         buybacks.setOperator(address(hook), true);
         buybacks.setOperator(address(this), true);
+        airdrops.setOperator(address(hook), true);
+        airdrops.setOperator(address(this), true);
     }
 
     function defaultModules() internal pure returns (BitmaskConfig.Modules memory) {
@@ -81,14 +86,17 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             buybackVesting: false,
             autoBurn: false,
             lpDonate: false,
-            creatorTaxBps: 0,
+            holderAirdrop: false,
+            creatorShareToHook: false,
+            hookTaxBps: 0,
             antiSnipeDurationSeconds: 0,
             maxTxBps: 0,
             maxWalletBps: 0,
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
-            lpDonateBps: 0
+            lpDonateBps: 0,
+            holderAirdropBps: 0
         });
     }
 

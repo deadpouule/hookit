@@ -56,6 +56,19 @@ function Glyph({ id }: { id: HookId }) {
           />
         </svg>
       );
+    case "holderAirdrop":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path
+            d="M12 4v3M8 7h8l1.5 3H6.5L8 7Z"
+            stroke={stroke}
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
+          <rect x="6" y="10" width="12" height="10" rx="1.5" stroke={stroke} strokeWidth="1.7" />
+          <path d="M12 10v10M6 14h12" stroke={stroke} strokeWidth="1.7" />
+        </svg>
+      );
     case "custom":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">

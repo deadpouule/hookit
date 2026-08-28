@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   modules: LaunchModules;
-  creatorTaxBps: number;
+  hookTaxBps: number;
   selected: LiveBlockId | null;
   onToggle: (id: LiveBlockId) => void;
   onSelectSoon: (label: string, description: string) => void;
@@ -14,7 +14,7 @@ type Props = {
 
 export function BuilderPalette({
   modules,
-  creatorTaxBps,
+  hookTaxBps,
   selected,
   onToggle,
   onSelectSoon,
@@ -24,7 +24,7 @@ export function BuilderPalette({
       <p className="text-xs text-zinc-500">Hook rules · click to add</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {LIVE_BLOCKS.map((block) => {
-          const enabled = isBlockEnabled(block.id as LiveBlockId, modules, creatorTaxBps);
+          const enabled = isBlockEnabled(block.id as LiveBlockId, modules, hookTaxBps);
           const Icon = block.accent.icon;
           const isSelected = selected === block.id;
           return (

@@ -131,7 +131,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_CreatorClaimsFees_EthQuote() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Fees", "FEE"
         );
@@ -171,9 +171,9 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
     }
 
-    function testFork_CreatorTaxOnlyInEscrow_NotProtocol() public onlyFork {
+    function testFork_HookTaxGoesToProtocol_NotCreator() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = 500; // 5%
+        m.hookTaxBps = 500; // 5% — no modules → unallocated hook tax to protocol
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tax", "TAX"
         );
@@ -185,12 +185,14 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
         uint256 escrowDelta = escrow.balanceOf(creator, quote) - escrowBefore;
         uint256 protoDelta = distributor.pending(quote) - protoBefore;
-        assertGt(escrowDelta, protoDelta);
+        // Creator only gets 70% of the 1% base; hook tax tips protocol above creator.
+        assertGt(escrowDelta, 0);
+        assertGt(protoDelta, escrowDelta);
     }
 
     function testFork_UsdgQuote_FeesAccrueInUsdg() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = 50;
+        m.hookTaxBps = 50;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, usdg, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "UFee", "UFE"
         );
@@ -209,8 +211,9 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_FloorAllocation_DepositsToTokenVault() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
+        m.hookTaxBps = 200; // 2% hook tax pot
         m.backedFloor = true;
-        m.floorAllocationBps = 2_000; // 20% of fee pool
+        m.floorAllocationBps = 2_000; // 20% of hook tax pot
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Floor", "FLR"
         );
@@ -246,6 +249,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_AutoBurn_ReducesSupply() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
+        m.hookTaxBps = 300;
         m.autoBurn = true;
         m.autoBurnBps = 3_000;
         InkForkTestBase.LaunchResult memory l = _launch(
@@ -260,6 +264,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LpDonate_IncreasesFeeGrowth() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
+        m.hookTaxBps = 300;
         m.lpDonate = true;
         m.lpDonateBps = 4_000;
         InkForkTestBase.LaunchResult memory l = _launch(
@@ -275,6 +280,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_AutoBurnAndLpDonate_Combined() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
+        m.hookTaxBps = 300;
         m.autoBurn = true;
         m.lpDonate = true;
         m.autoBurnBps = 1_500;
@@ -326,7 +332,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_SellAccruesFeesToCreator() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Sell", "SEL"
         );

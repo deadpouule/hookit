@@ -21,6 +21,7 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
+import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {LaunchTokenLike} from "./utils/LaunchpadTestBase.sol";
@@ -36,6 +37,7 @@ contract ForkBaseSepoliaTest is Test {
     FeeEscrow internal escrow;
     ProtocolRevenueDistributor internal distributor;
     BuybackVault internal buybacks;
+    HolderAirdropVault internal airdrops;
     MasterLaunchHook internal hook;
     LaunchFactory internal factory;
     PoolSwapTest internal swapper;
@@ -71,13 +73,14 @@ contract ForkBaseSepoliaTest is Test {
         escrow = new FeeEscrow(address(this), manager);
         distributor = new ProtocolRevenueDistributor(address(this), ops, manager);
         buybacks = new BuybackVault(address(this), manager);
+        airdrops = new HolderAirdropVault(address(this), manager);
 
         uint160 flags = uint160(
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
                 | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         address flagsAddr = address(flags | (uint160(0xA11CE) << 144));
-        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, address(this));
+        bytes memory args = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, address(this));
         deployCodeTo("MasterLaunchHook.sol:MasterLaunchHook", args, flagsAddr);
         hook = MasterLaunchHook(payable(flagsAddr));
 
@@ -88,6 +91,7 @@ contract ForkBaseSepoliaTest is Test {
         escrow.setOperator(address(hook), true);
         distributor.setOperator(address(hook), true);
         buybacks.setOperator(address(hook), true);
+        airdrops.setOperator(address(hook), true);
 
         swapper = new PoolSwapTest(manager);
     }
@@ -102,7 +106,7 @@ contract ForkBaseSepoliaTest is Test {
         m.backedFloor = true;
         m.antiSnipeDurationSeconds = 120;
         m.initialSnipeTaxBps = 2_000;
-        m.creatorTaxBps = 50;
+        m.hookTaxBps = 50;
         m.floorAllocationBps = 1_000;
 
         (, address token, PoolId poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(

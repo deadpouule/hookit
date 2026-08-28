@@ -18,6 +18,6 @@ library BondingConstants {
     /// @dev Max price impact (bps) for operator sweep swaps that convert token fees → quote.
     uint16 internal constant MAX_SWEEP_IMPACT_BPS = 500;
 
-    /// @dev Alias — creator tax ceiling matches protocol (base + tax ≤ 10%).
-    uint16 internal constant MAX_CREATOR_TAX_BPS = ProtocolConstants.MAX_CREATOR_TAX_BPS;
+    /// @dev Alias kept for older tests — Classic has no extra tax beyond the 1% base.
+    uint16 internal constant MAX_CREATOR_TAX_BPS = 0;
 }

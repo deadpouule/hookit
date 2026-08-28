@@ -4,6 +4,7 @@ export type HookId =
   | "antiMev"
   | "maxWallet"
   | "maxTx"
+  | "holderAirdrop"
   | "custom"
   | "quoteFee";
 
@@ -57,6 +58,14 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     color: "#fb923c",
     glow: "rgba(251,146,60,0.4)",
   },
+  holderAirdrop: {
+    id: "holderAirdrop",
+    label: "Holder Airdrop",
+    short: "Airdrop",
+    hint: "Quote fees push to holders every 15m",
+    color: "#f5d76e",
+    glow: "rgba(245,215,110,0.45)",
+  },
   custom: {
     id: "custom",
     label: "Custom Solidity",
@@ -81,12 +90,14 @@ export const MASTER_HOOK_IDS: HookId[] = [
   "antiMev",
   "maxWallet",
   "maxTx",
+  "holderAirdrop",
 ];
 
 export const SHOWCASE_HOOK_IDS: HookId[] = [
   "antiSnipe",
   "backedFloor",
   "antiMev",
+  "holderAirdrop",
   "custom",
   "quoteFee",
 ];

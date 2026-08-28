@@ -26,6 +26,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
 
     function testFork_FloorFillSell_DrawsVault() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
+        m.hookTaxBps = 200;
         m.backedFloor = true;
         m.floorAllocationBps = 1_500;
         InkForkTestBase.LaunchResult memory l = _launch(
@@ -71,7 +72,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
     function testFork_Buyback_FullVestClaim() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.buybackVesting = true;
-        m.creatorTaxBps = 200;
+        m.hookTaxBps = 200;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB"
         );
@@ -107,7 +108,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
 
     function testFork_CreatorClaimFees_SpyxQuote() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.creatorTaxBps = 100;
+        m.hookTaxBps = 100;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, wspyx, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "SpyFee", "SFE"
         );

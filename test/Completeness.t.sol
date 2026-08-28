@@ -35,6 +35,7 @@ contract CompletenessTest is LaunchpadTestBase {
 
     function testFloorFillSell_QuoteDrawnFromVault() public {
         BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
         m.backedFloor = true;
         m.floorAllocationBps = 1_000;
         (uint256 launchId, address token, PoolId poolId, PoolKey memory key) =
@@ -108,7 +109,7 @@ contract CompletenessTest is LaunchpadTestBase {
     function testBuybackVesting_EndToEndFromLaunch() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
-        m.creatorTaxBps = 300;
+        m.hookTaxBps = 300;
         (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
