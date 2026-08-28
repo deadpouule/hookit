@@ -46,7 +46,7 @@ export function HookCard({ hook }: { hook: MasterHook }) {
         </span>
 
         <div className="orb-footer-actions">
-          <span className="font-mono text-[10px] text-zinc-500">
+          <span className="orb-use-badge">
             {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
           </span>
           <span className="orb-use-badge">Use this hook</span>
