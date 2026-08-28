@@ -1,6 +1,6 @@
-import { PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import type { IndexerTokenSummary } from "@/lib/indexer-client";
 import type { TokenPool } from "@/lib/types";
+import { buybackFromProtocolRevenueUsd, protocolRevenueFromVolumeUsd } from "@/lib/protocol-fees";
 import {
   FEE_BREAKDOWN,
   NATIVE_BURNED,
@@ -69,7 +69,7 @@ export function computeLiveProtocolKpis(
   };
 }
 
-/** Live volume windows — non-24h stay empty until indexer rollups exist. */
+/** Live volume windows — uses correct fee math (1% base × 30% protocol × 80% flywheel). */
 export function volumeSnapshotForWindow(
   window: VolumeWindow,
   live: LiveProtocolKpis | null,
@@ -86,17 +86,19 @@ export function volumeSnapshotForWindow(
   };
   if (!live || live.source !== "live" || window !== "24h") return empty;
 
-  const buy = live.volume24hUsd * 0.55;
-  const sell = live.volume24hUsd * 0.45;
-  const revenue = live.volume24hUsd * (PROTOCOL_SHARE_BPS / 10_000);
+  const total = live.volume24hUsd;
+  const buy = total * 0.55;
+  const sell = total * 0.45;
+  const revenue = protocolRevenueFromVolumeUsd(total);
+  const buyback = buybackFromProtocolRevenueUsd(revenue);
   return {
-    realVolumeUsd: live.volume24hUsd,
+    realVolumeUsd: total,
     buyVolumeUsd: buy,
     sellVolumeUsd: sell,
-    buySellVolumeUsd: live.volume24hUsd,
-    totalVolumeUsd: live.volume24hUsd,
+    buySellVolumeUsd: total,
+    totalVolumeUsd: total,
     revenueUsd: revenue,
-    buybackUsd: revenue,
+    buybackUsd: buyback,
     hookEarned: 0,
   };
 }

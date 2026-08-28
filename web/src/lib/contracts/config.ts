@@ -113,6 +113,33 @@ export function getHookitSwapRouterAddress(): Address | undefined {
   return raw as Address;
 }
 
+/** ProtocolRevenueDistributor — set after DeployHookitCore. */
+export function getProtocolDistributorAddress(): Address | undefined {
+  const raw =
+    process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR?.trim() ??
+    process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
+/** HkitBuyback keeper — set after DeployHookitCore. */
+export function getHkitBuybackAddress(): Address | undefined {
+  const raw =
+    process.env.NEXT_PUBLIC_HKIT_BUYBACK?.trim() ??
+    process.env.NEXT_PUBLIC_HOOK_BUYBACK?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
+/** Fair-launched native token (HKIT / HOOKTEST). */
+export function getNativeTokenAddress(): Address | undefined {
+  const raw =
+    process.env.NEXT_PUBLIC_NATIVE_TOKEN?.trim() ??
+    process.env.NEXT_PUBLIC_HKIT_TOKEN?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
 /**
  * Swap entrypoint for Hookit pools.
  * - Prefer HookitSwapRouter when set (required on Ink; needed for hooked fee accounting).

@@ -4,6 +4,7 @@ import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
 
 import type { IndexerConfig } from "./config.js";
+import { buildProtocolStats } from "./protocol-stats.js";
 import type { Store } from "./store.js";
 
 function json(res: ServerResponse, status: number, body: unknown) {
@@ -115,6 +116,11 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
       return;
     }
 
+    if (parts[0] === "v1" && parts[1] === "protocol" && parts[2] === "stats") {
+      json(res, 200, buildProtocolStats(store));
+      return;
+    }
+
     if (parts[0] === "v1" && parts[1] === "tokens" && parts.length === 2) {
       const list = Object.values(store.data.tokens)
         .map((t) => summarize(store, t.address)!)
@@ -168,6 +174,7 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
       error: "not found",
       routes: [
         "GET /health",
+        "GET /v1/protocol/stats",
         "GET /v1/tokens",
         "GET /v1/tokens/:address",
         "GET /v1/tokens/:address/trades?limit=50&offset=0",

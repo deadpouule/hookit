@@ -2786,6 +2786,26 @@
     color: #52525b;
   }
 
+  .stats-footnote-muted {
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+
+  .stats-empty,
+  .stats-empty-inline {
+    margin: 0;
+    padding: 1.25rem 0.5rem;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #71717a;
+    text-align: center;
+  }
+
+  .stats-empty-inline {
+    padding: 0.75rem 0.1rem;
+    text-align: left;
+  }
+
   .stats-charts-block {
     margin-top: 2rem;
   }

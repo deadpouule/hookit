@@ -6,6 +6,8 @@ export const DEFAULT_LAUNCH_ETH_USD = 4_000;
 export const BASE_FEE_BPS = 100;
 export const CREATOR_SHARE_BPS = 7000;
 export const PROTOCOL_SHARE_BPS = 3000;
+export const OPS_SHARE_BPS = 2000;
+export const FLYWHEEL_SHARE_BPS = 8000;
 /** Max hook tax so base (1%) + tax ≤ 10% total steady fee. */
 export const MAX_HOOK_TAX_BPS = 900;
 export const MAX_TOTAL_FEE_BPS = 1000;

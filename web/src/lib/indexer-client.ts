@@ -119,3 +119,14 @@ export function fetchIndexerCandles(address: string, limit = 200) {
     `/v1/tokens/${address}/candles?limit=${limit}`,
   );
 }
+
+export function fetchIndexerProtocolStats() {
+  return getJson<{
+    tokensIndexed: number;
+    tradesIndexed: number;
+    windows: Record<string, unknown>;
+    daily: unknown[];
+    hourly: unknown[];
+    recentTrades: unknown[];
+  }>("/v1/protocol/stats");
+}
