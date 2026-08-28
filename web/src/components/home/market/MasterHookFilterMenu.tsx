@@ -4,7 +4,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -27,17 +26,6 @@ export function MasterHookFilterMenu({
   onSelectedHooksChange,
   onOpenMasterCategory,
 }: MasterHookFilterMenuProps) {
-  const allSelected = selectedHooks.length === 0;
-
-  const toggleHook = (hookId: MasterHookId, checked: boolean) => {
-    onOpenMasterCategory();
-    if (checked) {
-      onSelectedHooksChange([...selectedHooks, hookId]);
-      return;
-    }
-    onSelectedHooksChange(selectedHooks.filter((id) => id !== hookId));
-  };
-
   const label =
     selectedHooks.length === 0
       ? "Master"
@@ -64,28 +52,14 @@ export function MasterHookFilterMenu({
         <DropdownMenuLabel className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
           Master hooks
         </DropdownMenuLabel>
-        <DropdownMenuCheckboxItem
-          checked={allSelected}
-          onCheckedChange={(checked) => {
-            if (!checked) return;
+        <MasterHookCheckboxOptions
+          hookOptions={MASTER_HOOKS.map((hook) => hook.id)}
+          selectedHooks={selectedHooks}
+          onSelectedHooksChange={(hooks) => {
             onOpenMasterCategory();
-            onSelectedHooksChange([]);
+            onSelectedHooksChange(hooks);
           }}
-          className="master-hook-filter-item"
-        >
-          All
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuSeparator className="bg-white/10" />
-        {MASTER_HOOKS.map((hook) => (
-          <DropdownMenuCheckboxItem
-            key={hook.id}
-            checked={!allSelected && selectedHooks.includes(hook.id)}
-            onCheckedChange={(checked) => toggleHook(hook.id, checked === true)}
-            className="master-hook-filter-item"
-          >
-            {hook.title}
-          </DropdownMenuCheckboxItem>
-        ))}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -100,31 +74,8 @@ export function MasterHookBadgeMenu({
   onNavigate: (hookIds: MasterHookId[]) => void;
   className?: string;
 }) {
-  if (poolHookIds.length === 0) {
-    return (
-      <span className={className}>
-        <MasterHookGlyph className="token-type-badge-glyph" />
-        Master
-      </span>
-    );
-  }
-
-  if (poolHookIds.length === 1) {
-    return (
-      <button
-        type="button"
-        className={className}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onNavigate(poolHookIds);
-        }}
-      >
-        <MasterHookGlyph className="token-type-badge-glyph" />
-        Master
-      </button>
-    );
-  }
+  const hookOptions =
+    poolHookIds.length > 0 ? poolHookIds : (MASTER_HOOKS.map((hook) => hook.id) as MasterHookId[]);
 
   return (
     <DropdownMenu>
@@ -142,31 +93,70 @@ export function MasterHookBadgeMenu({
       <DropdownMenuContent
         align="start"
         className="master-hook-filter-menu w-56 border-white/10 bg-[#141416] p-1 text-zinc-200"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <DropdownMenuLabel className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
           Filter by hook
         </DropdownMenuLabel>
-        <DropdownMenuItem
-          className="master-hook-filter-item cursor-pointer"
-          onSelect={() => onNavigate(poolHookIds)}
-        >
-          All
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-white/10" />
-        {poolHookIds.map((hookId) => {
-          const hook = MASTER_HOOKS.find((item) => item.id === hookId);
-          if (!hook) return null;
-          return (
-            <DropdownMenuItem
-              key={hookId}
-              className="master-hook-filter-item cursor-pointer"
-              onSelect={() => onNavigate([hookId])}
-            >
-              {hook.title}
-            </DropdownMenuItem>
-          );
-        })}
+        <MasterHookCheckboxOptions
+          hookOptions={hookOptions}
+          selectedHooks={[]}
+          onSelectedHooksChange={onNavigate}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function MasterHookCheckboxOptions({
+  hookOptions,
+  selectedHooks,
+  onSelectedHooksChange,
+}: {
+  hookOptions: MasterHookId[];
+  selectedHooks: MasterHookId[];
+  onSelectedHooksChange: (hooks: MasterHookId[]) => void;
+}) {
+  const allSelected = selectedHooks.length === 0;
+
+  const toggleHook = (hookId: MasterHookId, checked: boolean) => {
+    if (checked) {
+      onSelectedHooksChange([...selectedHooks, hookId]);
+      return;
+    }
+    onSelectedHooksChange(selectedHooks.filter((id) => id !== hookId));
+  };
+
+  return (
+    <>
+      <DropdownMenuCheckboxItem
+        checked={allSelected}
+        onCheckedChange={(checked) => {
+          if (!checked) return;
+          onSelectedHooksChange([]);
+        }}
+        onSelect={(event) => event.preventDefault()}
+        className="master-hook-filter-item"
+      >
+        All
+      </DropdownMenuCheckboxItem>
+      <DropdownMenuSeparator className="bg-white/10" />
+      {hookOptions.map((hookId) => {
+        const hook = MASTER_HOOKS.find((item) => item.id === hookId);
+        if (!hook) return null;
+        return (
+          <DropdownMenuCheckboxItem
+            key={hookId}
+            checked={!allSelected && selectedHooks.includes(hookId)}
+            onCheckedChange={(checked) => toggleHook(hookId, checked === true)}
+            onSelect={(event) => event.preventDefault()}
+            className="master-hook-filter-item"
+          >
+            {hook.title}
+          </DropdownMenuCheckboxItem>
+        );
+      })}
+    </>
   );
 }

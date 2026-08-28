@@ -11,7 +11,7 @@ import { HookChip } from "@/components/hooks/HookMark";
 import { copyToClipboard } from "@/lib/clipboard";
 import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatUsd } from "@/lib/format";
-import { marketplaceHrefForHook, marketplaceHrefForHooks } from "@/lib/market-hook-filter";
+import { marketplaceHrefForHooks } from "@/lib/market-hook-filter";
 import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
 import { marketCapUsd } from "@/lib/pool-price";
 import { tokenHref } from "@/lib/routes";
@@ -51,7 +51,9 @@ export function TokenCard({ pool, marketplaceHookFilter, onMarketplaceNavigate }
 
   const handleCardClick = () => {
     if (marketplaceHookFilter) {
-      router.push(marketplaceHrefForHook(marketplaceHookFilter));
+      const hookIds =
+        poolHookIds.length > 0 ? poolHookIds : [marketplaceHookFilter];
+      router.push(marketplaceHrefForHooks(hookIds));
       onMarketplaceNavigate?.();
       return;
     }
