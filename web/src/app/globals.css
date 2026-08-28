@@ -1213,10 +1213,9 @@
     }
   }
 
-  .hookit-logo-img {
+  .hookit-logo-svg {
     flex-shrink: 0;
-    background: transparent;
-    opacity: 0.95;
+    color: #d4d4d8;
   }
 
   .ink-avatar-badge {
