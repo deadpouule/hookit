@@ -651,11 +651,64 @@
     padding: 1.25rem;
     color: inherit;
     text-decoration: none;
-    transition: border-color 0.25s ease;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
   }
 
-  .orb-card:hover {
-    border-color: rgb(255 255 255 / 0.14);
+  .orb-card--fire:hover {
+    border-color: #ef4444;
+    box-shadow: 0 0 15px rgb(239 68 68 / 0.5);
+  }
+
+  .orb-card--gold:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 0 15px rgb(245 158 11 / 0.5);
+  }
+
+  .orb-card--void:hover {
+    border-color: #e879f9;
+    box-shadow: 0 0 15px rgb(232 121 249 / 0.5);
+  }
+
+  .orb-card--nature:hover {
+    border-color: #10b981;
+    box-shadow: 0 0 15px rgb(16 185 129 / 0.5);
+  }
+
+  .orb-card--volt:hover {
+    border-color: #03b1ed;
+    box-shadow: 0 0 15px rgb(3 177 237 / 0.5);
+  }
+
+  .orb-card--ice:hover {
+    border-color: #38bdf8;
+    box-shadow: 0 0 15px rgb(56 189 248 / 0.5);
+  }
+
+  .orb-card--ember:hover {
+    border-color: #f97316;
+    box-shadow: 0 0 15px rgb(249 115 22 / 0.5);
+  }
+
+  .orb-card--rose:hover {
+    border-color: #f43f5e;
+    box-shadow: 0 0 15px rgb(244 63 94 / 0.5);
+  }
+
+  .orb-card--steel:hover {
+    border-color: #6366f1;
+    box-shadow: 0 0 15px rgb(99 102 241 / 0.5);
+  }
+
+  .orb-card--crimson:hover {
+    border-color: #dc2626;
+    box-shadow: 0 0 15px rgb(220 38 38 / 0.5);
+  }
+
+  .orb-card--lime:hover {
+    border-color: #84cc16;
+    box-shadow: 0 0 15px rgb(132 204 22 / 0.5);
   }
 
   .orb-card h2 {
