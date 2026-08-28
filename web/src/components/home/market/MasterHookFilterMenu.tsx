@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,7 +19,7 @@ type MasterHookFilterMenuProps = {
   active: boolean;
   selectedHooks: MasterHookId[];
   onSelectedHooksChange: (hooks: MasterHookId[]) => void;
-  onOpenMasterCategory: () => void;
+  onActivateMaster: () => void;
 };
 
 const DROPDOWN_CONTENT_PROPS = {
@@ -31,8 +33,10 @@ export function MasterHookFilterMenu({
   active,
   selectedHooks,
   onSelectedHooksChange,
-  onOpenMasterCategory,
+  onActivateMaster,
 }: MasterHookFilterMenuProps) {
+  const [open, setOpen] = useState(false);
+
   const label =
     selectedHooks.length === 0
       ? "Master"
@@ -40,13 +44,29 @@ export function MasterHookFilterMenu({
         ? MASTER_HOOKS.find((hook) => hook.id === selectedHooks[0])?.title ?? "Master"
         : `Master (${selectedHooks.length})`;
 
+  const handleActivate = () => {
+    if (!active) {
+      onActivateMaster();
+    }
+  };
+
   return (
-    <DropdownMenu modal={false}>
+    <DropdownMenu
+      open={active ? open : false}
+      onOpenChange={(nextOpen) => {
+        if (!active) return;
+        setOpen(nextOpen);
+      }}
+      modal={false}
+    >
       <DropdownMenuTrigger asChild>
         <button
           type="button"
           {...TOOLBAR_BUTTON_PROPS}
           className={cn("market-filter-pill", active && "market-filter-pill--active")}
+          aria-expanded={active ? open : false}
+          aria-haspopup="menu"
+          onClick={handleActivate}
         >
           <MasterHookGlyph />
           {label}
@@ -62,10 +82,7 @@ export function MasterHookFilterMenu({
         <MasterHookCheckboxOptions
           hookOptions={MASTER_HOOKS.map((hook) => hook.id)}
           selectedHooks={selectedHooks}
-          onSelectedHooksChange={(hooks) => {
-            onOpenMasterCategory();
-            onSelectedHooksChange(hooks);
-          }}
+          onSelectedHooksChange={onSelectedHooksChange}
         />
       </DropdownMenuContent>
     </DropdownMenu>
@@ -165,10 +182,7 @@ function MasterHookCheckboxOptions({
     <>
       <DropdownMenuCheckboxItem
         checked={allSelected}
-        onCheckedChange={(checked) => {
-          if (!checked) return;
-          onSelectedHooksChange([]);
-        }}
+        onCheckedChange={() => onSelectedHooksChange([])}
         onSelect={(event) => event.preventDefault()}
         className="master-hook-filter-item"
       >

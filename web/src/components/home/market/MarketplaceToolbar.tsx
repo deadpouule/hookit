@@ -28,6 +28,7 @@ type MarketplaceToolbarProps = {
   onCategoryChange: (category: CategoryKey) => void;
   masterHooks: MasterHookId[];
   onMasterHooksChange: (hooks: MasterHookId[]) => void;
+  onActivateMaster: () => void;
   layout: "grid" | "table";
   onLayoutChange: (layout: "grid" | "table") => void;
 };
@@ -41,6 +42,7 @@ export function MarketplaceToolbar({
   onCategoryChange,
   masterHooks,
   onMasterHooksChange,
+  onActivateMaster,
   layout,
   onLayoutChange,
 }: MarketplaceToolbarProps) {
@@ -84,7 +86,7 @@ export function MarketplaceToolbar({
           active={category === "master"}
           selectedHooks={masterHooks}
           onSelectedHooksChange={onMasterHooksChange}
-          onOpenMasterCategory={() => onCategoryChange("master")}
+          onActivateMaster={onActivateMaster}
         />
         <FilterPill
           active={category === "customs"}

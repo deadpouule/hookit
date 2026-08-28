@@ -149,7 +149,12 @@ function MarketplaceContent() {
 
   const handleCategoryChange = (nextCategory: CategoryKey) => {
     setCategory(nextCategory);
-    syncFiltersToUrl(nextCategory, nextCategory === "master" ? selectedHooks : []);
+    syncFiltersToUrl(nextCategory, []);
+  };
+
+  const handleActivateMaster = () => {
+    setCategory("master");
+    syncFiltersToUrl("master", []);
   };
 
   const handleMasterHooksChange = (nextHooks: MasterHookId[]) => {
@@ -208,6 +213,7 @@ function MarketplaceContent() {
           onCategoryChange={handleCategoryChange}
           masterHooks={selectedHooks}
           onMasterHooksChange={handleMasterHooksChange}
+          onActivateMaster={handleActivateMaster}
           layout={layout}
           onLayoutChange={setLayout}
         />
