@@ -7,13 +7,13 @@ export function isIndexerConfigured(): boolean {
 }
 
 /**
- * Gate on-chain launch fetches. In local dev we default to the demo catalog
- * unless NEXT_PUBLIC_USE_LIVE_LAUNCHES=true — avoids hanging RPC when .env.local
- * has factory addresses but no working node.
+ * Gate on-chain launch fetches.
+ * Local dev ALWAYS uses the demo catalog — no RPC calls on localhost.
+ * Production uses live data when factory addresses are configured.
  */
 export function shouldFetchLiveLaunches(): boolean {
   if (process.env.NODE_ENV === "development") {
-    return process.env.NEXT_PUBLIC_USE_LIVE_LAUNCHES === "true";
+    return false;
   }
   return isFactoryConfigured();
 }

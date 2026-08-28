@@ -2,6 +2,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
@@ -33,13 +34,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-black" suppressHydrationWarning>
-        <Web3Provider>
-          <TooltipProvider>
-            {children}
-            <AppToaster />
-            <Telemetry />
-          </TooltipProvider>
-        </Web3Provider>
+        <AppErrorBoundary>
+          <Web3Provider>
+            <TooltipProvider>
+              {children}
+              <AppToaster />
+              <Telemetry />
+            </TooltipProvider>
+          </Web3Provider>
+        </AppErrorBoundary>
       </body>
     </html>
   );
