@@ -7,6 +7,22 @@ const INDEXER_URL = process.env.INDEXER_URL?.trim().replace(/\/$/, "") ?? "";
 
 async function proxy(req: NextRequest, path: string[]) {
   if (!INDEXER_URL) {
+    const isHealth = path.length === 0 || path[0] === "health";
+    if (isHealth) {
+      // 200 so dev tools / StatusBar don't spam 503 errors when indexer isn't wired yet.
+      return NextResponse.json({
+        ok: false,
+        configured: false,
+        chainId: 0,
+        cursor: "",
+        updatedAt: Date.now(),
+        lastPollAt: null,
+        lastPollError: null,
+        latestBlock: null,
+        lagBlocks: null,
+        tokens: 0,
+      });
+    }
     return NextResponse.json(
       {
         error: "indexer not configured",

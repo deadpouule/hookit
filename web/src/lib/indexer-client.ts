@@ -66,6 +66,7 @@ export type IndexerTokenSummary = {
 
 export type IndexerHealth = {
   ok: boolean;
+  configured?: boolean;
   chainId: number;
   cursor: string;
   updatedAt: number;
@@ -88,7 +89,9 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export function fetchIndexerHealth() {
-  return getJson<IndexerHealth>("/health");
+  return getJson<IndexerHealth>("/health").then((health) =>
+    health.configured === false ? { ...health, ok: false } : health,
+  );
 }
 
 export function fetchIndexerTokens() {

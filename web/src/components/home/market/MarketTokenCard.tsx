@@ -6,6 +6,7 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 import { copyToClipboard } from "@/lib/clipboard";
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
@@ -94,7 +95,7 @@ export function MarketTokenCard({ token }: { token: MarketToken }) {
 
         <QuickBuy tokenId={token.id} size="sm" className="relative z-20" />
 
-        <button type="button" onClick={copy} className="token-card-creator relative z-20">
+        <button type="button" onClick={copy} {...TOOLBAR_BUTTON_PROPS} className="token-card-creator relative z-20">
           <span>Creator</span>
           <span className="font-mono">{truncateCreator(token.creator)}</span>
           {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 opacity-50" />}

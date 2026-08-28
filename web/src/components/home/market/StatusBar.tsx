@@ -32,6 +32,7 @@ export function StatusBar() {
   }, []);
 
   const live = checked && !!health?.ok;
+  const standby = checked && health?.configured === false;
   const lag = health?.lagBlocks;
 
   return (
@@ -48,6 +49,8 @@ export function StatusBar() {
             ? lag != null && lag > 50
               ? `Indexer · ${lag} blocks behind`
               : "Indexer live"
+            : standby
+              ? "Indexer standby"
             : checked
               ? "Indexer offline"
               : "Checking…"}

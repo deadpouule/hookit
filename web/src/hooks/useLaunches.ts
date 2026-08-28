@@ -7,8 +7,8 @@ import { usePublicClient } from "wagmi";
 import {
   getBondingFactoryAddress,
   getLaunchFactoryAddress,
-  isFactoryConfigured,
 } from "@/lib/contracts/config";
+import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
@@ -22,11 +22,11 @@ import { readEthUsd } from "@/lib/eth-usd";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches() {
-  const factoryConfigured = isFactoryConfigured();
+  const live = shouldFetchLiveLaunches();
 
   return useQuery({
     queryKey: ["launches", getLaunchFactoryAddress(), getBondingFactoryAddress()],
-    enabled: factoryConfigured,
+    enabled: live,
     queryFn: async (): Promise<TokenPool[]> => {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 12_000);

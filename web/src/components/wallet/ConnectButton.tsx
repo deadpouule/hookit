@@ -4,6 +4,7 @@ import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { HOOKIT_CHAIN_ID } from "@/lib/contracts/config";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function ConnectButton({
       <button
         type="button"
         disabled
+        {...TOOLBAR_BUTTON_PROPS}
         className={cn(
           compact
             ? "home-connect disabled:opacity-50"
@@ -70,6 +72,7 @@ export function ConnectButton({
             <button
               type="button"
               onClick={openConnectModal}
+              {...TOOLBAR_BUTTON_PROPS}
               className={cn(
                 compact
                   ? "home-connect"
@@ -88,6 +91,7 @@ export function ConnectButton({
             <button
               type="button"
               onClick={openChainModal}
+              {...TOOLBAR_BUTTON_PROPS}
               className={cn(
                 "rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition hover:bg-amber-500/20",
                 className,
@@ -102,6 +106,7 @@ export function ConnectButton({
           <button
             type="button"
             onClick={openAccountModal}
+            {...TOOLBAR_BUTTON_PROPS}
             className={cn(
               compact
                 ? "home-connect font-mono"

@@ -10,6 +10,7 @@ import {
   launchWithHookHref,
   type MasterHook,
 } from "@/lib/master-hooks";
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
 const SLOTS = [-2, -1, 0, 1, 2] as const;
@@ -96,7 +97,7 @@ function MiniHookCard({
             {body}
           </Link>
         ) : (
-          <button type="button" className="hero-hook-card" onClick={onSelect}>
+          <button type="button" {...TOOLBAR_BUTTON_PROPS} className="hero-hook-card" onClick={onSelect}>
             {body}
           </button>
         )}

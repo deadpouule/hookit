@@ -16,10 +16,10 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
+import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import { formatPercent, formatUsd } from "@/lib/format";
 import {
   buildDemoMarketTokens,
-  MARKET_TOKENS,
   poolToMarketToken,
   truncateCreator,
   type MarketToken,
@@ -63,22 +63,22 @@ export function Marketplace() {
   const [filter, setFilter] = useState<FilterKey>("top");
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
+  const liveLaunches = shouldFetchLiveLaunches();
   const { data: onChainPools, isLoading, isError } = useLaunches();
 
   const sourceTokens = useMemo(() => {
     const demoTokens = buildDemoMarketTokens();
 
-    if (onChainPools && onChainPools.length > 0) {
+    if (liveLaunches && onChainPools && onChainPools.length > 0) {
       return annotateCopyFlags(onChainPools.map(poolToMarketToken));
     }
 
-    // Never block the UI on a hanging RPC — show demo immediately in local dev.
-    if (!factoryConfigured || process.env.NODE_ENV === "development") {
+    if (!liveLaunches || process.env.NODE_ENV === "development") {
       return annotateCopyFlags(demoTokens);
     }
 
     return [];
-  }, [factoryConfigured, onChainPools]);
+  }, [liveLaunches, onChainPools]);
 
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -102,45 +102,31 @@ export function Marketplace() {
 
   return (
     <div className="space-y-5">
-      {factoryConfigured && isLoading && process.env.NODE_ENV === "development" && (
-        <p className="text-xs text-zinc-500">Syncing on-chain launches… (demo catalog shown meanwhile)</p>
-      )}
-      {factoryConfigured && isLoading && process.env.NODE_ENV !== "development" && (
-        <p className="text-xs text-zinc-500">Loading on-chain launches…</p>
-      )}
-      {factoryConfigured && isError && process.env.NODE_ENV === "development" && (
-        <p className="text-xs text-amber-400">
-          Could not sync on-chain launches — showing demo catalog. Check RPC / factory address in{" "}
-          <code className="text-zinc-200">.env.local</code>.
-        </p>
-      )}
-      {factoryConfigured && isError && process.env.NODE_ENV !== "development" && (
-        <p className="text-xs text-amber-400">
-          Could not load launches from the factory. Check RPC / factory address.
-        </p>
-      )}
-      {factoryConfigured && !isLoading && !isError && onChainPools?.length === 0 && (
+      {!liveLaunches && process.env.NODE_ENV === "development" && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-          {process.env.NODE_ENV === "development" ? (
-            <>
-              No on-chain launches yet — showing demo catalog for local dev. Launch from{" "}
-              <Link href="/launch" className="text-zinc-200 underline">
-                Launch
-              </Link>
-              .
-            </>
-          ) : (
-            <>
-              No launches yet — be the first from{" "}
-              <Link href="/launch" className="text-zinc-200 underline">
-                Launch
-              </Link>
-              .
-            </>
-          )}
+          Local dev — demo catalog. Set{" "}
+          <code className="text-zinc-200">NEXT_PUBLIC_USE_LIVE_LAUNCHES=true</code> to sync on-chain
+          launches.
         </p>
       )}
-      {!factoryConfigured && (
+      {liveLaunches && isLoading && (
+        <p className="text-xs text-zinc-500">Syncing on-chain launches…</p>
+      )}
+      {liveLaunches && isError && (
+        <p className="text-xs text-amber-400">
+          Could not load launches from the factory. Showing demo catalog — check RPC / factory address.
+        </p>
+      )}
+      {liveLaunches && !isLoading && !isError && onChainPools?.length === 0 && (
+        <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+          No launches yet — be the first from{" "}
+          <Link href="/launch" className="text-zinc-200 underline">
+            Launch
+          </Link>
+          .
+        </p>
+      )}
+      {!factoryConfigured && !liveLaunches && process.env.NODE_ENV !== "development" && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
           Set <code className="text-zinc-200">NEXT_PUBLIC_LAUNCH_FACTORY</code> /{" "}
           <code className="text-zinc-200">NEXT_PUBLIC_BONDING_FACTORY</code> after deploy to list live

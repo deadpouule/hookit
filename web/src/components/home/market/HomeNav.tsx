@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 
 function RocketMark() {
   return (
@@ -101,6 +102,7 @@ export function HomeNav() {
           <ConnectButton compact />
           <button
             type="button"
+            {...TOOLBAR_BUTTON_PROPS}
             className="rounded-lg p-2 text-white hover:text-gray-300 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
