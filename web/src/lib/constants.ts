@@ -51,7 +51,7 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     dynamicFees: false,
     creatorShareToHook: false,
   },
-  hookTaxBps: 50,
+  hookTaxBps: 0,
   devBuyEth: "",
   quoteAsset: "eth",
   markets: [{ id: "eth", bps: 10_000 }],
