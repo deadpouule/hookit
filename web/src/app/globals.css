@@ -809,36 +809,40 @@
 
   .live-on-ink-ticker {
     position: relative;
-    z-index: 40;
+    z-index: 60;
     overflow: hidden;
-    border-bottom: 1px solid rgb(0 0 0 / 0.06);
+    border-bottom: 1px solid rgb(0 0 0 / 0.08);
     background: #fff;
-    padding-block: 10px;
+    padding-block: 12px;
   }
 
   .live-on-ink-ticker__track {
-    gap: 3rem;
-    padding-inline: 1rem;
-    animation-duration: 28s;
+    gap: 0;
+    padding-inline: 1.5rem;
+    animation-duration: 36s;
   }
 
-  .live-on-ink-ticker__segment {
-    flex-shrink: 0;
+  .live-on-ink-ticker__unit {
+    gap: 4.5rem;
+    padding-inline: 2.25rem;
   }
 
   .live-on-ink-ticker__logo {
     display: block;
-    height: 20px;
-    width: 20px;
-    border-radius: 5px;
+    height: 22px;
+    width: 22px;
+    flex-shrink: 0;
+    border-radius: 6px;
     object-fit: cover;
   }
 
   .live-on-ink-ticker__label {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    text-transform: none;
     white-space: nowrap;
   }
 

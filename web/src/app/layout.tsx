@@ -1,6 +1,6 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
 import { Web3Provider } from "@/components/providers/Web3Provider";
@@ -20,6 +20,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-bricolage",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "hook it — Uniswap v4 Launchpad on Ink",
   description:
@@ -30,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-black" suppressHydrationWarning>
