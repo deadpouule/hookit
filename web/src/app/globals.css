@@ -367,6 +367,107 @@
     padding: 1rem 1.1rem 1.1rem;
   }
 
+  .pick-config--panel {
+    margin-top: 0;
+    cursor: pointer;
+  }
+
+  .pick-config-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .pick-config-head-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .pick-config-head-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .pick-config-badge.orb-hook-title-badge {
+    max-width: none;
+    font-size: 1rem;
+    padding: 0.42rem 0.65rem;
+  }
+
+  .pick-config-ascii {
+    display: flex;
+    width: 5.5rem;
+    height: 4.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .pick-config-ascii .ascii-shape {
+    font-size: 4px;
+    line-height: 1;
+  }
+
+  .pick-config--fire.pick-config--focused {
+    border-color: rgb(239 68 68 / 0.45);
+    box-shadow: 0 0 0 1px rgb(239 68 68 / 0.25), 0 0 24px rgb(239 68 68 / 0.12);
+  }
+
+  .pick-config--gold.pick-config--focused {
+    border-color: rgb(245 158 11 / 0.45);
+    box-shadow: 0 0 0 1px rgb(245 158 11 / 0.25), 0 0 24px rgb(245 158 11 / 0.12);
+  }
+
+  .pick-config--void.pick-config--focused {
+    border-color: rgb(232 121 249 / 0.45);
+    box-shadow: 0 0 0 1px rgb(232 121 249 / 0.25), 0 0 24px rgb(232 121 249 / 0.12);
+  }
+
+  .pick-config--nature.pick-config--focused {
+    border-color: rgb(16 185 129 / 0.45);
+    box-shadow: 0 0 0 1px rgb(16 185 129 / 0.25), 0 0 24px rgb(16 185 129 / 0.12);
+  }
+
+  .pick-config--volt.pick-config--focused {
+    border-color: rgb(3 177 237 / 0.45);
+    box-shadow: 0 0 0 1px rgb(3 177 237 / 0.25), 0 0 24px rgb(3 177 237 / 0.12);
+  }
+
+  .pick-config--ice.pick-config--focused {
+    border-color: rgb(56 189 248 / 0.45);
+    box-shadow: 0 0 0 1px rgb(56 189 248 / 0.25), 0 0 24px rgb(56 189 248 / 0.12);
+  }
+
+  .pick-config--ember.pick-config--focused {
+    border-color: rgb(249 115 22 / 0.45);
+    box-shadow: 0 0 0 1px rgb(249 115 22 / 0.25), 0 0 24px rgb(249 115 22 / 0.12);
+  }
+
+  .pick-config--rose.pick-config--focused {
+    border-color: rgb(244 63 94 / 0.45);
+    box-shadow: 0 0 0 1px rgb(244 63 94 / 0.25), 0 0 24px rgb(244 63 94 / 0.12);
+  }
+
+  .pick-config--steel.pick-config--focused {
+    border-color: rgb(99 102 241 / 0.45);
+    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.25), 0 0 24px rgb(99 102 241 / 0.12);
+  }
+
+  .pick-config--crimson.pick-config--focused {
+    border-color: rgb(220 38 38 / 0.45);
+    box-shadow: 0 0 0 1px rgb(220 38 38 / 0.25), 0 0 24px rgb(220 38 38 / 0.12);
+  }
+
+  .pick-config--lime.pick-config--focused {
+    border-color: rgb(132 204 22 / 0.45);
+    box-shadow: 0 0 0 1px rgb(132 204 22 / 0.25), 0 0 24px rgb(132 204 22 / 0.12);
+  }
+
   .pick-config-title {
     margin: 0;
     font-size: 14px;
@@ -375,9 +476,15 @@
   }
 
   .pick-config-copy {
-    margin: 0.25rem 0 0.9rem;
+    margin: 0.35rem 0 0;
     font-size: 12px;
     color: rgb(161 161 170);
+  }
+
+  .pick-config-head + .grid,
+  .pick-config-head + div:not(.pick-config-head),
+  .pick-config-head + ul {
+    margin-top: 0;
   }
 
   .launch-stars {

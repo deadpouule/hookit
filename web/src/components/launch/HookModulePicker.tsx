@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
+import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { Slider } from "@/components/ui/slider";
 import { isModuleEnabled, moduleCardHint } from "@/lib/launch-module-summary";
 import {
@@ -121,13 +123,13 @@ export function HookModulePicker({
                 panelRefs.current[hook.id] = el;
               }}
               className={cn(
-                "pick-config transition-shadow",
-                focus === hook.id && "ring-1 ring-base-blue/40",
+                "pick-config pick-config--panel transition-shadow",
+                `pick-config--${hook.theme}`,
+                focus === hook.id && "pick-config--focused",
               )}
               onClick={() => setFocus(hook.id)}
             >
-              <p className="pick-config-title">{hook.title}</p>
-              <p className="pick-config-copy">{hook.description}</p>
+              <HookConfigHeader hook={hook} active={focus === hook.id} />
               <HookSettings
                 hookId={hook.id}
                 modules={modules}
@@ -138,6 +140,31 @@ export function HookModulePicker({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function HookConfigHeader({ hook, active }: { hook: MasterHook; active: boolean }) {
+  return (
+    <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
+      <div className="pick-config-head-copy">
+        <div className="pick-config-head-row">
+          <h2
+            className={cn(
+              "orb-hook-desc-badge orb-hook-title-badge pick-config-badge",
+              `orb-hook-desc-badge--${hook.theme}`,
+            )}
+          >
+            <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+            <span>{hook.title}</span>
+          </h2>
+          <HookSettingsTooltip hook={hook} />
+        </div>
+        <p className="pick-config-copy">{hook.description}</p>
+      </div>
+      <div className="pick-config-ascii" aria-hidden>
+        <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />
+      </div>
     </div>
   );
 }
