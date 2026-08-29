@@ -12,8 +12,8 @@ function LiveOnInkUnit() {
       <Image
         src="/brand/ink-ticker.png"
         alt=""
-        width={22}
-        height={22}
+        width={26}
+        height={26}
         className="live-on-ink-ticker__logo"
         draggable={false}
       />
