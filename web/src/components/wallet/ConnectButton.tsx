@@ -1,7 +1,6 @@
 "use client";
 
 import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
@@ -23,16 +22,6 @@ function WalletMark() {
       <rect x="3" y="6" width="18" height="13" rx="2.2" stroke="currentColor" strokeWidth="1.7" />
       <path d="M3 10h18" stroke="currentColor" strokeWidth="1.7" />
       <circle cx="16.5" cy="14.5" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-function PortfolioMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-      <rect x="3" y="7" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="16.5" cy="14" r="1" fill="currentColor" />
     </svg>
   );
 }
@@ -147,12 +136,6 @@ export function ConnectButton({
                 {account.displayName}
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem asChild className="cursor-pointer focus:bg-white/10 focus:text-white">
-                <Link href="/portfolio" className="flex items-center gap-2">
-                  <PortfolioMark />
-                  Portfolio
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer text-zinc-400 focus:bg-white/10 focus:text-white"
                 onClick={openAccountModal}

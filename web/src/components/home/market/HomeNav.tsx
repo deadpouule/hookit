@@ -7,6 +7,7 @@ import { useState } from "react";
 import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { LaunchRocketIcon } from "@/components/brand/LaunchRocketIcon";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { PortfolioNavLink } from "@/components/wallet/PortfolioNavLink";
 import { cn } from "@/lib/utils";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 
@@ -90,6 +91,7 @@ export function HomeNav() {
             <LaunchRocketIcon />
             Launch coin
           </Link>
+          <PortfolioNavLink />
           <ConnectButton compact />
           <button
             type="button"
