@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { cn } from "@/lib/utils";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 
 function RocketMark() {
@@ -44,12 +46,19 @@ const LINKS = [
   { href: "/docs", label: "Docs" },
 ] as const;
 
+function isNavActive(href: string, pathname: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
+
   return (
     <>
       {LINKS.map((link) => {
-        const className =
-          "cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-white hover:text-black";
+        const active = isNavActive(link.href, pathname);
+        const className = cn("home-nav-link", active && "home-nav-link--active");
 
         if ("external" in link && link.external) {
           return (
@@ -82,15 +91,17 @@ export function HomeNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black" suppressHydrationWarning>
       <div className="market-shell flex h-16 items-center justify-between">
-        <Link href="/" aria-label="hook it" className="flex items-center">
-          <CarabinerLogo />
-        </Link>
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4 lg:gap-5">
+          <Link href="/" aria-label="hook it" className="flex shrink-0 items-center">
+            <CarabinerLogo />
+          </Link>
 
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 lg:flex">
-          <NavItems />
-        </nav>
+          <nav className="hidden items-center gap-0.5 lg:flex">
+            <NavItems />
+          </nav>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/launch"
             className="launch-coin hidden items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold sm:inline-flex"
