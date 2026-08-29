@@ -39,7 +39,7 @@ Bootstrap installs Node 22, nginx, certbot, creates `hookit` user, enables 512 M
 ```bash
 cp /opt/hookit/deploy/linode/indexer-only/env.example /opt/hookit/.env
 chmod 600 /opt/hookit/.env
-nano /opt/hookit/.env
+chown hookit:hookit /opt/hookit/.env
 ```
 
 Fill in (from your Ink deploy / local `.env`):

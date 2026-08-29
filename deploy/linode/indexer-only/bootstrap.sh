@@ -66,7 +66,8 @@ Indexer-only bootstrap done.
 Next:
   1. chown -R ${HOOKIT_USER}:${HOOKIT_USER} ${HOOKIT_DIR}
   2. cp ${HOOKIT_DIR}/deploy/linode/indexer-only/env.example ${HOOKIT_DIR}/.env
-     chmod 600 ${HOOKIT_DIR}/.env && nano ${HOOKIT_DIR}/.env
+     chmod 600 ${HOOKIT_DIR}/.env && chown ${HOOKIT_USER}:${HOOKIT_USER} ${HOOKIT_DIR}/.env
+     nano ${HOOKIT_DIR}/.env
   3. sudo -u ${HOOKIT_USER} ${HOOKIT_DIR}/deploy/linode/indexer-only/deploy.sh
   4. systemctl enable --now hookit-indexer
   5. nginx + certbot — see deploy/linode/indexer-only/README.md

@@ -11,6 +11,11 @@ if [[ ! -f "${ROOT}/.env" ]]; then
   exit 1
 fi
 
+if [[ ! -r "${ROOT}/.env" ]]; then
+  echo "Cannot read ${ROOT}/.env — run: chown hookit:hookit ${ROOT}/.env && chmod 600 ${ROOT}/.env" >&2
+  exit 1
+fi
+
 # shellcheck disable=SC1091
 set -a
 source "${ROOT}/.env"
