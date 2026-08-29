@@ -99,7 +99,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function _assertModuleSideEffects(address token, PoolId poolId, BitmaskConfig.Modules memory m) internal {
         if (m.backedFloor) assertGt(vault.reserve(token), 0);
         if (m.buybackVesting) {
-            (uint128 streamed,,) = buybacks.streams(address(this), Currency.wrap(address(0)));
+            (, uint128 streamed,,,) = buybacks.streams(address(this), token);
             assertGt(streamed, 0);
             assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
         }
@@ -165,11 +165,11 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 200;
-        (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(buyer, key, 2 ether);
-        (uint128 streamed,,) = buybacks.streams(address(this), Currency.wrap(address(0)));
+        (, uint128 streamed,,,) = buybacks.streams(address(this), token);
         assertGt(streamed, 0);
         assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
     }

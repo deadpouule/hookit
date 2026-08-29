@@ -21,6 +21,7 @@ import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {QuotronBridge} from "./libraries/QuotronBridge.sol";
+import {TokenAddressMiner} from "./libraries/TokenAddressMiner.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 
 interface IAggregatorV3 {
@@ -32,7 +33,7 @@ interface IAggregatorV3 {
 }
 
 /// @title LaunchFactory
-/// @notice Permissionless factory: mint ERC-20, init a v4 pool, and seed a locked unilateral position atomically.
+/// @notice Permissionless factory: mint ERC-20, init v4 pool(s), and seed locked unilateral positions atomically.
 contract LaunchFactory is Owned, IUnlockCallback {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -50,7 +51,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice ETH/USD price with 18 decimals — used to convert the fixed $4k FDV into ETH at launch.
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
-    /// @notice Optional Chainlink ETH/USD feed; anyone may `syncEthUsdPrice`.
+    /// @notice On-chain ETH/USD feed (Redstone push on Ink); anyone may `syncEthUsdPrice`.
     address public ethUsdFeed;
 
     struct QuoteConfig {
@@ -75,6 +76,24 @@ contract LaunchFactory is Owned, IUnlockCallback {
         IHooks customHook;
     }
 
+    struct MarketInput {
+        Currency quote;
+        uint16 bps;
+    }
+
+    struct LaunchMultiParams {
+        string name;
+        string symbol;
+        string metadataURI;
+        uint256 totalSupply;
+        MarketInput[] markets;
+        int24 tickSpacing;
+        uint256 bitmask;
+        IHooks customHook;
+        /// @dev Reserved for future backed-floor multi support; must index a selected market today.
+        uint8 floorQuoteIndex;
+    }
+
     struct LaunchInfo {
         address token;
         address creator;
@@ -86,6 +105,34 @@ contract LaunchFactory is Owned, IUnlockCallback {
         uint128 liquidity;
     }
 
+    struct LaunchMarket {
+        Currency quote;
+        uint16 bps;
+        PoolId poolId;
+        int24 tickLower;
+        int24 tickUpper;
+        uint128 liquidity;
+    }
+
+    struct PoolPlan {
+        PoolKey key;
+        uint160 sqrtPriceX96;
+        int24 tickLower;
+        int24 tickUpper;
+        uint128 liquidity;
+        bool tokenIsCurrency0;
+        Currency quote;
+        uint16 bps;
+    }
+
+    struct PoolSeed {
+        PoolKey key;
+        uint160 sqrtPriceX96;
+        int24 tickLower;
+        int24 tickUpper;
+        int256 liquidityDelta;
+    }
+
     mapping(uint256 => LaunchInfo) public launches;
     mapping(address => uint256) public tokenLaunchId;
     mapping(uint256 => uint256) public launchBitmasks;
@@ -93,6 +140,13 @@ contract LaunchFactory is Owned, IUnlockCallback {
     mapping(uint256 => Currency) public launchQuote;
     mapping(uint256 => int24) public launchTickSpacing;
     mapping(uint256 => uint24) public launchFeeFlag;
+
+    /// @notice Non-zero when created via `launchMulti` (1–5 canonical markets).
+    mapping(uint256 => uint8) public launchMarketCount;
+    mapping(uint256 => mapping(uint256 => LaunchMarket)) public launchMarkets;
+    mapping(PoolId => uint256) public poolLaunchId;
+    mapping(PoolId => uint8) public poolMarketIndex;
+    mapping(uint256 => uint8) public launchFloorQuoteIndex;
 
     /// @notice When true, only hooks in `allowedCustomHooks` may be used (Master always allowed).
     bool public customHookAllowlistEnabled;
@@ -118,6 +172,19 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickUpper,
         uint128 liquidity
     );
+    event MultiLaunchConfigured(
+        uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask
+    );
+    event MarketLaunched(
+        uint256 indexed launchId,
+        uint8 indexed marketIndex,
+        PoolId poolId,
+        Currency quote,
+        uint16 bps,
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 liquidity
+    );
 
     error InvalidQuote();
     error InvalidSupply();
@@ -125,11 +192,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error LaunchFeeRequired();
     error NativeNotAccepted();
     error NotPoolManager();
-    error UnknownAction();
     error UnknownLaunch();
+    error UnknownMarket();
     error InvalidFeed();
     error StalePrice();
     error CustomHookNotAllowed();
+    error InvalidMarketCount();
+    error InvalidMarketBps();
+    error DuplicateQuote();
+    error FloorNotSupportedInMulti();
+    error InvalidFloorQuoteIndex();
 
     constructor(IPoolManager _poolManager, MasterLaunchHook _masterHook, address owner_, address treasury_)
         Owned(owner_)
@@ -197,7 +269,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return _quoteUsdX18(token, q);
     }
 
-    /// @notice Pull ETH/USD from Chainlink into `ethUsdPriceX18` (8-decimal feeds scaled to 18).
+    /// @notice Pull ETH/USD from the configured on-chain feed into `ethUsdPriceX18`.
     function syncEthUsdPrice() public {
         if (ethUsdFeed == address(0)) revert InvalidFeed();
         ethUsdPriceX18 = _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE);
@@ -219,7 +291,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return FixedPointMath.mcapQuoteWei(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, usd, q.decimals);
     }
 
-    /// @dev Quotrons wStocks: live pool sqrtPrice (USDG≈$1). Else Chainlink feed, else stored snapshot.
+    /// @dev Quotrons wStocks: live pool sqrtPrice (USDG≈$1). Else on-chain feed, else stored snapshot.
     function _quoteUsdX18(address token, QuoteConfig memory q) internal view returns (uint256) {
         if (QuotronBridge.isQuotronStock(token)) {
             uint256 live = QuotronBridge.usdPriceX18(poolManager, token);
@@ -234,7 +306,6 @@ contract LaunchFactory is Owned, IUnlockCallback {
     function _setQuote(address token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed) private {
         if (token == address(0)) revert InvalidQuote();
         if (allowed && (decimals == 0 || decimals > 18)) revert InvalidQuote();
-        // Quotrons stocks may omit snapshot — live sqrtPrice is preferred at launch time.
         bool needsPrice = usdFeed == address(0) && usdPriceX18 == 0 && !QuotronBridge.isQuotronStock(token);
         if (allowed && needsPrice) revert InvalidQuote();
         quoteConfigs[token] = QuoteConfig({
@@ -282,9 +353,22 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     function poolKeyOf(uint256 launchId) external view returns (PoolKey memory key) {
+        return poolKeyOfMarket(launchId, 0);
+    }
+
+    function poolKeyOfMarket(uint256 launchId, uint256 marketIndex) public view returns (PoolKey memory key) {
         LaunchInfo storage info = launches[launchId];
         if (info.token == address(0)) revert UnknownLaunch();
-        Currency quote = launchQuote[launchId];
+
+        Currency quote;
+        if (launchMarketCount[launchId] > 0) {
+            if (marketIndex >= launchMarketCount[launchId]) revert UnknownMarket();
+            quote = launchMarkets[launchId][marketIndex].quote;
+        } else {
+            if (marketIndex != 0) revert UnknownMarket();
+            quote = launchQuote[launchId];
+        }
+
         bool tokenIs0 = uint160(info.token) < uint160(Currency.unwrap(quote));
         key = PoolKey({
             currency0: tokenIs0 ? Currency.wrap(info.token) : quote,
@@ -301,151 +385,360 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
         if (spacing <= 0) revert InvalidTickSpacing();
 
-        if (msg.value < launchFee) revert LaunchFeeRequired();
-        if (launchFee > 0) {
-            CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, launchFee);
-        }
-        uint256 extra = msg.value - launchFee;
-        if (extra > 0) {
-            if (!params.quote.isAddressZero()) revert NativeNotAccepted();
-            CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, extra);
-        }
+        _collectLaunchFee(params.quote.isAddressZero());
 
-        token = address(
-            new LaunchToken(
-                params.name, params.symbol, params.totalSupply, msg.sender, address(this), params.metadataURI
-            )
+        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
+
+        (IHooks hooks, bool useCustom, uint256 packed, uint24 fee) =
+            _resolveLaunchConfig(params.customHook, params.bitmask);
+
+        PoolPlan memory plan = _computePoolPlan(
+            token, params.quote, params.totalSupply, params.totalSupply, spacing, hooks, fee
         );
-
-        bool tokenIsCurrency0 = uint160(token) < uint160(Currency.unwrap(params.quote));
-        Currency currency0 = tokenIsCurrency0 ? Currency.wrap(token) : params.quote;
-        Currency currency1 = tokenIsCurrency0 ? params.quote : Currency.wrap(token);
-
-        bool useCustom = address(params.customHook) != address(0) && address(params.customHook) != address(masterHook);
-        if (useCustom && customHookAllowlistEnabled && !allowedCustomHooks[address(params.customHook)]) {
-            revert CustomHookNotAllowed();
-        }
-        IHooks hooks = useCustom ? params.customHook : IHooks(address(masterHook));
-
-        uint256 packed = params.bitmask;
-        BitmaskConfig.Modules memory modules = BitmaskConfig.unpack(packed);
-        // Re-pack to enforce caps (unpack does not validate; pack does).
-        packed = BitmaskConfig.pack(modules);
-
-        uint24 fee = (!useCustom && modules.dynamicFees)
-            ? LPFeeLibrary.DYNAMIC_FEE_FLAG
-            : 0;
-
-        PoolKey memory key = PoolKey({
-            currency0: currency0,
-            currency1: currency1,
-            fee: fee,
-            tickSpacing: spacing,
-            hooks: hooks
-        });
-
-        int24 tickLower;
-        int24 tickUpper;
-        uint160 sqrtPriceX96;
-        bool tokenIsCurrency1 = !tokenIsCurrency0;
-        uint256 mcapQuote = _mcapQuote(params.quote);
-        int24 startingTick = FixedPointMath.startingTickForMcap(
-            params.totalSupply, mcapQuote, spacing, tokenIsCurrency1
-        );
-        int24 startAligned;
-        if (tokenIsCurrency0) {
-            // 100% token0 when price is below the range.
-            startAligned = FixedPointMath.alignTickUp(startingTick, spacing);
-            tickLower = startAligned;
-            tickUpper = TickMath.maxUsableTick(spacing);
-            if (tickUpper <= tickLower) tickLower = tickUpper - spacing;
-            uint160 lowerSqrt = TickMath.getSqrtPriceAtTick(tickLower);
-            sqrtPriceX96 = lowerSqrt <= TickMath.MIN_SQRT_PRICE + 1 ? TickMath.MIN_SQRT_PRICE + 1 : lowerSqrt - 1;
-        } else {
-            // 100% token1 when price is above the range.
-            startAligned = FixedPointMath.alignTickDown(startingTick, spacing);
-            tickLower = TickMath.minUsableTick(spacing);
-            tickUpper = startAligned;
-            if (tickUpper <= tickLower) tickUpper = tickLower + spacing;
-            uint160 upperSqrt = TickMath.getSqrtPriceAtTick(tickUpper);
-            sqrtPriceX96 = upperSqrt >= TickMath.MAX_SQRT_PRICE - 1 ? TickMath.MAX_SQRT_PRICE - 1 : upperSqrt + 1;
-        }
-
-        uint128 liquidity = tokenIsCurrency0
-            ? FixedPointMath.liquidityForAmount0(
-                TickMath.getSqrtPriceAtTick(tickLower), TickMath.getSqrtPriceAtTick(tickUpper), params.totalSupply
-            )
-            : FixedPointMath.liquidityForAmount1(
-                TickMath.getSqrtPriceAtTick(tickLower), TickMath.getSqrtPriceAtTick(tickUpper), params.totalSupply
-            );
 
         if (!useCustom) {
-            masterHook.prepareLaunch(
-                IMasterLaunchHook.PrepareParams({
-                    key: key,
-                    bitmask: packed,
-                    creator: msg.sender,
-                    token: token,
-                    tickLower: tickLower,
-                    tickUpper: tickUpper,
-                    tokenIsCurrency0: tokenIsCurrency0
-                })
-            );
+            _prepareMasterLaunch(plan, packed, msg.sender, token);
         }
 
         IERC20Minimal(token).approve(address(poolManager), params.totalSupply);
-
-        poolManager.unlock(abi.encode(key, sqrtPriceX96, tickLower, tickUpper, int256(uint256(liquidity))));
+        _unlockPlans(_plansToArray(plan));
 
         launchId = ++launchCount;
-        poolId = key.toId();
+        poolId = plan.key.toId();
+        _recordSingleLaunch(launchId, token, msg.sender, hooks, useCustom, plan, packed, spacing, fee, params.quote);
+
+        emit LaunchConfigured(launchId, packed, params.quote, spacing, fee);
+        emit TokenLaunched(
+            launchId, token, msg.sender, poolId, hooks, useCustom, plan.tickLower, plan.tickUpper, plan.liquidity
+        );
+    }
+
+    /// @notice Deploy one token and 1–5 permanently locked v4 markets atomically (PAIR-style multi-pair).
+    /// @dev Backed floor is disabled in v1 multi launches. Custom hook applies to every market.
+    function launchMulti(LaunchMultiParams calldata params)
+        external
+        payable
+        returns (uint256 launchId, address token, PoolId primaryPoolId)
+    {
+        if (params.totalSupply == 0) revert InvalidSupply();
+        uint256 marketLen = params.markets.length;
+        if (marketLen < ProtocolConstants.MIN_LAUNCH_MARKETS || marketLen > ProtocolConstants.MAX_LAUNCH_MARKETS) {
+            revert InvalidMarketCount();
+        }
+        if (params.floorQuoteIndex >= marketLen) revert InvalidFloorQuoteIndex();
+
+        int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
+        if (spacing <= 0) revert InvalidTickSpacing();
+
+        bool hasNative;
+        uint256 bpsSum;
+        for (uint256 i; i < marketLen; ++i) {
+            MarketInput calldata m = params.markets[i];
+            if (m.bps == 0) revert InvalidMarketBps();
+            bpsSum += m.bps;
+            _assertQuoteAllowed(m.quote);
+            if (m.quote.isAddressZero()) hasNative = true;
+            for (uint256 j = i + 1; j < marketLen; ++j) {
+                if (Currency.unwrap(m.quote) == Currency.unwrap(params.markets[j].quote)) revert DuplicateQuote();
+            }
+        }
+        if (bpsSum != ProtocolConstants.BPS_DENOMINATOR) revert InvalidMarketBps();
+
+        (IHooks hooks, bool useCustom, uint256 packed, uint24 fee) =
+            _resolveLaunchConfig(params.customHook, params.bitmask);
+        if ((packed & BitmaskConfig.BACKED_FLOOR_ENABLED) != 0) revert FloorNotSupportedInMulti();
+
+        _collectLaunchFee(hasNative);
+
+        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
+
+        uint256[] memory tokenAmounts = _splitSupply(params.totalSupply, params.markets);
+
+        PoolPlan[] memory plans = new PoolPlan[](marketLen);
+        for (uint256 i; i < marketLen; ++i) {
+            MarketInput calldata m = params.markets[i];
+            plans[i] = _computePoolPlan(token, m.quote, tokenAmounts[i], params.totalSupply, spacing, hooks, fee);
+            plans[i].bps = m.bps;
+            if (!useCustom) {
+                _prepareMasterLaunch(plans[i], packed, msg.sender, token);
+            }
+        }
+
+        IERC20Minimal(token).approve(address(poolManager), params.totalSupply);
+        _unlockPlans(plans);
+
+        launchId = ++launchCount;
+        primaryPoolId = plans[0].key.toId();
+
         launches[launchId] = LaunchInfo({
             token: token,
             creator: msg.sender,
             hooks: hooks,
             customHook: useCustom,
-            poolId: poolId,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            liquidity: liquidity
+            poolId: primaryPoolId,
+            tickLower: plans[0].tickLower,
+            tickUpper: plans[0].tickUpper,
+            liquidity: plans[0].liquidity
         });
         tokenLaunchId[token] = launchId;
         launchBitmasks[launchId] = packed;
         launchedAt[launchId] = uint64(block.timestamp);
-        launchQuote[launchId] = params.quote;
+        launchQuote[launchId] = params.markets[0].quote;
         launchTickSpacing[launchId] = spacing;
         launchFeeFlag[launchId] = fee;
+        launchMarketCount[launchId] = uint8(marketLen);
+        launchFloorQuoteIndex[launchId] = params.floorQuoteIndex;
 
-        emit LaunchConfigured(launchId, packed, params.quote, spacing, fee);
-        emit TokenLaunched(launchId, token, msg.sender, poolId, hooks, useCustom, tickLower, tickUpper, liquidity);
+        for (uint256 i; i < marketLen; ++i) {
+            PoolPlan memory plan = plans[i];
+            PoolId pid = plan.key.toId();
+            launchMarkets[launchId][i] = LaunchMarket({
+                quote: plan.quote,
+                bps: plan.bps,
+                poolId: pid,
+                tickLower: plan.tickLower,
+                tickUpper: plan.tickUpper,
+                liquidity: plan.liquidity
+            });
+            poolLaunchId[pid] = launchId;
+            poolMarketIndex[pid] = uint8(i);
+
+            emit MarketLaunched(
+                launchId, uint8(i), pid, plan.quote, plan.bps, plan.tickLower, plan.tickUpper, plan.liquidity
+            );
+        }
+
+        emit LaunchConfigured(launchId, packed, params.markets[0].quote, spacing, fee);
+        emit MultiLaunchConfigured(launchId, uint8(marketLen), params.floorQuoteIndex, packed);
+        emit TokenLaunched(
+            launchId,
+            token,
+            msg.sender,
+            primaryPoolId,
+            hooks,
+            useCustom,
+            plans[0].tickLower,
+            plans[0].tickUpper,
+            plans[0].liquidity
+        );
     }
 
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         if (msg.sender != address(poolManager)) revert NotPoolManager();
 
-        (
-            PoolKey memory key,
-            uint160 sqrtPriceX96,
-            int24 tickLower,
-            int24 tickUpper,
-            int256 liquidityDelta
-        ) = abi.decode(data, (PoolKey, uint160, int24, int24, int256));
-        poolManager.initialize(key, sqrtPriceX96);
+        PoolSeed[] memory seeds = abi.decode(data, (PoolSeed[]));
+        for (uint256 i; i < seeds.length; ++i) {
+            PoolSeed memory s = seeds[i];
+            poolManager.initialize(s.key, s.sqrtPriceX96);
 
-        (BalanceDelta delta,) = poolManager.modifyLiquidity(
-            key,
-            ModifyLiquidityParams({
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: liquidityDelta,
-                salt: LAUNCH_SALT
-            }),
-            ""
-        );
+            (BalanceDelta delta,) = poolManager.modifyLiquidity(
+                s.key,
+                ModifyLiquidityParams({
+                    tickLower: s.tickLower,
+                    tickUpper: s.tickUpper,
+                    liquidityDelta: s.liquidityDelta,
+                    salt: LAUNCH_SALT
+                }),
+                ""
+            );
 
-        _settleDelta(key.currency0, delta.amount0());
-        _settleDelta(key.currency1, delta.amount1());
+            _settleDelta(s.key.currency0, delta.amount0());
+            _settleDelta(s.key.currency1, delta.amount1());
+        }
         return "";
+    }
+
+    function _deployToken(
+        string memory name_,
+        string memory symbol_,
+        uint256 totalSupply,
+        address creator,
+        string memory metadataURI_
+    ) internal returns (address token) {
+        bytes memory initCode = abi.encodePacked(
+            type(LaunchToken).creationCode,
+            abi.encode(name_, symbol_, totalSupply, creator, address(this), metadataURI_)
+        );
+        bytes32 entropy = keccak256(abi.encodePacked(name_, symbol_, creator, totalSupply, metadataURI_, launchCount));
+        token = TokenAddressMiner.deploy(address(this), initCode, entropy);
+    }
+
+    function _collectLaunchFee(bool needsNativeDust) internal {
+        if (msg.value < launchFee) revert LaunchFeeRequired();
+        uint256 keep = needsNativeDust && launchFee > 0 ? 1 : 0;
+        uint256 toTreasury = launchFee - keep;
+        if (toTreasury > 0) {
+            CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, toTreasury);
+        }
+        uint256 extra = msg.value - launchFee;
+        if (extra > 0) {
+            if (!needsNativeDust) revert NativeNotAccepted();
+            CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, extra);
+        }
+    }
+
+    function _resolveLaunchConfig(IHooks customHook, uint256 bitmask)
+        internal
+        view
+        returns (IHooks hooks, bool useCustom, uint256 packed, uint24 fee)
+    {
+        useCustom = address(customHook) != address(0) && address(customHook) != address(masterHook);
+        if (useCustom && customHookAllowlistEnabled && !allowedCustomHooks[address(customHook)]) {
+            revert CustomHookNotAllowed();
+        }
+        hooks = useCustom ? customHook : IHooks(address(masterHook));
+
+        packed = bitmask;
+        BitmaskConfig.Modules memory modules = BitmaskConfig.unpack(packed);
+        packed = BitmaskConfig.pack(modules);
+
+        fee = (!useCustom && modules.dynamicFees) ? LPFeeLibrary.DYNAMIC_FEE_FLAG : 0;
+    }
+
+    function _assertQuoteAllowed(Currency quote) internal view {
+        if (!isQuoteAllowed(Currency.unwrap(quote))) revert InvalidQuote();
+        if (Currency.unwrap(quote) != address(0)) {
+            quoteUsdPriceX18(Currency.unwrap(quote));
+        }
+    }
+
+    function _splitSupply(uint256 totalSupply, MarketInput[] calldata markets)
+        internal
+        pure
+        returns (uint256[] memory amounts)
+    {
+        uint256 len = markets.length;
+        amounts = new uint256[](len);
+        uint256 allocated;
+        for (uint256 i; i < len - 1; ++i) {
+            amounts[i] = totalSupply * markets[i].bps / ProtocolConstants.BPS_DENOMINATOR;
+            allocated += amounts[i];
+        }
+        amounts[len - 1] = totalSupply - allocated;
+    }
+
+    function _computePoolPlan(
+        address token,
+        Currency quote,
+        uint256 tokenAmount,
+        uint256 priceSupply,
+        int24 spacing,
+        IHooks hooks,
+        uint24 fee
+    ) internal view returns (PoolPlan memory plan) {
+        if (tokenAmount == 0 || priceSupply == 0) revert InvalidSupply();
+
+        bool tokenIsCurrency0 = uint160(token) < uint160(Currency.unwrap(quote));
+        plan.tokenIsCurrency0 = tokenIsCurrency0;
+        plan.quote = quote;
+        plan.key = PoolKey({
+            currency0: tokenIsCurrency0 ? Currency.wrap(token) : quote,
+            currency1: tokenIsCurrency0 ? quote : Currency.wrap(token),
+            fee: fee,
+            tickSpacing: spacing,
+            hooks: hooks
+        });
+
+        bool tokenIsCurrency1 = !tokenIsCurrency0;
+        uint256 mcapQuote = _mcapQuote(quote);
+        int24 startingTick =
+            FixedPointMath.startingTickForMcap(priceSupply, mcapQuote, spacing, tokenIsCurrency1);
+
+        if (tokenIsCurrency0) {
+            int24 startAligned = FixedPointMath.alignTickUp(startingTick, spacing);
+            plan.tickLower = startAligned;
+            plan.tickUpper = TickMath.maxUsableTick(spacing);
+            if (plan.tickUpper <= plan.tickLower) plan.tickLower = plan.tickUpper - spacing;
+            uint160 lowerSqrt = TickMath.getSqrtPriceAtTick(plan.tickLower);
+            plan.sqrtPriceX96 =
+                lowerSqrt <= TickMath.MIN_SQRT_PRICE + 1 ? TickMath.MIN_SQRT_PRICE + 1 : lowerSqrt - 1;
+            plan.liquidity = FixedPointMath.liquidityForAmount0(
+                TickMath.getSqrtPriceAtTick(plan.tickLower),
+                TickMath.getSqrtPriceAtTick(plan.tickUpper),
+                tokenAmount
+            );
+        } else {
+            int24 startAligned = FixedPointMath.alignTickDown(startingTick, spacing);
+            plan.tickLower = TickMath.minUsableTick(spacing);
+            plan.tickUpper = startAligned;
+            if (plan.tickUpper <= plan.tickLower) plan.tickUpper = plan.tickLower + spacing;
+            uint160 upperSqrt = TickMath.getSqrtPriceAtTick(plan.tickUpper);
+            // Spot above the range so modifyLiquidity is token1-only (no quote dust required).
+            if (upperSqrt >= TickMath.MAX_SQRT_PRICE - 2) {
+                plan.sqrtPriceX96 = TickMath.MAX_SQRT_PRICE - 1;
+            } else {
+                plan.sqrtPriceX96 = upperSqrt + 1;
+            }
+            plan.liquidity = FixedPointMath.liquidityForAmount1(
+                TickMath.getSqrtPriceAtTick(plan.tickLower),
+                TickMath.getSqrtPriceAtTick(plan.tickUpper),
+                tokenAmount
+            );
+        }
+    }
+
+    function _prepareMasterLaunch(PoolPlan memory plan, uint256 packed, address creator, address token) internal {
+        masterHook.prepareLaunch(
+            IMasterLaunchHook.PrepareParams({
+                key: plan.key,
+                bitmask: packed,
+                creator: creator,
+                token: token,
+                tickLower: plan.tickLower,
+                tickUpper: plan.tickUpper,
+                tokenIsCurrency0: plan.tokenIsCurrency0
+            })
+        );
+    }
+
+    function _plansToArray(PoolPlan memory plan) internal pure returns (PoolPlan[] memory plans) {
+        plans = new PoolPlan[](1);
+        plans[0] = plan;
+    }
+
+    function _unlockPlans(PoolPlan[] memory plans) internal {
+        PoolSeed[] memory seeds = new PoolSeed[](plans.length);
+        for (uint256 i; i < plans.length; ++i) {
+            PoolPlan memory plan = plans[i];
+            seeds[i] = PoolSeed({
+                key: plan.key,
+                sqrtPriceX96: plan.sqrtPriceX96,
+                tickLower: plan.tickLower,
+                tickUpper: plan.tickUpper,
+                liquidityDelta: int256(uint256(plan.liquidity))
+            });
+        }
+        poolManager.unlock(abi.encode(seeds));
+    }
+
+    function _recordSingleLaunch(
+        uint256 launchId,
+        address token,
+        address creator,
+        IHooks hooks,
+        bool useCustom,
+        PoolPlan memory plan,
+        uint256 packed,
+        int24 spacing,
+        uint24 fee,
+        Currency quote
+    ) internal {
+        launches[launchId] = LaunchInfo({
+            token: token,
+            creator: creator,
+            hooks: hooks,
+            customHook: useCustom,
+            poolId: plan.key.toId(),
+            tickLower: plan.tickLower,
+            tickUpper: plan.tickUpper,
+            liquidity: plan.liquidity
+        });
+        tokenLaunchId[token] = launchId;
+        launchBitmasks[launchId] = packed;
+        launchedAt[launchId] = uint64(block.timestamp);
+        launchQuote[launchId] = quote;
+        launchTickSpacing[launchId] = spacing;
+        launchFeeFlag[launchId] = fee;
     }
 
     function _settleDelta(Currency currency, int128 delta) private {

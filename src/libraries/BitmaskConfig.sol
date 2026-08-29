@@ -26,6 +26,7 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bit 145      HOLDER_AIRDROP_ENABLED
 ///      bits 146-161 holderAirdropBps (uint16) — % of hook pot
 ///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 70% of base into the hook pot
+///      bits 163-194 buybackVestingDurationSeconds (uint32) — linear vest for creator proceeds
 library BitmaskConfig {
     uint256 internal constant ANTI_SNIPE_ENABLED = 1 << 0;
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
@@ -48,8 +49,10 @@ library BitmaskConfig {
     uint256 internal constant AUTO_BURN_BPS_SHIFT = 113;
     uint256 internal constant LP_DONATE_BPS_SHIFT = 129;
     uint256 internal constant HOLDER_AIRDROP_BPS_SHIFT = 146;
+    uint256 internal constant BUYBACK_VESTING_DURATION_SHIFT = 163;
 
     uint256 internal constant UINT16_MASK = 0xFFFF;
+    uint256 internal constant UINT32_MASK = 0xFFFFFFFF;
     uint256 internal constant UINT24_MASK = 0xFFFFFF;
 
     struct Modules {
@@ -73,6 +76,7 @@ library BitmaskConfig {
         uint16 autoBurnBps;
         uint16 lpDonateBps;
         uint16 holderAirdropBps;
+        uint32 buybackVestingDurationSeconds;
     }
 
     function pack(Modules memory m) internal pure returns (uint256 packed) {
@@ -96,7 +100,8 @@ library BitmaskConfig {
             | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
             | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT)
             | (uint256(m.lpDonateBps) << LP_DONATE_BPS_SHIFT)
-            | (uint256(m.holderAirdropBps) << HOLDER_AIRDROP_BPS_SHIFT);
+            | (uint256(m.holderAirdropBps) << HOLDER_AIRDROP_BPS_SHIFT)
+            | (uint256(m.buybackVestingDurationSeconds) << BUYBACK_VESTING_DURATION_SHIFT);
     }
 
     function unpack(uint256 packed) internal pure returns (Modules memory m) {
@@ -120,6 +125,7 @@ library BitmaskConfig {
         m.autoBurnBps = uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
         m.lpDonateBps = uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
         m.holderAirdropBps = uint16((packed >> HOLDER_AIRDROP_BPS_SHIFT) & UINT16_MASK);
+        m.buybackVestingDurationSeconds = uint32((packed >> BUYBACK_VESTING_DURATION_SHIFT) & UINT32_MASK);
     }
 
     function enabled(uint256 packed, uint256 flag) internal pure returns (bool) {
@@ -158,6 +164,14 @@ library BitmaskConfig {
         return uint16((packed >> HOLDER_AIRDROP_BPS_SHIFT) & UINT16_MASK);
     }
 
+    function buybackVestingDurationSeconds(uint256 packed) internal pure returns (uint32) {
+        uint32 duration = uint32((packed >> BUYBACK_VESTING_DURATION_SHIFT) & UINT32_MASK);
+        if (duration == 0 && packed & BUYBACK_VESTING_ENABLED != 0) {
+            return uint32(ProtocolConstants.BUYBACK_VESTING_DURATION);
+        }
+        return duration;
+    }
+
     function initialSnipeTaxBps(uint256 packed) internal pure returns (uint16) {
         uint16 tax = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         if (tax == 0 && packed & ANTI_SNIPE_ENABLED != 0) {
@@ -188,6 +202,12 @@ library BitmaskConfig {
         // Fee sinks need a funded hook pot: hook tax and/or creator's 70% of base.
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) revert HookFundingRequired();
         if (m.creatorShareToHook && m.buybackVesting) revert CreatorShareConflict();
+        if (m.buybackVesting) {
+            uint32 duration = m.buybackVestingDurationSeconds;
+            if (duration == 0) duration = uint32(ProtocolConstants.BUYBACK_VESTING_DURATION);
+            if (duration < ProtocolConstants.MIN_BUYBACK_VESTING_DURATION) revert BuybackVestingTooShort();
+            if (duration > ProtocolConstants.MAX_BUYBACK_VESTING_DURATION) revert BuybackVestingTooLong();
+        }
         uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
         if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
         if (openFee > ProtocolConstants.BPS_DENOMINATOR) revert OpenFeeTooHigh();
@@ -206,4 +226,6 @@ library BitmaskConfig {
     error HolderAirdropTooHigh();
     error FeeRouteTooHigh();
     error OpenFeeTooHigh();
+    error BuybackVestingTooShort();
+    error BuybackVestingTooLong();
 }

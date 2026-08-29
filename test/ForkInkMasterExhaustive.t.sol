@@ -68,7 +68,7 @@ contract ForkInkMasterExhaustiveTest is InkForkTestBase {
 
         if (m.backedFloor) assertGt(vault.reserve(l.token), 0);
         if (m.buybackVesting) {
-            (uint128 streamed,,) = buybacks.streams(creator, quote);
+            (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
             assertGt(streamed, 0);
         }
         if (m.autoBurn) assertLt(IERC20(l.token).totalSupply(), supplyBefore);

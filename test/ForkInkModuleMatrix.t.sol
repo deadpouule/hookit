@@ -99,7 +99,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         );
 
         _routerBuy(trader, l.key, l.token, 1 ether);
-        (uint128 streamed,,) = buybacks.streams(creator, Currency.wrap(address(0)));
+        (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
         assertGt(streamed, 0);
         assertEq(escrow.balanceOf(creator, Currency.wrap(address(0))), 0);
     }
@@ -138,7 +138,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
 
         if (m.backedFloor) assertGt(vault.reserve(l.token), 0);
         if (m.buybackVesting) {
-            (uint128 streamed,,) = buybacks.streams(creator, Currency.wrap(address(0)));
+            (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
             assertGt(streamed, 0);
         }
         if (m.autoBurn) assertLt(IERC20(l.token).totalSupply(), supplyBefore);

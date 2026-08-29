@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { Slider } from "@/components/ui/slider";
+import { isModuleEnabled, moduleCardHint } from "@/lib/launch-module-summary";
 import {
-  HOOK_MODULE_FIELD,
   MASTER_HOOKS,
   type MasterHook,
   type MasterHookId,
@@ -13,17 +13,17 @@ import {
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function hookOn(modules: LaunchModules, id: MasterHookId) {
-  return Boolean(modules[HOOK_MODULE_FIELD[id]]);
-}
-
 function HookPickCard({
   hook,
   selected,
+  focused,
+  configHint,
   onClick,
 }: {
   hook: MasterHook;
   selected: boolean;
+  focused: boolean;
+  configHint?: string;
   onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -31,7 +31,7 @@ function HookPickCard({
   return (
     <button
       type="button"
-      className={cn("pick-card", selected && "is-on")}
+      className={cn("pick-card", selected && "is-on", focused && selected && "ring-1 ring-base-blue/60")}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -40,7 +40,9 @@ function HookPickCard({
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={hovered || selected} />
       </div>
       <p className="pick-card-title">{hook.title.toLowerCase()}</p>
-      <p className="pick-card-sub">{selected ? "hooked" : hook.description}</p>
+      <p className="pick-card-sub">
+        {selected && configHint ? configHint : selected ? "hooked" : hook.description}
+      </p>
     </button>
   );
 }
@@ -50,55 +52,93 @@ export function HookModulePicker({
   onToggle,
   onUpdate,
   floorEst,
+  multiMarket = false,
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
   onUpdate: (patch: Partial<LaunchModules>) => void;
   floorEst: number;
+  multiMarket?: boolean;
 }) {
-  const selectedCount = MASTER_HOOKS.filter((hook) => hookOn(modules, hook.id)).length;
-  const [focus, setFocus] = useState<MasterHookId | null>(
-    MASTER_HOOKS.find((hook) => hookOn(modules, hook.id))?.id ?? null,
+  const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
+  const enabledHooks = MASTER_HOOKS.filter(
+    (h) => h.id !== "creator-share-to-hook" && isModuleEnabled(modules, h.id),
   );
-  const focused = MASTER_HOOKS.find((hook) => hook.id === focus) ?? null;
-  const focusedOn = focused ? hookOn(modules, focused.id) : false;
+  const selectedCount = enabledHooks.length;
+  const [focus, setFocus] = useState<MasterHookId | null>(enabledHooks[0]?.id ?? null);
+
+  useEffect(() => {
+    if (focus && enabledHooks.some((h) => h.id === focus)) return;
+    setFocus(enabledHooks[0]?.id ?? null);
+  }, [enabledHooks, focus]);
+
+  const scrollToPanel = (id: MasterHookId) => {
+    setFocus(id);
+    requestAnimationFrame(() => {
+      panelRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  };
 
   return (
     <div>
       <p className="pick-kicker">
-        —hooks: {selectedCount} live · {MASTER_HOOKS.length} modules available
+        —hooks: {selectedCount} live · {MASTER_HOOKS.length - 1} modules available
       </p>
       <p className="pick-heading">pick your hooks</p>
       <div className="pick-grid pick-grid--hooks">
-        {MASTER_HOOKS.map((hook) => {
-          const selected = hookOn(modules, hook.id);
+        {MASTER_HOOKS.filter((hook) => hook.id !== "creator-share-to-hook").map((hook) => {
+          const selected = isModuleEnabled(modules, hook.id);
+          const disabled = multiMarket && hook.id === "backed-floor";
           return (
             <HookPickCard
               key={hook.id}
               hook={hook}
               selected={selected}
+              focused={focus === hook.id}
+              configHint={moduleCardHint(hook.id, modules)}
               onClick={() => {
+                if (disabled) return;
                 if (selected && focus === hook.id) {
                   onToggle(hook.id, false);
-                  const next = MASTER_HOOKS.find(
-                    (item) => item.id !== hook.id && hookOn(modules, item.id),
-                  );
+                  const next = enabledHooks.find((item) => item.id !== hook.id);
                   setFocus(next?.id ?? null);
                   return;
                 }
                 if (!selected) onToggle(hook.id, true);
-                setFocus(hook.id);
+                scrollToPanel(hook.id);
               }}
             />
           );
         })}
       </div>
 
-      {focused && focusedOn && (
-        <div className="pick-config">
-          <p className="pick-config-title">{focused.title}</p>
-          <p className="pick-config-copy">{focused.description}</p>
-          <HookSettings hookId={focused.id} modules={modules} onUpdate={onUpdate} floorEst={floorEst} />
+      {enabledHooks.length > 0 && (
+        <div className="mt-5 space-y-3">
+          <p className="text-xs text-zinc-500">
+            All active modules — settings stay visible when you switch focus.
+          </p>
+          {enabledHooks.map((hook) => (
+            <div
+              key={hook.id}
+              ref={(el) => {
+                panelRefs.current[hook.id] = el;
+              }}
+              className={cn(
+                "pick-config transition-shadow",
+                focus === hook.id && "ring-1 ring-base-blue/40",
+              )}
+              onClick={() => setFocus(hook.id)}
+            >
+              <p className="pick-config-title">{hook.title}</p>
+              <p className="pick-config-copy">{hook.description}</p>
+              <HookSettings
+                hookId={hook.id}
+                modules={modules}
+                onUpdate={onUpdate}
+                floorEst={floorEst}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -197,9 +237,7 @@ function HookSettings({
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>Cap</span>
-          <span className="font-mono text-zinc-300">
-            {(modules.maxTxBps / 100).toFixed(1)}% supply
-          </span>
+          <span className="font-mono text-zinc-300">{(modules.maxTxBps / 100).toFixed(1)}% supply</span>
         </div>
         <Slider
           value={[modules.maxTxBps / 100]}
@@ -207,6 +245,66 @@ function HookSettings({
           min={0.5}
           max={5}
           step={0.1}
+        />
+      </div>
+    );
+  }
+
+  if (hookId === "buyback-vesting") {
+    const days = modules.buybackVestingDurationDays ?? 365 * 5;
+    return (
+      <div>
+        <div className="mb-2 flex justify-between text-xs text-zinc-500">
+          <span>Vest duration</span>
+          <span className="font-mono text-zinc-300">
+            {days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
+          </span>
+        </div>
+        <Slider
+          value={[days]}
+          onValueChange={([v]) => onUpdate({ buybackVestingDurationDays: v })}
+          min={7}
+          max={365 * 5}
+          step={7}
+        />
+        <p className="mt-2 font-mono text-[11px] text-zinc-500">
+          Creator fee share (70% of base) vests linearly · claim on the token page
+        </p>
+      </div>
+    );
+  }
+
+  if (hookId === "auto-burn") {
+    return (
+      <div>
+        <div className="mb-2 flex justify-between text-xs text-zinc-500">
+          <span>Burn share</span>
+          <span className="font-mono text-zinc-300">{modules.autoBurnPct}%</span>
+        </div>
+        <Slider
+          value={[modules.autoBurnPct]}
+          onValueChange={([v]) => onUpdate({ autoBurnPct: v })}
+          min={1}
+          max={50}
+          step={1}
+        />
+      </div>
+    );
+  }
+
+  if (hookId === "lp-donate") {
+    return (
+      <div>
+        <div className="mb-2 flex justify-between text-xs text-zinc-500">
+          <span>LP donate share</span>
+          <span className="font-mono text-zinc-300">{modules.lpDonatePct}%</span>
+        </div>
+        <Slider
+          value={[modules.lpDonatePct]}
+          onValueChange={([v]) => onUpdate({ lpDonatePct: v })}
+          min={1}
+          max={50}
+          step={1}
         />
       </div>
     );

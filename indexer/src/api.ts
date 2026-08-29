@@ -60,6 +60,8 @@ function summarize(store: Store, address: Address) {
     graduationQuote: row.graduationQuote ?? null,
     realQuote: row.realQuote ?? null,
     graduatedAt: row.graduatedAt ?? null,
+    marketCount: row.marketCount ?? (row.markets?.length ? row.markets.length : 1),
+    markets: row.markets ?? null,
     price: last?.price ?? null,
     lastTradeAt: last?.timestamp ?? null,
     tradesIndexed: row.trades.length,

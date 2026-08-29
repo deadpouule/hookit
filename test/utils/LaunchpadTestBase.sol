@@ -96,7 +96,8 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
             lpDonateBps: 0,
-            holderAirdropBps: 0
+            holderAirdropBps: 0,
+            buybackVestingDurationSeconds: 0
         });
     }
 

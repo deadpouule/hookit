@@ -6,12 +6,12 @@ Prep only. Do **not** broadcast until every GO item is checked.
 
 | Check | Status |
 | --- | --- |
-| Alchemy / dedicated Ink RPC | Wired in local `.env` (not committed) |
+| Ink public RPC (`INK_RPC_URL`) | Use `https://rpc-gel.inkonchain.com` — no Alchemy required |
 | `DryRunInk.s.sol` on live Ink fork | Pass (`DRY_RUN_OK`) — Master + Classic + HKIT smoke |
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
 | HookitSwapRouter required in web | Code rejects Ink swaps without `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
 | Ink factories deployed | **Not yet** |
-| Hosted indexer | **Not yet** (Vercel UI live: https://hookit-five.vercel.app/) |
+| Hosted indexer | **Linode** — see [deploy/linode/README.md](deploy/linode/README.md) |
 | WalletConnect project ID | **Set before public UI** |
 
 ## Before first broadcast
@@ -20,7 +20,7 @@ Prep only. Do **not** broadcast until every GO item is checked.
 2. Set `OPS_TREASURY` (multisig preferred) in root `.env`.
 3. Set `PRIVATE_KEY` in root `.env` (never commit).
 4. Native token branding defaults to **HOOKTEST** / **HTST** (override `NATIVE_TOKEN_NAME`, `NATIVE_TOKEN_SYMBOL`, `NATIVE_TOKEN_URI`).
-5. Confirm `INK_RPC_URL` = dedicated Alchemy (or other) endpoint.
+5. Confirm `INK_RPC_URL=https://rpc-gel.inkonchain.com` (public Gelato RPC). Optional `INDEXER_RPC_URL` only if the indexer node needs a different endpoint.
 4. Optional: `INK_EXPLORER_API_KEY` for `forge verify`.
 5. Re-run dry-run:
    ```bash
@@ -48,18 +48,30 @@ Then try `script/WireFeeEthRailInk.s.sol` if `ethBridgeSet()` is still false.
 
 ## Flip the stack to Ink (after addresses exist)
 
-**Production UI:** https://hookit-five.vercel.app/ — no local indexer (`127.0.0.1:8787`) required.
+**Production UI:** Linode self-host ([deploy/linode/README.md](deploy/linode/README.md)) or Vercel — indexer must be reachable via `INDEXER_URL`.
 
-### Vercel (Project → Environment Variables)
+### Linode (recommended — web + indexer + custom hook forge)
+
+See **`deploy/linode/README.md`**. Quick path:
+
+```bash
+./deploy/linode/bootstrap.sh          # once, as root
+cp deploy/linode/env.production.example /opt/hookit/.env
+sudo -u hookit ./deploy/linode/deploy.sh
+```
+
+### Vercel (UI only — point INDEXER_URL at Linode)
+
+**Production UI:** https://hookit-five.vercel.app/
 
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
-NEXT_PUBLIC_INK_RPC_URL=<alchemy>
+NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
 NEXT_PUBLIC_LAUNCH_FACTORY=0x…
 NEXT_PUBLIC_BONDING_FACTORY=0x…
 NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x…
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
-# INDEXER_URL=   # optional until hosted indexer
+INDEXER_URL=http://127.0.0.1:8787   # local house indexer (see indexer/README.md)
 PINATA_JWT=<optional but recommended>
 ```
 
@@ -69,11 +81,12 @@ PINATA_JWT=<optional but recommended>
 
 ```
 HOOKIT_CHAIN=ink
-INDEXER_RPC_URL=<alchemy>
-LAUNCH_FACTORY=0x…
+INK_RPC_URL=https://rpc-gel.inkonchain.com
+# INDEXER_RPC_URL=   # optional override; defaults to INK_RPC_URL
+LAUNCH_FACTORY=0x…   # from repo root .env or paste deploy address
 BONDING_FACTORY=0x…
 INDEXER_START_BLOCK=<deploy_block>
-INDEXER_DATA_DIR=/var/lib/hookit-indexer   # persistent volume
+INDEXER_DATA_DIR=/var/lib/hookit-indexer
 INDEXER_POLL_MS=4000
 ```
 
@@ -103,4 +116,4 @@ Keep Base Sepolia env elsewhere for regression; do not mix chain IDs in one stor
 - Broadcast without funded deployer + `OPS_TREASURY`.
 - Point production UI at Ink without `HOOKIT_SWAP_ROUTER`.
 - Start indexer without `INDEXER_START_BLOCK` (avoids 80k lookback).
-- Commit Alchemy keys or `PRIVATE_KEY`.
+- Commit `PRIVATE_KEY` or RPC secrets.

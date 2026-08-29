@@ -44,7 +44,7 @@ contract ForkInkDualRailTest is InkForkTestBase {
         assertGt(_tokenBalance(classic.token, trader), 0);
 
         // Protocol fee sinks shared.
-        (uint128 streamed,,) = buybacks.streams(creator, Currency.wrap(address(0)));
+        (, uint128 streamed,,,) = buybacks.streams(creator, master.token);
         assertTrue(escrow.balanceOf(creator, Currency.wrap(address(0))) > 0 || streamed > 0);
     }
 

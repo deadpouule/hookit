@@ -26,6 +26,37 @@ export function createClient(cfg: IndexerConfig): PublicClient {
   });
 }
 
+const RATE_LIMIT_RE = /rate limit|429|too many requests/i;
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Retry gel/public RPC throttling with exponential backoff. */
+export async function rpcWithRetry<T>(fn: () => Promise<T>, label: string, attempts = 6): Promise<T> {
+  let delayMs = 1_500;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const retryable = RATE_LIMIT_RE.test(msg) || /timeout|ECONNRESET|fetch failed/i.test(msg);
+      if (!retryable || i === attempts - 1) throw err;
+      console.warn(`[indexer] ${label} throttled — retry ${i + 1}/${attempts - 1} in ${delayMs}ms`);
+      await sleep(delayMs);
+      delayMs = Math.min(delayMs * 2, 30_000);
+    }
+  }
+  throw new Error(`${label} failed after retries`);
+}
+
+function getLogs(
+  client: PublicClient,
+  params: Parameters<PublicClient["getLogs"]>[0],
+) {
+  return rpcWithRetry(() => client.getLogs(params), "getLogs");
+}
+
 async function metaForToken(client: PublicClient, token: Address) {
   const [name, symbol, decimals, totalSupply] = await Promise.all([
     client.readContract({ address: token, abi: erc20Abi, functionName: "name" }).catch(() => "Unknown"),
@@ -236,7 +267,10 @@ async function blockTimestamps(client: PublicClient, blockNumbers: bigint[]): Pr
   }
   await Promise.all(
     missing.map(async (bn) => {
-      const block = await client.getBlock({ blockNumber: bn });
+      const block = await rpcWithRetry(
+        () => client.getBlock({ blockNumber: bn }),
+        "getBlock",
+      );
       const ts = Number(block.timestamp);
       const key = bn.toString();
       blockTsCache.set(key, ts);
@@ -248,7 +282,7 @@ async function blockTimestamps(client: PublicClient, blockNumbers: bigint[]): Pr
 }
 
 export async function tick(client: PublicClient, store: Store, cfg: IndexerConfig): Promise<number> {
-  const latest = await client.getBlockNumber();
+  const latest = await rpcWithRetry(() => client.getBlockNumber(), "getBlockNumber");
   const safeHead = latest > cfg.confirmations ? latest - cfg.confirmations : 0n;
 
   let from = BigInt(store.data.cursor || "0");
@@ -269,6 +303,7 @@ export async function tick(client: PublicClient, store: Store, cfg: IndexerConfi
     store.save();
     processed += Number(to - from + 1n);
     from = to + 1n;
+    if (from <= safeHead) await sleep(250);
   }
   return processed;
 }
@@ -281,7 +316,7 @@ async function indexRange(
   toBlock: bigint,
 ) {
   if (cfg.launchFactory) {
-    const logs = await client.getLogs({
+    const logs = await getLogs(client,{
       address: cfg.launchFactory,
       event: parseAbiItem(
         "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, bytes32 poolId, address hooks, bool customHook, int24 tickLower, int24 tickUpper, uint128 liquidity)",
@@ -305,23 +340,77 @@ async function indexRange(
       });
     }
 
-    const configured = await client.getLogs({
+    const configured = await getLogs(client,{
       address: cfg.launchFactory,
       event: parseAbiItem(
-        "event LaunchConfigured(uint256 indexed launchId, uint256 packed, address quote, int24 tickSpacing, uint24 fee)",
+        "event LaunchConfigured(uint256 indexed launchId, uint256 bitmask, address quote, int24 tickSpacing, uint24 fee)",
       ),
       fromBlock,
       toBlock,
     });
     for (const log of configured) {
-      const a = log.args as { launchId: bigint; packed: bigint };
+      const a = log.args as { launchId: bigint; bitmask: bigint };
       const row = store.tokenForLaunchId(a.launchId);
-      if (row) row.hookModules = a.packed.toString();
+      if (row) row.hookModules = a.bitmask.toString();
+    }
+
+    const multiConfigured = await getLogs(client,{
+      address: cfg.launchFactory,
+      event: parseAbiItem(
+        "event MultiLaunchConfigured(uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask)",
+      ),
+      fromBlock,
+      toBlock,
+    });
+    for (const log of multiConfigured) {
+      const a = log.args as { launchId: bigint; marketCount: number; bitmask: bigint };
+      const row = store.tokenForLaunchId(a.launchId);
+      if (row) {
+        row.marketCount = Number(a.marketCount);
+        row.hookModules = a.bitmask.toString();
+      }
+    }
+
+    const marketLaunched = await getLogs(client,{
+      address: cfg.launchFactory,
+      event: parseAbiItem(
+        "event MarketLaunched(uint256 indexed launchId, uint8 indexed marketIndex, bytes32 poolId, address quote, uint16 bps, int24 tickLower, int24 tickUpper, uint128 liquidity)",
+      ),
+      fromBlock,
+      toBlock,
+    });
+    for (const log of marketLaunched) {
+      const a = log.args as {
+        launchId: bigint;
+        marketIndex: number;
+        poolId: Hex;
+        quote: Address;
+        bps: number;
+        tickLower: number;
+        tickUpper: number;
+        liquidity: bigint;
+      };
+      const row = store.tokenForLaunchId(a.launchId);
+      if (!row) continue;
+      const tokenIsCurrency0 = BigInt(row.address) < BigInt(a.quote);
+      store.registerMarket(
+        row.address,
+        {
+          poolId: a.poolId,
+          quote: a.quote,
+          bps: Number(a.bps),
+          tokenIsCurrency0: tokenIsCurrency0,
+          tickLower: Number(a.tickLower),
+          tickUpper: Number(a.tickUpper),
+          liquidity: a.liquidity.toString(),
+        },
+        row.marketCount,
+      );
     }
   }
 
   if (cfg.bondingFactory) {
-    const launched = await client.getLogs({
+    const launched = await getLogs(client,{
       address: cfg.bondingFactory,
       event: parseAbiItem(
         "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, address quote, uint256 graduationQuote)",
@@ -347,7 +436,7 @@ async function indexRange(
       });
     }
 
-    const graduated = await client.getLogs({
+    const graduated = await getLogs(client,{
       address: cfg.bondingFactory,
       event: parseAbiItem(
         "event Graduated(uint256 indexed launchId, bytes32 indexed poolId, uint256 quoteLp, uint256 tokenLp, uint128 liquidity)",
@@ -374,7 +463,7 @@ async function indexRange(
     const POOL_CHUNK = 40;
     for (let i = 0; i < poolIds.length; i += POOL_CHUNK) {
       const batch = poolIds.slice(i, i + POOL_CHUNK) as Hex[];
-      const swapLogs = await client.getLogs({
+      const swapLogs = await getLogs(client,{
         address: cfg.poolManager,
         event: parseAbiItem(
           "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)",
@@ -425,7 +514,7 @@ async function indexRange(
 
   const tokens = Object.keys(store.data.tokens);
   if (tokens.length > 0) {
-    const transferLogs = await client.getLogs({
+    const transferLogs = await getLogs(client,{
       address: tokens as Address[],
       event: transferEvent,
       fromBlock,
@@ -447,7 +536,7 @@ async function indexBondingTrades(
 ) {
   if (!cfg.bondingFactory) return;
 
-  const bought = await client.getLogs({
+  const bought = await getLogs(client,{
     address: cfg.bondingFactory,
     event: parseAbiItem(
       "event Bought(uint256 indexed launchId, address indexed buyer, uint256 quoteIn, uint256 tokensOut, uint256 feeQuote)",
@@ -456,7 +545,7 @@ async function indexBondingTrades(
     toBlock,
   });
 
-  const sold = await client.getLogs({
+  const sold = await getLogs(client,{
     address: cfg.bondingFactory,
     event: parseAbiItem(
       "event Sold(uint256 indexed launchId, address indexed seller, uint256 tokensIn, uint256 quoteOut, uint256 feeQuote)",

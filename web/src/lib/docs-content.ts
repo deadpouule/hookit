@@ -593,7 +593,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault and vests over time instead of being immediately claimable. Used for longer-term creator alignment.",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault and vests linearly over the duration you pick (7 days to 5 years). Claim unlocks gradually on the token page.",
         },
         {
           type: "h3",

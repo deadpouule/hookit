@@ -91,10 +91,26 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       if (!publicClient) {
         throw new Error("Wallet RPC not ready");
       }
-      const quote = resolveLaunchQuote(form.quoteAsset);
-      if (!quote) {
-        throw new Error(`Unsupported quote asset: ${form.quoteAsset}`);
+      const primaryMarket = form.markets[0];
+      if (!primaryMarket) {
+        throw new Error("Select at least one quote market");
       }
+      const quote = resolveLaunchQuote(primaryMarket.id);
+      if (!quote) {
+        throw new Error(`Unsupported quote asset: ${primaryMarket.id}`);
+      }
+      const marketQuotes = form.markets.map((m) => {
+        const q = resolveLaunchQuote(m.id);
+        if (!q && m.id !== "eth") {
+          throw new Error(`Unsupported quote asset: ${m.id}`);
+        }
+        return { quote: q ?? zeroAddress, bps: m.bps };
+      });
+      const bpsTotal = marketQuotes.reduce((sum, m) => sum + m.bps, 0);
+      if (bpsTotal !== 10_000) {
+        throw new Error("Market weights must total 100%");
+      }
+      const isMulti = form.markets.length > 1;
 
       const imageUri = await resolveLaunchImageUri(form.imagePreview);
       const metadataURI = buildMetadataUri(form, { imageUri });
@@ -150,28 +166,55 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         const bitmask =
           form.hookMode === "custom"
             ? BigInt(0)
-            : packLaunchBitmask(form.modules, form.hookTaxBps);
+            : packLaunchBitmask(
+                isMulti && form.modules.backedFloor
+                  ? { ...form.modules, backedFloor: false }
+                  : form.modules,
+                form.hookTaxBps,
+              );
         const customHook = customHookAddress ?? zeroAddress;
 
-        hash = await writeContractAsync({
-          address: factory,
-          abi: launchFactoryAbi,
-          functionName: "launch",
-          args: [
-            {
-              name: form.name.trim(),
-              symbol: form.ticker.trim().toUpperCase(),
-              metadataURI,
-              totalSupply: DEFAULT_TOTAL_SUPPLY,
-              quote,
-              tickSpacing: DEFAULT_TICK_SPACING,
-              startingTick: DEFAULT_STARTING_TICK,
-              bitmask,
-              customHook,
-            },
-          ],
-          value: launchFee,
-        });
+        if (isMulti) {
+          hash = await writeContractAsync({
+            address: factory,
+            abi: launchFactoryAbi,
+            functionName: "launchMulti",
+            args: [
+              {
+                name: form.name.trim(),
+                symbol: form.ticker.trim().toUpperCase(),
+                metadataURI,
+                totalSupply: DEFAULT_TOTAL_SUPPLY,
+                markets: marketQuotes,
+                tickSpacing: DEFAULT_TICK_SPACING,
+                bitmask,
+                customHook,
+                floorQuoteIndex: form.floorQuoteIndex,
+              },
+            ],
+            value: launchFee,
+          });
+        } else {
+          hash = await writeContractAsync({
+            address: factory,
+            abi: launchFactoryAbi,
+            functionName: "launch",
+            args: [
+              {
+                name: form.name.trim(),
+                symbol: form.ticker.trim().toUpperCase(),
+                metadataURI,
+                totalSupply: DEFAULT_TOTAL_SUPPLY,
+                quote,
+                tickSpacing: DEFAULT_TICK_SPACING,
+                startingTick: DEFAULT_STARTING_TICK,
+                bitmask,
+                customHook,
+              },
+            ],
+            value: launchFee,
+          });
+        }
       }
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });

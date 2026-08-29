@@ -5,6 +5,7 @@ export type HookId =
   | "maxWallet"
   | "maxTx"
   | "holderAirdrop"
+  | "creatorShareToHook"
   | "custom"
   | "quoteFee";
 
@@ -65,6 +66,14 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     hint: "Quote fees push to holders every 15m",
     color: "#f5d76e",
     glow: "rgba(245,215,110,0.45)",
+  },
+  creatorShareToHook: {
+    id: "creatorShareToHook",
+    label: "Creator → hook",
+    short: "→ hook",
+    hint: "Creator base share funds hook modules",
+    color: "#f472b6",
+    glow: "rgba(244,114,182,0.4)",
   },
   custom: {
     id: "custom",

@@ -6,9 +6,12 @@ Backend-only. The Next.js front consumes these HTTP routes — no subgraph requi
 
 ```bash
 cd indexer
-cp .env.example .env   # set LAUNCH_FACTORY (+ BONDING_FACTORY)
+cp .env.example .env   # optional local overrides
+# Root .env supplies INK_RPC_URL, LAUNCH_FACTORY, BONDING_FACTORY
 npm install
 npm run serve          # polls chain + serves API on :8787
+# Or from repo root:
+# ./scripts/serve-indexer.sh
 ```
 
 ## Env
@@ -17,12 +20,13 @@ npm run serve          # polls chain + serves API on :8787
 | --- | --- | --- |
 | `LAUNCH_FACTORY` | yes* | Master `LaunchFactory` |
 | `BONDING_FACTORY` | no | Classic rail when deployed |
-| `INDEXER_RPC_URL` | no | Dedicated RPC (falls back to `INK_RPC_URL`) |
+| `INDEXER_RPC_URL` | no | Optional dedicated RPC; defaults to `INK_RPC_URL` / gel public |
+| `INK_RPC_URL` | no | Loaded from repo root `.env` — `https://rpc-gel.inkonchain.com` |
 | `HOOKIT_CHAIN` | no | `ink` (default) or `baseSepolia` |
 | `POOL_MANAGER` | no | Ink v4 PoolManager default baked in |
 | `INDEXER_PORT` | no | default `8787` |
 | `INDEXER_POLL_MS` | no | default `12000` |
-| `INDEXER_CHUNK` | no | blocks per `getLogs` batch (default `2000`) |
+| `INDEXER_CHUNK` | no | blocks per `getLogs` batch (default `800` on Ink, `2000` on Base Sepolia) |
 | `INDEXER_CONFIRMATIONS` | no | reorg safety — index through `latest - N` (default `12`) |
 | `INDEXER_START_BLOCK` | no | factory deploy block (recommended prod); else ~80k lookback |
 | `INDEXER_DATA_DIR` | no | JSON store v2 directory |

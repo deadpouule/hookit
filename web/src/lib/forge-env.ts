@@ -10,10 +10,16 @@ import { getChainDeployment } from "@/lib/contracts/config";
 const execFileAsync = promisify(execFile);
 
 function resolveRepoRoot(): string {
+  const explicit = process.env.HOOKIT_REPO_ROOT?.trim();
+  if (explicit && fs.existsSync(path.join(explicit, "src", "LaunchToken.sol"))) {
+    return path.resolve(explicit);
+  }
   const cwd = process.cwd();
   if (fs.existsSync(path.join(cwd, "src", "LaunchToken.sol"))) return cwd;
   const parent = path.resolve(cwd, "..");
   if (fs.existsSync(path.join(parent, "src", "LaunchToken.sol"))) return parent;
+  const grand = path.resolve(cwd, "../..");
+  if (fs.existsSync(path.join(grand, "src", "LaunchToken.sol"))) return grand;
   return parent;
 }
 

@@ -1,0 +1,25 @@
+[Unit]
+Description=Hookit Next.js web (Ink mainnet)
+After=network-online.target hookit-indexer.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hookit
+Group=hookit
+WorkingDirectory=/opt/hookit/web/.next/standalone
+EnvironmentFile=/opt/hookit/.env
+EnvironmentFile=-/opt/hookit/web/.env.production.local
+Environment=NODE_ENV=production
+Environment=HOOKIT_REPO_ROOT=/opt/hookit
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hookit-web
+
+[Install]
+WantedBy=multi-user.target

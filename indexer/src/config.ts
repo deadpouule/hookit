@@ -54,21 +54,29 @@ export function loadConfig(): IndexerConfig {
   const isInk = chainKey === "ink" || chainKey === "57073";
   const chain = isInk ? ink : baseSepolia;
 
-  const rpcUrl =
-    process.env.INDEXER_RPC_URL ??
-    (isInk
-      ? (process.env.INK_RPC_URL ?? process.env.NEXT_PUBLIC_INK_RPC_URL ?? chain.rpcUrls.default.http[0])
-      : (process.env.BASE_SEPOLIA_RPC_URL ??
-        process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
-        chain.rpcUrls.default.http[0]));
+  const rpcUrl = isInk
+    ? (process.env.INK_RPC_URL ??
+      process.env.NEXT_PUBLIC_INK_RPC_URL ??
+      process.env.INDEXER_RPC_URL ??
+      chain.rpcUrls.default.http[0])
+    : (process.env.BASE_SEPOLIA_RPC_URL ??
+      process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
+      process.env.INDEXER_RPC_URL ??
+      chain.rpcUrls.default.http[0]);
 
   const poolManager = (process.env.POOL_MANAGER ??
     (isInk
       ? "0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32"
       : "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408")) as Address;
 
-  const launchFactory = addr(process.env.LAUNCH_FACTORY ?? process.env.NEXT_PUBLIC_LAUNCH_FACTORY);
-  const bondingFactory = addr(process.env.BONDING_FACTORY ?? process.env.NEXT_PUBLIC_BONDING_FACTORY);
+  const launchFactory = addr(
+    process.env.LAUNCH_FACTORY ??
+      process.env.NEXT_PUBLIC_LAUNCH_FACTORY,
+  );
+  const bondingFactory = addr(
+    process.env.BONDING_FACTORY ??
+      process.env.NEXT_PUBLIC_BONDING_FACTORY,
+  );
 
   const exclude = new Set<string>([
     "0x0000000000000000000000000000000000000000",
@@ -85,7 +93,7 @@ export function loadConfig(): IndexerConfig {
     rpcUrl,
     port: Number(process.env.INDEXER_PORT ?? 8787),
     pollMs: Number(process.env.INDEXER_POLL_MS ?? 12_000),
-    chunkSize: BigInt(process.env.INDEXER_CHUNK ?? 2_000),
+    chunkSize: BigInt(process.env.INDEXER_CHUNK ?? (isInk ? 800 : 2_000)),
     confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? 12),
     dataDir: process.env.INDEXER_DATA_DIR ?? defaultData,
     launchFactory,
@@ -122,6 +130,16 @@ export type Candle = {
   trades: number;
 };
 
+export type TokenMarket = {
+  poolId: Hex;
+  quote: Address;
+  bps: number;
+  tokenIsCurrency0: boolean;
+  tickLower: number;
+  tickUpper: number;
+  liquidity: string;
+};
+
 export type TokenRow = {
   address: Address;
   poolId: Hex;
@@ -143,6 +161,9 @@ export type TokenRow = {
   graduationQuote?: string;
   realQuote?: string;
   graduatedAt?: number;
+  /** Present when indexed via `launchMulti` (1–5 canonical pools). */
+  marketCount?: number;
+  markets?: TokenMarket[];
   holders: Record<string, string>;
   trades: IndexedTrade[];
   candles5m: Candle[];

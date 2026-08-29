@@ -28,9 +28,43 @@ export const launchFactoryAbi = [
   },
   {
     type: "function",
-    name: "launchFee",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
+    name: "launchMulti",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          { name: "name", type: "string" },
+          { name: "symbol", type: "string" },
+          { name: "metadataURI", type: "string" },
+          { name: "totalSupply", type: "uint256" },
+          {
+            name: "markets",
+            type: "tuple[]",
+            components: [
+              { name: "quote", type: "address" },
+              { name: "bps", type: "uint16" },
+            ],
+          },
+          { name: "tickSpacing", type: "int24" },
+          { name: "bitmask", type: "uint256" },
+          { name: "customHook", type: "address" },
+          { name: "floorQuoteIndex", type: "uint8" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "launchId", type: "uint256" },
+      { name: "token", type: "address" },
+      { name: "primaryPoolId", type: "bytes32" },
+    ],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "launchMarketCount",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint8" }],
     stateMutability: "view",
   },
   {

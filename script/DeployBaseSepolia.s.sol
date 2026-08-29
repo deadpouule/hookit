@@ -100,7 +100,8 @@ contract DeployBaseSepoliaScript is Script {
                 initialSnipeTaxBps: 5_000,
                 autoBurnBps: 0,
                 lpDonateBps: 0,
-                holderAirdropBps: 0
+                holderAirdropBps: 0,
+                buybackVestingDurationSeconds: 0
             })
         );
 

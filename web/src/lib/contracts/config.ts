@@ -40,7 +40,7 @@ const INK_MAINNET: ChainDeployment = {
   universalRouter: "0x112908daC86e20e7241B0927479Ea3Bf935d1fa0",
   poolSwapTest: zeroAddress,
   stableQuote: USDG_INK_ADDRESS,
-  ethUsdFeed: "0xdFc720E1ef024bfc768ed9E6F0e7Fc80E28f8CFA",
+  ethUsdFeed: "0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF", // RedStone ETH/USD (Ink)
   explorer: "https://explorer.inkonchain.com",
   networkLabel: "Ink",
 };

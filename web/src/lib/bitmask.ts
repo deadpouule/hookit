@@ -5,6 +5,8 @@ const FLAG_BACKED_FLOOR = BigInt(1) << BigInt(1);
 const FLAG_ANTI_MEV = BigInt(1) << BigInt(2);
 const FLAG_MAX_TX = BigInt(1) << BigInt(3);
 const FLAG_MAX_WALLET = BigInt(1) << BigInt(4);
+const FLAG_DYNAMIC_FEES = BigInt(1) << BigInt(5);
+const FLAG_BUYBACK_VESTING = BigInt(1) << BigInt(6);
 const FLAG_AUTO_BURN = BigInt(1) << BigInt(111);
 const FLAG_LP_DONATE = BigInt(1) << BigInt(112);
 const FLAG_HOLDER_AIRDROP = BigInt(1) << BigInt(145);
@@ -19,10 +21,14 @@ const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
 const SHIFT_LP_DONATE_BPS = BigInt(129);
 const SHIFT_HOLDER_AIRDROP_BPS = BigInt(146);
+const SHIFT_BUYBACK_VESTING_DURATION = BigInt(163);
 
 const MAX_HOOK_TAX_BPS = BigInt(900);
 const MAX_TOTAL_FEE_BPS = BigInt(1000);
 const MAX_SNIPE_TAX_BPS = BigInt(9900);
+const MIN_BUYBACK_VESTING_DAYS = 7;
+const MAX_BUYBACK_VESTING_DAYS = 365 * 5;
+const SECONDS_PER_DAY = 86_400;
 
 /** Packs UI module config into the on-chain uint256 bitmask (matches BitmaskConfig.sol). */
 export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): bigint {
@@ -68,12 +74,21 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
     );
   }
 
+  if (modules.buybackVesting) {
+    const days = modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
+    if (days < MIN_BUYBACK_VESTING_DAYS || days > MAX_BUYBACK_VESTING_DAYS) {
+      throw new Error(`Buyback vesting duration must be ${MIN_BUYBACK_VESTING_DAYS}–${MAX_BUYBACK_VESTING_DAYS} days`);
+    }
+  }
+
   let packed = BigInt(0);
   if (modules.antiSnipe) packed |= FLAG_ANTI_SNIPE;
   if (modules.backedFloor) packed |= FLAG_BACKED_FLOOR;
   if (modules.antiMev) packed |= FLAG_ANTI_MEV;
   if (modules.maxTx) packed |= FLAG_MAX_TX;
   if (modules.maxWallet) packed |= FLAG_MAX_WALLET;
+  if (modules.dynamicFees) packed |= FLAG_DYNAMIC_FEES;
+  if (modules.buybackVesting) packed |= FLAG_BUYBACK_VESTING;
   if (modules.autoBurn) packed |= FLAG_AUTO_BURN;
   if (modules.lpDonate) packed |= FLAG_LP_DONATE;
   if (modules.holderAirdrop) packed |= FLAG_HOLDER_AIRDROP;
@@ -88,12 +103,17 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   packed |= autoBurnBps << SHIFT_AUTO_BURN_BPS;
   packed |= lpDonateBps << SHIFT_LP_DONATE_BPS;
   packed |= holderAirdropBps << SHIFT_HOLDER_AIRDROP_BPS;
+  if (modules.buybackVesting) {
+    const days = modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
+    packed |= BigInt(days * SECONDS_PER_DAY) << SHIFT_BUYBACK_VESTING_DURATION;
+  }
 
   return packed;
 }
 
 const UINT16_MASK = BigInt(0xffff);
 const UINT24_MASK = BigInt(0xffffff);
+const UINT32_MASK = BigInt(0xffffffff);
 
 export interface UnpackedBitmask {
   modules: LaunchModules;
@@ -107,6 +127,8 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const antiMev = (packed & FLAG_ANTI_MEV) !== BigInt(0);
   const maxTx = (packed & FLAG_MAX_TX) !== BigInt(0);
   const maxWallet = (packed & FLAG_MAX_WALLET) !== BigInt(0);
+  const dynamicFees = (packed & FLAG_DYNAMIC_FEES) !== BigInt(0);
+  const buybackVesting = (packed & FLAG_BUYBACK_VESTING) !== BigInt(0);
   const autoBurn = (packed & FLAG_AUTO_BURN) !== BigInt(0);
   const lpDonate = (packed & FLAG_LP_DONATE) !== BigInt(0);
   const holderAirdrop = (packed & FLAG_HOLDER_AIRDROP) !== BigInt(0);
@@ -122,6 +144,11 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const autoBurnBps = Number((packed >> SHIFT_AUTO_BURN_BPS) & UINT16_MASK);
   const lpDonateBps = Number((packed >> SHIFT_LP_DONATE_BPS) & UINT16_MASK);
   const holderAirdropBps = Number((packed >> SHIFT_HOLDER_AIRDROP_BPS) & UINT16_MASK);
+  const buybackVestingDurationSeconds = Number((packed >> SHIFT_BUYBACK_VESTING_DURATION) & UINT32_MASK);
+  const buybackVestingDurationDays = Math.max(
+    MIN_BUYBACK_VESTING_DAYS,
+    Math.round(buybackVestingDurationSeconds / SECONDS_PER_DAY) || MAX_BUYBACK_VESTING_DAYS,
+  );
 
   return {
     hookTaxBps,
@@ -136,6 +163,9 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       maxWalletBps,
       maxTx,
       maxTxBps,
+      dynamicFees,
+      buybackVesting,
+      buybackVestingDurationDays,
       autoBurn,
       autoBurnPct: autoBurnBps === 0 ? 20 : Math.max(1, Math.round(autoBurnBps / 100)),
       lpDonate,

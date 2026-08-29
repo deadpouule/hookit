@@ -11,11 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "tsx": "^4.20.5",
     "viem": "^2.55.19"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

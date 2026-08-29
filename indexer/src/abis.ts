@@ -19,10 +19,34 @@ export const launchFactoryAbi = [
     name: "LaunchConfigured",
     inputs: [
       { name: "launchId", type: "uint256", indexed: true },
-      { name: "packed", type: "uint256", indexed: false },
+      { name: "bitmask", type: "uint256", indexed: false },
       { name: "quote", type: "address", indexed: false },
       { name: "tickSpacing", type: "int24", indexed: false },
       { name: "fee", type: "uint24", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "MultiLaunchConfigured",
+    inputs: [
+      { name: "launchId", type: "uint256", indexed: true },
+      { name: "marketCount", type: "uint8", indexed: false },
+      { name: "floorQuoteIndex", type: "uint8", indexed: false },
+      { name: "bitmask", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "MarketLaunched",
+    inputs: [
+      { name: "launchId", type: "uint256", indexed: true },
+      { name: "marketIndex", type: "uint8", indexed: true },
+      { name: "poolId", type: "bytes32", indexed: false },
+      { name: "quote", type: "address", indexed: false },
+      { name: "bps", type: "uint16", indexed: false },
+      { name: "tickLower", type: "int24", indexed: false },
+      { name: "tickUpper", type: "int24", indexed: false },
+      { name: "liquidity", type: "uint128", indexed: false },
     ],
   },
   {

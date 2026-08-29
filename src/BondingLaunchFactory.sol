@@ -18,6 +18,7 @@ import {FeeEscrow} from "./FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {BondingConstants} from "./libraries/BondingConstants.sol";
 import {BondingMath} from "./libraries/BondingMath.sol";
+import {TokenAddressMiner} from "./libraries/TokenAddressMiner.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {QuotronBridge} from "./libraries/QuotronBridge.sol";
@@ -232,8 +233,13 @@ contract BondingLaunchFactory is Owned {
         );
         if (virtualQuote == 0) virtualQuote = 1;
 
-        token = address(
-            new LaunchToken(params.name, params.symbol, supply, msg.sender, address(this), params.metadataURI)
+        token = TokenAddressMiner.deploy(
+            address(this),
+            abi.encodePacked(
+                type(LaunchToken).creationCode,
+                abi.encode(params.name, params.symbol, supply, msg.sender, address(this), params.metadataURI)
+            ),
+            keccak256(abi.encodePacked(params.name, params.symbol, msg.sender, supply, params.metadataURI, launchCount))
         );
 
         launchId = ++launchCount;

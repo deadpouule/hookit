@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import type { Address, Hex } from "viem";
 
-import type { Candle, IndexedTrade, StoreFile, StoreFileV1, TokenRow } from "./config.js";
+import type { Candle, IndexedTrade, StoreFile, StoreFileV1, TokenMarket, TokenRow } from "./config.js";
 import { compareDec, maxDec, minDec } from "./math.js";
 
 export const MAX_TRADES = 2_000;
@@ -90,7 +90,25 @@ export class Store {
     if (row.poolId !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
       this.data.poolToToken[row.poolId.toLowerCase()] = key;
     }
+    if (row.markets?.length) {
+      for (const m of row.markets) {
+        this.data.poolToToken[m.poolId.toLowerCase()] = key;
+      }
+    }
     this.data.launchIdToToken[String(row.launchId)] = key;
+  }
+
+  registerMarket(token: Address, market: TokenMarket, marketCount?: number) {
+    const row = this.getToken(token);
+    if (!row) return;
+    if (!row.markets) row.markets = [];
+    const pid = market.poolId.toLowerCase();
+    const ix = row.markets.findIndex((m) => m.poolId.toLowerCase() === pid);
+    if (ix >= 0) row.markets[ix] = market;
+    else row.markets.push(market);
+    row.markets.sort((a, b) => b.bps - a.bps);
+    this.data.poolToToken[pid] = token.toLowerCase();
+    if (marketCount !== undefined) row.marketCount = marketCount;
   }
 
   tokenForLaunchId(launchId: bigint | number): TokenRow | undefined {

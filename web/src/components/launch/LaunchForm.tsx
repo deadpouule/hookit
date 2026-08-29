@@ -99,6 +99,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     if (form.modules.maxWallet) tags.push("maxWallet");
     if (form.modules.maxTx) tags.push("maxTx");
     if (form.modules.holderAirdrop) tags.push("holderAirdrop");
+    if (form.modules.creatorShareToHook) tags.push("creatorShareToHook");
     return tags;
   }, [form.hookMode, form.modules]);
 
@@ -341,8 +342,22 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           <FormDivider />
 
           <PairingPicker
-            value={form.quoteAsset}
-            onChange={(id: PairingTokenId) => setForm((p) => ({ ...p, quoteAsset: id }))}
+            markets={form.markets}
+            floorQuoteIndex={form.floorQuoteIndex}
+            onMarketsChange={(markets) =>
+              setForm((p) => ({
+                ...p,
+                markets,
+                quoteAsset: markets[0]?.id ?? p.quoteAsset,
+                modules:
+                  markets.length > 1 && p.modules.backedFloor
+                    ? { ...p.modules, backedFloor: false }
+                    : p.modules,
+              }))
+            }
+            onFloorQuoteIndexChange={(floorQuoteIndex) =>
+              setForm((p) => ({ ...p, floorQuoteIndex }))
+            }
           />
 
           <FormDivider />
@@ -403,6 +418,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                 onToggle={(id, next) => updateModules({ [HOOK_MODULE_FIELD[id]]: next })}
                 onUpdate={updateModules}
                 floorEst={floorEst}
+                multiMarket={form.markets.length > 1}
               />
 
               <FormDivider />
@@ -449,7 +465,33 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                       ...(next ? { buybackVesting: false } : {}),
                     })
                   }
-                />
+                >
+                  {form.modules.creatorShareToHook && (
+                    <p className="text-xs leading-relaxed text-zinc-500">
+                      {form.modules.backedFloor ||
+                      form.modules.autoBurn ||
+                      form.modules.lpDonate ||
+                      form.modules.holderAirdrop ||
+                      form.hookTaxBps > 0 ? (
+                        <>
+                          Your base share joins the same hook pot as the hook tax, split across enabled
+                          modules.
+                        </>
+                      ) : (
+                        <>
+                          No hook modules selected — your 70% base share still routes to the hook pot
+                          and unallocated amounts go to the protocol treasury. Enable floor, burn, donate,
+                          or airdrop above to direct it.
+                        </>
+                      )}
+                      {form.modules.buybackVesting && (
+                        <span className="mt-1 block text-amber-600/90">
+                          Disabled while buyback vesting is on — they cannot run together.
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </ModuleRow>
               </div>
             </>
           )}

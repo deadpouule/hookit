@@ -62,7 +62,8 @@ contract FeeDistributionTest is Test {
             initialSnipeTaxBps: 4_000,
             autoBurnBps: 1_000,
             lpDonateBps: 1_000,
-            holderAirdropBps: 2_000
+            holderAirdropBps: 2_000,
+            buybackVestingDurationSeconds: uint32(180 days)
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
@@ -80,6 +81,7 @@ contract FeeDistributionTest is Test {
         assertEq(out.autoBurnBps, 1_000);
         assertEq(out.lpDonateBps, 1_000);
         assertEq(out.holderAirdropBps, 2_000);
+        assertEq(out.buybackVestingDurationSeconds, 180 days);
     }
 
     function packModules(BitmaskConfig.Modules memory m) public pure returns (uint256) {
@@ -156,14 +158,17 @@ contract FeeDistributionTest is Test {
     }
 
     function testBuybackLinearVest() public {
+        address token = address(0xCAFE);
         uint256 amount = 5 ether;
-        buybacks.credit{value: amount}(creator, Currency.wrap(address(0)), amount);
-        assertEq(buybacks.vestedOf(creator, Currency.wrap(address(0))), 0);
+        buybacks.credit{value: amount}(
+            creator, token, Currency.wrap(address(0)), amount, uint64(ProtocolConstants.BUYBACK_VESTING_DURATION)
+        );
+        assertEq(buybacks.vestedOf(creator, token), 0);
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION / 5);
-        uint256 vested = buybacks.vestedOf(creator, Currency.wrap(address(0)));
+        uint256 vested = buybacks.vestedOf(creator, token);
         assertApproxEqRel(vested, amount / 5, 1e16);
         vm.prank(creator);
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(token);
         assertEq(creator.balance, vested);
     }
 

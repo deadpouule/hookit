@@ -144,6 +144,16 @@ cd indexer && npm install && npm run serve
 
 Front proxies via `/api/indexer/*` when `INDEXER_URL` points at the service.
 
+### Self-host (Linode / VPS)
+
+Web + indexer + server-side custom hook deploy (`forge`) on one box: **`deploy/linode/README.md`**.
+
+```bash
+./deploy/linode/bootstrap.sh   # once on Ubuntu
+cp deploy/linode/env.production.example /opt/hookit/.env
+./deploy/linode/deploy.sh
+```
+
 ## Security notes
 
 This is unaudited reference implementation. Custom hooks are untrusted. Anti-MEV uses transient storage (same tx) plus a per-origin block guard. Floor fills currently trigger when *spot is already at or below* `P_floor`; a swap that *crosses* the floor in one tick still trades on the curve until the next swap.

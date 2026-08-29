@@ -42,6 +42,8 @@ library ProtocolConstants {
 
     uint16 internal constant DEFAULT_INITIAL_SNIPE_TAX_BPS = 5_000;
     uint256 internal constant BUYBACK_VESTING_DURATION = 5 * 365 days;
+    uint32 internal constant MIN_BUYBACK_VESTING_DURATION = 7 days;
+    uint32 internal constant MAX_BUYBACK_VESTING_DURATION = uint32(BUYBACK_VESTING_DURATION);
 
     int24 internal constant DEFAULT_TICK_SPACING = 60;
 
@@ -55,6 +57,10 @@ library ProtocolConstants {
 
     /// @dev Canonical launch supply (1 billion tokens, 18 decimals).
     uint256 internal constant DEFAULT_LAUNCH_SUPPLY = 1_000_000_000e18;
+
+    /// @dev Multi-market launches: 1–5 independent v4 pools per token (PAIR-style).
+    uint8 internal constant MIN_LAUNCH_MARKETS = 1;
+    uint8 internal constant MAX_LAUNCH_MARKETS = 5;
 
     /// @dev Default anti-snipe window for HKIT fair launch.
     uint16 internal constant HKIT_ANTI_SNIPE_DURATION_SECONDS = 3600;

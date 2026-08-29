@@ -7,12 +7,10 @@ import { createClient, tick } from "./poller.js";
 import { startApi } from "./api.js";
 import { Store } from "./store.js";
 
-/** Load indexer/.env into process.env (no dotenv dependency). */
-function loadDotEnv() {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const envPath = resolve(here, "../.env");
-  if (!existsSync(envPath)) return;
-  for (const line of readFileSync(envPath, "utf8").split("\n")) {
+/** Load KEY=VAL lines from a .env file (no dotenv dependency). Later files override earlier keys. */
+function loadDotEnvFile(path: string) {
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
     const eq = trimmed.indexOf("=");
@@ -25,8 +23,15 @@ function loadDotEnv() {
     ) {
       val = val.slice(1, -1);
     }
-    if (process.env[key] === undefined) process.env[key] = val;
+    process.env[key] = val;
   }
+}
+
+/** Repo root first, then indexer-local overrides. */
+function loadDotEnv() {
+  const here = dirname(fileURLToPath(import.meta.url));
+  loadDotEnvFile(resolve(here, "../../.env"));
+  loadDotEnvFile(resolve(here, "../.env"));
 }
 
 loadDotEnv();

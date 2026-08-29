@@ -80,29 +80,35 @@ contract CompletenessTest is LaunchpadTestBase {
     // ─── Buyback vesting: full 5-year claim ───────────────────────────────────
 
     function testBuyback_FullFiveYearVestAndClaim() public {
+        address token = address(0xBEEF1234);
         uint256 amount = 8 ether;
-        buybacks.credit{value: amount}(address(this), Currency.wrap(address(0)), amount);
+        buybacks.credit{value: amount}(
+            address(this), token, Currency.wrap(address(0)), amount, uint64(ProtocolConstants.BUYBACK_VESTING_DURATION)
+        );
 
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION + 1 days);
-        assertEq(buybacks.vestedOf(address(this), Currency.wrap(address(0))), amount);
+        assertEq(buybacks.vestedOf(address(this), token), amount);
 
         uint256 balBefore = address(this).balance;
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(token);
         assertEq(address(this).balance - balBefore, amount);
-        assertEq(buybacks.vestedOf(address(this), Currency.wrap(address(0))), 0);
+        assertEq(buybacks.vestedOf(address(this), token), 0);
     }
 
     function testBuyback_IncrementalClaimsOverVest() public {
+        address token = address(0xBEEF5678);
         uint256 amount = 10 ether;
-        buybacks.credit{value: amount}(address(this), Currency.wrap(address(0)), amount);
+        buybacks.credit{value: amount}(
+            address(this), token, Currency.wrap(address(0)), amount, uint64(ProtocolConstants.BUYBACK_VESTING_DURATION)
+        );
 
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION / 2);
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(token);
         uint256 half = amount / 2;
 
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION / 2 + 1);
         uint256 before = address(this).balance;
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(token);
         assertApproxEqRel(address(this).balance - before, amount - half, 0.01e18);
     }
 
@@ -110,17 +116,36 @@ contract CompletenessTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 300;
-        (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(trader, key, 3 ether);
-        (uint128 streamed,,) = buybacks.streams(address(this), Currency.wrap(address(0)));
+        (, uint128 streamed,,,) = buybacks.streams(address(this), token);
         assertGt(streamed, 0);
 
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION + 1);
         uint256 before = address(this).balance;
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(token);
         assertGt(address(this).balance, before);
+    }
+
+    function testBuybackVesting_CustomDurationFromLaunch() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.buybackVesting = true;
+        m.buybackVestingDurationSeconds = 30 days;
+        m.hookTaxBps = 200;
+        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        key = factory.poolKeyOf(launchId);
+
+        _buyAs(trader, key, 2 ether);
+        (,,,, uint64 duration) = buybacks.streams(address(this), token);
+        assertEq(duration, 30 days);
+
+        vm.warp(block.timestamp + 15 days);
+        assertGt(buybacks.vestedOf(address(this), token), 0);
+        vm.warp(block.timestamp + 16 days);
+        (, uint128 amount,,,) = buybacks.streams(address(this), token);
+        assertEq(buybacks.vestedOf(address(this), token), amount);
     }
 
     // ─── Custom hook launch ───────────────────────────────────────────────────

@@ -15,6 +15,7 @@ bytecode_hash = "none"
 fs_permissions = [
     { access = "read-write", path = "./.forge-snapshots" },
     { access = "read-write", path = "./.gas-snapshot" },
+    { access = "read-write", path = "./src/generated" },
 ]
 gas_reports = ["MasterLaunchHook", "LaunchFactory", "FloorVault", "FeeEscrow", "ProtocolRevenueDistributor"]
 ignored_error_codes = [2394, 3860]

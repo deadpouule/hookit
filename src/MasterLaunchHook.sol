@@ -186,7 +186,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (sender != factory) revert OnlyFactory();
         st.launchTimestamp = uint64(block.timestamp);
         st.initialized = true;
-        vault.setQuote(st.token, st.quote);
+        if (configs[id].enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
+            vault.setQuote(st.token, st.quote);
+        }
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
             airdropVault.setExcluded(st.token, address(poolManager), true);
             airdropVault.setExcluded(st.token, address(this), true);
@@ -431,7 +433,15 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             buybackAmt = creatorEscrowAmt;
             creatorEscrowAmt = 0;
             _pushQuote(st.quote, address(buybacks), buybackAmt);
-            if (buybackAmt > 0) buybacks.creditInternal(st.creator, st.quote, buybackAmt);
+            if (buybackAmt > 0) {
+                buybacks.creditInternal(
+                    st.creator,
+                    st.token,
+                    st.quote,
+                    buybackAmt,
+                    packed.buybackVestingDurationSeconds()
+                );
+            }
         } else {
             _pushQuote(st.quote, address(escrow), creatorEscrowAmt);
             if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);

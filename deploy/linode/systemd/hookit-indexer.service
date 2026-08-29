@@ -1,0 +1,23 @@
+[Unit]
+Description=Hookit house indexer (Ink)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hookit
+Group=hookit
+WorkingDirectory=/opt/hookit/indexer
+EnvironmentFile=/opt/hookit/.env
+ExecStart=/usr/bin/npm run serve
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hookit-indexer
+
+# Gel RPC rate limits — allow backoff
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

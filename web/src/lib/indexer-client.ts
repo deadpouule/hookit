@@ -62,6 +62,18 @@ export type IndexerTokenSummary = {
   volume24h: string;
   trades24h: number;
   change24h: number | null;
+  marketCount?: number;
+  markets?: IndexerTokenMarket[] | null;
+};
+
+export type IndexerTokenMarket = {
+  poolId: string;
+  quote: string;
+  bps: number;
+  tokenIsCurrency0: boolean;
+  tickLower: number;
+  tickUpper: number;
+  liquidity: string;
 };
 
 export type IndexerHealth = {

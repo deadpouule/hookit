@@ -24,10 +24,12 @@ export interface LaunchModules {
   maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
-  /** UI toggle — not packed into Master bitmask yet. */
+  /** UI toggle — packed into Master bitmask. */
   dynamicFees?: boolean;
-  /** UI toggle — not packed into Master bitmask yet. */
+  /** UI toggle — packed into Master bitmask. */
   buybackVesting?: boolean;
+  /** Linear vest duration when buyback vesting is on (days). */
+  buybackVestingDurationDays?: number;
   autoBurn: boolean;
   autoBurnPct: number;
   lpDonate: boolean;
@@ -38,6 +40,12 @@ export interface LaunchModules {
   holderAirdropPct: number;
   /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
+}
+
+export interface LaunchMarketInput {
+  id: PairingTokenId;
+  /** Basis points — must sum to 10_000 across selected markets. */
+  bps: number;
 }
 
 export interface LaunchFormState {
@@ -55,7 +63,12 @@ export interface LaunchFormState {
   modules: LaunchModules;
   hookTaxBps: number;
   devBuyEth: string;
+  /** @deprecated use markets[0] — kept for classic / single-pool paths */
   quoteAsset: PairingTokenId;
+  /** 1–5 canonical quote markets for Master multi-pool launch. */
+  markets: LaunchMarketInput[];
+  /** Creator-chosen floor leg index (multi); inactive until floor ships in multi. */
+  floorQuoteIndex: number;
 }
 
 export interface TokenPool {

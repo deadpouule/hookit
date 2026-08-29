@@ -55,7 +55,7 @@ library UniswapV4Deployments {
                 permit2: 0x000000000022D473030F116dDEE9F6B43aC78BA3,
                 create2Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C,
                 stableQuote: 0xe343167631d89B6Ffc58B88d6b7fB0228795491D, // USDG (Paxos)
-                ethUsdFeed: 0xdFc720E1ef024bfc768ed9E6F0e7Fc80E28f8CFA,
+                ethUsdFeed: 0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF, // RedStone ETH/USD (Ink)
                 poolSwapTest: address(0)
             });
         }

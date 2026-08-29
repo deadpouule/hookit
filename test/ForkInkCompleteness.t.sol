@@ -78,15 +78,15 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         );
 
         _routerBuy(trader, l.key, l.token, 4 ether);
-        (uint128 streamed,,) = buybacks.streams(creator, Currency.wrap(address(0)));
+        (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
         assertGt(streamed, 0);
 
         vm.warp(block.timestamp + ProtocolConstants.BUYBACK_VESTING_DURATION + 1 days);
-        assertEq(buybacks.vestedOf(creator, Currency.wrap(address(0))), streamed);
+        assertEq(buybacks.vestedOf(creator, l.token), streamed);
 
         uint256 ethBefore = creator.balance;
         vm.prank(creator);
-        buybacks.claim(Currency.wrap(address(0)));
+        buybacks.claim(l.token);
         assertGt(creator.balance, ethBefore);
     }
 
@@ -182,7 +182,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         assertGt(_tokenBalance(l.token, trader), 0);
 
         assertGt(vault.reserve(l.token), 0);
-        (uint128 streamed,,) = buybacks.streams(creator, quote.isAddressZero() ? Currency.wrap(address(0)) : quote);
+        (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
         assertGt(streamed, 0);
         assertLt(IERC20(l.token).totalSupply(), supplyBefore);
         (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);

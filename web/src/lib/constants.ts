@@ -3,6 +3,8 @@ import type { LaunchFormState, ProtocolMetrics, TokenPool } from "./types";
 export const LAUNCH_FEE_ETH = 0.0005;
 export const TARGET_LAUNCH_MCAP_USD = 4_000;
 export const DEFAULT_LAUNCH_ETH_USD = 4_000;
+/** Classic bonding graduation target (~4.2 ETH or USD-equivalent). */
+export const GRADUATION_ETH = 4.2;
 export const BASE_FEE_BPS = 100;
 export const CREATOR_SHARE_BPS = 7000;
 export const PROTOCOL_SHARE_BPS = 3000;
@@ -11,7 +13,10 @@ export const FLYWHEEL_SHARE_BPS = 8000;
 /** Max hook tax so base (1%) + tax ≤ 10% total steady fee. */
 export const MAX_HOOK_TAX_BPS = 900;
 export const MAX_TOTAL_FEE_BPS = 1000;
-export const GRADUATION_ETH = 4.2;
+export const BUYBACK_VESTING_DEFAULT_DAYS = 365 * 5;
+export const BUYBACK_VESTING_MIN_DAYS = 7;
+export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
+export const SECONDS_PER_DAY = 86_400;
 
 export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   name: "",
@@ -41,11 +46,16 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     lpDonatePct: 20,
     holderAirdrop: false,
     holderAirdropPct: 50,
+    buybackVesting: false,
+    buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
+    dynamicFees: false,
     creatorShareToHook: false,
   },
   hookTaxBps: 50,
   devBuyEth: "",
   quoteAsset: "eth",
+  markets: [{ id: "eth", bps: 10_000 }],
+  floorQuoteIndex: 0,
 };
 
 export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
@@ -68,6 +78,9 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     lpDonatePct: 20,
     holderAirdrop: false,
     holderAirdropPct: 50,
+    buybackVesting: false,
+    buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
+    dynamicFees: false,
     creatorShareToHook: false,
   },
 };
