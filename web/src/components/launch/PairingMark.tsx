@@ -1,24 +1,62 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import { cn } from "@/lib/utils";
 
+const PAIRING_LOGO_SRC: Partial<Record<PairingTokenId, string>> = {
+  usdg: "/pairing/usdg.png",
+  wmstrx: "/pairing/wmstrx.png",
+  wnflxx: "/pairing/wnflxx.png",
+  wnvdax: "/pairing/wnvdax.png",
+  wspyx: "/pairing/wspyx.png",
+  wtslax: "/pairing/wtslax.png",
+};
+
 function Wrap({
   children,
   fill,
   size = "md",
+  className,
 }: {
   children: ReactNode;
   fill: string;
   size?: "sm" | "md";
+  className?: string;
 }) {
   return (
     <span
-      className={cn("pick-logo", size === "sm" && "pick-logo--sm")}
+      className={cn("pick-logo", size === "sm" && "pick-logo--sm", className)}
       style={{ background: fill }}
     >
       {children}
     </span>
+  );
+}
+
+function LogoMark({
+  id,
+  size,
+  fill = "transparent",
+}: {
+  id: PairingTokenId;
+  size: "sm" | "md";
+  fill?: string;
+}) {
+  const src = PAIRING_LOGO_SRC[id];
+  if (!src) return null;
+  const px = size === "sm" ? 20 : 44;
+  return (
+    <Wrap fill={fill} size={size} className="pick-logo--photo">
+      <Image
+        src={src}
+        alt=""
+        width={px}
+        height={px}
+        className="h-full w-full object-cover"
+        draggable={false}
+      />
+    </Wrap>
   );
 }
 
@@ -29,6 +67,10 @@ export function PairingMark({
   id: PairingTokenId;
   size?: "sm" | "md";
 }) {
+  if (PAIRING_LOGO_SRC[id]) {
+    return <LogoMark id={id} size={size} />;
+  }
+
   const iconClass = size === "sm" ? "h-4 w-4" : "h-7 w-7";
   switch (id) {
     case "eth":
@@ -36,15 +78,6 @@ export function PairingMark({
         <Wrap fill="#627eea" size={size}>
           <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
             <path fill="#fff" fillOpacity="0.92" d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z" />
-          </svg>
-        </Wrap>
-      );
-    case "usdg":
-      return (
-        <Wrap fill="#16a34a" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" strokeWidth="1.6" />
-            <path d="M12 6.5v11M9.2 9.2c.6-1 1.6-1.5 2.8-1.5 1.8 0 3 1 3 2.4 0 2.4-5.6 1.4-5.6 4.2 0 1.4 1.2 2.5 3.1 2.5 1.3 0 2.3-.5 2.9-1.4" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
         </Wrap>
       );
@@ -76,46 +109,7 @@ export function PairingMark({
           </svg>
         </Wrap>
       );
-    case "wmstrx":
-      return (
-        <Wrap fill="#f97316" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <path fill="#fff" d="M5 18V6h3.1l3.9 7.2L15.9 6H19v12h-2.8V10.2L12.3 18h-.7L7.8 10.2V18H5Z" />
-          </svg>
-        </Wrap>
-      );
-    case "wnflxx":
-      return (
-        <Wrap fill="#e50914" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <path fill="#fff" d="M7 4h3.2l3.4 9.4V4H17v16h-3.2L10.4 10.6V20H7V4Z" />
-          </svg>
-        </Wrap>
-      );
-    case "wnvdax":
-      return (
-        <Wrap fill="#76b900" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <path fill="#111" d="M12 5c4.4 0 7.2 2.3 8 6.5-1.5-2.5-3.7-3.7-6.6-3.7-3.8 0-6.6 2.6-6.6 6.2 0 1.3.4 2.4 1.1 3.3C6.5 15.4 5.5 13 5.5 10.2 5.5 7 8.2 5 12 5Zm0 5.2c2.3 0 3.9 1.5 3.9 3.6 0 2.2-1.6 3.7-3.9 3.7s-3.9-1.5-3.9-3.7c0-2.1 1.6-3.6 3.9-3.6Z" />
-          </svg>
-        </Wrap>
-      );
-    case "wspyx":
-      return (
-        <Wrap fill="#2563eb" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <path d="M5 16.5 9.2 11l3.1 3.2L19 7.5" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M15.2 7.5H19v3.7" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </Wrap>
-      );
-    case "wtslax":
-      return (
-        <Wrap fill="#cc0000" size={size}>
-          <svg viewBox="0 0 24 24" className={iconClass} aria-hidden>
-            <path fill="#fff" d="M4.5 7.2h15l-1.3 1.8H13.1v9.2h-2.2V9H5.8L4.5 7.2Z" />
-          </svg>
-        </Wrap>
-      );
+    default:
+      return null;
   }
 }
