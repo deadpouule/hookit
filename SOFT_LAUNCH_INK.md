@@ -11,7 +11,7 @@ Prep only. Do **not** broadcast until every GO item is checked.
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
 | HookitSwapRouter required in web | Code rejects Ink swaps without `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
 | Ink factories deployed | **Not yet** |
-| Hosted indexer | **Linode** — see [deploy/linode/README.md](deploy/linode/README.md) |
+| Hosted indexer | **Linode 1 GB** — [deploy/linode/indexer-only/README.md](deploy/linode/indexer-only/README.md) |
 | WalletConnect project ID | **Set before public UI** |
 
 ## Before first broadcast

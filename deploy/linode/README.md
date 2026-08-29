@@ -1,6 +1,14 @@
 # Hookit on Linode (self-hosted)
 
-Production stack on one VPS:
+## Recommended today: indexer only (1 GB) + Vercel web
+
+**→ [deploy/linode/indexer-only/README.md](indexer-only/README.md)** — Nanode 1 GB (~$5/mo), charts/trades API, `INDEXER_URL` on Vercel.
+
+Full stack on one VPS (web + indexer + optional server `forge`) is below if you outgrow Vercel.
+
+---
+
+Production stack on one VPS (all-in-one):
 
 | Process | Port | Role |
 | --- | --- | --- |
