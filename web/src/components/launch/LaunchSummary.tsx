@@ -2,7 +2,7 @@
 
 import { Loader2, Rocket } from "lucide-react";
 
-import { HookChip } from "@/components/hooks/HookMark";
+import { LaunchSummaryModuleRow } from "@/components/launch/LaunchSummaryModuleRow";
 import { PairingMark } from "@/components/launch/PairingMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
@@ -10,7 +10,7 @@ import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
-import { hookMarkSummaryDetail, hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
+import { hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,8 @@ export function LaunchSummary({
   const hookAnalysis =
     form.hookMode === "custom" ? analyzeCustomHookSource(form.customHookSource) : null;
 
-  const showActiveModules = activeHooks.length > 0;
+  const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
+  const showActiveModules = summaryHooks.length > 0;
 
   const canLaunch =
     !!form.name &&
@@ -143,13 +144,8 @@ export function LaunchSummary({
             {form.hookMode === "custom" ? "Hook" : "Active modules"}
           </p>
           <ul className="space-y-2 text-xs">
-            {activeHooks.map((id) => (
-              <li key={id} className="flex items-start justify-between gap-2.5">
-                <HookChip id={id} className="shrink-0" />
-                <span className="min-w-0 pt-0.5 text-right font-mono text-[11px] leading-snug text-zinc-500">
-                  {hookMarkSummaryDetail(id, form.modules)}
-                </span>
-              </li>
+            {summaryHooks.map((id) => (
+              <LaunchSummaryModuleRow key={id} id={id} modules={form.modules} />
             ))}
           </ul>
           {form.hookMode === "master" && form.hookTaxBps > 0 && (
