@@ -31,7 +31,7 @@ function HookPickCard({
   return (
     <button
       type="button"
-      className={cn("pick-card", selected && "is-on")}
+      className={cn("pick-card", `pick-card--${hook.theme}`, selected && "is-on")}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
