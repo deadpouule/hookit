@@ -102,13 +102,13 @@ export function HookModulePicker({
               configHint={moduleCardHint(hook.id, modules)}
               onClick={() => {
                 if (disabled) return;
-                if (selected && focus === hook.id) {
+                if (selected) {
                   onToggle(hook.id, false);
                   const next = enabledHooks.find((item) => item.id !== hook.id);
                   setFocus(next?.id ?? null);
                   return;
                 }
-                if (!selected) onToggle(hook.id, true);
+                onToggle(hook.id, true);
                 scrollToPanel(hook.id);
               }}
             />

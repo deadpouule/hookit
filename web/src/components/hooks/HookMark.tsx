@@ -69,6 +69,42 @@ function Glyph({ id }: { id: HookId }) {
           <path d="M12 10v10M6 14h12" stroke={stroke} strokeWidth="1.7" />
         </svg>
       );
+    case "dynamicFees":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path d="M4 16 8 8l4 6 3-4 5 6" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    case "buybackVesting":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path d="M8 4h8l-1.5 7H9.5L8 4Zm1.5 7L8 20h8l-1.5-9" stroke={stroke} strokeWidth="1.7" strokeLinejoin="round" />
+        </svg>
+      );
+    case "autoBurn":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path
+            d="M12 3c2.2 3.2 5 5.4 5 8.4A5 5 0 0 1 7 11.4C7 8.4 9.8 6.2 12 3Z"
+            stroke={stroke}
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "lpDonate":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <circle cx="9" cy="12" r="4.2" stroke={stroke} strokeWidth="1.7" />
+          <circle cx="15" cy="12" r="4.2" stroke={stroke} strokeWidth="1.7" />
+        </svg>
+      );
+    case "creatorShareToHook":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path d="M5 12h10M12 7l5 5-5 5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
     case "custom":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">

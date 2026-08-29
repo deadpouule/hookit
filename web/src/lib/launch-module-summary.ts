@@ -17,7 +17,7 @@ export function moduleDetailLine(id: MasterHookId, modules: LaunchModules): stri
     case "anti-snipe":
       return `${modules.antiSnipeDuration}s · ${modules.antiSnipeInitialTax}% open tax`;
     case "backed-floor":
-      return `${modules.floorAllocation}% of hook tax → floor vault`;
+      return `${modules.floorAllocation}% of fees → floor vault`;
     case "anti-mev":
       return "Same-block opposing swap blocked";
     case "max-tx":
@@ -31,11 +31,11 @@ export function moduleDetailLine(id: MasterHookId, modules: LaunchModules): stri
       return days >= 365 ? `Creator fees vest ${(days / 365).toFixed(1)}y` : `Creator fees vest ${days}d`;
     }
     case "auto-burn":
-      return `${modules.autoBurnPct}% of hook tax burned`;
+      return `${modules.autoBurnPct}% of fees burned`;
     case "lp-donate":
-      return `${modules.lpDonatePct}% of hook tax → in-range LPs`;
+      return `${modules.lpDonatePct}% of fees → in-range LPs`;
     case "holder-airdrop":
-      return `${modules.holderAirdropPct}% of hook tax · 15m epochs`;
+      return `${modules.holderAirdropPct}% of fees · 15m epochs`;
     case "creator-share-to-hook":
       return "70% of base fee → hook pot";
     default:

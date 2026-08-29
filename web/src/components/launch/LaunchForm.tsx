@@ -32,8 +32,10 @@ import {
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
+import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
-import { HOOK_MODULE_FIELD, withMasterHookEnabled } from "@/lib/master-hooks";
+import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
+import { isModuleEnabled } from "@/lib/launch-module-summary";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -91,15 +93,9 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
   const activeHooks = useMemo(() => {
     if (form.hookMode === "custom") return ["custom"] as HookId[];
-    const tags: HookId[] = ["quoteFee"];
-    if (form.modules.antiSnipe) tags.push("antiSnipe");
-    if (form.modules.backedFloor) tags.push("backedFloor");
-    if (form.modules.antiMev) tags.push("antiMev");
-    if (form.modules.maxWallet) tags.push("maxWallet");
-    if (form.modules.maxTx) tags.push("maxTx");
-    if (form.modules.holderAirdrop) tags.push("holderAirdrop");
-    if (form.modules.creatorShareToHook) tags.push("creatorShareToHook");
-    return tags;
+    return MASTER_HOOKS.filter((hook) => isModuleEnabled(form.modules, hook.id)).map(
+      (hook) => MASTER_TO_HOOK_MARK[hook.id],
+    );
   }, [form.hookMode, form.modules]);
 
   const handleLaunch = async () => {
