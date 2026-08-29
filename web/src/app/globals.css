@@ -851,6 +851,27 @@
     color: #ffffff;
   }
 
+  .home-nav-link {
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.82);
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .home-nav-link:hover {
+    color: #fff;
+  }
+
+  .home-nav-link--active {
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+  }
+
   .launch-coin {
     background: #280120;
     color: #fff;
