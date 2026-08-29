@@ -1,3 +1,5 @@
+import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
+
 export type HookId =
   | "antiSnipe"
   | "backedFloor"
@@ -110,3 +112,21 @@ export const SHOWCASE_HOOK_IDS: HookId[] = [
   "custom",
   "quoteFee",
 ];
+
+/** Maps launch-summary / pool hook marks to master hook modules (for ASCII + theme). */
+export const HOOK_MARK_TO_MASTER: Partial<Record<HookId, MasterHookId>> = {
+  antiSnipe: "anti-snipe",
+  backedFloor: "backed-floor",
+  antiMev: "anti-mev",
+  maxWallet: "max-wallet",
+  maxTx: "max-tx",
+  holderAirdrop: "holder-airdrop",
+  creatorShareToHook: "creator-share-to-hook",
+  quoteFee: "dynamic-fees",
+};
+
+/** Badge theme overrides when the mark is not a 1:1 master hook title. */
+export const HOOK_MARK_THEME: Partial<Record<HookId, HookTheme>> = {
+  quoteFee: "nature",
+  custom: "gold",
+};

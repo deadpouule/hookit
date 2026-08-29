@@ -2,7 +2,7 @@
 
 import { Loader2, Rocket } from "lucide-react";
 
-import { HookChip } from "@/components/hooks/HookMark";
+import { LaunchHookBadge } from "@/components/launch/LaunchHookBadge";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
@@ -161,9 +161,9 @@ export function LaunchSummary({
       )}
 
       {activeHooks.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="launch-summary-hooks">
           {activeHooks.map((id) => (
-            <HookChip key={id} id={id} />
+            <LaunchHookBadge key={id} id={id} />
           ))}
         </div>
       )}

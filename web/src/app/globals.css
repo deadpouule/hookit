@@ -413,6 +413,53 @@
     line-height: 1;
   }
 
+  .launch-summary-hooks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .launch-hook-badge {
+    display: flex;
+    min-width: 5.25rem;
+    flex: 1 1 5.25rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 12px;
+    border: 1px solid rgb(255 255 255 / 0.07);
+    background: rgb(0 0 0 / 0.4);
+    padding: 0.45rem 0.35rem 0.4rem;
+  }
+
+  .launch-hook-badge-ascii {
+    display: flex;
+    height: 2.85rem;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .launch-hook-badge-ascii .ascii-shape {
+    font-size: 3.5px;
+    line-height: 1;
+  }
+
+  .launch-hook-badge-name.orb-hook-title-badge {
+    max-width: 100%;
+    padding: 0.28rem 0.45rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .launch-hook-badge-name.orb-hook-title-badge .orb-hook-desc-badge-glyph {
+    width: 0.65rem;
+    font-size: 0.28rem;
+  }
+
   .pick-config--fire.pick-config--focused {
     border-color: rgb(239 68 68 / 0.45);
     box-shadow: 0 0 0 1px rgb(239 68 68 / 0.25), 0 0 24px rgb(239 68 68 / 0.12);

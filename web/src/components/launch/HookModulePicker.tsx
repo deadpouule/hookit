@@ -6,6 +6,7 @@ import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { Slider } from "@/components/ui/slider";
+import { capitalizeDescription } from "@/lib/format";
 import { isModuleEnabled, moduleCardHint } from "@/lib/launch-module-summary";
 import {
   MASTER_HOOKS,
@@ -41,7 +42,11 @@ function HookPickCard({
       </div>
       <p className="pick-card-title">{hook.title.toLowerCase()}</p>
       <p className="pick-card-sub">
-        {selected && configHint ? configHint : selected ? "hooked" : hook.description}
+        {selected && configHint
+          ? configHint
+          : selected
+            ? "hooked"
+            : capitalizeDescription(hook.description)}
       </p>
     </button>
   );
@@ -160,7 +165,7 @@ function HookConfigHeader({ hook, active }: { hook: MasterHook; active: boolean 
           </h2>
           <HookSettingsTooltip hook={hook} />
         </div>
-        <p className="pick-config-copy">{hook.description}</p>
+        <p className="pick-config-copy">{capitalizeDescription(hook.description)}</p>
       </div>
       <div className="pick-config-ascii" aria-hidden>
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />

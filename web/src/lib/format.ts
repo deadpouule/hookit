@@ -61,6 +61,11 @@ export function formatBps(bps: number): string {
   return `${(bps / 100).toFixed(2)}%`;
 }
 
+export function capitalizeDescription(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function estimateFloorPrice(
   floorAllocation: number,
   devBuyEth: number,
