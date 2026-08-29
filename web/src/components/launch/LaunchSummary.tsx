@@ -5,12 +5,11 @@ import { Loader2, Rocket } from "lucide-react";
 import { LaunchSummaryModuleRow } from "@/components/launch/LaunchSummaryModuleRow";
 import { PairingMark } from "@/components/launch/PairingMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
-import { hookTaxSummary } from "@/lib/launch-module-summary";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -125,9 +124,8 @@ export function LaunchSummary({
         {form.hookMode === "master" && variant !== "classic" && (
           <div className="flex justify-between gap-4">
             <dt className="text-zinc-500">Fees</dt>
-            <dd className="text-right text-zinc-200">
-              <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-              <span className="ml-1.5 text-xs text-zinc-500">(1% base swap fee)</span>
+            <dd className="font-mono text-right text-zinc-200">
+              {formatBps(BASE_FEE_BPS + form.hookTaxBps)}
             </dd>
           </div>
         )}
@@ -143,11 +141,6 @@ export function LaunchSummary({
               <LaunchSummaryModuleRow key={id} id={id} modules={form.modules} />
             ))}
           </ul>
-          {form.hookMode === "master" && form.hookTaxBps > 0 && (
-            <p className="mt-2 border-t border-white/[0.05] pt-2 font-mono text-[11px] text-zinc-600">
-              {hookTaxSummary(form.hookTaxBps)}
-            </p>
-          )}
         </div>
       )}
 
