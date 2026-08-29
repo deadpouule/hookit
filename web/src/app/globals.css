@@ -919,6 +919,36 @@
     color: #fff;
   }
 
+  .launch-coin-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 11px 22px;
+    border: none;
+    border-radius: 9999px;
+    background: #ff4da6;
+    color: #000000;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    transition: filter 0.15s ease;
+  }
+
+  .launch-coin-nav:hover {
+    filter: brightness(1.06);
+    color: #000000;
+  }
+
+  .launch-coin-nav__rocket {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #000000;
+  }
+
   .launch-coin {
     background: #280120;
     color: #fff;
