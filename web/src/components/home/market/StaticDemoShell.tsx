@@ -10,6 +10,8 @@ export function StaticDemoShell() {
 
   return (
     <div className="min-h-screen bg-black pb-40">
+      <LiveOnInkTicker />
+
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black">
         <div className="market-shell flex h-16 items-center justify-between">
           <span className="text-sm font-semibold text-white">hook it</span>
@@ -18,8 +20,6 @@ export function StaticDemoShell() {
           </Link>
         </div>
       </header>
-
-      <LiveOnInkTicker />
 
       <div className="market-shell space-y-6 pt-6">
         <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-300">
