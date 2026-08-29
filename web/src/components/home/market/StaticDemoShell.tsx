@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LiveOnInkTicker } from "@/components/home/market/LiveOnInkTicker";
 import { buildDemoMarketTokens } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 
@@ -17,6 +18,8 @@ export function StaticDemoShell() {
           </Link>
         </div>
       </header>
+
+      <LiveOnInkTicker />
 
       <div className="market-shell space-y-6 pt-6">
         <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-300">
