@@ -166,6 +166,21 @@
     border-color: rgb(255 255 255 / 0.16);
   }
 
+  .pick-grid--pairs .pick-card:hover {
+    border-color: rgb(149 20 209 / 0.45);
+  }
+
+  .pick-grid--pairs .pick-card.is-on {
+    border-color: #9514d1;
+    box-shadow:
+      0 0 0 1px #9514d1,
+      0 0 18px rgb(149 20 209 / 0.35);
+  }
+
+  .pick-grid--pairs .pick-card.is-on .pick-card-title {
+    color: #e9d5ff;
+  }
+
   .pick-card.is-on .pick-card-title {
     color: #fff;
   }
@@ -416,58 +431,6 @@
   .pick-config-ascii .ascii-shape {
     font-size: 4px;
     line-height: 1;
-  }
-
-  .launch-summary-hooks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .launch-summary-hooks .launch-hook-badge {
-    flex: 1 1 calc(33.333% - 0.35rem);
-    min-width: 4.75rem;
-  }
-
-  .launch-hook-badge {
-    display: flex;
-    min-width: 5.25rem;
-    flex: 1 1 5.25rem;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    border-radius: 12px;
-    border: 1px solid rgb(255 255 255 / 0.07);
-    background: rgb(0 0 0 / 0.4);
-    padding: 0.45rem 0.35rem 0.4rem;
-  }
-
-  .launch-hook-badge-ascii {
-    display: flex;
-    height: 2.85rem;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .launch-hook-badge-ascii .ascii-shape {
-    font-size: 3.5px;
-    line-height: 1;
-  }
-
-  .launch-hook-badge-name.orb-hook-title-badge {
-    max-width: 100%;
-    padding: 0.28rem 0.45rem;
-    font-size: 0.625rem;
-    font-weight: 600;
-    line-height: 1.2;
-    text-align: center;
-  }
-
-  .launch-hook-badge-name.orb-hook-title-badge .orb-hook-desc-badge-glyph {
-    width: 0.65rem;
-    font-size: 0.28rem;
   }
 
   .pick-config--fire.pick-config--focused {

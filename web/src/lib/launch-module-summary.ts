@@ -1,3 +1,4 @@
+import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 
@@ -80,4 +81,14 @@ export function hookTaxSummary(hookTaxBps: number): string {
 export function totalFeeSummary(hookTaxBps: number): string {
   const total = 100 + hookTaxBps;
   return `${(total / 100).toFixed(1)}% max steady (1% base + hook tax)`;
+}
+
+export function hookMarkSummaryDetail(id: HookId, modules: LaunchModules): string {
+  if (id === "quoteFee") return "1% base · quote-only on swaps";
+  if (id === "custom") return HOOK_MARKS.custom.hint;
+
+  const masterId = HOOK_MARK_TO_MASTER[id];
+  if (masterId) return moduleDetailLine(masterId, modules);
+
+  return HOOK_MARKS[id]?.hint ?? "Enabled";
 }

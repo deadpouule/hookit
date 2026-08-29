@@ -114,7 +114,7 @@ export function PairingPicker({
         {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
       </p>
       <p className="pick-heading">pick your pair{isMulti ? "s" : ""}</p>
-      <div className="pick-grid">
+      <div className="pick-grid pick-grid--pairs">
         {PAIRING_TOKENS.map((token) => (
           <PickCard
             key={token.id}

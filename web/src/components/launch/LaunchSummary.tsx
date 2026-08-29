@@ -2,7 +2,7 @@
 
 import { Loader2, Rocket } from "lucide-react";
 
-import { LaunchHookBadge } from "@/components/launch/LaunchHookBadge";
+import { HookChip } from "@/components/hooks/HookMark";
 import { PairingMark } from "@/components/launch/PairingMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
@@ -10,7 +10,7 @@ import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
-import { hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
+import { hookMarkSummaryDetail, hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -139,16 +139,21 @@ export function LaunchSummary({
 
       {showActiveModules && (
         <div className="rounded-xl border border-white/[0.06] bg-black/40 px-3 py-3">
-          <p className="mb-2.5 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+          <p className="mb-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
             {form.hookMode === "custom" ? "Hook" : "Active modules"}
           </p>
-          <div className="launch-summary-hooks">
+          <ul className="space-y-2 text-xs">
             {activeHooks.map((id) => (
-              <LaunchHookBadge key={id} id={id} />
+              <li key={id} className="flex items-start justify-between gap-2.5">
+                <HookChip id={id} className="shrink-0" />
+                <span className="min-w-0 pt-0.5 text-right font-mono text-[11px] leading-snug text-zinc-500">
+                  {hookMarkSummaryDetail(id, form.modules)}
+                </span>
+              </li>
             ))}
-          </div>
+          </ul>
           {form.hookMode === "master" && form.hookTaxBps > 0 && (
-            <p className="mt-2.5 border-t border-white/[0.05] pt-2 font-mono text-[11px] text-zinc-600">
+            <p className="mt-2 border-t border-white/[0.05] pt-2 font-mono text-[11px] text-zinc-600">
               {hookTaxSummary(form.hookTaxBps)}
             </p>
           )}
