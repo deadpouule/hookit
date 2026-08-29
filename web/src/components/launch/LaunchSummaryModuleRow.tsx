@@ -20,15 +20,13 @@ function resolveHookTheme(id: HookId): HookTheme {
 }
 
 function HookAsciiMark({ id, theme }: { id: HookId; theme: HookTheme }) {
-  const def = HOOK_MARKS[id];
   const masterId = HOOK_MARK_TO_MASTER[id];
 
   if (!masterId) return null;
 
   return (
     <span
-      className="hook-ascii-mark inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md"
-      style={{ background: def.color, boxShadow: `0 0 12px ${def.glow}` }}
+      className="hook-ascii-mark inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden"
       aria-hidden
     >
       <AsciiShape hookId={masterId} theme={theme} isHovered />
@@ -67,12 +65,10 @@ export function LaunchSummaryModuleRow({
   return (
     <li className="flex items-center justify-between gap-2">
       <span
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-1.5 py-0.5 pr-2 text-[10px] font-medium"
-        style={{
-          borderColor: `${def.color}40`,
-          background: `${def.color}14`,
-          color: def.color,
-        }}
+        className={cn(
+          "launch-summary-hook-chip orb-hook-desc-badge",
+          `orb-hook-desc-badge--${theme}`,
+        )}
       >
         <HookAsciiMark id={id} theme={theme} />
         {def.short}

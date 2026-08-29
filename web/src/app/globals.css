@@ -465,6 +465,18 @@
     line-height: 1;
   }
 
+  .launch-summary-hook-chip.orb-hook-desc-badge {
+    width: auto;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 999px;
+    padding: 0.22rem 0.5rem 0.22rem 0.2rem;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
   .launch-summary-detail-badge.orb-hook-desc-badge {
     width: auto;
     max-width: 62%;
