@@ -33,9 +33,13 @@ npm run typecheck
 
 if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files hookit-indexer.service &>/dev/null; then
   echo "[indexer] restart service…"
-  sudo systemctl restart hookit-indexer
-  sleep 2
-  sudo systemctl status hookit-indexer --no-pager || true
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    systemctl restart hookit-indexer
+    sleep 2
+    systemctl status hookit-indexer --no-pager || true
+  else
+    echo "[indexer] systemctl needs root — run: sudo systemctl restart hookit-indexer"
+  fi
 else
   echo "[indexer] start manually: cd ${ROOT}/indexer && npm run serve"
 fi
