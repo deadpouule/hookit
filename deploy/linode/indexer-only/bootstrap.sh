@@ -22,7 +22,13 @@ apt-get install -y -qq \
   ca-certificates curl git jq ufw nginx certbot python3-certbot-nginx
 
 echo "[hookit-indexer] Node.js ${NODE_MAJOR}…"
-if ! command -v node >/dev/null 2>&1 || [[ "$(node -p process.versions.node.split('.')[0])" -lt "$NODE_MAJOR" ]]; then
+need_node=false
+if ! command -v node >/dev/null 2>&1; then
+  need_node=true
+elif [[ "$(node -p 'process.versions.node.split(".")[0]')" -lt "${NODE_MAJOR}" ]]; then
+  need_node=true
+fi
+if [[ "${need_node}" == true ]]; then
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash -
   apt-get install -y -qq nodejs
 fi
