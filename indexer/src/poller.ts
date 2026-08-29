@@ -14,6 +14,26 @@ import { baseSepolia, ink } from "./config.js";
 import { absBig, quotePerToken, quotePerTokenFromAmounts } from "./math.js";
 import { type Store, tradeId } from "./store.js";
 
+/** getLogs + parseAbiItem — runtime has args; viem 2.55+ types omit them on Log. */
+function logArgs<T>(log: unknown): T {
+  return (log as { args: T }).args;
+}
+
+function tradeLogMeta(log: {
+  blockNumber: bigint | null;
+  logIndex: number | null;
+  transactionHash: Hex | null;
+}):
+  | { blockNumber: bigint; logIndex: number; transactionHash: Hex }
+  | null {
+  if (log.blockNumber === null || log.logIndex == null || !log.transactionHash) return null;
+  return {
+    blockNumber: log.blockNumber,
+    logIndex: log.logIndex,
+    transactionHash: log.transactionHash,
+  };
+}
+
 const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
@@ -325,12 +345,12 @@ async function indexRange(
       toBlock,
     });
     for (const log of logs) {
-      const a = log.args as {
+      const a = logArgs<{
         launchId: bigint;
         token: Address;
         creator: Address;
         poolId: Hex;
-      };
+      }>(log);
       await ensureMasterToken(client, store, cfg, {
         launchId: a.launchId,
         token: a.token,
@@ -349,7 +369,7 @@ async function indexRange(
       toBlock,
     });
     for (const log of configured) {
-      const a = log.args as { launchId: bigint; bitmask: bigint };
+      const a = logArgs<{ launchId: bigint; bitmask: bigint }>(log);
       const row = store.tokenForLaunchId(a.launchId);
       if (row) row.hookModules = a.bitmask.toString();
     }
@@ -363,7 +383,7 @@ async function indexRange(
       toBlock,
     });
     for (const log of multiConfigured) {
-      const a = log.args as { launchId: bigint; marketCount: number; bitmask: bigint };
+      const a = logArgs<{ launchId: bigint; marketCount: number; bitmask: bigint }>(log);
       const row = store.tokenForLaunchId(a.launchId);
       if (row) {
         row.marketCount = Number(a.marketCount);
@@ -380,7 +400,7 @@ async function indexRange(
       toBlock,
     });
     for (const log of marketLaunched) {
-      const a = log.args as {
+      const a = logArgs<{
         launchId: bigint;
         marketIndex: number;
         poolId: Hex;
@@ -389,7 +409,7 @@ async function indexRange(
         tickLower: number;
         tickUpper: number;
         liquidity: bigint;
-      };
+      }>(log);
       const row = store.tokenForLaunchId(a.launchId);
       if (!row) continue;
       const tokenIsCurrency0 = BigInt(row.address) < BigInt(a.quote);
@@ -419,13 +439,13 @@ async function indexRange(
       toBlock,
     });
     for (const log of launched) {
-      const a = log.args as {
+      const a = logArgs<{
         launchId: bigint;
         token: Address;
         creator: Address;
         quote: Address;
         graduationQuote: bigint;
-      };
+      }>(log);
       await ensureClassicToken(client, store, cfg, {
         launchId: a.launchId,
         token: a.token,
@@ -445,7 +465,7 @@ async function indexRange(
       toBlock,
     });
     for (const log of graduated) {
-      const a = log.args as { launchId: bigint; poolId: Hex };
+      const a = logArgs<{ launchId: bigint; poolId: Hex }>(log);
       const row = store.tokenForLaunchId(a.launchId);
       if (row) {
         row.poolId = a.poolId;
@@ -477,17 +497,18 @@ async function indexRange(
       const tsMap = await blockTimestamps(client, blocks);
 
       for (const log of swapLogs) {
-        const args = log.args as {
+        const args = logArgs<{
           id: Hex;
           sender: Address;
           amount0: bigint;
           amount1: bigint;
           sqrtPriceX96: bigint;
-        };
+        }>(log);
         const row = store.tokenForPool(args.id);
-        if (!row || !log.transactionHash || log.blockNumber === null || log.logIndex === undefined) continue;
+        const meta = tradeLogMeta(log);
+        if (!row || !meta) continue;
 
-        const ts = tsMap.get(log.blockNumber.toString()) ?? 0;
+        const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;
         const tokenAmt = row.tokenIsCurrency0 ? absBig(args.amount0) : absBig(args.amount1);
         const quoteAmt = row.tokenIsCurrency0 ? absBig(args.amount1) : absBig(args.amount0);
         const quoteDelta = row.tokenIsCurrency0 ? args.amount1 : args.amount0;
@@ -495,10 +516,10 @@ async function indexRange(
         const price = quotePerToken(args.sqrtPriceX96, row.tokenIsCurrency0);
 
         const trade: IndexedTrade = {
-          id: tradeId(log.transactionHash, log.logIndex),
-          txHash: log.transactionHash,
-          logIndex: log.logIndex,
-          blockNumber: Number(log.blockNumber),
+          id: tradeId(meta.transactionHash, meta.logIndex),
+          txHash: meta.transactionHash,
+          logIndex: meta.logIndex,
+          blockNumber: Number(meta.blockNumber),
           timestamp: ts,
           side,
           quoteAmount: quoteAmt.toString(),
@@ -521,7 +542,7 @@ async function indexRange(
       toBlock,
     });
     for (const log of transferLogs) {
-      const a = log.args as { from: Address; to: Address; value: bigint };
+      const a = logArgs<{ from: Address; to: Address; value: bigint }>(log);
       store.applyTransfer(log.address as Address, a.from, a.to, a.value);
     }
   }
@@ -559,21 +580,22 @@ async function indexBondingTrades(
   const tsMap = await blockTimestamps(client, blocks);
 
   for (const log of bought) {
-    const a = log.args as {
+    const a = logArgs<{
       launchId: bigint;
       buyer: Address;
       quoteIn: bigint;
       tokensOut: bigint;
-    };
+    }>(log);
     const row = store.tokenForLaunchId(a.launchId);
-    if (!row || !log.transactionHash || log.blockNumber === null || log.logIndex === undefined) continue;
-    const ts = tsMap.get(log.blockNumber.toString()) ?? 0;
+    const meta = tradeLogMeta(log);
+    if (!row || !meta) continue;
+    const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;
     const price = quotePerTokenFromAmounts(a.quoteIn, a.tokensOut, row.decimals, row.quoteDecimals);
     store.pushTrade(row.address, {
-      id: tradeId(log.transactionHash, log.logIndex),
-      txHash: log.transactionHash,
-      logIndex: log.logIndex,
-      blockNumber: Number(log.blockNumber),
+      id: tradeId(meta.transactionHash, meta.logIndex),
+      txHash: meta.transactionHash,
+      logIndex: meta.logIndex,
+      blockNumber: Number(meta.blockNumber),
       timestamp: ts,
       side: "buy",
       quoteAmount: a.quoteIn.toString(),
@@ -586,21 +608,22 @@ async function indexBondingTrades(
   }
 
   for (const log of sold) {
-    const a = log.args as {
+    const a = logArgs<{
       launchId: bigint;
       seller: Address;
       tokensIn: bigint;
       quoteOut: bigint;
-    };
+    }>(log);
     const row = store.tokenForLaunchId(a.launchId);
-    if (!row || !log.transactionHash || log.blockNumber === null || log.logIndex === undefined) continue;
-    const ts = tsMap.get(log.blockNumber.toString()) ?? 0;
+    const meta = tradeLogMeta(log);
+    if (!row || !meta) continue;
+    const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;
     const price = quotePerTokenFromAmounts(a.quoteOut, a.tokensIn, row.decimals, row.quoteDecimals);
     store.pushTrade(row.address, {
-      id: tradeId(log.transactionHash, log.logIndex),
-      txHash: log.transactionHash,
-      logIndex: log.logIndex,
-      blockNumber: Number(log.blockNumber),
+      id: tradeId(meta.transactionHash, meta.logIndex),
+      txHash: meta.transactionHash,
+      logIndex: meta.logIndex,
+      blockNumber: Number(meta.blockNumber),
       timestamp: ts,
       side: "sell",
       quoteAmount: a.quoteOut.toString(),
