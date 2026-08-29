@@ -928,8 +928,8 @@
     padding: 11px 22px;
     border: none;
     border-radius: 9999px;
-    background: #ffffff;
-    color: var(--color-magenta);
+    background: var(--color-magenta);
+    color: #ffffff;
     font-size: 15px;
     font-weight: 600;
     line-height: 1;
@@ -938,8 +938,8 @@
   }
 
   .launch-coin-nav:hover {
-    background: #f4f4f5;
-    color: var(--color-magenta);
+    background: #a832e0;
+    color: #ffffff;
     filter: none;
   }
 
@@ -947,7 +947,7 @@
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    color: #000000;
+    color: #ffffff;
   }
 
   .launch-coin {
