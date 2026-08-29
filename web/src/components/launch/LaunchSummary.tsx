@@ -3,22 +3,45 @@
 import { Loader2, Rocket } from "lucide-react";
 
 import { LaunchHookBadge } from "@/components/launch/LaunchHookBadge";
+import { PairingMark } from "@/components/launch/PairingMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
-import {
-  hookTaxSummary,
-  listEnabledModuleSummaries,
-  totalFeeSummary,
-} from "@/lib/launch-module-summary";
+import { hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "done";
+
+function SummaryPairValue({ form }: { form: LaunchFormState }) {
+  if (form.markets.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-x-2.5 gap-y-1.5">
+        {form.markets.map((market) => (
+          <span key={market.id} className="inline-flex items-center gap-1.5">
+            <PairingMark id={market.id} size="sm" />
+            <span className="font-mono text-zinc-200">
+              {formatPairingTicker(market.id)} {(market.bps / 100).toFixed(0)}%
+            </span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  const pairId = form.markets[0]?.id ?? form.quoteAsset;
+
+  return (
+    <span className="inline-flex items-center justify-end gap-1.5">
+      <PairingMark id={pairId} size="sm" />
+      <span className="font-mono text-zinc-200">{formatPairingTicker(pairId)}</span>
+    </span>
+  );
+}
 
 type Props = {
   form: LaunchFormState;
@@ -47,10 +70,7 @@ export function LaunchSummary({
   const hookAnalysis =
     form.hookMode === "custom" ? analyzeCustomHookSource(form.customHookSource) : null;
 
-  const moduleLines =
-    form.hookMode === "master"
-      ? listEnabledModuleSummaries(form.modules, { includeCreatorShare: true })
-      : [];
+  const showActiveModules = activeHooks.length > 0;
 
   const canLaunch =
     !!form.name &&
@@ -93,31 +113,9 @@ export function LaunchSummary({
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-zinc-500">{form.markets.length > 1 ? "Pairs" : "Pair"}</dt>
-          <dd className="font-mono text-zinc-200 text-right">
-            {form.markets.length > 1
-              ? form.markets
-                  .map((m) => `${formatPairingTicker(m.id)} ${(m.bps / 100).toFixed(0)}%`)
-                  .join(" · ")
-              : formatPairingTicker(form.quoteAsset)}
+          <dd className="text-right">
+            <SummaryPairValue form={form} />
           </dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Hook</dt>
-          <dd className="text-zinc-200">
-            {variant === "classic"
-              ? "Classic"
-              : form.hookMode === "custom"
-                ? "Custom (your code)"
-                : "Master"}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Network</dt>
-          <dd className="text-zinc-200">{getNetworkLabel()}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-zinc-500">Contract</dt>
-          <dd className="font-mono text-xs text-zinc-400">···8 (Hookit)</dd>
         </div>
         <div className="flex justify-between gap-4 border-t border-white/[0.06] pt-2.5">
           <dt className="text-zinc-500">Launch fee</dt>
@@ -139,32 +137,21 @@ export function LaunchSummary({
         )}
       </dl>
 
-      {moduleLines.length > 0 && (
+      {showActiveModules && (
         <div className="rounded-xl border border-white/[0.06] bg-black/40 px-3 py-3">
-          <p className="mb-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
-            Active modules
+          <p className="mb-2.5 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+            {form.hookMode === "custom" ? "Hook" : "Active modules"}
           </p>
-          <ul className="space-y-2 text-xs">
-            {moduleLines.map((line) => (
-              <li key={line.id} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
-                <span className="shrink-0 text-zinc-300">{line.title}</span>
-                <span className="font-mono text-zinc-500 sm:text-right">{line.detail}</span>
-              </li>
+          <div className="launch-summary-hooks">
+            {activeHooks.map((id) => (
+              <LaunchHookBadge key={id} id={id} />
             ))}
-          </ul>
-          {form.hookTaxBps > 0 && (
-            <p className="mt-2 border-t border-white/[0.05] pt-2 font-mono text-[11px] text-zinc-600">
+          </div>
+          {form.hookMode === "master" && form.hookTaxBps > 0 && (
+            <p className="mt-2.5 border-t border-white/[0.05] pt-2 font-mono text-[11px] text-zinc-600">
               {hookTaxSummary(form.hookTaxBps)}
             </p>
           )}
-        </div>
-      )}
-
-      {activeHooks.length > 0 && (
-        <div className="launch-summary-hooks">
-          {activeHooks.map((id) => (
-            <LaunchHookBadge key={id} id={id} />
-          ))}
         </div>
       )}
 

@@ -330,6 +330,11 @@
     border-radius: 999px;
   }
 
+  .pick-logo--sm {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+
   .pick-ascii {
     height: 72px;
     overflow: hidden;
@@ -417,6 +422,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .launch-summary-hooks .launch-hook-badge {
+    flex: 1 1 calc(33.333% - 0.35rem);
+    min-width: 4.75rem;
   }
 
   .launch-hook-badge {
