@@ -80,7 +80,7 @@ export function hookTaxSummary(hookTaxBps: number): string {
 
 export function totalFeeSummary(hookTaxBps: number): string {
   const total = 100 + hookTaxBps;
-  return `${(total / 100).toFixed(1)}% max steady (1% base + hook tax)`;
+  return `${(total / 100).toFixed(1)}% max steady (1% base + fees)`;
 }
 
 export function hookMarkSummaryDetail(id: HookId, modules: LaunchModules): string {

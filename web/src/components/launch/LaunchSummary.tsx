@@ -125,7 +125,7 @@ export function LaunchSummary({
         {form.hookMode === "master" && variant !== "classic" && (
           <>
             <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Hook tax</dt>
+              <dt className="text-zinc-500">Fees</dt>
               <dd className="font-mono text-right text-zinc-200">
                 {formatBps(form.hookTaxBps)}
               </dd>

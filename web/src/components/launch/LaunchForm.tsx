@@ -28,7 +28,6 @@ import {
   DEFAULT_LAUNCH_STATE,
   LAUNCH_FEE_ETH,
   MAX_HOOK_TAX_BPS,
-  TARGET_LAUNCH_MCAP_USD,
 } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
@@ -137,15 +136,8 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
         <h1 className="terminal-title text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
-        <p className="mx-auto mt-3 max-w-md text-sm text-zinc-500">
-          Atomic Uniswap v4 launch on {network} ·{" "}
-          <span className="font-mono text-zinc-300">
-            ${TARGET_LAUNCH_MCAP_USD.toLocaleString()}
-          </span>{" "}
-          FDV · 1B supply
-        </p>
         {draftLoaded && (
-          <p className="mx-auto mt-2 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
+          <p className="mx-auto mt-3 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
         )}
       </div>
 
@@ -435,7 +427,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                   <FeeBreakdown creator="0.70%" protocol="0.30%" />
                 </div>
                 <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Hook tax</Label>
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Fees</Label>
                   <div className="field-input flex items-center justify-between bg-black/60">
                     <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
                   </div>
@@ -454,7 +446,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                 </div>
               </div>
 
-              <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/40 px-4">
+              <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/40 px-5 py-2 sm:px-6 sm:py-3">
                 <ModuleRow
                   label="Creator → hook"
                   description="Send your 70% of the base 1% into the hook pot (floor / burn / donate / airdrop) instead of claiming escrow."
