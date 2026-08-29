@@ -16,13 +16,11 @@ import { cn } from "@/lib/utils";
 function HookPickCard({
   hook,
   selected,
-  focused,
   configHint,
   onClick,
 }: {
   hook: MasterHook;
   selected: boolean;
-  focused: boolean;
   configHint?: string;
   onClick: () => void;
 }) {
@@ -94,7 +92,6 @@ export function HookModulePicker({
               key={hook.id}
               hook={hook}
               selected={selected}
-              focused={focus === hook.id}
               configHint={moduleCardHint(hook.id, modules)}
               onClick={() => {
                 if (disabled) return;
