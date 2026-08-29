@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: process.env.NODE_ENV === "production",
-  /** Smaller self-hosted deploy (Linode/VPS) — run `.next/standalone/web/server.js`. */
-  output: "standalone",
+  // Standalone is for Linode/VPS only — Vercel expects the default output (NFT trace).
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
 };
 
 export default nextConfig;
