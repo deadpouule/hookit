@@ -10,7 +10,7 @@ import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import type { HookId } from "@/lib/hook-marks";
-import { hookTaxSummary, totalFeeSummary } from "@/lib/launch-module-summary";
+import { hookTaxSummary } from "@/lib/launch-module-summary";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -123,18 +123,13 @@ export function LaunchSummary({
           <dd className="font-mono text-zinc-200">{launchFeeEth} ETH</dd>
         </div>
         {form.hookMode === "master" && variant !== "classic" && (
-          <>
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Fees</dt>
-              <dd className="font-mono text-right text-zinc-200">
-                {formatBps(form.hookTaxBps)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Total swap fee</dt>
-              <dd className="text-right text-xs text-zinc-400">{totalFeeSummary(form.hookTaxBps)}</dd>
-            </div>
-          </>
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Fees</dt>
+            <dd className="text-right text-zinc-200">
+              <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
+              <span className="ml-1.5 text-xs text-zinc-500">(1% base swap fee)</span>
+            </dd>
+          </div>
         )}
       </dl>
 
