@@ -91,17 +91,14 @@ export function HomeNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black" suppressHydrationWarning>
       <div className="market-shell flex h-16 items-center justify-between">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-4 lg:gap-5">
-          <Link href="/" aria-label="hook it" className="flex shrink-0 items-center">
-            <CarabinerLogo />
-          </Link>
+        <Link href="/" aria-label="hook it" className="flex shrink-0 items-center">
+          <CarabinerLogo />
+        </Link>
 
+        <div className="flex shrink-0 items-center gap-2 lg:gap-3">
           <nav className="hidden items-center gap-0.5 lg:flex">
             <NavItems />
           </nav>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/launch"
             className="launch-coin hidden items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold sm:inline-flex"
