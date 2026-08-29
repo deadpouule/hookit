@@ -16,6 +16,7 @@ export async function enrichPoolsWithSpotPrices(
   publicClient: PublicClient,
   pools: TokenPool[],
   ethUsd = DEFAULT_LAUNCH_ETH_USD,
+  options?: { skipSwapIndex?: boolean },
 ): Promise<TokenPool[]> {
   const withPool = pools.filter((p) => p.poolId);
   if (withPool.length === 0) {
@@ -71,17 +72,19 @@ export async function enrichPoolsWithSpotPrices(
   });
 
   let swapStats = new Map<string, ReturnType<typeof statsFromSwaps>>();
-  try {
-    const swaps = await loadSwapsForPools(
-      publicClient,
-      withPool.map((p) => p.poolId!),
-    );
-    for (const pool of withPool) {
-      const id = pool.poolId!.toLowerCase();
-      swapStats.set(id, statsFromSwaps(swaps.get(id) ?? [], pool.tokenIsCurrency0 ?? false));
+  if (!options?.skipSwapIndex) {
+    try {
+      const swaps = await loadSwapsForPools(
+        publicClient,
+        withPool.map((p) => p.poolId!),
+      );
+      for (const pool of withPool) {
+        const id = pool.poolId!.toLowerCase();
+        swapStats.set(id, statsFromSwaps(swaps.get(id) ?? [], pool.tokenIsCurrency0 ?? false));
+      }
+    } catch {
+      swapStats = new Map();
     }
-  } catch {
-    swapStats = new Map();
   }
 
   return pools.map((pool) => {

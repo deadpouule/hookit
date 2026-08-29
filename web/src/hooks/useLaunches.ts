@@ -55,9 +55,30 @@ export function useLaunchPool(id: string) {
     enabled: ready,
     retry: 1,
     queryFn: async (): Promise<TokenPool | null> => {
+      const needle = id.toLowerCase();
+
+      // Fast path: server API (avoids browser RPC + 50k-block getLogs scan).
+      try {
+        const res = await fetch("/api/launches", { cache: "no-store" });
+        if (res.ok) {
+          const body = (await res.json()) as { pools?: TokenPool[] };
+          const fromApi =
+            body.pools?.find(
+              (p) =>
+                p.id.toLowerCase() === needle ||
+                p.contractAddress?.toLowerCase() === needle ||
+                (p.launchId != null && String(p.launchId) === id),
+            ) ?? null;
+          if (fromApi) return fromApi;
+        }
+      } catch {
+        /* fall through to chain */
+      }
+
       if (!publicClient) return null;
 
       let pool: TokenPool | null = null;
+      const enrichOpts = { skipSwapIndex: true };
 
       if (isAddress(id)) {
         if (factory) {
@@ -75,6 +96,7 @@ export function useLaunchPool(id: string) {
                 publicClient,
                 [launchToTokenPool(launch)],
                 ethUsd,
+                enrichOpts,
               );
               pool = enriched ?? null;
             }
@@ -100,32 +122,13 @@ export function useLaunchPool(id: string) {
               publicClient,
               [launchToTokenPool(launch)],
               ethUsd,
+              enrichOpts,
             );
             pool = enriched ?? null;
           }
         }
         if (!pool && bonding) {
           pool = await fetchBondingLaunchById(publicClient, bonding, BigInt(id));
-        }
-      }
-
-      // Last resort: resolve from the launches API (same source as the marketplace).
-      if (!pool) {
-        try {
-          const res = await fetch("/api/launches", { cache: "no-store" });
-          if (res.ok) {
-            const body = (await res.json()) as { pools?: TokenPool[] };
-            const needle = id.toLowerCase();
-            pool =
-              body.pools?.find(
-                (p) =>
-                  p.id.toLowerCase() === needle ||
-                  p.contractAddress?.toLowerCase() === needle ||
-                  (p.launchId != null && String(p.launchId) === id),
-              ) ?? null;
-          }
-        } catch {
-          /* ignore */
         }
       }
 

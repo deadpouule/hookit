@@ -10,6 +10,7 @@ import {
   launchToTokenPool,
 } from "@/lib/launches";
 import { createServerPublicClient } from "@/lib/server-rpc";
+import { isIndexerConfigured } from "@/lib/live-data";
 import type { PublicClient } from "viem";
 
 export const revalidate = 12;
@@ -54,12 +55,15 @@ export async function GET() {
       client,
       masterRaw.map(launchToTokenPool),
       ethUsd,
+      { skipSwapIndex: isIndexerConfigured() },
     );
 
     // Spot-enrich graduated classic pools that already have a poolId.
     const classicGraduated = classicPools.filter((p) => !!p.poolId);
     const classicBonding = classicPools.filter((p) => !p.poolId);
-    const classicWithSpot = await enrichPoolsWithSpotPrices(client, classicGraduated, ethUsd);
+    const classicWithSpot = await enrichPoolsWithSpotPrices(client, classicGraduated, ethUsd, {
+      skipSwapIndex: isIndexerConfigured(),
+    });
 
     const pools = [...masterPools, ...classicWithSpot, ...classicBonding].sort(
       (a, b) => (b.launchedAt ?? 0) - (a.launchedAt ?? 0),

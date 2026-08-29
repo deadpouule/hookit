@@ -37,7 +37,7 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
     isError: poolError,
   } = useLaunchPool(id);
 
-  const { data: listedPools, isPending: listPending } = useLaunches();
+  const { data: listedPools } = useLaunches();
 
   const copyFlags = useMemo(() => {
     if (!listedPools?.length) return { isOriginal: false, isCopycat: false };
@@ -49,9 +49,17 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
     return { isOriginal: match?.isOriginal ?? false, isCopycat: match?.isCopycat ?? false };
   }, [listedPools, id]);
 
+  const fromList = resolveFromList(listedPools, id);
+  const demoPool = getDetailPool(id);
+
   const waitingOnChain =
     factoryConfigured &&
-    (!publicClient || poolPending || poolFetching || (listPending && !onChainPool));
+    !fromList &&
+    !onChainPool &&
+    (!publicClient || poolPending || poolFetching);
+
+  const pool: TokenPool | undefined =
+    onChainPool ?? fromList ?? (!isAddress(id) ? demoPool : undefined) ?? undefined;
 
   if (waitingOnChain) {
     return (
@@ -60,13 +68,6 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
       </div>
     );
   }
-
-  const fromList = resolveFromList(listedPools, id);
-  const demoPool = getDetailPool(id);
-
-  // Prefer live chain → marketplace list → demo catalog (slug ids like "smingo").
-  const pool: TokenPool | undefined =
-    onChainPool ?? fromList ?? (!isAddress(id) ? demoPool : undefined) ?? undefined;
 
   if (!pool) {
     return (
