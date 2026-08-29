@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { HomeNav } from "@/components/home/market/HomeNav";
 import { LeanHero } from "@/components/home/market/LeanHero";
+import { LiveOnInkTicker } from "@/components/home/market/LiveOnInkTicker";
 import { Marketplace } from "@/components/home/market/Marketplace";
 import { StaticDemoShell } from "@/components/home/market/StaticDemoShell";
 import { StatusBar } from "@/components/home/market/StatusBar";
@@ -22,6 +23,7 @@ export function LaunchpadHomeClient() {
   return (
     <div className="min-h-screen bg-black pb-40">
       <HomeNav />
+      <LiveOnInkTicker />
       <div className="market-shell space-y-6 pt-4">
         <LeanHero />
         <Marketplace />

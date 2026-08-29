@@ -807,6 +807,49 @@
     animation: ticker-slide 32s linear infinite;
   }
 
+  .live-on-ink-ticker {
+    position: relative;
+    z-index: 40;
+    overflow: hidden;
+    border-bottom: 1px solid rgb(0 0 0 / 0.06);
+    background: #fff;
+    padding-block: 10px;
+  }
+
+  .live-on-ink-ticker__track {
+    gap: 3rem;
+    padding-inline: 1rem;
+    animation-duration: 28s;
+  }
+
+  .live-on-ink-ticker__segment {
+    flex-shrink: 0;
+  }
+
+  .live-on-ink-ticker__logo {
+    display: block;
+    height: 20px;
+    width: 20px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .live-on-ink-ticker__label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .live-on-ink-ticker__live {
+    color: #7131f7;
+  }
+
+  .live-on-ink-ticker__on {
+    color: #111111;
+  }
+
   .market-shell {
     margin-inline: auto;
     width: 100%;
