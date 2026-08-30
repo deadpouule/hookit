@@ -1286,6 +1286,245 @@
     cursor: not-allowed;
   }
 
+  .market-order-tab {
+    display: flex;
+    gap: 16px;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    padding-bottom: 10px;
+  }
+
+  .market-order-tab__label {
+    position: relative;
+    padding-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #71717a;
+  }
+
+  .market-order-tab__label--active {
+    color: #9514d1;
+  }
+
+  .market-order-tab__label--active::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: #9514d1;
+  }
+
+  .market-token-block {
+    margin-top: 12px;
+    border-radius: 12px;
+    background: #1a1a1c;
+    padding: 14px;
+  }
+
+  .market-token-block__heading {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .market-token-picker {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    border-radius: 10px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: #141416;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .market-token-picker:hover {
+    border-color: rgb(149 20 209 / 0.35);
+  }
+
+  .market-token-picker__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .market-token-block__amount-row {
+    margin-top: 12px;
+  }
+
+  .market-token-block__amount-row--readonly {
+    min-height: 36px;
+  }
+
+  .market-token-block__input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: right;
+    font-family: inherit;
+    font-size: 28px;
+    font-weight: 500;
+    color: #fff;
+    outline: none;
+  }
+
+  .market-token-block__input::placeholder {
+    color: #52525b;
+  }
+
+  .market-token-block__output {
+    display: block;
+    width: 100%;
+    text-align: right;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  .market-token-block__usd {
+    margin-top: 4px;
+    text-align: right;
+    font-size: 12px;
+    color: #71717a;
+  }
+
+  .market-token-block__balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+
+  .market-preset-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .market-preset-btn {
+    flex: 1;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: #2a2a2e;
+    padding: 7px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e4e4e7;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .market-preset-btn:hover {
+    border-color: rgb(149 20 209 / 0.35);
+    color: #fff;
+  }
+
+  .market-flip-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    margin: -14px 0;
+  }
+
+  .market-flip-btn {
+    display: flex;
+    height: 36px;
+    width: 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: none;
+    background: #9514d1;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgb(149 20 209 / 0.35);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .market-flip-btn:hover {
+    background: #a820e8;
+  }
+
+  .market-flip-btn--spin {
+    animation: market-flip-spin 0.35s ease;
+  }
+
+  @keyframes market-flip-spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(180deg);
+    }
+  }
+
+  .market-details {
+    margin-top: 14px;
+  }
+
+  .market-details__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 0;
+    font-size: 13px;
+  }
+
+  .market-details__label {
+    color: #71717a;
+  }
+
+  .market-details__value {
+    font-variant-numeric: tabular-nums;
+    color: #d4d4d8;
+  }
+
+  .swap-token-modal {
+    border-radius: 16px;
+  }
+
+  .swap-token-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 999px;
+    border: 1px solid #9514d1;
+    background: #0f0f11;
+    padding: 10px 14px;
+  }
+
+  .swap-token-list {
+    max-height: 360px;
+  }
+
+  .swap-token-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    border-radius: 12px;
+    padding: 10px 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .swap-token-row:hover,
+  .swap-token-row--active {
+    background: rgb(255 255 255 / 0.04);
+  }
+
   .quick-buy-btn {
     display: inline-flex;
     flex: 1 1 0;

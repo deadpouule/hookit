@@ -1,11 +1,23 @@
 "use client";
 
 import { formatUnits, parseEther, parseUnits } from "viem";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { SwapTokenSelectModal } from "@/components/token/SwapTokenSelectModal";
+import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import type { PaymentAssetId } from "@/lib/payment-assets";
+import {
+  NATIVE_ETH_ASSET,
+  poolToSwapAsset,
+  swapAssetLabel,
+  type SwapAsset,
+} from "@/lib/swap-assets";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const ETH_USD = 1000;
+const BALANCE_PRESETS = [15, 25, 50] as const;
 
 function EthMark() {
   return (
@@ -21,134 +33,186 @@ function EthMark() {
   );
 }
 
-function TokenMark({ ticker, imageUrl }: { ticker: string; imageUrl?: string }) {
-  if (imageUrl) {
+function TokenMark({ asset }: { asset: SwapAsset }) {
+  if (asset.imageUrl) {
     return (
       <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+        <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
       </span>
     );
   }
-
   return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9514d1] text-[10px] font-bold text-white">
-      {ticker.slice(0, 2)}
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-[10px] font-bold text-black">
+      {asset.symbol.slice(0, 1)}
     </span>
   );
 }
 
-const SLIPPAGE_PRESETS = [0.5, 1, 2] as const;
+function AssetIcon({ asset }: { asset: SwapAsset }) {
+  return asset.isNative ? <EthMark /> : <TokenMark asset={asset} />;
+}
 
-/** Market swap — you pay / you receive layout. */
+/** Market swap — pools.fun Sell Token / Buy Token layout. */
 export function TokenProSwap({
-  ticker,
-  tokenImageUrl,
+  pool,
+  sellAsset,
+  buyAsset,
+  onSellAsset,
+  onBuyAsset,
   sellAmount,
   onSellAmount,
-  ethOnTop,
   onInvert,
   receiveAmount,
   slippagePct,
-  onSlippagePct,
-  payWith,
-  onPayWith,
-  showPayWith,
-  quoteLabel = "ETH",
+  sellBalance,
+  tokenPriceEth,
 }: {
-  ticker: string;
-  tokenImageUrl?: string;
+  pool: TokenPool;
+  sellAsset: SwapAsset;
+  buyAsset: SwapAsset;
+  onSellAsset: (asset: SwapAsset) => void;
+  onBuyAsset: (asset: SwapAsset) => void;
   sellAmount: string;
   onSellAmount: (value: string) => void;
-  ethOnTop: boolean;
   onInvert: () => void;
   receiveAmount?: string;
   slippagePct: number;
-  onSlippagePct: (value: number) => void;
-  payWith?: PaymentAssetId;
-  onPayWith?: (id: PaymentAssetId) => void;
-  showPayWith?: boolean;
-  quoteLabel?: string;
+  sellBalance: number;
+  tokenPriceEth?: number;
 }) {
-  const sellTicker = ethOnTop
-    ? payWith && payWith !== "ETH"
-      ? payWith
-      : quoteLabel
-    : ticker;
-  const buyTicker = ethOnTop ? ticker : quoteLabel;
+  const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
+  const [flipAnim, setFlipAnim] = useState(false);
+
+  const sellUsd = (() => {
+    const n = Number(sellAmount);
+    if (!(n > 0)) return 0;
+    if (sellAsset.isNative) return n * ETH_USD;
+    return n * (tokenPriceEth ?? 0) * ETH_USD;
+  })();
+
+  const receiveUsd = (() => {
+    const n = Number(receiveAmount);
+    if (!(n > 0)) return 0;
+    if (buyAsset.isNative) return n * ETH_USD;
+    return n * (tokenPriceEth ?? 0) * ETH_USD;
+  })();
+
+  const handleInvert = () => {
+    setFlipAnim(true);
+    onInvert();
+    window.setTimeout(() => setFlipAnim(false), 350);
+  };
+
+  const applyPreset = (pct: number) => {
+    if (sellBalance <= 0) return;
+    onSellAmount(String((sellBalance * pct) / 100));
+  };
+
+  const route =
+    receiveAmount && Number(sellAmount) > 0
+      ? `${sellAsset.symbol} → ${buyAsset.symbol}`
+      : "—";
 
   return (
-    <div className="mt-4 space-y-2">
-      <AssetBlock
-        label="You pay"
-        ticker={sellTicker}
-        launchTicker={ticker}
-        tokenImageUrl={tokenImageUrl}
-        amount={sellAmount}
-        onAmount={onSellAmount}
-      />
-      <div className="flex justify-center py-1">
+    <div className="mt-3">
+      <div className="market-order-tab">
+        <span className="market-order-tab__label market-order-tab__label--active">Market</span>
+      </div>
+
+      <div className="market-token-block">
+        <p className="market-token-block__heading">Sell Token</p>
         <button
           type="button"
-          aria-label="Invert pair"
-          onClick={onInvert}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#1a1a1c] text-zinc-300 transition hover:border-[#9514d1] hover:bg-[#9514d1] hover:text-white"
+          onClick={() => setSelectSide("sell")}
+          className="market-token-picker"
         >
-          <ArrowDown className="h-4 w-4" />
+          <AssetIcon asset={sellAsset} />
+          <span className="market-token-picker__label">{swapAssetLabel(sellAsset)}</span>
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
         </button>
-      </div>
-      <AssetBlock
-        label="You receive"
-        ticker={buyTicker}
-        launchTicker={ticker}
-        tokenImageUrl={tokenImageUrl}
-        amount={receiveAmount ?? ""}
-        onAmount={() => undefined}
-        readOnly
-      />
-      {showPayWith && ethOnTop && onPayWith && payWith && (
-        <div className="swap-detail-row">
-          <span className="swap-detail-row__label">Pay with</span>
-          <select
-            value={payWith}
-            onChange={(e) => onPayWith(e.target.value as PaymentAssetId)}
-            className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
-          >
-            <option value="ETH">ETH</option>
-            <option value="USDC">{quoteLabel === "USDG" ? "USDG" : "USDC"}</option>
-          </select>
+        <div className="market-token-block__amount-row">
+          <input
+            value={sellAmount}
+            onChange={(e) => onSellAmount(e.target.value)}
+            placeholder="0.0"
+            inputMode="decimal"
+            className="market-token-block__input"
+          />
         </div>
-      )}
-      <div className="swap-detail-row">
-        <span className="swap-detail-row__label">Max slippage</span>
-        <div className="flex items-center gap-1">
-          {SLIPPAGE_PRESETS.map((pct) => (
+        <p className="market-token-block__usd">≈ {formatCompactUsd(sellUsd)}</p>
+        <div className="market-token-block__balance-row">
+          <span className="text-zinc-500">Balance</span>
+          <span className="font-mono text-zinc-400">
+            {sellBalance < 1 ? sellBalance.toFixed(6) : formatTokenAmount(sellBalance)} {sellAsset.symbol}
+          </span>
+        </div>
+        <div className="market-preset-row">
+          {BALANCE_PRESETS.map((pct) => (
             <button
               key={pct}
               type="button"
-              onClick={() => onSlippagePct(pct)}
-              className={cn(
-                "rounded-md px-2 py-0.5 font-mono text-[11px] transition",
-                slippagePct === pct
-                  ? "bg-[#9514d1] text-white"
-                  : "bg-white/5 text-zinc-400 hover:text-white",
-              )}
+              onClick={() => applyPreset(pct)}
+              className="market-preset-btn"
             >
               {pct}%
             </button>
           ))}
         </div>
       </div>
-      <div className="swap-detail-row">
-        <span className="swap-detail-row__label">Route</span>
-        <span className="swap-detail-row__value font-mono text-[12px]">
-          {sellTicker} → {buyTicker}
-        </span>
+
+      <div className="market-flip-wrap">
+        <button
+          type="button"
+          aria-label="Switch tokens"
+          onClick={handleInvert}
+          className={cn("market-flip-btn", flipAnim && "market-flip-btn--spin")}
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
       </div>
-      <div className="swap-detail-row">
-        <span className="swap-detail-row__label">Type</span>
-        <span className="swap-detail-row__value">Market</span>
+
+      <div className="market-token-block">
+        <p className="market-token-block__heading">Buy Token</p>
+        <button
+          type="button"
+          onClick={() => setSelectSide("buy")}
+          className="market-token-picker"
+        >
+          <AssetIcon asset={buyAsset} />
+          <span className="market-token-picker__label">{swapAssetLabel(buyAsset)}</span>
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
+        </button>
+        <div className="market-token-block__amount-row market-token-block__amount-row--readonly">
+          <span className="market-token-block__output">{receiveAmount || "—"}</span>
+        </div>
+        <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
       </div>
+
+      <dl className="market-details">
+        <Detail label="Minimum received" value={receiveAmount ? `${formatTokenAmount(Number(receiveAmount))} ${buyAsset.symbol}` : "—"} />
+        <Detail label="Price impact" value="—" />
+        <Detail label="Route" value={route} />
+        <Detail label="Max slippage" value={`${slippagePct}%`} />
+        <Detail label="Platform fee" value="Free" valueClass="text-white" />
+      </dl>
+
+      <SwapTokenSelectModal
+        open={selectSide === "sell"}
+        onOpenChange={(open) => !open && setSelectSide(null)}
+        title="Select sell token"
+        currentPool={pool}
+        selectedKey={sellAsset.key}
+        onSelect={onSellAsset}
+      />
+      <SwapTokenSelectModal
+        open={selectSide === "buy"}
+        onOpenChange={(open) => !open && setSelectSide(null)}
+        title="Select buy token"
+        currentPool={pool}
+        selectedKey={buyAsset.key}
+        onSelect={onBuyAsset}
+      />
     </div>
   );
 }
@@ -206,42 +270,19 @@ export function useProQuoteAmount(opts: {
   return out;
 }
 
-function AssetBlock({
+function Detail({
   label,
-  ticker,
-  launchTicker,
-  tokenImageUrl,
-  amount,
-  onAmount,
-  readOnly,
+  value,
+  valueClass,
 }: {
   label: string;
-  ticker: string;
-  launchTicker: string;
-  tokenImageUrl?: string;
-  amount: string;
-  onAmount: (value: string) => void;
-  readOnly?: boolean;
+  value: string;
+  valueClass?: string;
 }) {
-  const isEth = ticker === "ETH";
-  const isLaunchToken = ticker.toUpperCase() === launchTicker.toUpperCase();
-  const launchImage = isLaunchToken ? tokenImageUrl : undefined;
-
   return (
-    <div className={cn("rounded-lg bg-[#1a1a1c] p-3", readOnly && "opacity-90")}>
-      <div className="text-[12px] text-zinc-500">{label}</div>
-      <div className="mt-2 flex items-center gap-2">
-        {isEth ? <EthMark /> : <TokenMark ticker={ticker} imageUrl={launchImage} />}
-        <span className="text-sm font-medium text-white">{ticker}</span>
-        <input
-          value={amount}
-          onChange={(e) => onAmount(e.target.value)}
-          placeholder={readOnly ? "—" : "0.0"}
-          inputMode="decimal"
-          readOnly={readOnly}
-          className="min-w-0 flex-1 bg-transparent text-right font-mono text-2xl text-white outline-none placeholder:text-zinc-600"
-        />
-      </div>
+    <div className="market-details__row">
+      <dt className="market-details__label">{label}</dt>
+      <dd className={cn("market-details__value", valueClass)}>{value}</dd>
     </div>
   );
 }
