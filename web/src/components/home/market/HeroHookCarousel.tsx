@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import {
   MASTER_HOOKS,
   launchWithHookHref,
@@ -58,7 +59,15 @@ function MiniHookCard({
   const active = offset === 0;
   const body = (
     <>
-      <h3>{hook.title}</h3>
+      <h3
+        className={cn(
+          "orb-hook-desc-badge orb-hook-title-badge hero-hook-title-badge",
+          `orb-hook-desc-badge--${hook.theme}`,
+        )}
+      >
+        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+        <span>{hook.title}</span>
+      </h3>
       <div className="hero-hook-ascii">
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={active} />
       </div>

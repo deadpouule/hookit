@@ -3580,11 +3580,22 @@
       0 0 40px -10px rgb(149 20 209 / 0.4);
   }
 
-  .hero-hook-card h3 {
+  .hero-hook-card .hero-hook-title-badge {
+    width: auto;
+    max-width: 100%;
+    align-items: center;
     margin: 0;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #fff;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .hero-hook-card .hero-hook-title-badge .orb-hook-desc-badge-glyph {
+    width: 0.75rem;
+    margin-top: 0;
+    font-size: 0.26rem;
   }
 
   .hero-hook-ascii {
