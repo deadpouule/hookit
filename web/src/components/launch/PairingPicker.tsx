@@ -142,7 +142,10 @@ export function PairingPicker({
             return (
               <div key={market.id}>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-zinc-300">{token?.ticker ?? market.id}</span>
+                  <span className="inline-flex items-center gap-2 text-zinc-300">
+                    <PairingMark id={market.id} size="sm" />
+                    <span>{token?.ticker ?? market.id}</span>
+                  </span>
                   <span className="font-mono text-zinc-400">{(market.bps / 100).toFixed(1)}%</span>
                 </div>
                 <Slider
@@ -170,12 +173,13 @@ export function PairingPicker({
                     type="button"
                     disabled
                     title="Backed floor disabled for multi-pool launches in v1"
-                    className={`rounded-md border px-2 py-1 text-xs ${
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
                       floorQuoteIndex === index
                         ? "border-emerald-600/50 text-emerald-400"
                         : "border-zinc-800 text-zinc-600"
                     }`}
                   >
+                    <PairingMark id={market.id} size="sm" />
                     {token?.ticker ?? market.id}
                   </button>
                 );
@@ -183,7 +187,8 @@ export function PairingPicker({
             </div>
           </div>
           <p className="text-xs text-amber-600/90">
-            Multi-pool launches: backed floor is off for now. Other hook modules apply to every pool.
+            Multi-pool: Backed floor is not available yet (single-pair only for now). Anti-snipe,
+            anti-MEV, fees, and other modules still apply on every pool.
           </p>
         </div>
       )}
