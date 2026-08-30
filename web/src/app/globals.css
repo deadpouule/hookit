@@ -986,7 +986,7 @@
     display: inline-flex;
     align-items: center;
     font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
     line-height: 1;
     color: #ffffff;
@@ -995,10 +995,11 @@
   }
 
   .hookit-fun-logo__infinity {
-    width: 0.78em;
-    height: 0.38em;
-    margin-inline: -0.04em 0.01em;
+    width: 1.18em;
+    height: 0.62em;
+    margin-inline: -0.02em 0.04em;
     flex-shrink: 0;
+    transform: translateY(0.03em);
   }
 
   .portfolio-nav-btn {
