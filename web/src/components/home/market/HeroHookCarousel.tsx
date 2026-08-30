@@ -100,13 +100,18 @@ function MiniHookCard({
         {active ? (
           <Link
             href={launchWithHookHref(hook.id)}
-            className={cn("hero-hook-card", "is-on")}
+            className={cn("hero-hook-card", "is-on", `hero-hook-card--${hook.theme}`)}
             aria-current="true"
           >
             {body}
           </Link>
         ) : (
-          <button type="button" {...TOOLBAR_BUTTON_PROPS} className="hero-hook-card" onClick={onSelect}>
+          <button
+            type="button"
+            {...TOOLBAR_BUTTON_PROPS}
+            className={cn("hero-hook-card", `hero-hook-card--${hook.theme}`)}
+            onClick={onSelect}
+          >
             {body}
           </button>
         )}
