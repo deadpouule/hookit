@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import type { MasterHookId } from "@/lib/master-hooks";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenAgeLabel } from "@/lib/market-tokens";
+import { PairingMark } from "@/components/launch/PairingMark";
 import { pairingBadgeClassName, pairingCurveBadge } from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +85,9 @@ export function TokenTypeBadges({
   if (pairing) {
     badges.push(
       <span key="pairing" className={pairingBadgeClassName(pairing.tone)}>
-        {pairing.label}
+        <span className="token-type-badge-pairing-prefix">paired with</span>
+        <PairingMark id={pairing.pairingId} size="sm" />
+        <span className="token-type-badge-pairing-name">{pairing.name}</span>
       </span>,
     );
   } else if (token.rail === "classic" && token.hookType === "Classic") {
