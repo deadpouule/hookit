@@ -104,14 +104,23 @@ export function TokenTypeBadges({
 
   if (isMulti) {
     badges.push(
-      <span key="multi-pair" className="token-type-badge token-type-badge--multi-pair">
+      <span
+        key="multi-pair"
+        className="token-type-badge token-type-badge--multi-pair"
+        title={pairings.map((pairing) => pairing.name).join(" · ")}
+      >
         Multi pair
+        <span className="token-type-badge-multi-pair-logos">
+          {pairings.map((pairing) => (
+            <PairingMark key={pairing.pairingId} id={pairing.pairingId} size="sm" />
+          ))}
+        </span>
       </span>,
     );
-  }
-
-  for (const pairing of pairings) {
-    badges.push(<PairingBadgeRow key={`pairing-${pairing.pairingId}`} pairing={pairing} />);
+  } else {
+    for (const pairing of pairings) {
+      badges.push(<PairingBadgeRow key={`pairing-${pairing.pairingId}`} pairing={pairing} />);
+    }
   }
 
   if (pairings.length === 0 && token.rail === "classic" && token.hookType === "Classic") {

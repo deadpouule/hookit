@@ -3277,6 +3277,20 @@
     background: rgb(56 189 248 / 0.16);
     color: #7dd3fc;
     text-transform: capitalize;
+    gap: 5px;
+  }
+
+  .token-type-badge-multi-pair-logos {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .token-type-badge--multi-pair .pick-logo--sm {
+    height: 14px;
+    width: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
   }
 
   .token-type-badge--curve {
