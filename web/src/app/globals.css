@@ -3318,6 +3318,25 @@
     color: #86efac;
   }
 
+  .token-type-badge[class*="token-type-badge--pair-"] {
+    gap: 4px;
+  }
+
+  .token-type-badge-pairing-prefix {
+    text-transform: lowercase;
+  }
+
+  .token-type-badge-pairing-name {
+    text-transform: none;
+  }
+
+  .token-type-badge[class*="token-type-badge--pair-"] .pick-logo--sm {
+    height: 14px;
+    width: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
   .token-type-badge--pair-wspyx {
     border-color: rgb(56 189 248 / 0.55);
     background: rgb(56 189 248 / 0.16);
