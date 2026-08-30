@@ -19,7 +19,7 @@ import { CustomsGlyph, MasterHookGlyph, MultiPairGlyph, RwaGlyph } from "./Categ
 import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
 const BADGE_TIPS = {
-  master: "Uniswap v4 pool from day one, with locked LP and optional hook modules.",
+  master: "Uniswap v4 token with hooks only. A normal v4 pool without hooks is not Master.",
   customs: "Custom unaudited hook code — treat as higher risk.",
   rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.).",
   multiPair: "Trades across multiple quote pools at once.",
