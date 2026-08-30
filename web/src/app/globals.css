@@ -2421,7 +2421,7 @@
 
   .market-toolbar-search {
     display: flex;
-    width: min(100%, 26rem);
+    width: min(100%, 28rem);
     min-width: 14rem;
     flex: 0 1 auto;
     align-items: center;
