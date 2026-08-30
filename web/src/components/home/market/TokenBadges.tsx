@@ -19,7 +19,7 @@ import { CustomsGlyph, MasterHookGlyph, MultiPairGlyph, RwaGlyph } from "./Categ
 import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
 const BADGE_TIPS = {
-  master: "Uniswap v4 token with hooks only. A normal v4 pool without hooks is not Master.",
+  master: "Uniswap v4 token with our programmable hooks.",
   customs: "Custom unaudited hook code — treat as higher risk.",
   rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.).",
   multiPair: "Trades across multiple quote pools at once.",
@@ -35,6 +35,7 @@ function BadgeTip({ tip, children }: { tip: string; children: ReactNode }) {
       <TooltipContent
         side="top"
         sideOffset={8}
+        showArrow={false}
         className="max-w-[240px] border border-white/10 bg-[#1a1a1c] px-2.5 py-1.5 text-left text-[11px] leading-snug text-zinc-100 shadow-lg"
       >
         {tip}
