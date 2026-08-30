@@ -7,8 +7,13 @@ import {
 import type { PublicClient } from "viem";
 
 import { POOL_MANAGER_ADDRESS, getChainDeployment } from "@/lib/contracts/config";
-import { ethPerTokenFromSqrtPrice, marketCapUsd, stateViewAbi } from "@/lib/pool-price";
+import { ethPerTokenFromSqrtPrice, stateViewAbi } from "@/lib/pool-price";
 import { poolTvlUsd } from "@/lib/pool-tvl";
+import {
+  marketCapUsdForPool,
+  quoteVolumeUsd,
+  resolveQuoteKind,
+} from "@/lib/quote-usd";
 import { TOTAL_SUPPLY, type LiveCandle, type LiveSwap, type LiveTokenState } from "@/lib/token-live";
 import type { TokenPool } from "@/lib/types";
 
@@ -49,14 +54,12 @@ function seriesToCandles(mcapSeries: number[]): LiveCandle[] {
 /** Spot-only live state — `pool.liquidity` must already be TVL USD when enriched. */
 export function buildSparseLive(pool: TokenPool, ethUsd: number): LiveTokenState {
   const priceEth = pool.priceEth ?? 0;
-  const quoteIsEth = (pool.quoteAsset ?? "ETH") === "ETH";
+  const quoteUsd = pool.quoteUsd;
   const marketCap =
     pool.marketCap > 0
       ? pool.marketCap
       : priceEth > 0
-        ? quoteIsEth
-          ? marketCapUsd(priceEth, ethUsd)
-          : priceEth * TOTAL_SUPPLY
+        ? marketCapUsdForPool(priceEth, pool, ethUsd, quoteUsd)
         : 0;
   const priceUsd = marketCap > 0 ? marketCap / TOTAL_SUPPLY : 0;
   const spotCandle =
@@ -94,7 +97,9 @@ export async function fetchOnChainLive(
 
   const poolId = pool.poolId;
   const tokenIs0 = pool.tokenIsCurrency0 ?? false;
-  const quoteIsEth = (pool.quoteAsset ?? "ETH") === "ETH";
+  const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+  const quoteIsEth = quoteKind === "eth";
+  const quoteUsd = pool.quoteUsd;
   const stateView = getChainDeployment().stateView;
 
   const latest = await client.getBlockNumber();
@@ -144,9 +149,7 @@ export async function fetchOnChainLive(
 
   const marketCap =
     spotEth > 0
-      ? quoteIsEth
-        ? marketCapUsd(spotEth, ethUsd)
-        : spotEth * TOTAL_SUPPLY
+      ? marketCapUsdForPool(spotEth, pool, ethUsd, quoteUsd)
       : base.marketCap;
   const priceUsd = marketCap / TOTAL_SUPPLY;
 
@@ -163,6 +166,7 @@ export async function fetchOnChainLive(
           tokenIsCurrency0: tokenIs0,
           quoteIsEth,
           ethUsd,
+          quoteUsdPerUnit: quoteUsd,
         })
       : pool.liquidity > 0
         ? pool.liquidity
@@ -215,17 +219,15 @@ export async function fetchOnChainLive(
     const price = ethPerTokenFromSqrtPrice(args.sqrtPriceX96, tokenIs0);
     const mcap =
       price > 0
-        ? quoteIsEth
-          ? marketCapUsd(price, ethUsd)
-          : price * TOTAL_SUPPLY
+        ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd)
         : marketCap;
+
     if (mcap > 0) mcapSeries.push(mcap);
 
     const side: "buy" | "sell" = quoteDelta > BigInt(0) ? "buy" : "sell";
     if (side === "buy") buys += 1;
 
-    const quoteAmt = Number(abs(quoteDelta)) / (quoteIsEth ? 1e18 : 1e6);
-    const totalUsd = quoteIsEth ? quoteAmt * ethUsd : quoteAmt;
+    const totalUsd = quoteVolumeUsd(abs(quoteDelta), pool, ethUsd, quoteUsd);
     const tokenAmt = Number(abs(tokenDelta)) / 1e18;
     const bn = Number(log.blockNumber ?? 0);
     const ts = tsByBlock.get(bn);
@@ -252,9 +254,7 @@ export async function fetchOnChainLive(
         ? [{ o: marketCap, h: marketCap, l: marketCap, c: marketCap }]
         : [];
 
-  const volume24h = quoteIsEth
-    ? (Number(volumeQuoteWei) / 1e18) * ethUsd
-    : Number(volumeQuoteWei) / 1e6;
+  const volume24h = quoteVolumeUsd(volumeQuoteWei, pool, ethUsd, quoteUsd);
 
   const first = mcapSeries[0] ?? marketCap;
   const last = mcapSeries[mcapSeries.length - 1] ?? marketCap;

@@ -108,6 +108,8 @@ export interface TokenPool {
   launchedAt?: number;
   hooksAddress?: `0x${string}`;
   quoteAddress?: `0x${string}`;
+  /** USD price of one quote unit (1 ETH, 1 USDG, or 1 wStock). */
+  quoteUsd?: number;
   tickSpacing?: number;
   lpFee?: number;
   /** Locked position range (Master / graduated Classic). */

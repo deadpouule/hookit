@@ -96,6 +96,8 @@ export type TvlInput = {
   /** Quote is native ETH (18 decimals). */
   quoteIsEth: boolean;
   ethUsd: number;
+  /** USD value of one quote unit (1 ETH, 1 USDG, or 1 wStock). */
+  quoteUsdPerUnit?: number;
   /** Quote token decimals when not ETH (e.g. 6 for USDG). */
   quoteDecimals?: number;
 };
@@ -113,9 +115,12 @@ export function poolTvlUsd(input: TvlInput): number {
     tokenIsCurrency0,
     quoteIsEth,
     ethUsd,
+    quoteUsdPerUnit,
     quoteDecimals = 6,
   } = input;
   if (liquidity === 0n || sqrtPriceX96 === 0n) return 0;
+
+  const quoteUsd = quoteIsEth ? ethUsd : (quoteUsdPerUnit ?? 1);
 
   const { amount0, amount1 } = getAmountsForLiquidity(
     sqrtPriceX96,
@@ -139,10 +144,8 @@ export function poolTvlUsd(input: TvlInput): number {
   const tokens = Number(tokenWei) / 1e18;
   const quoteHuman = Number(quoteWei) / (quoteIsEth ? 1e18 : 10 ** quoteDecimals);
 
-  const tokenUsd = quoteIsEth
-    ? tokens * ethPerToken * ethUsd
-    : tokens * ethPerToken; // ethPerToken is already quote-per-token for non-ETH
-  const quoteUsd = quoteIsEth ? quoteHuman * ethUsd : quoteHuman;
+  const tokenUsd = tokens * ethPerToken * quoteUsd;
+  const quoteUsdReserve = quoteHuman * quoteUsd;
 
-  return Math.max(0, tokenUsd + quoteUsd);
+  return Math.max(0, tokenUsd + quoteUsdReserve);
 }

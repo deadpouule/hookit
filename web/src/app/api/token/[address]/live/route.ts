@@ -84,6 +84,7 @@ export async function GET(_req: Request, ctx: Ctx) {
         marketCap: pool.marketCap,
         volume24h: pool.volume24h,
         priceEth: pool.priceEth,
+        quoteUsd: pool.quoteUsd,
         change24h: pool.change24h,
         liquidity: pool.liquidity,
       },

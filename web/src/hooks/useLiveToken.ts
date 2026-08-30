@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { zeroAddress } from "viem";
 
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import {
@@ -12,6 +11,13 @@ import {
   fetchIndexerTrades,
 } from "@/lib/indexer-client";
 import { marketCapUsd } from "@/lib/pool-price";
+import {
+  candleFdvScale,
+  fallbackStockUsd,
+  marketCapFromQuotePrice,
+  quoteVolumeUsd,
+  resolveQuoteKind,
+} from "@/lib/quote-usd";
 import {
   TOTAL_SUPPLY,
   type LiveCandle,
@@ -25,7 +31,7 @@ function isLikelyAddress(id: string) {
 }
 
 function quoteIsEth(pool: TokenPool) {
-  return !pool.quoteAddress || pool.quoteAddress === zeroAddress || pool.quoteAsset === "ETH";
+  return resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) === "eth";
 }
 
 function resolveEthUsd(pool: TokenPool): number {
@@ -120,12 +126,16 @@ export function useLiveToken(pool: TokenPool) {
     const { summary, trades, holders, candles } = data;
     const eth = resolveEthUsd(pool);
     const isEth = quoteIsEth(pool);
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    const quoteUsd =
+      pool.quoteUsd ??
+      (quoteKind === "eth" ? eth : quoteKind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);
     const priceQuote = summary.price ? Number(summary.price) : 0;
     const mcapFromIndexer =
       priceQuote > 0
         ? isEth
           ? marketCapUsd(priceQuote, eth)
-          : priceQuote * TOTAL_SUPPLY
+          : marketCapFromQuotePrice(priceQuote, quoteUsd ?? 1)
         : 0;
     const mcap =
       mcapFromIndexer > 0
@@ -138,9 +148,9 @@ export function useLiveToken(pool: TokenPool) {
     const quoteVolRaw = summary.volume24h ? Number(summary.volume24h) : 0;
     const quoteVolUsd = isEth
       ? (quoteVolRaw / 1e18) * eth
-      : quoteVolRaw / 10 ** (summary.quoteDecimals || 6);
+      : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
 
-    const candleScale = isEth ? TOTAL_SUPPLY * eth : TOTAL_SUPPLY;
+    const candleScale = candleFdvScale(pool, eth, quoteUsd);
     const mappedCandles: LiveCandle[] =
       candles.length > 0
         ? candles.map((c) => ({
@@ -172,7 +182,9 @@ export function useLiveToken(pool: TokenPool) {
           : 50,
       swaps: trades.map((t, i) => {
         const qRaw = Number(t.quoteAmount);
-        const totalUsd = isEth ? (qRaw / 1e18) * eth : qRaw / 1e6;
+        const totalUsd = isEth
+          ? (qRaw / 1e18) * eth
+          : quoteVolumeUsd(BigInt(Math.trunc(qRaw)), pool, eth, quoteUsd);
         return {
           id: t.id ?? `${t.txHash}-${i}`,
           ageSec: Math.max(0, Math.floor(Date.now() / 1000) - t.timestamp),
@@ -191,7 +203,7 @@ export function useLiveToken(pool: TokenPool) {
       candles: mappedCandles,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexerQuery.dataUpdatedAt, pool.marketCap, pool.liquidity, pool.quoteAddress, pool.quoteAsset]);
+  }, [indexerQuery.dataUpdatedAt, pool.marketCap, pool.liquidity, pool.quoteAddress, pool.quoteAsset, pool.quoteUsd]);
 
   useEffect(() => {
     if (indexerQuery.data?.summary) return;

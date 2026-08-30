@@ -9,6 +9,8 @@ export type QuotronStockListing = {
   /** Underlying xStocks API symbol for USD price refresh (e.g. AAPLx for wAAPLx). */
   priceSymbol: string;
   quotronPoolId: `0x${string}`;
+  /** Fallback USD when API + Quotrons pool are unavailable (matches on-chain seed). */
+  fallbackUsd: number;
 };
 
 export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
@@ -19,6 +21,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "AAPLx",
     quotronPoolId: "0x0ef0fe35389f4104afef27864010022976ed1b924e8837b30f308255d07d3092",
+    fallbackUsd: 309.775,
   },
   {
     symbol: "wAMZNx",
@@ -27,6 +30,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "AMZNx",
     quotronPoolId: "0xc113916ee057276dfd79b4ff4a29be5e98703e410923e4a61e95ccf459223a38",
+    fallbackUsd: 263.75,
   },
   {
     symbol: "wGOOGLx",
@@ -35,6 +39,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "GOOGLx",
     quotronPoolId: "0x5ec6f9fc8178f8b3a9c09b56d073a4503a5ea3f127ece3e8a8d1579c0cf9c3b2",
+    fallbackUsd: 349.4,
   },
   {
     symbol: "wMSTRx",
@@ -43,6 +48,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "MSTRx",
     quotronPoolId: "0xb7add80f794d65c978346f9e929971d2f12b4f862c89f4c14201872819a39a7d",
+    fallbackUsd: 121.57,
   },
   {
     symbol: "wNFLXx",
@@ -51,6 +57,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "NFLXx",
     quotronPoolId: "0x9f11034d6b2a7bfea38a0c39548c590e4aabd215ffa2b6bbe9bacd29e40238b6",
+    fallbackUsd: 819.4,
   },
   {
     symbol: "wNVDAx",
@@ -59,6 +66,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "NVDAx",
     quotronPoolId: "0xebe5d3cc94d87cf07cf06c969ca82a67760697535c57800350e210df8547cd11",
+    fallbackUsd: 211.32,
   },
   {
     symbol: "wSPYx",
@@ -67,6 +75,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "SPYx",
     quotronPoolId: "0x84b421dc355c6c003fcf4f8100691eddaa0319deb894acb7e9bbf633621694a7",
+    fallbackUsd: 767.582,
   },
   {
     symbol: "wTSLAx",
@@ -75,6 +84,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "TSLAx",
     quotronPoolId: "0x131ebb0eb148451d7225a52e94a8257b69976e780ebce1615aadf47d8e2aaf19",
+    fallbackUsd: 351.9,
   },
 ];
 

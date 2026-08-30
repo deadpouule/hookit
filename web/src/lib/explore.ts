@@ -5,11 +5,17 @@ import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import { getChainDeployment } from "@/lib/contracts/config";
 import {
   ethPerTokenFromSqrtPrice,
-  marketCapUsd,
   stateViewAbi,
 } from "@/lib/pool-price";
+import {
+  buildQuoteUsdMap,
+  marketCapUsdForPool,
+  quoteUsdFromMap,
+  quoteVolumeUsd as quoteVolumeUsdForPool,
+  resolveQuoteKind,
+} from "@/lib/quote-usd";
 import { poolTvlUsd } from "@/lib/pool-tvl";
-import { loadSwapsForPools, quoteVolumeUsd, statsFromSwaps } from "@/lib/swap-index";
+import { loadSwapsForPools, statsFromSwaps } from "@/lib/swap-index";
 import type { TokenPool } from "@/lib/types";
 
 export async function enrichPoolsWithSpotPrices(
@@ -18,6 +24,7 @@ export async function enrichPoolsWithSpotPrices(
   ethUsd = DEFAULT_LAUNCH_ETH_USD,
   options?: { skipSwapIndex?: boolean },
 ): Promise<TokenPool[]> {
+  const quoteUsdMap = await buildQuoteUsdMap(publicClient, pools, ethUsd);
   const withPool = pools.filter((p) => p.poolId);
   if (withPool.length === 0) {
     // Bonding-only: convert realQuote ETH → USD liquidity.
@@ -102,16 +109,15 @@ export async function enrichPoolsWithSpotPrices(
     const meta = metaByPoolId.get(pool.poolId);
     const priceEth = meta?.priceEth ?? pool.priceEth ?? 0;
     const stats = swapStats.get(pool.poolId.toLowerCase());
-    const quoteIsEth = (pool.quoteAsset ?? "ETH") === "ETH";
+    const quoteUsd = quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
     const marketCap =
-      priceEth > 0
-        ? quoteIsEth
-          ? marketCapUsd(priceEth, ethUsd)
-          : priceEth * 1_000_000_000
-        : pool.marketCap;
+      priceEth > 0 ? marketCapUsdForPool(priceEth, pool, ethUsd, quoteUsd) : pool.marketCap;
     const volume24h = stats
-      ? quoteVolumeUsd(stats.volumeQuoteWei, quoteIsEth, ethUsd)
+      ? quoteVolumeUsdForPool(stats.volumeQuoteWei, pool, ethUsd, quoteUsd)
       : 0;
+
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    const quoteIsEth = quoteKind === "eth";
 
     let liquidityUsd = 0;
     if (
@@ -129,6 +135,7 @@ export async function enrichPoolsWithSpotPrices(
           tokenIsCurrency0: pool.tokenIsCurrency0 ?? false,
           quoteIsEth,
           ethUsd,
+          quoteUsdPerUnit: quoteUsd,
         });
       } catch {
         liquidityUsd = 0;
@@ -140,6 +147,7 @@ export async function enrichPoolsWithSpotPrices(
     return {
       ...pool,
       priceEth,
+      quoteUsd,
       marketCap,
       volume24h,
       change24h: stats?.change24h ?? pool.change24h,

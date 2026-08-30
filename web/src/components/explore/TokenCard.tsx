@@ -13,7 +13,7 @@ import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants"
 import { formatUsd } from "@/lib/format";
 import { marketplaceHrefForHooks } from "@/lib/market-hook-filter";
 import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
-import { marketCapUsd } from "@/lib/pool-price";
+import { marketCapUsdForPool } from "@/lib/quote-usd";
 import { tokenHref } from "@/lib/routes";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function TokenCard({
     pool.marketCap > 0
       ? pool.marketCap
       : pool.priceEth && pool.priceEth > 0
-        ? marketCapUsd(pool.priceEth, DEFAULT_LAUNCH_ETH_USD)
+        ? marketCapUsdForPool(pool.priceEth, pool, DEFAULT_LAUNCH_ETH_USD, pool.quoteUsd)
         : TARGET_LAUNCH_MCAP_USD;
 
   const copyAddress = async (e: React.MouseEvent) => {
