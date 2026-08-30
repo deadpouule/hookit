@@ -13,6 +13,25 @@ export const MAX_SEEN_TRADES = 100_000;
 const CANDLE_SEC = 300;
 const SEC_24H = 86_400;
 
+export type ActivityWindowStats = {
+  txns: number;
+  volumeQuote: string;
+  buyCount: number;
+  sellCount: number;
+  buyVolumeQuote: string;
+  sellVolumeQuote: string;
+  buyPct: number;
+};
+
+export const ACTIVITY_WINDOWS = {
+  "5m": 300,
+  "1h": 3600,
+  "6h": 21_600,
+  "24h": SEC_24H,
+} as const;
+
+export type ActivityWindowKey = keyof typeof ACTIVITY_WINDOWS;
+
 export function defaultDataDir(): string {
   return join(fileURLToPath(new URL("..", import.meta.url)), "data");
 }
@@ -198,31 +217,53 @@ export class Store {
   }
 
   stats24h(token: Address) {
-    const row = this.getToken(token);
-    if (!row) return { volume24h: "0", trades24h: 0, change24h: null as number | null };
-    const cutoff = Math.floor(Date.now() / 1000) - SEC_24H;
-    let volume = 0n;
-    let trades24h = 0;
-    for (const t of row.trades) {
-      if (t.timestamp >= cutoff) {
-        volume += BigInt(t.quoteAmount);
-        trades24h += 1;
-      }
-    }
-    const recent = row.trades.filter((t) => t.timestamp >= cutoff);
-    let change24h: number | null = null;
-    if (recent.length >= 2) {
-      const first = Number(recent[0]!.price);
-      const last = Number(recent[recent.length - 1]!.price);
-      if (first > 0) change24h = ((last - first) / first) * 100;
-    }
-    return { volume24h: volume.toString(), trades24h, change24h };
+    const stats = this.statsForWindow(token, SEC_24H);
+    return {
+      volume24h: stats.volumeQuote,
+      trades24h: stats.txns,
+      change24h: stats.change,
+    };
   }
 
-  activityStats24h(token: Address) {
+  statsForWindow(token: Address, windowSec: number) {
     const row = this.getToken(token);
     if (!row) {
       return {
+        txns: 0,
+        volumeQuote: "0",
+        change: null as number | null,
+      };
+    }
+    const cutoff = Math.floor(Date.now() / 1000) - windowSec;
+    let volume = 0n;
+    let txns = 0;
+    const recent: IndexedTrade[] = [];
+    for (const t of row.trades) {
+      if (t.timestamp >= cutoff) {
+        volume += BigInt(t.quoteAmount);
+        txns += 1;
+        recent.push(t);
+      }
+    }
+    let change: number | null = null;
+    if (recent.length >= 2) {
+      const first = Number(recent[0]!.price);
+      const last = Number(recent[recent.length - 1]!.price);
+      if (first > 0) change = ((last - first) / first) * 100;
+    }
+    return { txns, volumeQuote: volume.toString(), change };
+  }
+
+  activityStats24h(token: Address) {
+    return this.activityStatsForWindow(token, SEC_24H);
+  }
+
+  activityStatsForWindow(token: Address, windowSec: number): ActivityWindowStats {
+    const row = this.getToken(token);
+    if (!row) {
+      return {
+        txns: 0,
+        volumeQuote: "0",
         buyCount: 0,
         sellCount: 0,
         buyVolumeQuote: "0",
@@ -230,7 +271,7 @@ export class Store {
         buyPct: 50,
       };
     }
-    const cutoff = Math.floor(Date.now() / 1000) - SEC_24H;
+    const cutoff = Math.floor(Date.now() / 1000) - windowSec;
     let buyCount = 0;
     let sellCount = 0;
     let buyVolumeQuote = 0n;
@@ -245,9 +286,27 @@ export class Store {
         sellVolumeQuote += BigInt(t.quoteAmount);
       }
     }
-    const total = buyCount + sellCount;
-    const buyPct = total > 0 ? (buyCount / total) * 100 : 50;
-    return { buyCount, sellCount, buyVolumeQuote: buyVolumeQuote.toString(), sellVolumeQuote: sellVolumeQuote.toString(), buyPct };
+    const txns = buyCount + sellCount;
+    const buyPct = txns > 0 ? (buyCount / txns) * 100 : 50;
+    const volumeQuote = (buyVolumeQuote + sellVolumeQuote).toString();
+    return {
+      txns,
+      volumeQuote,
+      buyCount,
+      sellCount,
+      buyVolumeQuote: buyVolumeQuote.toString(),
+      sellVolumeQuote: sellVolumeQuote.toString(),
+      buyPct,
+    };
+  }
+
+  activityByWindow(token: Address): Record<ActivityWindowKey, ActivityWindowStats> {
+    return {
+      "5m": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["5m"]),
+      "1h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["1h"]),
+      "6h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["6h"]),
+      "24h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["24h"]),
+    };
   }
 
   devBuyInfo(token: Address) {

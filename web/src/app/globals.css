@@ -1546,6 +1546,14 @@
     border-radius: 8px;
     padding: 8px 4px;
     text-align: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .token-stats-change:hover {
+    background: rgb(255 255 255 / 0.04);
   }
 
   .token-stats-change--active {

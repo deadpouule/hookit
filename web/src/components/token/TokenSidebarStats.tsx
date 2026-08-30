@@ -16,8 +16,16 @@ import {
 import { shortAddress } from "@/lib/master-hooks";
 import { formatDevBuyQuote, formatDevBuyTokens } from "@/lib/token-dev-buy";
 import type { LiveTokenState } from "@/lib/token-live";
+import type { StatsWindow } from "@/lib/token-window-stats";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const CHANGE_WINDOWS: { key: StatsWindow; label: string; changeKey: "change5m" | "change1h" | "change6h" | "change24h" }[] = [
+  { key: "5m", label: "5m", changeKey: "change5m" },
+  { key: "1h", label: "1h", changeKey: "change1h" },
+  { key: "6h", label: "6h", changeKey: "change6h" },
+  { key: "24h", label: "24h", changeKey: "change24h" },
+];
 
 export function TokenSidebarStats({
   live,
@@ -29,26 +37,22 @@ export function TokenSidebarStats({
   contractAddress: string;
 }) {
   const { data: stats } = useTokenStats(pool);
+  const [window, setWindow] = useState<StatsWindow>("24h");
+
   const ageSeconds =
     pool.launchedAt != null && isValidLaunchTimestamp(pool.launchedAt)
       ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
       : null;
 
-  const txns = stats?.txns ?? live.txns;
-  const volume24h = stats?.volume24hUsd ?? live.volume24h;
-  const buyCount = stats?.buyCount ?? 0;
-  const sellCount = stats?.sellCount ?? 0;
-  const buyVol = stats?.buyVolumeUsd ?? 0;
-  const sellVol = stats?.sellVolumeUsd ?? 0;
-  const buyPct = stats?.buyPct ?? live.buyPct;
+  const windowStats = stats?.windows[window];
+  const txns = windowStats?.txns ?? (window === "24h" ? live.txns : 0);
+  const volume = windowStats?.volumeUsd ?? (window === "24h" ? live.volume24h : 0);
+  const buyCount = windowStats?.buyCount ?? 0;
+  const sellCount = windowStats?.sellCount ?? 0;
+  const buyVol = windowStats?.buyVolumeUsd ?? 0;
+  const sellVol = windowStats?.sellVolumeUsd ?? 0;
+  const buyPct = windowStats?.buyPct ?? (window === "24h" ? live.buyPct : 50);
   const sellPct = 100 - buyPct;
-
-  const changes = [
-    { label: "5m", value: stats?.change5m ?? live.change5m },
-    { label: "1h", value: stats?.change1h ?? live.change1h },
-    { label: "6h", value: stats?.change6h ?? live.change6h },
-    { label: "24h", value: stats?.change24h ?? live.change24h },
-  ];
 
   const quoteLabel = pool.quoteAsset ?? "ETH";
   const isEthQuote =
@@ -64,14 +68,31 @@ export function TokenSidebarStats({
       <h3 className="token-stats-card__title">Stats</h3>
 
       <div className="token-stats-changes">
-        {changes.map(({ label, value }) => (
-          <ChangeChip key={label} label={label} value={value} active={label === "24h"} />
-        ))}
+        {CHANGE_WINDOWS.map(({ key, label, changeKey }) => {
+          const value =
+            stats?.[changeKey] ??
+            (key === "5m"
+              ? live.change5m
+              : key === "1h"
+                ? live.change1h
+                : key === "6h"
+                  ? live.change6h
+                  : live.change24h);
+          return (
+            <ChangeChip
+              key={key}
+              label={label}
+              value={value}
+              active={window === key}
+              onClick={() => setWindow(key)}
+            />
+          );
+        })}
       </div>
 
       <dl className="token-stats-meta">
         <MetaRow label="Txns" value={txns.toLocaleString()} />
-        <MetaRow label="Vol." value={formatCompactUsd(volume24h)} />
+        <MetaRow label="Vol." value={formatCompactUsd(volume)} />
       </dl>
 
       <div className="token-stats-flow">
@@ -138,13 +159,22 @@ function ChangeChip({
   label,
   value,
   active,
+  onClick,
 }: {
   label: string;
   value: number;
   active?: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className={cn("token-stats-change", active && "token-stats-change--active")}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "token-stats-change",
+        active && "token-stats-change--active",
+      )}
+    >
       <span className="token-stats-change__label">{label}</span>
       <span
         className={cn(
@@ -154,7 +184,7 @@ function ChangeChip({
       >
         {formatPercent(value, true)}
       </span>
-    </div>
+    </button>
   );
 }
 

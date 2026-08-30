@@ -70,6 +70,18 @@ export type IndexerTokenSummary = {
   buyVolume24h?: string;
   sellVolume24h?: string;
   buyPct24h?: number;
+  windows?: Record<
+    "5m" | "1h" | "6h" | "24h",
+    {
+      txns: number;
+      volumeQuote: string;
+      buyCount: number;
+      sellCount: number;
+      buyVolumeQuote: string;
+      sellVolumeQuote: string;
+      buyPct: number;
+    }
+  >;
   devBuyCompleted?: boolean;
   devBuyQuoteSpent?: string | null;
   devBuyTokensReceived?: string | null;

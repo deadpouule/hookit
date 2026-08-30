@@ -40,6 +40,7 @@ function summarize(store: Store, address: Address) {
   const holders = Object.keys(row.holders).length;
   const stats = store.stats24h(address);
   const activity = store.activityStats24h(address);
+  const windows = store.activityByWindow(address);
   const devBuy = store.devBuyInfo(address);
   const changes = store.priceChanges(address);
   return {
@@ -81,6 +82,7 @@ function summarize(store: Store, address: Address) {
     buyVolume24h: activity.buyVolumeQuote,
     sellVolume24h: activity.sellVolumeQuote,
     buyPct24h: activity.buyPct,
+    windows,
     devBuyCompleted: devBuy.completed,
     devBuyQuoteSpent: devBuy.completed ? devBuy.quoteSpent : null,
     devBuyTokensReceived: devBuy.completed ? devBuy.tokensReceived : null,
