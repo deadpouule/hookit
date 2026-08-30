@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
+import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { LaunchRocketIcon } from "@/components/brand/LaunchRocketIcon";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { PortfolioNavLink } from "@/components/wallet/PortfolioNavLink";
@@ -79,8 +79,8 @@ export function HomeNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black" suppressHydrationWarning>
       <div className="market-shell flex h-16 items-center justify-between">
-        <Link href="/" aria-label="hook it" className="flex shrink-0 items-center">
-          <CarabinerLogo />
+        <Link href="/" aria-label="hookit.fun home" className="flex shrink-0 items-center">
+          <HookitFunLogo />
         </Link>
 
         <div className="flex shrink-0 items-center gap-2 lg:gap-3">

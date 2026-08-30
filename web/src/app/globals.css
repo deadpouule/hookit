@@ -982,6 +982,25 @@
     box-shadow: 0 0 15px rgba(149, 20, 209, 0.5);
   }
 
+  .hookit-fun-logo {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
+  }
+
+  .hookit-fun-logo__infinity {
+    width: 0.78em;
+    height: 0.38em;
+    margin-inline: -0.04em 0.01em;
+    flex-shrink: 0;
+  }
+
   .portfolio-nav-btn {
     display: inline-flex;
     align-items: center;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LiveOnInkTicker } from "@/components/home/market/LiveOnInkTicker";
+import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { buildDemoMarketTokens } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 
@@ -14,7 +15,7 @@ export function StaticDemoShell() {
 
       <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black">
         <div className="market-shell flex h-16 items-center justify-between">
-          <span className="text-sm font-semibold text-white">hook it</span>
+          <HookitFunLogo />
           <Link href="/launch" className="rounded-xl bg-[#9514d1] px-4 py-2 text-sm font-semibold text-white">
             Launch
           </Link>
