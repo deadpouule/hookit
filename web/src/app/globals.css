@@ -604,6 +604,99 @@
     color: #71717a;
   }
 
+  .token-hooks-vault {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 0.15rem;
+    padding: 0.55rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    background: rgb(0 0 0 / 0.28);
+  }
+
+  .token-hooks-vault--passive {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .token-hooks-vault-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem 0.75rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: #d4d4d8;
+  }
+
+  .token-hooks-vault-ready {
+    color: #34d399;
+  }
+
+  .token-hooks-vault-copy {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #71717a;
+  }
+
+  .token-hooks-vault-form {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .token-hooks-vault-input {
+    height: 2rem;
+    flex: 1;
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(0 0 0 / 0.45);
+    padding: 0 0.65rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: #fff;
+    outline: none;
+  }
+
+  .token-hooks-vault-input:focus {
+    border-color: rgb(149 20 209 / 0.55);
+  }
+
+  .token-hooks-vault-btn {
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.04);
+    padding: 0 0.75rem;
+    font-size: 11px;
+    color: #e4e4e7;
+    transition: border-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .token-hooks-vault-btn:hover:not(:disabled) {
+    border-color: #9514d1;
+  }
+
+  .token-hooks-vault-btn:disabled {
+    opacity: 0.4;
+  }
+
+  .token-hooks-burn-track {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .token-hooks-burn-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ef4444, #f97316);
+  }
+
   .pick-config--fire.pick-config--focused {
     border-color: rgb(239 68 68 / 0.45);
     box-shadow: 0 0 0 1px rgb(239 68 68 / 0.25), 0 0 24px rgb(239 68 68 / 0.12);

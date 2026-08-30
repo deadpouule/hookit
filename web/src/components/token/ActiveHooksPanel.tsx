@@ -5,23 +5,21 @@ import { formatUnits, zeroAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
 
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
+import { HookInlineAction } from "@/components/token/HookInlineActions";
+import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
-import { unpackLaunchBitmask } from "@/lib/bitmask";
 import {
   hookTaxSummary,
   isModuleEnabled,
   moduleDetailLine,
   totalFeeSummary,
 } from "@/lib/launch-module-summary";
-import {
-  MASTER_HOOKS,
-  type MasterHookId,
-} from "@/lib/master-hooks";
+import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { LaunchModules, TokenPool } from "@/lib/types";
@@ -33,13 +31,6 @@ function quoteDecimals(quote: Address): number {
   if (quote === zeroAddress) return 18;
   if (quote.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()) return 6;
   return 18;
-}
-
-function formatCountdown(seconds: number): string {
-  if (seconds <= 0) return "Ready";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
 function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: number } | null {
@@ -119,7 +110,13 @@ function liveStatusForHook(
           ? `${live.airdropPendingHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
           : "—";
       const window =
-        live.airdropSecondsLeft == null ? "—" : formatCountdown(live.airdropSecondsLeft);
+        live.airdropSecondsLeft == null
+          ? "—"
+          : live.airdropSecondsLeft <= 0
+            ? "Ready"
+            : `${Math.floor(live.airdropSecondsLeft / 60)}m ${(live.airdropSecondsLeft % 60)
+                .toString()
+                .padStart(2, "0")}s`;
       return `Pot ${pot} · next ${window}`;
     }
     case "creator-share-to-hook":
@@ -127,27 +124,6 @@ function liveStatusForHook(
     default:
       return moduleDetailLine(id, modules);
   }
-}
-
-function ActionHint({ id, live }: { id: MasterHookId; live: LiveBits }) {
-  if (id === "holder-airdrop") {
-    const ready = live.airdropSecondsLeft != null && live.airdropSecondsLeft <= 0;
-    return (
-      <p className="token-hooks-action">
-        {ready
-          ? "Window open — next swap can push the pot pro-rata to holders."
-          : "Fees accrue here. When Ready, a swap on this token can distribute the pot."}
-      </p>
-    );
-  }
-  if (id === "backed-floor") {
-    return (
-      <p className="token-hooks-action">
-        Redeem launch tokens for quote at P_floor via the Floor vault card below.
-      </p>
-    );
-  }
-  return null;
 }
 
 export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
@@ -256,6 +232,8 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     quoteLabel,
   };
 
+  const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
+
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
@@ -294,7 +272,15 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                 </span>
               </div>
               {status ? <p className="token-hooks-live">{status}</p> : null}
-              <ActionHint id={hook.id} live={live} />
+              <HookInlineAction
+                id={hook.id}
+                pool={pool}
+                modules={modules}
+                live={live}
+                floorVault={floorVault as Address | undefined}
+                floorReserveWei={floorReserveWei}
+                decimals={decimals}
+              />
             </li>
           );
         })}
