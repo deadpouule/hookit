@@ -4,7 +4,6 @@ import { formatUnits, parseEther, parseUnits } from "viem";
 import { ArrowDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { usePriceAlertWatcher, useTokenAlerts, type PriceAlertKind } from "@/lib/price-alerts";
 import type { PaymentAssetId } from "@/lib/payment-assets";
 import { cn } from "@/lib/utils";
 
@@ -40,15 +39,11 @@ function TokenMark({ ticker, imageUrl }: { ticker: string; imageUrl?: string }) 
 }
 
 const SLIPPAGE_PRESETS = [0.5, 1, 2] as const;
-type ProTab = "market" | "limit" | "stop";
 
-/** Market orders + client-side limit/stop price alerts. */
+/** Market swap — you pay / you receive layout. */
 export function TokenProSwap({
   ticker,
   tokenImageUrl,
-  tokenAddress,
-  spotEth,
-  quoteLabel = "ETH",
   sellAmount,
   onSellAmount,
   ethOnTop,
@@ -59,13 +54,10 @@ export function TokenProSwap({
   payWith,
   onPayWith,
   showPayWith,
-  onOrderTabChange,
+  quoteLabel = "ETH",
 }: {
   ticker: string;
   tokenImageUrl?: string;
-  tokenAddress?: string;
-  spotEth?: number;
-  quoteLabel?: string;
   sellAmount: string;
   onSellAmount: (value: string) => void;
   ethOnTop: boolean;
@@ -76,17 +68,8 @@ export function TokenProSwap({
   payWith?: PaymentAssetId;
   onPayWith?: (id: PaymentAssetId) => void;
   showPayWith?: boolean;
-  onOrderTabChange?: (tab: ProTab) => void;
+  quoteLabel?: string;
 }) {
-  const [tab, setTab] = useState<ProTab>("market");
-  const [target, setTarget] = useState("");
-  const alerts = useTokenAlerts(tokenAddress);
-  usePriceAlertWatcher(tokenAddress, spotEth);
-
-  useEffect(() => {
-    onOrderTabChange?.(tab);
-  }, [tab, onOrderTabChange]);
-
   const sellTicker = ethOnTop
     ? payWith && payWith !== "ETH"
       ? payWith
@@ -94,151 +77,78 @@ export function TokenProSwap({
     : ticker;
   const buyTicker = ethOnTop ? ticker : quoteLabel;
 
-  const placeAlert = (kind: PriceAlertKind) => {
-    const n = Number(target);
-    if (!(n > 0)) return;
-    alerts.add(kind, n, ticker);
-    setTarget("");
-  };
-
   return (
     <div className="mt-4 space-y-2">
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 pb-2">
-        {(["market", "limit", "stop"] as const).map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={cn(
-              "relative pb-1.5 text-[12px] capitalize transition",
-              tab === id ? "font-medium text-white" : "text-zinc-600 hover:text-zinc-400",
-            )}
-          >
-            {id}
-            {tab === id && <span className="absolute inset-x-0 bottom-0 h-px bg-[#9514d1]" />}
-          </button>
-        ))}
+      <AssetBlock
+        label="You pay"
+        ticker={sellTicker}
+        launchTicker={ticker}
+        tokenImageUrl={tokenImageUrl}
+        amount={sellAmount}
+        onAmount={onSellAmount}
+      />
+      <div className="flex justify-center py-1">
+        <button
+          type="button"
+          aria-label="Invert pair"
+          onClick={onInvert}
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#1a1a1c] text-zinc-300 transition hover:border-[#9514d1] hover:bg-[#9514d1] hover:text-white"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
       </div>
-
-      {tab === "market" ? (
-        <>
-          <AssetBlock
-            label="You pay"
-            ticker={sellTicker}
-            launchTicker={ticker}
-            tokenImageUrl={tokenImageUrl}
-            amount={sellAmount}
-            onAmount={onSellAmount}
-          />
-          <div className="flex justify-center">
-            <button
-              type="button"
-              aria-label="Invert pair"
-              onClick={onInvert}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-[#1a1a1c] text-zinc-300 transition hover:border-[#9514d1] hover:bg-[#9514d1] hover:text-white"
-            >
-              <ArrowDown className="h-4 w-4" />
-            </button>
-          </div>
-          <AssetBlock
-            label="You receive"
-            ticker={buyTicker}
-            launchTicker={ticker}
-            tokenImageUrl={tokenImageUrl}
-            amount={receiveAmount ?? ""}
-            onAmount={() => undefined}
-            readOnly
-          />
-          {showPayWith && ethOnTop && onPayWith && payWith && (
-            <label className="flex items-center justify-between text-[12px] text-zinc-500">
-              Pay with
-              <select
-                value={payWith}
-                onChange={(e) => onPayWith(e.target.value as PaymentAssetId)}
-                className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
-              >
-                <option value="ETH">ETH</option>
-                <option value="USDC">{quoteLabel === "USDG" ? "USDG" : "USDC"}</option>
-              </select>
-            </label>
-          )}
-          <div className="flex items-center justify-between gap-2 pt-1 text-[12px]">
-            <span className="text-zinc-500">Max slippage</span>
-            <div className="flex items-center gap-1">
-              {SLIPPAGE_PRESETS.map((pct) => (
-                <button
-                  key={pct}
-                  type="button"
-                  onClick={() => onSlippagePct(pct)}
-                  className={cn(
-                    "rounded-md px-2 py-0.5 font-mono text-[11px] transition",
-                    slippagePct === pct
-                      ? "bg-[#9514d1] text-white"
-                      : "bg-white/5 text-zinc-400 hover:text-white",
-                  )}
-                >
-                  {pct}%
-                </button>
-              ))}
-            </div>
-          </div>
-          <dl className="space-y-1.5 pt-1 text-[12px]">
-            <Detail label="Route" value={`${sellTicker} → ${buyTicker}`} />
-            <Detail label="Type" value="Market" />
-          </dl>
-        </>
-      ) : (
-        <div className="space-y-3 rounded-lg bg-[#111111] p-3">
-          <p className="text-[12px] text-zinc-500">
-            Browser alert — toasts when spot crosses your{" "}
-            {tab === "limit" ? "limit (at or above)" : "stop (at or below)"}. Not an on-chain order.
-          </p>
-          {spotEth != null && spotEth > 0 && (
-            <p className="font-mono text-[11px] text-zinc-400">
-              Spot {spotEth.toExponential(4)} ETH
-            </p>
-          )}
-          <label className="block text-[11px] text-zinc-500">
-            Target price (ETH / token)
-            <input
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              placeholder="0.0"
-              inputMode="decimal"
-              className="mt-1.5 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-lg text-white outline-none focus:border-[#9514d1]/60"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => placeAlert(tab)}
-            disabled={!tokenAddress || !(Number(target) > 0)}
-            className="launch-coin w-full rounded-xl py-2.5 text-sm font-semibold disabled:opacity-50"
+      <AssetBlock
+        label="You receive"
+        ticker={buyTicker}
+        launchTicker={ticker}
+        tokenImageUrl={tokenImageUrl}
+        amount={receiveAmount ?? ""}
+        onAmount={() => undefined}
+        readOnly
+      />
+      {showPayWith && ethOnTop && onPayWith && payWith && (
+        <div className="swap-detail-row">
+          <span className="swap-detail-row__label">Pay with</span>
+          <select
+            value={payWith}
+            onChange={(e) => onPayWith(e.target.value as PaymentAssetId)}
+            className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
           >
-            Set {tab} alert
-          </button>
-          {alerts.alerts.length > 0 && (
-            <ul className="space-y-1.5 pt-1">
-              {alerts.alerts.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between text-[11px] text-zinc-400"
-                >
-                  <span className="font-mono">
-                    {a.kind} @ {a.targetEth.toExponential(3)}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-zinc-600 hover:text-zinc-300"
-                    onClick={() => alerts.remove(a.id)}
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+            <option value="ETH">ETH</option>
+            <option value="USDC">{quoteLabel === "USDG" ? "USDG" : "USDC"}</option>
+          </select>
         </div>
       )}
+      <div className="swap-detail-row">
+        <span className="swap-detail-row__label">Max slippage</span>
+        <div className="flex items-center gap-1">
+          {SLIPPAGE_PRESETS.map((pct) => (
+            <button
+              key={pct}
+              type="button"
+              onClick={() => onSlippagePct(pct)}
+              className={cn(
+                "rounded-md px-2 py-0.5 font-mono text-[11px] transition",
+                slippagePct === pct
+                  ? "bg-[#9514d1] text-white"
+                  : "bg-white/5 text-zinc-400 hover:text-white",
+              )}
+            >
+              {pct}%
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="swap-detail-row">
+        <span className="swap-detail-row__label">Route</span>
+        <span className="swap-detail-row__value font-mono text-[12px]">
+          {sellTicker} → {buyTicker}
+        </span>
+      </div>
+      <div className="swap-detail-row">
+        <span className="swap-detail-row__label">Type</span>
+        <span className="swap-detail-row__value">Market</span>
+      </div>
     </div>
   );
 }
@@ -318,16 +228,10 @@ function AssetBlock({
   const launchImage = isLaunchToken ? tokenImageUrl : undefined;
 
   return (
-    <div className={cn("rounded-lg bg-[#111111] p-3", readOnly && "opacity-80")}>
-      <div className="flex items-center justify-between text-[11px] text-zinc-500">
-        <span>{label}</span>
-      </div>
+    <div className={cn("rounded-lg bg-[#1a1a1c] p-3", readOnly && "opacity-90")}>
+      <div className="text-[12px] text-zinc-500">{label}</div>
       <div className="mt-2 flex items-center gap-2">
-        {isEth ? (
-          <EthMark />
-        ) : (
-          <TokenMark ticker={ticker} imageUrl={launchImage} />
-        )}
+        {isEth ? <EthMark /> : <TokenMark ticker={ticker} imageUrl={launchImage} />}
         <span className="text-sm font-medium text-white">{ticker}</span>
         <input
           value={amount}
@@ -338,15 +242,6 @@ function AssetBlock({
           className="min-w-0 flex-1 bg-transparent text-right font-mono text-2xl text-white outline-none placeholder:text-zinc-600"
         />
       </div>
-    </div>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="font-mono text-zinc-300">{value}</dd>
     </div>
   );
 }
