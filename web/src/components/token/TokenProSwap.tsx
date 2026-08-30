@@ -5,6 +5,7 @@ import { ArrowDown, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { SwapTokenSelectModal } from "@/components/token/SwapTokenSelectModal";
+import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import type { PaymentAssetId } from "@/lib/payment-assets";
 import {
@@ -21,14 +22,17 @@ const BALANCE_PRESETS = [15, 25, 50] as const;
 
 function EthMark() {
   return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#627eea]">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-        <path
-          fill="#fff"
-          fillOpacity="0.92"
-          d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
-        />
-      </svg>
+    <span className="relative inline-flex h-7 w-7 shrink-0">
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#627eea]">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+          <path
+            fill="#fff"
+            fillOpacity="0.92"
+            d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
+          />
+        </svg>
+      </span>
+      <InkAvatarBadge />
     </span>
   );
 }
@@ -116,21 +120,8 @@ export function TokenProSwap({
 
   return (
     <div className="mt-3">
-      <div className="market-order-tab">
-        <span className="market-order-tab__label market-order-tab__label--active">Market</span>
-      </div>
-
       <div className="market-token-block">
         <p className="market-token-block__heading">Sell Token</p>
-        <button
-          type="button"
-          onClick={() => setSelectSide("sell")}
-          className="market-token-picker"
-        >
-          <AssetIcon asset={sellAsset} />
-          <span className="market-token-picker__label">{swapAssetLabel(sellAsset)}</span>
-          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
-        </button>
         <div className="market-token-block__amount-row">
           <input
             value={sellAmount}
@@ -147,6 +138,15 @@ export function TokenProSwap({
             {sellBalance < 1 ? sellBalance.toFixed(6) : formatTokenAmount(sellBalance)} {sellAsset.symbol}
           </span>
         </div>
+        <button
+          type="button"
+          onClick={() => setSelectSide("sell")}
+          className="market-token-picker"
+        >
+          <AssetIcon asset={sellAsset} />
+          <span className="market-token-picker__label">{swapAssetLabel(sellAsset)}</span>
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
+        </button>
         <div className="market-preset-row">
           {BALANCE_PRESETS.map((pct) => (
             <button
@@ -172,8 +172,12 @@ export function TokenProSwap({
         </button>
       </div>
 
-      <div className="market-token-block">
+      <div className="market-token-block market-token-block--buy">
         <p className="market-token-block__heading">Buy Token</p>
+        <div className="market-token-block__amount-row market-token-block__amount-row--readonly">
+          <span className="market-token-block__output">{receiveAmount || "—"}</span>
+        </div>
+        <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
         <button
           type="button"
           onClick={() => setSelectSide("buy")}
@@ -183,10 +187,6 @@ export function TokenProSwap({
           <span className="market-token-picker__label">{swapAssetLabel(buyAsset)}</span>
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
         </button>
-        <div className="market-token-block__amount-row market-token-block__amount-row--readonly">
-          <span className="market-token-block__output">{receiveAmount || "—"}</span>
-        </div>
-        <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
       </div>
 
       <dl className="market-details">
