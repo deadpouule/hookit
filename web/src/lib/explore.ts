@@ -12,6 +12,7 @@ import {
   buildQuoteUsdMap,
   launchMcapQuoteFromMap,
   marketCapUsdForPool,
+  quoteDecimalsForKind,
   quoteUsdFromMap,
   quoteVolumeUsd as quoteVolumeUsdForPool,
   resolveQuoteKind,
@@ -152,6 +153,7 @@ export async function enrichPoolsWithSpotPrices(
           quoteIsEth,
           ethUsd,
           quoteUsdPerUnit: quoteUsd,
+          quoteDecimals: quoteDecimalsForKind(quoteKind),
         });
       } catch {
         liquidityUsd = 0;
@@ -159,6 +161,10 @@ export async function enrichPoolsWithSpotPrices(
     }
     // Unilateral Hookit seed ≈ FDV until quote depth builds; never show raw L.
     if (liquidityUsd <= 0 && marketCap > 0) liquidityUsd = marketCap;
+    // Guard against decimal/math blowups (e.g. treating 18-dec wStock as 6-dec).
+    if (marketCap > 0 && liquidityUsd > marketCap * 50) {
+      liquidityUsd = marketCap;
+    }
 
     return {
       ...pool,

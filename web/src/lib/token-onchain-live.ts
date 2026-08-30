@@ -11,6 +11,7 @@ import { ethPerTokenFromSqrtPrice, stateViewAbi } from "@/lib/pool-price";
 import { poolTvlUsd } from "@/lib/pool-tvl";
 import {
   marketCapUsdForPool,
+  quoteDecimalsForKind,
   quoteVolumeUsd,
   resolveQuoteKind,
 } from "@/lib/quote-usd";
@@ -160,16 +161,21 @@ export async function fetchOnChainLive(
     pool.tickUpper != null &&
     sqrtPriceX96 > 0n &&
     (liveL as bigint) > 0n
-      ? poolTvlUsd({
-          sqrtPriceX96,
-          liquidity: liveL as bigint,
-          tickLower: pool.tickLower,
-          tickUpper: pool.tickUpper,
-          tokenIsCurrency0: tokenIs0,
-          quoteIsEth,
-          ethUsd,
-          quoteUsdPerUnit: quoteUsd,
-        })
+      ? (() => {
+          const tvl = poolTvlUsd({
+            sqrtPriceX96,
+            liquidity: liveL as bigint,
+            tickLower: pool.tickLower,
+            tickUpper: pool.tickUpper,
+            tokenIsCurrency0: tokenIs0,
+            quoteIsEth,
+            ethUsd,
+            quoteUsdPerUnit: quoteUsd,
+            quoteDecimals: quoteDecimalsForKind(quoteKind),
+          });
+          if (marketCap > 0 && tvl > marketCap * 50) return marketCap;
+          return tvl > 0 ? tvl : marketCap;
+        })()
       : pool.liquidity > 0
         ? pool.liquidity
         : marketCap;

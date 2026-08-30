@@ -116,11 +116,13 @@ export function poolTvlUsd(input: TvlInput): number {
     quoteIsEth,
     ethUsd,
     quoteUsdPerUnit,
-    quoteDecimals = 6,
+    quoteDecimals,
   } = input;
   if (liquidity === 0n || sqrtPriceX96 === 0n) return 0;
 
   const quoteUsd = quoteIsEth ? ethUsd : (quoteUsdPerUnit ?? 1);
+  // ETH / wStock = 18 decimals; stables (USDG/USDC) = 6. Never default RWA to 6.
+  const decimals = quoteDecimals ?? (quoteIsEth ? 18 : 6);
 
   const { amount0, amount1 } = getAmountsForLiquidity(
     sqrtPriceX96,
@@ -132,20 +134,26 @@ export function poolTvlUsd(input: TvlInput): number {
   const tokenWei = tokenIsCurrency0 ? amount0 : amount1;
   const quoteWei = tokenIsCurrency0 ? amount1 : amount0;
 
-  // Spot: ETH (or quote) per 1 whole token.
-  const priceX192 = sqrtPriceX96 * sqrtPriceX96;
-  const token1PerToken0 = Number(priceX192) / Number(Q96 * Q96);
-  const ethPerToken = tokenIsCurrency0
-    ? token1PerToken0
-    : token1PerToken0 > 0
-      ? 1 / token1PerToken0
-      : 0;
+  // Spot: quote units per 1 whole token (avoid Number(2^192) overflow).
+  const ethPerToken = quotePerTokenFromSqrt(sqrtPriceX96, tokenIsCurrency0);
 
   const tokens = Number(tokenWei) / 1e18;
-  const quoteHuman = Number(quoteWei) / (quoteIsEth ? 1e18 : 10 ** quoteDecimals);
+  const quoteHuman = Number(quoteWei) / 10 ** decimals;
 
   const tokenUsd = tokens * ethPerToken * quoteUsd;
   const quoteUsdReserve = quoteHuman * quoteUsd;
 
+  if (!Number.isFinite(tokenUsd) || !Number.isFinite(quoteUsdReserve)) return 0;
   return Math.max(0, tokenUsd + quoteUsdReserve);
+}
+
+/** Quote-per-token from sqrtPriceX96 without materializing 2^192 as Number. */
+function quotePerTokenFromSqrt(sqrtPriceX96: bigint, tokenIsCurrency0: boolean): number {
+  if (sqrtPriceX96 === 0n) return 0;
+  // price1per0 = (sqrtP / 2^96)^2
+  const sqrt = Number(sqrtPriceX96) / Number(Q96);
+  if (!Number.isFinite(sqrt) || sqrt <= 0) return 0;
+  const token1PerToken0 = sqrt * sqrt;
+  if (!Number.isFinite(token1PerToken0) || token1PerToken0 <= 0) return 0;
+  return tokenIsCurrency0 ? token1PerToken0 : 1 / token1PerToken0;
 }
