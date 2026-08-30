@@ -4,20 +4,12 @@ import { BarChart3, Crosshair, Minus, Pencil, TrendingUp } from "lucide-react";
 import { useMemo } from "react";
 
 import { formatCompactUsd, formatPercent } from "@/lib/format";
+import { candlesForChartInterval } from "@/lib/chart-candles";
 import type { LiveCandle } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"] as const;
 export type ChartInterval = (typeof TIMEFRAMES)[number];
-
-const VISIBLE: Record<ChartInterval, number> = {
-  "1m": 64,
-  "5m": 48,
-  "15m": 36,
-  "1h": 28,
-  "4h": 20,
-  "1D": 14,
-};
 
 const TOOLS = [
   { id: "cursor", icon: Crosshair, label: "Cursor" },
@@ -40,7 +32,10 @@ export function TokenCandleChart({
   marketCap?: number;
   change24h?: number;
 }) {
-  const visible = useMemo(() => candles.slice(-VISIBLE[interval]), [candles, interval]);
+  const visible = useMemo(
+    () => candlesForChartInterval(candles, interval),
+    [candles, interval],
+  );
   const min = visible.length ? Math.min(...visible.map((c) => c.l)) : 0;
   const max = visible.length ? Math.max(...visible.map((c) => c.h)) : 1;
   const span = Math.max(max - min, 1);

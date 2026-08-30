@@ -96,7 +96,7 @@ export function useLiveToken(pool: TokenPool) {
         fetchIndexerToken(address).catch(() => null),
         fetchIndexerTrades(address, 40).catch(() => ({ trades: [] })),
         fetchIndexerHolders(address, 20).catch(() => ({ holders: [] })),
-        fetchIndexerCandles(address, 120).catch(() => ({ candles: [] })),
+        fetchIndexerCandles(address, 500).catch(() => ({ candles: [] })),
       ]);
       if (!summary) return null;
       return {

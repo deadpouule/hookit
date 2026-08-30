@@ -1,3 +1,5 @@
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
+import { stableQuoteLabel } from "@/lib/payment-assets";
 import { shortAddress } from "@/lib/master-hooks";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
@@ -19,6 +21,22 @@ export const NATIVE_ETH_ASSET: SwapAsset = {
   decimals: 18,
   isNative: true,
 };
+
+export const STABLE_SWAP_ASSET: SwapAsset = {
+  key: "stable-usdg",
+  symbol: stableQuoteLabel(),
+  name: stableQuoteLabel(),
+  address: STABLE_QUOTE_ADDRESS,
+  imageUrl: "/pairing/usdg.png",
+  decimals: 6,
+};
+
+export function isStableSwapAsset(asset: SwapAsset): boolean {
+  return (
+    !!asset.address &&
+    asset.address.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()
+  );
+}
 
 export function poolToSwapAsset(pool: TokenPool): SwapAsset {
   return {

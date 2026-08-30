@@ -19,6 +19,7 @@ import { shortAddress } from "@/lib/master-hooks";
 import {
   NATIVE_ETH_ASSET,
   poolToSwapAsset,
+  STABLE_SWAP_ASSET,
   type SwapAsset,
 } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
@@ -124,13 +125,28 @@ export function SwapTokenSelectModal({
       try {
         const ethBal = await publicClient.getBalance({ address });
         const ethAmount = Number(formatUnits(ethBal, 18));
-        if (ethAmount > 0) {
-          rows.push({
-            ...NATIVE_ETH_ASSET,
-            balance: ethAmount,
-            valueUsd: ethAmount * ETH_USD,
-          });
-        }
+        rows.push({
+          ...NATIVE_ETH_ASSET,
+          balance: ethAmount,
+          valueUsd: ethAmount * ETH_USD,
+        });
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const usdgBal = (await publicClient.readContract({
+          address: STABLE_SWAP_ASSET.address!,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        })) as bigint;
+        const usdgAmount = Number(formatUnits(usdgBal, 6));
+        rows.push({
+          ...STABLE_SWAP_ASSET,
+          balance: usdgAmount,
+          valueUsd: usdgAmount,
+        });
       } catch {
         /* ignore */
       }

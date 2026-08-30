@@ -12,13 +12,16 @@ import { useSwapToken, useTokenBalance } from "@/hooks/useSwapToken";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
-import { paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
+import { paymentAssetById, stableQuoteLabel, type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
+  isStableSwapAsset,
   NATIVE_ETH_ASSET,
   poolToSwapAsset,
+  STABLE_SWAP_ASSET,
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
@@ -33,9 +36,19 @@ const ETH_USD = 1000;
 
 function deriveSide(sell: SwapAsset, buy: SwapAsset, pool: TokenPool): Side {
   const tokenKey = poolToSwapAsset(pool).key;
-  if (sell.isNative && buy.key === tokenKey) return "buy";
-  if (sell.key === tokenKey && buy.isNative) return "sell";
-  return sell.isNative ? "buy" : "sell";
+  if ((sell.isNative || isStableSwapAsset(sell)) && buy.key === tokenKey) return "buy";
+  if (sell.key === tokenKey && (buy.isNative || isStableSwapAsset(buy))) return "sell";
+  return sell.isNative || isStableSwapAsset(sell) ? "buy" : "sell";
+}
+
+function paymentIdFromAsset(asset: SwapAsset): PaymentAssetId {
+  if (asset.isNative) return "ETH";
+  if (isStableSwapAsset(asset)) return "USDC";
+  return "ETH";
+}
+
+function payAssetForSide(side: Side, sell: SwapAsset, buy: SwapAsset): SwapAsset {
+  return side === "buy" ? sell : buy;
 }
 
 function SwapSideTabs({ side, onSide }: { side: Side; onSide: (side: Side) => void }) {
@@ -66,6 +79,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const swap = useSwapToken(pool);
   const fetchTokenBalance = useTokenBalance(pool.contractAddress as `0x${string}` | undefined);
   const fetchEthBalance = useTokenBalance(undefined);
+  const fetchUsdgBalance = useTokenBalance(STABLE_QUOTE_ADDRESS);
 
   const [mode, setMode] = useState<Mode>("instant");
   const [side, setSide] = useState<Side>("buy");
@@ -79,6 +93,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [tokenBal, setTokenBal] = useState<number>(0);
   const [ethBal, setEthBal] = useState<number>(0);
+  const [usdgBal, setUsdgBal] = useState<number>(0);
 
   const applySide = useCallback(
     (nextSide: Side) => {
@@ -118,35 +133,45 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     if (!walletReady) {
       setTokenBal(0);
       setEthBal(0);
+      setUsdgBal(0);
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const [tokenRaw, ethRaw] = await Promise.all([fetchTokenBalance(), fetchEthBalance()]);
+        const [tokenRaw, ethRaw, usdgRaw] = await Promise.all([
+          fetchTokenBalance(),
+          fetchEthBalance(),
+          fetchUsdgBalance(),
+        ]);
         if (cancelled) return;
         setTokenBal(Number(formatUnits(tokenRaw, 18)));
         setEthBal(Number(formatUnits(ethRaw, 18)));
+        setUsdgBal(Number(formatUnits(usdgRaw, 6)));
       } catch {
         if (!cancelled) {
           setTokenBal(0);
           setEthBal(0);
+          setUsdgBal(0);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [walletReady, fetchTokenBalance, fetchEthBalance, address]);
+  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, address]);
 
+  const payAsset = payAssetForSide(side, sellAsset, buyAsset);
+  const effectivePayWith = paymentIdFromAsset(payAsset);
   const onBonding = pool.rail === "classic" && pool.bondingPhase === 0;
   const bonding = getBondingFactoryAddress();
-  const payDecimals = side === "buy" ? paymentAssetById(payWith).decimals : 18;
+  const payDecimals =
+    side === "buy" ? paymentAssetById(effectivePayWith).decimals : payAsset.decimals;
 
   const receiveAmount = useProQuoteAmount({
     amount,
     side,
-    payWith,
+    payWith: effectivePayWith,
     decimalsIn: payDecimals,
     decimalsOut: side === "buy" ? 18 : payDecimals,
     quoteExactIn: swap.quoteExactIn,
@@ -162,15 +187,27 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   );
 
   const tokenValueUsd = tokenBal * tokenPriceUsd;
-  const amountUsd = hasAmount
-    ? side === "buy"
-      ? Number(amount) * ETH_USD
-      : Number(amount) * tokenPriceUsd
-    : 0;
+  const payUnitUsd =
+    effectivePayWith === "USDC" ? 1 : effectivePayWith === "ETH" ? ETH_USD : tokenPriceUsd;
+  const amountUsd = hasAmount ? Number(amount) * payUnitUsd : 0;
+  const stableLabel = stableQuoteLabel();
   const payTicker =
-    side === "buy" ? (onBonding ? (pool.quoteAsset ?? "ETH") : payWith) : ticker;
-  const walletBalance = side === "buy" ? ethBal : tokenBal;
-  const marketSellBalance = sellAsset.isNative ? ethBal : tokenBal;
+    side === "buy"
+      ? onBonding
+        ? (pool.quoteAsset ?? "ETH")
+        : payAsset.symbol
+      : payAsset.symbol;
+  const walletBalance =
+    side === "buy"
+      ? effectivePayWith === "USDC"
+        ? usdgBal
+        : ethBal
+      : tokenBal;
+  const marketSellBalance = sellAsset.isNative
+    ? ethBal
+    : isStableSwapAsset(sellAsset)
+      ? usdgBal
+      : tokenBal;
 
   const handleInvert = () => {
     const nextSell = buyAsset;
@@ -184,6 +221,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const handleSellAsset = (asset: SwapAsset) => {
     setSellAsset(asset);
+    setPayWith(paymentIdFromAsset(asset));
     setSide(deriveSide(asset, buyAsset, pool));
     setAmount("");
     setPreset(null);
@@ -191,6 +229,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const handleBuyAsset = (asset: SwapAsset) => {
     setBuyAsset(asset);
+    setPayWith(paymentIdFromAsset(asset));
     setSide(deriveSide(sellAsset, asset, pool));
     setAmount("");
     setPreset(null);
@@ -198,7 +237,11 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const applyUsdPreset = (usd: number) => {
     if (side === "buy") {
-      setAmount(String(usd / ETH_USD));
+      if (effectivePayWith === "USDC") {
+        setAmount(String(usd));
+      } else {
+        setAmount(String(usd / ETH_USD));
+      }
     } else if (tokenPriceUsd > 0) {
       setAmount(String(usd / tokenPriceUsd));
     }
@@ -264,7 +307,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       }
 
       setStatus(side === "buy" ? "Buying…" : "Selling…");
-      const hash = await swap.swapExactIn(side, amount, slippagePct, payWith);
+      const hash = await swap.swapExactIn(side, amount, slippagePct, effectivePayWith);
       toast.dismiss(loadingId);
       if (hash) {
         setStatus("Trade confirmed");
@@ -399,7 +442,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             <p className="mt-2 text-[11px] text-zinc-500">
               Balance:{" "}
               {walletBalance < 1 ? walletBalance.toFixed(6) : formatTokenAmount(walletBalance)}{" "}
-              {side === "buy" ? "ETH" : ticker}
+              {side === "buy" ? payTicker : ticker}
             </p>
           )}
 
@@ -407,26 +450,54 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             <div className="swap-detail-row">
               <span className="swap-detail-row__label">Pay with</span>
               <select
-                value={payWith}
-                onChange={(e) => setPayWith(e.target.value as PaymentAssetId)}
+                value={effectivePayWith}
+                onChange={(e) => {
+                  const id = e.target.value as PaymentAssetId;
+                  setPayWith(id);
+                  if (id === "USDC") {
+                    setSellAsset(STABLE_SWAP_ASSET);
+                    setBuyAsset(poolToSwapAsset(pool));
+                    setSide("buy");
+                  } else {
+                    setSellAsset(NATIVE_ETH_ASSET);
+                    setBuyAsset(poolToSwapAsset(pool));
+                    setSide("buy");
+                  }
+                  setAmount("");
+                  setPreset(null);
+                }}
                 className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
               >
                 <option value="ETH">ETH</option>
-                <option value="USDC">{pool.quoteAsset === "USDG" ? "USDG" : "USDC"}</option>
+                <option value="USDC">{stableLabel}</option>
               </select>
             </div>
           )}
 
-          {side === "sell" && (
+          {side === "sell" && !onBonding && (
             <div className="swap-detail-row">
               <span className="swap-detail-row__label">Receive in</span>
               <select
-                value={payWith}
-                onChange={(e) => setPayWith(e.target.value as PaymentAssetId)}
+                value={effectivePayWith}
+                onChange={(e) => {
+                  const id = e.target.value as PaymentAssetId;
+                  setPayWith(id);
+                  if (id === "USDC") {
+                    setSellAsset(poolToSwapAsset(pool));
+                    setBuyAsset(STABLE_SWAP_ASSET);
+                    setSide("sell");
+                  } else {
+                    setSellAsset(poolToSwapAsset(pool));
+                    setBuyAsset(NATIVE_ETH_ASSET);
+                    setSide("sell");
+                  }
+                  setAmount("");
+                  setPreset(null);
+                }}
                 className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
               >
                 <option value="ETH">ETH</option>
-                <option value="USDC">{pool.quoteAsset === "USDG" ? "USDG" : "USDC"}</option>
+                <option value="USDC">{stableLabel}</option>
               </select>
             </div>
           )}
@@ -435,7 +506,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             <span className="swap-detail-row__label">You receive</span>
             <span className="swap-detail-row__value font-mono text-[12px]">
               {receiveAmount
-                ? `${formatTokenAmount(Number(receiveAmount))} ${side === "buy" ? ticker : payWith}`
+                ? `${formatTokenAmount(Number(receiveAmount))} ${side === "buy" ? ticker : payAsset.symbol}`
                 : "—"}
             </span>
           </div>
