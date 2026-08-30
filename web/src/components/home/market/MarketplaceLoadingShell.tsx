@@ -1,4 +1,3 @@
-import { LiveOnInkTicker } from "@/components/home/market/LiveOnInkTicker";
 import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { SiteHeader } from "@/components/home/market/SiteHeader";
 
@@ -16,7 +15,6 @@ function SkeletonCard() {
 export function MarketplaceLoadingShell() {
   return (
     <div className="min-h-screen bg-black pb-40">
-      <LiveOnInkTicker />
       <SiteHeader />
       <div className="market-shell space-y-6 pt-4">
         <div className="h-40 animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.03]" />
