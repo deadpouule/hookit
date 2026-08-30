@@ -365,10 +365,10 @@ function TokenTable({
   onMasterHooksChange: (hooks: MasterHookId[]) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#141416]">
+    <div className="overflow-x-auto rounded-2xl border border-border bg-card">
       <table className="w-full min-w-[640px] text-left text-sm">
-        <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">
-          <tr className="border-b border-white/[0.08]">
+        <thead className="text-[11px] tracking-wide text-muted-foreground uppercase">
+          <tr className="border-b border-border">
             <th className="px-4 py-3 font-medium">Token</th>
             <th className="px-4 py-3 font-medium">Market Cap</th>
             <th className="px-4 py-3 font-medium">Volume</th>
@@ -380,7 +380,7 @@ function TokenTable({
           {tokens.map((token) => (
             <tr
               key={token.id}
-              className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
+              className="border-b border-border last:border-0 hover:bg-muted/30"
             >
               <td className="px-4 py-3">
                 <Link href={tokenHref(token.id)} className="flex items-center gap-3">

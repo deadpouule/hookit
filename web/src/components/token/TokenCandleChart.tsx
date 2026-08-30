@@ -50,29 +50,29 @@ export function TokenCandleChart({
 
   return (
     <div className="desk-card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[11px] text-zinc-400">
-          <span className="text-zinc-500">Market Cap</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-3 py-2">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
+          <span>Market Cap</span>
           {visible.length > 0 ? (
             <>
               <span>
-                O <span className="text-zinc-200">{formatCompactUsd(open)}</span>
+                O <span className="text-foreground">{formatCompactUsd(open)}</span>
               </span>
               <span>
-                H <span className="text-zinc-200">{formatCompactUsd(high)}</span>
+                H <span className="text-foreground">{formatCompactUsd(high)}</span>
               </span>
               <span>
-                L <span className="text-zinc-200">{formatCompactUsd(low)}</span>
+                L <span className="text-foreground">{formatCompactUsd(low)}</span>
               </span>
               <span>
-                C <span className="text-zinc-200">{formatCompactUsd(close)}</span>
+                C <span className="text-foreground">{formatCompactUsd(close)}</span>
               </span>
               <span className={up ? "text-emerald-400" : "text-red-400"}>
                 {formatPercent(pct, true)}
               </span>
             </>
           ) : (
-            <span className="text-zinc-500">Waiting for first trade</span>
+            <span className="text-muted-foreground">Waiting for first trade</span>
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -85,7 +85,7 @@ export function TokenCandleChart({
                 "rounded-md px-2 py-1 font-mono text-[11px] transition",
                 interval === tf
                   ? "bg-[#9514d1] text-white"
-                  : "text-zinc-500 hover:text-white",
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {tf}
@@ -94,12 +94,12 @@ export function TokenCandleChart({
         </div>
       </div>
 
-      <div className="relative h-[340px] bg-[#0a0a0a] sm:h-[420px]">
+      <div className="relative h-[340px] bg-chart-bg sm:h-[420px]">
         <div className="candle-grid absolute inset-0" />
         {visible.length === 0 ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center">
-            <p className="text-sm text-zinc-400">No trades yet</p>
-            <p className="text-xs text-zinc-600">Chart builds from the first on-chain swap</p>
+            <p className="text-sm text-muted-foreground">No trades yet</p>
+            <p className="text-xs text-muted-foreground/80">Chart builds from the first on-chain swap</p>
           </div>
         ) : (
           <>

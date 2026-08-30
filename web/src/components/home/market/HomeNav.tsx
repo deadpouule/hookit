@@ -77,7 +77,7 @@ export function HomeNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-black" suppressHydrationWarning>
+    <header className="sticky top-0 z-50 border-b border-border bg-background" suppressHydrationWarning>
       <div className="market-shell flex h-16 items-center justify-between">
         <Link href="/" aria-label="hookit.fun home" className="flex shrink-0 items-center">
           <HookitFunLogo />
@@ -96,7 +96,7 @@ export function HomeNav() {
           <button
             type="button"
             {...TOOLBAR_BUTTON_PROPS}
-            className="rounded-lg p-2 text-white hover:text-gray-300 lg:hidden"
+            className="rounded-lg p-2 text-foreground hover:text-muted-foreground lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -106,7 +106,7 @@ export function HomeNav() {
       </div>
 
       {open && (
-        <div className="border-t border-white/[0.06] bg-black px-4 py-3 lg:hidden">
+        <div className="border-t border-border bg-background px-4 py-3 lg:hidden">
           <nav className="flex flex-col gap-1">
             <NavItems onNavigate={() => setOpen(false)} />
             <Link

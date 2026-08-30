@@ -36,7 +36,7 @@ function BadgeTip({ tip, children }: { tip: string; children: ReactNode }) {
         side="top"
         sideOffset={8}
         showArrow={false}
-        className="max-w-[240px] border border-white/10 bg-[#1a1a1c] px-2.5 py-1.5 text-left text-[11px] leading-snug text-zinc-100 shadow-lg"
+        className="max-w-[240px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
       >
         {tip}
       </TooltipContent>

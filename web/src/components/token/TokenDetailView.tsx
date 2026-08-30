@@ -31,7 +31,7 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
         side="top"
         sideOffset={8}
         showArrow={false}
-        className="max-w-[240px] border border-white/10 bg-[#1a1a1c] px-2.5 py-1.5 text-left text-[11px] leading-snug text-zinc-100 shadow-lg"
+        className="max-w-[240px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
       >
         {tip}
       </TooltipContent>
@@ -65,10 +65,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   };
 
   return (
-    <div className="market-shell bg-black py-4 pb-8">
+    <div className="market-shell bg-background py-4 pb-8">
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-[13px] text-zinc-400 transition hover:text-zinc-200"
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to explore
@@ -79,7 +79,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <div className="desk-card token-hero-card">
             <header className="flex flex-wrap items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-20 sm:w-20"
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border sm:h-20 sm:w-20"
                 style={{ background: pool.bannerGradient }}
               >
                 {media ? (
@@ -92,10 +92,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                  <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     {pool.name}
                   </h1>
-                  <span className="font-mono text-base text-zinc-500 sm:text-lg">${pool.ticker}</span>
+                  <span className="font-mono text-base text-muted-foreground sm:text-lg">${pool.ticker}</span>
                   {isCopycat && (
                     <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
                       COPY
@@ -134,7 +134,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                   <button
                     type="button"
                     onClick={copyAddress}
-                    className="inline-flex items-center gap-1.5 font-mono text-xs text-zinc-500 transition hover:text-zinc-300"
+                    className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition hover:text-foreground"
                   >
                     {pool.address}
                     <Copy className="h-3 w-3" />
@@ -144,7 +144,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                     href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-zinc-600 transition hover:text-[#03b1ed]"
+                    className="text-muted-foreground transition hover:text-[#03b1ed]"
                     aria-label="Explorer"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -197,8 +197,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[12px] text-zinc-500">{label}</p>
-      <p className="mt-1 font-mono text-lg text-white sm:text-xl">{value}</p>
+      <p className="text-[12px] text-muted-foreground">{label}</p>
+      <p className="mt-1 font-mono text-lg text-foreground sm:text-xl">{value}</p>
     </div>
   );
 }

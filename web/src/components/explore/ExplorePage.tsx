@@ -48,12 +48,12 @@ function ExplorePageContent() {
   }, [category, query, usage]);
 
   return (
-    <div className="market-shell space-y-6 bg-black pt-8 pb-10">
+    <div className="market-shell space-y-6 bg-background pt-8 pb-10">
       <div className="max-w-xl space-y-2">
-        <h1 className="terminal-title text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="terminal-title text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Discover one click hooks
         </h1>
-        <p className="text-sm text-zinc-400 sm:text-base">
+        <p className="text-sm text-muted-foreground sm:text-base">
           Browse our Hooks, pick your strategy, and deploy your token in one click
         </p>
       </div>
@@ -69,11 +69,11 @@ function ExplorePageContent() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search master hooks…"
-            className="h-11 w-full rounded-xl border border-white/10 bg-[#141416] pr-3 pl-10 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-[#9514d1]"
+            className="h-11 w-full rounded-xl border border-border bg-card pr-3 pl-10 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-[#9514d1]"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1 rounded-full bg-[#141416] p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-full bg-card p-1">
           {MASTER_HOOK_FILTERS.map((filter) => (
             <button
               key={filter.id}
@@ -81,7 +81,9 @@ function ExplorePageContent() {
               onClick={() => setCategory(filter.id)}
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition",
-                category === filter.id ? "bg-[#2a2a2e] text-white" : "text-zinc-400 hover:text-white",
+                category === filter.id
+                  ? "bg-surface-raised text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {filter.label}
@@ -97,9 +99,9 @@ function ExplorePageContent() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center rounded-2xl bg-[#111111] px-6 py-16 text-center">
-          <Sparkles className="mb-4 h-8 w-8 text-zinc-600" />
-          <p className="text-sm text-zinc-400">No master hooks match your filters</p>
+        <div className="flex flex-col items-center rounded-2xl bg-card px-6 py-16 text-center">
+          <Sparkles className="mb-4 h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No master hooks match your filters</p>
           <button
             type="button"
             onClick={() => {
@@ -120,8 +122,8 @@ export function ExplorePage() {
   return (
     <Suspense
       fallback={
-        <div className="market-shell bg-black pt-8 pb-10">
-          <p className="text-sm text-zinc-500">Loading hooks…</p>
+        <div className="market-shell bg-background pt-8 pb-10">
+          <p className="text-sm text-muted-foreground">Loading hooks…</p>
         </div>
       }
     >
