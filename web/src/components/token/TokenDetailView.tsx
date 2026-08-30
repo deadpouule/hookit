@@ -57,82 +57,84 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
       <div className="token-desk mt-4">
         <div className="min-w-0 space-y-4">
-          <header className="flex flex-wrap items-start gap-3">
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-16 sm:w-16"
-              style={{ background: pool.bannerGradient }}
-            >
-              {media ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={media} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-2xl font-bold text-white/90">{pool.ticker[0]}</span>
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                  {pool.name}
-                </h1>
-                <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
-                {isCopycat && (
-                  <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
-                    COPY
-                  </span>
-                )}
-                {isOriginal && !isCopycat && (
-                  <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first token with this ticker">
-                    OG
-                  </span>
-                )}
-                <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
-                {pool.rail === "classic" && (
-                  <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
-                    {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
-                  </span>
-                )}
-                {trending && (
-                  <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
-                    <Flame className="h-3.5 w-3.5" />
-                    Trend
-                  </span>
+          <div className="desk-card token-hero-card">
+            <header className="flex flex-wrap items-start gap-3 p-4 sm:p-5">
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-16 sm:w-16"
+                style={{ background: pool.bannerGradient }}
+              >
+                {media ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={media} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold text-white/90">{pool.ticker[0]}</span>
                 )}
               </div>
 
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={copyAddress}
-                  className="inline-flex items-center gap-1.5 font-mono text-xs text-zinc-500 transition hover:text-zinc-300"
-                >
-                  {pool.address}
-                  <Copy className="h-3 w-3" />
-                  {copied && <span className="text-[#10b981]">Copied</span>}
-                </button>
-                <a
-                  href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-600 transition hover:text-[#03b1ed]"
-                  aria-label="Explorer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-                {ageSeconds != null && (
-                  <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
-                    Born {formatAge(ageSeconds)} ago
-                  </span>
-                )}
-              </div>
-            </div>
-          </header>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                    {pool.name}
+                  </h1>
+                  <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
+                  {isCopycat && (
+                    <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
+                      COPY
+                    </span>
+                  )}
+                  {isOriginal && !isCopycat && (
+                    <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first token with this ticker">
+                      OG
+                    </span>
+                  )}
+                  <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
+                  {pool.rail === "classic" && (
+                    <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
+                      {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
+                    </span>
+                  )}
+                  {trending && (
+                    <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
+                      <Flame className="h-3.5 w-3.5" />
+                      Trend
+                    </span>
+                  )}
+                </div>
 
-          <div className="grid grid-cols-2 gap-4 border-b border-white/10 pb-4 sm:grid-cols-4">
-            <Metric label="Market Cap" value={formatCompactUsd(live.marketCap)} />
-            <Metric label="Vol 24h" value={formatCompactUsd(live.volume24h)} />
-            <Metric label="Liquidity" value={formatCompactUsd(live.liquidity)} />
-            <Metric label="Holders" value={live.holders.toString()} />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={copyAddress}
+                    className="inline-flex items-center gap-1.5 font-mono text-xs text-zinc-500 transition hover:text-zinc-300"
+                  >
+                    {pool.address}
+                    <Copy className="h-3 w-3" />
+                    {copied && <span className="text-[#10b981]">Copied</span>}
+                  </button>
+                  <a
+                    href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-600 transition hover:text-[#03b1ed]"
+                    aria-label="Explorer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  {ageSeconds != null && (
+                    <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
+                      Born {formatAge(ageSeconds)} ago
+                    </span>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            <div className="token-hero-metrics grid grid-cols-2 gap-4 px-4 pb-4 sm:grid-cols-4 sm:px-5 sm:pb-5">
+              <Metric label="Market Cap" value={formatCompactUsd(live.marketCap)} />
+              <Metric label="Vol 24h" value={formatCompactUsd(live.volume24h)} />
+              <Metric label="Liquidity" value={formatCompactUsd(live.liquidity)} />
+              <Metric label="Holders" value={live.holders.toString()} />
+            </div>
           </div>
 
           <TokenCandleChart

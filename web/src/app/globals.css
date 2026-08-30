@@ -1125,6 +1125,19 @@
     border-color: rgb(3 177 237 / 0.28);
   }
 
+  .token-hero-card {
+    background: #141416;
+  }
+
+  .token-hero-card:hover {
+    border-color: rgb(255 255 255 / 0.1);
+  }
+
+  .token-hero-metrics {
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    padding-top: 16px;
+  }
+
   .candle-grid {
     background-image:
       linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
