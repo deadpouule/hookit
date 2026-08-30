@@ -23,6 +23,8 @@ type CategorySplitFilterProps = {
   glyph: ReactNode;
   items: CategorySplitFilterItem[];
   selectedIds: string[];
+  /** `single` replaces the selection (RWA quote). `multiple` toggles/adds (master hooks). */
+  selectionMode?: "single" | "multiple";
   onActivate: () => void;
   onSelectedIdsChange: (ids: string[]) => void;
 };
@@ -41,6 +43,7 @@ export function CategorySplitFilter({
   glyph,
   items,
   selectedIds,
+  selectionMode = "multiple",
   onActivate,
   onSelectedIdsChange,
 }: CategorySplitFilterProps) {
@@ -146,6 +149,16 @@ export function CategorySplitFilter({
   };
 
   const toggleItem = (id: string) => {
+    if (selectionMode === "single") {
+      if (selectedIds.includes(id)) {
+        onSelectedIdsChange([]);
+      } else {
+        onSelectedIdsChange([id]);
+        setOpen(false);
+      }
+      return;
+    }
+
     if (allSelected) {
       onSelectedIdsChange([id]);
       setOpen(false);

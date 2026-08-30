@@ -36,6 +36,21 @@ import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 type LayoutMode = "grid" | "table";
 
+function tokenHasRwaQuote(token: MarketToken, quoteKey: string): boolean {
+  if (token.quoteAsset?.toLowerCase() === quoteKey) return true;
+  if (token.markets?.some((market) => market.quoteAsset?.toLowerCase() === quoteKey)) return true;
+  if (token.pairings?.some((pairing) => pairing.pairingId.toLowerCase() === quoteKey)) return true;
+  return false;
+}
+
+function tokenIsRwa(token: MarketToken): boolean {
+  if (token.isRwa) return true;
+  if (token.markets?.some((market) => Boolean(market.quoteAsset?.toLowerCase().match(/^w.+x$/)))) {
+    return true;
+  }
+  return false;
+}
+
 function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote: string | null): MarketToken[] {
   if (category === "master") {
     return tokens.filter((t) => t.hookType === "Master" || (t.rail === "master" && t.hookType !== "Custom"));
@@ -44,10 +59,10 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote
     return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
   }
   if (category === "rwa") {
-    const rwaTokens = tokens.filter((t) => t.isRwa);
+    const rwaTokens = tokens.filter(tokenIsRwa);
     if (!rwaQuote) return rwaTokens;
     const quoteKey = rwaQuote.toLowerCase();
-    return rwaTokens.filter((t) => t.quoteAsset?.toLowerCase() === quoteKey);
+    return rwaTokens.filter((t) => tokenHasRwaQuote(t, quoteKey));
   }
   return tokens;
 }

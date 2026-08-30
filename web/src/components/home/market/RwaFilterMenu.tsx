@@ -39,6 +39,7 @@ export function RwaFilterMenu({
       glyph={<RwaGlyph />}
       items={items}
       selectedIds={selectedQuote ? [selectedQuote] : []}
+      selectionMode="single"
       onActivate={onActivateRwa}
       onSelectedIdsChange={(ids) => onSelectedQuoteChange(ids[0] ?? null)}
     />

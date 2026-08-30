@@ -417,7 +417,9 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     hookType: pool.hookType,
     quoteAsset: pool.quoteAsset,
     quoteAddress: pool.quoteAddress,
-    isRwa: isRwaQuote(pool.quoteAsset, pool.quoteAddress),
+    isRwa:
+      isRwaQuote(pool.quoteAsset, pool.quoteAddress) ||
+      Boolean(pool.markets?.some((market) => isRwaQuote(market.quoteAsset, market.quoteAddress))),
     masterHookIds: masterHookIdsForPool(pool),
     marketCount: pool.marketCount,
     markets: pool.markets,

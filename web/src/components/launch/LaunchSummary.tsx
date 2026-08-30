@@ -187,7 +187,7 @@ export function LaunchSummary({
           type="button"
           onClick={onLaunch}
           disabled={!canLaunch}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+          className="launch-coin-nav w-full justify-center rounded-xl disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
