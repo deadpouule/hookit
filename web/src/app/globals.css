@@ -2927,6 +2927,25 @@
     flex: 1;
   }
 
+  .trending-card .token-type-badges {
+    margin-top: 4px;
+  }
+
+  .trending-card .token-type-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+
+  .trending-card .token-type-badge--multi-pair .pick-logo--sm {
+    height: 12px;
+    width: 12px;
+  }
+
+  .trending-card .token-type-badge[class*="token-type-badge--pair-"] .pick-logo--sm {
+    height: 12px;
+    width: 12px;
+  }
+
   .trending-card-name-row {
     display: flex;
     min-width: 0;
@@ -3352,7 +3371,7 @@
   }
 
   .token-type-badge-pairing-prefix {
-    text-transform: lowercase;
+    text-transform: none;
   }
 
   .token-type-badge-pairing-name {

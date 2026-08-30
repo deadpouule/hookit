@@ -43,7 +43,7 @@ function PairingBadgeRow({
 }) {
   return (
     <span className={pairingBadgeClassName(pairing.tone)}>
-      <span className="token-type-badge-pairing-prefix">paired with</span>
+      <span className="token-type-badge-pairing-prefix">Paired with</span>
       <PairingMark id={pairing.pairingId} size="sm" />
       <span className="token-type-badge-pairing-name">{pairing.name}</span>
     </span>

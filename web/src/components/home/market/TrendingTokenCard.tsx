@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { CopyContractButton } from "./CopyContractButton";
 import { InkAvatarBadge } from "./InkAvatarBadge";
 import { TokenArt } from "./TokenArt";
+import { TokenTypeBadges } from "./TokenBadges";
 
 type TrendingTokenCardProps = {
   token: MarketToken;
@@ -70,6 +71,7 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
             </p>
             <CopyContractButton token={token} />
           </div>
+          <TokenTypeBadges token={token} />
         </div>
       </div>
 

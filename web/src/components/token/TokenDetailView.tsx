@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { HolderAirdropCard } from "@/components/token/HolderAirdropCard";
-import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "@/components/home/market/CategoryGlyphs";
 import { TokenDexScreenerChart } from "@/components/token/TokenDexScreenerChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
@@ -16,8 +16,8 @@ import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
+import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
-import { isRwaQuote } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 
 interface TokenDetailViewProps {
@@ -36,6 +36,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
     : null;
   const media = resolveMediaUrl(pool.image);
+  const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -84,25 +85,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                     OG
                   </span>
                 )}
-                {pool.hookType === "Master" && (
-                  <span className="token-type-badge token-type-badge--master">
-                    <MasterHookGlyph className="token-type-badge-glyph" />
-                    Master
-                  </span>
-                )}
-                {pool.hookType === "Custom" && (
-                  <span className="token-type-badge token-type-badge--custom">
-                    <CustomsGlyph className="token-type-badge-glyph" />
-                    Customs
-                    <AlertTriangle className="token-custom-warn" aria-hidden />
-                  </span>
-                )}
-                {isRwaQuote(pool.quoteAsset, pool.quoteAddress) && (
-                  <span className="token-type-badge token-type-badge--rwa">
-                    <RwaGlyph className="token-type-badge-glyph" />
-                    RWA pools
-                  </span>
-                )}
+                <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
                 {pool.rail === "classic" && (
                   <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
                     {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
