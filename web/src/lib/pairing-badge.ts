@@ -1,4 +1,5 @@
 import { pairingById, PAIRING_TOKENS, type PairingTokenId } from "@/lib/pairing-tokens";
+import { STABLE_QUOTE_ADDRESS, USDG_INK_ADDRESS } from "@/lib/contracts/config";
 import { isRwaQuote } from "@/lib/token-identity";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
@@ -55,6 +56,68 @@ function pairingDisplayName(id: PairingTokenId | string): string {
   if (stock) return stock.name;
 
   return pairingById(id).name;
+}
+
+/** Resolve a pairing badge from an on-chain quote token address. */
+export function pairingBadgeFromQuoteAddress(quoteAddress?: string): PairingBadgeInfo | null {
+  if (!quoteAddress) return null;
+  const addr = quoteAddress.toLowerCase();
+  if (addr === "0x0000000000000000000000000000000000000000") {
+    return { name: "Ether", tone: "eth", pairingId: "eth" };
+  }
+  if (
+    addr === STABLE_QUOTE_ADDRESS.toLowerCase() ||
+    addr === USDG_INK_ADDRESS.toLowerCase()
+  ) {
+    return { name: pairingDisplayName("usdg"), tone: "usdg", pairingId: "usdg" };
+  }
+
+  const stock = INK_QUOTRON_STOCKS.find((listing) => listing.address.toLowerCase() === addr);
+  if (stock) {
+    const pairingId = stock.symbol.toLowerCase() as PairingTokenId;
+    const tone = PAIRING_TONE[pairingId as PairingBadgeTone]
+      ? (pairingId as PairingBadgeTone)
+      : "stock";
+    return { name: stock.name, tone, pairingId };
+  }
+
+  return null;
+}
+
+export function pairingBadgesForPool(pool: {
+  quoteAsset?: string;
+  quoteAddress?: string;
+  markets?: { quoteAddress: `0x${string}`; quoteAsset?: string }[];
+  marketCount?: number;
+}): PairingBadgeInfo[] {
+  const seen = new Set<PairingTokenId>();
+  const out: PairingBadgeInfo[] = [];
+
+  const push = (badge: PairingBadgeInfo | null) => {
+    if (!badge || seen.has(badge.pairingId)) return;
+    seen.add(badge.pairingId);
+    out.push(badge);
+  };
+
+  if (pool.markets?.length) {
+    for (const market of pool.markets) {
+      push(pairingBadgeFromQuoteAddress(market.quoteAddress));
+    }
+  }
+
+  if (out.length === 0) {
+    push(pairingCurveBadge(pool.quoteAsset, pool.quoteAddress));
+  }
+
+  return out;
+}
+
+export function isMultiPairPool(pool: {
+  marketCount?: number;
+  markets?: unknown[];
+}): boolean {
+  if (pool.marketCount != null && pool.marketCount > 1) return true;
+  return (pool.markets?.length ?? 0) > 1;
 }
 
 /** Badge info for RWA / stock pairings; null for plain ETH master pools. */

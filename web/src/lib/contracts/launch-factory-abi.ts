@@ -69,6 +69,23 @@ export const launchFactoryAbi = [
   },
   {
     type: "function",
+    name: "launchMarkets",
+    inputs: [
+      { name: "launchId", type: "uint256" },
+      { name: "index", type: "uint256" },
+    ],
+    outputs: [
+      { name: "quote", type: "address" },
+      { name: "bps", type: "uint16" },
+      { name: "poolId", type: "bytes32" },
+      { name: "tickLower", type: "int24" },
+      { name: "tickUpper", type: "int24" },
+      { name: "liquidity", type: "uint128" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "launchCount",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],

@@ -29,6 +29,10 @@ export interface MarketToken {
   isCopycat?: boolean;
   /** Enabled master hook modules (on-chain pools only). */
   masterHookIds?: import("@/lib/master-hooks").MasterHookId[];
+  /** Canonical quote pools when launched via `launchMulti`. */
+  marketCount?: number;
+  markets?: import("@/lib/types").TokenPoolMarket[];
+  pairings?: import("@/lib/pairing-badge").PairingBadgeInfo[];
 }
 
 export const QUICK_BUY_AMOUNTS = [10, 25, 50, 100] as const;
@@ -364,6 +368,7 @@ export function resolveTokenContractAddress(token: MarketToken): string {
 
 import { isRwaQuote } from "@/lib/token-identity";
 import { masterHookIdsForPool } from "@/lib/master-hooks";
+import { pairingBadgesForPool } from "@/lib/pairing-badge";
 
 /** Map on-chain TokenPool → market card model. */
 export function poolToMarketToken(pool: import("@/lib/types").TokenPool): MarketToken {
@@ -414,6 +419,9 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     quoteAddress: pool.quoteAddress,
     isRwa: isRwaQuote(pool.quoteAsset, pool.quoteAddress),
     masterHookIds: masterHookIdsForPool(pool),
+    marketCount: pool.marketCount,
+    markets: pool.markets,
+    pairings: pairingBadgesForPool(pool),
   };
 }
 

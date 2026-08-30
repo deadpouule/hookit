@@ -3272,6 +3272,13 @@
     text-transform: capitalize;
   }
 
+  .token-type-badge--multi-pair {
+    border-color: rgb(56 189 248 / 0.55);
+    background: rgb(56 189 248 / 0.16);
+    color: #7dd3fc;
+    text-transform: capitalize;
+  }
+
   .token-type-badge--curve {
     border-color: rgb(56 189 248 / 0.45);
     background: rgb(56 189 248 / 0.15);

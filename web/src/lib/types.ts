@@ -71,6 +71,13 @@ export interface LaunchFormState {
   floorQuoteIndex: number;
 }
 
+export interface TokenPoolMarket {
+  quoteAddress: `0x${string}`;
+  quoteAsset?: string;
+  bps: number;
+  poolId?: `0x${string}`;
+}
+
 export interface TokenPool {
   id: string;
   name: string;
@@ -119,6 +126,10 @@ export interface TokenPool {
   liquidityRaw?: string;
   priceSeries?: number[];
   trades24h?: number;
+  /** Number of canonical quote pools when launched via `launchMulti`. */
+  marketCount?: number;
+  /** All quote markets for multi-pool Master launches. */
+  markets?: TokenPoolMarket[];
   /** Master atomic pool vs Classic bonding curve. */
   rail?: "master" | "classic";
   bondingPhase?: number;

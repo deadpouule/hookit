@@ -9,6 +9,7 @@ import {
   fetchAllLaunches,
   launchToTokenPool,
 } from "@/lib/launches";
+import { enrichPoolsWithIndexerMarkets } from "@/lib/pool-markets";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { isIndexerConfigured } from "@/lib/live-data";
 import type { PublicClient } from "viem";
@@ -71,8 +72,12 @@ export async function GET() {
       (a, b) => (b.launchedAt ?? 0) - (a.launchedAt ?? 0),
     );
 
+    const withMarkets = isIndexerConfigured()
+      ? await enrichPoolsWithIndexerMarkets(pools)
+      : pools;
+
     return Response.json({
-      pools,
+      pools: withMarkets,
       factoryConfigured: true,
       ethUsd,
       rails: {

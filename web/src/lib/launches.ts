@@ -9,7 +9,7 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { parseTokenMetadata } from "@/lib/token-metadata";
-import type { TokenPool } from "@/lib/types";
+import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 
 const GRADIENTS = [
   "linear-gradient(135deg, #0a0a0f 0%, #1a1028 45%, #0c0c10 100%)",
@@ -49,6 +49,8 @@ export type OnChainLaunch = LaunchRow & {
   fee?: number;
   quote?: Address;
   image?: string;
+  marketCount?: number;
+  markets?: TokenPoolMarket[];
 };
 
 function rowFromResult(result: unknown): LaunchRow | null {
@@ -124,7 +126,80 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
     tickUpper: launch.tickUpper,
     liquidityRaw: launch.liquidity.toString(),
     rail: "master",
+    marketCount: launch.marketCount,
+    markets: launch.markets,
   };
+}
+
+async function attachLaunchMarkets(
+  publicClient: PublicClient,
+  factory: Address,
+  launches: OnChainLaunch[],
+): Promise<void> {
+  if (launches.length === 0) return;
+
+  const countResults = await publicClient.multicall({
+    contracts: launches.map((launch) => ({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "launchMarketCount" as const,
+      args: [launch.launchId] as const,
+    })),
+    allowFailure: true,
+  });
+
+  const jobs: { launch: OnChainLaunch; index: number }[] = [];
+  launches.forEach((launch, i) => {
+    const count =
+      countResults[i]?.status === "success" ? Number(countResults[i].result as number) : 0;
+    launch.marketCount = count > 0 ? count : 1;
+    if (count > 1) {
+      for (let index = 0; index < count; index += 1) {
+        jobs.push({ launch, index });
+      }
+    }
+  });
+
+  if (jobs.length === 0) return;
+
+  const marketResults = await publicClient.multicall({
+    contracts: jobs.map(({ launch, index }) => ({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "launchMarkets" as const,
+      args: [launch.launchId, BigInt(index)] as const,
+    })),
+    allowFailure: true,
+  });
+
+  const marketsByLaunch = new Map<string, TokenPoolMarket[]>();
+  jobs.forEach(({ launch, index }, i) => {
+    const result = marketResults[i];
+    if (result?.status !== "success" || !result.result) return;
+    const [quote, bps, poolId] = result.result as readonly [
+      Address,
+      number,
+      `0x${string}`,
+      number,
+      number,
+      bigint,
+    ];
+    const key = launch.launchId.toString();
+    const list = marketsByLaunch.get(key) ?? [];
+    const quoteAddress = quote as `0x${string}`;
+    list.push({
+      quoteAddress,
+      quoteAsset: poolQuoteLabel({ quoteAddress } as TokenPool),
+      bps: Number(bps),
+      poolId,
+    });
+    marketsByLaunch.set(key, list);
+  });
+
+  for (const launch of launches) {
+    const markets = marketsByLaunch.get(launch.launchId.toString());
+    if (markets?.length) launch.markets = markets;
+  }
 }
 
 async function hydrateLaunches(
@@ -234,6 +309,7 @@ export async function fetchLaunchById(
     { id: launchId, row, launchedAt },
   ]);
   if (!hydrated) return null;
+  await attachLaunchMarkets(publicClient, factory, [hydrated]);
   try {
     const quote = (await publicClient.readContract({
       address: factory,
@@ -273,6 +349,7 @@ async function fetchAllLaunchesLegacy(
 
   const withMeta = await attachQuotesAndTimestamps(publicClient, factory, rows);
   const launches = await hydrateLaunches(publicClient, withMeta);
+  await attachLaunchMarkets(publicClient, factory, launches);
   return launches.reverse();
 }
 
@@ -344,9 +421,12 @@ export async function fetchAllLaunches(
     }));
     const withQuotes = await attachQuotesAndTimestamps(publicClient, factory, rows);
     const launches = await hydrateLaunches(publicClient, withQuotes);
+    await attachLaunchMarkets(publicClient, factory, launches);
     return launches.reverse();
   } catch {
-    return fetchAllLaunchesLegacy(publicClient, factory, n);
+    const legacy = await fetchAllLaunchesLegacy(publicClient, factory, n);
+    await attachLaunchMarkets(publicClient, factory, legacy);
+    return legacy;
   }
 }
 

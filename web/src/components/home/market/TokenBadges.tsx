@@ -7,7 +7,11 @@ import type { MasterHookId } from "@/lib/master-hooks";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenAgeLabel } from "@/lib/market-tokens";
 import { PairingMark } from "@/components/launch/PairingMark";
-import { pairingBadgeClassName, pairingCurveBadge } from "@/lib/pairing-badge";
+import {
+  isMultiPairPool,
+  pairingBadgeClassName,
+  pairingBadgesForPool,
+} from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
 import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
@@ -32,7 +36,21 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
   return null;
 }
 
-/** Type badges row — Master, Customs, RWA pools, pairing curve (colored). */
+function PairingBadgeRow({
+  pairing,
+}: {
+  pairing: NonNullable<MarketToken["pairings"]>[number];
+}) {
+  return (
+    <span className={pairingBadgeClassName(pairing.tone)}>
+      <span className="token-type-badge-pairing-prefix">paired with</span>
+      <PairingMark id={pairing.pairingId} size="sm" />
+      <span className="token-type-badge-pairing-name">{pairing.name}</span>
+    </span>
+  );
+}
+
+/** Type badges row — Master, Customs, RWA pools, multi-pair, pairing legs. */
 export function TokenTypeBadges({
   token,
   masterHookFilters,
@@ -81,16 +99,22 @@ export function TokenTypeBadges({
     );
   }
 
-  const pairing = pairingCurveBadge(token.quoteAsset, token.quoteAddress);
-  if (pairing) {
+  const pairings = token.pairings ?? pairingBadgesForPool(token);
+  const isMulti = isMultiPairPool(token);
+
+  if (isMulti) {
     badges.push(
-      <span key="pairing" className={pairingBadgeClassName(pairing.tone)}>
-        <span className="token-type-badge-pairing-prefix">paired with</span>
-        <PairingMark id={pairing.pairingId} size="sm" />
-        <span className="token-type-badge-pairing-name">{pairing.name}</span>
+      <span key="multi-pair" className="token-type-badge token-type-badge--multi-pair">
+        Multi pair
       </span>,
     );
-  } else if (token.rail === "classic" && token.hookType === "Classic") {
+  }
+
+  for (const pairing of pairings) {
+    badges.push(<PairingBadgeRow key={`pairing-${pairing.pairingId}`} pairing={pairing} />);
+  }
+
+  if (pairings.length === 0 && token.rail === "classic" && token.hookType === "Classic") {
     badges.push(
       <span key="curve" className="token-type-badge token-type-badge--curve">
         curve
