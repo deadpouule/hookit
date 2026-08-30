@@ -40,6 +40,29 @@
 }
 
 :root {
+  --background: #f4f4f5;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #e4e4e7;
+  --secondary-foreground: #18181b;
+  --muted: #e4e4e7;
+  --muted-foreground: #71717a;
+  --accent: #e4e4e7;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --border: rgb(24 24 27 / 0.12);
+  --input: rgb(24 24 27 / 0.1);
+  --ring: #9514d1;
+  --radius: 1rem;
+  --color-cosmic: #f4f4f5;
+}
+
+.dark {
   --background: #000000;
   --foreground: #fafafa;
   --card: #111113;
@@ -58,7 +81,7 @@
   --border: rgb(255 255 255 / 0.08);
   --input: rgb(255 255 255 / 0.06);
   --ring: #03b1ed;
-  --radius: 1rem;
+  --color-cosmic: #000000;
 }
 
 @layer base {
@@ -69,7 +92,74 @@
     @apply scroll-smooth font-sans antialiased;
   }
   body {
-    @apply bg-cosmic text-foreground;
+    @apply bg-background text-foreground;
+  }
+
+  .status-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    backdrop-filter: blur(12px);
+  }
+
+  .status-bar-inner {
+    display: flex;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.85rem;
+  }
+
+  .status-bar-links {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .status-bar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-foreground);
+    transition: color 0.15s ease;
+  }
+
+  .status-bar-icon:hover {
+    color: var(--foreground);
+  }
+
+  .status-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.15rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--muted) 70%, transparent);
+  }
+
+  .status-theme-btn {
+    display: inline-flex;
+    height: 1.55rem;
+    width: 1.55rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--muted-foreground);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .status-theme-btn:hover {
+    color: var(--foreground);
+  }
+
+  .status-theme-btn.is-active {
+    background: color-mix(in srgb, var(--background) 85%, var(--foreground) 8%);
+    color: var(--foreground);
+    box-shadow: 0 0 0 1px var(--border);
   }
 }
 

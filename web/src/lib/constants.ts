@@ -86,6 +86,7 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
 };
 
 export const GITHUB_REPO_URL = "https://github.com/deadpouule/hookit";
+export const TWITTER_URL = "https://x.com/hookitfun";
 
 export const MOCK_METRICS: ProtocolMetrics = {
   totalVolume: 12_847_392,

@@ -2,10 +2,14 @@
 
 import { Toaster } from "sonner";
 
+import { useTheme } from "@/components/providers/ThemeProvider";
+
 export function AppToaster() {
+  const { resolved } = useTheme();
+
   return (
     <Toaster
-      theme="dark"
+      theme={resolved}
       position="bottom-right"
       richColors
       closeButton
