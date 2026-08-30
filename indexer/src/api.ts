@@ -39,6 +39,9 @@ function summarize(store: Store, address: Address) {
   const last = row.trades[row.trades.length - 1];
   const holders = Object.keys(row.holders).length;
   const stats = store.stats24h(address);
+  const activity = store.activityStats24h(address);
+  const devBuy = store.devBuyInfo(address);
+  const changes = store.priceChanges(address);
   return {
     address: row.address,
     poolId: row.poolId,
@@ -69,7 +72,20 @@ function summarize(store: Store, address: Address) {
     candles5m: row.candles5m.length,
     volume24h: stats.volume24h,
     trades24h: stats.trades24h,
-    change24h: stats.change24h,
+    change24h: stats.change24h ?? changes.change24h,
+    change5m: changes.change5m,
+    change1h: changes.change1h,
+    change6h: changes.change6h,
+    buyCount24h: activity.buyCount,
+    sellCount24h: activity.sellCount,
+    buyVolume24h: activity.buyVolumeQuote,
+    sellVolume24h: activity.sellVolumeQuote,
+    buyPct24h: activity.buyPct,
+    devBuyCompleted: devBuy.completed,
+    devBuyQuoteSpent: devBuy.completed ? devBuy.quoteSpent : null,
+    devBuyTokensReceived: devBuy.completed ? devBuy.tokensReceived : null,
+    devBuyTxHash: devBuy.completed ? devBuy.txHash : null,
+    devBuyAt: devBuy.completed ? devBuy.timestamp : null,
   };
 }
 
