@@ -1529,6 +1529,127 @@
     background: rgb(255 255 255 / 0.04);
   }
 
+  .token-stats-card__title {
+    margin-bottom: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .token-stats-changes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .token-stats-change {
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+
+  .token-stats-change--active {
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .token-stats-change__label {
+    display: block;
+    font-size: 11px;
+    color: #71717a;
+  }
+
+  .token-stats-change__value {
+    display: block;
+    margin-top: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .token-stats-meta {
+    margin-top: 14px;
+  }
+
+  .token-stats-meta--spaced {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .token-stats-meta__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 13px;
+  }
+
+  .token-stats-meta__row dt,
+  .token-stats-meta__row > span:first-child {
+    color: #71717a;
+  }
+
+  .token-stats-meta__row dd {
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+
+  .token-stats-chain {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+  }
+
+  .token-stats-flow {
+    margin-top: 14px;
+  }
+
+  .token-stats-flow__labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .token-stats-flow__bar {
+    display: flex;
+    height: 4px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.06);
+  }
+
+  .token-stats-flow__detail {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #71717a;
+  }
+
+  .token-stats-devbuy {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .token-stats-devbuy__badge {
+    border-radius: 999px;
+    background: rgb(16 185 129 / 0.15);
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #10b981;
+  }
+
+  .token-stats-devbuy__hint {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #52525b;
+  }
+
   .quick-buy-btn {
     display: inline-flex;
     flex: 1 1 0;

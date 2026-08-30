@@ -1,12 +1,20 @@
 "use client";
 
-import { Check, Copy, ExternalLink } from "lucide-react";
+import Image from "next/image";
+import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { zeroAddress } from "viem";
 
+import { useTokenStats } from "@/hooks/useTokenStats";
 import { copyToClipboard } from "@/lib/clipboard";
-import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
-import { dexScreenerPageUrl, getDexScreenerChainSlug, normalizeTokenAddress } from "@/lib/dexscreener";
-import { formatAge, formatCompactUsd, formatPercent, isValidLaunchTimestamp } from "@/lib/format";
+import {
+  formatAge,
+  formatCompactUsd,
+  formatPercent,
+  isValidLaunchTimestamp,
+} from "@/lib/format";
+import { shortAddress } from "@/lib/master-hooks";
+import { formatDevBuyQuote, formatDevBuyTokens } from "@/lib/token-dev-buy";
 import type { LiveTokenState } from "@/lib/token-live";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -20,134 +28,152 @@ export function TokenSidebarStats({
   pool: TokenPool;
   contractAddress: string;
 }) {
-  const network = getChainDeployment().networkLabel;
-  const dexToken = normalizeTokenAddress(contractAddress);
-  const dexUrl = dexToken ? dexScreenerPageUrl(getDexScreenerChainSlug(), dexToken) : null;
-  const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
-    ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
-    : null;
+  const { data: stats } = useTokenStats(pool);
+  const ageSeconds =
+    pool.launchedAt != null && isValidLaunchTimestamp(pool.launchedAt)
+      ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
+      : null;
+
+  const txns = stats?.txns ?? live.txns;
+  const volume24h = stats?.volume24hUsd ?? live.volume24h;
+  const buyCount = stats?.buyCount ?? 0;
+  const sellCount = stats?.sellCount ?? 0;
+  const buyVol = stats?.buyVolumeUsd ?? 0;
+  const sellVol = stats?.sellVolumeUsd ?? 0;
+  const buyPct = stats?.buyPct ?? live.buyPct;
+  const sellPct = 100 - buyPct;
+
+  const changes = [
+    { label: "5m", value: stats?.change5m ?? live.change5m },
+    { label: "1h", value: stats?.change1h ?? live.change1h },
+    { label: "6h", value: stats?.change6h ?? live.change6h },
+    { label: "24h", value: stats?.change24h ?? live.change24h },
+  ];
+
+  const quoteLabel = pool.quoteAsset ?? "ETH";
+  const isEthQuote =
+    !pool.quoteAddress || pool.quoteAddress === zeroAddress || quoteLabel === "ETH";
+  const quoteDecimals = stats?.quoteDecimals ?? (isEthQuote ? 18 : 6);
+  const devBuy = stats?.devBuy ?? { completed: false };
+
+  const buyVolPct = buyVol + sellVol > 0 ? (buyVol / (buyVol + sellVol)) * 100 : buyPct;
+  const sellVolPct = 100 - buyVolPct;
 
   return (
-    <>
-      <div className="desk-card p-4">
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <Change label="5m" value={live.change5m} />
-          <Change label="1h" value={live.change1h} />
-          <Change label="6h" value={live.change6h} />
-          <Change label="24h" value={live.change24h} />
-        </div>
+    <div className="desk-card token-stats-card p-4">
+      <h3 className="token-stats-card__title">Stats</h3>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 text-[13px]">
-          <div>
-            <p className="text-zinc-500">Txns</p>
-            <p className="mt-0.5 font-mono text-white">{live.txns.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-zinc-500">Volume</p>
-            <p className="mt-0.5 font-mono text-white">{formatCompactUsd(live.volume24h)}</p>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between text-[11px]">
-            <span className="text-[#10b981]">Buys {live.buyPct.toFixed(1)}%</span>
-            <span className="text-[#ef4444]">Sells {(100 - live.buyPct).toFixed(1)}%</span>
-          </div>
-          <div className="flex h-1.5 overflow-hidden rounded-full">
-            <div className="bg-[#10b981]" style={{ width: `${live.buyPct}%` }} />
-            <div className="bg-[#ef4444]" style={{ width: `${100 - live.buyPct}%` }} />
-          </div>
-        </div>
-
-        <dl className="mt-4 space-y-2 text-[13px]">
-          <Meta
-            label="Created"
-            value={ageSeconds != null ? `${formatAge(ageSeconds)} ago` : "—"}
-          />
-          <div className="flex items-center justify-between">
-            <dt className="text-zinc-500">Chain</dt>
-            <dd className="inline-flex items-center gap-1 text-[#10b981]">
-              {network}
-              <Check className="h-3.5 w-3.5" />
-            </dd>
-          </div>
-          <CopyMeta label="CA" value={contractAddress} />
-          <div className="flex items-center justify-between">
-            <dt className="text-zinc-500">Rail</dt>
-            <dd className="text-zinc-200">
-              {pool.rail === "classic"
-                ? pool.bondingPhase === 0
-                  ? "Classic bonding"
-                  : "Classic graduated"
-                : pool.hookType}
-            </dd>
-          </div>
-          <div className="flex items-center justify-between">
-            <dt className="text-zinc-500">Quote</dt>
-            <dd className="font-mono text-zinc-200">{pool.quoteAsset ?? "ETH"}</dd>
-          </div>
-        </dl>
+      <div className="token-stats-changes">
+        {changes.map(({ label, value }) => (
+          <ChangeChip key={label} label={label} value={value} active={label === "24h"} />
+        ))}
       </div>
 
-      <div className="desk-card p-4">
-        <p className="text-[11px] tracking-wide text-zinc-500 uppercase">Links</p>
-        <a
-          href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm text-zinc-300 transition hover:text-[#03b1ed]"
-        >
-          Explorer
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-        {dexUrl ? (
-          <a
-            href={dexUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 text-sm text-zinc-300 transition hover:text-[#03b1ed]"
-          >
-            DexScreener
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        ) : null}
-      </div>
-    </>
-  );
-}
+      <dl className="token-stats-meta">
+        <MetaRow label="Txns" value={txns.toLocaleString()} />
+        <MetaRow label="Vol." value={formatCompactUsd(volume24h)} />
+      </dl>
 
-function Change({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <p className="text-[11px] text-zinc-500">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 font-mono text-[12px] font-medium",
-          value >= 0 ? "text-[#10b981]" : "text-[#ef4444]",
+      <div className="token-stats-flow">
+        <div className="token-stats-flow__labels">
+          <span className="text-[#10b981]">{buyCount} buys</span>
+          <span className="text-[#ef4444]">{sellCount} sells</span>
+        </div>
+        <div className="token-stats-flow__bar">
+          <div className="bg-[#10b981]" style={{ width: `${buyPct}%` }} />
+          <div className="bg-[#ef4444]" style={{ width: `${sellPct}%` }} />
+        </div>
+        <div className="token-stats-flow__detail">
+          <span>
+            {buyCount} · {formatCompactUsd(buyVol)} · {buyVolPct.toFixed(1)}%
+          </span>
+          <span>
+            {sellCount} · {formatCompactUsd(sellVol)} · {sellVolPct.toFixed(1)}%
+          </span>
+        </div>
+      </div>
+
+      <dl className="token-stats-meta token-stats-meta--spaced">
+        <MetaRow label="Created" value={ageSeconds != null ? `${formatAge(ageSeconds)} ago` : "—"} />
+        <div className="token-stats-meta__row">
+          <dt>Chain</dt>
+          <dd className="token-stats-chain">
+            <Image src="/brand/ink-badge.png" alt="" width={16} height={16} className="h-4 w-4 rounded-sm" />
+            Ink
+          </dd>
+        </div>
+        <CopyMeta label="CA" value={contractAddress} />
+      </dl>
+
+      <div className="token-stats-devbuy">
+        <div className="token-stats-meta__row">
+          <span className="text-zinc-500">Dev buy</span>
+          {devBuy.completed ? (
+            <span className="token-stats-devbuy__badge">Completed</span>
+          ) : (
+            <span className="text-zinc-500">—</span>
+          )}
+        </div>
+        {devBuy.completed && devBuy.quoteSpent && devBuy.tokensReceived && (
+          <>
+            <MetaRow
+              label="Spent"
+              value={formatDevBuyQuote(devBuy.quoteSpent, quoteDecimals, isEthQuote ? "ETH" : quoteLabel)}
+            />
+            <MetaRow
+              label="Received"
+              value={formatDevBuyTokens(devBuy.tokensReceived, 18, pool.ticker)}
+            />
+          </>
         )}
-      >
-        {formatPercent(value, true)}
-      </p>
+        {!devBuy.completed && (
+          <p className="token-stats-devbuy__hint">No on-chain buy from creator wallet yet</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function ChangeChip({
+  label,
+  value,
+  active,
+}: {
+  label: string;
+  value: number;
+  active?: boolean;
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="text-zinc-200">{value}</dd>
+    <div className={cn("token-stats-change", active && "token-stats-change--active")}>
+      <span className="token-stats-change__label">{label}</span>
+      <span
+        className={cn(
+          "token-stats-change__value",
+          value >= 0 ? "text-[#10b981]" : "text-[#ef4444]",
+        )}
+      >
+        {formatPercent(value, true)}
+      </span>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="token-stats-meta__row">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   );
 }
 
 function CopyMeta({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
-  const short = `${value.slice(0, 6)}...${value.slice(-4)}`;
+  const short = shortAddress(value);
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-zinc-500">{label}</dt>
+    <div className="token-stats-meta__row">
+      <dt>{label}</dt>
       <dd>
         <button
           type="button"
@@ -156,10 +182,14 @@ function CopyMeta({ label, value }: { label: string; value: string }) {
             setCopied(true);
             window.setTimeout(() => setCopied(false), 1400);
           }}
-          className="inline-flex items-center gap-1 font-mono text-zinc-300 transition hover:text-white"
+          className="inline-flex items-center gap-1.5 font-mono text-zinc-300 transition hover:text-white"
         >
           {short}
-          {copied ? <Check className="h-3 w-3 text-[#10b981]" /> : <Copy className="h-3 w-3 opacity-60" />}
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-[#10b981]" />
+          ) : (
+            <Copy className="h-3.5 w-3.5 opacity-60" />
+          )}
         </button>
       </dd>
     </div>
