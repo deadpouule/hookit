@@ -31,7 +31,7 @@ const METRIC_LABELS: Record<ChartMetric, string> = {
 const NATIVE_SYMBOL = "HKR";
 
 export function ProtocolStatsPage() {
-  const { data: stats, isLoading, isError, dataUpdatedAt } = useProtocolStats();
+  const { data: stats, dataUpdatedAt } = useProtocolStats();
   const [volumeWindow, setVolumeWindow] = useState<VolumeWindow>("all");
   const [chartWindow, setChartWindow] = useState<ChartWindow>("90d");
   const [chartMetric, setChartMetric] = useState<ChartMetric>("buybacks");
@@ -66,16 +66,6 @@ export function ProtocolStatsPage() {
     barSeries.reduce((sum, point) => sum + point.buybackUsd, 0) / Math.max(barSeries.length, 1);
   const areaTooltipValue = areaPoint ? metricValueFromSeries(areaPoint, chartMetric) : 0;
 
-  const statusLabel = isLoading
-    ? "Syncing on-chain stats…"
-    : isError
-      ? "Stats unavailable — retrying"
-      : stats?.source === "live"
-        ? `Live · ${stats.tokensIndexed} tokens · ${stats.tradesIndexed} trades indexed`
-        : stats?.source === "partial"
-          ? "Partial live data · waiting for indexer rollups"
-          : "No indexed activity yet";
-
   return (
     <div className="market-shell stats-page">
       <header className="stats-head">
@@ -84,7 +74,6 @@ export function ProtocolStatsPage() {
         <p className="stats-lede">
           80% of protocol revenue buys HKT on the market and burn it.
         </p>
-        <p className="stats-footnote">{statusLabel}</p>
       </header>
 
       <section className="stats-block">
