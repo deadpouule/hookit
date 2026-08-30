@@ -4,14 +4,6 @@ import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { HOOKIT_CHAIN_ID } from "@/lib/contracts/config";
 import { cn } from "@/lib/utils";
@@ -111,39 +103,20 @@ export function ConnectButton({
         }
 
         return (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                {...TOOLBAR_BUTTON_PROPS}
-                className={cn(
-                  compact
-                    ? "home-connect font-mono"
-                    : "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm text-zinc-100 transition hover:bg-white/[0.08]",
-                  className,
-                )}
-              >
-                <span className="h-2 w-2 rounded-full bg-[#9514d1] shadow-[0_0_8px_rgba(149,20,209,0.55)]" />
-                {account.displayName}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={8}
-              className="min-w-[11rem] border border-white/10 bg-[#0a0a0a] text-zinc-100 shadow-xl"
-            >
-              <DropdownMenuLabel className="font-mono text-xs text-zinc-500">
-                {account.displayName}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem
-                className="cursor-pointer text-zinc-400 focus:bg-white/10 focus:text-white"
-                onClick={openAccountModal}
-              >
-                Disconnect
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            type="button"
+            onClick={openAccountModal}
+            {...TOOLBAR_BUTTON_PROPS}
+            className={cn(
+              compact
+                ? "home-connect font-mono"
+                : "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm text-zinc-100 transition hover:bg-white/[0.08]",
+              className,
+            )}
+          >
+            <span className="h-2 w-2 rounded-full bg-[#9514d1] shadow-[0_0_8px_rgba(149,20,209,0.55)]" />
+            {account.displayName}
+          </button>
         );
       }}
     </RainbowConnectButton.Custom>
