@@ -66,7 +66,7 @@ function MarketplaceContent() {
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
   const liveLaunches = shouldFetchLiveLaunches();
-  const { data: onChainPools, isLoading, isError } = useLaunches();
+  const { data: onChainPools, isLoading, isError, isFetched } = useLaunches();
 
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
@@ -203,7 +203,7 @@ function MarketplaceContent() {
           launches.
         </p>
       )}
-      {liveLaunches && isLoading && (
+      {liveLaunches && isLoading && !isFetched && (
         <p className="text-xs text-zinc-500">Syncing on-chain launches…</p>
       )}
       {liveLaunches && isError && (
@@ -228,7 +228,7 @@ function MarketplaceContent() {
         </p>
       )}
 
-      {liveLaunches && isLoading && (
+      {liveLaunches && isLoading && !isFetched && (
         <div className="token-grid">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="market-card overflow-hidden border border-white/10 p-3">
@@ -240,7 +240,7 @@ function MarketplaceContent() {
         </div>
       )}
 
-      {!(liveLaunches && isLoading) && (
+      {!(liveLaunches && isLoading && !isFetched) && (
         <>
       <section id="party" className="scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">

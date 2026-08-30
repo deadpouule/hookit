@@ -25,21 +25,21 @@ export function useLaunches() {
   const live = shouldFetchLiveLaunches();
 
   return useQuery({
-    queryKey: ["launches", getLaunchFactoryAddress(), getBondingFactoryAddress()],
+    queryKey: ["launches"],
     enabled: live,
     queryFn: async (): Promise<TokenPool[]> => {
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 12_000);
+      const timer = window.setTimeout(() => controller.abort(), 20_000);
       try {
         const res = await fetch("/api/launches", { cache: "no-store", signal: controller.signal });
         if (!res.ok) throw new Error("Failed to fetch launches");
-        const body = (await res.json()) as { pools?: TokenPool[] };
+        const body = (await res.json()) as { pools?: TokenPool[]; factoryConfigured?: boolean };
         return body.pools ?? [];
       } finally {
         window.clearTimeout(timer);
       }
     },
-    retry: 1,
+    retry: 2,
     refetchInterval: 15_000,
   });
 }
