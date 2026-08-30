@@ -15,6 +15,7 @@ import { useSwapToken } from "@/hooks/useSwapToken";
 import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
 import { paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import { toast } from "@/lib/toast";
+import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -174,6 +175,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       {mode === "pro" ? (
         <TokenProSwap
           ticker={ticker}
+          tokenImageUrl={resolveMediaUrl(pool.image)}
           tokenAddress={pool.contractAddress}
           spotEth={pool.priceEth}
           quoteLabel={onBonding ? (pool.quoteAsset ?? "ETH") : "ETH"}
