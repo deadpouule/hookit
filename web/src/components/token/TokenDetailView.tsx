@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
@@ -12,6 +12,7 @@ import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCa
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
@@ -19,6 +20,23 @@ import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/forma
 import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
+
+function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-help">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        className="max-w-[240px] border border-white/10 bg-[#1a1a1c] px-2.5 py-1.5 text-left text-[11px] leading-snug text-zinc-100 shadow-lg"
+      >
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 interface TokenDetailViewProps {
   pool: TokenPool;
@@ -89,15 +107,25 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                   )}
                   <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
                   {pool.rail === "classic" && (
-                    <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
-                      {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
-                    </span>
+                    <HeaderTip
+                      tip={
+                        pool.bondingPhase === 0
+                          ? "Still on the bonding curve — graduates to a Uniswap pool when the target is hit."
+                          : "Bonding curve finished — now trading on a Uniswap v4 pool."
+                      }
+                    >
+                      <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[12px] font-medium text-[#d8b4fe]">
+                        {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
+                      </span>
+                    </HeaderTip>
                   )}
                   {trending && (
-                    <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
-                      <Flame className="h-3.5 w-3.5" />
-                      Trend
-                    </span>
+                    <HeaderTip tip="Price is up over the last hour.">
+                      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-orange-400">
+                        <Flame className="h-3.5 w-3.5" />
+                        Trend
+                      </span>
+                    </HeaderTip>
                   )}
                 </div>
 

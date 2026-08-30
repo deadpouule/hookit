@@ -3,10 +3,11 @@
 import { AlertTriangle } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { PairingMark } from "@/components/launch/PairingMark";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { MasterHookId } from "@/lib/master-hooks";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenAgeLabel } from "@/lib/market-tokens";
-import { PairingMark } from "@/components/launch/PairingMark";
 import {
   isMultiPairPool,
   pairingBadgeClassName,
@@ -17,20 +18,49 @@ import { cn } from "@/lib/utils";
 import { CustomsGlyph, MasterHookGlyph, MultiPairGlyph, RwaGlyph } from "./CategoryGlyphs";
 import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
+const BADGE_TIPS = {
+  master: "Uniswap v4 pool from day one, with locked LP and optional hook modules.",
+  customs: "Custom unaudited hook code — treat as higher risk.",
+  rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.).",
+  multiPair: "Trades across multiple quote pools at once.",
+  pairing: (name: string) => `Pool liquidity is paired against ${name}.`,
+} as const;
+
+function BadgeTip({ tip, children }: { tip: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex max-w-full cursor-help">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        className="max-w-[240px] border border-white/10 bg-[#1a1a1c] px-2.5 py-1.5 text-left text-[11px] leading-snug text-zinc-100 shadow-lg"
+      >
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** COPY / OG overlay on the token art — top-right corner. */
 export function TokenCopyBadge({ token }: { token: MarketToken }) {
   if (token.isCopycat) {
     return (
-      <span className="token-copy-badge" title="Copycat launch — verify the contract address">
-        COPY
-      </span>
+      <BadgeTip tip="Copycat launch — verify the contract address before trading.">
+        <span className="token-copy-badge" title="Copycat launch — verify the contract address">
+          COPY
+        </span>
+      </BadgeTip>
     );
   }
   if (token.isOriginal) {
     return (
-      <span className="token-og-badge" title="Original launch — first token with this ticker">
-        OG
-      </span>
+      <BadgeTip tip="Original launch — first token with this ticker on Hookit.">
+        <span className="token-og-badge" title="Original launch — first token with this ticker">
+          OG
+        </span>
+      </BadgeTip>
     );
   }
   return null;
@@ -42,11 +72,13 @@ function PairingBadgeRow({
   pairing: NonNullable<MarketToken["pairings"]>[number];
 }) {
   return (
-    <span className={pairingBadgeClassName(pairing.tone)}>
-      <span className="token-type-badge-pairing-prefix">Paired with</span>
-      <PairingMark id={pairing.pairingId} size="sm" />
-      <span className="token-type-badge-pairing-name">{pairing.name}</span>
-    </span>
+    <BadgeTip tip={BADGE_TIPS.pairing(pairing.name)}>
+      <span className={pairingBadgeClassName(pairing.tone)}>
+        <span className="token-type-badge-pairing-prefix">Paired with</span>
+        <PairingMark id={pairing.pairingId} size="sm" />
+        <span className="token-type-badge-pairing-name">{pairing.name}</span>
+      </span>
+    </BadgeTip>
   );
 }
 
@@ -66,36 +98,41 @@ export function TokenTypeBadges({
 
   if (isMaster) {
     badges.push(
-      onMasterHookFiltersChange ? (
-        <MasterHookTokenBadgeFilter
-          key="master"
-          selectedHooks={masterHookFilters ?? []}
-          onSelectedHooksChange={onMasterHookFiltersChange}
-          className="token-type-badge token-type-badge--master relative z-20 cursor-pointer transition hover:brightness-110"
-        />
-      ) : (
-        <span key="master" className="token-type-badge token-type-badge--master">
-          <MasterHookGlyph className="token-type-badge-glyph" />
-          Master
-        </span>
-      ),
+      <BadgeTip key="master" tip={BADGE_TIPS.master}>
+        {onMasterHookFiltersChange ? (
+          <MasterHookTokenBadgeFilter
+            selectedHooks={masterHookFilters ?? []}
+            onSelectedHooksChange={onMasterHookFiltersChange}
+            className="token-type-badge token-type-badge--master relative z-20 cursor-pointer transition hover:brightness-110"
+          />
+        ) : (
+          <span className="token-type-badge token-type-badge--master">
+            <MasterHookGlyph className="token-type-badge-glyph" />
+            Master
+          </span>
+        )}
+      </BadgeTip>,
     );
   } else if (token.hookType === "Custom" || token.kind === "sushi") {
     badges.push(
-      <span key="custom" className="token-type-badge token-type-badge--custom">
-        <CustomsGlyph className="token-type-badge-glyph" />
-        Customs
-        <AlertTriangle className="token-custom-warn" aria-hidden />
-      </span>,
+      <BadgeTip key="custom" tip={BADGE_TIPS.customs}>
+        <span className="token-type-badge token-type-badge--custom">
+          <CustomsGlyph className="token-type-badge-glyph" />
+          Customs
+          <AlertTriangle className="token-custom-warn" aria-hidden />
+        </span>
+      </BadgeTip>,
     );
   }
 
   if (token.isRwa) {
     badges.push(
-      <span key="rwa" className="token-type-badge token-type-badge--rwa">
-        <RwaGlyph className="token-type-badge-glyph" />
-        RWA pools
-      </span>,
+      <BadgeTip key="rwa" tip={BADGE_TIPS.rwa}>
+        <span className="token-type-badge token-type-badge--rwa">
+          <RwaGlyph className="token-type-badge-glyph" />
+          RWA pools
+        </span>
+      </BadgeTip>,
     );
   }
 
@@ -103,20 +140,19 @@ export function TokenTypeBadges({
   const isMulti = isMultiPairPool(token);
 
   if (isMulti) {
+    const legs = pairings.map((pairing) => pairing.name).join(" · ");
     badges.push(
-      <span
-        key="multi-pair"
-        className="token-type-badge token-type-badge--multi-pair"
-        title={pairings.map((pairing) => pairing.name).join(" · ")}
-      >
-        <MultiPairGlyph className="token-type-badge-glyph" />
-        Multi pair
-        <span className="token-type-badge-multi-pair-logos">
-          {pairings.map((pairing) => (
-            <PairingMark key={pairing.pairingId} id={pairing.pairingId} size="sm" />
-          ))}
+      <BadgeTip key="multi-pair" tip={`${BADGE_TIPS.multiPair} ${legs}`}>
+        <span className="token-type-badge token-type-badge--multi-pair">
+          <MultiPairGlyph className="token-type-badge-glyph" />
+          Multi pair
+          <span className="token-type-badge-multi-pair-logos">
+            {pairings.map((pairing) => (
+              <PairingMark key={pairing.pairingId} id={pairing.pairingId} size="sm" />
+            ))}
+          </span>
         </span>
-      </span>,
+      </BadgeTip>,
     );
   } else {
     for (const pairing of pairings) {

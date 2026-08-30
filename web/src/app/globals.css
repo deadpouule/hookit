@@ -1141,38 +1141,38 @@
   /* Larger type badges on the trading terminal header only */
   .token-hero-card .token-type-badges {
     margin-top: 0;
-    gap: 6px;
+    gap: 7px;
   }
 
   .token-hero-card .token-type-badge {
-    gap: 5px;
-    border-radius: 5px;
-    padding: 3px 9px;
-    font-size: 12px;
-    line-height: 1.35;
+    gap: 6px;
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-size: 13px;
+    line-height: 1.3;
   }
 
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
-    width: 0.9rem;
-    font-size: 0.3rem;
+    width: 1.05rem;
+    font-size: 0.34rem;
   }
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
   .token-hero-card .token-type-badge-glyph.category-rwa-icon,
   .token-hero-card .token-type-badge-glyph.category-multi-pair-icon {
-    width: 0.8rem;
-    height: 0.8rem;
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .token-hero-card .token-custom-warn {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
   }
 
   .token-hero-card .token-type-badge--multi-pair .pick-logo--sm,
   .token-hero-card .token-type-badge[class*="token-type-badge--pair-"] .pick-logo--sm {
-    height: 16px;
-    width: 16px;
+    height: 18px;
+    width: 18px;
   }
 
   .candle-grid {
