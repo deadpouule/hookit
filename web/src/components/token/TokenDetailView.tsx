@@ -77,25 +77,25 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       <div className="token-desk mt-4">
         <div className="min-w-0 space-y-4">
           <div className="desk-card token-hero-card">
-            <header className="flex flex-wrap items-start gap-3 p-4 sm:p-5">
+            <header className="flex flex-wrap items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
               <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-16 sm:w-16"
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 sm:h-20 sm:w-20"
                 style={{ background: pool.bannerGradient }}
               >
                 {media ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={media} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-white/90">{pool.ticker[0]}</span>
+                  <span className="text-3xl font-bold text-white/90 sm:text-4xl">{pool.ticker[0]}</span>
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                     {pool.name}
                   </h1>
-                  <span className="font-mono text-sm text-zinc-500">${pool.ticker}</span>
+                  <span className="font-mono text-base text-zinc-500 sm:text-lg">${pool.ticker}</span>
                   {isCopycat && (
                     <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
                       COPY
