@@ -8,7 +8,7 @@ import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { HolderAirdropCard } from "@/components/token/HolderAirdropCard";
-import { TokenDexScreenerChart } from "@/components/token/TokenDexScreenerChart";
+import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
@@ -30,6 +30,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const live = useLiveToken(pool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
+  const [interval, setInterval] = useState<ChartInterval>("5m");
   const contractAddress = pool.contractAddress ?? pool.address;
   const trending = live.change1h >= 0;
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
@@ -134,7 +135,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             <Metric label="Holders" value={live.holders.toString()} />
           </div>
 
-          <TokenDexScreenerChart tokenAddress={contractAddress} />
+          <TokenCandleChart
+            candles={live.candles}
+            interval={interval}
+            onInterval={setInterval}
+            marketCap={live.marketCap}
+            change24h={live.change24h}
+          />
           <TokenTxTable
             tab={tab}
             onTab={setTab}
