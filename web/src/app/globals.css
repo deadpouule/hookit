@@ -41,37 +41,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-:root {
-  --background: #f4f4f5;
-  --foreground: #09090b;
-  --card: #ffffff;
-  --card-foreground: #09090b;
-  --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #e4e4e7;
-  --secondary-foreground: #18181b;
-  --muted: #ebebed;
-  --muted-foreground: #71717a;
-  --accent: #e4e4e7;
-  --accent-foreground: #18181b;
-  --destructive: #ef4444;
-  --border: rgb(24 24 27 / 0.12);
-  --input: rgb(24 24 27 / 0.1);
-  --ring: #9514d1;
-  --radius: 1rem;
-  --surface: #ffffff;
-  --surface-raised: #f0f0f2;
-  --surface-muted: #e4e4e7;
-  --surface-inset: #fafafa;
-  --chart-bg: #f8f8f9;
-  --nav-text: #52525b;
-  --nav-text-hover: #09090b;
-  --nav-active-bg: rgb(24 24 27 / 0.08);
-  --overlay-scrim: rgb(244 244 245 / 0.92);
-}
-
+:root,
 .dark {
   --background: #000000;
   --foreground: #fafafa;
@@ -91,6 +61,7 @@
   --border: rgb(255 255 255 / 0.08);
   --input: rgb(255 255 255 / 0.06);
   --ring: #03b1ed;
+  --radius: 1rem;
   --surface: #111111;
   --surface-raised: #141416;
   --surface-muted: #1a1a1c;
@@ -147,37 +118,6 @@
 
   .status-bar-icon:hover {
     color: var(--foreground);
-  }
-
-  .status-theme-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.1rem;
-    padding: 0.15rem;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--muted) 70%, transparent);
-  }
-
-  .status-theme-btn {
-    display: inline-flex;
-    height: 1.55rem;
-    width: 1.55rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    color: var(--muted-foreground);
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .status-theme-btn:hover {
-    color: var(--foreground);
-  }
-
-  .status-theme-btn.is-active {
-    background: color-mix(in srgb, var(--background) 85%, var(--foreground) 8%);
-    color: var(--foreground);
-    box-shadow: 0 0 0 1px var(--border);
   }
 }
 
@@ -1381,12 +1321,6 @@
       linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
       linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
     background-size: 44px 36px;
-  }
-
-  .light .candle-grid {
-    background-image:
-      linear-gradient(to right, rgb(24 24 27 / 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(24 24 27 / 0.08) 1px, transparent 1px);
   }
 
   .token-desk {

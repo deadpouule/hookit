@@ -1,11 +1,9 @@
 "use client";
 
-import { BookOpen, Contrast, Moon, Sun } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
-import { useTheme, type ThemeMode } from "@/components/providers/ThemeProvider";
 import { GITHUB_REPO_URL, TWITTER_URL } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -20,36 +18,6 @@ function XIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.727-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
     </svg>
-  );
-}
-
-const THEME_OPTIONS: { id: ThemeMode; label: string; icon: typeof Sun }[] = [
-  { id: "light", label: "Light", icon: Sun },
-  { id: "dark", label: "Dark", icon: Moon },
-  { id: "system", label: "System", icon: Contrast },
-];
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <div className="status-theme-toggle" role="group" aria-label="Color theme">
-      {THEME_OPTIONS.map(({ id, label, icon: Icon }) => {
-        const active = theme === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            aria-label={label}
-            aria-pressed={active}
-            onClick={() => setTheme(id)}
-            className={cn("status-theme-btn", active && "is-active")}
-          >
-            <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -80,7 +48,6 @@ export function StatusBar() {
             <BookOpen className="h-4 w-4" strokeWidth={1.75} />
           </Link>
         </div>
-        <ThemeToggle />
       </div>
     </div>
   );

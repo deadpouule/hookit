@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
@@ -47,24 +46,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("hookit-theme")||"dark";var d=t==="system"?window.matchMedia("(prefers-color-scheme: dark)").matches:t==="dark";document.documentElement.classList.toggle("dark",d);document.documentElement.classList.toggle("light",!d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`,
-          }}
-        />
-      </head>
       <body className="flex min-h-full flex-col bg-background text-foreground" suppressHydrationWarning>
         <AppErrorBoundary>
-          <ThemeProvider>
-            <Web3Provider>
-              <TooltipProvider>
-                {children}
-                <AppToaster />
-                <Telemetry />
-              </TooltipProvider>
-            </Web3Provider>
-          </ThemeProvider>
+          <Web3Provider>
+            <TooltipProvider>
+              {children}
+              <AppToaster />
+              <Telemetry />
+            </TooltipProvider>
+          </Web3Provider>
         </AppErrorBoundary>
       </body>
     </html>
