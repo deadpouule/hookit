@@ -304,8 +304,12 @@ function MarketplaceContent() {
 
         {category === "rwa" && selectedRwaQuote && (
           <p className="text-xs text-zinc-500">
-            Showing pools paired with <span className="text-zinc-300">{selectedRwaQuote}</span>.
+            Showing single pools paired with <span className="text-zinc-300">{selectedRwaQuote}</span>.
           </p>
+        )}
+
+        {category === "multi" && (
+          <p className="text-xs text-zinc-500">Showing multi-pair launches only.</p>
         )}
 
         {tokens.length === 0 ? (
