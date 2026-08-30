@@ -1383,6 +1383,12 @@
     background-size: 44px 36px;
   }
 
+  .light .candle-grid {
+    background-image:
+      linear-gradient(to right, rgb(24 24 27 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(24 24 27 / 0.08) 1px, transparent 1px);
+  }
+
   .token-desk {
     display: grid;
     gap: 16px;
