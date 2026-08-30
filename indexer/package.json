@@ -8,6 +8,7 @@
     "serve": "tsx src/main.ts serve",
     "poll": "tsx src/main.ts poll",
     "tick": "tsx src/main.ts tick",
+    "probe": "tsx src/main.ts probe",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

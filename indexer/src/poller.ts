@@ -38,6 +38,14 @@ const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
 
+const masterLaunchEvent = parseAbiItem(
+  "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, bytes32 poolId, address hooks, bool customHook, int24 tickLower, int24 tickUpper, uint128 liquidity)",
+);
+
+const shortMasterLaunchEvent = parseAbiItem(
+  "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, bytes32 poolId, address hooks, bool customHook)",
+);
+
 export function createClient(cfg: IndexerConfig): PublicClient {
   const chain = cfg.chainId === ink.id ? ink : baseSepolia;
   return createPublicClient({
@@ -75,6 +83,33 @@ function getLogs(
   params: Parameters<PublicClient["getLogs"]>[0],
 ) {
   return rpcWithRetry(() => client.getLogs(params), "getLogs");
+}
+
+/** One-shot RPC sanity check — compares full vs legacy TokenLaunched topic filters. */
+export async function probeLaunchLogs(client: PublicClient, cfg: IndexerConfig, block: bigint) {
+  if (!cfg.launchFactory) {
+    return { block: block.toString(), full: 0, legacy: 0, factory: null as Address | null };
+  }
+  const [full, legacy] = await Promise.all([
+    getLogs(client, {
+      address: cfg.launchFactory,
+      event: masterLaunchEvent,
+      fromBlock: block,
+      toBlock: block,
+    }),
+    getLogs(client, {
+      address: cfg.launchFactory,
+      event: shortMasterLaunchEvent,
+      fromBlock: block,
+      toBlock: block,
+    }),
+  ]);
+  return {
+    block: block.toString(),
+    factory: cfg.launchFactory,
+    full: full.length,
+    legacy: legacy.length,
+  };
 }
 
 async function metaForToken(client: PublicClient, token: Address) {
@@ -338,12 +373,15 @@ async function indexRange(
   if (cfg.launchFactory) {
     const logs = await getLogs(client,{
       address: cfg.launchFactory,
-      event: parseAbiItem(
-        "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, bytes32 poolId, address hooks, bool customHook, int24 tickLower, int24 tickUpper, uint128 liquidity)",
-      ),
+      event: masterLaunchEvent,
       fromBlock,
       toBlock,
     });
+    if (logs.length > 0) {
+      console.log(
+        `[indexer] TokenLaunched x${logs.length} blocks ${fromBlock}-${toBlock} factory=${cfg.launchFactory}`,
+      );
+    }
     for (const log of logs) {
       const a = logArgs<{
         launchId: bigint;

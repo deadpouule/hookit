@@ -3,11 +3,11 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadConfig } from "./config.js";
-import { createClient, tick } from "./poller.js";
+import { createClient, tick, probeLaunchLogs } from "./poller.js";
 import { startApi } from "./api.js";
 import { Store } from "./store.js";
 
-/** Load KEY=VAL lines from a .env file (no dotenv dependency). Later files override earlier keys. */
+/** Load KEY=VAL lines from a .env file (no dotenv dependency). Never overrides existing keys (systemd/shell win). */
 function loadDotEnvFile(path: string) {
   if (!existsSync(path)) return;
   for (const line of readFileSync(path, "utf8").split("\n")) {
@@ -23,11 +23,13 @@ function loadDotEnvFile(path: string) {
     ) {
       val = val.slice(1, -1);
     }
-    process.env[key] = val;
+    if (!(key in process.env)) {
+      process.env[key] = val;
+    }
   }
 }
 
-/** Repo root first, then indexer-local overrides. */
+/** Repo root first, then indexer-local keys not already set. */
 function loadDotEnv() {
   const here = dirname(fileURLToPath(import.meta.url));
   loadDotEnvFile(resolve(here, "../../.env"));
@@ -44,7 +46,9 @@ async function main() {
 
   console.log(`[indexer] chain=${cfg.chainId} rpc=${cfg.rpcUrl}`);
   console.log(`[indexer] factory=${cfg.launchFactory ?? "(unset)"} bonding=${cfg.bondingFactory ?? "(unset)"}`);
-  console.log(`[indexer] data=${store.path} cursor=${store.data.cursor} confirmations=${cfg.confirmations}`);
+  console.log(
+    `[indexer] data=${store.path} cursor=${store.data.cursor} startBlock=${cfg.startBlock} confirmations=${cfg.confirmations}`,
+  );
 
   if (!cfg.launchFactory && !cfg.bondingFactory) {
     console.warn("[indexer] WARN: set LAUNCH_FACTORY and/or BONDING_FACTORY");
@@ -64,6 +68,19 @@ async function main() {
       throw err;
     }
   };
+
+  if (cmd === "probe") {
+    const block = BigInt(process.argv[3] ?? "54547597");
+    const result = await probeLaunchLogs(client, cfg, block);
+    console.log("[indexer] probe", JSON.stringify(result));
+    if (result.full === 0) {
+      console.warn(
+        "[indexer] WARN: full TokenLaunched filter returned 0 logs — check LAUNCH_FACTORY, git pull, and INDEXER_START_BLOCK",
+      );
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   if (cmd === "tick" || cmd === "poll-once") {
     const n = await runTick();
@@ -94,7 +111,7 @@ async function main() {
     }
   }
 
-  console.error(`Unknown command: ${cmd}. Use serve | poll | tick`);
+  console.error(`Unknown command: ${cmd}. Use serve | poll | tick | probe [block]`);
   process.exit(1);
 }
 
