@@ -44,8 +44,8 @@ function TokenMark({ asset }: { asset: SwapAsset }) {
   );
 
   return (
-    <span className="relative inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
-      {inner}
+    <span className="relative inline-flex h-8 w-8 shrink-0">
+      <span className="h-8 w-8 overflow-hidden rounded-full bg-[#1a1a1c]">{inner}</span>
       <InkAvatarBadge />
     </span>
   );

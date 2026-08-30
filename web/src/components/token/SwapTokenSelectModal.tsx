@@ -48,16 +48,18 @@ function AssetIcon({ asset }: { asset: SwapAsset }) {
   if (asset.isNative) return <EthMark />;
   if (asset.imageUrl) {
     return (
-      <span className="relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
+      <span className="relative inline-flex h-9 w-9 shrink-0">
+        <span className="h-9 w-9 overflow-hidden rounded-full bg-[#1a1a1c]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
+        </span>
         <InkAvatarBadge />
       </span>
     );
   }
   return (
-    <span className="relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#eab308]">
-      <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-black">
+    <span className="relative inline-flex h-9 w-9 shrink-0">
+      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#eab308] text-[11px] font-bold text-black">
         {asset.symbol.slice(0, 1)}
       </span>
       <InkAvatarBadge />

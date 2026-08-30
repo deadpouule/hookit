@@ -37,11 +37,11 @@ export function TokenArt({
         <img
           src={mediaSrc}
           alt=""
-          className="relative z-10 h-full w-full object-cover"
+          className="relative z-[1] h-full w-full object-cover"
           onError={() => setBroken(true)}
         />
       ) : (
-        <span className={cn("relative z-10 select-none", glyphClassName)}>
+        <span className={cn("relative z-[1] select-none", glyphClassName)}>
           {isTokenMediaUri(token.emoji) ? fallback : token.emoji || fallback}
         </span>
       )}
