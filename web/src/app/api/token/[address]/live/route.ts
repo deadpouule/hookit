@@ -6,7 +6,7 @@ import {
 } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
-import { readEthUsd } from "@/lib/eth-usd";
+import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
 import {
   fetchBondingLaunchById,
   fetchLaunchById,
@@ -38,6 +38,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   try {
     const client = createServerPublicClient() as PublicClient;
     const ethUsd = await readEthUsd(client);
+    const launchEthUsd = await readLaunchEthUsd(client);
 
     let pool = null as Awaited<ReturnType<typeof fetchBondingLaunchById>>;
 
@@ -55,6 +56,7 @@ export async function GET(_req: Request, ctx: Ctx) {
             client,
             [launchToTokenPool(launch)],
             ethUsd,
+            { launchEthUsd },
           );
           pool = enriched ?? launchToTokenPool(launch);
         }

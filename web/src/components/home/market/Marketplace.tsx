@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
 import { useLaunches } from "@/hooks/useLaunches";
-import { MOCK_POOLS } from "@/lib/constants";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import { formatPercent, formatUsd } from "@/lib/format";
@@ -120,25 +119,26 @@ function MarketplaceContent() {
   );
 
   const sourcePools = useMemo((): TokenPool[] => {
-    if (liveLaunches && onChainPools && onChainPools.length > 0) {
-      return onChainPools;
-    }
-    return MOCK_POOLS;
-  }, [liveLaunches, onChainPools]);
+    if (!liveLaunches) return [];
+    if (isLoading) return [];
+    return onChainPools ?? [];
+  }, [liveLaunches, onChainPools, isLoading]);
 
   const sourceTokens = useMemo(() => {
-    const demoTokens = buildDemoMarketTokens();
-
-    if (liveLaunches && onChainPools && onChainPools.length > 0) {
-      return annotateCopyFlags(onChainPools.map(poolToMarketToken));
+    if (liveLaunches) {
+      if (isLoading) return [];
+      if (onChainPools && onChainPools.length > 0) {
+        return annotateCopyFlags(onChainPools.map(poolToMarketToken));
+      }
+      return [];
     }
 
-    if (!liveLaunches || process.env.NODE_ENV === "development") {
-      return annotateCopyFlags(demoTokens);
+    if (process.env.NODE_ENV === "development") {
+      return annotateCopyFlags(buildDemoMarketTokens());
     }
 
     return [];
-  }, [liveLaunches, onChainPools]);
+  }, [liveLaunches, onChainPools, isLoading]);
 
   const rankings = useMemo(() => buildMarketRankings(sourceTokens), [sourceTokens]);
 
@@ -208,7 +208,7 @@ function MarketplaceContent() {
       )}
       {liveLaunches && isError && (
         <p className="text-xs text-amber-400">
-          Could not load launches from the factory. Showing demo catalog — check RPC / factory address.
+          Could not load launches from the factory — check RPC / factory address.
         </p>
       )}
       {liveLaunches && !isLoading && !isError && onChainPools?.length === 0 && (
@@ -228,6 +228,20 @@ function MarketplaceContent() {
         </p>
       )}
 
+      {liveLaunches && isLoading && (
+        <div className="token-grid">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="market-card overflow-hidden border border-white/10 p-3">
+              <div className="mb-2 aspect-square animate-pulse rounded-2xl bg-white/[0.06]" />
+              <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-white/[0.08]" />
+              <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.05]" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!(liveLaunches && isLoading) && (
+        <>
       <section id="party" className="scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
@@ -294,6 +308,8 @@ function MarketplaceContent() {
           />
         )}
       </section>
+        </>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import {
   getLaunchFactoryAddress,
 } from "@/lib/contracts/config";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
-import { readEthUsd } from "@/lib/eth-usd";
+import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
 import {
   fetchAllBondingLaunches,
   fetchAllLaunches,
@@ -41,6 +41,7 @@ export async function GET() {
   try {
     const client = createServerPublicClient() as PublicClient;
     const ethUsd = await withTimeout(readEthUsd(client), API_TIMEOUT_MS, "readEthUsd");
+    const launchEthUsd = await withTimeout(readLaunchEthUsd(client), API_TIMEOUT_MS, "readLaunchEthUsd");
 
     const [masterRaw, classicPools] = await withTimeout(
       Promise.all([
@@ -55,7 +56,7 @@ export async function GET() {
       client,
       masterRaw.map(launchToTokenPool),
       ethUsd,
-      { skipSwapIndex: isIndexerConfigured() },
+      { skipSwapIndex: isIndexerConfigured(), launchEthUsd },
     );
 
     // Spot-enrich graduated classic pools that already have a poolId.
@@ -63,6 +64,7 @@ export async function GET() {
     const classicBonding = classicPools.filter((p) => !p.poolId);
     const classicWithSpot = await enrichPoolsWithSpotPrices(client, classicGraduated, ethUsd, {
       skipSwapIndex: isIndexerConfigured(),
+      launchEthUsd,
     });
 
     const pools = [...masterPools, ...classicWithSpot, ...classicBonding].sort(

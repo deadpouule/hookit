@@ -5,7 +5,6 @@ import { Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
 import { useLaunches } from "@/hooks/useLaunches";
-import { MOCK_POOLS } from "@/lib/constants";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import {
   MASTER_HOOK_FILTERS,
@@ -25,10 +24,10 @@ function ExplorePageContent() {
   const { data: onChainPools } = useLaunches();
 
   const pools = useMemo((): TokenPool[] => {
-    if (shouldFetchLiveLaunches() && onChainPools && onChainPools.length > 0) {
-      return onChainPools;
+    if (shouldFetchLiveLaunches()) {
+      return onChainPools ?? [];
     }
-    return MOCK_POOLS;
+    return [];
   }, [onChainPools]);
 
   const usage = useMemo(() => countHookUsage(pools), [pools]);

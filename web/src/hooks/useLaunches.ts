@@ -18,7 +18,7 @@ import {
   type OnChainLaunch,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
-import { readEthUsd } from "@/lib/eth-usd";
+import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches() {
@@ -92,11 +92,12 @@ export function useLaunchPool(id: string) {
             const launch = await fetchLaunchById(publicClient, factory, launchId);
             if (launch) {
               const ethUsd = await readEthUsd(publicClient);
+              const launchEthUsd = await readLaunchEthUsd(publicClient);
               const [enriched] = await enrichPoolsWithSpotPrices(
                 publicClient,
                 [launchToTokenPool(launch)],
                 ethUsd,
-                enrichOpts,
+                { ...enrichOpts, launchEthUsd },
               );
               pool = enriched ?? null;
             }
@@ -118,11 +119,12 @@ export function useLaunchPool(id: string) {
           const launch = await fetchLaunchById(publicClient, factory, BigInt(id));
           if (launch) {
             const ethUsd = await readEthUsd(publicClient);
+            const launchEthUsd = await readLaunchEthUsd(publicClient);
             const [enriched] = await enrichPoolsWithSpotPrices(
               publicClient,
               [launchToTokenPool(launch)],
               ethUsd,
-              enrichOpts,
+              { ...enrichOpts, launchEthUsd },
             );
             pool = enriched ?? null;
           }

@@ -5,7 +5,8 @@ import { CHAINLINK_ETH_USD, chainlinkAggregatorAbi, getLaunchFactoryAddress } fr
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 
-export async function readEthUsd(client: PublicClient): Promise<number> {
+/** ETH/USD stored on LaunchFactory — same oracle used to seed launch FDV (~$4k). */
+export async function readLaunchEthUsd(client: PublicClient): Promise<number> {
   const factory = getLaunchFactoryAddress();
   if (factory) {
     try {
@@ -20,7 +21,11 @@ export async function readEthUsd(client: PublicClient): Promise<number> {
       // old factory without the getter
     }
   }
+  return DEFAULT_LAUNCH_ETH_USD;
+}
 
+/** Live ETH/USD (Chainlink) — for volumes / implied rates, not launch FDV display. */
+export async function readEthUsd(client: PublicClient): Promise<number> {
   try {
     const result = (await client.readContract({
       address: CHAINLINK_ETH_USD,

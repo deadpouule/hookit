@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 import { LeanHero } from "@/components/home/market/LeanHero";
 import { Marketplace } from "@/components/home/market/Marketplace";
+import { MarketplaceLoadingShell } from "@/components/home/market/MarketplaceLoadingShell";
 import { SiteHeader } from "@/components/home/market/SiteHeader";
-import { StaticDemoShell } from "@/components/home/market/StaticDemoShell";
 import { StatusBar } from "@/components/home/market/StatusBar";
 
 export function LaunchpadHomeClient() {
@@ -16,7 +16,7 @@ export function LaunchpadHomeClient() {
   }, []);
 
   if (!hydrated) {
-    return <StaticDemoShell />;
+    return <MarketplaceLoadingShell />;
   }
 
   return (
