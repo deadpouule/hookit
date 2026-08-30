@@ -15,6 +15,7 @@ import { marketplaceHrefForHooks } from "@/lib/market-hook-filter";
 import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
 import { marketCapUsdForPool } from "@/lib/quote-usd";
 import { tokenHref } from "@/lib/routes";
+import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -35,8 +36,10 @@ export function TokenCard({
 }: TokenCardProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [imageBroken, setImageBroken] = useState(false);
   const fullAddress = pool.contractAddress ?? pool.id;
   const poolHookIds = masterHookIdsForPool(pool);
+  const media = resolveMediaUrl(pool.image);
   const displayMcap =
     pool.marketCap > 0
       ? pool.marketCap
@@ -131,9 +134,19 @@ export function TokenCard({
           )}
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-5xl font-bold text-white/25 transition group-hover:text-white/40">
-            {pool.ticker[0]}
-          </span>
+          {media && !imageBroken ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={media}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => setImageBroken(true)}
+            />
+          ) : (
+            <span className="text-5xl font-bold text-white/25 transition group-hover:text-white/40">
+              {pool.ticker[0]}
+            </span>
+          )}
         </div>
         <div className="absolute top-3 right-3 opacity-0 transition group-hover:opacity-100">
           <ArrowUpRight className="h-4 w-4 text-white/70" />

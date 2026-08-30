@@ -134,14 +134,18 @@ export async function blobUrlToDataUrl(url: string): Promise<string | null> {
 }
 
 /**
- * Upload image to Pinata when PINATA_JWT is configured; otherwise return a clipped data URL.
+ * Upload image to Pinata when PINATA_JWT is configured.
+ * Returns undefined when there is no preview. Throws when a preview was
+ * selected but could not be pinned (images are not embedded on-chain).
  */
 export async function resolveLaunchImageUri(
   imagePreview: string | null,
 ): Promise<string | undefined> {
   if (!imagePreview) return undefined;
   const dataUrl = await blobUrlToDataUrl(imagePreview);
-  if (!dataUrl) return clipImageForMetadata(imagePreview);
+  if (!dataUrl) {
+    throw new Error("Could not read the selected token image. Try another file.");
+  }
 
   try {
     const res = await fetch("/api/ipfs/upload", {
@@ -153,9 +157,19 @@ export async function resolveLaunchImageUri(
       const body = (await res.json()) as { uri?: string };
       if (body.uri) return body.uri;
     }
-  } catch {
-    // fall through — image omitted from on-chain metadata when IPFS unavailable
+    if (res.status === 503) {
+      throw new Error(
+        "Custom token images need IPFS (PINATA_JWT). Ask the host to enable Pinata, or launch without an image.",
+      );
+    }
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      detail
+        ? `Token image upload failed (${res.status}). Try a smaller image under 1.5MB.`
+        : `Token image upload failed (${res.status}).`,
+    );
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("Token image upload failed. Try again or launch without an image.");
   }
-
-  return undefined;
 }

@@ -23,6 +23,8 @@ export interface MarketToken {
   quoteAsset?: string;
   quoteAddress?: string;
   isRwa?: boolean;
+  /** Resolved HTTP/IPFS gateway URL for custom token art when present. */
+  imageUrl?: string;
   /** First launch of this ticker when duplicates exist — gets the OG badge. */
   isOriginal?: boolean;
   /** Later launch reusing the same ticker — gets the COPY flag. */
@@ -369,6 +371,7 @@ export function resolveTokenContractAddress(token: MarketToken): string {
 import { isRwaQuote } from "@/lib/token-identity";
 import { masterHookIdsForPool } from "@/lib/master-hooks";
 import { pairingBadgesForPool } from "@/lib/pairing-badge";
+import { isTokenMediaUri, resolveMediaUrl } from "@/lib/token-metadata";
 
 /** Map on-chain TokenPool → market card model. */
 export function poolToMarketToken(pool: import("@/lib/types").TokenPool): MarketToken {
@@ -384,6 +387,8 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
         goal === BigInt(0) ? 0 : Math.min(99, Math.round(Number((real * BigInt(100)) / goal)));
     }
   }
+  const imageUrl = resolveMediaUrl(pool.image);
+  const hasCustomArt = Boolean(imageUrl && isTokenMediaUri(pool.image));
   return {
     id: pool.contractAddress ?? pool.id,
     name: pool.name,
@@ -396,7 +401,8 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
         : pool.hookType === "Custom"
           ? "Custom Uniswap v4 hook"
           : "Master launch with modules",
-    emoji: pool.image || pool.ticker.slice(0, 1).toUpperCase(),
+    emoji: hasCustomArt ? pool.ticker.slice(0, 1).toUpperCase() : pool.image || pool.ticker.slice(0, 1).toUpperCase(),
+    imageUrl: hasCustomArt ? imageUrl : undefined,
     art,
     artAccent: "#e9d5ff",
     marketCap: pool.marketCap || 4_000,

@@ -8,7 +8,7 @@ import { poolQuoteLabel } from "@/lib/payment-assets";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
-import { parseTokenMetadata } from "@/lib/token-metadata";
+import { resolveTokenMetadata } from "@/lib/token-metadata";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 
 const GRADIENTS = [
@@ -248,28 +248,30 @@ async function hydrateLaunches(
     }
   });
 
-  return rows.map(({ id, row, bitmask, launchedAt, quote }, i) => {
-    const name = (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
-    const symbol =
-      (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
-    const metadataURI =
-      meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-    const { image } = parseTokenMetadata(metadataURI);
-    let packed = bitmask ?? BigInt(0);
-    if (packed === BigInt(0) && !row.customHook) {
-      packed = bitmaskByIndex.get(i) ?? BigInt(0);
-    }
-    return {
-      ...row,
-      launchId: id,
-      name,
-      symbol,
-      bitmask: packed,
-      launchedAt,
-      quote: quote ?? zeroAddress,
-      image,
-    };
-  });
+  return Promise.all(
+    rows.map(async ({ id, row, bitmask, launchedAt, quote }, i) => {
+      const name = (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
+      const symbol =
+        (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
+      const metadataURI =
+        meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
+      const { image } = await resolveTokenMetadata(metadataURI);
+      let packed = bitmask ?? BigInt(0);
+      if (packed === BigInt(0) && !row.customHook) {
+        packed = bitmaskByIndex.get(i) ?? BigInt(0);
+      }
+      return {
+        ...row,
+        launchId: id,
+        name,
+        symbol,
+        bitmask: packed,
+        launchedAt,
+        quote: quote ?? zeroAddress,
+        image,
+      };
+    }),
+  );
 }
 
 function normalizeLaunchedAt(value: number | undefined): number | undefined {
@@ -616,8 +618,8 @@ export async function fetchAllBondingLaunches(
     allowFailure: true,
   });
 
-  return rows
-    .map(({ id, row }, i) => {
+  return Promise.all(
+    rows.map(async ({ id, row }, i) => {
       const name =
         (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
       const symbol =
@@ -625,10 +627,10 @@ export async function fetchAllBondingLaunches(
         "???";
       const metadataURI =
         meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const { image } = parseTokenMetadata(metadataURI);
+      const { image } = await resolveTokenMetadata(metadataURI);
       return bondingToTokenPool(id, row, { name, symbol, image }, feeHook);
-    })
-    .reverse();
+    }),
+  ).then((pools) => pools.reverse());
 }
 
 export async function fetchBondingLaunchById(
@@ -662,7 +664,7 @@ export async function fetchBondingLaunchById(
       .readContract({ address: row.token, abi: erc20Abi, functionName: "metadataURI" })
       .catch(() => ""),
   ]);
-  const { image } = parseTokenMetadata(metadataURI as string);
+  const { image } = await resolveTokenMetadata(metadataURI as string);
   return bondingToTokenPool(
     launchId,
     row,

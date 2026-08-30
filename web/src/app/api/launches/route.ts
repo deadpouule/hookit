@@ -16,7 +16,7 @@ import type { PublicClient } from "viem";
 
 export const revalidate = 12;
 
-const API_TIMEOUT_MS = 15_000;
+const API_TIMEOUT_MS = 25_000;
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;

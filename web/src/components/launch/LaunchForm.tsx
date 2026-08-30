@@ -110,9 +110,16 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
   };
 
   const handleImage = (file: File | undefined) => {
-    if (file?.type.startsWith("image/")) {
-      setForm((p) => ({ ...p, imagePreview: URL.createObjectURL(file) }));
+    if (!file?.type.startsWith("image/")) return;
+    if (file.size > 1_500_000) {
+      setError("Image must be under 1.5MB for IPFS upload.");
+      return;
     }
+    setError(null);
+    setForm((p) => {
+      if (p.imagePreview?.startsWith("blob:")) URL.revokeObjectURL(p.imagePreview);
+      return { ...p, imagePreview: URL.createObjectURL(file) };
+    });
   };
 
   return (
@@ -246,7 +253,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                   <span className="px-3 text-center text-xs leading-relaxed text-zinc-500">
                     Logo
                     <br />
-                    JPG, PNG, WebP
+                    JPG, PNG · max 1.5MB
                   </span>
                 </>
               )}

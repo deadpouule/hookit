@@ -114,18 +114,18 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       }
       const isMulti = form.markets.length > 1;
 
+      setPhase("launching");
+      const loadingId = toast.loading(
+        form.imagePreview ? "Uploading image & launching…" : form.hookMode === "custom" ? "Preparing launch…" : "Launching token…",
+      );
+
+      try {
       const imageUri = await resolveLaunchImageUri(form.imagePreview);
       let metadataURI = await resolveOnChainMetadataUri(form, imageUri);
       const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
       let customHookAddress: Address | undefined;
       let hash: `0x${string}`;
 
-      setPhase("launching");
-      const loadingId = toast.loading(
-        form.hookMode === "custom" ? "Preparing launch…" : "Launching token…",
-      );
-
-      try {
       if (rail === "classic") {
         hash = await writeContractAsync({
           address: factory,

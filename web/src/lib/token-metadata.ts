@@ -1,6 +1,25 @@
 const MAX_IMAGE_CHARS = 80_000;
 
-export function parseTokenMetadata(uri: string): { image?: string; description?: string } {
+export type TokenMetadataFields = {
+  image?: string;
+  description?: string;
+};
+
+const remoteMetaCache = new Map<string, TokenMetadataFields>();
+
+/** True when a string looks like a renderable image / media URI. */
+export function isTokenMediaUri(value: string | undefined | null): boolean {
+  if (!value) return false;
+  return (
+    value.startsWith("ipfs://") ||
+    value.startsWith("https://") ||
+    value.startsWith("http://") ||
+    value.startsWith("data:image/")
+  );
+}
+
+/** Sync parse for inline `data:application/json` metadata URIs. */
+export function parseTokenMetadata(uri: string): TokenMetadataFields {
   if (!uri) return {};
   try {
     let json = uri;
@@ -8,6 +27,9 @@ export function parseTokenMetadata(uri: string): { image?: string; description?:
       json = Buffer.from(uri.slice("data:application/json;base64,".length), "base64").toString("utf8");
     } else if (uri.startsWith("data:application/json,")) {
       json = decodeURIComponent(uri.slice("data:application/json,".length));
+    } else if (uri.startsWith("ipfs://") || uri.startsWith("https://") || uri.startsWith("http://")) {
+      // Remote metadata needs resolveTokenMetadata (async fetch).
+      return {};
     }
     const parsed = JSON.parse(json) as { image?: unknown; description?: unknown };
     const image = typeof parsed.image === "string" ? parsed.image : undefined;
@@ -16,6 +38,75 @@ export function parseTokenMetadata(uri: string): { image?: string; description?:
   } catch {
     return {};
   }
+}
+
+function fieldsFromUnknown(parsed: unknown): TokenMetadataFields {
+  if (!parsed || typeof parsed !== "object") return {};
+  const record = parsed as { image?: unknown; description?: unknown };
+  return {
+    image: typeof record.image === "string" ? record.image : undefined,
+    description: typeof record.description === "string" ? record.description : undefined,
+  };
+}
+
+/**
+ * Resolve LaunchToken.metadataURI to image/description.
+ * Handles inline data: JSON and remote ipfs:// / https:// metadata documents.
+ */
+export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFields> {
+  if (!uri) return {};
+
+  if (uri.startsWith("data:application/json")) {
+    return parseTokenMetadata(uri);
+  }
+
+  if (uri.startsWith("data:image/")) {
+    return { image: uri };
+  }
+
+  if (uri.startsWith("ipfs://") || uri.startsWith("https://") || uri.startsWith("http://")) {
+    const cached = remoteMetaCache.get(uri);
+    if (cached) return cached;
+
+    const httpUrl = resolveMediaUrl(uri);
+    if (!httpUrl) {
+      remoteMetaCache.set(uri, {});
+      return {};
+    }
+
+    try {
+      const res = await fetch(httpUrl, {
+        signal: AbortSignal.timeout(4_000),
+        headers: { Accept: "application/json, image/*, */*" },
+      });
+      if (!res.ok) {
+        remoteMetaCache.set(uri, {});
+        return {};
+      }
+
+      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+      if (contentType.startsWith("image/")) {
+        const fields = { image: uri };
+        remoteMetaCache.set(uri, fields);
+        return fields;
+      }
+
+      const text = await res.text();
+      try {
+        const fields = fieldsFromUnknown(JSON.parse(text));
+        remoteMetaCache.set(uri, fields);
+        return fields;
+      } catch {
+        remoteMetaCache.set(uri, {});
+        return {};
+      }
+    } catch {
+      remoteMetaCache.set(uri, {});
+      return {};
+    }
+  }
+
+  return parseTokenMetadata(uri);
 }
 
 export function clipImageForMetadata(image: string | null | undefined): string | undefined {
