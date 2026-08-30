@@ -27,9 +27,16 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "hook it — Uniswap v4 Launchpad on Ink",
+  title: {
+    default: "Hookit",
+    template: "%s | Hookit",
+  },
   description:
     "Permissionless modular launchpad on Ink. Dual-rail Master + Classic bonding, Quotrons wStocks, locked LP, quote-only fees.",
+  icons: {
+    icon: "/brand/hookit-mark.png",
+    apple: "/brand/hookit-mark.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

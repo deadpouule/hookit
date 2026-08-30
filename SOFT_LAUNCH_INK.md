@@ -64,6 +64,8 @@ sudo -u hookit ./deploy/linode/deploy.sh
 
 **Production UI:** https://hookit-five.vercel.app/
 
+**Hide the Vercel toolbar** (the floating “hook it” pill for team members): `web/vercel.json` sets `VERCEL_PREVIEW_FEEDBACK_ENABLED=0`. After merge, redeploy. If it still appears, turn **Vercel Toolbar → Off** under Project Settings → General (Production + Preview), then redeploy again.
+
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
 NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
