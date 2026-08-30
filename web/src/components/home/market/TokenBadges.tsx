@@ -90,7 +90,7 @@ export function TokenTypeBadges({
     );
   }
 
-  if (token.isRwa && !isMultiPairPool(token)) {
+  if (token.isRwa) {
     badges.push(
       <span key="rwa" className="token-type-badge token-type-badge--rwa">
         <RwaGlyph className="token-type-badge-glyph" />
