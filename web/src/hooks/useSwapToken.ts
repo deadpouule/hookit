@@ -13,6 +13,7 @@ import {
 } from "wagmi";
 
 import {
+  STABLE_QUOTE_ADDRESS,
   getHookitSwapRouterAddress,
   getSwapRouterAddress,
   isProductionSwapRouter,
@@ -30,10 +31,15 @@ import {
   isDirectBuy,
   paymentAssetById,
   poolQuoteAddress,
+  stableQuoteLabel,
   type PaymentAssetId,
 } from "@/lib/payment-assets";
 import { poolKeyFromLaunch } from "@/lib/pool-key";
 import type { TokenPool } from "@/lib/types";
+import {
+  needsCompositeSell,
+  type SwapAsset,
+} from "@/lib/swap-assets";
 import {
   findBridgeRoute,
   hookRecipientData,
@@ -87,11 +93,23 @@ export function useSwapToken(pool: TokenPool) {
       side: SwapSide,
       amountIn: bigint,
       paymentId: PaymentAssetId = "ETH",
+      receiveAsset?: SwapAsset,
     ): Promise<bigint | null> => {
       if (!publicClient || amountIn <= BigInt(0)) return null;
 
       if (side === "sell") {
-        return quoteHookLeg("sell", amountIn);
+        const quoteOut = await quoteHookLeg("sell", amountIn);
+        if (quoteOut == null) return null;
+        if (receiveAsset && needsCompositeSell(pool, receiveAsset)) {
+          const bridge = await findBridgeRoute(
+            publicClient,
+            poolQuoteAddress(pool),
+            STABLE_QUOTE_ADDRESS,
+            quoteOut,
+          );
+          return bridge?.amountOut ?? null;
+        }
+        return quoteOut;
       }
 
       const payment = paymentAssetById(paymentId);
@@ -113,12 +131,34 @@ export function useSwapToken(pool: TokenPool) {
     [pool, publicClient, quoteHookLeg],
   );
 
+  const ensureErc20Allowance = useCallback(
+    async (token: Address, spender: Address, amount: bigint) => {
+      if (!publicClient || !address) return;
+      const allowance = (await publicClient.readContract({
+        address: token,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [address, spender],
+      })) as bigint;
+      if (allowance >= amount) return;
+      const approveHash = await writeContractAsync({
+        address: token,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [spender, amount],
+      });
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
+    },
+    [address, publicClient, writeContractAsync],
+  );
+
   const swapExactIn = useCallback(
     async (
       side: SwapSide,
       amountHuman: string,
       slippagePct: number,
       paymentId: PaymentAssetId = "ETH",
+      receiveAsset?: SwapAsset,
     ) => {
       setError(null);
       if (!publicClient || !address) throw new Error("Connect wallet");
@@ -139,6 +179,85 @@ export function useSwapToken(pool: TokenPool) {
         throw e instanceof Error ? e : new Error(String(e));
       }
       const bps = Math.min(5_000, Math.max(1, Math.round(slippagePct * 100)));
+
+      if (
+        side === "sell" &&
+        receiveAsset &&
+        needsCompositeSell(pool, receiveAsset) &&
+        isProductionSwapRouter()
+      ) {
+        if (!supportsCompositeSwap()) {
+          throw new Error(
+            "Composite sell needs HookitSwapRouter deployed. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER in env.",
+          );
+        }
+
+        const poolQuote = poolQuoteAddress(pool);
+        const hookZeroForOne = hookSwapDirection(hookKey, token, "sell");
+        const hookLimit = sqrtLimit(hookZeroForOne);
+
+        const quotedQuote = await quoteHookLeg("sell", amountIn);
+        if (!quotedQuote || quotedQuote <= BigInt(0)) {
+          throw new Error("Could not quote pool leg for composite sell");
+        }
+        const minQuoteOut =
+          (quotedQuote * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+
+        const bridge = await findBridgeRoute(
+          publicClient,
+          poolQuote,
+          STABLE_QUOTE_ADDRESS,
+          quotedQuote,
+        );
+        if (!bridge) {
+          throw new Error(
+            `No v4 route from pool quote (${pool.quoteAsset ?? "quote"}) to ${stableQuoteLabel()}`,
+          );
+        }
+        const minStableOut =
+          (bridge.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+
+        const hookitRouter = getHookitSwapRouterAddress()!;
+        await ensureErc20Allowance(token, hookitRouter, amountIn);
+
+        const quoteBefore = (await publicClient.readContract({
+          address: poolQuote,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        })) as bigint;
+
+        const hash1 = await writeContractAsync({
+          address: hookitRouter,
+          abi: hookitSwapRouterAbi,
+          functionName: "swapExactIn",
+          args: [hookKey, hookZeroForOne, amountIn, minQuoteOut, hookLimit],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: hash1 });
+
+        const quoteAfter = (await publicClient.readContract({
+          address: poolQuote,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        })) as bigint;
+        const quoteReceived = quoteAfter - quoteBefore;
+        if (quoteReceived <= BigInt(0)) {
+          throw new Error("Pool leg did not credit quote for composite sell");
+        }
+
+        const bridgeLimit = sqrtLimit(bridge.zeroForOne);
+        await ensureErc20Allowance(poolQuote, hookitRouter, quoteReceived);
+
+        const hash2 = await writeContractAsync({
+          address: hookitRouter,
+          abi: hookitSwapRouterAbi,
+          functionName: "swapExactIn",
+          args: [bridge.key, bridge.zeroForOne, quoteReceived, minStableOut, bridgeLimit],
+        });
+        await publicClient.waitForTransactionReceipt({ hash: hash2 });
+        return hash2;
+      }
 
       if (side === "buy" && !isDirectBuy(pool, payment)) {
         if (!supportsCompositeSwap()) {
@@ -207,7 +326,7 @@ export function useSwapToken(pool: TokenPool) {
       const limit = sqrtLimit(zeroForOne);
       const hookData = hookRecipientData(address);
 
-      const quoted = await quoteExactIn(side, amountIn, paymentId);
+      const quoted = await quoteExactIn(side, amountIn, paymentId, receiveAsset);
       const minOut =
         quoted && quoted > BigInt(0)
           ? (quoted * BigInt(10_000 - bps)) / BigInt(10_000)
@@ -240,21 +359,7 @@ export function useSwapToken(pool: TokenPool) {
 
       if (side === "sell") {
         if (!token) throw new Error("Token address missing");
-        const allowance = (await publicClient.readContract({
-          address: token,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [address, router],
-        })) as bigint;
-        if (allowance < amountIn) {
-          const approveHash = await writeContractAsync({
-            address: token,
-            abi: erc20Abi,
-            functionName: "approve",
-            args: [router, amountIn],
-          });
-          await publicClient.waitForTransactionReceipt({ hash: approveHash });
-        }
+        await ensureErc20Allowance(token, router, amountIn);
       }
 
       const value =
@@ -293,7 +398,7 @@ export function useSwapToken(pool: TokenPool) {
       await publicClient.waitForTransactionReceipt({ hash });
       return hash;
     },
-    [address, pool, publicClient, quoteExactIn, quoteHookLeg, writeContractAsync],
+    [address, pool, publicClient, quoteExactIn, quoteHookLeg, ensureErc20Allowance, writeContractAsync],
   );
 
   return {

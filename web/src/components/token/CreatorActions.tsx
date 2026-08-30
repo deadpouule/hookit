@@ -224,7 +224,8 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       {pool.hooks.backedFloor && reserveWei > BigInt(0) && (
         <div className="space-y-2 border-t border-white/[0.05] pt-3">
           <p className="text-xs text-zinc-500">
-            Floor vault {formatUnits(reserveWei, 18)} ETH · redeem tokens at the ratchet
+            Floor vault {formatUnits(reserveWei, decimals)} {quoteLabel} · redeem tokens at the
+            ratchet
           </p>
           <div className="flex gap-2">
             <input

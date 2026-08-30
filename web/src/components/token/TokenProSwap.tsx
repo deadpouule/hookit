@@ -9,7 +9,7 @@ import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import type { PaymentAssetId } from "@/lib/payment-assets";
-import { type SwapAsset } from "@/lib/swap-assets";
+import { type SwapAsset, needsCompositeSell, poolQuoteSwapAsset, STABLE_SWAP_ASSET } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -112,6 +112,7 @@ export function TokenProSwap({
     const n = Number(receiveAmount);
     if (!(n > 0)) return 0;
     if (buyAsset.isNative) return n * ETH_USD;
+    if (buyAsset.address?.toLowerCase() === STABLE_SWAP_ASSET.address?.toLowerCase()) return n;
     return n * (tokenPriceEth ?? 0) * ETH_USD;
   })();
 
@@ -126,10 +127,13 @@ export function TokenProSwap({
     onSellAmount(String((sellBalance * pct) / 100));
   };
 
-  const route =
-    receiveAmount && Number(sellAmount) > 0
-      ? `${sellAsset.symbol} → ${buyAsset.symbol}`
-      : "—";
+  const route = (() => {
+    if (!receiveAmount || Number(sellAmount) <= 0) return "—";
+    if (needsCompositeSell(pool, buyAsset)) {
+      return `${sellAsset.symbol} → ${poolQuoteSwapAsset(pool).symbol} → ${buyAsset.symbol}`;
+    }
+    return `${sellAsset.symbol} → ${buyAsset.symbol}`;
+  })();
 
   return (
     <div className="mt-3">
@@ -244,12 +248,14 @@ export function useProQuoteAmount(opts: {
   amount: string;
   side: "buy" | "sell";
   payWith: PaymentAssetId;
+  receiveAsset: SwapAsset;
   decimalsIn: number;
   decimalsOut: number;
   quoteExactIn: (
     side: "buy" | "sell",
     amountIn: bigint,
     paymentId: PaymentAssetId,
+    receiveAsset?: SwapAsset,
   ) => Promise<bigint | null>;
   enabled: boolean;
 }) {
@@ -268,7 +274,12 @@ export function useProQuoteAmount(opts: {
             opts.decimalsIn === 18
               ? parseEther(opts.amount)
               : parseUnits(opts.amount, opts.decimalsIn);
-          const quoted = await opts.quoteExactIn(opts.side, amountIn, opts.payWith);
+          const quoted = await opts.quoteExactIn(
+            opts.side,
+            amountIn,
+            opts.payWith,
+            opts.receiveAsset,
+          );
           if (cancelled) return;
           setOut(quoted && quoted > BigInt(0) ? formatUnits(quoted, opts.decimalsOut) : "");
         } catch {
@@ -281,6 +292,7 @@ export function useProQuoteAmount(opts: {
       window.clearTimeout(handle);
     };
   }, [
+    opts.receiveAsset,
     opts.amount,
     opts.side,
     opts.payWith,

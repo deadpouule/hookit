@@ -172,8 +172,9 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     amount,
     side,
     payWith: effectivePayWith,
+    receiveAsset: buyAsset,
     decimalsIn: payDecimals,
-    decimalsOut: side === "buy" ? 18 : payDecimals,
+    decimalsOut: side === "buy" ? buyAsset.decimals : buyAsset.decimals,
     quoteExactIn: swap.quoteExactIn,
     enabled: !onBonding,
   });
@@ -307,7 +308,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       }
 
       setStatus(side === "buy" ? "Buying…" : "Selling…");
-      const hash = await swap.swapExactIn(side, amount, slippagePct, effectivePayWith);
+      const hash = await swap.swapExactIn(side, amount, slippagePct, effectivePayWith, buyAsset);
       toast.dismiss(loadingId);
       if (hash) {
         setStatus("Trade confirmed");
