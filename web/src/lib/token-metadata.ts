@@ -5,6 +5,30 @@ export type TokenMetadataFields = {
   description?: string;
 };
 
+const DEFAULT_IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
+
+const IPFS_GATEWAY_FALLBACKS = [
+  process.env.NEXT_PUBLIC_IPFS_GATEWAY?.replace(/\/$/, ""),
+  DEFAULT_IPFS_GATEWAY,
+  "https://cloudflare-ipfs.com/ipfs",
+  "https://ipfs.io/ipfs",
+].filter((g): g is string => Boolean(g));
+
+function ipfsHttpUrls(uri: string): string[] {
+  if (!uri.startsWith("ipfs://")) return [uri];
+  const cid = uri.slice("ipfs://".length).replace(/^ipfs\//, "");
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const base of IPFS_GATEWAY_FALLBACKS) {
+    const url = `${base}/${cid}`;
+    if (!seen.has(url)) {
+      seen.add(url);
+      urls.push(url);
+    }
+  }
+  return urls;
+}
+
 const remoteMetaCache = new Map<string, TokenMetadataFields>();
 
 /** True when a string looks like a renderable image / media URI. */
@@ -68,42 +92,36 @@ export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFi
     const cached = remoteMetaCache.get(uri);
     if (cached) return cached;
 
-    const httpUrl = resolveMediaUrl(uri);
-    if (!httpUrl) {
-      remoteMetaCache.set(uri, {});
-      return {};
-    }
-
-    try {
-      const res = await fetch(httpUrl, {
-        signal: AbortSignal.timeout(4_000),
-        headers: { Accept: "application/json, image/*, */*" },
-      });
-      if (!res.ok) {
-        remoteMetaCache.set(uri, {});
-        return {};
-      }
-
-      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
-      if (contentType.startsWith("image/")) {
-        const fields = { image: uri };
-        remoteMetaCache.set(uri, fields);
-        return fields;
-      }
-
-      const text = await res.text();
+    for (const httpUrl of ipfsHttpUrls(uri)) {
       try {
-        const fields = fieldsFromUnknown(JSON.parse(text));
-        remoteMetaCache.set(uri, fields);
-        return fields;
+        const res = await fetch(httpUrl, {
+          signal: AbortSignal.timeout(8_000),
+          headers: { Accept: "application/json, image/*, */*" },
+        });
+        if (!res.ok) continue;
+
+        const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+        if (contentType.startsWith("image/")) {
+          const fields = { image: uri };
+          remoteMetaCache.set(uri, fields);
+          return fields;
+        }
+
+        const text = await res.text();
+        try {
+          const fields = fieldsFromUnknown(JSON.parse(text));
+          remoteMetaCache.set(uri, fields);
+          return fields;
+        } catch {
+          continue;
+        }
       } catch {
-        remoteMetaCache.set(uri, {});
-        return {};
+        continue;
       }
-    } catch {
-      remoteMetaCache.set(uri, {});
-      return {};
     }
+
+    remoteMetaCache.set(uri, {});
+    return {};
   }
 
   return parseTokenMetadata(uri);
@@ -123,8 +141,7 @@ export function resolveMediaUrl(uri: string | undefined | null): string | undefi
   if (!uri) return undefined;
   if (uri.startsWith("ipfs://")) {
     const cid = uri.slice("ipfs://".length).replace(/^ipfs\//, "");
-    const gateway =
-      process.env.NEXT_PUBLIC_IPFS_GATEWAY?.replace(/\/$/, "") ?? "https://ipfs.io/ipfs";
+    const gateway = IPFS_GATEWAY_FALLBACKS[0] ?? DEFAULT_IPFS_GATEWAY;
     return `${gateway}/${cid}`;
   }
   return uri;
