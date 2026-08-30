@@ -7,13 +7,9 @@ import { useEffect, useState } from "react";
 import { SwapTokenSelectModal } from "@/components/token/SwapTokenSelectModal";
 import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
+import { shortAddress } from "@/lib/master-hooks";
 import type { PaymentAssetId } from "@/lib/payment-assets";
-import {
-  NATIVE_ETH_ASSET,
-  poolToSwapAsset,
-  swapAssetLabel,
-  type SwapAsset,
-} from "@/lib/swap-assets";
+import { type SwapAsset } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +18,8 @@ const BALANCE_PRESETS = [15, 25, 50] as const;
 
 function EthMark() {
   return (
-    <span className="relative inline-flex h-7 w-7 shrink-0">
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#627eea]">
+    <span className="relative inline-flex h-8 w-8 shrink-0">
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#627eea]">
         <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
           <path
             fill="#fff"
@@ -38,23 +34,40 @@ function EthMark() {
 }
 
 function TokenMark({ asset }: { asset: SwapAsset }) {
-  if (asset.imageUrl) {
-    return (
-      <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
-      </span>
-    );
-  }
-  return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-[10px] font-bold text-black">
+  const inner = asset.imageUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    <span className="flex h-full w-full items-center justify-center bg-[#eab308] text-[10px] font-bold text-black">
       {asset.symbol.slice(0, 1)}
+    </span>
+  );
+
+  return (
+    <span className="relative inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
+      {inner}
+      <InkAvatarBadge />
     </span>
   );
 }
 
 function AssetIcon({ asset }: { asset: SwapAsset }) {
   return asset.isNative ? <EthMark /> : <TokenMark asset={asset} />;
+}
+
+function PickerLabel({ asset }: { asset: SwapAsset }) {
+  if (asset.isNative) {
+    return <span className="market-token-picker__symbol">{asset.symbol}</span>;
+  }
+
+  return (
+    <span className="market-token-picker__text">
+      <span className="market-token-picker__symbol">{asset.symbol}</span>
+      {asset.address && (
+        <span className="market-token-picker__ca">{shortAddress(asset.address)}</span>
+      )}
+    </span>
+  );
 }
 
 /** Market swap — pools.fun Sell Token / Buy Token layout. */
@@ -122,7 +135,16 @@ export function TokenProSwap({
     <div className="mt-3">
       <div className="market-token-block">
         <p className="market-token-block__heading">Sell Token</p>
-        <div className="market-token-block__amount-row">
+        <button
+          type="button"
+          onClick={() => setSelectSide("sell")}
+          className="market-token-picker market-token-picker--top"
+        >
+          <AssetIcon asset={sellAsset} />
+          <PickerLabel asset={sellAsset} />
+          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
+        </button>
+        <div className="market-token-block__amount-stack">
           <input
             value={sellAmount}
             onChange={(e) => onSellAmount(e.target.value)}
@@ -130,23 +152,15 @@ export function TokenProSwap({
             inputMode="decimal"
             className="market-token-block__input"
           />
+          <p className="market-token-block__usd">≈ {formatCompactUsd(sellUsd)}</p>
+          <div className="market-token-block__balance-row">
+            <span className="text-zinc-500">Balance</span>
+            <span className="font-mono text-zinc-400">
+              {sellBalance < 1 ? sellBalance.toFixed(6) : formatTokenAmount(sellBalance)}{" "}
+              {sellAsset.symbol}
+            </span>
+          </div>
         </div>
-        <p className="market-token-block__usd">≈ {formatCompactUsd(sellUsd)}</p>
-        <div className="market-token-block__balance-row">
-          <span className="text-zinc-500">Balance</span>
-          <span className="font-mono text-zinc-400">
-            {sellBalance < 1 ? sellBalance.toFixed(6) : formatTokenAmount(sellBalance)} {sellAsset.symbol}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setSelectSide("sell")}
-          className="market-token-picker"
-        >
-          <AssetIcon asset={sellAsset} />
-          <span className="market-token-picker__label">{swapAssetLabel(sellAsset)}</span>
-          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
-        </button>
         <div className="market-preset-row">
           {BALANCE_PRESETS.map((pct) => (
             <button
@@ -174,23 +188,30 @@ export function TokenProSwap({
 
       <div className="market-token-block market-token-block--buy">
         <p className="market-token-block__heading">Buy Token</p>
-        <div className="market-token-block__amount-row market-token-block__amount-row--readonly">
-          <span className="market-token-block__output">{receiveAmount || "—"}</span>
-        </div>
-        <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
         <button
           type="button"
           onClick={() => setSelectSide("buy")}
-          className="market-token-picker"
+          className="market-token-picker market-token-picker--top"
         >
           <AssetIcon asset={buyAsset} />
-          <span className="market-token-picker__label">{swapAssetLabel(buyAsset)}</span>
+          <PickerLabel asset={buyAsset} />
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
         </button>
+        <div className="market-token-block__amount-stack">
+          <span className="market-token-block__output">{receiveAmount || "—"}</span>
+          <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
+        </div>
       </div>
 
       <dl className="market-details">
-        <Detail label="Minimum received" value={receiveAmount ? `${formatTokenAmount(Number(receiveAmount))} ${buyAsset.symbol}` : "—"} />
+        <Detail
+          label="Minimum received"
+          value={
+            receiveAmount
+              ? `${formatTokenAmount(Number(receiveAmount))} ${buyAsset.symbol}`
+              : "—"
+          }
+        />
         <Detail label="Price impact" value="—" />
         <Detail label="Route" value={route} />
         <Detail label="Max slippage" value={`${slippagePct}%`} />
@@ -202,6 +223,7 @@ export function TokenProSwap({
         onOpenChange={(open) => !open && setSelectSide(null)}
         title="Select sell token"
         currentPool={pool}
+        side="sell"
         selectedKey={sellAsset.key}
         onSelect={onSellAsset}
       />
@@ -210,6 +232,7 @@ export function TokenProSwap({
         onOpenChange={(open) => !open && setSelectSide(null)}
         title="Select buy token"
         currentPool={pool}
+        side="buy"
         selectedKey={buyAsset.key}
         onSelect={onBuyAsset}
       />

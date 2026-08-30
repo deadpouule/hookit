@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { useLaunches } from "@/hooks/useLaunches";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
@@ -25,21 +26,19 @@ import { cn } from "@/lib/utils";
 
 const ETH_USD = 1000;
 
-function EthMark({ className }: { className?: string }) {
+function EthMark() {
   return (
-    <span
-      className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#627eea]",
-        className,
-      )}
-    >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
-        <path
-          fill="#fff"
-          fillOpacity="0.92"
-          d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
-        />
-      </svg>
+    <span className="relative inline-flex h-9 w-9 shrink-0">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#627eea]">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+          <path
+            fill="#fff"
+            fillOpacity="0.92"
+            d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
+          />
+        </svg>
+      </span>
+      <InkAvatarBadge />
     </span>
   );
 }
@@ -48,15 +47,19 @@ function AssetIcon({ asset }: { asset: SwapAsset }) {
   if (asset.isNative) return <EthMark />;
   if (asset.imageUrl) {
     return (
-      <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
+      <span className="relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={asset.imageUrl} alt="" className="h-full w-full object-cover" />
+        <InkAvatarBadge />
       </span>
     );
   }
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eab308] text-[11px] font-bold text-black">
-      {asset.symbol.slice(0, 1)}
+    <span className="relative inline-flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-[#eab308]">
+      <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-black">
+        {asset.symbol.slice(0, 1)}
+      </span>
+      <InkAvatarBadge />
     </span>
   );
 }
@@ -64,6 +67,7 @@ function AssetIcon({ asset }: { asset: SwapAsset }) {
 export type WalletSwapRow = SwapAsset & {
   balance: number;
   valueUsd: number;
+  pool?: TokenPool;
 };
 
 export function SwapTokenSelectModal({
@@ -71,6 +75,7 @@ export function SwapTokenSelectModal({
   onOpenChange,
   title,
   currentPool,
+  side,
   selectedKey,
   onSelect,
 }: {
@@ -78,6 +83,7 @@ export function SwapTokenSelectModal({
   onOpenChange: (open: boolean) => void;
   title: string;
   currentPool: TokenPool;
+  side: "sell" | "buy";
   selectedKey?: string;
   onSelect: (asset: SwapAsset) => void;
 }) {
@@ -85,88 +91,114 @@ export function SwapTokenSelectModal({
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: pools } = useLaunches();
-
-  const rows = useMemo(() => {
-    const list: WalletSwapRow[] = [];
-    list.push({ ...NATIVE_ETH_ASSET, balance: 0, valueUsd: 0 });
-
-    const seen = new Set<string>([NATIVE_ETH_ASSET.key]);
-    const addPool = (pool: TokenPool, balance = 0) => {
-      const asset = poolToSwapAsset(pool);
-      if (seen.has(asset.key)) return;
-      seen.add(asset.key);
-      const valueUsd = balance * (pool.priceEth ?? 0) * ETH_USD;
-      list.push({ ...asset, balance, valueUsd });
-    };
-
-    addPool(currentPool);
-
-    for (const pool of pools ?? []) {
-      addPool(pool);
-    }
-
-    return list;
-  }, [currentPool, pools]);
-
-  // Hydrate balances when modal opens
-  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [walletRows, setWalletRows] = useState<WalletSwapRow[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open || !address || !publicClient) return;
-    let cancelled = false;
-    void (async () => {
-      const next: Record<string, number> = {};
-      try {
-        const ethBal = await publicClient.getBalance({ address });
-        next[NATIVE_ETH_ASSET.key] = Number(formatUnits(ethBal, 18));
-      } catch {
-        next[NATIVE_ETH_ASSET.key] = 0;
-      }
+    if (!open) {
+      setQuery("");
+      return;
+    }
+    if (!address || !publicClient) {
+      setWalletRows([]);
+      return;
+    }
 
-      for (const row of rows) {
-        if (row.isNative || !row.address) continue;
-        try {
-          const bal = (await publicClient.readContract({
-            address: row.address,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [address],
-          })) as bigint;
-          next[row.key] = Number(formatUnits(bal, row.decimals));
-        } catch {
-          next[row.key] = 0;
+    let cancelled = false;
+    setLoading(true);
+
+    void (async () => {
+      const rows: WalletSwapRow[] = [];
+      const poolByAddress = new Map<string, TokenPool>();
+
+      for (const pool of pools ?? []) {
+        if (pool.contractAddress) {
+          poolByAddress.set(pool.contractAddress.toLowerCase(), pool);
         }
       }
-      if (!cancelled) setBalances(next);
+      poolByAddress.set(
+        (currentPool.contractAddress ?? "").toLowerCase(),
+        currentPool,
+      );
+
+      try {
+        const ethBal = await publicClient.getBalance({ address });
+        const ethAmount = Number(formatUnits(ethBal, 18));
+        if (ethAmount > 0) {
+          rows.push({
+            ...NATIVE_ETH_ASSET,
+            balance: ethAmount,
+            valueUsd: ethAmount * ETH_USD,
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+
+      const candidates = Array.from(poolByAddress.values()).filter((p) => p.contractAddress);
+      const balances = await Promise.all(
+        candidates.map(async (pool) => {
+          try {
+            const bal = (await publicClient.readContract({
+              address: pool.contractAddress as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address],
+            })) as bigint;
+            return { pool, amount: Number(formatUnits(bal, 18)) };
+          } catch {
+            return { pool, amount: 0 };
+          }
+        }),
+      );
+
+      for (const { pool, amount } of balances) {
+        if (amount <= 0) continue;
+        const asset = poolToSwapAsset(pool);
+        rows.push({
+          ...asset,
+          balance: amount,
+          valueUsd: amount * (pool.priceEth ?? 0) * ETH_USD,
+          pool,
+        });
+      }
+
+      // Buy side: allow selecting the page token even with zero balance.
+      if (side === "buy") {
+        const pageAsset = poolToSwapAsset(currentPool);
+        if (!rows.some((r) => r.key === pageAsset.key)) {
+          rows.push({
+            ...pageAsset,
+            balance: 0,
+            valueUsd: 0,
+            pool: currentPool,
+          });
+        }
+      }
+
+      rows.sort((a, b) => b.valueUsd - a.valueUsd);
+
+      if (!cancelled) {
+        setWalletRows(rows);
+        setLoading(false);
+      }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [open, address, publicClient, rows]);
+  }, [open, address, publicClient, pools, currentPool, side]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return rows
-      .map((row) => {
-        const balance = balances[row.key] ?? row.balance;
-        const poolForRow =
-          row.key === poolToSwapAsset(currentPool).key
-            ? currentPool
-            : (pools?.find((p) => p.contractAddress === row.address) ?? null);
-        const priceEth = row.isNative ? 1 : (poolForRow?.priceEth ?? 0);
-        const valueUsd = row.isNative ? balance * ETH_USD : balance * priceEth * ETH_USD;
-        return { ...row, balance, valueUsd };
-      })
-      .filter((row) => {
-        if (!q) return true;
-        return (
-          row.symbol.toLowerCase().includes(q) ||
-          row.name.toLowerCase().includes(q) ||
-          row.address?.toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => b.valueUsd - a.valueUsd);
-  }, [rows, balances, query, currentPool, pools]);
+    if (!q) return walletRows;
+    return walletRows.filter(
+      (row) =>
+        row.symbol.toLowerCase().includes(q) ||
+        row.name.toLowerCase().includes(q) ||
+        row.address?.toLowerCase().includes(q),
+    );
+  }, [walletRows, query]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -203,41 +235,49 @@ export function SwapTokenSelectModal({
         </div>
 
         <ul className="swap-token-list mt-2 overflow-y-auto px-3 pb-4">
-          {filtered.map((row) => (
-            <li key={row.key}>
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(row);
-                  onOpenChange(false);
-                }}
-                className={cn(
-                  "swap-token-row",
-                  selectedKey === row.key && "swap-token-row--active",
-                )}
-              >
-                <AssetIcon asset={row} />
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium text-white">{row.name}</p>
-                  <p className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-500">
-                    <span>{row.symbol}</span>
-                    {row.address && (
-                      <>
-                        <Link2 className="h-3 w-3 text-[#eab308]" />
-                        <span className="font-mono">{shortAddress(row.address)}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-white">{formatCompactUsd(row.valueUsd)}</p>
-                  <p className="mt-0.5 text-[11px] text-zinc-500">
-                    {row.balance < 1 ? row.balance.toFixed(6) : formatTokenAmount(row.balance)} {row.symbol}
-                  </p>
-                </div>
-              </button>
-            </li>
-          ))}
+          {loading && (
+            <li className="px-3 py-6 text-center text-sm text-zinc-500">Loading wallet…</li>
+          )}
+          {!loading && filtered.length === 0 && (
+            <li className="px-3 py-6 text-center text-sm text-zinc-500">No tokens in wallet</li>
+          )}
+          {!loading &&
+            filtered.map((row) => (
+              <li key={row.key}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(row);
+                    onOpenChange(false);
+                  }}
+                  className={cn(
+                    "swap-token-row",
+                    selectedKey === row.key && "swap-token-row--active",
+                  )}
+                >
+                  <AssetIcon asset={row} />
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="truncate text-sm font-medium text-white">{row.name}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-500">
+                      <span>{row.symbol}</span>
+                      {row.address && (
+                        <>
+                          <Link2 className="h-3 w-3 text-[#eab308]" />
+                          <span className="font-mono">{shortAddress(row.address)}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-white">{formatCompactUsd(row.valueUsd)}</p>
+                    <p className="mt-0.5 text-[11px] text-zinc-500">
+                      {row.balance < 1 ? row.balance.toFixed(6) : formatTokenAmount(row.balance)}{" "}
+                      {row.symbol}
+                    </p>
+                  </div>
+                </button>
+              </li>
+            ))}
         </ul>
 
         <p className="border-t border-white/8 px-5 py-3 text-[10px] uppercase tracking-wide text-zinc-600">
