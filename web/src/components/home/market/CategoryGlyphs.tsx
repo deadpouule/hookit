@@ -1,4 +1,4 @@
-import { Code2, Landmark } from "lucide-react";
+import { Code2, Landmark, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,4 +18,8 @@ export function CustomsGlyph({ className }: { className?: string }) {
 
 export function RwaGlyph({ className }: { className?: string }) {
   return <Landmark className={cn("category-rwa-icon", className)} aria-hidden />;
+}
+
+export function MultiPairGlyph({ className }: { className?: string }) {
+  return <Layers className={cn("category-multi-pair-icon", className)} aria-hidden />;
 }

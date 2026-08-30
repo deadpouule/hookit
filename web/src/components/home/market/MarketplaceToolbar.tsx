@@ -11,13 +11,13 @@ import type { ReactNode } from "react";
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
-import { CustomsGlyph } from "./CategoryGlyphs";
+import { CustomsGlyph, MultiPairGlyph } from "./CategoryGlyphs";
 import { MasterHookFilterMenu } from "./MasterHookFilterMenu";
 import { RwaFilterMenu } from "./RwaFilterMenu";
 import type { MasterHookId } from "@/lib/master-hooks";
 
 export type SortKey = "top" | "almostBonded" | "live";
-export type CategoryKey = "all" | "master" | "customs" | "rwa";
+export type CategoryKey = "all" | "master" | "customs" | "rwa" | "multi";
 
 type MarketplaceToolbarProps = {
   query: string;
@@ -87,6 +87,12 @@ export function MarketplaceToolbar({
             selectedQuote={rwaQuote}
             onSelectedQuoteChange={onRwaQuoteChange}
             onActivateRwa={onActivateRwa}
+          />
+          <FilterPill
+            active={category === "multi"}
+            onClick={() => onCategoryChange("multi")}
+            glyph={<MultiPairGlyph />}
+            label="Multi pair"
           />
         </div>
 

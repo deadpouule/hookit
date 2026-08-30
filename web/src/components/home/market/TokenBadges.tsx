@@ -14,7 +14,7 @@ import {
 } from "@/lib/pairing-badge";
 import { cn } from "@/lib/utils";
 
-import { CustomsGlyph, MasterHookGlyph, RwaGlyph } from "./CategoryGlyphs";
+import { CustomsGlyph, MasterHookGlyph, MultiPairGlyph, RwaGlyph } from "./CategoryGlyphs";
 import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
 /** COPY / OG overlay on the token art — top-right corner. */
@@ -90,7 +90,7 @@ export function TokenTypeBadges({
     );
   }
 
-  if (token.isRwa) {
+  if (token.isRwa && !isMultiPairPool(token)) {
     badges.push(
       <span key="rwa" className="token-type-badge token-type-badge--rwa">
         <RwaGlyph className="token-type-badge-glyph" />
@@ -109,6 +109,7 @@ export function TokenTypeBadges({
         className="token-type-badge token-type-badge--multi-pair"
         title={pairings.map((pairing) => pairing.name).join(" · ")}
       >
+        <MultiPairGlyph className="token-type-badge-glyph" />
         Multi pair
         <span className="token-type-badge-multi-pair-logos">
           {pairings.map((pairing) => (

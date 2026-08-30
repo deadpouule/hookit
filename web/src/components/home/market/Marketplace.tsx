@@ -23,6 +23,7 @@ import {
 } from "@/lib/market-rankings";
 import type { SortKey } from "@/lib/market-rankings";
 import { poolsMatchingAnyMasterHooks, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
+import { isMultiPairPool } from "@/lib/pairing-badge";
 import { tokenHref } from "@/lib/routes";
 import { annotateCopyFlags } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
@@ -51,6 +52,10 @@ function tokenIsRwa(token: MarketToken): boolean {
   return false;
 }
 
+function tokenIsSingleRwa(token: MarketToken): boolean {
+  return tokenIsRwa(token) && !isMultiPairPool(token);
+}
+
 function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote: string | null): MarketToken[] {
   if (category === "master") {
     return tokens.filter((t) => t.hookType === "Master" || (t.rail === "master" && t.hookType !== "Custom"));
@@ -59,16 +64,19 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote
     return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
   }
   if (category === "rwa") {
-    const rwaTokens = tokens.filter(tokenIsRwa);
-    if (!rwaQuote) return rwaTokens;
+    const singleRwa = tokens.filter(tokenIsSingleRwa);
+    if (!rwaQuote) return singleRwa;
     const quoteKey = rwaQuote.toLowerCase();
-    return rwaTokens.filter((t) => tokenHasRwaQuote(t, quoteKey));
+    return singleRwa.filter((t) => tokenHasRwaQuote(t, quoteKey));
+  }
+  if (category === "multi") {
+    return tokens.filter((t) => isMultiPairPool(t));
   }
   return tokens;
 }
 
 function parseCategoryParam(value: string | null): CategoryKey {
-  if (value === "master" || value === "customs" || value === "rwa") return value;
+  if (value === "master" || value === "customs" || value === "rwa" || value === "multi") return value;
   return "all";
 }
 

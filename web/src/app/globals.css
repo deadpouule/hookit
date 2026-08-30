@@ -2727,13 +2727,23 @@
     filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
   }
 
+  .category-multi-pair-icon,
+  .filter-multi-pair-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    flex-shrink: 0;
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 4px rgb(56 189 248 / 0.5));
+  }
+
   .token-type-badge-glyph.category-hook-glyph {
     width: 0.72rem;
     font-size: 0.24rem;
   }
 
   .token-type-badge-glyph.category-customs-icon,
-  .token-type-badge-glyph.category-rwa-icon {
+  .token-type-badge-glyph.category-rwa-icon,
+  .token-type-badge-glyph.category-multi-pair-icon {
     width: 0.625rem;
     height: 0.625rem;
   }
