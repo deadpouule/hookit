@@ -219,6 +219,85 @@ export class Store {
     return { volume24h: volume.toString(), trades24h, change24h };
   }
 
+  activityStats24h(token: Address) {
+    const row = this.getToken(token);
+    if (!row) {
+      return {
+        buyCount: 0,
+        sellCount: 0,
+        buyVolumeQuote: "0",
+        sellVolumeQuote: "0",
+        buyPct: 50,
+      };
+    }
+    const cutoff = Math.floor(Date.now() / 1000) - SEC_24H;
+    let buyCount = 0;
+    let sellCount = 0;
+    let buyVolumeQuote = 0n;
+    let sellVolumeQuote = 0n;
+    for (const t of row.trades) {
+      if (t.timestamp < cutoff) continue;
+      if (t.side === "buy") {
+        buyCount += 1;
+        buyVolumeQuote += BigInt(t.quoteAmount);
+      } else {
+        sellCount += 1;
+        sellVolumeQuote += BigInt(t.quoteAmount);
+      }
+    }
+    const total = buyCount + sellCount;
+    const buyPct = total > 0 ? (buyCount / total) * 100 : 50;
+    return { buyCount, sellCount, buyVolumeQuote: buyVolumeQuote.toString(), sellVolumeQuote: sellVolumeQuote.toString(), buyPct };
+  }
+
+  devBuyInfo(token: Address) {
+    const row = this.getToken(token);
+    if (!row) return { completed: false as const };
+    const creator = row.creator.toLowerCase();
+    const buy = row.trades.find(
+      (t) => t.side === "buy" && t.actor?.toLowerCase() === creator,
+    );
+    if (!buy) return { completed: false as const };
+    return {
+      completed: true as const,
+      quoteSpent: buy.quoteAmount,
+      tokensReceived: buy.tokenAmount,
+      txHash: buy.txHash,
+      timestamp: buy.timestamp,
+    };
+  }
+
+  priceChanges(token: Address) {
+    const row = this.getToken(token);
+    if (!row || row.candles5m.length === 0) {
+      return { change5m: null as number | null, change1h: null, change6h: null, change24h: null };
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const current = Number(row.candles5m[row.candles5m.length - 1]!.c);
+    if (!(current > 0)) {
+      return { change5m: null, change1h: null, change6h: null, change24h: null };
+    }
+
+    const pctAt = (secondsAgo: number) => {
+      const target = now - secondsAgo;
+      let ref = row.candles5m[0]!;
+      for (const c of row.candles5m) {
+        if (c.t <= target) ref = c;
+        else break;
+      }
+      const base = Number(ref.o);
+      if (!(base > 0)) return null;
+      return ((current - base) / base) * 100;
+    };
+
+    return {
+      change5m: pctAt(300),
+      change1h: pctAt(3600),
+      change6h: pctAt(21_600),
+      change24h: pctAt(86_400),
+    };
+  }
+
   topHolders(token: Address, limit: number) {
     const row = this.getToken(token);
     if (!row) return [];
