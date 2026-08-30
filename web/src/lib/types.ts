@@ -94,12 +94,20 @@ export interface TokenPool {
     antiMev: boolean;
     maxTx?: boolean;
     maxWallet?: boolean;
+    dynamicFees?: boolean;
+    buybackVesting?: boolean;
     autoBurn?: boolean;
     lpDonate?: boolean;
     holderAirdrop?: boolean;
     creatorShareToHook?: boolean;
     customHook: boolean;
   };
+  /** Unpacked Master bitmask modules + params (Master launches only). */
+  modules?: LaunchModules;
+  /** Extra hook tax in bps (on top of the 1% base fee). */
+  hookTaxBps?: number;
+  /** Raw Master bitmask as decimal string (optional rehydrate). */
+  bitmask?: string;
   address: string;
   quoteAsset?: string;
   hookType: "Master" | "Custom" | "Classic";

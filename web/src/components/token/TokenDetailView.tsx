@@ -5,9 +5,9 @@ import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
+import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
-import { HolderAirdropCard } from "@/components/token/HolderAirdropCard";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenSwapCard } from "@/components/token/TokenSwapCard";
@@ -154,7 +154,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         <aside className="space-y-3">
           <TokenSwapCard pool={pool} />
           <BondingProgress pool={pool} />
-          <HolderAirdropCard pool={pool} />
+          <ActiveHooksPanel pool={pool} />
           <CreatorActions pool={pool} />
           <TokenSidebarStats live={live} pool={pool} contractAddress={contractAddress} />
         </aside>

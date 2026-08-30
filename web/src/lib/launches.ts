@@ -76,7 +76,7 @@ function rowFromResult(result: unknown): LaunchRow | null {
 }
 
 export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
-  const { modules } = unpackLaunchBitmask(launch.bitmask);
+  const { modules, hookTaxBps } = unpackLaunchBitmask(launch.bitmask);
   const token = launch.token.toLowerCase() as Address;
   const quote = (launch.quote ?? zeroAddress).toLowerCase() as Address;
   const tokenIsCurrency0 = BigInt(launch.token) < BigInt(quote);
@@ -100,12 +100,17 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       antiMev: modules.antiMev,
       maxTx: modules.maxTx,
       maxWallet: modules.maxWallet,
+      dynamicFees: modules.dynamicFees,
+      buybackVesting: modules.buybackVesting,
       autoBurn: modules.autoBurn,
       lpDonate: modules.lpDonate,
       holderAirdrop: modules.holderAirdrop,
       creatorShareToHook: modules.creatorShareToHook,
       customHook: launch.customHook,
     },
+    modules: launch.customHook ? undefined : modules,
+    hookTaxBps: launch.customHook ? undefined : hookTaxBps,
+    bitmask: launch.customHook ? undefined : launch.bitmask.toString(),
     address: shortenAddress(token),
     quoteAsset: quoteLabel,
     hookType: launch.customHook ? "Custom" : "Master",

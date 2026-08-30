@@ -498,6 +498,112 @@
     text-align: right;
   }
 
+  .token-hooks-panel {
+    padding: 1rem;
+  }
+
+  .token-hooks-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .token-hooks-kicker {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #71717a;
+  }
+
+  .token-hooks-title {
+    margin: 0.2rem 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fafafa;
+  }
+
+  .token-hooks-fee {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: #d4d4d8;
+    text-align: right;
+  }
+
+  .token-hooks-fee-sub {
+    color: #71717a;
+  }
+
+  .token-hooks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .token-hooks-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.65rem 0.7rem;
+    border-radius: 12px;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    background: rgb(0 0 0 / 0.35);
+  }
+
+  .token-hooks-row-main {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.45rem;
+  }
+
+  .token-hooks-chip.orb-hook-desc-badge,
+  .token-hooks-detail.orb-hook-desc-badge {
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    gap: 0.4rem;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .token-hooks-ascii {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .token-hooks-ascii .ascii-shape {
+    font-size: 3.5px;
+    line-height: 1;
+  }
+
+  .token-hooks-live {
+    margin: 0;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: #a1a1aa;
+  }
+
+  .token-hooks-action {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #71717a;
+  }
+
   .pick-config--fire.pick-config--focused {
     border-color: rgb(239 68 68 / 0.45);
     box-shadow: 0 0 0 1px rgb(239 68 68 / 0.25), 0 0 24px rgb(239 68 68 / 0.12);

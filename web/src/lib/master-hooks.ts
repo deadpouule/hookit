@@ -268,6 +268,8 @@ export function countHookUsage(
       antiMev?: boolean;
       maxTx?: boolean;
       maxWallet?: boolean;
+      dynamicFees?: boolean;
+      buybackVesting?: boolean;
       autoBurn?: boolean;
       lpDonate?: boolean;
       holderAirdrop?: boolean;
@@ -297,6 +299,8 @@ export function countHookUsage(
     if (pool.hooks.antiMev) counts["anti-mev"] += 1;
     if (pool.hooks.maxTx) counts["max-tx"] += 1;
     if (pool.hooks.maxWallet) counts["max-wallet"] += 1;
+    if (pool.hooks.dynamicFees) counts["dynamic-fees"] += 1;
+    if (pool.hooks.buybackVesting) counts["buyback-vesting"] += 1;
     if (pool.hooks.autoBurn) counts["auto-burn"] += 1;
     if (pool.hooks.lpDonate) counts["lp-donate"] += 1;
     if (pool.hooks.holderAirdrop) counts["holder-airdrop"] += 1;
@@ -313,6 +317,8 @@ const POOL_HOOK_BY_MASTER_ID: Partial<
   "anti-mev": "antiMev",
   "max-tx": "maxTx",
   "max-wallet": "maxWallet",
+  "dynamic-fees": "dynamicFees",
+  "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
   "lp-donate": "lpDonate",
   "holder-airdrop": "holderAirdrop",
