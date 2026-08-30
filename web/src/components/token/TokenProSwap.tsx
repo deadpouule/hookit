@@ -10,15 +10,30 @@ import { cn } from "@/lib/utils";
 
 function EthMark() {
   return (
-    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#627eea] text-[11px] font-bold text-white">
-      Ξ
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#627eea]">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+        <path
+          fill="#fff"
+          fillOpacity="0.92"
+          d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
+        />
+      </svg>
     </span>
   );
 }
 
-function TokenMark({ ticker }: { ticker: string }) {
+function TokenMark({ ticker, imageUrl }: { ticker: string; imageUrl?: string }) {
+  if (imageUrl) {
+    return (
+      <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#1a1a1c]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
+
   return (
-    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#9514d1] text-[10px] font-bold text-white">
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#9514d1] text-[10px] font-bold text-white">
       {ticker.slice(0, 2)}
     </span>
   );
@@ -30,6 +45,7 @@ type ProTab = "market" | "limit" | "stop";
 /** Market orders + client-side limit/stop price alerts. */
 export function TokenProSwap({
   ticker,
+  tokenImageUrl,
   tokenAddress,
   spotEth,
   quoteLabel = "ETH",
@@ -46,6 +62,7 @@ export function TokenProSwap({
   onOrderTabChange,
 }: {
   ticker: string;
+  tokenImageUrl?: string;
   tokenAddress?: string;
   spotEth?: number;
   quoteLabel?: string;
@@ -105,7 +122,14 @@ export function TokenProSwap({
 
       {tab === "market" ? (
         <>
-          <AssetBlock label="You pay" ticker={sellTicker} amount={sellAmount} onAmount={onSellAmount} />
+          <AssetBlock
+            label="You pay"
+            ticker={sellTicker}
+            launchTicker={ticker}
+            tokenImageUrl={tokenImageUrl}
+            amount={sellAmount}
+            onAmount={onSellAmount}
+          />
           <div className="flex justify-center">
             <button
               type="button"
@@ -119,6 +143,8 @@ export function TokenProSwap({
           <AssetBlock
             label="You receive"
             ticker={buyTicker}
+            launchTicker={ticker}
+            tokenImageUrl={tokenImageUrl}
             amount={receiveAmount ?? ""}
             onAmount={() => undefined}
             readOnly
@@ -273,24 +299,35 @@ export function useProQuoteAmount(opts: {
 function AssetBlock({
   label,
   ticker,
+  launchTicker,
+  tokenImageUrl,
   amount,
   onAmount,
   readOnly,
 }: {
   label: string;
   ticker: string;
+  launchTicker: string;
+  tokenImageUrl?: string;
   amount: string;
   onAmount: (value: string) => void;
   readOnly?: boolean;
 }) {
-  const isQuote = ticker === "ETH" || ticker === "USDG" || ticker === "USDC";
+  const isEth = ticker === "ETH";
+  const isLaunchToken = ticker.toUpperCase() === launchTicker.toUpperCase();
+  const launchImage = isLaunchToken ? tokenImageUrl : undefined;
+
   return (
     <div className={cn("rounded-lg bg-[#111111] p-3", readOnly && "opacity-80")}>
       <div className="flex items-center justify-between text-[11px] text-zinc-500">
         <span>{label}</span>
       </div>
       <div className="mt-2 flex items-center gap-2">
-        {isQuote && ticker === "ETH" ? <EthMark /> : <TokenMark ticker={ticker} />}
+        {isEth ? (
+          <EthMark />
+        ) : (
+          <TokenMark ticker={ticker} imageUrl={launchImage} />
+        )}
         <span className="text-sm font-medium text-white">{ticker}</span>
         <input
           value={amount}

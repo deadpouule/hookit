@@ -83,7 +83,18 @@ export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
 export const XSTOCKS_LOGO_BASE = "https://xstocks-metadata.backed.fi/logos/tokens";
 
+/** Local pairing assets override incorrect remote xStocks logos. */
+const LOCAL_QUOTRON_LOGOS: Partial<Record<QuotronStockListing["priceSymbol"], string>> = {
+  NVDAx: "/pairing/wnvdax.png",
+  SPYx: "/pairing/wspyx.png",
+  MSTRx: "/pairing/wmstrx.png",
+  NFLXx: "/pairing/wnflxx.png",
+  TSLAx: "/pairing/wtslax.png",
+};
+
 export function quotronStockLogoUrl(listing: Pick<QuotronStockListing, "priceSymbol">): string {
+  const local = LOCAL_QUOTRON_LOGOS[listing.priceSymbol];
+  if (local) return local;
   return `${XSTOCKS_LOGO_BASE}/${listing.priceSymbol}.png`;
 }
 
