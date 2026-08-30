@@ -1,7 +1,9 @@
 import { type Address, zeroAddress } from "viem";
 import type { PublicClient } from "viem";
 
-import { STABLE_QUOTE_ADDRESS, getChainDeployment } from "@/lib/contracts/config";
+import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { STABLE_QUOTE_ADDRESS, getChainDeployment, getLaunchFactoryAddress } from "@/lib/contracts/config";
+import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { marketCapUsd, stateViewAbi } from "@/lib/pool-price";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import { isRwaQuote } from "@/lib/token-identity";
@@ -97,13 +99,14 @@ export async function resolveQuoteUsdPrice(
   const listing = quotronStockByAddress(quoteAddress);
   if (!listing) return fallbackStockUsd(quoteAddress) || 1;
 
-  const api = await fetchQuotronStockUsdPrice(listing);
-  if (api && api > 0) return api;
-
+  // Prefer live Quotrons pool (same source as launch pricing) over xStocks API.
   if (client) {
     const live = await stockUsdFromQuotronPool(client, listing);
     if (live && live > 0) return live;
   }
+
+  const api = await fetchQuotronStockUsdPrice(listing);
+  if (api && api > 0) return api;
 
   return listing.fallbackUsd ?? 1;
 }
@@ -135,6 +138,68 @@ export async function buildQuoteUsdMap(
   return map;
 }
 
+/** Launch-time quote amount for full FDV (from factory `mcapQuoteFor`) in whole quote tokens. */
+export async function readLaunchMcapQuoteHuman(
+  client: PublicClient,
+  quoteAddress: Address,
+): Promise<number | null> {
+  const factory = getLaunchFactoryAddress();
+  if (!factory) return null;
+  try {
+    const wei = (await client.readContract({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "mcapQuoteFor",
+      args: [quoteAddress],
+    })) as bigint;
+    if (wei === 0n) return null;
+    const kind = resolveQuoteKind(quoteAddress);
+    return Number(wei) / 10 ** quoteDecimalsForKind(kind);
+  } catch {
+    return null;
+  }
+}
+
+export async function buildLaunchMcapQuoteMap(
+  client: PublicClient,
+  pools: TokenPool[],
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const quotes = new Set<string>();
+  for (const pool of pools) {
+    if (resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) !== "rwa" || !pool.quoteAddress) continue;
+    quotes.add(pool.quoteAddress.toLowerCase());
+  }
+  await Promise.all(
+    [...quotes].map(async (addr) => {
+      const human = await readLaunchMcapQuoteHuman(client, addr as Address);
+      if (human && human > 0) map.set(addr, human);
+    }),
+  );
+  return map;
+}
+
+/** RWA FDV anchored to on-chain $4k launch sizing — immune to bad xStocks API quotes. */
+export function marketCapUsdFromLaunchAnchor(
+  quotePerToken: number,
+  launchMcapQuoteHuman: number,
+  totalSupply = TOTAL_SUPPLY,
+  targetMcapUsd = TARGET_LAUNCH_MCAP_USD,
+): number {
+  if (quotePerToken <= 0 || launchMcapQuoteHuman <= 0) return 0;
+  const quoteMcapHuman = quotePerToken * totalSupply;
+  return (quoteMcapHuman / launchMcapQuoteHuman) * targetMcapUsd;
+}
+
+export function launchMcapQuoteFromMap(
+  pool: Pick<TokenPool, "quoteAddress">,
+  map: Map<string, number>,
+): number | undefined {
+  const addr = pool.quoteAddress?.toLowerCase();
+  if (!addr) return undefined;
+  return map.get(addr);
+}
+
 export function quoteUsdFromMap(
   pool: Pick<TokenPool, "quoteAddress" | "quoteAsset">,
   ethUsd: number,
@@ -163,9 +228,13 @@ export function marketCapUsdForPool(
   pool: Pick<TokenPool, "quoteAddress" | "quoteAsset">,
   ethUsd: number,
   quoteUsd?: number,
+  launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return marketCapUsd(quotePerToken, ethUsd);
+  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
+    return marketCapUsdFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman);
+  }
   const qUsd =
     quoteUsd ??
     (pool.quoteAddress
@@ -197,9 +266,13 @@ export function candleFdvScale(
   pool: Pick<TokenPool, "quoteAddress" | "quoteAsset">,
   ethUsd: number,
   quoteUsd?: number,
+  launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return TOTAL_SUPPLY * ethUsd;
+  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
+    return (TOTAL_SUPPLY / launchMcapQuoteHuman) * TARGET_LAUNCH_MCAP_USD;
+  }
   const qUsd =
     quoteUsd ??
     (kind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);

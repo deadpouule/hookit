@@ -8,7 +8,9 @@ import {
   stateViewAbi,
 } from "@/lib/pool-price";
 import {
+  buildLaunchMcapQuoteMap,
   buildQuoteUsdMap,
+  launchMcapQuoteFromMap,
   marketCapUsdForPool,
   quoteUsdFromMap,
   quoteVolumeUsd as quoteVolumeUsdForPool,
@@ -26,7 +28,10 @@ export async function enrichPoolsWithSpotPrices(
   options?: { skipSwapIndex?: boolean; launchEthUsd?: number },
 ): Promise<TokenPool[]> {
   const launchEthUsd = options?.launchEthUsd ?? (await readLaunchEthUsd(publicClient));
-  const quoteUsdMap = await buildQuoteUsdMap(publicClient, pools, launchEthUsd);
+  const [quoteUsdMap, launchMcapQuoteMap] = await Promise.all([
+    buildQuoteUsdMap(publicClient, pools, launchEthUsd),
+    buildLaunchMcapQuoteMap(publicClient, pools),
+  ]);
   const withPool = pools.filter((p) => p.poolId);
   if (withPool.length === 0) {
     // Bonding-only: convert realQuote ETH → USD liquidity.
@@ -112,6 +117,7 @@ export async function enrichPoolsWithSpotPrices(
     const priceEth = meta?.priceEth ?? pool.priceEth ?? 0;
     const stats = swapStats.get(pool.poolId.toLowerCase());
     const quoteUsd = quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
+    const launchMcapQuoteHuman = launchMcapQuoteFromMap(pool, launchMcapQuoteMap);
     const marketCap =
       priceEth > 0
         ? marketCapUsdForPool(
@@ -119,6 +125,7 @@ export async function enrichPoolsWithSpotPrices(
             pool,
             resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) === "eth" ? launchEthUsd : ethUsd,
             quoteUsd,
+            launchMcapQuoteHuman,
           )
         : pool.marketCap;
     const volume24h = stats
@@ -157,6 +164,7 @@ export async function enrichPoolsWithSpotPrices(
       ...pool,
       priceEth,
       quoteUsd,
+      launchMcapQuoteHuman,
       marketCap,
       volume24h,
       change24h: stats?.change24h ?? pool.change24h,

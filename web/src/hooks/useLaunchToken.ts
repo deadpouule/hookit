@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import {
   decodeEventLog,
   type Address,
+  type PublicClient,
   zeroAddress,
 } from "viem";
 import {
@@ -24,10 +25,11 @@ import {
   DEFAULT_TOTAL_SUPPLY,
   getBondingFactoryAddress,
   getLaunchFactoryAddress,
+  launchGasFloor,
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
-import { buildMetadataUri, resolveLaunchImageUri } from "@/lib/launch-metadata";
+import { buildMinimalOnChainMetadataUri, resolveLaunchImageUri, resolveOnChainMetadataUri } from "@/lib/launch-metadata";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import { toast } from "@/lib/toast";
 import type { LaunchFormState } from "@/lib/types";
@@ -113,7 +115,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       const isMulti = form.markets.length > 1;
 
       const imageUri = await resolveLaunchImageUri(form.imagePreview);
-      const metadataURI = buildMetadataUri(form, { imageUri });
+      let metadataURI = await resolveOnChainMetadataUri(form, imageUri);
       const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
       let customHookAddress: Address | undefined;
       let hash: `0x${string}`;
@@ -174,6 +176,56 @@ export function useLaunchToken(rail: LaunchRail = "master") {
               );
         const customHook = customHookAddress ?? zeroAddress;
 
+        const masterLaunchFields = {
+          name: form.name.trim(),
+          symbol: form.ticker.trim().toUpperCase(),
+          metadataURI,
+          totalSupply: DEFAULT_TOTAL_SUPPLY,
+          tickSpacing: DEFAULT_TICK_SPACING,
+          bitmask,
+          customHook,
+        };
+
+        const marketCount = form.markets.length;
+        let gas = launchGasFloor(isMulti, marketCount);
+        if (creator) {
+          try {
+            gas = await estimateLaunchGas(
+              publicClient,
+              factory,
+              creator,
+              launchFee,
+              isMulti,
+              marketCount,
+              masterLaunchFields,
+              marketQuotes,
+              quote,
+              form.floorQuoteIndex,
+            );
+          } catch (simErr) {
+            const hint = launchSimulationHint(simErr);
+            if (hint?.includes("Metadata too large")) {
+              metadataURI = buildMinimalOnChainMetadataUri(form, imageUri);
+              masterLaunchFields.metadataURI = metadataURI;
+              gas = await estimateLaunchGas(
+                publicClient,
+                factory,
+                creator,
+                launchFee,
+                isMulti,
+                marketCount,
+                masterLaunchFields,
+                marketQuotes,
+                quote,
+                form.floorQuoteIndex,
+              );
+            } else if (hint) {
+              throw new Error(hint);
+            }
+            // else keep launchGasFloor when RPC estimate fails transiently
+          }
+        }
+
         if (isMulti) {
           hash = await writeContractAsync({
             address: factory,
@@ -181,18 +233,13 @@ export function useLaunchToken(rail: LaunchRail = "master") {
             functionName: "launchMulti",
             args: [
               {
-                name: form.name.trim(),
-                symbol: form.ticker.trim().toUpperCase(),
-                metadataURI,
-                totalSupply: DEFAULT_TOTAL_SUPPLY,
+                ...masterLaunchFields,
                 markets: marketQuotes,
-                tickSpacing: DEFAULT_TICK_SPACING,
-                bitmask,
-                customHook,
                 floorQuoteIndex: form.floorQuoteIndex,
               },
             ],
             value: launchFee,
+            gas,
           });
         } else {
           hash = await writeContractAsync({
@@ -201,18 +248,13 @@ export function useLaunchToken(rail: LaunchRail = "master") {
             functionName: "launch",
             args: [
               {
-                name: form.name.trim(),
-                symbol: form.ticker.trim().toUpperCase(),
-                metadataURI,
-                totalSupply: DEFAULT_TOTAL_SUPPLY,
+                ...masterLaunchFields,
                 quote,
-                tickSpacing: DEFAULT_TICK_SPACING,
                 startingTick: DEFAULT_STARTING_TICK,
-                bitmask,
-                customHook,
               },
             ],
             value: launchFee,
+            gas,
           });
         }
       }
@@ -332,4 +374,69 @@ function resolveLaunchQuote(id: PairingTokenId): Address | null {
   if (id === "usdg") return STABLE_QUOTE_ADDRESS as Address;
   const stock = INK_QUOTRON_STOCKS.find((s) => s.symbol.toLowerCase() === id);
   return stock?.address ?? null;
+}
+
+function launchSimulationHint(err: unknown): string | null {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/CreateInitCodeSizeLimit|init.?code.?size|#-39004/i.test(msg)) {
+    return "Metadata too large for on-chain token deploy. Image/metadata is now pinned to IPFS when configured — retry, or shorten name/description.";
+  }
+  if (/gas/i.test(msg) && /limit|required|exceed/i.test(msg)) {
+    return "Transaction needs more gas (multi-market launches use ~4M gas). Retry — gas is estimated automatically.";
+  }
+  return null;
+}
+
+async function estimateLaunchGas(
+  publicClient: PublicClient,
+  factory: Address,
+  creator: Address,
+  launchFee: bigint,
+  isMulti: boolean,
+  marketCount: number,
+  fields: {
+    name: string;
+    symbol: string;
+    metadataURI: string;
+    totalSupply: bigint;
+    tickSpacing: number;
+    bitmask: bigint;
+    customHook: Address;
+  },
+  marketQuotes: { quote: Address; bps: number }[],
+  quote: Address,
+  floorQuoteIndex: number,
+): Promise<bigint> {
+  const floor = launchGasFloor(isMulti, marketCount);
+  const estimated = isMulti
+    ? await publicClient.estimateContractGas({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "launchMulti",
+        args: [
+          {
+            ...fields,
+            markets: marketQuotes,
+            floorQuoteIndex,
+          },
+        ],
+        value: launchFee,
+        account: creator,
+      })
+    : await publicClient.estimateContractGas({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "launch",
+        args: [
+          {
+            ...fields,
+            quote,
+            startingTick: DEFAULT_STARTING_TICK,
+          },
+        ],
+        value: launchFee,
+        account: creator,
+      });
+  const buffered = estimated + estimated / 4n;
+  return buffered > floor ? buffered : floor;
 }

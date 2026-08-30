@@ -55,11 +55,12 @@ function seriesToCandles(mcapSeries: number[]): LiveCandle[] {
 export function buildSparseLive(pool: TokenPool, ethUsd: number): LiveTokenState {
   const priceEth = pool.priceEth ?? 0;
   const quoteUsd = pool.quoteUsd;
+  const launchMcapQuoteHuman = pool.launchMcapQuoteHuman;
   const marketCap =
     pool.marketCap > 0
       ? pool.marketCap
       : priceEth > 0
-        ? marketCapUsdForPool(priceEth, pool, ethUsd, quoteUsd)
+        ? marketCapUsdForPool(priceEth, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
         : 0;
   const priceUsd = marketCap > 0 ? marketCap / TOTAL_SUPPLY : 0;
   const spotCandle =
@@ -100,6 +101,7 @@ export async function fetchOnChainLive(
   const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   const quoteIsEth = quoteKind === "eth";
   const quoteUsd = pool.quoteUsd;
+  const launchMcapQuoteHuman = pool.launchMcapQuoteHuman;
   const stateView = getChainDeployment().stateView;
 
   const latest = await client.getBlockNumber();
@@ -149,7 +151,7 @@ export async function fetchOnChainLive(
 
   const marketCap =
     spotEth > 0
-      ? marketCapUsdForPool(spotEth, pool, ethUsd, quoteUsd)
+      ? marketCapUsdForPool(spotEth, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
       : base.marketCap;
   const priceUsd = marketCap / TOTAL_SUPPLY;
 
@@ -219,7 +221,7 @@ export async function fetchOnChainLive(
     const price = ethPerTokenFromSqrtPrice(args.sqrtPriceX96, tokenIs0);
     const mcap =
       price > 0
-        ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd)
+        ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
         : marketCap;
 
     if (mcap > 0) mcapSeries.push(mcap);

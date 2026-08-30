@@ -123,6 +123,13 @@ export const launchFactoryAbi = [
   },
   {
     type: "function",
+    name: "mcapQuoteFor",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "ethUsdPriceX18",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],

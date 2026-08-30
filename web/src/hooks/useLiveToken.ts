@@ -15,6 +15,7 @@ import {
   candleFdvScale,
   fallbackStockUsd,
   marketCapFromQuotePrice,
+  marketCapUsdFromLaunchAnchor,
   quoteVolumeUsd,
   resolveQuoteKind,
 } from "@/lib/quote-usd";
@@ -135,7 +136,9 @@ export function useLiveToken(pool: TokenPool) {
       priceQuote > 0
         ? isEth
           ? marketCapUsd(priceQuote, eth)
-          : marketCapFromQuotePrice(priceQuote, quoteUsd ?? 1)
+          : pool.launchMcapQuoteHuman && pool.launchMcapQuoteHuman > 0
+            ? marketCapUsdFromLaunchAnchor(priceQuote, pool.launchMcapQuoteHuman)
+            : marketCapFromQuotePrice(priceQuote, quoteUsd ?? 1)
         : 0;
     const mcap =
       pool.marketCap > 0
@@ -150,7 +153,7 @@ export function useLiveToken(pool: TokenPool) {
       ? (quoteVolRaw / 1e18) * eth
       : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
 
-    const candleScale = candleFdvScale(pool, eth, quoteUsd);
+    const candleScale = candleFdvScale(pool, eth, quoteUsd, pool.launchMcapQuoteHuman);
     const mappedCandles: LiveCandle[] =
       candles.length > 0
         ? candles.map((c) => ({

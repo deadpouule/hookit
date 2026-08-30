@@ -180,5 +180,17 @@ export const DEFAULT_TOTAL_SUPPLY = BigInt("1000000000000000000000000000");
 export const DEFAULT_TICK_SPACING = 60;
 export const DEFAULT_STARTING_TICK = 0;
 
+/** Measured on Ink — single `launch` ~2.5M; `launchMulti` ~3.7M for 3 RWA markets. */
+export const LAUNCH_GAS_SINGLE = 3_000_000n;
+export const LAUNCH_GAS_MULTI_BASE = 2_800_000n;
+export const LAUNCH_GAS_PER_EXTRA_MARKET = 950_000n;
+
+/** Minimum gas limit wallets should use (estimateLaunchGas applies +25% on top when RPC succeeds). */
+export function launchGasFloor(isMulti: boolean, marketCount = 1): bigint {
+  if (!isMulti) return LAUNCH_GAS_SINGLE;
+  const extra = Math.max(0, marketCount - 1);
+  return LAUNCH_GAS_MULTI_BASE + BigInt(extra) * LAUNCH_GAS_PER_EXTRA_MARKET;
+}
+
 export const MIN_SQRT_PRICE = BigInt("4295128739");
 export const MAX_SQRT_PRICE = BigInt("1461446703485210103287273052203988822378723970342");

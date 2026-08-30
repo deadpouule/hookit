@@ -117,6 +117,8 @@ export interface TokenPool {
   quoteAddress?: `0x${string}`;
   /** USD price of one quote unit (1 ETH, 1 USDG, or 1 wStock). */
   quoteUsd?: number;
+  /** Factory `mcapQuoteFor` for this quote — full-supply FDV sizing at launch. */
+  launchMcapQuoteHuman?: number;
   tickSpacing?: number;
   lpFee?: number;
   /** Locked position range (Master / graduated Classic). */
