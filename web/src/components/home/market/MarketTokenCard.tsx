@@ -30,7 +30,7 @@ export function BondMeter({ token }: { token: MarketToken }) {
       <div className="bond-track" aria-hidden>
         <span className="bond-fill" style={{ width: `${progress}%` }} />
       </div>
-      <p>{progress}% bonded</p>
+      <p className="bond-meter-label">{progress}% bonded</p>
     </div>
   );
 }

@@ -3202,10 +3202,11 @@
     margin-top: 0.5rem;
   }
 
-  .bond-meter p {
+  .bond-meter p,
+  .bond-meter-label {
     margin: 0;
     font-size: 10px;
-    color: #a1a1aa;
+    color: #9514d1;
   }
 
   .bond-track {
@@ -3219,7 +3220,9 @@
     display: block;
     height: 100%;
     border-radius: 99px;
-    background: #22c55e;
+    background: #9514d1;
+    box-shadow: 0 0 8px rgb(149 20 209 / 0.35);
+    transition: width 0.35s ease;
   }
 
   /* ── Token identity badges (COPY / OG) ── */
@@ -3432,10 +3435,6 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-  }
-
-  .bond-meter p {
-    color: #22c55e;
   }
 
   .terminal-title {

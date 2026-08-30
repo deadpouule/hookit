@@ -124,14 +124,6 @@ export function TokenTypeBadges({
     }
   }
 
-  if (pairings.length === 0 && token.rail === "classic" && token.hookType === "Classic") {
-    badges.push(
-      <span key="curve" className="token-type-badge token-type-badge--curve">
-        curve
-      </span>,
-    );
-  }
-
   if (badges.length === 0) return null;
 
   return (
