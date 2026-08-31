@@ -65,7 +65,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   };
 
   return (
-    <div className="market-shell token-detail-shell bg-background py-4 pb-8">
+    <div className="market-shell bg-background py-4 pb-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition hover:text-foreground"
