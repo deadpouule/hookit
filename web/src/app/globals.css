@@ -230,9 +230,11 @@
   }
 
   .launch-mode-toggle__btn--single.is-active {
-    background: rgb(255 255 255);
-    color: rgb(0 0 0);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+    background: rgb(149 20 209 / 0.22);
+    color: #f3e8ff;
+    box-shadow:
+      0 0 0 1px rgb(149 20 209 / 0.55),
+      0 0 18px rgb(149 20 209 / 0.28);
   }
 
   .launch-mode-toggle__btn--multi.is-active {
@@ -260,7 +262,7 @@
   }
 
   .launch-mode-toggle__btn--single.is-active .category-single-pair-glyph {
-    color: rgb(63 63 70);
+    color: #c4b5fd;
   }
 
   .launch-mode-toggle__btn--multi.is-active .category-multi-pair-icon {
