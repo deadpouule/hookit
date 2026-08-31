@@ -1,8 +1,8 @@
 "use client";
 
 import { PairingMark } from "@/components/launch/PairingMark";
+import { PairModeToggle } from "@/components/launch/PairModeToggle";
 import { PickCard } from "@/components/launch/PickCard";
-import { SegmentedControl } from "@/components/ui/form-primitives";
 import { Slider } from "@/components/ui/slider";
 import {
   PAIRING_TOKENS,
@@ -94,14 +94,7 @@ export function PairingPicker({
   return (
     <div>
       <div className="mb-4">
-        <SegmentedControl
-          value={isMulti ? "multi" : "single"}
-          onChange={(mode) => setMode(mode)}
-          options={[
-            { value: "single", label: "Single pair" },
-            { value: "multi", label: "Multi-pair (2–5)" },
-          ]}
-        />
+        <PairModeToggle value={isMulti ? "multi" : "single"} onChange={(mode) => setMode(mode)} />
         <p className="mt-2 text-xs text-zinc-600">
           {isMulti
             ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
