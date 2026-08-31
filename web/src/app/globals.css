@@ -384,6 +384,45 @@
       transform 0.22s ease;
   }
 
+  .pick-card--hook {
+    position: relative;
+  }
+
+  .hook-pick-tooltip-trigger {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(0 0 0 / 0.55);
+    padding: 0.2rem;
+    color: rgb(161 161 170);
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .hook-pick-tooltip-trigger:hover {
+    border-color: rgb(255 255 255 / 0.22);
+    background: rgb(255 255 255 / 0.08);
+    color: #e9d5ff;
+  }
+
+  .pick-card-status.orb-hook-desc-badge {
+    width: auto;
+    margin-top: 0.15rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: lowercase;
+  }
+
   .pick-card:hover {
     border-color: rgb(255 255 255 / 0.16);
   }
@@ -681,6 +720,49 @@
     max-width: 100%;
     margin-top: 0.45rem;
     align-items: center;
+  }
+
+  .pick-config-hint-badge.orb-hook-desc-badge {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+    margin-top: 0.4rem;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .pick-config-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .pick-config-control-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .pick-config-control-badge.orb-hook-desc-badge,
+  .pick-config-control-value.orb-hook-desc-badge {
+    width: auto;
+    align-items: center;
+    padding: 0.28rem 0.55rem;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .pick-config-control-value.orb-hook-desc-badge {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pick-config-control-track {
+    padding: 0 0.1rem;
   }
 
   .pick-config-ascii {
