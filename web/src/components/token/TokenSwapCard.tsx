@@ -261,6 +261,12 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     setPreset(null);
   };
 
+  const applyMaxBalance = () => {
+    if (walletBalance <= 0) return;
+    setAmount(walletBalance < 1 ? walletBalance.toFixed(6) : String(walletBalance));
+    setPreset(null);
+  };
+
   const applyUsdPreset = (usd: number) => {
     if (side === "buy") {
       if (effectivePayWith === "USDC") {
@@ -463,6 +469,14 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
                 ${value}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={applyMaxBalance}
+              disabled={!walletReady || walletBalance <= 0}
+              className="swap-preset-btn swap-preset-btn--max"
+            >
+              MAX
+            </button>
           </div>
 
           {walletReady && (

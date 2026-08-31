@@ -664,7 +664,8 @@
   .token-hooks-chip--expanded {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.45rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.65rem;
   }
 
   .token-hooks-chip-top {
@@ -690,11 +691,146 @@
   .token-hooks-chip-actions--floor {
     flex-direction: column;
     padding-left: 1.45rem;
+    gap: 0.4rem;
+  }
+
+  .token-hooks-chip-actions--floor .token-hooks-vault-btn {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .token-hooks-vault-field {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    min-height: 2rem;
+    border-radius: 4px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: rgb(0 0 0 / 0.35);
+    overflow: hidden;
+  }
+
+  .token-hooks-vault-field--fire {
+    border-color: rgb(239 68 68 / 0.55);
+    box-shadow:
+      0 0 10px rgb(239 68 68 / 0.35),
+      inset 0 0 14px rgb(239 68 68 / 0.06);
+  }
+
+  .token-hooks-vault-field--gold {
+    border-color: rgb(245 158 11 / 0.6);
+    box-shadow:
+      0 0 12px rgb(245 158 11 / 0.4),
+      inset 0 0 14px rgb(245 158 11 / 0.08);
+  }
+
+  .token-hooks-vault-field--void {
+    border-color: rgb(232 121 249 / 0.55);
+    box-shadow:
+      0 0 10px rgb(232 121 249 / 0.35),
+      inset 0 0 14px rgb(232 121 249 / 0.06);
+  }
+
+  .token-hooks-vault-field--nature {
+    border-color: rgb(16 185 129 / 0.55);
+    box-shadow:
+      0 0 10px rgb(16 185 129 / 0.35),
+      inset 0 0 14px rgb(16 185 129 / 0.06);
+  }
+
+  .token-hooks-vault-field--volt {
+    border-color: rgb(3 177 237 / 0.55);
+    box-shadow:
+      0 0 10px rgb(3 177 237 / 0.35),
+      inset 0 0 14px rgb(3 177 237 / 0.06);
+  }
+
+  .token-hooks-vault-field--ice {
+    border-color: rgb(56 189 248 / 0.55);
+    box-shadow:
+      0 0 10px rgb(56 189 248 / 0.35),
+      inset 0 0 14px rgb(56 189 248 / 0.06);
+  }
+
+  .token-hooks-vault-field--ember {
+    border-color: rgb(249 115 22 / 0.55);
+    box-shadow:
+      0 0 10px rgb(249 115 22 / 0.35),
+      inset 0 0 14px rgb(249 115 22 / 0.06);
+  }
+
+  .token-hooks-vault-field--rose {
+    border-color: rgb(244 63 94 / 0.55);
+    box-shadow:
+      0 0 10px rgb(244 63 94 / 0.35),
+      inset 0 0 14px rgb(244 63 94 / 0.06);
+  }
+
+  .token-hooks-vault-field--steel {
+    border-color: rgb(99 102 241 / 0.55);
+    box-shadow:
+      0 0 10px rgb(99 102 241 / 0.35),
+      inset 0 0 14px rgb(99 102 241 / 0.06);
+  }
+
+  .token-hooks-vault-field--crimson {
+    border-color: rgb(220 38 38 / 0.55);
+    box-shadow:
+      0 0 10px rgb(220 38 38 / 0.35),
+      inset 0 0 14px rgb(220 38 38 / 0.06);
+  }
+
+  .token-hooks-vault-field--lime {
+    border-color: rgb(132 204 22 / 0.55);
+    box-shadow:
+      0 0 10px rgb(132 204 22 / 0.35),
+      inset 0 0 14px rgb(132 204 22 / 0.06);
+  }
+
+  .token-hooks-vault-field .token-hooks-vault-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: auto;
+    min-height: 2rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .token-hooks-vault-field .token-hooks-vault-input:focus {
+    border: none;
+    outline: none;
+  }
+
+  .token-hooks-vault-max {
+    flex-shrink: 0;
+    align-self: stretch;
+    border: none;
+    border-left: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.06);
+    padding: 0 0.55rem;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #e4e4e7;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .token-hooks-vault-max:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+  }
+
+  .token-hooks-vault-max:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
   }
 
   .token-hooks-chip-actions--floor .token-hooks-vault-input,
   .token-hooks-chip-actions--floor .token-hooks-vault-btn {
-    width: 100%;
     max-width: 100%;
   }
 
@@ -1486,7 +1622,7 @@
 
   @media (min-width: 1100px) {
     .token-desk--hooks {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 9fr) minmax(320px, 5fr);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
       grid-template-areas: "left center right";
       align-items: start;
     }
@@ -1705,6 +1841,12 @@
     color: #fff;
   }
 
+  .swap-preset-btn--max {
+    flex: 0 0 auto;
+    min-width: 3.25rem;
+    padding: 8px 12px;
+  }
+
   .swap-detail-row {
     display: flex;
     align-items: center;
@@ -1902,6 +2044,12 @@
   .market-preset-btn:hover {
     border-color: rgb(149 20 209 / 0.35);
     color: #fff;
+  }
+
+  .market-preset-btn--max {
+    flex: 0 0 auto;
+    min-width: 3.25rem;
+    padding: 7px 12px;
   }
 
   .market-flip-wrap {
