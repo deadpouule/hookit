@@ -1410,12 +1410,8 @@
   }
 
   @media (min-width: 1100px) {
-    .token-detail-shell.market-shell {
-      max-width: min(100%, 1720px);
-    }
-
     .token-desk {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 10fr) minmax(280px, 3fr);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(280px, 3fr);
       grid-template-areas: "left center right";
       align-items: start;
     }
