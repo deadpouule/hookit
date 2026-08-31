@@ -206,7 +206,15 @@ function HookConfigHeader({
           </h2>
           <HookSettingsTooltip hook={hook} modules={modules} hookTaxBps={hookTaxBps} />
         </div>
-        <p className="pick-config-copy">{capitalizeDescription(hook.description)}</p>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-desc-badge",
+            `orb-hook-desc-badge--${hook.theme}`,
+          )}
+        >
+          <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+          <span>{capitalizeDescription(hook.description)}</span>
+        </span>
       </div>
       <div className="pick-config-ascii" aria-hidden>
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />

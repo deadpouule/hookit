@@ -672,6 +672,13 @@
     padding: 0.42rem 0.65rem;
   }
 
+  .pick-config-desc-badge.orb-hook-desc-badge {
+    width: auto;
+    max-width: 100%;
+    margin-top: 0.45rem;
+    align-items: center;
+  }
+
   .pick-config-ascii {
     display: flex;
     width: 5.5rem;

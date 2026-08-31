@@ -4,6 +4,7 @@ import { Loader2, Rocket } from "lucide-react";
 
 import { LaunchSummaryModuleRow } from "@/components/launch/LaunchSummaryModuleRow";
 import { PairingMark } from "@/components/launch/PairingMark";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
@@ -112,8 +113,7 @@ export function LaunchSummary({
   return (
     <aside className="panel sticky top-20 flex flex-col gap-4 p-5 lg:top-24">
       <div>
-        <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Summary</p>
-        <h2 className="mt-1 text-lg font-medium text-white">
+        <h2 className="text-lg font-medium text-white">
           {form.name || "Untitled token"}
           {form.ticker && (
             <span className="ml-2 font-mono text-sm text-zinc-500">${form.ticker}</span>
@@ -162,9 +162,12 @@ export function LaunchSummary({
 
       {showActiveModules && (
         <div className="rounded-xl border border-white/[0.06] bg-black/40 px-3 py-3">
-          <p className="mb-2 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
-            {form.hookMode === "custom" ? "Hook" : "Active modules"}
-          </p>
+          <span className="token-type-badge token-type-badge--master token-hooks-count-badge mb-2">
+            <MasterHookGlyph className="token-type-badge-glyph" />
+            {form.hookMode === "custom"
+              ? `${summaryHooks.length} hook${summaryHooks.length === 1 ? "" : "s"}`
+              : `${summaryHooks.length} active module${summaryHooks.length === 1 ? "" : "s"}`}
+          </span>
           <ul className="space-y-2 text-xs">
             {summaryHooks.map((id) => (
               <LaunchSummaryModuleRow
