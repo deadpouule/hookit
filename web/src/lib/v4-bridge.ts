@@ -30,6 +30,11 @@ export type BridgeRoute = {
   amountOut: bigint;
 };
 
+export type BridgeAmountOut = {
+  amountOut: bigint;
+  routeLabel?: string;
+};
+
 function quotronKeyForStock(stock: Address, usdg: Address): V4PoolKey | null {
   const listing = INK_QUOTRON_STOCKS.find((s) => s.address.toLowerCase() === stock.toLowerCase());
   if (!listing) return null;
@@ -68,6 +73,14 @@ async function quoteBridge(
   } catch {
     return null;
   }
+}
+
+function bridgeRouteLabel(currencyIn: Address, currencyOut: Address): string {
+  const inLabel =
+    currencyIn === zeroAddress ? "ETH" : `${currencyIn.slice(0, 6)}…${currencyIn.slice(-4)}`;
+  const outLabel =
+    currencyOut === zeroAddress ? "ETH" : `${currencyOut.slice(0, 6)}…${currencyOut.slice(-4)}`;
+  return `${inLabel} → ${outLabel}`;
 }
 
 export async function findBridgeRoute(
@@ -120,6 +133,41 @@ export async function findBridgeRoute(
     }
   }
   return best;
+}
+
+/** Quote bridge output, including a 2-hop fallback via USDG when direct route fails. */
+export async function findBridgeAmountOut(
+  client: PublicClient,
+  currencyIn: Address,
+  currencyOut: Address,
+  amountIn: bigint,
+): Promise<BridgeAmountOut | null> {
+  if (amountIn <= BigInt(0)) return null;
+
+  const direct = await findBridgeRoute(client, currencyIn, currencyOut, amountIn);
+  if (direct) {
+    return {
+      amountOut: direct.amountOut,
+      routeLabel: bridgeRouteLabel(currencyIn, currencyOut),
+    };
+  }
+
+  const usdg = STABLE_QUOTE_ADDRESS;
+  const inLower = currencyIn.toLowerCase();
+  const outLower = currencyOut.toLowerCase();
+  if (inLower === usdg.toLowerCase() || outLower === usdg.toLowerCase()) {
+    return null;
+  }
+
+  const hop1 = await findBridgeRoute(client, currencyIn, usdg, amountIn);
+  if (!hop1) return null;
+  const hop2 = await findBridgeRoute(client, usdg, currencyOut, hop1.amountOut);
+  if (!hop2) return null;
+
+  return {
+    amountOut: hop2.amountOut,
+    routeLabel: `${bridgeRouteLabel(currencyIn, usdg)} → ${bridgeRouteLabel(usdg, currencyOut)}`,
+  };
 }
 
 export function hookSwapDirection(poolKey: V4PoolKey, token: Address, side: "buy" | "sell"): boolean {
