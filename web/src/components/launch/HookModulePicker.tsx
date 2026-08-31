@@ -1,31 +1,61 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Info } from "lucide-react";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { AccentSlider } from "@/components/launch/AccentSlider";
-import { capitalizeDescription } from "@/lib/format";
-import { isModuleEnabled, moduleCardHint } from "@/lib/launch-module-summary";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  hookPickTip,
+  isModuleEnabled,
+  moduleCardHint,
+} from "@/lib/launch-module-summary";
 import {
   hookAccentColor,
   MASTER_HOOKS,
+  type HookTheme,
   type MasterHook,
   type MasterHookId,
 } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const NO_CONFIG_HOOKS = new Set<MasterHookId>(["anti-mev", "dynamic-fees"]);
+
+function HookPickTooltip({ hook }: { hook: MasterHook }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={`About ${hook.title}`}
+          className="hook-pick-tooltip-trigger"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <Info className="h-3 w-3" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="center" sideOffset={6} className="max-w-[200px] text-xs">
+        {hookPickTip(hook.id)}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function HookPickCard({
   hook,
   selected,
-  configHint,
   onClick,
 }: {
   hook: MasterHook;
   selected: boolean;
-  configHint?: string;
   onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -33,23 +63,63 @@ function HookPickCard({
   return (
     <button
       type="button"
-      className={cn("pick-card", `pick-card--${hook.theme}`, selected && "is-on")}
+      className={cn("pick-card pick-card--hook", `pick-card--${hook.theme}`, selected && "is-on")}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      <HookPickTooltip hook={hook} />
       <div className="pick-card-mark pick-ascii">
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={hovered || selected} />
       </div>
       <p className="pick-card-title">{hook.title.toLowerCase()}</p>
-      <p className="pick-card-sub">
-        {selected && configHint
-          ? configHint
-          : selected
-            ? "hooked"
-            : capitalizeDescription(hook.description)}
-      </p>
+      {selected && (
+        <span
+          className={cn(
+            "pick-card-status orb-hook-desc-badge",
+            `orb-hook-desc-badge--${hook.theme}`,
+          )}
+        >
+          hooked
+        </span>
+      )}
     </button>
+  );
+}
+
+function PickConfigControl({
+  theme,
+  label,
+  value,
+  children,
+}: {
+  theme: HookTheme;
+  label: string;
+  value: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="pick-config-control">
+      <div className="pick-config-control-head">
+        <span
+          className={cn(
+            "pick-config-control-badge orb-hook-desc-badge",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          {label}
+        </span>
+        <span
+          className={cn(
+            "pick-config-control-value orb-hook-desc-badge",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          {value}
+        </span>
+      </div>
+      <div className="pick-config-control-track">{children}</div>
+    </div>
   );
 }
 
@@ -124,7 +194,6 @@ export function HookModulePicker({
               key={hook.id}
               hook={hook}
               selected={selected}
-              configHint={moduleCardHint(hook.id, modules, hookTaxBps)}
               onClick={() => {
                 if (disabled) return;
                 if (selected) {
@@ -191,6 +260,8 @@ function HookConfigHeader({
   modules: LaunchModules;
   hookTaxBps?: number;
 }) {
+  const configHint = moduleCardHint(hook.id, modules, hookTaxBps);
+
   return (
     <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
       <div className="pick-config-head-copy">
@@ -213,8 +284,18 @@ function HookConfigHeader({
           )}
         >
           <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-          <span>{capitalizeDescription(hook.description)}</span>
+          <span>{hookPickTip(hook.id)}</span>
         </span>
+        {configHint && (
+          <span
+            className={cn(
+              "orb-hook-desc-badge pick-config-hint-badge",
+              `orb-hook-desc-badge--${hook.theme}`,
+            )}
+          >
+            {configHint}
+          </span>
+        )}
       </div>
       <div className="pick-config-ascii" aria-hidden>
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />
@@ -237,15 +318,20 @@ function HookSettings({
   hookTaxBps?: number;
 }) {
   const accent = hookAccentColor(hook.id);
+  const theme = hook.theme;
+
+  if (NO_CONFIG_HOOKS.has(hook.id)) {
+    return null;
+  }
 
   if (hook.id === "anti-snipe") {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <div className="mb-2 flex justify-between text-xs text-zinc-500">
-            <span>Duration</span>
-            <span className="font-mono text-zinc-300">{modules.antiSnipeDuration}s</span>
-          </div>
+        <PickConfigControl
+          theme={theme}
+          label="Duration"
+          value={`${modules.antiSnipeDuration}s`}
+        >
           <AccentSlider
             accentColor={accent}
             value={[modules.antiSnipeDuration]}
@@ -254,12 +340,12 @@ function HookSettings({
             max={10}
             step={1}
           />
-        </div>
-        <div>
-          <div className="mb-2 flex justify-between text-xs text-zinc-500">
-            <span>Initial tax</span>
-            <span className="font-mono text-zinc-300">{modules.antiSnipeInitialTax}%</span>
-          </div>
+        </PickConfigControl>
+        <PickConfigControl
+          theme={theme}
+          label="Initial tax"
+          value={`${modules.antiSnipeInitialTax}%`}
+        >
           <AccentSlider
             accentColor={accent}
             value={[modules.antiSnipeInitialTax]}
@@ -268,7 +354,7 @@ function HookSettings({
             max={99}
             step={1}
           />
-        </div>
+        </PickConfigControl>
       </div>
     );
   }
@@ -276,22 +362,25 @@ function HookSettings({
   if (hook.id === "backed-floor") {
     return (
       <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Fee to floor</span>
-          <span className="font-mono text-zinc-300">{modules.floorAllocation}%</span>
-        </div>
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.floorAllocation]}
-          onValueChange={([v]) => onUpdate({ floorAllocation: v })}
-          min={0}
-          max={50}
-          step={1}
-        />
+        <PickConfigControl theme={theme} label="Fee to floor" value={`${modules.floorAllocation}%`}>
+          <AccentSlider
+            accentColor={accent}
+            value={[modules.floorAllocation]}
+            onValueChange={([v]) => onUpdate({ floorAllocation: v })}
+            min={0}
+            max={50}
+            step={1}
+          />
+        </PickConfigControl>
         {floorEst > 0 && (
-          <p className="mt-2 font-mono text-xs text-emerald-500/80">
+          <span
+            className={cn(
+              "orb-hook-desc-badge pick-config-hint-badge mt-2",
+              `orb-hook-desc-badge--${theme}`,
+            )}
+          >
             Est. floor ≈ {floorEst.toFixed(6)} ETH / token
-          </p>
+          </span>
         )}
       </div>
     );
@@ -299,13 +388,11 @@ function HookSettings({
 
   if (hook.id === "max-wallet") {
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Cap</span>
-          <span className="font-mono text-zinc-300">
-            {(modules.maxWalletBps / 100).toFixed(1)}% supply
-          </span>
-        </div>
+      <PickConfigControl
+        theme={theme}
+        label="Cap"
+        value={`${(modules.maxWalletBps / 100).toFixed(1)}% supply`}
+      >
         <AccentSlider
           accentColor={accent}
           value={[modules.maxWalletBps / 100]}
@@ -314,17 +401,17 @@ function HookSettings({
           max={5}
           step={0.1}
         />
-      </div>
+      </PickConfigControl>
     );
   }
 
   if (hook.id === "max-tx") {
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Cap</span>
-          <span className="font-mono text-zinc-300">{(modules.maxTxBps / 100).toFixed(1)}% supply</span>
-        </div>
+      <PickConfigControl
+        theme={theme}
+        label="Cap"
+        value={`${(modules.maxTxBps / 100).toFixed(1)}% supply`}
+      >
         <AccentSlider
           accentColor={accent}
           value={[modules.maxTxBps / 100]}
@@ -333,20 +420,18 @@ function HookSettings({
           max={5}
           step={0.1}
         />
-      </div>
+      </PickConfigControl>
     );
   }
 
   if (hook.id === "buyback-vesting") {
     const days = modules.buybackVestingDurationDays ?? 365 * 5;
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Vest duration</span>
-          <span className="font-mono text-zinc-300">
-            {days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
-          </span>
-        </div>
+      <PickConfigControl
+        theme={theme}
+        label="Vest duration"
+        value={days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
+      >
         <AccentSlider
           accentColor={accent}
           value={[days]}
@@ -355,20 +440,13 @@ function HookSettings({
           max={365 * 5}
           step={7}
         />
-        <p className="mt-2 font-mono text-[11px] text-zinc-500">
-          Creator fee share (70% of base) vests linearly · claim on the token page
-        </p>
-      </div>
+      </PickConfigControl>
     );
   }
 
   if (hook.id === "auto-burn") {
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Burn share</span>
-          <span className="font-mono text-zinc-300">{modules.autoBurnPct}%</span>
-        </div>
+      <PickConfigControl theme={theme} label="Burn share" value={`${modules.autoBurnPct}%`}>
         <AccentSlider
           accentColor={accent}
           value={[modules.autoBurnPct]}
@@ -377,17 +455,13 @@ function HookSettings({
           max={50}
           step={1}
         />
-      </div>
+      </PickConfigControl>
     );
   }
 
   if (hook.id === "lp-donate") {
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>LP donate share</span>
-          <span className="font-mono text-zinc-300">{modules.lpDonatePct}%</span>
-        </div>
+      <PickConfigControl theme={theme} label="LP donate share" value={`${modules.lpDonatePct}%`}>
         <AccentSlider
           accentColor={accent}
           value={[modules.lpDonatePct]}
@@ -396,17 +470,17 @@ function HookSettings({
           max={50}
           step={1}
         />
-      </div>
+      </PickConfigControl>
     );
   }
 
   if (hook.id === "holder-airdrop") {
     return (
-      <div>
-        <div className="mb-2 flex justify-between text-xs text-zinc-500">
-          <span>Fee to holder airdrop</span>
-          <span className="font-mono text-zinc-300">{modules.holderAirdropPct}%</span>
-        </div>
+      <PickConfigControl
+        theme={theme}
+        label="Fee to airdrop"
+        value={`${modules.holderAirdropPct}%`}
+      >
         <AccentSlider
           accentColor={accent}
           value={[modules.holderAirdropPct]}
@@ -415,10 +489,7 @@ function HookSettings({
           max={50}
           step={1}
         />
-        <p className="mt-2 font-mono text-[11px] text-zinc-500">
-          Accrues in quote · permissionless push every 15 minutes · pro-rata by balance
-        </p>
-      </div>
+      </PickConfigControl>
     );
   }
 
@@ -431,33 +502,19 @@ function HookSettings({
       hookTaxBps > 0;
 
     return (
-      <div className="space-y-2 text-xs leading-relaxed text-zinc-500">
-        {hasFeeSink ? (
-          <p>
-            Your 70% base share joins the same hook pot as the hook tax, split across enabled
-            modules.
-          </p>
-        ) : (
-          <p>
-            No fee modules selected — your 70% base share still routes to the hook pot and
-            unallocated amounts go to the protocol treasury. Enable floor, burn, donate, or airdrop
-            to direct it.
-          </p>
+      <span
+        className={cn(
+          "orb-hook-desc-badge pick-config-hint-badge",
+          `orb-hook-desc-badge--${theme}`,
         )}
-        {modules.buybackVesting && (
-          <p className="text-amber-600/90">
-            Disabled while buyback vesting is on — they cannot run together.
-          </p>
-        )}
-      </div>
+      >
+        {hasFeeSink
+          ? "70% creator share → hook pot with your modules"
+          : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
+        {modules.buybackVesting && " · disabled while buyback vesting is on"}
+      </span>
     );
   }
 
-  return (
-    <ul className="space-y-1 font-mono text-[11px] text-zinc-500">
-      {MASTER_HOOKS.find((item) => item.id === hook.id)?.settings.map((line) => (
-        <li key={line}>{line}</li>
-      ))}
-    </ul>
-  );
+  return null;
 }

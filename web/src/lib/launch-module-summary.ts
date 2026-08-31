@@ -137,6 +137,25 @@ export function totalFeeTooltip(hookTaxBps: number): string {
 }
 
 const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
+  "anti-snipe": "Blocks snipers at launch",
+  "backed-floor": "Quote-backed price floor",
+  "anti-mev": "Blocks same-block bot trades",
+  "max-tx": "Caps swap size vs supply",
+  "max-wallet": "Caps wallet holdings",
+  "dynamic-fees": "Fees rise with volume",
+  "buyback-vesting": "Creator fees vest over time",
+  "auto-burn": "Burns tokens on swaps",
+  "lp-donate": "Rewards in-range LPs",
+  "holder-airdrop": "Drops quote to holders",
+  "creator-share-to-hook": "Creator fees → hook pot",
+};
+
+/** Short one-liner for pick cards and config badges. */
+export function hookPickTip(id: MasterHookId): string {
+  return MODULE_SUMMARY_PHRASE[id];
+}
+
+const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "anti-snipe": "blocks snipers at launch",
   "backed-floor": "has a price floor",
   "anti-mev": "blocks bot trades",
@@ -151,7 +170,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
 };
 
 export function buildModulesSummarySentence(hookIds: MasterHookId[]): string {
-  const phrases = hookIds.map((id) => MODULE_SUMMARY_PHRASE[id]).filter(Boolean);
+  const phrases = hookIds.map((id) => MODULE_SUMMARY_PHRASE_LOWER[id]).filter(Boolean);
   if (phrases.length === 0) return "";
   if (phrases.length === 1) return `This token ${phrases[0]}.`;
   const last = phrases[phrases.length - 1];
