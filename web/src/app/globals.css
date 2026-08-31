@@ -614,11 +614,7 @@
   .token-hooks-row {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.65rem 0.7rem;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--surface-muted) 55%, transparent);
+    gap: 0.4rem;
   }
 
   .token-hooks-row-main {
@@ -629,14 +625,38 @@
   }
 
   .token-hooks-chip.orb-hook-desc-badge {
-    width: auto;
+    width: 100%;
     max-width: 100%;
     margin: 0;
+    align-items: flex-start;
     gap: 0.4rem;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.78rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .token-hooks-chip-copy {
+    display: inline;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .token-hooks-chip-title {
+    white-space: nowrap;
+  }
+
+  .token-hooks-chip-sep {
+    margin: 0 0.2rem;
+    opacity: 0.55;
+  }
+
+  .token-hooks-chip-stat {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    opacity: 0.92;
   }
 
   .token-hooks-ascii {
