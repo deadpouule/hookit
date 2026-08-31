@@ -68,9 +68,7 @@ export function HookModulePicker({
   hookTaxBps?: number;
 }) {
   const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
-  const enabledHooks = MASTER_HOOKS.filter(
-    (h) => h.id !== "creator-share-to-hook" && isModuleEnabled(modules, h.id),
-  );
+  const enabledHooks = MASTER_HOOKS.filter((h) => isModuleEnabled(modules, h.id));
   const selectedCount = enabledHooks.length;
   const [focus, setFocus] = useState<MasterHookId | null>(enabledHooks[0]?.id ?? null);
 
@@ -89,11 +87,11 @@ export function HookModulePicker({
   return (
     <div>
       <p className="pick-kicker">
-        —hooks: {selectedCount} live · {MASTER_HOOKS.length - 1} modules available
+        —hooks: {selectedCount} live · {MASTER_HOOKS.length} modules available
       </p>
       <p className="pick-heading">pick your hooks</p>
       <div className="pick-grid pick-grid--hooks">
-        {MASTER_HOOKS.filter((hook) => hook.id !== "creator-share-to-hook").map((hook) => {
+        {MASTER_HOOKS.map((hook) => {
           const selected = isModuleEnabled(modules, hook.id);
           const disabled = multiMarket && hook.id === "backed-floor";
           return (
@@ -147,6 +145,7 @@ export function HookModulePicker({
                 modules={modules}
                 onUpdate={onUpdate}
                 floorEst={floorEst}
+                hookTaxBps={hookTaxBps}
               />
             </div>
           ))}
@@ -196,11 +195,13 @@ function HookSettings({
   modules,
   onUpdate,
   floorEst,
+  hookTaxBps = 0,
 }: {
   hookId: MasterHookId;
   modules: LaunchModules;
   onUpdate: (patch: Partial<LaunchModules>) => void;
   floorEst: number;
+  hookTaxBps?: number;
 }) {
   if (hookId === "anti-snipe") {
     return (
@@ -373,6 +374,37 @@ function HookSettings({
         <p className="mt-2 font-mono text-[11px] text-zinc-500">
           Accrues in quote · permissionless push every 15 minutes · pro-rata by balance
         </p>
+      </div>
+    );
+  }
+
+  if (hookId === "creator-share-to-hook") {
+    const hasFeeSink =
+      modules.backedFloor ||
+      modules.autoBurn ||
+      modules.lpDonate ||
+      modules.holderAirdrop ||
+      hookTaxBps > 0;
+
+    return (
+      <div className="space-y-2 text-xs leading-relaxed text-zinc-500">
+        {hasFeeSink ? (
+          <p>
+            Your 70% base share joins the same hook pot as the hook tax, split across enabled
+            modules.
+          </p>
+        ) : (
+          <p>
+            No fee modules selected — your 70% base share still routes to the hook pot and
+            unallocated amounts go to the protocol treasury. Enable floor, burn, donate, or airdrop
+            to direct it.
+          </p>
+        )}
+        {modules.buybackVesting && (
+          <p className="text-amber-600/90">
+            Disabled while buyback vesting is on — they cannot run together.
+          </p>
+        )}
       </div>
     );
   }

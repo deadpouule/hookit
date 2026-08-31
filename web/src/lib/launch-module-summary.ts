@@ -104,26 +104,14 @@ export function moduleCardHint(id: MasterHookId, modules: LaunchModules, hookTax
 
 export function listEnabledModuleSummaries(
   modules: LaunchModules,
-  opts?: { includeCreatorShare?: boolean; hookTaxBps?: number },
+  opts?: { hookTaxBps?: number },
 ): ModuleSummaryLine[] {
   const hookTaxBps = opts?.hookTaxBps ?? 0;
-  const lines: ModuleSummaryLine[] = MASTER_HOOKS.filter(
-    (h) => h.id !== "creator-share-to-hook" && isModuleEnabled(modules, h.id),
-  ).map((h) => ({
+  return MASTER_HOOKS.filter((h) => isModuleEnabled(modules, h.id)).map((h) => ({
     id: h.id,
     title: h.title,
     detail: moduleDetailLine(h.id, modules, hookTaxBps),
   }));
-
-  if (opts?.includeCreatorShare && modules.creatorShareToHook) {
-    lines.push({
-      id: "creator-share-to-hook",
-      title: "Creator → hook",
-      detail: moduleDetailLine("creator-share-to-hook", modules, hookTaxBps),
-    });
-  }
-
-  return lines;
 }
 
 export function hookTaxSummary(hookTaxBps: number): string {
