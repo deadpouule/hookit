@@ -16,7 +16,6 @@ import {
   FormDivider,
   FormPanel,
   SectionLabel,
-  SegmentedControl,
 } from "@/components/ui/form-primitives";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -36,7 +35,7 @@ import { loadBuilderDraft } from "@/lib/hook-builder";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
-import type { HookMode, LaunchFormState, LaunchModules } from "@/lib/types";
+import type { LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "custom" }) {
@@ -306,7 +305,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           <button
             type="button"
             onClick={() => setSocialsOpen(!socialsOpen)}
-            className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10"
+            className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
           >
             Social links
             <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />
@@ -363,15 +362,22 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           {variant !== "classic" && (
             <>
           <SectionLabel>Hook architecture</SectionLabel>
-          <div className="mt-3">
-            <SegmentedControl<HookMode>
-              value={form.hookMode}
-              onChange={(mode) => setForm((p) => ({ ...p, hookMode: mode }))}
-              options={[
-                { value: "master", label: "Master Hook" },
-                { value: "custom", label: "Custom Solidity" },
-              ]}
-            />
+          <div className="launch-hook-arch-badges">
+            {(
+              [
+                { value: "master" as const, label: "Master Hook" },
+                { value: "custom" as const, label: "Custom Solidity" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setForm((p) => ({ ...p, hookMode: opt.value }))}
+                className={cn("launch-hook-arch-badge", form.hookMode === opt.value && "is-active")}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
           {form.hookMode === "custom" ? (

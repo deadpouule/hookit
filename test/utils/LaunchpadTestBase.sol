@@ -116,7 +116,9 @@ abstract contract LaunchpadTestBase is Test, Deployers {
                 tickSpacing: 60,
                 startingTick: startingTick,
                 bitmask: bitmask,
-                customHook: IHooks(address(0))
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         key = PoolKey({

@@ -152,26 +152,54 @@
     box-shadow: 0 0 0 1px rgb(149 20 209 / 0.35), 0 0 16px rgb(149 20 209 / 0.2);
   }
 
-  .launch-shell .pick-card:hover {
+  .launch-shell .launch-social-toggle:hover {
+    border-color: rgb(149 20 209 / 0.45);
+    box-shadow: 0 0 16px rgb(149 20 209 / 0.12);
+  }
+
+  .launch-shell .pick-card--pair:hover {
     border-color: rgb(149 20 209 / 0.45);
   }
 
-  .launch-shell .pick-card.is-on {
+  .launch-shell .pick-card--pair.is-on {
     border-color: #9514d1 !important;
     box-shadow:
       0 0 0 1px #9514d1,
       0 0 20px rgb(149 20 209 / 0.38) !important;
   }
 
-  .launch-shell .pick-card.is-on .pick-card-title {
+  .launch-shell .pick-card--pair.is-on .pick-card-title {
     color: #e9d5ff;
   }
 
-  .launch-shell .pick-config--focused {
-    border-color: rgb(149 20 209 / 0.45) !important;
-    box-shadow:
-      0 0 0 1px rgb(149 20 209 / 0.25),
-      0 0 24px rgb(149 20 209 / 0.12) !important;
+  .launch-hook-arch-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .launch-hook-arch-badge {
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(0 0 0 / 0.45);
+    color: rgb(161 161 170);
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    font-size: 12px;
+    font-weight: 600;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .launch-hook-arch-badge:hover {
+    color: rgb(228 228 231);
+    border-color: rgb(255 255 255 / 0.18);
+  }
+
+  .launch-hook-arch-badge.is-active {
+    border-color: rgb(255 255 255 / 0.22);
+    background: rgb(255 255 255 / 0.12);
+    color: rgb(244 244 245);
+    box-shadow: 0 0 18px rgb(255 255 255 / 0.08);
   }
 
   .dev-buy-section {

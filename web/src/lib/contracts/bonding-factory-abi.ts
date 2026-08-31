@@ -13,6 +13,8 @@ export const bondingFactoryAbi = [
           { name: "totalSupply", type: "uint256" },
           { name: "quote", type: "address" },
           { name: "creatorTaxBps", type: "uint16" },
+          { name: "devBuyQuoteIn", type: "uint256" },
+          { name: "minDevBuyTokensOut", type: "uint256" },
         ],
       },
     ],

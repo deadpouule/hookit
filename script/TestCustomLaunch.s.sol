@@ -29,7 +29,9 @@ contract TestCustomLaunchScript is Script {
                 tickSpacing: ProtocolConstants.DEFAULT_TICK_SPACING,
                 startingTick: 0,
                 bitmask: 0,
-                customHook: IHooks(customHookAddr)
+                customHook: IHooks(customHookAddr),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         vm.stopBroadcast();

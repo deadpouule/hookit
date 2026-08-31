@@ -51,6 +51,10 @@ contract BondingLaunchFactory is Owned {
         uint256 totalSupply; // 0 → BondingConstants.TOTAL_SUPPLY
         Currency quote; // address(0) = ETH; else must be an allowed quote (USDG / wStock)
         uint16 creatorTaxBps; // deprecated — must be 0 (Classic is base 1% only)
+        /// @dev Optional quote spent on the first curve buy, atomically with launch (0 = skip).
+        uint256 devBuyQuoteIn;
+        /// @dev Slippage guard for the bundled dev buy.
+        uint256 minDevBuyTokensOut;
     }
 
     struct Launch {
@@ -119,6 +123,8 @@ contract BondingLaunchFactory is Owned {
     error InvalidQuote();
     error StalePrice();
     error NativeMismatch();
+    error DevBuyTooLarge();
+    error DevBuyQuoteTooHigh();
 
     constructor(
         IPoolManager manager_,
@@ -211,11 +217,14 @@ contract BondingLaunchFactory is Owned {
     }
 
     function launch(LaunchParams calldata params) external payable returns (uint256 launchId, address token) {
-        if (msg.value < launchFee) revert LaunchFeeRequired();
+        uint256 devBuy = params.devBuyQuoteIn;
+        bool nativeQuote = params.quote.isAddressZero();
+        uint256 requiredNative = launchFee + (nativeQuote ? devBuy : 0);
+        if (msg.value < requiredNative) revert LaunchFeeRequired();
         if (launchFee > 0) CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, launchFee);
-        uint256 extra = msg.value - launchFee;
+        uint256 extra = msg.value - requiredNative;
         if (extra > 0) {
-            if (!params.quote.isAddressZero()) revert NativeMismatch();
+            if (!nativeQuote) revert NativeMismatch();
             CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, extra);
         }
 
@@ -232,6 +241,15 @@ contract BondingLaunchFactory is Owned {
             graduationQuote, BondingConstants.VIRTUAL_QUOTE_START_ETH, ProtocolConstants.GRADUATION_ETH_WEI
         );
         if (virtualQuote == 0) virtualQuote = 1;
+
+        if (devBuy > 0) {
+            _validateDevBuyQuote(devBuy, virtualQuote, onCurve, supply);
+            if (!nativeQuote) {
+                if (!IERC20Minimal(Currency.unwrap(params.quote)).transferFrom(msg.sender, address(this), devBuy)) {
+                    revert TransferFailed();
+                }
+            }
+        }
 
         token = TokenAddressMiner.deploy(
             address(this),
@@ -263,6 +281,10 @@ contract BondingLaunchFactory is Owned {
         tokenLaunchId[token] = launchId;
 
         emit TokenLaunched(launchId, token, msg.sender, Currency.unwrap(params.quote), graduationQuote);
+
+        if (devBuy > 0) {
+            _executeBuy(launchId, msg.sender, devBuy, params.minDevBuyTokensOut, nativeQuote);
+        }
     }
 
     /// @notice Buy on the curve. Pay ETH via `msg.value` when quote is native; else `quoteIn` ERC-20.
@@ -272,13 +294,26 @@ contract BondingLaunchFactory is Owned {
         payable
         returns (uint256 tokensOut, uint256 feeQuote)
     {
+        return _executeBuy(launchId, msg.sender, quoteIn, minTokensOut, false);
+    }
+
+    function _executeBuy(
+        uint256 launchId,
+        address buyer,
+        uint256 quoteIn,
+        uint256 minTokensOut,
+        bool devBuyFromLaunch
+    ) private returns (uint256 tokensOut, uint256 feeQuote) {
         Launch storage l = launches[launchId];
         if (l.phase != Phase.Bonding) revert NotBonding();
         if (l.tokensSold >= l.curveSupply) revert CurveSoldOut();
 
-        uint256 paid = _pullQuote(l.quote, quoteIn);
+        uint256 paid = devBuyFromLaunch && l.quote == address(0)
+            ? quoteIn
+            : _pullQuote(l.quote, quoteIn);
         if (paid == 0) revert ZeroAmount();
 
+        uint256 maxDevTokens = FixedPointMath.applyBps(l.totalSupply, ProtocolConstants.MAX_DEV_BUY_BPS);
         uint256 available = l.curveSupply - l.tokensSold;
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS);
         uint256 quoteForCurve = paid - FixedPointMath.applyBps(paid, totalBps);
@@ -287,12 +322,10 @@ contract BondingLaunchFactory is Owned {
 
         uint256 refundGross;
         if (tokensOut > available) {
-            // Partial fill: take only the quote needed for remaining curve tokens.
             uint256 quoteNeeded;
             (quoteNeeded, l.virtualQuote, l.virtualToken) =
                 BondingMath.quoteInForTokensOut(l.virtualQuote, l.virtualToken, available);
             tokensOut = available;
-            // Gross quote so that net-of-fee == quoteNeeded.
             uint256 grossNeeded = totalBps >= ProtocolConstants.BPS_DENOMINATOR
                 ? quoteNeeded
                 : (quoteNeeded * ProtocolConstants.BPS_DENOMINATOR + (ProtocolConstants.BPS_DENOMINATOR - totalBps - 1))
@@ -308,6 +341,7 @@ contract BondingLaunchFactory is Owned {
                 BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteForCurve);
         }
 
+        if (devBuyFromLaunch && tokensOut > maxDevTokens) revert DevBuyTooLarge();
         if (tokensOut < minTokensOut) revert InsufficientOutput();
 
         _payFees(l.creator, l.quote, feeQuote);
@@ -315,10 +349,10 @@ contract BondingLaunchFactory is Owned {
         l.tokensSold += tokensOut;
         l.realQuote += quoteForCurve;
 
-        if (!IERC20Minimal(l.token).transfer(msg.sender, tokensOut)) revert TransferFailed();
-        if (refundGross > 0) _pushQuote(l.quote, msg.sender, refundGross);
+        if (!IERC20Minimal(l.token).transfer(buyer, tokensOut)) revert TransferFailed();
+        if (refundGross > 0) _pushQuote(l.quote, buyer, refundGross);
 
-        emit Bought(launchId, msg.sender, quoteForCurve, tokensOut, feeQuote);
+        emit Bought(launchId, buyer, quoteForCurve, tokensOut, feeQuote);
 
         if (l.realQuote >= l.graduationQuote || l.tokensSold >= l.curveSupply) _graduate(launchId);
     }
@@ -411,6 +445,22 @@ contract BondingLaunchFactory is Owned {
     function _validateFees(uint16 creatorTaxBps) private pure {
         // Classic rail: base 1% only. Extra creator tax removed (use Master hook tax instead).
         if (creatorTaxBps != 0) revert CreatorTaxTooHigh();
+    }
+
+    function _validateDevBuyQuote(uint256 devBuy, uint256 virtualQuote, uint256 virtualToken, uint256 supply)
+        private
+        pure
+    {
+        uint256 maxTokens = FixedPointMath.applyBps(supply, ProtocolConstants.MAX_DEV_BUY_BPS);
+        if (maxTokens == 0) revert DevBuyQuoteTooHigh();
+        uint256 maxNet;
+        (maxNet,,) = BondingMath.quoteInForTokensOut(virtualQuote, virtualToken, maxTokens);
+        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS);
+        uint256 maxGross = totalBps >= ProtocolConstants.BPS_DENOMINATOR
+            ? maxNet
+            : (maxNet * ProtocolConstants.BPS_DENOMINATOR + (ProtocolConstants.BPS_DENOMINATOR - totalBps - 1))
+                / (ProtocolConstants.BPS_DENOMINATOR - totalBps);
+        if (devBuy > maxGross) revert DevBuyQuoteTooHigh();
     }
 
     function _assertQuoteAllowed(Currency quote) private view {

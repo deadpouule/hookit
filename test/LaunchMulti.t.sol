@@ -53,7 +53,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 bitmask: BitmaskConfig.pack(m),
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 
@@ -113,7 +115,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: ProtocolConstants.DEFAULT_TICK_SPACING,
                 bitmask: BitmaskConfig.pack(defaultModules()),
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         assertTrue(TokenAddressMiner.hasBrandSuffix(token));
@@ -135,7 +139,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 bitmask: 0,
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -156,7 +162,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 bitmask: 0,
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -180,7 +188,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 bitmask: BitmaskConfig.pack(mods),
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -202,7 +212,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 bitmask: 0,
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 1
+                floorQuoteIndex: 1,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 

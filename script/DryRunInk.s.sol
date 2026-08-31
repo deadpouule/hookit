@@ -218,7 +218,9 @@ contract DryRunInkScript is Script {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: bitmask,
-                customHook: IHooks(address(0))
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         vm.stopBroadcast();
@@ -250,7 +252,9 @@ contract DryRunInkScript is Script {
                 metadataURI: "ipfs://hookit-classic-dry",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 0
+                creatorTaxBps: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         vm.stopBroadcast();

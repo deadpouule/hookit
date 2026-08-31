@@ -85,7 +85,9 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 1
+                creatorTaxBps: 1,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -103,7 +105,9 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 0
+                creatorTaxBps: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 
@@ -150,7 +154,9 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 0
+                creatorTaxBps: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 
@@ -174,7 +180,9 @@ contract BondingLaunchTest is Test, Deployers {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 0
+                creatorTaxBps: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 

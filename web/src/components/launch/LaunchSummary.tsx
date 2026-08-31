@@ -17,7 +17,7 @@ import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { zeroAddress } from "viem";
 
-export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "dev-buy" | "done";
+export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "done";
 
 function SummaryPairValue({ form }: { form: LaunchFormState }) {
   if (form.markets.length > 1) {
@@ -198,7 +198,7 @@ export function LaunchSummary({
           <li
             className={cn(
               "flex items-center gap-2",
-              phase === "launching" ? "text-base-blue" : phase === "done" || phase === "dev-buy" ? "text-emerald-400" : "text-zinc-600",
+              phase === "launching" ? "text-base-blue" : phase === "done" ? "text-emerald-400" : "text-zinc-600",
             )}
           >
             {phase === "launching" ? (
@@ -206,23 +206,8 @@ export function LaunchSummary({
             ) : (
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
             )}
-            Create pool & token
+            Create pool & token{devBuyConfigured ? " + dev buy" : ""}
           </li>
-          {devBuyConfigured && (
-            <li
-              className={cn(
-                "flex items-center gap-2",
-                phase === "dev-buy" ? "text-base-blue" : phase === "done" ? "text-emerald-400" : "text-zinc-600",
-              )}
-            >
-              {phase === "dev-buy" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              )}
-              Dev buy (first trade)
-            </li>
-          )}
         </ol>
       )}
 

@@ -58,6 +58,9 @@ library ProtocolConstants {
     /// @dev Canonical launch supply (1 billion tokens, 18 decimals).
     uint256 internal constant DEFAULT_LAUNCH_SUPPLY = 1_000_000_000e18;
 
+    /// @dev Optional creator dev buy cap: 2.5% of total supply per launch.
+    uint16 internal constant MAX_DEV_BUY_BPS = 250;
+
     /// @dev Multi-market launches: 1–5 independent v4 pools per token (PAIR-style).
     uint8 internal constant MIN_LAUNCH_MARKETS = 1;
     uint8 internal constant MAX_LAUNCH_MARKETS = 5;

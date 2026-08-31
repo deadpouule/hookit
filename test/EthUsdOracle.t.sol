@@ -49,7 +49,9 @@ contract EthUsdOracleTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: 0,
-                customHook: IHooks(address(0))
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
