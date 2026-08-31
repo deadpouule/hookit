@@ -172,34 +172,67 @@
     color: #e9d5ff;
   }
 
+  .launch-hook-arch-row {
+    text-align: center;
+  }
+
+  .launch-hook-arch-title {
+    justify-content: center;
+    width: 100%;
+  }
+
   .launch-hook-arch-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.65rem;
     margin-top: 0.75rem;
   }
 
   .launch-hook-arch-badge {
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: rgb(0 0 0 / 0.45);
-    color: rgb(161 161 170);
+    cursor: pointer;
     border-radius: 999px;
-    padding: 0.45rem 0.85rem;
+    padding: 0.4rem 0.85rem;
     font-size: 12px;
     font-weight: 600;
-    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    letter-spacing: 0;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      background 0.18s ease,
+      transform 0.18s ease;
   }
 
   .launch-hook-arch-badge:hover {
-    color: rgb(228 228 231);
-    border-color: rgb(255 255 255 / 0.18);
+    transform: translateY(-1px);
   }
 
-  .launch-hook-arch-badge.is-active {
-    border-color: rgb(255 255 255 / 0.22);
-    background: rgb(255 255 255 / 0.12);
-    color: rgb(244 244 245);
-    box-shadow: 0 0 18px rgb(255 255 255 / 0.08);
+  .launch-hook-arch-badge.token-type-badge--master.is-active {
+    border-color: #9514d1;
+    background: rgb(149 20 209 / 0.24);
+    color: #f3e8ff;
+    box-shadow:
+      0 0 0 1px #9514d1,
+      0 0 20px rgb(149 20 209 / 0.42);
+  }
+
+  .launch-hook-arch-badge.token-type-badge--custom.is-active {
+    border-color: #fbbf24;
+    background: rgb(251 191 36 / 0.22);
+    color: #fde68a;
+    box-shadow:
+      0 0 0 1px #fbbf24,
+      0 0 20px rgb(251 191 36 / 0.38);
+  }
+
+  .launch-hook-arch-badge .token-type-badge-glyph.category-hook-glyph {
+    font-size: 9px;
+    line-height: 1;
+  }
+
+  .launch-hook-arch-badge .token-type-badge-glyph.category-customs-icon {
+    width: 13px;
+    height: 13px;
   }
 
   .dev-buy-section {
@@ -233,14 +266,24 @@
   }
 
   .dev-buy-mode-toggle button.is-active {
-    background: rgb(255 255 255 / 0.12);
-    color: rgb(244 244 245);
+    background: rgb(149 20 209 / 0.32);
+    color: #f3e8ff;
+    box-shadow: 0 0 14px rgb(149 20 209 / 0.28);
+  }
+
+  .dev-buy-section [data-slot="slider-track"] {
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .dev-buy-section [data-slot="slider-range"] {
+    background: #9514d1;
+    box-shadow: 0 0 12px rgb(149 20 209 / 0.45);
   }
 
   .dev-buy-section [data-slot="slider-thumb"] {
-    border-color: rgb(56 189 248 / 0.6);
-    background: rgb(125 211 252);
-    box-shadow: 0 0 12px rgb(56 189 248 / 0.45);
+    border-color: rgb(149 20 209 / 0.75);
+    background: #e9d5ff;
+    box-shadow: 0 0 12px rgb(149 20 209 / 0.55);
   }
 
   .pick-kicker {
@@ -278,6 +321,31 @@
 
   .pick-grid--hooks {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pick-grid--hooks .pick-card {
+    position: relative;
+    z-index: 0;
+  }
+
+  .pick-grid--hooks .pick-card:hover {
+    z-index: 3;
+    transform: translateY(-5px) scale(1.07);
+  }
+
+  .pick-grid--hooks .pick-card.is-on {
+    z-index: 1;
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  .pick-grid--hooks .pick-card.is-on:hover {
+    z-index: 3;
+    transform: translateY(-6px) scale(1.09);
+  }
+
+  .pick-grid--hooks .pick-card:hover .pick-ascii,
+  .pick-grid--hooks .pick-card.is-on:hover .pick-ascii {
+    transform: scale(1.14);
   }
 
   @media (min-width: 520px) {
@@ -534,6 +602,7 @@
   .pick-ascii {
     height: 72px;
     overflow: hidden;
+    transition: transform 0.22s ease;
   }
 
   .pick-ascii .ascii-shape {
@@ -570,7 +639,6 @@
 
   .pick-config--panel {
     margin-top: 0;
-    cursor: pointer;
   }
 
   .pick-config-head {

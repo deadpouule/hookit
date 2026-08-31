@@ -12,6 +12,7 @@ import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import { PairingPicker } from "@/components/launch/PairingPicker";
+import { CustomsGlyph, MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import {
   FormDivider,
   FormPanel,
@@ -361,23 +362,34 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
           {variant !== "classic" && (
             <>
-          <SectionLabel>Hook architecture</SectionLabel>
-          <div className="launch-hook-arch-badges">
-            {(
-              [
-                { value: "master" as const, label: "Master Hook" },
-                { value: "custom" as const, label: "Custom Solidity" },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setForm((p) => ({ ...p, hookMode: opt.value }))}
-                className={cn("launch-hook-arch-badge", form.hookMode === opt.value && "is-active")}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="launch-hook-arch-row">
+            <SectionLabel className="launch-hook-arch-title">Hook architecture</SectionLabel>
+            <div className="launch-hook-arch-badges">
+              {(
+                [
+                  { value: "master" as const, label: "Master Hook", glyph: "master" as const },
+                  { value: "custom" as const, label: "Custom Solidity", glyph: "custom" as const },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setForm((p) => ({ ...p, hookMode: opt.value }))}
+                  className={cn(
+                    "token-type-badge launch-hook-arch-badge",
+                    opt.glyph === "master" ? "token-type-badge--master" : "token-type-badge--custom",
+                    form.hookMode === opt.value && "is-active",
+                  )}
+                >
+                  {opt.glyph === "master" ? (
+                    <MasterHookGlyph className="token-type-badge-glyph" />
+                  ) : (
+                    <CustomsGlyph className="token-type-badge-glyph" />
+                  )}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {form.hookMode === "custom" ? (

@@ -64,7 +64,9 @@ export function DevBuySection({ form, variant, onChange }: Props) {
   return (
     <section className="dev-buy-section">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-white">Dev buy</p>
+        <p className="text-sm font-semibold text-white">
+          <span className="font-normal text-zinc-500">(optional)</span> Dev buy
+        </p>
         <div className="dev-buy-mode-toggle" role="tablist" aria-label="Dev buy input mode">
           {(
             [
@@ -87,9 +89,9 @@ export function DevBuySection({ form, variant, onChange }: Props) {
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-        Optional. Buy up to {MAX_DEV_BUY_SUPPLY_PCT}% of the supply as the pool&apos;s very first trade
-        — bundled atomically with launch so nothing can trade before you. Paid in{" "}
-        {payLabel} with the launch fee; the tokens land in your wallet the moment the pool is live.
+        Buy up to {MAX_DEV_BUY_SUPPLY_PCT}% of the supply as the pool&apos;s very first trade — bundled
+        atomically with launch so nothing can trade before you. Paid in {payLabel} with the launch fee;
+        the tokens land in your wallet the moment the pool is live.
       </p>
 
       {form.devBuyMode === "supply" ? (
