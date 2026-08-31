@@ -12,7 +12,6 @@ import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
-  FeeBreakdown,
   FormDivider,
   FormPanel,
   SectionLabel,
@@ -291,7 +290,11 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                 <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
                 <textarea
                   className="field-textarea"
-                  placeholder="What makes this token hooked?"
+                  placeholder={
+                    variant === "classic"
+                      ? "Describe your token — story, utility, or community."
+                      : "What makes this token hooked?"
+                  }
                   value={form.description}
                   onChange={(e) => updateField("description", e.target.value)}
                 />
@@ -356,19 +359,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
           <FormDivider />
 
-          {variant === "classic" ? (
-            <>
-              <SectionLabel>Fees</SectionLabel>
-              <p className="mt-1 text-xs text-zinc-600">
-                Standard 1% quote-only swap fee (70% creator / 30% protocol). Classic has no extra hook tax.
-              </p>
-              <div className="mt-4 max-w-xs">
-                <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
-                <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
-                <FeeBreakdown creator="0.70%" protocol="0.30%" />
-              </div>
-            </>
-          ) : (
+          {variant !== "classic" && (
             <>
           <SectionLabel>Hook architecture</SectionLabel>
           <div className="mt-3">
@@ -433,30 +424,23 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                 Fees deducted in quote asset only — zero sell pressure on your token.
               </p>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Base swap fee</Label>
-                  <div className="field-input flex items-center bg-black/60 text-zinc-400">1.00%</div>
-                  <FeeBreakdown creator="0.70%" protocol="0.30%" />
+              <div className="mt-4 max-w-sm">
+                <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
+                <div className="field-input flex items-center justify-between bg-black/60">
+                  <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
                 </div>
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Fees</Label>
-                  <div className="field-input flex items-center justify-between bg-black/60">
-                    <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-                  </div>
-                  <div className="mt-2">
-                    <Slider
-                      value={[form.hookTaxBps]}
-                      onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
-                      min={0}
-                      max={MAX_HOOK_TAX_BPS}
-                      step={10}
-                    />
-                  </div>
-                  <p className="mt-1.5 text-xs text-zinc-500">
-                    Extra fee for hook modules · leftover → protocol
-                  </p>
+                <div className="mt-2">
+                  <Slider
+                    value={[form.hookTaxBps]}
+                    onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
+                    min={0}
+                    max={MAX_HOOK_TAX_BPS}
+                    step={10}
+                  />
                 </div>
+                <p className="mt-1.5 text-xs text-zinc-500">
+                  Extra fee for hook modules · leftover → protocol
+                </p>
               </div>
             </>
           )}
