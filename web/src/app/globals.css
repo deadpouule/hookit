@@ -172,67 +172,66 @@
     color: #e9d5ff;
   }
 
-  .launch-hook-arch-row {
-    text-align: center;
-  }
-
-  .launch-hook-arch-title {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .launch-hook-arch-badges {
+  .launch-hook-arch-toggle {
     display: flex;
     flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    background: rgb(0 0 0 / 0.5);
+  }
+
+  .launch-hook-arch-toggle__btn {
+    display: inline-flex;
+    flex: 1 1 0;
+    align-items: center;
     justify-content: center;
-    gap: 0.65rem;
-    margin-top: 0.75rem;
-  }
-
-  .launch-hook-arch-badge {
-    cursor: pointer;
-    border-radius: 999px;
-    padding: 0.4rem 0.85rem;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: rgb(113 113 122);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: center;
     transition:
-      border-color 0.18s ease,
-      box-shadow 0.18s ease,
-      background 0.18s ease,
-      transform 0.18s ease;
+      color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
-  .launch-hook-arch-badge:hover {
-    transform: translateY(-1px);
+  .launch-hook-arch-toggle__btn:hover {
+    color: rgb(212 212 216);
   }
 
-  .launch-hook-arch-badge.token-type-badge--master.is-active {
-    border-color: #9514d1;
-    background: rgb(149 20 209 / 0.24);
+  .launch-hook-arch-toggle__btn--master.is-active {
+    background: rgb(149 20 209 / 0.28);
     color: #f3e8ff;
     box-shadow:
-      0 0 0 1px #9514d1,
-      0 0 20px rgb(149 20 209 / 0.42);
+      0 0 0 1px rgb(149 20 209 / 0.55),
+      0 0 18px rgb(149 20 209 / 0.35);
   }
 
-  .launch-hook-arch-badge.token-type-badge--custom.is-active {
-    border-color: #fbbf24;
-    background: rgb(251 191 36 / 0.22);
+  .launch-hook-arch-toggle__btn--custom.is-active {
+    background: rgb(251 191 36 / 0.24);
     color: #fde68a;
     box-shadow:
-      0 0 0 1px #fbbf24,
-      0 0 20px rgb(251 191 36 / 0.38);
+      0 0 0 1px rgb(251 191 36 / 0.55),
+      0 0 18px rgb(251 191 36 / 0.32);
   }
 
-  .launch-hook-arch-badge .token-type-badge-glyph.category-hook-glyph {
-    font-size: 9px;
+  .launch-hook-arch-toggle__glyph.category-hook-glyph {
+    font-size: 11px;
     line-height: 1;
   }
 
-  .launch-hook-arch-badge .token-type-badge-glyph.category-customs-icon {
-    width: 13px;
-    height: 13px;
+  .launch-hook-arch-toggle__glyph.category-customs-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .dev-buy-section {
@@ -266,24 +265,9 @@
   }
 
   .dev-buy-mode-toggle button.is-active {
-    background: rgb(149 20 209 / 0.32);
-    color: #f3e8ff;
-    box-shadow: 0 0 14px rgb(149 20 209 / 0.28);
-  }
-
-  .dev-buy-section [data-slot="slider-track"] {
-    background: rgb(255 255 255 / 0.08);
-  }
-
-  .dev-buy-section [data-slot="slider-range"] {
-    background: #9514d1;
-    box-shadow: 0 0 12px rgb(149 20 209 / 0.45);
-  }
-
-  .dev-buy-section [data-slot="slider-thumb"] {
-    border-color: rgb(149 20 209 / 0.75);
-    background: #e9d5ff;
-    box-shadow: 0 0 12px rgb(149 20 209 / 0.55);
+    background: rgb(255 255 255);
+    color: rgb(0 0 0);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
   }
 
   .pick-kicker {

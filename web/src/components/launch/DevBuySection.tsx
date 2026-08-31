@@ -65,7 +65,7 @@ export function DevBuySection({ form, variant, onChange }: Props) {
     <section className="dev-buy-section">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="text-sm font-semibold text-white">
-          <span className="font-normal text-zinc-500">(optional)</span> Dev buy
+          Dev buy <span className="font-normal text-zinc-500">(optional)</span>
         </p>
         <div className="dev-buy-mode-toggle" role="tablist" aria-label="Dev buy input mode">
           {(
