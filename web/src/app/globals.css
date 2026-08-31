@@ -635,6 +635,8 @@
     font-weight: 600;
     line-height: 1.35;
     white-space: normal;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .token-hooks-chip-copy {
@@ -675,16 +677,31 @@
   .token-hooks-chip-actions {
     display: flex;
     gap: 0.35rem;
+    min-width: 0;
+    width: 100%;
     padding-left: 1.45rem;
+    box-sizing: border-box;
   }
 
   .token-hooks-chip-actions--stack {
     flex-direction: column;
+  }
+
+  .token-hooks-chip-actions--floor {
+    flex-direction: column;
     padding-left: 1.45rem;
+  }
+
+  .token-hooks-chip-actions--floor .token-hooks-vault-input,
+  .token-hooks-chip-actions--floor .token-hooks-vault-btn {
+    width: 100%;
+    max-width: 100%;
   }
 
   .token-hooks-chip-actions .token-hooks-vault-input {
     height: 1.65rem;
+    min-width: 0;
+    flex: 1;
     border-radius: 6px;
     font-size: 10px;
   }
@@ -1469,13 +1486,13 @@
 
   @media (min-width: 1100px) {
     .token-desk--hooks {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(280px, 3fr);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 9fr) minmax(320px, 5fr);
       grid-template-areas: "left center right";
       align-items: start;
     }
 
     .token-desk--wide {
-      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+      grid-template-columns: minmax(0, 5fr) minmax(320px, 5fr);
       grid-template-areas: "center right";
       align-items: start;
     }

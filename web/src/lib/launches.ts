@@ -456,7 +456,7 @@ export type BondingLaunchRow = {
   graduatedAt: number;
 };
 
-function bondingRowFromResult(result: unknown): BondingLaunchRow | null {
+export function bondingRowFromResult(result: unknown): BondingLaunchRow | null {
   if (!result || !Array.isArray(result)) return null;
   const [
     token,

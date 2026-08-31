@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { TokenProSwap, useProQuoteAmount } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
+import { useBondingQuote } from "@/hooks/useBondingQuote";
 import { useSwapToken, useTokenBalance } from "@/hooks/useSwapToken";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
@@ -167,6 +168,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const bonding = getBondingFactoryAddress();
   const payDecimals =
     side === "buy" ? paymentAssetById(effectivePayWith).decimals : payAsset.decimals;
+  const quoteDecimals =
+    !pool.quoteAddress || pool.quoteAddress === zeroAddress ? 18 : 6;
 
   const receiveAmount = useProQuoteAmount({
     amount,
@@ -178,6 +181,19 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     quoteExactIn: swap.quoteExactIn,
     enabled: !onBonding,
   });
+
+  const bondingQuote = useBondingQuote({
+    pool,
+    side,
+    amount,
+    decimalsIn: payDecimals,
+    decimalsOut: side === "buy" ? 18 : quoteDecimals,
+    slippagePct,
+    enabled: onBonding,
+  });
+
+  const quotedReceive = onBonding ? bondingQuote.receiveAmount : receiveAmount;
+  const swapQuoteMeta = onBonding ? bondingQuote.quote : null;
 
   const hasAmount = !!amount && Number(amount) > 0;
   const tokenPriceUsd = (pool.priceEth ?? 0) * ETH_USD;
@@ -377,10 +393,11 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             setPreset(null);
           }}
           onInvert={handleInvert}
-          receiveAmount={receiveAmount}
+          receiveAmount={quotedReceive}
           slippagePct={slippagePct}
           sellBalance={marketSellBalance}
           tokenPriceEth={pool.priceEth}
+          quoteMeta={swapQuoteMeta}
         />
       ) : (
         <>
@@ -506,11 +523,40 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
           <div className="swap-detail-row">
             <span className="swap-detail-row__label">You receive</span>
             <span className="swap-detail-row__value font-mono text-[12px]">
-              {receiveAmount
-                ? `${formatTokenAmount(Number(receiveAmount))} ${side === "buy" ? ticker : payAsset.symbol}`
+              {quotedReceive
+                ? `${formatTokenAmount(Number(quotedReceive))} ${side === "buy" ? ticker : payAsset.symbol}`
                 : "—"}
             </span>
           </div>
+
+          {(onBonding || quotedReceive) && (
+            <dl className="market-details mt-3">
+              <SwapDetailRow
+                label="Minimum received"
+                value={
+                  swapQuoteMeta
+                    ? `${formatTokenAmount(Number(formatUnits(swapQuoteMeta.minAmountOut, side === "buy" ? 18 : quoteDecimals)))} ${side === "buy" ? ticker : payAsset.symbol}`
+                    : quotedReceive
+                      ? `${formatTokenAmount(Number(quotedReceive) * (1 - slippagePct / 100))} ${side === "buy" ? ticker : payAsset.symbol}`
+                      : "—"
+                }
+              />
+              <SwapDetailRow
+                label="Price impact"
+                value={
+                  swapQuoteMeta != null
+                    ? `${swapQuoteMeta.priceImpactPct.toFixed(2)}%`
+                    : "—"
+                }
+              />
+              <SwapDetailRow
+                label="Route"
+                value={swapQuoteMeta?.route ?? (onBonding ? "Bonding curve" : "—")}
+              />
+              <SwapDetailRow label="Max slippage" value={`${slippagePct}%`} />
+              <SwapDetailRow label="Platform fee" value="1% base" valueClass="text-white" />
+            </dl>
+          )}
         </>
       )}
 
@@ -531,6 +577,23 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       {(error || swap.error) && (
         <p className="mt-2 text-center text-[12px] text-red-400">{error ?? swap.error}</p>
       )}
+    </div>
+  );
+}
+
+function SwapDetailRow({
+  label,
+  value,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="market-details__row">
+      <dt className="market-details__label">{label}</dt>
+      <dd className={cn("market-details__value", valueClass)}>{value}</dd>
     </div>
   );
 }
