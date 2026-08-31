@@ -589,6 +589,17 @@
     color: #71717a;
   }
 
+  .token-hooks-summary {
+    margin: 0 0 0.85rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface-muted) 45%, transparent);
+    font-size: 12px;
+    line-height: 1.45;
+    color: #d4d4d8;
+  }
+
   .token-hooks-list {
     display: flex;
     flex-direction: column;
@@ -741,6 +752,92 @@
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #ef4444, #f97316);
+  }
+
+  .token-hooks-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .token-hooks-meter-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    color: #a1a1aa;
+  }
+
+  .token-hooks-meter-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .token-hooks-meter-value {
+    flex-shrink: 0;
+    color: #71717a;
+  }
+
+  .token-hooks-meter-track {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .token-hooks-meter-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #9514d1;
+  }
+
+  .token-hooks-meter-fill--fire {
+    background: linear-gradient(90deg, #ef4444, #f97316);
+  }
+
+  .token-hooks-meter-fill--gold {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  }
+
+  .token-hooks-meter-fill--crimson {
+    background: linear-gradient(90deg, #ef4444, #f97316);
+  }
+
+  .token-hooks-meter-fill--steel {
+    background: linear-gradient(90deg, #64748b, #94a3b8);
+  }
+
+  .token-hooks-meter-fill--nature {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
+  .token-hooks-meter-fill--volt {
+    background: linear-gradient(90deg, #03b1ed, #38bdf8);
+  }
+
+  .token-hooks-meter-fill--ice {
+    background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+  }
+
+  .token-hooks-meter-fill--ember {
+    background: linear-gradient(90deg, #f97316, #fb923c);
+  }
+
+  .token-hooks-meter-fill--rose {
+    background: linear-gradient(90deg, #f472b6, #fb7185);
+  }
+
+  .token-hooks-meter-fill--void {
+    background: linear-gradient(90deg, #a855f7, #c084fc);
+  }
+
+  .token-hooks-meter-fill--lime {
+    background: linear-gradient(90deg, #84cc16, #a3e635);
   }
 
   .pick-config--fire.pick-config--focused {

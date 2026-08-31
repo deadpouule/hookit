@@ -40,7 +40,7 @@ export function TokenTxTable({
         ))}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto no-scrollbar">
         {tab === "swaps" ? (
           <table className="w-full min-w-[720px] text-left text-[13px]">
             <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">

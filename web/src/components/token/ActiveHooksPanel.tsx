@@ -15,18 +15,20 @@ import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
 import {
+  buildModulesSummarySentence,
   isModuleEnabled,
   moduleTooltipText,
   totalFeePlain,
   totalFeeTooltip,
 } from "@/lib/launch-module-summary";
-import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
+import { MASTER_HOOKS, type HookTheme, type MasterHookId } from "@/lib/master-hooks";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { LaunchModules, TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LAUNCH_SUPPLY_WEI = BigInt(TOTAL_SUPPLY) * 10n ** 18n;
+const AIRDROP_EPOCH_SEC = 15 * 60;
 
 function ModuleTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (
@@ -75,71 +77,111 @@ type LiveBits = {
   quoteLabel: string;
 };
 
-function liveStatusForHook(
-  id: MasterHookId,
-  modules: LaunchModules,
-  pool: TokenPool,
-  live: LiveBits,
-): string | null {
+function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return "Ready";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
+}
+
+function ModuleMeter({
+  label,
+  pct,
+  theme,
+}: {
+  label: string;
+  pct: number;
+  theme: HookTheme;
+}) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="token-hooks-meter">
+      <div className="token-hooks-meter-head">
+        <span className="token-hooks-meter-label">{label}</span>
+        <span className="token-hooks-meter-value">{Math.round(clamped)}%</span>
+      </div>
+      <div className="token-hooks-meter-track" aria-hidden>
+        <span
+          className={cn("token-hooks-meter-fill", `token-hooks-meter-fill--${theme}`)}
+          style={{ width: `${clamped}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ModuleVisualBar({
+  id,
+  modules,
+  pool,
+  live,
+  theme,
+}: {
+  id: MasterHookId;
+  modules: LaunchModules;
+  pool: TokenPool;
+  live: LiveBits;
+  theme: HookTheme;
+}) {
   switch (id) {
     case "anti-snipe": {
-      if (!pool.launchedAt) return "Launch protection active";
+      if (!pool.launchedAt || modules.antiSnipeDuration <= 0) return null;
       const endsAt = pool.launchedAt + modules.antiSnipeDuration;
       const left = endsAt - Math.floor(Date.now() / 1000);
-      if (left <= 0) return "Protection ended";
-      return `${left}s left · ${modules.antiSnipeInitialTax}% extra tax`;
-    }
-    case "backed-floor": {
-      if (live.floorPriceHuman == null && live.floorReserveHuman == null) {
-        return `${modules.floorAllocation}% of fees → floor`;
+      if (left <= 0) {
+        return <ModuleMeter label="Launch protection ended" pct={100} theme={theme} />;
       }
-      const price =
-        live.floorPriceHuman != null
-          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
-          : "—";
-      const reserve =
-        live.floorReserveHuman != null
-          ? `${live.floorReserveHuman.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${live.quoteLabel}`
-          : "—";
-      return `Floor ${price} · vault ${reserve}`;
-    }
-    case "anti-mev":
-      return "Same-block bot trades blocked";
-    case "max-tx":
-      return `Max ${(modules.maxTxBps / 100).toFixed(1)}% of supply per trade`;
-    case "max-wallet":
-      return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
-    case "dynamic-fees":
-      return "Swap fee adjusts with activity";
-    case "buyback-vesting": {
-      const days = modules.buybackVestingDurationDays ?? 365 * 5;
-      return days >= 365
-        ? `Creator fees unlock over ${(days / 365).toFixed(1)} years`
-        : `Creator fees unlock over ${days} days`;
+      const elapsedPct =
+        ((modules.antiSnipeDuration - left) / modules.antiSnipeDuration) * 100;
+      return (
+        <ModuleMeter
+          label={`${left}s left · ${modules.antiSnipeInitialTax}% tax`}
+          pct={elapsedPct}
+          theme={theme}
+        />
+      );
     }
     case "auto-burn": {
-      if (live.burnedPct == null) return `${modules.autoBurnPct}% of fees burned`;
-      return `${live.burnedPct.toFixed(2)}% of supply burned`;
+      const pct = live.burnedPct ?? 0;
+      return (
+        <ModuleMeter
+          label={`${pct.toFixed(2)}% of supply burned`}
+          pct={pct}
+          theme={theme}
+        />
+      );
     }
-    case "lp-donate":
-      return `${modules.lpDonatePct}% of fees shared with LPs`;
     case "holder-airdrop": {
+      const left = live.airdropSecondsLeft;
+      if (left == null) return null;
+      const ready = left <= 0;
+      const pct = ready ? 100 : ((AIRDROP_EPOCH_SEC - left) / AIRDROP_EPOCH_SEC) * 100;
       const pot =
         live.airdropPendingHuman != null
           ? `${live.airdropPendingHuman.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${live.quoteLabel}`
           : "—";
-      const window =
-        live.airdropSecondsLeft == null
-          ? "—"
-          : live.airdropSecondsLeft <= 0
-            ? "Ready to drop"
-            : `Next drop in ${Math.floor(live.airdropSecondsLeft / 60)}m ${(live.airdropSecondsLeft % 60)
-                .toString()
-                .padStart(2, "0")}s`;
-      return `Pot ${pot} · ${window}`;
+      return (
+        <ModuleMeter
+          label={ready ? `Pot ${pot} · ready to drop` : `Pot ${pot} · ${formatCountdown(left)}`}
+          pct={pct}
+          theme={theme}
+        />
+      );
     }
-    case "creator-share-to-hook":
-      return "Creator fees feed hook modules";
+    case "backed-floor": {
+      if (live.floorReserveHuman == null || live.floorReserveHuman <= 0) return null;
+      const price =
+        live.floorPriceHuman != null
+          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
+          : "—";
+      return (
+        <ModuleMeter
+          label={`Floor ${price} · vault funded`}
+          pct={100}
+          theme={theme}
+        />
+      );
+    }
     default:
       return null;
   }
@@ -252,6 +294,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   };
 
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
+  const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
   return (
     <section className="token-hooks-panel desk-card">
@@ -263,40 +306,47 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
         <ModuleTip tip={totalFeeTooltip(hookTaxBps)}>
           <div className="token-hooks-fee">
             <span>{totalFeePlain(hookTaxBps)}</span>
-            <span className="token-hooks-fee-sub">{enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}</span>
+            <span className="token-hooks-fee-sub">
+              {enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}
+            </span>
           </div>
         </ModuleTip>
       </header>
 
+      {summary ? <p className="token-hooks-summary">{summary}</p> : null}
+
       <ul className="token-hooks-list">
-        {enabledHooks.map((hook) => {
-          const status = liveStatusForHook(hook.id, modules, pool, live);
-          return (
-            <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
-              <ModuleTip tip={moduleTooltipText(hook.description, hook.id, modules)}>
-                <span
-                  className={cn(
-                    "token-hooks-chip orb-hook-desc-badge",
-                    `orb-hook-desc-badge--${hook.theme}`,
-                  )}
-                >
-                  <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
-                  <span>{hook.title}</span>
-                </span>
-              </ModuleTip>
-              {status ? <p className="token-hooks-live">{status}</p> : null}
-              <HookInlineAction
-                id={hook.id}
-                pool={pool}
-                modules={modules}
-                live={live}
-                floorVault={floorVault as Address | undefined}
-                floorReserveWei={floorReserveWei}
-                decimals={decimals}
-              />
-            </li>
-          );
-        })}
+        {enabledHooks.map((hook) => (
+          <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
+            <ModuleTip tip={moduleTooltipText(hook.description, hook.id, modules)}>
+              <span
+                className={cn(
+                  "token-hooks-chip orb-hook-desc-badge",
+                  `orb-hook-desc-badge--${hook.theme}`,
+                )}
+              >
+                <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
+                <span>{hook.title}</span>
+              </span>
+            </ModuleTip>
+            <ModuleVisualBar
+              id={hook.id}
+              modules={modules}
+              pool={pool}
+              live={live}
+              theme={hook.theme}
+            />
+            <HookInlineAction
+              id={hook.id}
+              pool={pool}
+              floorVault={floorVault as Address | undefined}
+              floorReserveWei={floorReserveWei}
+              decimals={decimals}
+              floorPriceHuman={live.floorPriceHuman}
+              quoteLabel={live.quoteLabel}
+            />
+          </li>
+        ))}
       </ul>
     </section>
   );

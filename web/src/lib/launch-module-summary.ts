@@ -104,6 +104,29 @@ export function totalFeeTooltip(hookTaxBps: number): string {
   return `1% base fee + ${(hookTaxBps / 100).toFixed(1)}% hook fee on swaps.`;
 }
 
+const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
+  "anti-snipe": "blocks snipers at launch",
+  "backed-floor": "has a price floor",
+  "anti-mev": "blocks bot trades",
+  "max-tx": "limits trade size",
+  "max-wallet": "limits wallet size",
+  "dynamic-fees": "adjusts fees with activity",
+  "buyback-vesting": "locks creator fees over time",
+  "auto-burn": "burns tokens on swaps",
+  "lp-donate": "rewards liquidity providers",
+  "holder-airdrop": "airdrops to holders",
+  "creator-share-to-hook": "feeds creator fees into hooks",
+};
+
+export function buildModulesSummarySentence(hookIds: MasterHookId[]): string {
+  const phrases = hookIds.map((id) => MODULE_SUMMARY_PHRASE[id]).filter(Boolean);
+  if (phrases.length === 0) return "";
+  if (phrases.length === 1) return `This token ${phrases[0]}.`;
+  const last = phrases[phrases.length - 1];
+  const rest = phrases.slice(0, -1);
+  return `This token ${rest.join(", ")} and ${last}.`;
+}
+
 export function hookMarkSummaryDetail(id: HookId, modules: LaunchModules): string {
   if (id === "quoteFee") return "1% base · quote-only on swaps";
   if (id === "custom") return HOOK_MARKS.custom.hint;
