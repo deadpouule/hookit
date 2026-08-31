@@ -3,13 +3,15 @@
 import { PairingMark } from "@/components/launch/PairingMark";
 import { PairModeToggle } from "@/components/launch/PairModeToggle";
 import { PickCard } from "@/components/launch/PickCard";
-import { Slider } from "@/components/ui/slider";
+import { AccentSlider } from "@/components/launch/AccentSlider";
 import {
+  formatPairingTicker,
   PAIRING_TOKENS,
   type PairingTokenId,
 } from "@/lib/pairing-tokens";
 import type { LaunchMarketInput } from "@/lib/types";
-import { cn } from "@/lib/utils";
+
+const LAUNCH_VIOLET = "#9514d1";
 
 const MAX_MARKETS = 5;
 const BPS_TOTAL = 10_000;
@@ -108,13 +110,13 @@ export function PairingPicker({
         {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
       </p>
       <p className="pick-heading">Pick your pair{isMulti ? "s" : ""}</p>
-      <div className={cn("pick-grid pick-grid--pairs", isMulti && "pick-grid--pairs-multi")}>
+      <div className="pick-grid pick-grid--pairs">
         {PAIRING_TOKENS.map((token) => (
           <PickCard
             key={token.id}
             variant="pair"
             selected={selectedIds.has(token.id)}
-            title={token.ticker}
+            title={formatPairingTicker(token.id)}
             subtitle={
               selectedIds.has(token.id)
                 ? isMulti
@@ -132,18 +134,17 @@ export function PairingPicker({
       {isMulti && (
         <div className="mt-5 space-y-4 rounded-lg border border-zinc-800/80 bg-black/40 p-4">
           <p className="text-xs text-zinc-500">Liquidity split across pools (must total 100%)</p>
-          {markets.map((market, index) => {
-            const token = PAIRING_TOKENS.find((t) => t.id === market.id);
-            return (
+          {markets.map((market, index) => (
               <div key={market.id}>
                 <div className="mb-2 flex items-center justify-between text-sm">
                   <span className="inline-flex items-center gap-2 text-zinc-300">
                     <PairingMark id={market.id} size="sm" />
-                    <span>{token?.ticker ?? market.id}</span>
+                    <span>{formatPairingTicker(market.id)}</span>
                   </span>
                   <span className="font-mono text-zinc-400">{(market.bps / 100).toFixed(1)}%</span>
                 </div>
-                <Slider
+                <AccentSlider
+                  accentColor={LAUNCH_VIOLET}
                   min={100}
                   max={BPS_TOTAL - (markets.length - 1) * 100}
                   step={100}
@@ -153,16 +154,13 @@ export function PairingPicker({
                   }
                 />
               </div>
-            );
-          })}
+          ))}
           <div>
             <p className="mb-2 text-xs text-zinc-500">
               Floor quote (when backed floor ships for multi) — stored for later
             </p>
             <div className="flex flex-wrap gap-2">
-              {markets.map((market, index) => {
-                const token = PAIRING_TOKENS.find((t) => t.id === market.id);
-                return (
+              {markets.map((market, index) => (
                   <button
                     key={market.id}
                     type="button"
@@ -175,10 +173,9 @@ export function PairingPicker({
                     }`}
                   >
                     <PairingMark id={market.id} size="sm" />
-                    {token?.ticker ?? market.id}
+                    {formatPairingTicker(market.id)}
                   </button>
-                );
-              })}
+              ))}
             </div>
           </div>
           <p className="text-xs text-amber-600/90">
