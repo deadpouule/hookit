@@ -81,9 +81,7 @@ export function moduleLiveStatLine(
         : `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} locked`;
     }
     case "auto-burn":
-      return live.burnedPct != null && live.burnedPct > 0
-        ? `${live.burnedPct.toFixed(2)}% burned`
-        : null;
+      return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
     case "lp-donate": {
       const pending = formatAmount(live.lpDonatePendingHuman, live.quoteLabel);
       return `${modules.lpDonatePct}% of hook fees · ${pending} queued for LPs`;

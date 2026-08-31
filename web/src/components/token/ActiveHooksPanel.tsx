@@ -21,12 +21,8 @@ import {
   moduleTooltipText,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
-import { MASTER_HOOKS, type HookTheme, type MasterHookId } from "@/lib/master-hooks";
-import {
-  moduleLiveStatLine,
-  moduleMeterPct,
-  type ModuleLiveStats,
-} from "@/lib/module-live-stats";
+import { MASTER_HOOKS } from "@/lib/master-hooks";
+import { moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { LaunchModules, TokenPool } from "@/lib/types";
@@ -60,32 +56,6 @@ function quoteDecimals(quote: Address): number {
 
 function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: number } | null {
   return resolveTokenModules(pool);
-}
-
-function ModuleMeter({
-  label,
-  pct,
-  theme,
-}: {
-  label: string;
-  pct: number;
-  theme: HookTheme;
-}) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  return (
-    <div className="token-hooks-meter">
-      <div className="token-hooks-meter-head">
-        <span className="token-hooks-meter-label">{label}</span>
-        <span className="token-hooks-meter-value">{Math.round(clamped)}%</span>
-      </div>
-      <div className="token-hooks-meter-track" aria-hidden>
-        <span
-          className={cn("token-hooks-meter-fill", `token-hooks-meter-fill--${theme}`)}
-          style={{ width: `${clamped}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
@@ -303,7 +273,6 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       <ul className="token-hooks-list">
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
-          const meterPct = moduleMeterPct(hook.id, resolvedModules, pool, live);
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
               <ModuleTip tip={moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps)}>
@@ -314,13 +283,19 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                   )}
                 >
                   <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
-                  <span>{hook.title}</span>
+                  <span className="token-hooks-chip-copy">
+                    <span className="token-hooks-chip-title">{hook.title}</span>
+                    {stat ? (
+                      <>
+                        <span className="token-hooks-chip-sep" aria-hidden>
+                          ·
+                        </span>
+                        <span className="token-hooks-chip-stat">{stat}</span>
+                      </>
+                    ) : null}
+                  </span>
                 </span>
               </ModuleTip>
-              {stat ? <p className="token-hooks-live">{stat}</p> : null}
-              {meterPct != null ? (
-                <ModuleMeter label={hook.title} pct={meterPct} theme={hook.theme} />
-              ) : null}
               <HookInlineAction
                 id={hook.id}
                 pool={pool}
