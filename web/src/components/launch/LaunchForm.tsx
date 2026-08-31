@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
+import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import { PairingPicker } from "@/components/launch/PairingPicker";
@@ -446,6 +447,13 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           )}
             </>
           )}
+
+          <FormDivider />
+          <DevBuySection
+            form={form}
+            variant={variant}
+            onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+          />
         </FormPanel>
 
         <LaunchSummary

@@ -9,12 +9,15 @@ import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
+import { hasDevBuyConfigured, resolveDevBuyQuoteWei } from "@/lib/dev-buy-launch";
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import type { HookId } from "@/lib/hook-marks";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { zeroAddress } from "viem";
 
-export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "done";
+export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "dev-buy" | "done";
 
 function SummaryPairValue({ form }: { form: LaunchFormState }) {
   if (form.markets.length > 1) {
@@ -71,6 +74,22 @@ export function LaunchSummary({
 
   const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
   const showActiveModules = summaryHooks.length > 0;
+
+  const primaryQuoteId = form.markets[0]?.id ?? form.quoteAsset;
+  const quoteAddr =
+    primaryQuoteId === "eth"
+      ? zeroAddress
+      : primaryQuoteId === "usdg"
+        ? STABLE_QUOTE_ADDRESS
+        : zeroAddress;
+  const devBuyConfigured = hasDevBuyConfigured(form);
+  const devBuyQuoteWei = devBuyConfigured
+    ? resolveDevBuyQuoteWei(form, {
+        rail: variant === "classic" ? "classic" : "master",
+        quote: quoteAddr,
+      })
+    : null;
+  const devBuyPayLabel = primaryQuoteId === "eth" ? "ETH" : formatPairingTicker(primaryQuoteId);
 
   const canLaunch =
     !!form.name &&
@@ -129,6 +148,16 @@ export function LaunchSummary({
             </dd>
           </div>
         )}
+        {devBuyConfigured && devBuyQuoteWei && devBuyQuoteWei > 0n && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Dev buy</dt>
+            <dd className="font-mono text-right text-zinc-200">
+              {form.devBuyMode === "supply"
+                ? `${form.devBuySupplyPct.toFixed(2)}% supply`
+                : `${form.devBuyEth} ${devBuyPayLabel}`}
+            </dd>
+          </div>
+        )}
       </dl>
 
       {showActiveModules && (
@@ -169,7 +198,7 @@ export function LaunchSummary({
           <li
             className={cn(
               "flex items-center gap-2",
-              phase === "launching" ? "text-base-blue" : phase === "done" ? "text-emerald-400" : "text-zinc-600",
+              phase === "launching" ? "text-base-blue" : phase === "done" || phase === "dev-buy" ? "text-emerald-400" : "text-zinc-600",
             )}
           >
             {phase === "launching" ? (
@@ -179,6 +208,21 @@ export function LaunchSummary({
             )}
             Create pool & token
           </li>
+          {devBuyConfigured && (
+            <li
+              className={cn(
+                "flex items-center gap-2",
+                phase === "dev-buy" ? "text-base-blue" : phase === "done" ? "text-emerald-400" : "text-zinc-600",
+              )}
+            >
+              {phase === "dev-buy" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              )}
+              Dev buy (first trade)
+            </li>
+          )}
         </ol>
       )}
 

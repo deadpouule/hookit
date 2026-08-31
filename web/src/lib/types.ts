@@ -62,6 +62,10 @@ export interface LaunchFormState {
   customHookFileName: string;
   modules: LaunchModules;
   hookTaxBps: number;
+  /** Dev buy input mode — % of total supply or fixed quote amount. */
+  devBuyMode: "supply" | "eth";
+  /** 0–2.5 when devBuyMode is supply. */
+  devBuySupplyPct: number;
   devBuyEth: string;
   /** @deprecated use markets[0] — kept for classic / single-pool paths */
   quoteAsset: PairingTokenId;

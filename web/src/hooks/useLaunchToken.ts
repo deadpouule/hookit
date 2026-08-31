@@ -29,6 +29,7 @@ import {
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
+import { executeDevBuyAfterLaunch, hasDevBuyConfigured } from "@/lib/dev-buy-launch";
 import { buildMinimalOnChainMetadataUri, resolveLaunchImageUri, resolveOnChainMetadataUri } from "@/lib/launch-metadata";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import { toast } from "@/lib/toast";
@@ -297,7 +298,6 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         }
       }
 
-      setPhase("done");
       const out: LaunchResult = {
         launchId,
         token,
@@ -306,6 +306,40 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         customHookAddress,
         rail,
       };
+
+      if (
+        token !== zeroAddress &&
+        creator &&
+        launchId > 0n &&
+        hasDevBuyConfigured(form)
+      ) {
+        setPhase("dev-buy");
+        const devBuyToast = toast.loading("Executing dev buy…");
+        try {
+          const devBuyHash = await executeDevBuyAfterLaunch({
+            client: publicClient,
+            writeContractAsync: writeContractAsync as (args: Record<string, unknown>) => Promise<`0x${string}`>,
+            rail,
+            form,
+            launchId,
+            token,
+            factory,
+            creator,
+            quote,
+          });
+          toast.dismiss(devBuyToast);
+          if (devBuyHash) {
+            toast.success("Dev buy complete", `${devBuyHash.slice(0, 10)}…`);
+          }
+        } catch (devBuyErr) {
+          toast.dismiss(devBuyToast);
+          const devBuyMsg =
+            devBuyErr instanceof Error ? devBuyErr.message : "Dev buy transaction failed";
+          toast.error("Dev buy failed", devBuyMsg.slice(0, 140));
+        }
+      }
+
+      setPhase("done");
       setResult(out);
       await queryClient.invalidateQueries({ queryKey: ["launches"] });
       toast.dismiss(loadingId);

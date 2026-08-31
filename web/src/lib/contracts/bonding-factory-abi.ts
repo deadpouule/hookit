@@ -122,6 +122,13 @@ export const bondingFactoryAbi = [
   },
   {
     type: "function",
+    name: "graduationQuoteWei",
+    inputs: [{ name: "quote", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "graduate",
     inputs: [{ name: "launchId", type: "uint256" }],
     outputs: [],

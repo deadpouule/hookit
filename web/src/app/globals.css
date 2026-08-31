@@ -174,6 +174,47 @@
       0 0 24px rgb(149 20 209 / 0.12) !important;
   }
 
+  .dev-buy-section {
+    margin-top: 0;
+  }
+
+  .dev-buy-mode-toggle {
+    display: inline-flex;
+    gap: 0;
+    padding: 2px;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .dev-buy-mode-toggle button {
+    border: 0;
+    background: transparent;
+    color: rgb(113 113 122);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0.45rem 0.65rem;
+    border-radius: 999px;
+    transition: color 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .dev-buy-mode-toggle button:hover {
+    color: rgb(212 212 216);
+  }
+
+  .dev-buy-mode-toggle button.is-active {
+    background: rgb(255 255 255 / 0.12);
+    color: rgb(244 244 245);
+  }
+
+  .dev-buy-section [data-slot="slider-thumb"] {
+    border-color: rgb(56 189 248 / 0.6);
+    background: rgb(125 211 252);
+    box-shadow: 0 0 12px rgb(56 189 248 / 0.45);
+  }
+
   .pick-kicker {
     margin: 0 0 0.35rem;
     font-size: 11px;
