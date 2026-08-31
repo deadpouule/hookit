@@ -24,7 +24,7 @@ export function PickCard({
       onClick={onClick}
     >
       <div className="pick-card-mark">{children}</div>
-      <p className="pick-card-title">{title}</p>
+      <p className={cn("pick-card-title", variant === "pair" && "pick-card-title--pair")}>{title}</p>
       <p className="pick-card-sub">{subtitle}</p>
     </button>
   );

@@ -660,11 +660,18 @@
     font-weight: 700;
     letter-spacing: -0.02em;
     color: #fff;
+  }
+
+  .pick-card--hook .pick-card-title {
     text-transform: lowercase;
   }
 
-  .pick-card--pair .pick-card-title {
+  .pick-card-title--pair,
+  .pick-card--pair .pick-card-title,
+  .pick-grid--pairs .pick-card .pick-card-title {
     text-transform: none;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    letter-spacing: 0;
   }
 
   .pick-card-sub {
