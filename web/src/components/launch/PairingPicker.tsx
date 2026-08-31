@@ -154,16 +154,13 @@ export function PairingPicker({
                   }
                 />
               </div>
-            );
-          })}
+          ))}
           <div>
             <p className="mb-2 text-xs text-zinc-500">
               Floor quote (when backed floor ships for multi) — stored for later
             </p>
             <div className="flex flex-wrap gap-2">
-              {markets.map((market, index) => {
-                const token = PAIRING_TOKENS.find((t) => t.id === market.id);
-                return (
+              {markets.map((market, index) => (
                   <button
                     key={market.id}
                     type="button"
@@ -178,8 +175,7 @@ export function PairingPicker({
                     <PairingMark id={market.id} size="sm" />
                     {formatPairingTicker(market.id)}
                   </button>
-                );
-              })}
+              ))}
             </div>
           </div>
           <p className="text-xs text-amber-600/90">
