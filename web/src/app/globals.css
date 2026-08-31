@@ -595,11 +595,15 @@
     font-size: 0.34rem;
   }
 
-  .token-hooks-count {
+  .token-hooks-count-badge {
     flex-shrink: 0;
+    border-radius: 6px;
+    padding: 4px 10px;
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 11px;
-    color: #71717a;
+    font-weight: 600;
+    line-height: 1.3;
+    text-transform: none;
   }
 
   .token-hooks-list {
@@ -711,77 +715,132 @@
   }
 
   .token-hooks-vault-field--fire {
-    border-color: rgb(239 68 68 / 0.55);
+    border-color: rgb(239 68 68 / 0.28);
+  }
+
+  .token-hooks-vault-field--fire:hover,
+  .token-hooks-vault-field--fire:focus-within {
+    border-color: rgb(239 68 68 / 0.6);
     box-shadow:
       0 0 10px rgb(239 68 68 / 0.35),
       inset 0 0 14px rgb(239 68 68 / 0.06);
   }
 
   .token-hooks-vault-field--gold {
-    border-color: rgb(245 158 11 / 0.6);
+    border-color: rgb(245 158 11 / 0.28);
+  }
+
+  .token-hooks-vault-field--gold:hover,
+  .token-hooks-vault-field--gold:focus-within {
+    border-color: rgb(245 158 11 / 0.65);
     box-shadow:
-      0 0 12px rgb(245 158 11 / 0.4),
+      0 0 12px rgb(245 158 11 / 0.42),
       inset 0 0 14px rgb(245 158 11 / 0.08);
   }
 
   .token-hooks-vault-field--void {
-    border-color: rgb(232 121 249 / 0.55);
+    border-color: rgb(232 121 249 / 0.28);
+  }
+
+  .token-hooks-vault-field--void:hover,
+  .token-hooks-vault-field--void:focus-within {
+    border-color: rgb(232 121 249 / 0.6);
     box-shadow:
       0 0 10px rgb(232 121 249 / 0.35),
       inset 0 0 14px rgb(232 121 249 / 0.06);
   }
 
   .token-hooks-vault-field--nature {
-    border-color: rgb(16 185 129 / 0.55);
+    border-color: rgb(16 185 129 / 0.28);
+  }
+
+  .token-hooks-vault-field--nature:hover,
+  .token-hooks-vault-field--nature:focus-within {
+    border-color: rgb(16 185 129 / 0.6);
     box-shadow:
       0 0 10px rgb(16 185 129 / 0.35),
       inset 0 0 14px rgb(16 185 129 / 0.06);
   }
 
   .token-hooks-vault-field--volt {
-    border-color: rgb(3 177 237 / 0.55);
+    border-color: rgb(3 177 237 / 0.28);
+  }
+
+  .token-hooks-vault-field--volt:hover,
+  .token-hooks-vault-field--volt:focus-within {
+    border-color: rgb(3 177 237 / 0.6);
     box-shadow:
       0 0 10px rgb(3 177 237 / 0.35),
       inset 0 0 14px rgb(3 177 237 / 0.06);
   }
 
   .token-hooks-vault-field--ice {
-    border-color: rgb(56 189 248 / 0.55);
+    border-color: rgb(56 189 248 / 0.28);
+  }
+
+  .token-hooks-vault-field--ice:hover,
+  .token-hooks-vault-field--ice:focus-within {
+    border-color: rgb(56 189 248 / 0.6);
     box-shadow:
       0 0 10px rgb(56 189 248 / 0.35),
       inset 0 0 14px rgb(56 189 248 / 0.06);
   }
 
   .token-hooks-vault-field--ember {
-    border-color: rgb(249 115 22 / 0.55);
+    border-color: rgb(249 115 22 / 0.28);
+  }
+
+  .token-hooks-vault-field--ember:hover,
+  .token-hooks-vault-field--ember:focus-within {
+    border-color: rgb(249 115 22 / 0.6);
     box-shadow:
       0 0 10px rgb(249 115 22 / 0.35),
       inset 0 0 14px rgb(249 115 22 / 0.06);
   }
 
   .token-hooks-vault-field--rose {
-    border-color: rgb(244 63 94 / 0.55);
+    border-color: rgb(244 63 94 / 0.28);
+  }
+
+  .token-hooks-vault-field--rose:hover,
+  .token-hooks-vault-field--rose:focus-within {
+    border-color: rgb(244 63 94 / 0.6);
     box-shadow:
       0 0 10px rgb(244 63 94 / 0.35),
       inset 0 0 14px rgb(244 63 94 / 0.06);
   }
 
   .token-hooks-vault-field--steel {
-    border-color: rgb(99 102 241 / 0.55);
+    border-color: rgb(99 102 241 / 0.28);
+  }
+
+  .token-hooks-vault-field--steel:hover,
+  .token-hooks-vault-field--steel:focus-within {
+    border-color: rgb(99 102 241 / 0.6);
     box-shadow:
       0 0 10px rgb(99 102 241 / 0.35),
       inset 0 0 14px rgb(99 102 241 / 0.06);
   }
 
   .token-hooks-vault-field--crimson {
-    border-color: rgb(220 38 38 / 0.55);
+    border-color: rgb(220 38 38 / 0.28);
+  }
+
+  .token-hooks-vault-field--crimson:hover,
+  .token-hooks-vault-field--crimson:focus-within {
+    border-color: rgb(220 38 38 / 0.6);
     box-shadow:
       0 0 10px rgb(220 38 38 / 0.35),
       inset 0 0 14px rgb(220 38 38 / 0.06);
   }
 
   .token-hooks-vault-field--lime {
-    border-color: rgb(132 204 22 / 0.55);
+    border-color: rgb(132 204 22 / 0.28);
+  }
+
+  .token-hooks-vault-field--lime:hover,
+  .token-hooks-vault-field--lime:focus-within {
+    border-color: rgb(132 204 22 / 0.6);
     box-shadow:
       0 0 10px rgb(132 204 22 / 0.35),
       inset 0 0 14px rgb(132 204 22 / 0.06);

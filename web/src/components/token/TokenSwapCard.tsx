@@ -1,10 +1,9 @@
 "use client";
 
 import { formatUnits, parseEther, parseUnits, zeroAddress } from "viem";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
-import { ChevronDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
@@ -27,7 +26,6 @@ import {
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
-import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -217,12 +215,12 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     effectivePayWith === "USDC" ? 1 : effectivePayWith === "ETH" ? ETH_USD : tokenPriceUsd;
   const amountUsd = hasAmount ? Number(amount) * payUnitUsd : 0;
   const stableLabel = stableQuoteLabel();
-  const payTicker =
+  const instantAmountTicker =
     side === "buy"
       ? onBonding
         ? (pool.quoteAsset ?? "ETH")
         : payAsset.symbol
-      : payAsset.symbol;
+      : sellAsset.symbol;
   const walletBalance =
     side === "buy"
       ? effectivePayWith === "USDC"
@@ -447,10 +445,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
                 placeholder="0.0"
                 inputMode="decimal"
               />
-              <span className="swap-amount-ticker">
-                {payTicker}
-                <ChevronDown className="h-3.5 w-3.5 text-zinc-500" />
-              </span>
+              <span className="swap-amount-ticker">{instantAmountTicker}</span>
             </div>
           </div>
           <p className="swap-usd-estimate">≈ {formatCompactUsd(amountUsd)}</p>
@@ -483,7 +478,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             <p className="mt-2 text-[11px] text-zinc-500">
               Balance:{" "}
               {walletBalance < 1 ? walletBalance.toFixed(6) : formatTokenAmount(walletBalance)}{" "}
-              {side === "buy" ? payTicker : ticker}
+              {side === "buy" ? instantAmountTicker : ticker}
             </p>
           )}
 
