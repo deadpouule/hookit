@@ -659,6 +659,44 @@
     opacity: 0.92;
   }
 
+  .token-hooks-chip--expanded {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .token-hooks-chip-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .token-hooks-chip-actions {
+    display: flex;
+    gap: 0.35rem;
+    padding-left: 1.45rem;
+  }
+
+  .token-hooks-chip-actions--stack {
+    flex-direction: column;
+    padding-left: 1.45rem;
+  }
+
+  .token-hooks-chip-actions .token-hooks-vault-input {
+    height: 1.65rem;
+    border-radius: 6px;
+    font-size: 10px;
+  }
+
+  .token-hooks-chip-actions .token-hooks-vault-btn {
+    height: 1.65rem;
+    padding: 0 0.55rem;
+    border-radius: 6px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
   .token-hooks-ascii {
     width: 1.1rem;
     height: 1.1rem;
@@ -1430,13 +1468,19 @@
   }
 
   @media (min-width: 1100px) {
-    .token-desk {
+    .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(280px, 3fr);
       grid-template-areas: "left center right";
       align-items: start;
     }
 
-    .token-desk-rail--left {
+    .token-desk--wide {
+      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+      grid-template-areas: "center right";
+      align-items: start;
+    }
+
+    .token-desk--hooks .token-desk-rail--left {
       grid-area: left;
     }
 
