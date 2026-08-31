@@ -19,16 +19,16 @@ export interface PairingToken {
 }
 
 export const PAIRING_TOKENS: PairingToken[] = [
-  { id: "eth", ticker: "eth", name: "Ether", subtitle: "the classic pair", classic: true },
-  { id: "usdg", ticker: "usdg", name: "Global Dollar", subtitle: "priced in usdg" },
-  { id: "waaplx", ticker: "waaplx", name: "Apple", subtitle: "priced in waaplx" },
-  { id: "wamznx", ticker: "wamznx", name: "Amazon", subtitle: "priced in wamznx" },
-  { id: "wgooglx", ticker: "wgooglx", name: "Alphabet", subtitle: "priced in wgooglx" },
-  { id: "wmstrx", ticker: "wmstrx", name: "MicroStrategy", subtitle: "priced in wmstrx" },
-  { id: "wnflxx", ticker: "wnflxx", name: "Netflix", subtitle: "priced in wnflxx" },
-  { id: "wnvdax", ticker: "wnvdax", name: "NVIDIA", subtitle: "priced in wnvdax" },
-  { id: "wspyx", ticker: "wspyx", name: "S&P 500", subtitle: "priced in wspyx" },
-  { id: "wtslax", ticker: "wtslax", name: "Tesla", subtitle: "priced in wtslax" },
+  { id: "eth", ticker: "ETH", name: "Ether", subtitle: "the classic pair", classic: true },
+  { id: "usdg", ticker: "USDG", name: "Global Dollar", subtitle: "priced in USDG" },
+  { id: "waaplx", ticker: "wAAPLx", name: "Apple", subtitle: "priced in wAAPLx" },
+  { id: "wamznx", ticker: "wAMZNx", name: "Amazon", subtitle: "priced in wAMZNx" },
+  { id: "wgooglx", ticker: "wGOOGLx", name: "Alphabet", subtitle: "priced in wGOOGLx" },
+  { id: "wmstrx", ticker: "wMSTRx", name: "MicroStrategy", subtitle: "priced in wMSTRx" },
+  { id: "wnflxx", ticker: "wNFLXx", name: "Netflix", subtitle: "priced in wNFLXx" },
+  { id: "wnvdax", ticker: "wNVDAx", name: "NVIDIA", subtitle: "priced in wNVDAx" },
+  { id: "wspyx", ticker: "wSPYx", name: "S&P 500", subtitle: "priced in wSPYx" },
+  { id: "wtslax", ticker: "wTSLAx", name: "Tesla", subtitle: "priced in wTSLAx" },
 ];
 
 export function pairingById(id: string) {

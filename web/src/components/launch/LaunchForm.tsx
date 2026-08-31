@@ -122,7 +122,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
   };
 
   return (
-    <div className={cn("launch-shell pt-6 sm:pt-10", form.markets.length > 1 && "launch-shell--multi-pair")}>
+    <div className="launch-shell pt-6 sm:pt-10">
       <Link
         href="/launch"
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"

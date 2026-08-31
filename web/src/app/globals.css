@@ -172,39 +172,6 @@
     color: #e9d5ff;
   }
 
-  .launch-shell--multi-pair .pick-grid--pairs .pick-card:hover,
-  .launch-shell--multi-pair .pick-card--pair:hover {
-    border-color: #38bdf8;
-    box-shadow:
-      0 0 0 1px #38bdf8,
-      0 0 22px rgb(56 189 248 / 0.42);
-  }
-
-  .launch-shell--multi-pair .pick-grid--pairs .pick-card:hover .pick-card-title,
-  .launch-shell--multi-pair .pick-card--pair:hover .pick-card-title {
-    color: #bae6fd;
-  }
-
-  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on,
-  .launch-shell--multi-pair .pick-card--pair.is-on {
-    border-color: #38bdf8 !important;
-    box-shadow:
-      0 0 0 1px #38bdf8,
-      0 0 18px rgb(56 189 248 / 0.35) !important;
-  }
-
-  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on:hover,
-  .launch-shell--multi-pair .pick-card--pair.is-on:hover {
-    box-shadow:
-      0 0 0 1px #38bdf8,
-      0 0 26px rgb(56 189 248 / 0.48) !important;
-  }
-
-  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on .pick-card-title,
-  .launch-shell--multi-pair .pick-card--pair.is-on .pick-card-title {
-    color: #bae6fd;
-  }
-
   .launch-mode-toggle {
     display: flex;
     flex-wrap: wrap;
@@ -271,11 +238,11 @@
   }
 
   .launch-mode-toggle__btn--multi.is-active {
-    background: rgb(56 189 248 / 0.22);
-    color: #e0f2fe;
+    background: rgb(149 20 209 / 0.22);
+    color: #f3e8ff;
     box-shadow:
-      0 0 0 1px rgb(56 189 248 / 0.55),
-      0 0 18px rgb(56 189 248 / 0.28);
+      0 0 0 1px rgb(149 20 209 / 0.55),
+      0 0 18px rgb(149 20 209 / 0.28);
   }
 
   .launch-mode-toggle__glyph.category-hook-glyph {
@@ -299,7 +266,7 @@
   }
 
   .launch-mode-toggle__btn--multi.is-active .category-multi-pair-icon {
-    color: #7dd3fc;
+    color: #c4b5fd;
   }
 
   .launch-mode-toggle--compact {
