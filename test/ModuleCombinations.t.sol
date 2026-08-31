@@ -30,14 +30,37 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
     // ─── Exhaustive 512 masks (8 × 64 batches) ───────────────────────────────
 
-    function testAllModuleMasks_Batch0() public { _runMaskBatch(0, 64); }
-    function testAllModuleMasks_Batch1() public { _runMaskBatch(64, 64); }
-    function testAllModuleMasks_Batch2() public { _runMaskBatch(128, 64); }
-    function testAllModuleMasks_Batch3() public { _runMaskBatch(192, 64); }
-    function testAllModuleMasks_Batch4() public { _runMaskBatch(256, 64); }
-    function testAllModuleMasks_Batch5() public { _runMaskBatch(320, 64); }
-    function testAllModuleMasks_Batch6() public { _runMaskBatch(384, 64); }
-    function testAllModuleMasks_Batch7() public { _runMaskBatch(448, 64); }
+    function testAllModuleMasks_Batch0() public {
+        _runMaskBatch(0, 64);
+    }
+
+    function testAllModuleMasks_Batch1() public {
+        _runMaskBatch(64, 64);
+    }
+
+    function testAllModuleMasks_Batch2() public {
+        _runMaskBatch(128, 64);
+    }
+
+    function testAllModuleMasks_Batch3() public {
+        _runMaskBatch(192, 64);
+    }
+
+    function testAllModuleMasks_Batch4() public {
+        _runMaskBatch(256, 64);
+    }
+
+    function testAllModuleMasks_Batch5() public {
+        _runMaskBatch(320, 64);
+    }
+
+    function testAllModuleMasks_Batch6() public {
+        _runMaskBatch(384, 64);
+    }
+
+    function testAllModuleMasks_Batch7() public {
+        _runMaskBatch(448, 64);
+    }
 
     function _runMaskBatch(uint16 start, uint16 count) internal {
         for (uint16 i; i < count; ++i) {
@@ -49,8 +72,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
         uint256 packed = BitmaskConfig.pack(m);
 
-        (uint256 launchId, address token, PoolId poolId,) =
-            launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token, PoolId poolId,) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         PoolKey memory key = factory.poolKeyOf(launchId);
 
         assertGt(launchId, 0);
@@ -78,7 +100,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         vm.prank(user);
         swapRouter.swap{value: ethIn}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );
@@ -89,7 +113,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         LaunchTokenLike(token).approve(address(swapRouter), tokenIn);
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );
@@ -113,15 +139,41 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _launchBuySellSmoke(uint16(ModuleMatrix.MASK_SPACE - 1));
     }
 
-    function testSingleModule_AntiSnipe() public { _launchBuySellSmoke(ModuleMatrix.BIT_ANTI_SNIPE); }
-    function testSingleModule_BackedFloor() public { _launchBuySellSmoke(ModuleMatrix.BIT_BACKED_FLOOR); }
-    function testSingleModule_AntiMev() public { _launchBuySellSmoke(ModuleMatrix.BIT_ANTI_MEV); }
-    function testSingleModule_MaxTx() public { _launchBuySellSmoke(ModuleMatrix.BIT_MAX_TX); }
-    function testSingleModule_MaxWallet() public { _launchBuySellSmoke(ModuleMatrix.BIT_MAX_WALLET); }
-    function testSingleModule_DynamicFees() public { _launchBuySellSmoke(ModuleMatrix.BIT_DYNAMIC_FEES); }
-    function testSingleModule_BuybackVesting() public { _launchBuySellSmoke(ModuleMatrix.BIT_BUYBACK_VESTING); }
-    function testSingleModule_AutoBurn() public { _launchBuySellSmoke(ModuleMatrix.BIT_AUTO_BURN); }
-    function testSingleModule_LpDonate() public { _launchBuySellSmoke(ModuleMatrix.BIT_LP_DONATE); }
+    function testSingleModule_AntiSnipe() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_ANTI_SNIPE);
+    }
+
+    function testSingleModule_BackedFloor() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_BACKED_FLOOR);
+    }
+
+    function testSingleModule_AntiMev() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_ANTI_MEV);
+    }
+
+    function testSingleModule_MaxTx() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_MAX_TX);
+    }
+
+    function testSingleModule_MaxWallet() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_MAX_WALLET);
+    }
+
+    function testSingleModule_DynamicFees() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_DYNAMIC_FEES);
+    }
+
+    function testSingleModule_BuybackVesting() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_BUYBACK_VESTING);
+    }
+
+    function testSingleModule_AutoBurn() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_AUTO_BURN);
+    }
+
+    function testSingleModule_LpDonate() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_LP_DONATE);
+    }
 
     // ─── Behavioral edge cases ────────────────────────────────────────────────
 
@@ -154,7 +206,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         vm.expectRevert();
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(buyer)
         );
@@ -165,7 +219,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 200;
-        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) =
+            launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(buyer, key, 2 ether);
@@ -203,7 +258,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         m.antiSnipe = true;
         m.antiSnipeDurationSeconds = 500;
         m.initialSnipeTaxBps = 2_000;
-        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) =
+            launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(buyer, key, 0.5 ether);
@@ -214,7 +270,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         vm.expectRevert();
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(bal / 20), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(bal / 20), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(buyer)
         );

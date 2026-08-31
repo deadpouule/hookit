@@ -26,15 +26,41 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
 
     // ─── One module at a time ─────────────────────────────────────────────────
 
-    function testFork_Single_AntiSnipe() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_ANTI_SNIPE); }
-    function testFork_Single_BackedFloor() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR); }
-    function testFork_Single_AntiMev() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_ANTI_MEV); }
-    function testFork_Single_MaxTx() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_TX); }
-    function testFork_Single_MaxWallet() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_WALLET); }
-    function testFork_Single_DynamicFees() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_DYNAMIC_FEES); }
-    function testFork_Single_BuybackVesting() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_BUYBACK_VESTING); }
-    function testFork_Single_AutoBurn() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN); }
-    function testFork_Single_LpDonate() public onlyFork { _smokeLaunchAndSwap(ModuleMatrix.BIT_LP_DONATE); }
+    function testFork_Single_AntiSnipe() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_ANTI_SNIPE);
+    }
+
+    function testFork_Single_BackedFloor() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR);
+    }
+
+    function testFork_Single_AntiMev() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_ANTI_MEV);
+    }
+
+    function testFork_Single_MaxTx() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_TX);
+    }
+
+    function testFork_Single_MaxWallet() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_WALLET);
+    }
+
+    function testFork_Single_DynamicFees() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_DYNAMIC_FEES);
+    }
+
+    function testFork_Single_BuybackVesting() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_BUYBACK_VESTING);
+    }
+
+    function testFork_Single_AutoBurn() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN);
+    }
+
+    function testFork_Single_LpDonate() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_LP_DONATE);
+    }
 
     // ─── Meaningful pairs users might combine ─────────────────────────────────
 
@@ -63,9 +89,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     }
 
     function testFork_Triple_FloorBurnDonate() public onlyFork {
-        _smokeLaunchAndSwap(
-            ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_LP_DONATE
-        );
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_LP_DONATE);
     }
 
     // ─── Fuzz sample on fork (32 masks) ───────────────────────────────────────
@@ -81,9 +105,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.maxWallet = true;
         m.maxWalletBps = 5;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, 1_000_000_000e18, "MW", "MW"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000_000e18, "MW", "MW");
 
         _routerBuy(trader, l.key, l.token, 5 ether);
         vm.expectRevert();
@@ -94,9 +117,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 100;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB");
 
         _routerBuy(trader, l.key, l.token, 1 ether);
         (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
@@ -107,9 +129,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     function testFork_DynamicFees_FlagOnPool() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.dynamicFees = true;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "DF", "DF"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "DF", "DF");
         assertTrue(l.key.fee & LPFeeLibrary.DYNAMIC_FEE_FLAG != 0);
         _routerBuy(trader, l.key, l.token, 0.1 ether);
     }
@@ -120,15 +141,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
         BitmaskConfig.pack(m);
 
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator,
-            Currency.wrap(address(0)),
-            m,
-            60,
-            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
-            "Mod",
-            "MOD"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Mod", "MOD");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);

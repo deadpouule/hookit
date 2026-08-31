@@ -13,6 +13,7 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
 import {LaunchpadTestBase, LaunchTokenLike} from "./utils/LaunchpadTestBase.sol";
+import {HookitSwapRouter} from "../src/HookitSwapRouter.sol";
 import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
@@ -24,10 +25,12 @@ import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 contract CompletenessTest is LaunchpadTestBase {
     using StateLibrary for IPoolManager;
 
+    HookitSwapRouter internal router;
     address internal trader = address(0xBEEF);
 
     function setUp() public {
         deployProtocol();
+        router = new HookitSwapRouter(manager);
         vm.deal(trader, 200 ether);
     }
 
@@ -38,8 +41,7 @@ contract CompletenessTest is LaunchpadTestBase {
         m.hookTaxBps = 200;
         m.backedFloor = true;
         m.floorAllocationBps = 1_000;
-        (uint256 launchId, address token, PoolId poolId, PoolKey memory key) =
-            launchToken(m, 0, 1_000_000e18);
+        (uint256 launchId, address token, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
         key = factory.poolKeyOf(launchId);
 
         vault.deposit{value: 40 ether}(token, Currency.wrap(address(0)), 40 ether);
@@ -116,7 +118,8 @@ contract CompletenessTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 300;
-        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) =
+            launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(trader, key, 3 ether);
@@ -134,7 +137,8 @@ contract CompletenessTest is LaunchpadTestBase {
         m.buybackVesting = true;
         m.buybackVestingDurationSeconds = 30 days;
         m.hookTaxBps = 200;
-        (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,, PoolKey memory key) =
+            launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         key = factory.poolKeyOf(launchId);
 
         _buyAs(trader, key, 2 ether);
@@ -151,9 +155,8 @@ contract CompletenessTest is LaunchpadTestBase {
     // ─── Custom hook launch ───────────────────────────────────────────────────
 
     function testCustomHook_LaunchBuySwap() public {
-        address flags = address(
-            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144)
-        );
+        address flags =
+            address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         HookitCustomHook customHook = HookitCustomHook(payable(flags));
 
@@ -215,14 +218,11 @@ contract CompletenessTest is LaunchpadTestBase {
         assertEq(factory.launchBitmasks(launchId), bitmask);
 
         deal(address(usdc), trader, 1_000_000e6);
+        bool zeroForOne = Currency.unwrap(key.currency1) == token;
+        uint160 limit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
         vm.startPrank(trader);
-        usdc.approve(address(swapRouter), type(uint256).max);
-        swapRouter.swap(
-            key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(500e6), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
-            abi.encode(trader)
-        );
+        usdc.approve(address(router), type(uint256).max);
+        router.swapExactIn(key, zeroForOne, 500e6, 1, limit);
         vm.stopPrank();
 
         assertGt(LaunchTokenLike(token).balanceOf(trader), 0);
@@ -234,7 +234,9 @@ contract CompletenessTest is LaunchpadTestBase {
         vm.prank(user);
         swapRouter.swap{value: ethIn}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );
@@ -245,7 +247,9 @@ contract CompletenessTest is LaunchpadTestBase {
         LaunchTokenLike(token).approve(address(swapRouter), tokenIn);
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );

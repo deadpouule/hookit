@@ -171,8 +171,7 @@ contract ForkInkBondingTest is InkForkTestBase {
         vm.roll(block.number + 1);
         _routerSell(trader, key, r.token, tokBal / 5);
 
-        uint256 pendingQuote = graduatedHook.pendingFees(poolId, quote)
-            + graduatedHook.pendingCreatorTax(poolId, quote);
+        uint256 pendingQuote = graduatedHook.pendingFees(poolId, quote) + graduatedHook.pendingCreatorTax(poolId, quote);
         uint256 pendingTok = graduatedHook.pendingFees(poolId, Currency.wrap(r.token))
             + graduatedHook.pendingCreatorTax(poolId, Currency.wrap(r.token));
         assertGt(pendingQuote + pendingTok, 0);
@@ -183,10 +182,7 @@ contract ForkInkBondingTest is InkForkTestBase {
             assertGt(escrow.balanceOf(creator, quote), creatorBefore);
         } else {
             graduatedHook.sweepWithConversion(key, 1);
-            assertGt(
-                escrow.balanceOf(creator, quote) + distributor.pending(quote),
-                0
-            );
+            assertGt(escrow.balanceOf(creator, quote) + distributor.pending(quote), 0);
         }
     }
 }

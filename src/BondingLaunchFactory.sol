@@ -193,9 +193,8 @@ contract BondingLaunchFactory is Owned {
 
         QuoteConfig memory q = quoteConfigs[token];
         if (!q.allowed) revert InvalidQuote();
-        uint256 ethUsd = ethUsdFeed != address(0)
-            ? _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE)
-            : ethUsdPriceX18;
+        uint256 ethUsd =
+            ethUsdFeed != address(0) ? _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) : ethUsdPriceX18;
         uint256 quoteUsd = _quoteUsdX18(token, q);
         if (ethUsd == 0 || quoteUsd == 0) revert InvalidQuote();
 
@@ -297,20 +296,15 @@ contract BondingLaunchFactory is Owned {
         return _executeBuy(launchId, msg.sender, quoteIn, minTokensOut, false);
     }
 
-    function _executeBuy(
-        uint256 launchId,
-        address buyer,
-        uint256 quoteIn,
-        uint256 minTokensOut,
-        bool devBuyFromLaunch
-    ) private returns (uint256 tokensOut, uint256 feeQuote) {
+    function _executeBuy(uint256 launchId, address buyer, uint256 quoteIn, uint256 minTokensOut, bool devBuyFromLaunch)
+        private
+        returns (uint256 tokensOut, uint256 feeQuote)
+    {
         Launch storage l = launches[launchId];
         if (l.phase != Phase.Bonding) revert NotBonding();
         if (l.tokensSold >= l.curveSupply) revert CurveSoldOut();
 
-        uint256 paid = devBuyFromLaunch && l.quote == address(0)
-            ? quoteIn
-            : _pullQuote(l.quote, quoteIn);
+        uint256 paid = devBuyFromLaunch && l.quote == address(0) ? quoteIn : _pullQuote(l.quote, quoteIn);
         if (paid == 0) revert ZeroAmount();
 
         uint256 maxDevTokens = FixedPointMath.applyBps(l.totalSupply, ProtocolConstants.MAX_DEV_BUY_BPS);
@@ -337,8 +331,7 @@ contract BondingLaunchFactory is Owned {
             (feeQuote,) = _splitFee(paid);
         } else {
             (feeQuote, quoteForCurve) = _splitFee(paid);
-            (, l.virtualQuote, l.virtualToken) =
-                BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteForCurve);
+            (, l.virtualQuote, l.virtualToken) = BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteForCurve);
         }
 
         if (devBuyFromLaunch && tokensOut > maxDevTokens) revert DevBuyTooLarge();
@@ -367,8 +360,7 @@ contract BondingLaunchFactory is Owned {
 
         if (!IERC20Minimal(l.token).transferFrom(msg.sender, address(this), tokensIn)) revert TransferFailed();
 
-        (quoteOut, l.virtualQuote, l.virtualToken) =
-            BondingMath.sellTokenIn(l.virtualQuote, l.virtualToken, tokensIn);
+        (quoteOut, l.virtualQuote, l.virtualToken) = BondingMath.sellTokenIn(l.virtualQuote, l.virtualToken, tokensIn);
         if (quoteOut > l.realQuote) quoteOut = l.realQuote;
 
         l.tokensSold -= tokensIn;
@@ -430,9 +422,7 @@ contract BondingLaunchFactory is Owned {
         if (quote != address(0)) IERC20Minimal(quote).approve(address(locker), quoteLp);
 
         uint256 ethValue = quote == address(0) ? quoteLp : 0;
-        locker.seed{value: ethValue}(
-            key, sqrtPriceX96, tickLower, tickUpper, liquidity, quote, quoteLp, token, tokenLp
-        );
+        locker.seed{value: ethValue}(key, sqrtPriceX96, tickLower, tickUpper, liquidity, quote, quoteLp, token, tokenLp);
 
         l.phase = Phase.Graduated;
         l.poolId = key.toId();

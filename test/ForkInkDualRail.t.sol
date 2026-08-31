@@ -22,13 +22,7 @@ contract ForkInkDualRailTest is InkForkTestBase {
         // Master kitchen sink on ETH.
         BitmaskConfig.Modules memory m = ModuleMatrix.kitchenSink();
         InkForkTestBase.LaunchResult memory master = _launch(
-            creator,
-            Currency.wrap(address(0)),
-            m,
-            60,
-            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
-            "Master",
-            "MST"
+            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Master", "MST"
         );
         _routerBuy(trader, master.key, master.token, 0.2 ether);
         assertGt(_tokenBalance(master.token, trader), 0);
@@ -49,9 +43,8 @@ contract ForkInkDualRailTest is InkForkTestBase {
     }
 
     function testFork_DualRail_MasterUsdg_BondingUsdg() public onlyFork {
-        InkForkTestBase.LaunchResult memory master = _launch(
-            creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MU", "MU"
-        );
+        InkForkTestBase.LaunchResult memory master =
+            _launch(creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MU", "MU");
         _routerBuy(trader, master.key, master.token, 1_000e6);
 
         BondingResult memory classic = _bondingLaunch(creator, usdg, 0, "BU", "BU");

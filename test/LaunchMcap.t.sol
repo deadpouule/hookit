@@ -39,11 +39,9 @@ contract LaunchMcapTest is LaunchpadTestBase {
         uint256 expectedMcapEth = factory.launchMcapQuoteWei();
         assertEq(expectedMcapEth, 2 ether);
 
-        (, , PoolId poolId,) = launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (,, PoolId poolId,) = launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         (uint160 sqrtPriceX96,,,) = manager.getSlot0(poolId);
-        uint256 spotMcap = FixedPointMath.quoteFromToken(
-            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, false
-        );
+        uint256 spotMcap = FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, false);
         assertApproxEqRel(spotMcap, expectedMcapEth, 0.01e18);
     }
 }

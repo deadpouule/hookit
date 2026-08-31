@@ -84,9 +84,7 @@ contract HookitSwapRouter is IUnlockCallback {
             recipient: msg.sender,
             key: key,
             params: SwapParams({
-                zeroForOne: zeroForOne,
-                amountSpecified: -int256(amountIn),
-                sqrtPriceLimitX96: sqrtPriceLimitX96
+                zeroForOne: zeroForOne, amountSpecified: -int256(amountIn), sqrtPriceLimitX96: sqrtPriceLimitX96
             }),
             minAmountOut: minAmountOut
         });
@@ -168,9 +166,7 @@ contract HookitSwapRouter is IUnlockCallback {
         _settleCurrencyDelta(call.key.currency0, call.payer, call.recipient);
         _settleCurrencyDelta(call.key.currency1, call.payer, call.recipient);
 
-        uint256 amountOut = call.params.zeroForOne
-            ? (d1 > 0 ? uint256(d1) : 0)
-            : (d0 > 0 ? uint256(d0) : 0);
+        uint256 amountOut = call.params.zeroForOne ? (d1 > 0 ? uint256(d1) : 0) : (d0 > 0 ? uint256(d0) : 0);
         if (amountOut < call.minAmountOut) revert InsufficientOutput();
 
         return abi.encode(amountOut);
@@ -227,9 +223,7 @@ contract HookitSwapRouter is IUnlockCallback {
             call.quoteCurrency.take(poolManager, call.payer, uint256(quoteLeft), false);
         }
 
-        uint256 amountOut = call.hookZeroForOne
-            ? (d1 > 0 ? uint256(d1) : 0)
-            : (d0 > 0 ? uint256(d0) : 0);
+        uint256 amountOut = call.hookZeroForOne ? (d1 > 0 ? uint256(d1) : 0) : (d0 > 0 ? uint256(d0) : 0);
         if (amountOut < call.minAmountOut) revert InsufficientOutput();
 
         return abi.encode(amountOut);

@@ -43,7 +43,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
         m.antiSnipeDurationSeconds = 300;
         m.initialSnipeTaxBps = 1_000;
 
-        (uint256 launchId, address token, PoolId primary) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+        (uint256 launchId, address token, PoolId primary) = factory.launchMulti{
+            value: ProtocolConstants.LAUNCH_FEE_WEI
+        }(
             LaunchFactory.LaunchMultiParams({
                 name: "Multi",
                 symbol: "MLT",
@@ -233,20 +235,11 @@ contract LaunchMultiTest is LaunchpadTestBase {
         (,,,, poolId,,,) = factory.launches(launchId);
     }
 
-    function _market(uint256 launchId, uint256 index)
-        internal
-        view
-        returns (LaunchFactory.LaunchMarket memory market)
-    {
+    function _market(uint256 launchId, uint256 index) internal view returns (LaunchFactory.LaunchMarket memory market) {
         (Currency quote, uint16 bps, PoolId poolId, int24 tickLower, int24 tickUpper, uint128 liquidity) =
             factory.launchMarkets(launchId, index);
         market = LaunchFactory.LaunchMarket({
-            quote: quote,
-            bps: bps,
-            poolId: poolId,
-            tickLower: tickLower,
-            tickUpper: tickUpper,
-            liquidity: liquidity
+            quote: quote, bps: bps, poolId: poolId, tickLower: tickLower, tickUpper: tickUpper, liquidity: liquidity
         });
     }
 }

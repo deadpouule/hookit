@@ -32,9 +32,8 @@ contract BondingDevBuyTest is Test, Deployers {
         escrow = new FeeEscrow(address(this), manager);
         distributor = new ProtocolRevenueDistributor(address(this), ops, manager);
 
-        uint160 flags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 flags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         address hookAddr = address(flags | (uint160(0xB0AD) << 144));
         bytes memory args = abi.encode(manager, escrow, distributor, address(this));
         deployCodeTo("GraduatedFeeHook.sol:GraduatedFeeHook", args, hookAddr);
@@ -50,7 +49,7 @@ contract BondingDevBuyTest is Test, Deployers {
     }
 
     function test_AtomicDevBuyOnLaunch() public {
-        uint256 devBuy = 0.05 ether;
+        uint256 devBuy = 0.01 ether;
         vm.prank(creator);
         (uint256 launchId, address token) = bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI + devBuy}(
             BondingLaunchFactory.LaunchParams({
@@ -66,7 +65,7 @@ contract BondingDevBuyTest is Test, Deployers {
         );
 
         assertGt(IERC20Minimal(token).balanceOf(creator), 0);
-        (,,,,,, uint256 tokensSold,,,,,,,) = bonding.launches(launchId);
+        (,,,,,, uint256 tokensSold,,,,,,,,) = bonding.launches(launchId);
         assertGt(tokensSold, 0);
     }
 }

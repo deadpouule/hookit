@@ -32,7 +32,13 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LaunchEthQuote_BuyAndSell() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkETH", "IETH"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "InkETH",
+            "IETH"
         );
 
         _routerBuy(trader, l.key, l.token, 0.25 ether);
@@ -44,9 +50,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     }
 
     function testFork_LaunchUsdgQuote_BuyAndSell() public onlyFork {
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkUSDG", "IUSD"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkUSDG", "IUSD");
 
         _routerBuy(trader, l.key, l.token, 1_000e6);
         uint256 tokens = _tokenBalance(l.token, trader);
@@ -57,9 +62,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     }
 
     function testFork_LaunchWspyxQuote_BuyAndSell() public onlyFork {
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkSPY", "ISPY"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkSPY", "ISPY");
 
         _routerBuy(trader, l.key, l.token, 0.05e18);
         uint256 tokens = _tokenBalance(l.token, trader);
@@ -71,7 +75,13 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LaunchTickSpacing10() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 10, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tick10", "T10"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            10,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Tick10",
+            "T10"
         );
         assertEq(l.key.tickSpacing, 10);
         _routerBuy(trader, l.key, l.token, 0.1 ether);
@@ -80,7 +90,13 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LaunchTickSpacing60() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tick60", "T60"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Tick60",
+            "T60"
         );
         assertEq(l.key.tickSpacing, 60);
         _routerBuy(trader, l.key, l.token, 0.1 ether);
@@ -89,11 +105,16 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_MultipleLaunches_Isolated() public onlyFork {
         InkForkTestBase.LaunchResult memory a = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "A", "AAA"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "A",
+            "AAA"
         );
-        InkForkTestBase.LaunchResult memory b = _launch(
-            creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "B", "BBB"
-        );
+        InkForkTestBase.LaunchResult memory b =
+            _launch(creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "B", "BBB");
 
         assertTrue(a.token != b.token);
         assertTrue(PoolId.unwrap(a.poolId) != PoolId.unwrap(b.poolId));
@@ -108,7 +129,13 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LaunchLiquidityCannotBeRemoved() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Lock", "LCK"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Lock",
+            "LCK"
         );
         IMasterLaunchHook.LaunchState memory st = hook.launchState(l.poolId);
 
@@ -118,10 +145,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
             address(factory),
             l.key,
             ModifyLiquidityParams({
-                tickLower: st.tickLower,
-                tickUpper: st.tickUpper,
-                liquidityDelta: -1,
-                salt: bytes32(0)
+                tickLower: st.tickLower, tickUpper: st.tickUpper, liquidityDelta: -1, salt: bytes32(0)
             }),
             ""
         );
@@ -132,9 +156,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_CreatorClaimsFees_EthQuote() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 100;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Fees", "FEE"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Fees", "FEE");
         Currency quote = Currency.wrap(address(0));
 
         uint256 escrowBefore = escrow.balanceOf(creator, quote);
@@ -149,7 +172,13 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_ProtocolFees_Distribute8020() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Proto", "PRO"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Proto",
+            "PRO"
         );
         Currency quote = Currency.wrap(address(0));
 
@@ -174,9 +203,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_HookTaxGoesToProtocol_NotCreator() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 500; // 5% — no modules → unallocated hook tax to protocol
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tax", "TAX"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tax", "TAX");
         Currency quote = Currency.wrap(address(0));
 
         uint256 escrowBefore = escrow.balanceOf(creator, quote);
@@ -193,9 +221,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_UsdgQuote_FeesAccrueInUsdg() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 50;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, usdg, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "UFee", "UFE"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, usdg, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "UFee", "UFE");
 
         uint256 escrowBefore = escrow.balanceOf(creator, usdg);
         _routerBuy(trader, l.key, l.token, 2_000e6);
@@ -214,9 +241,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         m.hookTaxBps = 200; // 2% hook tax pot
         m.backedFloor = true;
         m.floorAllocationBps = 2_000; // 20% of hook tax pot
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Floor", "FLR"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Floor", "FLR");
 
         uint256 reserveBefore = vault.reserve(l.token);
         _routerBuy(trader, l.key, l.token, 1.5 ether);
@@ -230,9 +256,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         m.antiSnipe = true;
         m.antiSnipeDurationSeconds = 1_000;
         m.initialSnipeTaxBps = 5_000;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Snipe", "SNP"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Snipe", "SNP");
         Currency quote = Currency.wrap(address(0));
 
         _routerBuy(trader, l.key, l.token, 0.5 ether);
@@ -252,9 +277,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         m.hookTaxBps = 300;
         m.autoBurn = true;
         m.autoBurnBps = 3_000;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Burn", "BRN"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Burn", "BRN");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         _routerBuy(trader, l.key, l.token, 2 ether);
@@ -285,9 +309,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         m.lpDonate = true;
         m.autoBurnBps = 1_500;
         m.lpDonateBps = 1_500;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Combo", "CMB"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Combo", "CMB");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         uint256 escrowBefore = escrow.balanceOf(creator, Currency.wrap(address(0)));
@@ -300,9 +323,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_AntiMev_BlocksSameBlockRoundTrip() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.antiMev = true;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MEV", "MEV"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MEV", "MEV");
 
         _routerBuy(trader, l.key, l.token, 0.5 ether);
         uint256 bal = _tokenBalance(l.token, trader);
@@ -318,9 +340,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_AntiMev_AllowsSellNextBlock() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.antiMev = true;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MEV2", "MV2"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "MEV2", "MV2");
 
         _routerBuy(trader, l.key, l.token, 0.5 ether);
         vm.roll(block.number + 1);
@@ -333,9 +354,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_SellAccruesFeesToCreator() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 100;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Sell", "SEL"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Sell", "SEL");
         Currency quote = Currency.wrap(address(0));
 
         _routerBuy(trader, l.key, l.token, 1 ether);
@@ -351,11 +371,18 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_LaunchMcapNearFourThousandUsd_Eth() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Mcap", "MCP"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Mcap",
+            "MCP"
         );
         bool tokenIs0 = Currency.unwrap(l.key.currency0) == l.token;
         (uint160 sqrtPriceX96,,,) = manager.getSlot0(l.poolId);
-        uint256 mcapQuote = FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
+        uint256 mcapQuote =
+            FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
         uint256 expected = factory.mcapQuoteFor(address(0));
         assertApproxEqRel(mcapQuote, expected, 0.05e18);
     }

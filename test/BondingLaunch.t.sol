@@ -43,9 +43,8 @@ contract BondingLaunchTest is Test, Deployers {
         escrow = new FeeEscrow(address(this), manager);
         distributor = new ProtocolRevenueDistributor(address(this), ops, manager);
 
-        uint160 flags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 flags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         address hookAddr = address(flags | (uint160(0xB0AD) << 144));
         bytes memory args = abi.encode(manager, escrow, distributor, address(this));
         deployCodeTo("GraduatedFeeHook.sol:GraduatedFeeHook", args, hookAddr);
@@ -128,9 +127,7 @@ contract BondingLaunchTest is Test, Deployers {
         swapRouter.swap{value: 0.05 ether}(
             key,
             SwapParams({
-                zeroForOne: true,
-                amountSpecified: -int256(0.05 ether),
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+                zeroForOne: true, amountSpecified: -int256(0.05 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""
@@ -196,9 +193,7 @@ contract BondingLaunchTest is Test, Deployers {
         swapRouter.swap{value: 0.1 ether}(
             key,
             SwapParams({
-                zeroForOne: true,
-                amountSpecified: -int256(0.1 ether),
-                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+                zeroForOne: true, amountSpecified: -int256(0.1 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""
@@ -210,9 +205,7 @@ contract BondingLaunchTest is Test, Deployers {
         swapRouter.swap(
             key,
             SwapParams({
-                zeroForOne: false,
-                amountSpecified: -int256(bal / 4),
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+                zeroForOne: false, amountSpecified: -int256(bal / 4), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""

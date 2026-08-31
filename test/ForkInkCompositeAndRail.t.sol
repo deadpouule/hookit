@@ -38,9 +38,8 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
     }
 
     function testFork_CompositeUsdgToWspyxToToken() public onlyFork {
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Cmp", "CMP"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Cmp", "CMP");
 
         PoolKey memory bridgeKey = QuotronBridge.poolKey(QuotronStockQuotes.wSPYx);
         bool bridgeZfo = QuotronBridge.zeroForOne(QuotronStockQuotes.wSPYx, Currency.unwrap(usdg));
@@ -51,9 +50,7 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
 
         uint256 balBefore = _tokenBalance(l.token, trader);
         bool hookZfo = _buyZeroForOne(l.key, l.token);
-        uint256 tokensOut = router.swapExactInComposite(
-            bridgeKey, bridgeZfo, usdgIn, l.key, hookZfo, wspyx, 1, 0, 0
-        );
+        uint256 tokensOut = router.swapExactInComposite(bridgeKey, bridgeZfo, usdgIn, l.key, hookZfo, wspyx, 1, 0, 0);
         vm.stopPrank();
 
         assertGt(tokensOut, 0);

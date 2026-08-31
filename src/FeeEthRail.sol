@@ -39,7 +39,9 @@ contract FeeEthRail is Owned, IUnlockCallback {
     error TransferFailed();
     error NativeNotAccepted();
 
-    event EthBridgeSet(Currency currency0, Currency currency1, uint24 fee, int24 tickSpacing, address hooks, address wethToken);
+    event EthBridgeSet(
+        Currency currency0, Currency currency1, uint24 fee, int24 tickSpacing, address hooks, address wethToken
+    );
     event Converted(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
 
     struct SwapCall {
@@ -115,9 +117,7 @@ contract FeeEthRail is Owned, IUnlockCallback {
         poolManager.swap(
             call.key,
             SwapParams({
-                zeroForOne: call.zeroForOne,
-                amountSpecified: -int256(call.amountIn),
-                sqrtPriceLimitX96: call.sqrtLimit
+                zeroForOne: call.zeroForOne, amountSpecified: -int256(call.amountIn), sqrtPriceLimitX96: call.sqrtLimit
             }),
             ""
         );

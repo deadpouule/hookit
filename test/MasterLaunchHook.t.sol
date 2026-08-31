@@ -124,8 +124,8 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         buyExactIn(key, 1 ether);
-        uint256 feesAtLaunch = escrow.balanceOf(address(this), Currency.wrap(address(0)))
-            + distributor.pending(Currency.wrap(address(0)));
+        uint256 feesAtLaunch =
+            escrow.balanceOf(address(this), Currency.wrap(address(0))) + distributor.pending(Currency.wrap(address(0)));
 
         vm.warp(block.timestamp + 1_000);
         uint256 pendingBefore = distributor.pending(Currency.wrap(address(0)));
@@ -147,7 +147,9 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         vm.expectRevert();
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(bal / 10), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(bal / 10), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );
@@ -176,7 +178,9 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         vm.expectRevert();
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );

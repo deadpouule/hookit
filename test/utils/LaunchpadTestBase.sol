@@ -133,7 +133,9 @@ abstract contract LaunchpadTestBase is Test, Deployers {
     function buyExactIn(PoolKey memory key, uint256 ethIn) internal {
         swapRouter.swap{value: ethIn}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );
@@ -143,7 +145,9 @@ abstract contract LaunchpadTestBase is Test, Deployers {
         LaunchTokenLike(token).approve(address(swapRouter), tokenIn);
         swapRouter.swap(
             key,
-            SwapParams({zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1}),
+            SwapParams({
+                zeroForOne: false, amountSpecified: -int256(tokenIn), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );

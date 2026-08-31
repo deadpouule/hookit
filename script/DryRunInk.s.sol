@@ -35,8 +35,7 @@ import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 /// @notice Ink mainnet fork dry-run: dual-rail deploy, HKIT, Master + Classic smoke.
 /// @dev `forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-limit -vv`
 contract DryRunInkScript is Script {
-    uint256 internal constant ANVIL_DEPLOYER_PK =
-        0xac0974bec39a39a17e36ba4a292a5b8a36c683c0e11c0521fcd0663fca4ddd4;
+    uint256 internal constant ANVIL_DEPLOYER_PK = 0xac0974bec39a39a17e36ba4a292a5b8a36c683c0e11c0521fcd0663fca4ddd4;
     uint160 internal constant EXPECTED_HOOK_FLAGS = uint160(
         Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
             | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
@@ -100,17 +99,19 @@ contract DryRunInkScript is Script {
         d.airdrops = new HolderAirdropVault(deployer, manager);
 
         bytes memory ctorArgs = abi.encode(manager, d.vault, d.escrow, d.distributor, d.buybacks, d.airdrops, deployer);
-        (address predicted, bytes32 salt) =
-            HookMiner.find(HookMiner.CREATE2_DEPLOYER, EXPECTED_HOOK_FLAGS, type(MasterLaunchHook).creationCode, ctorArgs);
-        d.hook = new MasterLaunchHook{salt: salt}(manager, d.vault, d.escrow, d.distributor, d.buybacks, d.airdrops, deployer);
+        (address predicted, bytes32 salt) = HookMiner.find(
+            HookMiner.CREATE2_DEPLOYER, EXPECTED_HOOK_FLAGS, type(MasterLaunchHook).creationCode, ctorArgs
+        );
+        d.hook = new MasterLaunchHook{salt: salt}(
+            manager, d.vault, d.escrow, d.distributor, d.buybacks, d.airdrops, deployer
+        );
         require(address(d.hook) == predicted, "hook address mismatch");
 
         d.factory = new LaunchFactory(manager, d.hook, deployer, ops);
         HookitDeployLib.seedQuotes(d.factory);
 
-        uint160 gFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 gFlags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         bytes memory gArgs = abi.encode(manager, d.escrow, d.distributor, deployer);
         (address gPredicted, bytes32 gSalt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, gFlags, type(GraduatedFeeHook).creationCode, gArgs);
@@ -140,10 +141,9 @@ contract DryRunInkScript is Script {
         d.distributor.setFeeRail(d.feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, d.feeRail);
 
-        (d.hkitLaunchId, d.hkit,, d.hkitKey) =
-            HkitLaunchLib.fairLaunch(
-                d.factory, d.distributor, d.hkitBuyback, "HOOKTEST", "HTST", "ipfs://hooktest-native-dry-run"
-            );
+        (d.hkitLaunchId, d.hkit,, d.hkitKey) = HkitLaunchLib.fairLaunch(
+            d.factory, d.distributor, d.hkitBuyback, "HOOKTEST", "HTST", "ipfs://hooktest-native-dry-run"
+        );
 
         vm.stopBroadcast();
     }
@@ -165,9 +165,7 @@ contract DryRunInkScript is Script {
         }
 
         require(d.distributor.nativeToken() == d.hkit, "HKIT not native");
-        require(
-            d.distributor.flywheelMode() == ProtocolRevenueDistributor.FlywheelMode.BuybackBurn, "flywheel mode"
-        );
+        require(d.distributor.flywheelMode() == ProtocolRevenueDistributor.FlywheelMode.BuybackBurn, "flywheel mode");
         require(d.distributor.buybackExecutor() == address(d.hkitBuyback), "buyback executor");
         require(d.hkitLaunchId == 1, "HKIT should be launch #1");
         if (!d.feeRail.ethBridgeSet()) {

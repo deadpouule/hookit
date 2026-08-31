@@ -72,10 +72,7 @@ contract LiquidityLocker is IUnlockCallback {
         (BalanceDelta delta,) = poolManager.modifyLiquidity(
             key,
             ModifyLiquidityParams({
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: liqDelta,
-                salt: GRADUATION_SALT
+                tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: liqDelta, salt: GRADUATION_SALT
             }),
             ""
         );

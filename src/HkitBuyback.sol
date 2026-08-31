@@ -74,7 +74,9 @@ contract HkitBuyback is Owned, IUnlockCallback {
 
         bool zeroForOne = Currency.unwrap(poolKey.currency0) == address(0);
         tokensBurned = abi.decode(
-            poolManager.unlock(abi.encode(SwapCall({ethIn: pulled, minTokensOut: minTokensOut, zeroForOne: zeroForOne}))),
+            poolManager.unlock(
+                abi.encode(SwapCall({ethIn: pulled, minTokensOut: minTokensOut, zeroForOne: zeroForOne}))
+            ),
             (uint256)
         );
 
