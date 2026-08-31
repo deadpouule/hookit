@@ -20,6 +20,7 @@ export function FloorVaultInline({
   decimals,
   quoteLabel,
   floorPriceHuman,
+  embedded = false,
 }: {
   pool: TokenPool;
   floorVault: Address | undefined;
@@ -27,6 +28,7 @@ export function FloorVaultInline({
   decimals: number;
   quoteLabel: string;
   floorPriceHuman: number | null;
+  embedded?: boolean;
 }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -73,6 +75,27 @@ export function FloorVaultInline({
       ? `${floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${quoteLabel}`
       : "—";
 
+  if (embedded) {
+    return (
+      <div className="token-hooks-chip-actions">
+        <input
+          value={redeemAmount}
+          onChange={(e) => setRedeemAmount(e.target.value)}
+          placeholder={`${pool.ticker} amount`}
+          className="token-hooks-vault-input"
+        />
+        <button
+          type="button"
+          disabled={!floorVault || !redeemAmount || isPending || !address}
+          onClick={() => void redeem()}
+          className="token-hooks-vault-btn"
+        >
+          Redeem
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="token-hooks-vault">
       <div className="token-hooks-vault-meta">
@@ -116,6 +139,7 @@ export function HolderAirdropInline({
   secondsLeft,
   decimals,
   quoteLabel,
+  embedded = false,
 }: {
   pool: TokenPool;
   airdropVault: Address | undefined;
@@ -123,6 +147,7 @@ export function HolderAirdropInline({
   secondsLeft: number | null;
   decimals: number;
   quoteLabel: string;
+  embedded?: boolean;
 }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -179,6 +204,22 @@ export function HolderAirdropInline({
   else if (!ready) disabledReason = `Wait ${formatAirdropWait(secondsLeft)}`;
   else if (!holdsToken) disabledReason = "Hold tokens to claim";
 
+  if (embedded) {
+    return (
+      <div className="token-hooks-chip-actions token-hooks-chip-actions--stack">
+        <button
+          type="button"
+          disabled={!airdropVault || isPending || !!disabledReason}
+          onClick={() => void claimDrop()}
+          className="token-hooks-vault-btn w-full"
+          title={disabledReason ?? undefined}
+        >
+          {isPending ? "Claiming…" : disabledReason ?? "Claim drop"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="token-hooks-vault token-hooks-vault--passive">
       <div className="token-hooks-vault-meta">
@@ -215,6 +256,7 @@ export function HookInlineAction({
   decimals,
   floorPriceHuman,
   quoteLabel,
+  embedded = false,
 }: {
   id: MasterHookId;
   pool: TokenPool;
@@ -226,6 +268,7 @@ export function HookInlineAction({
   decimals: number;
   floorPriceHuman: number | null;
   quoteLabel: string;
+  embedded?: boolean;
 }) {
   if (id === "backed-floor") {
     return (
@@ -236,6 +279,7 @@ export function HookInlineAction({
         decimals={decimals}
         quoteLabel={quoteLabel}
         floorPriceHuman={floorPriceHuman}
+        embedded={embedded}
       />
     );
   }
@@ -249,6 +293,7 @@ export function HookInlineAction({
         secondsLeft={airdropSecondsLeft ?? null}
         decimals={decimals}
         quoteLabel={quoteLabel}
+        embedded={embedded}
       />
     );
   }

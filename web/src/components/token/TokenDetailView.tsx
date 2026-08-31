@@ -20,6 +20,7 @@ import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/forma
 import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (
@@ -57,6 +58,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     : null;
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
+  const isClassicDesk = pool.rail === "classic";
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -74,11 +76,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         Back to explore
       </Link>
 
-      <div className="token-desk mt-4">
-        <aside className="token-desk-rail token-desk-rail--left space-y-3">
-          <ActiveHooksPanel pool={pool} />
-          <BondingProgress pool={pool} />
-        </aside>
+      <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
+        {!isClassicDesk && (
+          <aside className="token-desk-rail token-desk-rail--left space-y-3">
+            <ActiveHooksPanel pool={pool} />
+          </aside>
+        )}
 
         <div className="token-desk-main min-w-0 space-y-4">
           <div className="desk-card token-hero-card">
@@ -189,6 +192,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
         <aside className="token-desk-rail token-desk-rail--right space-y-3">
           <TokenSwapCard pool={pool} />
+          {isClassicDesk && <BondingProgress pool={pool} />}
           <CreatorActions pool={pool} />
           <TokenSidebarStats live={live} pool={pool} contractAddress={contractAddress} />
         </aside>

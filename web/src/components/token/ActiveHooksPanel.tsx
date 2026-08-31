@@ -21,7 +21,7 @@ import {
   moduleTooltipText,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
-import { MASTER_HOOKS } from "@/lib/master-hooks";
+import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
@@ -56,6 +56,50 @@ function quoteDecimals(quote: Address): number {
 
 function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: number } | null {
   return resolveTokenModules(pool);
+}
+
+const EXPANDED_HOOK_IDS = new Set<MasterHookId>(["backed-floor", "holder-airdrop"]);
+
+function HookModuleBadge({
+  hook,
+  stat,
+  tip,
+  children,
+}: {
+  hook: (typeof MASTER_HOOKS)[number];
+  stat: string | null;
+  tip: string;
+  children?: ReactNode;
+}) {
+  const expanded = EXPANDED_HOOK_IDS.has(hook.id);
+
+  return (
+    <ModuleTip tip={tip}>
+      <div
+        className={cn(
+          "token-hooks-chip orb-hook-desc-badge",
+          `orb-hook-desc-badge--${hook.theme}`,
+          expanded && "token-hooks-chip--expanded",
+        )}
+      >
+        <div className="token-hooks-chip-top">
+          <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
+          <span className="token-hooks-chip-copy">
+            <span className="token-hooks-chip-title">{hook.title}</span>
+            {stat ? (
+              <>
+                <span className="token-hooks-chip-sep" aria-hidden>
+                  ·
+                </span>
+                <span className="token-hooks-chip-stat">{stat}</span>
+              </>
+            ) : null}
+          </span>
+        </div>
+        {children}
+      </div>
+    </ModuleTip>
+  );
 }
 
 export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
@@ -273,41 +317,28 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       <ul className="token-hooks-list">
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
+          const tip = moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps);
+          const expanded = EXPANDED_HOOK_IDS.has(hook.id);
+
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
-              <ModuleTip tip={moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps)}>
-                <span
-                  className={cn(
-                    "token-hooks-chip orb-hook-desc-badge",
-                    `orb-hook-desc-badge--${hook.theme}`,
-                  )}
-                >
-                  <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
-                  <span className="token-hooks-chip-copy">
-                    <span className="token-hooks-chip-title">{hook.title}</span>
-                    {stat ? (
-                      <>
-                        <span className="token-hooks-chip-sep" aria-hidden>
-                          ·
-                        </span>
-                        <span className="token-hooks-chip-stat">{stat}</span>
-                      </>
-                    ) : null}
-                  </span>
-                </span>
-              </ModuleTip>
-              <HookInlineAction
-                id={hook.id}
-                pool={pool}
-                floorVault={floorVault as Address | undefined}
-                floorReserveWei={floorReserveWei}
-                airdropVault={airdropVault as Address | undefined}
-                airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
-                airdropSecondsLeft={live.airdropSecondsLeft}
-                decimals={decimals}
-                floorPriceHuman={live.floorPriceHuman}
-                quoteLabel={live.quoteLabel}
-              />
+              <HookModuleBadge hook={hook} stat={stat} tip={tip}>
+                {expanded ? (
+                  <HookInlineAction
+                    id={hook.id}
+                    pool={pool}
+                    floorVault={floorVault as Address | undefined}
+                    floorReserveWei={floorReserveWei}
+                    airdropVault={airdropVault as Address | undefined}
+                    airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
+                    airdropSecondsLeft={live.airdropSecondsLeft}
+                    decimals={decimals}
+                    floorPriceHuman={live.floorPriceHuman}
+                    quoteLabel={live.quoteLabel}
+                    embedded
+                  />
+                ) : null}
+              </HookModuleBadge>
             </li>
           );
         })}

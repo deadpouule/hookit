@@ -53,8 +53,14 @@ export function moduleLiveStatLine(
       if (left <= 0) return null;
       return `${left}s left`;
     }
-    case "backed-floor":
-      return null;
+    case "backed-floor": {
+      const vault = formatAmount(live.floorReserveHuman, live.quoteLabel);
+      const floor =
+        live.floorPriceHuman != null
+          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
+          : `0 ${live.quoteLabel}`;
+      return `${modules.floorAllocation}% · Vault ${vault} · Floor ${floor}`;
+    }
     case "anti-mev":
       return null;
     case "max-tx":
