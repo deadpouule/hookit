@@ -172,6 +172,39 @@
     color: #e9d5ff;
   }
 
+  .launch-shell--multi-pair .pick-grid--pairs .pick-card:hover,
+  .launch-shell--multi-pair .pick-card--pair:hover {
+    border-color: #38bdf8;
+    box-shadow:
+      0 0 0 1px #38bdf8,
+      0 0 22px rgb(56 189 248 / 0.42);
+  }
+
+  .launch-shell--multi-pair .pick-grid--pairs .pick-card:hover .pick-card-title,
+  .launch-shell--multi-pair .pick-card--pair:hover .pick-card-title {
+    color: #bae6fd;
+  }
+
+  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on,
+  .launch-shell--multi-pair .pick-card--pair.is-on {
+    border-color: #38bdf8 !important;
+    box-shadow:
+      0 0 0 1px #38bdf8,
+      0 0 18px rgb(56 189 248 / 0.35) !important;
+  }
+
+  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on:hover,
+  .launch-shell--multi-pair .pick-card--pair.is-on:hover {
+    box-shadow:
+      0 0 0 1px #38bdf8,
+      0 0 26px rgb(56 189 248 / 0.48) !important;
+  }
+
+  .launch-shell--multi-pair .pick-grid--pairs .pick-card.is-on .pick-card-title,
+  .launch-shell--multi-pair .pick-card--pair.is-on .pick-card-title {
+    color: #bae6fd;
+  }
+
   .launch-mode-toggle {
     display: flex;
     flex-wrap: wrap;
@@ -269,40 +302,26 @@
     color: #7dd3fc;
   }
 
+  .launch-mode-toggle--compact {
+    display: inline-flex;
+    width: auto;
+    max-width: 100%;
+  }
+
+  .launch-mode-toggle--compact .launch-mode-toggle__btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 0.45rem 0.65rem;
+    font-size: 11px;
+    gap: 0.35rem;
+  }
+
   .dev-buy-section {
     margin-top: 0;
   }
 
-  .dev-buy-mode-toggle {
-    display: inline-flex;
-    gap: 0;
-    padding: 2px;
-    border-radius: 999px;
-    border: 1px solid rgb(255 255 255 / 0.08);
-    background: rgb(0 0 0 / 0.45);
-  }
-
-  .dev-buy-mode-toggle button {
-    border: 0;
-    background: transparent;
-    color: rgb(113 113 122);
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1;
-    padding: 0.45rem 0.65rem;
-    border-radius: 999px;
-    transition: color 0.15s ease, background 0.15s ease;
-    white-space: nowrap;
-  }
-
-  .dev-buy-mode-toggle button:hover {
-    color: rgb(212 212 216);
-  }
-
-  .dev-buy-mode-toggle button.is-active {
-    background: rgb(255 255 255);
-    color: rgb(0 0 0);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  .hook-fee-slider {
+    margin-top: 0.5rem;
   }
 
   .pick-kicker {

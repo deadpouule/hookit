@@ -5,10 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
-import { Slider } from "@/components/ui/slider";
+import { AccentSlider } from "@/components/launch/AccentSlider";
 import { capitalizeDescription } from "@/lib/format";
 import { isModuleEnabled, moduleCardHint } from "@/lib/launch-module-summary";
 import {
+  hookAccentColor,
   MASTER_HOOKS,
   type MasterHook,
   type MasterHookId,
@@ -165,7 +166,7 @@ export function HookModulePicker({
                 hookTaxBps={hookTaxBps}
               />
               <HookSettings
-                hookId={hook.id}
+                hook={hook}
                 modules={modules}
                 onUpdate={onUpdate}
                 floorEst={floorEst}
@@ -215,19 +216,21 @@ function HookConfigHeader({
 }
 
 function HookSettings({
-  hookId,
+  hook,
   modules,
   onUpdate,
   floorEst,
   hookTaxBps = 0,
 }: {
-  hookId: MasterHookId;
+  hook: MasterHook;
   modules: LaunchModules;
   onUpdate: (patch: Partial<LaunchModules>) => void;
   floorEst: number;
   hookTaxBps?: number;
 }) {
-  if (hookId === "anti-snipe") {
+  const accent = hookAccentColor(hook.id);
+
+  if (hook.id === "anti-snipe") {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -235,7 +238,8 @@ function HookSettings({
             <span>Duration</span>
             <span className="font-mono text-zinc-300">{modules.antiSnipeDuration}s</span>
           </div>
-          <Slider
+          <AccentSlider
+            accentColor={accent}
             value={[modules.antiSnipeDuration]}
             onValueChange={([v]) => onUpdate({ antiSnipeDuration: v })}
             min={1}
@@ -248,7 +252,8 @@ function HookSettings({
             <span>Initial tax</span>
             <span className="font-mono text-zinc-300">{modules.antiSnipeInitialTax}%</span>
           </div>
-          <Slider
+          <AccentSlider
+            accentColor={accent}
             value={[modules.antiSnipeInitialTax]}
             onValueChange={([v]) => onUpdate({ antiSnipeInitialTax: v })}
             min={50}
@@ -260,14 +265,15 @@ function HookSettings({
     );
   }
 
-  if (hookId === "backed-floor") {
+  if (hook.id === "backed-floor") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>Fee to floor</span>
           <span className="font-mono text-zinc-300">{modules.floorAllocation}%</span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.floorAllocation]}
           onValueChange={([v]) => onUpdate({ floorAllocation: v })}
           min={0}
@@ -283,7 +289,7 @@ function HookSettings({
     );
   }
 
-  if (hookId === "max-wallet") {
+  if (hook.id === "max-wallet") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
@@ -292,7 +298,8 @@ function HookSettings({
             {(modules.maxWalletBps / 100).toFixed(1)}% supply
           </span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.maxWalletBps / 100]}
           onValueChange={([v]) => onUpdate({ maxWalletBps: Math.round(v * 100) })}
           min={0.5}
@@ -303,14 +310,15 @@ function HookSettings({
     );
   }
 
-  if (hookId === "max-tx") {
+  if (hook.id === "max-tx") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>Cap</span>
           <span className="font-mono text-zinc-300">{(modules.maxTxBps / 100).toFixed(1)}% supply</span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.maxTxBps / 100]}
           onValueChange={([v]) => onUpdate({ maxTxBps: Math.round(v * 100) })}
           min={0.5}
@@ -321,7 +329,7 @@ function HookSettings({
     );
   }
 
-  if (hookId === "buyback-vesting") {
+  if (hook.id === "buyback-vesting") {
     const days = modules.buybackVestingDurationDays ?? 365 * 5;
     return (
       <div>
@@ -331,7 +339,8 @@ function HookSettings({
             {days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
           </span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[days]}
           onValueChange={([v]) => onUpdate({ buybackVestingDurationDays: v })}
           min={7}
@@ -345,14 +354,15 @@ function HookSettings({
     );
   }
 
-  if (hookId === "auto-burn") {
+  if (hook.id === "auto-burn") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>Burn share</span>
           <span className="font-mono text-zinc-300">{modules.autoBurnPct}%</span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.autoBurnPct]}
           onValueChange={([v]) => onUpdate({ autoBurnPct: v })}
           min={1}
@@ -363,14 +373,15 @@ function HookSettings({
     );
   }
 
-  if (hookId === "lp-donate") {
+  if (hook.id === "lp-donate") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>LP donate share</span>
           <span className="font-mono text-zinc-300">{modules.lpDonatePct}%</span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.lpDonatePct]}
           onValueChange={([v]) => onUpdate({ lpDonatePct: v })}
           min={1}
@@ -381,14 +392,15 @@ function HookSettings({
     );
   }
 
-  if (hookId === "holder-airdrop") {
+  if (hook.id === "holder-airdrop") {
     return (
       <div>
         <div className="mb-2 flex justify-between text-xs text-zinc-500">
           <span>Fee to holder airdrop</span>
           <span className="font-mono text-zinc-300">{modules.holderAirdropPct}%</span>
         </div>
-        <Slider
+        <AccentSlider
+          accentColor={accent}
           value={[modules.holderAirdropPct]}
           onValueChange={([v]) => onUpdate({ holderAirdropPct: v })}
           min={1}
@@ -402,7 +414,7 @@ function HookSettings({
     );
   }
 
-  if (hookId === "creator-share-to-hook") {
+  if (hook.id === "creator-share-to-hook") {
     const hasFeeSink =
       modules.backedFloor ||
       modules.autoBurn ||
@@ -435,7 +447,7 @@ function HookSettings({
 
   return (
     <ul className="space-y-1 font-mono text-[11px] text-zinc-500">
-      {MASTER_HOOKS.find((hook) => hook.id === hookId)?.settings.map((line) => (
+      {MASTER_HOOKS.find((item) => item.id === hook.id)?.settings.map((line) => (
         <li key={line}>{line}</li>
       ))}
     </ul>

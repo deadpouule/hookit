@@ -9,6 +9,7 @@ import {
   type PairingTokenId,
 } from "@/lib/pairing-tokens";
 import type { LaunchMarketInput } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const MAX_MARKETS = 5;
 const BPS_TOTAL = 10_000;
@@ -107,7 +108,7 @@ export function PairingPicker({
         {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
       </p>
       <p className="pick-heading">Pick your pair{isMulti ? "s" : ""}</p>
-      <div className="pick-grid pick-grid--pairs">
+      <div className={cn("pick-grid pick-grid--pairs", isMulti && "pick-grid--pairs-multi")}>
         {PAIRING_TOKENS.map((token) => (
           <PickCard
             key={token.id}

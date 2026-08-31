@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import { zeroAddress } from "viem";
 
+import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import {
   estimateClassicDevBuyQuoteWei,
@@ -18,6 +18,8 @@ import {
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const LAUNCH_VIOLET = "#9514d1";
 
 type Props = {
   form: LaunchFormState;
@@ -67,7 +69,7 @@ export function DevBuySection({ form, variant, onChange }: Props) {
         <p className="text-sm font-semibold text-white">
           Dev buy <span className="font-normal text-zinc-500">(optional)</span>
         </p>
-        <div className="dev-buy-mode-toggle" role="tablist" aria-label="Dev buy input mode">
+        <div className="launch-mode-toggle launch-mode-toggle--compact" role="tablist" aria-label="Dev buy input mode">
           {(
             [
               { value: "supply" as const, label: "% of supply" },
@@ -80,7 +82,10 @@ export function DevBuySection({ form, variant, onChange }: Props) {
               role="tab"
               aria-selected={form.devBuyMode === opt.value}
               onClick={() => onChange({ devBuyMode: opt.value })}
-              className={cn(form.devBuyMode === opt.value && "is-active")}
+              className={cn(
+                "launch-mode-toggle__btn launch-mode-toggle__btn--single",
+                form.devBuyMode === opt.value && "is-active",
+              )}
             >
               {opt.label}
             </button>
@@ -103,7 +108,8 @@ export function DevBuySection({ form, variant, onChange }: Props) {
             </span>
             <span>{MAX_DEV_BUY_SUPPLY_PCT}%</span>
           </div>
-          <Slider
+          <AccentSlider
+            accentColor={LAUNCH_VIOLET}
             value={[form.devBuySupplyPct]}
             onValueChange={([v]) => onChange({ devBuySupplyPct: v })}
             min={0}
