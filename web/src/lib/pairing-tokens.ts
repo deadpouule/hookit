@@ -36,7 +36,10 @@ export function pairingById(id: string) {
 }
 
 export function formatPairingTicker(id: PairingTokenId) {
-  if (id === "eth") return "ETH";
-  if (id === "usdg") return "USDG";
-  return `w${id.slice(1, -1).toUpperCase()}x`;
+  return pairingById(id).ticker;
+}
+
+export function pairingSubtitle(id: PairingTokenId) {
+  if (id === "eth") return "the classic pair";
+  return `priced in ${formatPairingTicker(id)}`;
 }

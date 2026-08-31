@@ -408,7 +408,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
               <FormDivider />
 
-              <SectionLabel>Fees & rewards</SectionLabel>
+              <p className="pick-heading">Fees & rewards</p>
               <p className="mt-1 text-xs text-zinc-600">
                 Fees deducted in quote asset only — zero sell pressure on your token.
               </p>

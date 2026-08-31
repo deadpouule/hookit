@@ -6,6 +6,7 @@ import { PickCard } from "@/components/launch/PickCard";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import {
   formatPairingTicker,
+  pairingSubtitle,
   PAIRING_TOKENS,
   type PairingTokenId,
 } from "@/lib/pairing-tokens";
@@ -118,11 +119,9 @@ export function PairingPicker({
             selected={selectedIds.has(token.id)}
             title={formatPairingTicker(token.id)}
             subtitle={
-              selectedIds.has(token.id)
-                ? isMulti
-                  ? `${((markets.find((m) => m.id === token.id)?.bps ?? 0) / 100).toFixed(1)}% liq`
-                  : token.subtitle
-                : token.subtitle
+              selectedIds.has(token.id) && isMulti
+                ? `${((markets.find((m) => m.id === token.id)?.bps ?? 0) / 100).toFixed(1)}% liq`
+                : pairingSubtitle(token.id)
             }
             onClick={() => toggle(token.id)}
           >
