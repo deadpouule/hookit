@@ -8,7 +8,11 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary, toBeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {
+    BeforeSwapDelta,
+    BeforeSwapDeltaLibrary,
+    toBeforeSwapDelta
+} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {SwapParams, ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
@@ -244,8 +248,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         _antiMev(id, packed, isBuy);
 
-        uint256 specifiedAbs =
-            exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
+        uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
 
         if (packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
             _checkMaxTx(st.token, packed.maxTxBps(), specifiedAbs, isBuy, exactInput);
@@ -260,9 +263,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(packed.hookTaxBps()) + uint256(snipeBps);
         if (totalFeeBps > ProtocolConstants.BPS_DENOMINATOR) {
-            snipeBps = uint16(
-                ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.hookTaxBps()
-            );
+            snipeBps = uint16(ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.hookTaxBps());
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
@@ -272,29 +273,26 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         // Floor intercept: sell that is already at/below floor OR would cross the floor in this swap.
         if (!isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
-            uint256 tokenAmt = exactInput
-                ? specifiedAbs
-                : FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, tokenIs0);
-            if (
-                FixedPointMath.sellWouldBreachFloor(
+            uint256 tokenAmt =
+                exactInput ? specifiedAbs : FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, tokenIs0);
+            if (FixedPointMath.sellWouldBreachFloor(
                     sqrtPriceX96,
                     liquidity,
                     tokenIs0,
                     vault.reserve(st.token),
                     IERC20Supply(st.token).totalSupply(),
                     tokenAmt
-                )
-            ) {
+                )) {
                 return _floorFill(key, st, params, exactInput, specifiedAbs);
             }
         }
 
-        uint256 quoteNotional = _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
+        uint256 quoteNotional =
+            _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
         uint256 feeAmount = FixedPointMath.applyBps(quoteNotional, totalFeeBps);
         if (feeAmount == 0) {
-            uint24 lpOverride = packed.enabled(BitmaskConfig.DYNAMIC_FEES_ENABLED)
-                ? (LPFeeLibrary.OVERRIDE_FEE_FLAG | 0)
-                : 0;
+            uint24 lpOverride =
+                packed.enabled(BitmaskConfig.DYNAMIC_FEES_ENABLED) ? (LPFeeLibrary.OVERRIDE_FEE_FLAG | 0) : 0;
             return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, lpOverride);
         }
 
@@ -347,7 +345,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     function _floorFill(
         PoolKey calldata key,
         LaunchState storage st,
-        SwapParams calldata /* params */,
+        SwapParams calldata,
+        /* params */
         bool exactInput,
         uint256 specifiedAbs
     ) private returns (bytes4, BeforeSwapDelta, uint24) {
@@ -397,16 +396,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, st.tokenIsCurrency0);
     }
 
-    function _distributeFees(
-        PoolId id,
-        LaunchState storage st,
-        uint256 packed,
-        uint256 feeAmount,
-        uint16 snipeBps
-    ) private {
+    function _distributeFees(PoolId id, LaunchState storage st, uint256 packed, uint256 feeAmount, uint16 snipeBps)
+        private
+    {
         uint16 hookTaxBps_ = packed.hookTaxBps();
-        uint256 totalBps =
-            uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
+        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
         if (totalBps == 0) return;
 
         // Base (+ snipe) always computes 70/30. Hook tax is a separate pot for modules.
@@ -435,11 +429,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             _pushQuote(st.quote, address(buybacks), buybackAmt);
             if (buybackAmt > 0) {
                 buybacks.creditInternal(
-                    st.creator,
-                    st.token,
-                    st.quote,
-                    buybackAmt,
-                    packed.buybackVestingDurationSeconds()
+                    st.creator, st.token, st.quote, buybackAmt, packed.buybackVestingDurationSeconds()
                 );
             }
         } else {
@@ -488,14 +478,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         pendingLpDonate[id] = lpDonateCut;
 
         emit FeesDistributed(
-            id,
-            creatorEscrowAmt + buybackAmt,
-            protocolShare,
-            floorCut,
-            buybackAmt,
-            autoBurnCut,
-            lpDonateCut,
-            airdropCut
+            id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut, airdropCut
         );
     }
 
@@ -515,13 +498,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         lastSwapPacked[id][origin] = (block.number << 8) | dir;
     }
 
-    function _checkMaxTx(
-        address token,
-        uint16 bps,
-        uint256 specifiedAbs,
-        bool isBuy,
-        bool exactInput
-    ) private view {
+    function _checkMaxTx(address token, uint16 bps, uint256 specifiedAbs, bool isBuy, bool exactInput) private view {
         uint256 cap = FixedPointMath.applyBps(IERC20Supply(token).totalSupply(), bps);
         if (cap == 0) return;
         bool tokenIsSpecified = isBuy ? !exactInput : exactInput;
@@ -542,7 +519,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
                 sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
             }),
             ""
-        ) returns (BalanceDelta d) {
+        ) returns (
+            BalanceDelta d
+        ) {
             delta = d;
         } catch {
             _setFeeAction(false);

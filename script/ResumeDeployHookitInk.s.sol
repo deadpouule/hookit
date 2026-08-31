@@ -43,8 +43,7 @@ contract ResumeDeployHookitInkScript is Script {
 
         FloorVault vault = FloorVault(payable(vm.envAddress("FLOOR_VAULT")));
         FeeEscrow escrow = FeeEscrow(payable(vm.envAddress("FEE_ESCROW")));
-        ProtocolRevenueDistributor distributor =
-            ProtocolRevenueDistributor(payable(vm.envAddress("DISTRIBUTOR")));
+        ProtocolRevenueDistributor distributor = ProtocolRevenueDistributor(payable(vm.envAddress("DISTRIBUTOR")));
         BuybackVault buybacks = BuybackVault(payable(vm.envAddress("BUYBACK_VAULT")));
         HolderAirdropVault airdrops = HolderAirdropVault(payable(vm.envAddress("HOLDER_AIRDROP_VAULT")));
         MasterLaunchHook hook = MasterLaunchHook(payable(vm.envAddress("MASTER_LAUNCH_HOOK")));
@@ -58,18 +57,15 @@ contract ResumeDeployHookitInkScript is Script {
             factory.setQuote(stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0));
         }
 
-        uint160 gradFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 gradFlags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         bytes memory gradArgs = abi.encode(manager, escrow, distributor, deployer);
         (address gradPredicted, bytes32 gradSalt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, gradFlags, type(GraduatedFeeHook).creationCode, gradArgs);
-        GraduatedFeeHook graduated =
-            new GraduatedFeeHook{salt: gradSalt}(manager, escrow, distributor, deployer);
+        GraduatedFeeHook graduated = new GraduatedFeeHook{salt: gradSalt}(manager, escrow, distributor, deployer);
         require(address(graduated) == gradPredicted, "graduated hook mismatch");
 
-        BondingLaunchFactory bonding =
-            new BondingLaunchFactory(manager, graduated, escrow, distributor, deployer, ops);
+        BondingLaunchFactory bonding = new BondingLaunchFactory(manager, graduated, escrow, distributor, deployer, ops);
         graduated.setFactory(address(bonding));
         HookitDeployLib.seedBondingQuotes(bonding);
 
@@ -91,9 +87,8 @@ contract ResumeDeployHookitInkScript is Script {
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
-        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) = HkitLaunchLib.fairLaunch(
-            factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri
-        );
+        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) =
+            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri);
 
         vm.stopBroadcast();
 

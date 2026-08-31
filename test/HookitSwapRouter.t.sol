@@ -46,11 +46,14 @@ contract HookitSwapRouterTest is LaunchpadTestBase {
     }
 
     function testGetLaunchPageAndPoolKey() public {
-        (uint256 launchId, address token,,) =
-            launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (uint256 launchId, address token,,) = launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
 
-        (LaunchFactory.LaunchInfo[] memory infos, uint256[] memory bitmasks, uint64[] memory timestamps, uint256 total)
-        = factory.getLaunchPage(1, 10);
+        (
+            LaunchFactory.LaunchInfo[] memory infos,
+            uint256[] memory bitmasks,
+            uint64[] memory timestamps,
+            uint256 total
+        ) = factory.getLaunchPage(1, 10);
 
         assertEq(total, 1);
         assertEq(infos.length, 1);

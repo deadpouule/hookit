@@ -58,8 +58,8 @@ contract ForkCompositeSwapTest is Test {
 
     function setUp() public {
         string memory rpc = vm.envOr("BASE_SEPOLIA_RPC_URL", string("https://sepolia.base.org"));
-        try vm.createSelectFork(rpc) {
-        } catch {
+        try vm.createSelectFork(rpc) {}
+        catch {
             vm.skip(true);
             return;
         }
@@ -126,9 +126,7 @@ contract ForkCompositeSwapTest is Test {
         usdc.mint(address(this), 50_000_000e6);
         usdc.approve(address(liquidityRouter), type(uint256).max);
         liquidityRouter.modifyLiquidity{value: 50 ether}(
-            bridgeKey,
-            ModifyLiquidityParams({tickLower: -600, tickUpper: 600, liquidityDelta: 1e18, salt: 0}),
-            ""
+            bridgeKey, ModifyLiquidityParams({tickLower: -600, tickUpper: 600, liquidityDelta: 1e18, salt: 0}), ""
         );
     }
 

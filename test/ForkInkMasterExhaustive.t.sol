@@ -16,14 +16,37 @@ contract ForkInkMasterExhaustiveTest is InkForkTestBase {
     using StateLibrary for IPoolManager;
     using CurrencyLibrary for Currency;
 
-    function testFork_AllMasks_Batch0() public onlyFork { _runMaskBatch(0, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch1() public onlyFork { _runMaskBatch(64, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch2() public onlyFork { _runMaskBatch(128, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch3() public onlyFork { _runMaskBatch(192, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch4() public onlyFork { _runMaskBatch(256, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch5() public onlyFork { _runMaskBatch(320, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch6() public onlyFork { _runMaskBatch(384, 64, Currency.wrap(address(0))); }
-    function testFork_AllMasks_Batch7() public onlyFork { _runMaskBatch(448, 64, Currency.wrap(address(0))); }
+    function testFork_AllMasks_Batch0() public onlyFork {
+        _runMaskBatch(0, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch1() public onlyFork {
+        _runMaskBatch(64, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch2() public onlyFork {
+        _runMaskBatch(128, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch3() public onlyFork {
+        _runMaskBatch(192, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch4() public onlyFork {
+        _runMaskBatch(256, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch5() public onlyFork {
+        _runMaskBatch(320, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch6() public onlyFork {
+        _runMaskBatch(384, 64, Currency.wrap(address(0)));
+    }
+
+    function testFork_AllMasks_Batch7() public onlyFork {
+        _runMaskBatch(448, 64, Currency.wrap(address(0)));
+    }
 
     /// @notice USDG quote sample: every 8th mask (64 launches) to keep fork runtime bounded.
     function testFork_Usdg_MaskSample() public onlyFork {
@@ -49,15 +72,8 @@ contract ForkInkMasterExhaustiveTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
         BitmaskConfig.pack(m);
 
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator,
-            quote,
-            m,
-            60,
-            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
-            "Ex",
-            "EX"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Ex", "EX");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);

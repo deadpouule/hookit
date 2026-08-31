@@ -37,7 +37,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         m.hookTaxBps = 500;
         m.lpDonate = true;
         m.lpDonateBps = 5_000;
-        (, , PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+        (,, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         buyExactIn(key, 5 ether);
         (uint256 growth0, uint256 growth1) = manager.getFeeGrowthGlobals(poolId);

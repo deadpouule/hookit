@@ -56,7 +56,8 @@ contract DeployBaseSepoliaScript is Script {
         (address predicted, bytes32 salt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, flags, type(MasterLaunchHook).creationCode, ctorArgs);
 
-        MasterLaunchHook hook = new MasterLaunchHook{salt: salt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
+        MasterLaunchHook hook =
+            new MasterLaunchHook{salt: salt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
         require(address(hook) == predicted, "hook address mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
@@ -75,9 +76,7 @@ contract DeployBaseSepoliaScript is Script {
         // Live Quotrons/Ink USDG↔ETH liquidity only — no proprietary seed.
 
         (uint256 hkitLaunchId, address hkit,,) =
-            HkitLaunchLib.fairLaunch(
-                factory, distributor, hkitBuyback, "HOOKIT", "HKIT", "ipfs://hookit-hkit"
-            );
+            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, "HOOKIT", "HKIT", "ipfs://hookit-hkit");
 
         uint256 bitmask = BitmaskConfig.pack(
             BitmaskConfig.Modules({
@@ -132,7 +131,9 @@ contract DeployBaseSepoliaScript is Script {
 
         swapper.swap{value: 0.001 ether}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -0.001 ether, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -0.001 ether, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(deployer)
         );

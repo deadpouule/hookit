@@ -90,23 +90,17 @@ contract HolderAirdropTest is LaunchpadTestBase {
         vm.prank(user);
         swapRouter.swap{value: ethIn}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );
     }
 
     function _circulatingHolders(address token, address a, address b) internal view returns (address[] memory holders) {
-        address[8] memory candidates = [
-            a,
-            b,
-            address(this),
-            address(swapRouter),
-            address(factory),
-            ops,
-            address(escrow),
-            address(distributor)
-        ];
+        address[8] memory candidates =
+            [a, b, address(this), address(swapRouter), address(factory), ops, address(escrow), address(distributor)];
         uint256 n;
         for (uint256 i; i < candidates.length; ++i) {
             address c = candidates[i];

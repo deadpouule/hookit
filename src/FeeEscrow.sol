@@ -79,9 +79,8 @@ contract FeeEscrow is Owned, UnlockTaker, IFeeEscrow {
     }
 
     function _payout(address to, Currency currency, uint256 amount) private {
-        uint256 claims = address(claimsManager) == address(0)
-            ? 0
-            : claimsManager.balanceOf(address(this), currency.toId());
+        uint256 claims =
+            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), currency.toId());
         if (claims >= amount) {
             _redeemClaims(currency, to, amount);
         } else {

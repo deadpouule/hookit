@@ -26,9 +26,7 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     mapping(address => mapping(address => Stream)) public streams;
 
     event OperatorSet(address indexed operator, bool allowed);
-    event Credited(
-        address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount
-    );
+    event Credited(address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount);
     event Claimed(address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount);
 
     error NotOperator();
@@ -89,9 +87,8 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
         Stream storage s = streams[msg.sender][launchToken];
         s.claimed += uint128(vested);
 
-        uint256 claims = address(claimsManager) == address(0)
-            ? 0
-            : claimsManager.balanceOf(address(this), s.currency.toId());
+        uint256 claims =
+            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), s.currency.toId());
         if (claims >= vested) {
             _redeemClaims(s.currency, msg.sender, vested);
         } else {
@@ -121,7 +118,8 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
         if (s.start == 0) {
             s.start = uint64(block.timestamp);
             s.currency = currency;
-            s.durationSeconds = durationSeconds == 0 ? uint64(ProtocolConstants.BUYBACK_VESTING_DURATION) : durationSeconds;
+            s.durationSeconds =
+                durationSeconds == 0 ? uint64(ProtocolConstants.BUYBACK_VESTING_DURATION) : durationSeconds;
         } else if (Currency.unwrap(s.currency) != Currency.unwrap(currency)) {
             revert CurrencyMismatch();
         }

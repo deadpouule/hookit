@@ -61,18 +61,15 @@ contract DeployHookitCoreScript is Script {
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
         HookitDeployLib.seedQuotes(factory);
 
-        uint160 gradFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 gradFlags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         bytes memory gradArgs = abi.encode(manager, escrow, distributor, deployer);
         (address gradPredicted, bytes32 gradSalt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, gradFlags, type(GraduatedFeeHook).creationCode, gradArgs);
-        GraduatedFeeHook graduated =
-            new GraduatedFeeHook{salt: gradSalt}(manager, escrow, distributor, deployer);
+        GraduatedFeeHook graduated = new GraduatedFeeHook{salt: gradSalt}(manager, escrow, distributor, deployer);
         require(address(graduated) == gradPredicted, "graduated hook mismatch");
 
-        BondingLaunchFactory bonding =
-            new BondingLaunchFactory(manager, graduated, escrow, distributor, deployer, ops);
+        BondingLaunchFactory bonding = new BondingLaunchFactory(manager, graduated, escrow, distributor, deployer, ops);
         graduated.setFactory(address(bonding));
         HookitDeployLib.seedBondingQuotes(bonding);
 
@@ -94,9 +91,8 @@ contract DeployHookitCoreScript is Script {
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
-        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) = HkitLaunchLib.fairLaunch(
-            factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri
-        );
+        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) =
+            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri);
 
         vm.stopBroadcast();
 

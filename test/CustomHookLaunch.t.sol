@@ -22,9 +22,8 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
 
     function setUp() public {
         deployProtocol();
-        address flags = address(
-            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144)
-        );
+        address flags =
+            address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         customHook = HookitCustomHook(payable(flags));
     }

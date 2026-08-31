@@ -220,12 +220,11 @@ library FixedPointMath {
 
     /// @notice Starting tick so spot FDV in quote equals `mcapQuoteWei` for a unilateral launch position.
     /// @param tokenIsCurrency1 True when the launched token is `currency1` (native-ETH quote launches).
-    function startingTickForMcap(
-        uint256 totalSupply,
-        uint256 mcapQuoteWei,
-        int24 tickSpacing,
-        bool tokenIsCurrency1
-    ) internal pure returns (int24) {
+    function startingTickForMcap(uint256 totalSupply, uint256 mcapQuoteWei, int24 tickSpacing, bool tokenIsCurrency1)
+        internal
+        pure
+        returns (int24)
+    {
         if (totalSupply == 0 || mcapQuoteWei == 0) revert InvalidPrice();
 
         if (tokenIsCurrency1) {

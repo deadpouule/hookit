@@ -87,8 +87,8 @@ abstract contract InkForkTestBase is Test {
 
     function _selectInkFork() internal returns (bool) {
         string memory rpc = vm.envOr("INK_RPC_URL", string("https://rpc-gel.inkonchain.com"));
-        try vm.createSelectFork(rpc) {
-        } catch {
+        try vm.createSelectFork(rpc) {}
+        catch {
             return false;
         }
         if (block.chainid != INK_CHAIN) return false;
@@ -136,9 +136,8 @@ abstract contract InkForkTestBase is Test {
     }
 
     function _deployBondingRail() internal {
-        uint160 gFlags = uint160(
-            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-        );
+        uint160 gFlags =
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
         address gAddr = address(gFlags | (uint160(0xB0AD) << 144));
         bytes memory gArgs = abi.encode(manager, escrow, distributor, deployer);
         deployCodeTo("GraduatedFeeHook.sol:GraduatedFeeHook", gArgs, gAddr);
@@ -294,10 +293,13 @@ abstract contract InkForkTestBase is Test {
         uint256 graduationQuote;
     }
 
-    function _bondingLaunch(address launcher, Currency quote, uint16 creatorTaxBps, string memory name, string memory symbol)
-        internal
-        returns (BondingResult memory r)
-    {
+    function _bondingLaunch(
+        address launcher,
+        Currency quote,
+        uint16 creatorTaxBps,
+        string memory name,
+        string memory symbol
+    ) internal returns (BondingResult memory r) {
         vm.prank(launcher);
         (r.launchId, r.token) = bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             BondingLaunchFactory.LaunchParams({
@@ -306,7 +308,9 @@ abstract contract InkForkTestBase is Test {
                 metadataURI: "ipfs://bonding-fork",
                 totalSupply: 0,
                 quote: quote,
-                creatorTaxBps: creatorTaxBps
+                creatorTaxBps: creatorTaxBps,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         r.quote = quote;

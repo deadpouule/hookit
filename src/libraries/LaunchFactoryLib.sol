@@ -83,11 +83,7 @@ library LaunchFactoryLib {
         return q.usdPriceX18;
     }
 
-    function mcapQuoteWei(uint256 targetMcapUsdX18, uint256 usdX18, uint8 decimals)
-        external
-        pure
-        returns (uint256)
-    {
+    function mcapQuoteWei(uint256 targetMcapUsdX18, uint256 usdX18, uint8 decimals) external pure returns (uint256) {
         if (usdX18 == 0) revert InvalidQuote();
         return FixedPointMath.mcapQuoteWei(targetMcapUsdX18, usdX18, decimals);
     }
@@ -107,11 +103,7 @@ library LaunchFactoryLib {
         amounts[len - 1] = totalSupply - allocated;
     }
 
-    function validateMarkets(MarketInput[] calldata markets)
-        external
-        pure
-        returns (bool hasNative, uint256 bpsSum)
-    {
+    function validateMarkets(MarketInput[] calldata markets) external pure returns (bool hasNative, uint256 bpsSum) {
         uint256 marketLen = markets.length;
         for (uint256 i; i < marketLen; ++i) {
             MarketInput calldata m = markets[i];
@@ -149,8 +141,7 @@ library LaunchFactoryLib {
         });
 
         bool tokenIsCurrency1 = !tokenIsCurrency0;
-        int24 startingTick =
-            FixedPointMath.startingTickForMcap(priceSupply, mcapQuote, spacing, tokenIsCurrency1);
+        int24 startingTick = FixedPointMath.startingTickForMcap(priceSupply, mcapQuote, spacing, tokenIsCurrency1);
 
         if (tokenIsCurrency0) {
             int24 startAligned = FixedPointMath.alignTickUp(startingTick, spacing);
@@ -158,12 +149,9 @@ library LaunchFactoryLib {
             plan.tickUpper = TickMath.maxUsableTick(spacing);
             if (plan.tickUpper <= plan.tickLower) plan.tickLower = plan.tickUpper - spacing;
             uint160 lowerSqrt = TickMath.getSqrtPriceAtTick(plan.tickLower);
-            plan.sqrtPriceX96 =
-                lowerSqrt <= TickMath.MIN_SQRT_PRICE + 1 ? TickMath.MIN_SQRT_PRICE + 1 : lowerSqrt - 1;
+            plan.sqrtPriceX96 = lowerSqrt <= TickMath.MIN_SQRT_PRICE + 1 ? TickMath.MIN_SQRT_PRICE + 1 : lowerSqrt - 1;
             plan.liquidity = FixedPointMath.liquidityForAmount0(
-                TickMath.getSqrtPriceAtTick(plan.tickLower),
-                TickMath.getSqrtPriceAtTick(plan.tickUpper),
-                tokenAmount
+                TickMath.getSqrtPriceAtTick(plan.tickLower), TickMath.getSqrtPriceAtTick(plan.tickUpper), tokenAmount
             );
         } else {
             int24 startAligned = FixedPointMath.alignTickDown(startingTick, spacing);
@@ -177,9 +165,7 @@ library LaunchFactoryLib {
                 plan.sqrtPriceX96 = upperSqrt + 1;
             }
             plan.liquidity = FixedPointMath.liquidityForAmount1(
-                TickMath.getSqrtPriceAtTick(plan.tickLower),
-                TickMath.getSqrtPriceAtTick(plan.tickUpper),
-                tokenAmount
+                TickMath.getSqrtPriceAtTick(plan.tickLower), TickMath.getSqrtPriceAtTick(plan.tickUpper), tokenAmount
             );
         }
     }
@@ -194,10 +180,7 @@ library LaunchFactoryLib {
             (BalanceDelta delta,) = poolManager.modifyLiquidity(
                 s.key,
                 ModifyLiquidityParams({
-                    tickLower: s.tickLower,
-                    tickUpper: s.tickUpper,
-                    liquidityDelta: s.liquidityDelta,
-                    salt: launchSalt
+                    tickLower: s.tickLower, tickUpper: s.tickUpper, liquidityDelta: s.liquidityDelta, salt: launchSalt
                 }),
                 ""
             );

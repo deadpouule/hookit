@@ -60,10 +60,7 @@ contract SmokeClassicInkScript is Script {
         BondingLaunchFactory bonding = BondingLaunchFactory(payable(vm.envAddress("BONDING_FACTORY")));
         uint256 launchId = vm.envUint("CLASSIC_LAUNCH_ID");
 
-        (
-            address token,
-            ,,,,,,,,,,,,,
-        ) = bonding.launches(launchId);
+        (address token,,,,,,,,,,,,,,) = bonding.launches(launchId);
         uint256 tokenBal = IERC20(token).balanceOf(user);
         require(tokenBal > 0, "no tokens");
 

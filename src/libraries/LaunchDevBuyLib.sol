@@ -6,6 +6,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 import {IERC20Minimal} from "@uniswap/v4-core/src/interfaces/external/IERC20Minimal.sol";
 
 import {CurrencySettler} from "./CurrencySettler.sol";
@@ -17,6 +18,7 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 library LaunchDevBuyLib {
     using CurrencyLibrary for Currency;
     using CurrencySettler for Currency;
+    using TransientStateLibrary for IPoolManager;
 
     struct SwapCall {
         address payer;

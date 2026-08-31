@@ -132,9 +132,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     event QuoteSet(address indexed token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed);
     event CustomHookAllowlistEnabled(bool enabled);
     event CustomHookAllowed(address indexed hook, bool allowed);
-    event LaunchConfigured(
-        uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee
-    );
+    event LaunchConfigured(uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee);
     event TokenLaunched(
         uint256 indexed launchId,
         address indexed token,
@@ -146,9 +144,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickUpper,
         uint128 liquidity
     );
-    event MultiLaunchConfigured(
-        uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask
-    );
+    event MultiLaunchConfigured(uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask);
     event MarketLaunched(
         uint256 indexed launchId,
         uint8 indexed marketIndex,
@@ -160,9 +156,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         uint128 liquidity
     );
 
-    event DevBuyExecuted(
-        uint256 indexed launchId, address indexed buyer, uint256 quoteIn, uint256 tokensOut
-    );
+    event DevBuyExecuted(uint256 indexed launchId, address indexed buyer, uint256 quoteIn, uint256 tokensOut);
 
     error InvalidQuote();
     error InvalidSupply();
@@ -273,21 +267,14 @@ contract LaunchFactory is Owned, IUnlockCallback {
         if (allowed && (decimals == 0 || decimals > 18)) revert InvalidQuote();
         bool needsPrice = usdFeed == address(0) && usdPriceX18 == 0 && !QuotronBridge.isQuotronStock(token);
         if (allowed && needsPrice) revert InvalidQuote();
-        quoteConfigs[token] = QuoteConfig({
-            allowed: allowed,
-            decimals: decimals,
-            usdPriceX18: usdPriceX18,
-            usdFeed: usdFeed
-        });
+        quoteConfigs[token] =
+            QuoteConfig({allowed: allowed, decimals: decimals, usdPriceX18: usdPriceX18, usdFeed: usdFeed});
         emit QuoteSet(token, allowed, decimals, usdPriceX18, usdFeed);
     }
 
     function _libQuote(QuoteConfig memory q) private pure returns (LaunchFactoryLib.QuoteConfig memory) {
         return LaunchFactoryLib.QuoteConfig({
-            allowed: q.allowed,
-            decimals: q.decimals,
-            usdPriceX18: q.usdPriceX18,
-            usdFeed: q.usdFeed
+            allowed: q.allowed, decimals: q.decimals, usdPriceX18: q.usdPriceX18, usdFeed: q.usdFeed
         });
     }
 
@@ -343,7 +330,11 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     /// @notice Create a token, initialize its Uniswap v4 pool, and lock 100% of supply as a unilateral position.
-    function launch(LaunchParams calldata params) external payable returns (uint256 launchId, address token, PoolId poolId) {
+    function launch(LaunchParams calldata params)
+        external
+        payable
+        returns (uint256 launchId, address token, PoolId poolId)
+    {
         if (params.totalSupply == 0) revert InvalidSupply();
         int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
         if (spacing <= 0) revert InvalidTickSpacing();
@@ -356,14 +347,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
             _resolveLaunchConfig(params.customHook, params.bitmask);
 
         LaunchFactoryLib.PoolPlan memory plan = LaunchFactoryLib.computePoolPlan(
-            token,
-            params.quote,
-            params.totalSupply,
-            params.totalSupply,
-            spacing,
-            hooks,
-            fee,
-            _mcapQuote(params.quote)
+            token, params.quote, params.totalSupply, params.totalSupply, spacing, hooks, fee, _mcapQuote(params.quote)
         );
 
         if (!useCustom) {
@@ -404,8 +388,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
         if (spacing <= 0) revert InvalidTickSpacing();
 
-        (bool hasNative,) =
-            LaunchFactoryLib.validateMarkets(_libMarkets(params.markets));
+        (bool hasNative,) = LaunchFactoryLib.validateMarkets(_libMarkets(params.markets));
         for (uint256 i; i < marketLen; ++i) {
             _assertQuoteAllowed(params.markets[i].quote);
         }

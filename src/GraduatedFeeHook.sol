@@ -10,7 +10,11 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {BeforeSwapDelta, BeforeSwapDeltaLibrary, toBeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {
+    BeforeSwapDelta,
+    BeforeSwapDeltaLibrary,
+    toBeforeSwapDelta
+} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
@@ -34,9 +38,8 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     using CurrencySettler for Currency;
     using StateLibrary for IPoolManager;
 
-    uint160 public constant HOOK_FLAGS = uint160(
-        Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
-    );
+    uint160 public constant HOOK_FLAGS =
+        uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
 
     struct LaunchConfig {
         address token;
@@ -80,12 +83,10 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         _;
     }
 
-    constructor(
-        IPoolManager poolManager_,
-        FeeEscrow escrow_,
-        ProtocolRevenueDistributor distributor_,
-        address owner_
-    ) BaseHook(poolManager_) Owned(owner_) {
+    constructor(IPoolManager poolManager_, FeeEscrow escrow_, ProtocolRevenueDistributor distributor_, address owner_)
+        BaseHook(poolManager_)
+        Owned(owner_)
+    {
         escrow = escrow_;
         distributor = distributor_;
     }
@@ -122,22 +123,15 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     }
 
     /// @notice Called by `BondingLaunchFactory` before pool initialize at graduation.
-    function registerLaunch(
-        PoolKey calldata key,
-        address token,
-        address quote,
-        address creator,
-        bool tokenIsCurrency0
-    ) external onlyFactory {
+    function registerLaunch(PoolKey calldata key, address token, address quote, address creator, bool tokenIsCurrency0)
+        external
+        onlyFactory
+    {
         PoolId id = key.toId();
         if (launches[id].registered) revert AlreadyRegistered();
 
         launches[id] = LaunchConfig({
-            token: token,
-            quote: quote,
-            creator: creator,
-            tokenIsCurrency0: tokenIsCurrency0,
-            registered: true
+            token: token, quote: quote, creator: creator, tokenIsCurrency0: tokenIsCurrency0, registered: true
         });
         emit LaunchRegistered(id, token, creator);
     }
@@ -163,13 +157,11 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         bool isBuy = tokenIs0 ? !params.zeroForOne : params.zeroForOne;
         bool exactInput = params.amountSpecified < 0;
         bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
-        uint256 specifiedAbs =
-            exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
+        uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
 
         (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(id);
-        uint256 quoteNotional = quoteIsSpecified
-            ? specifiedAbs
-            : FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, tokenIs0);
+        uint256 quoteNotional =
+            quoteIsSpecified ? specifiedAbs : FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, tokenIs0);
         uint256 feeAmount = quoteNotional * totalBps / ProtocolConstants.BPS_DENOMINATOR;
         if (feeAmount == 0) return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 

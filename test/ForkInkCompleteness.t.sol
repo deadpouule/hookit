@@ -29,9 +29,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         m.hookTaxBps = 200;
         m.backedFloor = true;
         m.floorAllocationBps = 1_500;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, 1_000_000e18, "Floor", "FLR"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000e18, "Floor", "FLR");
 
         vault.deposit{value: 30 ether}(l.token, Currency.wrap(address(0)), 30 ether);
         uint256 reserveBefore = vault.reserve(l.token);
@@ -50,9 +49,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
     function testFork_RedeemFloor_Direct() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.backedFloor = true;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, 1_000_000e18, "Redeem", "RDM"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000e18, "Redeem", "RDM");
 
         vault.deposit{value: 15 ether}(l.token, Currency.wrap(address(0)), 15 ether);
         _routerBuy(trader, l.key, l.token, 0.2 ether);
@@ -73,9 +71,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.buybackVesting = true;
         m.hookTaxBps = 200;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "BB", "BB");
 
         _routerBuy(trader, l.key, l.token, 4 ether);
         (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
@@ -109,9 +106,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
     function testFork_CreatorClaimFees_SpyxQuote() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 100;
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, wspyx, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "SpyFee", "SFE"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, wspyx, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "SpyFee", "SFE");
 
         _routerBuy(trader, l.key, l.token, 0.05e18);
         uint256 wspyxBefore = IERC20(Currency.unwrap(wspyx)).balanceOf(creator);
@@ -122,9 +118,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
     // ─── Custom hook on Ink fork ──────────────────────────────────────────────
 
     function testFork_CustomHook_LaunchAndBuy() public onlyFork {
-        address flags = address(
-            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144)
-        );
+        address flags =
+            address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         customHook = HookitCustomHook(payable(flags));
 
@@ -167,9 +162,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
 
     function _kitchenSinkSmoke(Currency quote) internal {
         BitmaskConfig.Modules memory m = ModuleMatrix.kitchenSink();
-        InkForkTestBase.LaunchResult memory l = _launch(
-            creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "KS", "KS"
-        );
+        InkForkTestBase.LaunchResult memory l =
+            _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "KS", "KS");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);

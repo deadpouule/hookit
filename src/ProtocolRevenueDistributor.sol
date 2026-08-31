@@ -73,10 +73,7 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
         _;
     }
 
-    constructor(address owner_, address opsTreasury_, IPoolManager manager_)
-        Owned(owner_)
-        UnlockTaker(manager_)
-    {
+    constructor(address owner_, address opsTreasury_, IPoolManager manager_) Owned(owner_) UnlockTaker(manager_) {
         if (opsTreasury_ == address(0)) revert ZeroAddress();
         opsTreasury = opsTreasury_;
         flywheelMode = FlywheelMode.BuybackBurn;
@@ -136,7 +133,7 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
         emit Notified(currency, amount);
     }
 
-/// @dev HKIT creator fees → 100% buyback pot (no ops cut). ETH accrues in `buybackEth`; ERC-20 → `buybackExecutor`.
+    /// @dev HKIT creator fees → 100% buyback pot (no ops cut). ETH accrues in `buybackEth`; ERC-20 → `buybackExecutor`.
     function notifyBuybackInternal(Currency currency, uint256 amount) external onlyOperator {
         if (amount == 0) revert ZeroAmount();
         pendingBuyback[currency] += amount;
@@ -206,9 +203,8 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
         if (flushed == 0) return 0;
         pendingBuyback[currency] = 0;
 
-        uint256 claims = address(claimsManager) == address(0)
-            ? 0
-            : claimsManager.balanceOf(address(this), currency.toId());
+        uint256 claims =
+            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), currency.toId());
         if (claims >= flushed) {
             _redeemClaims(currency, address(this), flushed);
         }
@@ -245,9 +241,8 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
         if (amount == 0) revert ZeroAmount();
         pending[currency] = 0;
 
-        uint256 claims = address(claimsManager) == address(0)
-            ? 0
-            : claimsManager.balanceOf(address(this), currency.toId());
+        uint256 claims =
+            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), currency.toId());
         if (claims >= amount) {
             _redeemClaims(currency, address(this), amount);
         }

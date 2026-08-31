@@ -82,7 +82,8 @@ contract QuoteAssetsTest is LaunchpadTestBase {
 
         bool tokenIs0 = uint160(token) < uint160(address(usd));
         (uint160 sqrtPriceX96,,,) = manager.getSlot0(poolId);
-        uint256 spotMcap = FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
+        uint256 spotMcap =
+            FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
         assertApproxEqRel(spotMcap, factory.mcapQuoteFor(address(usd)), 0.02e18);
     }
 
