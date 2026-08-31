@@ -25,6 +25,7 @@ import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
   DEFAULT_CLASSIC_LAUNCH_STATE,
   DEFAULT_LAUNCH_STATE,
+  CUSTOM_SOLIDITY_HOOKS_ENABLED,
   LAUNCH_FEE_ETH,
   MAX_HOOK_TAX_BPS,
 } from "@/lib/constants";
@@ -362,78 +363,90 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
           {variant !== "classic" && (
             <>
-          <HookArchitectureSection
-            mode={form.hookMode}
-            onChange={(hookMode) => setForm((p) => ({ ...p, hookMode }))}
-          />
-
-          {form.hookMode === "custom" && (
-            <div className="mt-4">
-              <CustomHookEditor
-                source={form.customHookSource}
-                fileName={form.customHookFileName}
-                onChange={({ source, fileName }) =>
-                  setForm((p) => ({
-                    ...p,
-                    customHookSource: source,
-                    customHookFileName: fileName,
-                  }))
-                }
-              />
-            </div>
-          )}
-
-          {form.hookMode === "master" && (
-            <>
-              <FormDivider />
-
-              <HookModulePicker
-                modules={form.modules}
-                onToggle={(id, next) => {
-                  if (id === "creator-share-to-hook" && next) {
-                    updateModules({ creatorShareToHook: true, buybackVesting: false });
-                    return;
-                  }
-                  if (id === "buyback-vesting" && next) {
-                    updateModules({ buybackVesting: true, creatorShareToHook: false });
-                    return;
-                  }
-                  updateModules({ [HOOK_MODULE_FIELD[id]]: next });
-                }}
-                onUpdate={updateModules}
-                floorEst={floorEst}
-                multiMarket={form.markets.length > 1}
-                hookTaxBps={form.hookTaxBps}
-              />
-
-              <FormDivider />
-
-              <p className="pick-heading">Fees & rewards</p>
-              <p className="mt-1 text-xs text-zinc-600">
-                Fees deducted in quote asset only — zero sell pressure on your token.
-              </p>
-
-              <div className="mt-4 max-w-sm">
-                <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
-                <div className="field-input flex items-center justify-between bg-black/60">
-                  <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-                </div>
-                <div className="mt-2">
-                  <AccentSlider
-                    accentColor="#9514d1"
-                    value={[form.hookTaxBps]}
-                    onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
-                    min={0}
-                    max={MAX_HOOK_TAX_BPS}
-                    step={10}
+              {CUSTOM_SOLIDITY_HOOKS_ENABLED ? (
+                <>
+                  <HookArchitectureSection
+                    mode={form.hookMode}
+                    onChange={(hookMode) => setForm((p) => ({ ...p, hookMode }))}
                   />
-                </div>
-                <p className="mt-1.5 text-xs text-zinc-500">
-                  Extra fee for hook modules · leftover → protocol
-                </p>
-              </div>
-            </>
-          )}
+
+                  {form.hookMode === "custom" && (
+                    <div className="mt-4">
+                      <CustomHookEditor
+                        source={form.customHookSource}
+                        fileName={form.customHookFileName}
+                        onChange={({ source, fileName }) =>
+                          setForm((p) => ({
+                            ...p,
+                            customHookSource: source,
+                            customHookFileName: fileName,
+                          }))
+                        }
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <SectionLabel>Hook modules</SectionLabel>
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                    Pre-built Hookit Master modules — anti-snipe, backed floor, anti-MEV, and quote-only fees.
+                    Custom Solidity hooks are not available at launch yet.
+                  </p>
+                </>
+              )}
+
+              {(CUSTOM_SOLIDITY_HOOKS_ENABLED ? form.hookMode === "master" : true) && (
+                <>
+                  <FormDivider />
+
+                  <HookModulePicker
+                    modules={form.modules}
+                    onToggle={(id, next) => {
+                      if (id === "creator-share-to-hook" && next) {
+                        updateModules({ creatorShareToHook: true, buybackVesting: false });
+                        return;
+                      }
+                      if (id === "buyback-vesting" && next) {
+                        updateModules({ buybackVesting: true, creatorShareToHook: false });
+                        return;
+                      }
+                      updateModules({ [HOOK_MODULE_FIELD[id]]: next });
+                    }}
+                    onUpdate={updateModules}
+                    floorEst={floorEst}
+                    multiMarket={form.markets.length > 1}
+                    hookTaxBps={form.hookTaxBps}
+                  />
+
+                  <FormDivider />
+
+                  <p className="pick-heading">Fees & rewards</p>
+                  <p className="mt-1 text-xs text-zinc-600">
+                    Fees deducted in quote asset only — zero sell pressure on your token.
+                  </p>
+
+                  <div className="mt-4 max-w-sm">
+                    <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
+                    <div className="field-input flex items-center justify-between bg-black/60">
+                      <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
+                    </div>
+                    <div className="mt-2">
+                      <AccentSlider
+                        accentColor="#9514d1"
+                        value={[form.hookTaxBps]}
+                        onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
+                        min={0}
+                        max={MAX_HOOK_TAX_BPS}
+                        step={10}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-xs text-zinc-500">
+                      Extra fee for hook modules · leftover → protocol
+                    </p>
+                  </div>
+                </>
+              )}
             </>
           )}
 

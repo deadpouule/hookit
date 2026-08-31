@@ -1,65 +1,55 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, use } from "react";
+import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { isAddress } from "viem";
-import { usePublicClient } from "wagmi";
 
 import { TokenDetailView } from "@/components/token/TokenDetailView";
-import { useLaunchPool, useLaunches } from "@/hooks/useLaunches";
+import { useLaunchPool } from "@/hooks/useLaunches";
 import { getChainDeployment, isFactoryConfigured } from "@/lib/contracts/config";
 import { getDetailPool } from "@/lib/pools";
 import { annotateCopyFlags } from "@/lib/token-identity";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import type { TokenPool } from "@/lib/types";
 
-function resolveFromList(pools: TokenPool[] | undefined, id: string): TokenPool | undefined {
-  if (!pools?.length) return undefined;
-  const needle = id.toLowerCase();
-  return pools.find(
-    (p) =>
-      p.id.toLowerCase() === needle ||
-      p.contractAddress?.toLowerCase() === needle ||
-      (p.launchId != null && String(p.launchId) === id),
-  );
-}
-
-export function TokenDetailPageClient({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export function TokenDetailPageClient({
+  id,
+  initialPool,
+}: {
+  id: string;
+  initialPool?: TokenPool;
+}) {
   const factoryConfigured = isFactoryConfigured();
-  const publicClient = usePublicClient();
   const network = getChainDeployment().networkLabel;
+  const queryClient = useQueryClient();
 
   const {
     data: onChainPool,
     isPending: poolPending,
     isFetching: poolFetching,
     isError: poolError,
-  } = useLaunchPool(id);
-
-  const { data: listedPools } = useLaunches();
+  } = useLaunchPool(id, initialPool);
 
   const copyFlags = useMemo(() => {
+    const listedPools = queryClient.getQueryData<TokenPool[]>(["launches"]);
     if (!listedPools?.length) return { isOriginal: false, isCopycat: false };
     const annotated = annotateCopyFlags(listedPools.map(poolToMarketToken));
     const needle = id.toLowerCase();
-    const match = annotated.find(
-      (t) => t.id.toLowerCase() === needle,
-    );
+    const match = annotated.find((t) => t.id.toLowerCase() === needle);
     return { isOriginal: match?.isOriginal ?? false, isCopycat: match?.isCopycat ?? false };
-  }, [listedPools, id]);
+  }, [queryClient, id]);
 
-  const fromList = resolveFromList(listedPools, id);
   const demoPool = getDetailPool(id);
 
   const waitingOnChain =
     factoryConfigured &&
-    !fromList &&
+    !initialPool &&
     !onChainPool &&
-    (!publicClient || poolPending || poolFetching);
+    (poolPending || poolFetching);
 
   const pool: TokenPool | undefined =
-    onChainPool ?? fromList ?? (!isAddress(id) ? demoPool : undefined) ?? undefined;
+    onChainPool ?? initialPool ?? (!isAddress(id) ? demoPool : undefined) ?? undefined;
 
   if (waitingOnChain) {
     return (
@@ -88,5 +78,7 @@ export function TokenDetailPageClient({ params }: { params: Promise<{ id: string
     );
   }
 
-  return <TokenDetailView pool={pool} isOriginal={copyFlags.isOriginal} isCopycat={copyFlags.isCopycat} />;
+  return (
+    <TokenDetailView pool={pool} isOriginal={copyFlags.isOriginal} isCopycat={copyFlags.isCopycat} />
+  );
 }

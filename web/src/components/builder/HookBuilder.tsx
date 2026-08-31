@@ -153,8 +153,8 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
             Anti-MEV is per-origin TSTORE in the same block, not private-mempool protection.
           </li>
           <li>
-            Max wallet reads <code className="text-zinc-400">hookData</code> recipient; routers
-            that omit it fall back to <code className="text-zinc-400">tx.origin</code>.
+            Max wallet requires <code className="text-zinc-400">hookData</code> = recipient on buys
+            (Hookit router sets this automatically).
           </li>
           <li>
             Floor fill does not catch a single-tick cross of P_floor. Allocation is a split of

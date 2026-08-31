@@ -124,6 +124,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice When true, only hooks in `allowedCustomHooks` may be used (Master always allowed).
     bool public customHookAllowlistEnabled;
+    /// @notice When false, `launch` / `launchMulti` reject any non-Master hook (soft launch default).
+    bool public customHooksEnabled;
     mapping(address => bool) public allowedCustomHooks;
 
     event LaunchFeeSet(uint256 fee);
@@ -131,6 +133,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     event EthUsdPriceSet(uint256 ethUsdPriceX18);
     event QuoteSet(address indexed token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed);
     event CustomHookAllowlistEnabled(bool enabled);
+    event CustomHooksEnabled(bool enabled);
     event CustomHookAllowed(address indexed hook, bool allowed);
     event LaunchConfigured(uint256 indexed launchId, uint256 bitmask, Currency quote, int24 tickSpacing, uint24 fee);
     event TokenLaunched(
@@ -169,6 +172,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error InvalidFeed();
     error StalePrice();
     error CustomHookNotAllowed();
+    error CustomHooksDisabled();
+    error ModulesNotSupportedWithCustomHook();
     error InvalidMarketCount();
     error InvalidMarketBps();
     error DuplicateQuote();
@@ -181,6 +186,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         poolManager = _poolManager;
         masterHook = _masterHook;
         treasury = treasury_;
+        customHookAllowlistEnabled = true;
+        customHooksEnabled = false;
     }
 
     receive() external payable {}
@@ -203,6 +210,11 @@ contract LaunchFactory is Owned, IUnlockCallback {
     function setCustomHookAllowed(address hook, bool allowed) external onlyOwner {
         allowedCustomHooks[hook] = allowed;
         emit CustomHookAllowed(hook, allowed);
+    }
+
+    function setCustomHooksEnabled(bool enabled) external onlyOwner {
+        customHooksEnabled = enabled;
+        emit CustomHooksEnabled(enabled);
     }
 
     function setEthUsdPrice(uint256 ethUsdPriceX18_) external onlyOwner {
@@ -567,6 +579,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         returns (IHooks hooks, bool useCustom, uint256 packed, uint24 fee)
     {
         useCustom = address(customHook) != address(0) && address(customHook) != address(masterHook);
+        if (useCustom && !customHooksEnabled) revert CustomHooksDisabled();
+        if (useCustom && bitmask != 0) revert ModulesNotSupportedWithCustomHook();
         if (useCustom && customHookAllowlistEnabled && !allowedCustomHooks[address(customHook)]) {
             revert CustomHookNotAllowed();
         }

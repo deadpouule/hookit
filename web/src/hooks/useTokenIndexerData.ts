@@ -35,9 +35,9 @@ export function useTokenIndexerData(
   address: string | null | undefined,
   opts?: TokenIndexerOptions,
 ) {
-  const tradesLimit = opts?.tradesLimit ?? 500;
+  const tradesLimit = opts?.tradesLimit ?? 80;
   const holdersLimit = opts?.holdersLimit ?? 20;
-  const candlesLimit = opts?.candlesLimit ?? 500;
+  const candlesLimit = opts?.candlesLimit ?? 200;
 
   return useQuery({
     queryKey: ["indexer-token-bundle", address, tradesLimit, holdersLimit, candlesLimit],

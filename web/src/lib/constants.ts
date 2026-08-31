@@ -18,6 +18,9 @@ export const BUYBACK_VESTING_MIN_DAYS = 7;
 export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
 export const SECONDS_PER_DAY = 86_400;
 
+/** Upload-your-own Solidity hooks — disabled for Ink soft launch; enable later via factory owner. */
+export const CUSTOM_SOLIDITY_HOOKS_ENABLED = false;
+
 export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   name: "",
   ticker: "",

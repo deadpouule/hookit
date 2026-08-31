@@ -4,12 +4,14 @@ pragma solidity ^0.8.26;
 import {BitmaskConfig} from "../../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
 
-/// @notice Builds valid `BitmaskConfig.Modules` from a 9-bit on/off mask (one bit per toggle module).
+/// @notice Builds valid `BitmaskConfig.Modules` from on/off module masks for tests and smoke scripts.
 library ModuleMatrix {
-    uint16 internal constant MODULE_COUNT = 9;
+    uint16 internal constant MODULE_COUNT = 11;
+    /// @dev Core toggle modules (bits 0–8) — exhaustive 512-combination matrix.
     uint16 internal constant MASK_SPACE = 512;
+    /// @dev Extended mask including holder airdrop + creator-share-to-hook (bits 9–10).
+    uint16 internal constant EXTENDED_MASK_SPACE = 2048;
 
-    /// @dev Bit order matches `BitmaskConfig` toggle fields (hook tax is sized from fee sinks).
     uint16 internal constant BIT_ANTI_SNIPE = 1 << 0;
     uint16 internal constant BIT_BACKED_FLOOR = 1 << 1;
     uint16 internal constant BIT_ANTI_MEV = 1 << 2;
@@ -19,9 +21,32 @@ library ModuleMatrix {
     uint16 internal constant BIT_BUYBACK_VESTING = 1 << 6;
     uint16 internal constant BIT_AUTO_BURN = 1 << 7;
     uint16 internal constant BIT_LP_DONATE = 1 << 8;
+    uint16 internal constant BIT_HOLDER_AIRDROP = 1 << 9;
+    uint16 internal constant BIT_CREATOR_SHARE_TO_HOOK = 1 << 10;
 
     function fromMask(uint16 mask) internal pure returns (BitmaskConfig.Modules memory m) {
-        mask = uint16(mask & (MASK_SPACE - 1));
+        m = _coreFromMask(mask & (MASK_SPACE - 1));
+        m = _applyExtendedBits(m, mask);
+        return m;
+    }
+
+    function fromExtendedMask(uint16 mask) internal pure returns (BitmaskConfig.Modules memory m) {
+        return fromMask(mask & (EXTENDED_MASK_SPACE - 1));
+    }
+
+    function kitchenSink() internal pure returns (BitmaskConfig.Modules memory m) {
+        // Creator-share-to-hook conflicts with buyback vesting in `BitmaskConfig`.
+        uint16 mask = uint16(EXTENDED_MASK_SPACE - 1) & ~BIT_BUYBACK_VESTING;
+        return fromExtendedMask(mask);
+    }
+
+    function maxOpenFeeBps(BitmaskConfig.Modules memory m) internal pure returns (uint256) {
+        uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
+        if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
+        return openFee;
+    }
+
+    function _coreFromMask(uint16 mask) private pure returns (BitmaskConfig.Modules memory m) {
         m.antiSnipe = mask & BIT_ANTI_SNIPE != 0;
         m.backedFloor = mask & BIT_BACKED_FLOOR != 0;
         m.antiMev = mask & BIT_ANTI_MEV != 0;
@@ -42,21 +67,27 @@ library ModuleMatrix {
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.lpDonate) m.lpDonateBps = 1_000;
 
-        // Fee sinks are % of the hook-tax pot — enable a modest hook tax when any sink is on.
+        return _ensureHookTax(m);
+    }
+
+    function _applyExtendedBits(BitmaskConfig.Modules memory m, uint16 mask)
+        private
+        pure
+        returns (BitmaskConfig.Modules memory)
+    {
+        m.holderAirdrop = mask & BIT_HOLDER_AIRDROP != 0;
+        m.creatorShareToHook = mask & BIT_CREATOR_SHARE_TO_HOOK != 0;
+        if (m.holderAirdrop) m.holderAirdropBps = 500;
+        return _ensureHookTax(m);
+    }
+
+    function _ensureHookTax(BitmaskConfig.Modules memory m) private pure returns (BitmaskConfig.Modules memory) {
         uint256 routed;
         if (m.backedFloor) routed += m.floorAllocationBps;
         if (m.autoBurn) routed += m.autoBurnBps;
         if (m.lpDonate) routed += m.lpDonateBps;
-        if (routed > 0) m.hookTaxBps = 200;
-    }
-
-    function kitchenSink() internal pure returns (BitmaskConfig.Modules memory m) {
-        return fromMask(uint16(MASK_SPACE - 1));
-    }
-
-    function maxOpenFeeBps(BitmaskConfig.Modules memory m) internal pure returns (uint256) {
-        uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
-        if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
-        return openFee;
+        if (m.holderAirdrop) routed += m.holderAirdropBps;
+        if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) m.hookTaxBps = 200;
+        return m;
     }
 }

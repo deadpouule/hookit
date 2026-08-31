@@ -92,6 +92,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     error SandwichBlocked();
     error MaxTxExceeded();
     error MaxWalletExceeded();
+    error HookDataRequired();
     error UnknownPool();
 
     modifier onlyFactory() {
@@ -229,7 +230,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return this.beforeRemoveLiquidity.selector;
     }
 
-    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata)
+    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
         internal
         override
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -254,6 +255,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             _checkMaxTx(st.token, packed.maxTxBps(), specifiedAbs, isBuy, exactInput);
         }
 
+        (uint160 sqrtPriceX96,, uint128 liquidity,) = poolManager.getSlot0(id);
+
         uint16 snipeBps;
         if (isBuy && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
             snipeBps = FixedPointMath.snipeTaxBps(
@@ -267,7 +270,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
-        (uint160 sqrtPriceX96,, uint128 liquidity,) = poolManager.getSlot0(id);
+        if (isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
+            _checkMaxWalletBeforeBuy(
+                st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps
+            );
+        }
 
         bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
 
@@ -313,7 +320,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return (this.beforeSwap.selector, toBeforeSwapDelta(specifiedDelta, unspecifiedDelta), lpFeeOverride);
     }
 
-    function _afterSwap(address, PoolKey calldata key, SwapParams calldata, BalanceDelta, bytes calldata hookData)
+    function _afterSwap(address, PoolKey calldata key, SwapParams calldata, BalanceDelta, bytes calldata)
         internal
         override
         returns (bytes4, int128)
@@ -321,13 +328,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (_inFeeAction()) return (this.afterSwap.selector, 0);
 
         PoolId id = key.toId();
-        uint256 packed = configs[id];
         LaunchState storage st = _launchState[id];
-        if (packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
-            address recipient = hookData.length >= 32 ? abi.decode(hookData, (address)) : tx.origin;
-            uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), packed.maxWalletBps());
-            if (cap > 0 && IERC20Supply(st.token).balanceOf(recipient) > cap) revert MaxWalletExceeded();
-        }
 
         uint256 burnCut = pendingAutoBurn[id];
         uint256 donateCut = pendingLpDonate[id];
@@ -505,6 +506,38 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (tokenIsSpecified) {
             if (specifiedAbs > cap) revert MaxTxExceeded();
         }
+    }
+
+    function _decodeRecipient(bytes calldata hookData) private pure returns (address recipient) {
+        if (hookData.length < 32) revert HookDataRequired();
+        recipient = abi.decode(hookData, (address));
+        if (recipient == address(0)) revert HookDataRequired();
+    }
+
+    /// @dev Enforce max-wallet on buys before tokens move (requires router `hookData` = recipient).
+    function _checkMaxWalletBeforeBuy(
+        LaunchState storage st,
+        uint256 packed,
+        bytes calldata hookData,
+        bool exactInput,
+        uint256 specifiedAbs,
+        uint160 sqrtPriceX96,
+        uint256 totalFeeBps
+    ) private view {
+        address recipient = _decodeRecipient(hookData);
+        uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), packed.maxWalletBps());
+        if (cap == 0) return;
+
+        uint256 tokenIn = exactInput
+            ? FixedPointMath.tokenFromQuote(
+                specifiedAbs - (specifiedAbs * totalFeeBps / ProtocolConstants.BPS_DENOMINATOR),
+                sqrtPriceX96,
+                st.tokenIsCurrency0
+            )
+            : specifiedAbs;
+        if (tokenIn == 0) return;
+
+        if (IERC20Supply(st.token).balanceOf(recipient) + tokenIn > cap) revert MaxWalletExceeded();
     }
 
     function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private {

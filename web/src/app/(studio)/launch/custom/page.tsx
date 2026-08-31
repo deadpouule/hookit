@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { LaunchForm } from "@/components/launch/LaunchForm";
 
 export const metadata = {
-  title: "Custom launch | hook it",
-  description: "Launch a token with Master or Custom Uniswap v4 hooks.",
+  title: "Master launch | hook it",
+  description: "Launch a token with Hookit Master modules on Uniswap v4.",
 };
 
 export default function CustomLaunchRoute() {

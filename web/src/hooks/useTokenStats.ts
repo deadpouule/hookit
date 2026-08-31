@@ -171,7 +171,7 @@ function computeDeskStats(
 export function useTokenStats(pool: TokenPool) {
   const address = pool.contractAddress ?? pool.address;
   const ethUsd = resolveEthUsd(pool);
-  const indexer = useTokenIndexerData(address, { tradesLimit: 500 });
+  const indexer = useTokenIndexerData(address, { tradesLimit: 120 });
 
   const devBuyQuery = useQuery({
     queryKey: ["token-dev-buy", address],

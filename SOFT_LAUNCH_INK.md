@@ -1,34 +1,130 @@
 # Soft launch prep — Ink mainnet (57073)
 
-Prep only. Do **not** broadcast until every GO item is checked.
+Canonical addresses: [`deploy/ink/addresses.json`](deploy/ink/addresses.json).  
+Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 
-## Status (prep)
+## Status
 
 | Check | Status |
 | --- | --- |
-| Ink public RPC (`INK_RPC_URL`) | Use `https://rpc-gel.inkonchain.com` — no Alchemy required |
-| `DryRunInk.s.sol` on live Ink fork | Pass (`DRY_RUN_OK`) — Master + Classic + HKIT smoke |
+| Ink public RPC (`INK_RPC_URL`) | `https://rpc-gel.inkonchain.com` |
+| `DeployHookitCore` broadcast (57073) | **Live** — block `54547596` |
+| `VerifyInkDeploy.s.sol` | Run after syncing `.env` from `deploy/ink/env.ink.example` |
+| Custom hook allowlist on factory | Run **`HardenInkSoftLaunch.s.sol`** once if `customHookAllowlistEnabled` is false |
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
-| HookitSwapRouter required in web | Code rejects Ink swaps without `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
-| Ink factories deployed | **Not yet** |
-| Hosted indexer | **Linode 1 GB** — [deploy/linode/indexer-only/README.md](deploy/linode/indexer-only/README.md) |
-| WalletConnect project ID | **Set before public UI** |
+| HookitSwapRouter required in web | Set `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
+| Hosted indexer | Linode — `https://indexer.hookit.fun` |
+| WalletConnect project ID | Required before public UI |
 
-## Before first broadcast
+## Live addresses (57073)
 
-1. Fund deployer with Ink ETH (gas for full `DeployHookitCore`).
-2. Set `OPS_TREASURY` (multisig preferred) in root `.env`.
-3. Set `PRIVATE_KEY` in root `.env` (never commit).
-4. Native token branding defaults to **HOOKTEST** / **HTST** (override `NATIVE_TOKEN_NAME`, `NATIVE_TOKEN_SYMBOL`, `NATIVE_TOKEN_URI`).
-5. Confirm `INK_RPC_URL=https://rpc-gel.inkonchain.com` (public Gelato RPC). Optional `INDEXER_RPC_URL` only if the indexer node needs a different endpoint.
-4. Optional: `INK_EXPLORER_API_KEY` for `forge verify`.
-5. Re-run dry-run:
-   ```bash
-   forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-limit -vv
-   ```
-   Expect `DRY_RUN_OK` and note the `WARN: FeeEthRail eth bridge not live` (expected today).
+| Contract | Address |
+| --- | --- |
+| **LaunchFactory** | `0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2` |
+| **BondingLaunchFactory** | `0x2003af38d2f995fb78cfa9feadcd2b05c903fb80` |
+| **HookitSwapRouter** | `0xe76b7f77ddcdcd892f6b808387a784997f3d8af2` |
+| **MasterLaunchHook** | `0xa33c80507b82816f84cce80f2aa0f6d5cd5beac8` |
+| **GraduatedFeeHook** | `0x82bfc49342a5fac13ad78d44d9bf64ff57a72088` |
+| **Native token (HOOKTEST / HTST)** | `0x9E6D824deE12B586955116A8881f3186194Ee468` |
+| **ProtocolRevenueDistributor** | `0x436ad54eb2c36f58ce856e26fe42e1b0fe9c0bf1` |
+| **HkitBuyback** | `0xeccad668aa9601c2c8373561dfb0976bc6eb680c` |
 
-## Deploy day (when you decide to go)
+`INDEXER_START_BLOCK=54547596`
+
+## Post-deploy checklist
+
+```bash
+# 1) Sync root .env (see deploy/ink/env.ink.example)
+cp deploy/ink/env.ink.example .env   # then add PRIVATE_KEY
+
+# 2) Verify wiring (read-only)
+forge script script/VerifyInkDeploy.s.sol --rpc-url $INK_RPC_URL -vv
+
+# 3) Harden soft launch — enable custom-hook allowlist (owner tx, once)
+forge script script/HardenInkSoftLaunch.s.sol --rpc-url $INK_RPC_URL --broadcast
+
+# 4) Optional: wire FeeEthRail when USDG/ETH pool exists
+FEE_ETH_RAIL=0x903df3daed1062eb2abec4a0a4098d9152228c0a \
+  forge script script/WireFeeEthRailInk.s.sol --rpc-url $INK_RPC_URL --broadcast
+
+# 5) Dry-run latest bytecode on Ink fork
+forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-limit -vv
+```
+
+## Flip Vercel / Linode env
+
+**Vercel (UI):** https://hookit.fun / https://hookit-five.vercel.app/
+
+```
+NEXT_PUBLIC_HOOKIT_CHAIN=ink
+NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
+NEXT_PUBLIC_LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2
+NEXT_PUBLIC_BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80
+NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0xe76b7f77ddcdcd892f6b808387a784997f3d8af2
+NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x436ad54eb2c36f58ce856e26fe42e1b0fe9c0bf1
+NEXT_PUBLIC_HKIT_BUYBACK=0xeccad668aa9601c2c8373561dfb0976bc6eb680c
+NEXT_PUBLIC_NATIVE_TOKEN=0x9E6D824deE12B586955116A8881f3186194Ee468
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
+INDEXER_URL=https://indexer.hookit.fun
+```
+
+**Linode `/opt/hookit/.env`:**
+
+```
+LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2
+BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80
+INDEXER_START_BLOCK=54547596
+INK_RPC_URL=https://rpc-gel.inkonchain.com
+INDEXER_DATA_DIR=/var/lib/hookit-indexer
+```
+
+After changing factory or start block: delete `hookit-57073.json` store and restart `hookit-indexer`.
+
+## Smoke (private)
+
+```bash
+# Classic bonding
+BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80 \
+  forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
+
+# Master + modules matrix
+LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2 \
+  HOOKIT_SWAP_ROUTER=0xe76b7f77ddcdcd892f6b808387a784997f3d8af2 \
+  forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast
+```
+
+1. Launch Master (ETH) → swap via HookitSwapRouter.
+2. Launch Classic → buy on curve.
+3. `GET /health` on indexer — low lag, no `lastPollError`.
+4. Token page: chart + trades from indexer.
+
+## Soft launch vs hard launch
+
+| Soft (now) | Later |
+| --- | --- |
+| Small circle / no big announce | Public marketing |
+| Deployer or multisig as owner | Timelock handoff |
+| Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after redeploy with hardened factory |
+| Unaudited disclaimer in UI | External audit |
+| Buyback keeper manual | Automated `HkitBuyback.execute` |
+
+### Bytecode note
+
+The live Ink deploy predates repo hardening (`customHooksEnabled`, max-wallet pre-swap, required `hookData`). For those fixes on-chain, run a **fresh** `DeployHookitCore` (new addresses — update indexer + Vercel). Until then:
+
+- UI blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENABLED=false`).
+- Run `HardenInkSoftLaunch.s.sol` so the factory rejects non-allowlisted custom hooks.
+
+## Do not
+
+- Point production UI at Ink without `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER`.
+- Start indexer without `INDEXER_START_BLOCK`.
+- Commit `PRIVATE_KEY` or RPC secrets.
+- Mix Base Sepolia and Ink env in one store.
+
+## Redeploy (v2 hardened bytecode)
+
+When ready to replace the live stack:
 
 ```bash
 forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
@@ -36,86 +132,4 @@ forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
   --etherscan-api-key $INK_EXPLORER_API_KEY
 ```
 
-Record from logs / broadcast JSON:
-
-- `LaunchFactory`
-- `BondingLaunchFactory`
-- `HookitSwapRouter`
-- `MasterLaunchHook` / `GraduatedFeeHook`
-- Deploy **block number** → `INDEXER_START_BLOCK`
-
-Then try `script/WireFeeEthRailInk.s.sol` if `ethBridgeSet()` is still false.
-
-## Flip the stack to Ink (after addresses exist)
-
-**Production UI:** Linode self-host ([deploy/linode/README.md](deploy/linode/README.md)) or Vercel — indexer must be reachable via `INDEXER_URL`.
-
-### Linode (recommended — web + indexer + custom hook forge)
-
-See **`deploy/linode/README.md`**. Quick path:
-
-```bash
-./deploy/linode/bootstrap.sh          # once, as root
-cp deploy/linode/env.production.example /opt/hookit/.env
-sudo -u hookit ./deploy/linode/deploy.sh
-```
-
-### Vercel (UI only — point INDEXER_URL at Linode)
-
-**Production UI:** https://hookit-five.vercel.app/
-
-**Hide the Vercel toolbar** (the floating “hook it” pill for team members): `web/vercel.json` sets `VERCEL_PREVIEW_FEEDBACK_ENABLED=0`. After merge, redeploy. If it still appears, turn **Vercel Toolbar → Off** under Project Settings → General (Production + Preview), then redeploy again.
-
-```
-NEXT_PUBLIC_HOOKIT_CHAIN=ink
-NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
-NEXT_PUBLIC_LAUNCH_FACTORY=0x…
-NEXT_PUBLIC_BONDING_FACTORY=0x…
-NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x…
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
-INDEXER_URL=http://127.0.0.1:8787   # local house indexer (see indexer/README.md)
-PINATA_JWT=<optional but recommended>
-```
-
-### Local web (`web/.env.local`)
-
-### Indexer
-
-```
-HOOKIT_CHAIN=ink
-INK_RPC_URL=https://rpc-gel.inkonchain.com
-# INDEXER_RPC_URL=   # optional override; defaults to INK_RPC_URL
-LAUNCH_FACTORY=0x…   # from repo root .env or paste deploy address
-BONDING_FACTORY=0x…
-INDEXER_START_BLOCK=<deploy_block>
-INDEXER_DATA_DIR=/var/lib/hookit-indexer
-INDEXER_POLL_MS=4000
-```
-
-Keep Base Sepolia env elsewhere for regression; do not mix chain IDs in one store.
-
-## Smoke after flip (private)
-
-1. Launch Master (ETH quote) → swap buy/sell via HookitSwapRouter.
-2. Launch Classic → buy on curve → progress toward graduation.
-3. Launch wStock quote (e.g. wSPYx) if Quotrons depth looks healthy.
-4. `GET /health` — lag low, no `lastPollError`.
-5. Token page: chart + recent trades from indexer.
-6. Creator fee claim path once fees accrued.
-
-## Soft launch vs hard launch
-
-| Soft | Later |
-| --- | --- |
-| Small circle / no big announce | Public marketing |
-| Deployer or known multisig as owner | Timelock / multisig handoff |
-| Custom hooks unrestricted (default) | Consider `customHookAllowlistEnabled` |
-| Unaudited disclaimer in UI/docs | External audit |
-| Buyback keeper manual / rare | Automated `HkitBuyback.execute` |
-
-## Do not
-
-- Broadcast without funded deployer + `OPS_TREASURY`.
-- Point production UI at Ink without `HOOKIT_SWAP_ROUTER`.
-- Start indexer without `INDEXER_START_BLOCK` (avoids 80k lookback).
-- Commit `PRIVATE_KEY` or RPC secrets.
+Update `deploy/ink/addresses.json`, all env files, indexer start block, and reset the indexer store.

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
 import { formatPercent, formatUsd } from "@/lib/format";
@@ -47,10 +48,19 @@ export function MarketTokenCard({
   const router = useRouter();
   const href = tokenHref(token.id);
 
+  const prefetchToken = useCallback(() => {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/launches/${encodeURIComponent(token.id)}`, {
+      priority: "low",
+    }).catch(() => undefined);
+  }, [token.id]);
+
   return (
     <article
       className="market-card group relative cursor-pointer overflow-hidden border border-transparent transition-all duration-300 hover:border-[#9514d1] hover:shadow-[0_0_15px_rgba(149,20,209,0.5)]"
       onClick={() => router.push(href)}
+      onMouseEnter={prefetchToken}
+      onFocus={prefetchToken}
     >
       <div className="relative">
         <TokenArt

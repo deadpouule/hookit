@@ -49,15 +49,17 @@ export function useLaunches(initialPools?: TokenPool[]) {
   });
 }
 
-export function useLaunchPool(id: string) {
+export function useLaunchPool(id: string, initialPool?: TokenPool | null) {
   const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
   const publicClient = usePublicClient();
-  const ready = (!!factory || !!bonding) && !!publicClient && !!id;
+  const hasFactories = !!factory || !!bonding;
 
   return useQuery({
     queryKey: ["launch-pool", factory, bonding, id, publicClient?.chain?.id],
-    enabled: ready,
+    enabled: hasFactories && !!id,
+    initialData: initialPool ?? undefined,
+    placeholderData: initialPool ?? undefined,
     staleTime: LAUNCHES_STALE_MS,
     retry: 1,
     queryFn: async (): Promise<TokenPool | null> => {

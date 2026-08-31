@@ -159,6 +159,8 @@ contract CompletenessTest is LaunchpadTestBase {
             address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         HookitCustomHook customHook = HookitCustomHook(payable(flags));
+        factory.setCustomHookAllowed(address(customHook), true);
+        factory.setCustomHooksEnabled(true);
 
         (uint256 launchId, address token, PoolId poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({

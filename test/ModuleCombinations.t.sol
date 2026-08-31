@@ -70,6 +70,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
     function _launchBuySellSmoke(uint16 mask) internal {
         BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
+        if (m.creatorShareToHook) m.buybackVesting = false;
         uint256 packed = BitmaskConfig.pack(m);
 
         (uint256 launchId, address token, PoolId poolId,) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
@@ -180,13 +181,37 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function testMaxWallet_RevertsWhenBalanceExceedsCap() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxWallet = true;
-        m.maxWalletBps = 5; // 0.05%
+        m.maxWalletBps = 2_000; // 20%
         (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
         key = factory.poolKeyOf(launchId);
 
-        _buyAs(buyer, key, 10 ether);
+        _buyAs(buyer, key, 0.05 ether);
         vm.expectRevert();
-        _buyAs(buyer, key, 1 ether);
+        _buyAs(buyer, key, 20 ether);
+    }
+
+    function testMaxWallet_RevertsWithoutHookData() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.maxWallet = true;
+        m.maxWalletBps = 2_000;
+        (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
+
+        vm.prank(buyer);
+        vm.expectRevert();
+        swapRouter.swap{value: 0.01 ether}(
+            key,
+            SwapParams({zeroForOne: true, amountSpecified: -int256(0.01 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+    }
+
+    function testSingleModule_HolderAirdrop() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_HOLDER_AIRDROP);
+    }
+
+    function testSingleModule_CreatorShareToHook() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_CREATOR_SHARE_TO_HOOK);
     }
 
     function testMaxTx_RevertsAboveCap() public {

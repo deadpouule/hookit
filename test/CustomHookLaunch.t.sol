@@ -13,6 +13,7 @@ import {LaunchpadTestBase, LaunchTokenLike} from "./utils/LaunchpadTestBase.sol"
 import {HookitCustomHook} from "../src/examples/HookitCustomHook.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
+import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 
 contract CustomHookLaunchTest is LaunchpadTestBase {
@@ -26,6 +27,8 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
             address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC057) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         customHook = HookitCustomHook(payable(flags));
+        factory.setCustomHookAllowed(address(customHook), true);
+        factory.setCustomHooksEnabled(true);
     }
 
     function testCustomHookLaunch() public {
@@ -53,5 +56,68 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
         (uint160 sqrtPriceX96,,,) = manager.getSlot0(poolId);
         uint256 mcap = FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, false);
         assertApproxEqRel(mcap, factory.launchMcapQuoteWei(), 0.01e18);
+    }
+
+    function testCustomHookRevertsWhenDisabled() public {
+        factory.setCustomHooksEnabled(false);
+        vm.expectRevert(LaunchFactory.CustomHooksDisabled.selector);
+        factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchParams({
+                name: "Custom",
+                symbol: "CST",
+                metadataURI: "ipfs://custom",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                quote: Currency.wrap(address(0)),
+                tickSpacing: 60,
+                startingTick: 0,
+                bitmask: 0,
+                customHook: IHooks(address(customHook))
+            })
+        );
+    }
+
+    function testCustomHookRevertsWhenNotAllowlisted() public {
+        address flags = address(
+            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC058) << 144)
+        );
+        deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
+        HookitCustomHook unlisted = HookitCustomHook(payable(flags));
+
+        vm.expectRevert(LaunchFactory.CustomHookNotAllowed.selector);
+        factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchParams({
+                name: "Custom",
+                symbol: "CST",
+                metadataURI: "ipfs://custom",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                quote: Currency.wrap(address(0)),
+                tickSpacing: 60,
+                startingTick: 0,
+                bitmask: 0,
+                customHook: IHooks(address(unlisted))
+            })
+        );
+    }
+
+    function testCustomHookRevertsWithModules() public {
+        factory.setCustomHookAllowed(address(customHook), true);
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.antiSnipe = true;
+        m.initialSnipeTaxBps = 500;
+        m.antiSnipeDurationSeconds = 900;
+        vm.expectRevert(LaunchFactory.ModulesNotSupportedWithCustomHook.selector);
+        factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchParams({
+                name: "Custom",
+                symbol: "CST",
+                metadataURI: "ipfs://custom",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                quote: Currency.wrap(address(0)),
+                tickSpacing: 60,
+                startingTick: 0,
+                bitmask: BitmaskConfig.pack(m),
+                customHook: IHooks(address(customHook))
+            })
+        );
     }
 }

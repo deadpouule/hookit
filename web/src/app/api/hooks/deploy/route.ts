@@ -22,6 +22,13 @@ function parseCreatedAddress(output: string): string | null {
 }
 
 export async function POST(request: Request) {
+  if (process.env.CUSTOM_SOLIDITY_HOOKS_ENABLED !== "true") {
+    return Response.json(
+      { error: "Custom Solidity hooks are disabled for the current launch phase." },
+      { status: 503 },
+    );
+  }
+
   loadRepoEnv();
   let body: { source?: string };
   try {

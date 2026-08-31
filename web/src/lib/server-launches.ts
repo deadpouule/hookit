@@ -1,19 +1,25 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
-import type { PublicClient } from "viem";
+import { type Address, isAddress, type PublicClient } from "viem";
 
 import {
   getBondingFactoryAddress,
   getLaunchFactoryAddress,
 } from "@/lib/contracts/config";
+import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
+import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
 import {
   fetchAllBondingLaunches,
   fetchAllLaunches,
+  fetchBondingLaunchById,
+  fetchLaunchById,
   launchToTokenPool,
 } from "@/lib/launches";
 import { isIndexerConfigured } from "@/lib/live-data";
 import { enrichPoolsWithIndexerMarkets } from "@/lib/pool-markets";
+import { getDetailPool } from "@/lib/pools";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import type { TokenPool } from "@/lib/types";
 
@@ -55,7 +61,7 @@ export function findPoolById(pools: TokenPool[], id: string): TokenPool | null {
   );
 }
 
-export const loadLaunchesResponse = cache(async (): Promise<LaunchesResponse> => {
+async function loadLaunchesResponseImpl(): Promise<LaunchesResponse> {
   const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
   if (!factory && !bonding) {
@@ -104,4 +110,105 @@ export const loadLaunchesResponse = cache(async (): Promise<LaunchesResponse> =>
       classic: !!bonding,
     },
   };
-});
+}
+
+const getCachedLaunchesResponse = unstable_cache(
+  loadLaunchesResponseImpl,
+  ["hookit-launches"],
+  { revalidate: LAUNCHES_REVALIDATE_SEC },
+);
+
+/** Full catalog — cached across requests (12s) and deduped within a render. */
+export const loadLaunchesResponse = cache(async (): Promise<LaunchesResponse> =>
+  getCachedLaunchesResponse(),
+);
+
+async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
+  const needle = id.trim();
+  if (!needle) return null;
+
+  const demo = getDetailPool(needle);
+  if (demo && !isAddress(needle)) return demo;
+
+  const factory = getLaunchFactoryAddress();
+  const bonding = getBondingFactoryAddress();
+  if (!factory && !bonding) return demo ?? null;
+
+  const client = createServerPublicClient() as PublicClient;
+  const ethUsd = await withTimeout(readEthUsd(client), API_TIMEOUT_MS, "readEthUsd");
+  const launchEthUsd = await withTimeout(readLaunchEthUsd(client), API_TIMEOUT_MS, "readLaunchEthUsd");
+  const enrichOpts = { skipSwapIndex: isIndexerConfigured(), launchEthUsd };
+
+  let pool: TokenPool | null = null;
+
+  if (isAddress(needle)) {
+    const token = needle as Address;
+    if (factory) {
+      const launchId = (await client.readContract({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "tokenLaunchId",
+        args: [token],
+      })) as bigint;
+      if (launchId > BigInt(0)) {
+        const launch = await fetchLaunchById(client, factory, launchId);
+        if (launch) {
+          const [enriched] = await enrichPoolsWithSpotPrices(
+            client,
+            [launchToTokenPool(launch)],
+            ethUsd,
+            enrichOpts,
+          );
+          pool = enriched ?? null;
+        }
+      }
+    }
+    if (!pool && bonding) {
+      const launchId = (await client.readContract({
+        address: bonding,
+        abi: bondingFactoryAbi,
+        functionName: "tokenLaunchId",
+        args: [token],
+      })) as bigint;
+      if (launchId > BigInt(0)) {
+        pool = await fetchBondingLaunchById(client, bonding, launchId);
+      }
+    }
+  } else if (/^\d+$/.test(needle)) {
+    const launchId = BigInt(needle);
+    if (factory) {
+      const launch = await fetchLaunchById(client, factory, launchId);
+      if (launch) {
+        const [enriched] = await enrichPoolsWithSpotPrices(
+          client,
+          [launchToTokenPool(launch)],
+          ethUsd,
+          enrichOpts,
+        );
+        pool = enriched ?? null;
+      }
+    }
+    if (!pool && bonding) {
+      pool = await fetchBondingLaunchById(client, bonding, launchId);
+    }
+  }
+
+  if (!pool) return demo ?? null;
+
+  if (isIndexerConfigured()) {
+    const [withMarkets] = await enrichPoolsWithIndexerMarkets([pool]);
+    return withMarkets ?? pool;
+  }
+  return pool;
+}
+
+const getCachedLaunchPoolById = unstable_cache(
+  loadLaunchPoolByIdImpl,
+  ["hookit-launch-pool"],
+  { revalidate: LAUNCHES_REVALIDATE_SEC },
+);
+
+/** Single launch lookup — O(1) RPC instead of reloading the full catalog. */
+export async function loadLaunchPoolById(id: string): Promise<TokenPool | null> {
+  return getCachedLaunchPoolById(id.trim().toLowerCase());
+}

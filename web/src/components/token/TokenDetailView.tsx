@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
@@ -10,7 +11,6 @@ import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
-import { TokenSwapCard } from "@/components/token/TokenSwapCard";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLiveToken } from "@/hooks/useLiveToken";
@@ -21,6 +21,16 @@ import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const TokenSwapCard = dynamic(
+  () => import("@/components/token/TokenSwapCard").then((m) => m.TokenSwapCard),
+  {
+    loading: () => (
+      <div className="swap-card min-h-[280px] animate-pulse rounded-2xl bg-zinc-900/50" aria-hidden />
+    ),
+    ssr: false,
+  },
+);
 
 function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (

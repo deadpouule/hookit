@@ -43,15 +43,15 @@ export function LaunchModelPicker() {
             </div>
           </Link>
 
-          <Link href="/launch/custom" className="launch-model-card" aria-label="Custom. Create a Custom coin with a hook">
+          <Link href="/launch/custom" className="launch-model-card" aria-label="Master. Launch with Hookit Master modules">
             <div className="launch-model-stage" aria-hidden>
               <AnimatedGridBackground className="launch-model-grid-bg" />
               <LaunchHookReel />
             </div>
             <div className="launch-model-copy">
-              <h2 className="terminal-title font-mono text-3xl font-semibold tracking-tight text-white">Custom.</h2>
+              <h2 className="terminal-title font-mono text-3xl font-semibold tracking-tight text-white">Master.</h2>
               <p>
-                Create a Custom coin with a hook
+                Master modules — anti-snipe, floor, burn
                 <span aria-hidden>-&gt;</span>
               </p>
             </div>

@@ -17,6 +17,7 @@ import {
 
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { packLaunchBitmask } from "@/lib/bitmask";
+import { CUSTOM_SOLIDITY_HOOKS_ENABLED } from "@/lib/constants";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
@@ -176,6 +177,9 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         });
       } else {
         if (form.hookMode === "custom") {
+          if (!CUSTOM_SOLIDITY_HOOKS_ENABLED) {
+            throw new Error("Custom Solidity hooks are not available yet — use Master modules.");
+          }
           const analysis = analyzeCustomHookSource(form.customHookSource);
           if (!analysis.valid) {
             throw new Error(analysis.errors[0] ?? "Fix your hook source before launching");

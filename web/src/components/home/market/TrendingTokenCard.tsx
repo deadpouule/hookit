@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Flame, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
 import { formatPercent } from "@/lib/format";
@@ -26,10 +27,19 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
   const href = tokenHref(token.id);
   const positive = token.change1h >= 0;
 
+  const prefetchToken = useCallback(() => {
+    if (typeof window === "undefined") return;
+    void fetch(`/api/launches/${encodeURIComponent(token.id)}`, {
+      priority: "low",
+    }).catch(() => undefined);
+  }, [token.id]);
+
   return (
     <article
       className="trending-card group relative cursor-pointer"
       onClick={() => router.push(href)}
+      onMouseEnter={prefetchToken}
+      onFocus={prefetchToken}
     >
       <span
         className={cn(

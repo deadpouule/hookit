@@ -1,7 +1,4 @@
-import {
-  findPoolById,
-  loadLaunchesResponse,
-} from "@/lib/server-launches";
+import { loadLaunchPoolById } from "@/lib/server-launches";
 
 export const revalidate = 12;
 
@@ -14,8 +11,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   }
 
   try {
-    const data = await loadLaunchesResponse();
-    const pool = findPoolById(data.pools, id.trim());
+    const pool = await loadLaunchPoolById(id.trim());
     if (!pool) {
       return Response.json({ error: "pool not found", pool: null }, { status: 404 });
     }

@@ -20,6 +20,13 @@ export const maxDuration = 180;
  * (no server PRIVATE_KEY). Fallback remains POST /api/hooks/deploy.
  */
 export async function POST(request: Request) {
+  if (process.env.CUSTOM_SOLIDITY_HOOKS_ENABLED !== "true") {
+    return Response.json(
+      { error: "Custom Solidity hooks are disabled for the current launch phase." },
+      { status: 503 },
+    );
+  }
+
   loadRepoEnv();
   let body: { source?: string };
   try {
