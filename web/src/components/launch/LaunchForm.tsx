@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
+import { AccentSlider } from "@/components/launch/AccentSlider";
 import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookArchitectureSection } from "@/components/launch/HookArchitectureSection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
@@ -19,7 +20,6 @@ import {
   SectionLabel,
 } from "@/components/ui/form-primitives";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
 import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
@@ -122,7 +122,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
   };
 
   return (
-    <div className="launch-shell pt-6 sm:pt-10">
+    <div className={cn("launch-shell pt-6 sm:pt-10", form.markets.length > 1 && "launch-shell--multi-pair")}>
       <Link
         href="/launch"
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"
@@ -419,7 +419,8 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                   <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
                 </div>
                 <div className="mt-2">
-                  <Slider
+                  <AccentSlider
+                    accentColor="#9514d1"
                     value={[form.hookTaxBps]}
                     onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
                     min={0}

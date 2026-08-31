@@ -41,6 +41,25 @@ export type HookTheme =
   | "crimson"
   | "lime";
 
+/** Slider / accent colors aligned with pick-card hook themes */
+export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
+  fire: "#ef4444",
+  gold: "#f59e0b",
+  void: "#e879f9",
+  nature: "#10b981",
+  volt: "#03b1ed",
+  ice: "#38bdf8",
+  ember: "#f97316",
+  rose: "#f43f5e",
+  steel: "#6366f1",
+  crimson: "#dc2626",
+  lime: "#84cc16",
+};
+
+export function hookThemeAccentColor(theme: HookTheme): string {
+  return HOOK_THEME_ACCENT[theme];
+}
+
 export interface MasterHook {
   id: MasterHookId;
   number: number;
@@ -392,6 +411,11 @@ export function isMasterHookId(value: string | null): value is MasterHookId {
 
 export function launchWithHookHref(id: MasterHookId) {
   return `/launch/custom?hook=${id}`;
+}
+
+export function hookAccentColor(id: MasterHookId): string {
+  const hook = MASTER_HOOKS.find((item) => item.id === id);
+  return hook ? hookThemeAccentColor(hook.theme) : "#9514d1";
 }
 
 export function withMasterHookEnabled(
