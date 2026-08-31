@@ -11,7 +11,8 @@ import { fetchIndexerHolders } from "@/lib/indexer-client";
 import { isIndexerConfigured } from "@/lib/live-data";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
-import type { MasterHookId } from "@/lib/master-hooks";
+import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
+import { cn } from "@/lib/utils";
 
 export function FloorVaultInline({
   pool,
@@ -21,6 +22,7 @@ export function FloorVaultInline({
   quoteLabel,
   floorPriceHuman,
   embedded = false,
+  theme = "gold",
 }: {
   pool: TokenPool;
   floorVault: Address | undefined;
@@ -29,11 +31,27 @@ export function FloorVaultInline({
   quoteLabel: string;
   floorPriceHuman: number | null;
   embedded?: boolean;
+  theme?: HookTheme;
 }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending } = useWriteContract();
   const [redeemAmount, setRedeemAmount] = useState("");
+  const token = pool.contractAddress as Address | undefined;
+
+  const { data: tokenBalance } = useReadContract({
+    address: token,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!token && !!address },
+  });
+
+  const applyMax = () => {
+    const bal = (tokenBalance as bigint | undefined) ?? BigInt(0);
+    if (bal <= BigInt(0)) return;
+    setRedeemAmount(formatUnits(bal, 18));
+  };
 
   const redeem = async () => {
     if (!floorVault || !pool.contractAddress || !address) return;
@@ -78,12 +96,22 @@ export function FloorVaultInline({
   if (embedded) {
     return (
       <div className="token-hooks-chip-actions token-hooks-chip-actions--floor">
-        <input
-          value={redeemAmount}
-          onChange={(e) => setRedeemAmount(e.target.value)}
-          placeholder={`${pool.ticker} amount`}
-          className="token-hooks-vault-input"
-        />
+        <div className={cn("token-hooks-vault-field", `token-hooks-vault-field--${theme}`)}>
+          <input
+            value={redeemAmount}
+            onChange={(e) => setRedeemAmount(e.target.value)}
+            placeholder={`${pool.ticker} amount`}
+            className="token-hooks-vault-input"
+          />
+          <button
+            type="button"
+            disabled={!address || !tokenBalance || (tokenBalance as bigint) <= BigInt(0)}
+            onClick={applyMax}
+            className="token-hooks-vault-max"
+          >
+            MAX
+          </button>
+        </div>
         <button
           type="button"
           disabled={!floorVault || !redeemAmount || isPending || !address}
@@ -257,6 +285,7 @@ export function HookInlineAction({
   floorPriceHuman,
   quoteLabel,
   embedded = false,
+  theme,
 }: {
   id: MasterHookId;
   pool: TokenPool;
@@ -269,6 +298,7 @@ export function HookInlineAction({
   floorPriceHuman: number | null;
   quoteLabel: string;
   embedded?: boolean;
+  theme?: HookTheme;
 }) {
   if (id === "backed-floor") {
     return (
@@ -280,6 +310,7 @@ export function HookInlineAction({
         quoteLabel={quoteLabel}
         floorPriceHuman={floorPriceHuman}
         embedded={embedded}
+        theme={theme ?? "gold"}
       />
     );
   }

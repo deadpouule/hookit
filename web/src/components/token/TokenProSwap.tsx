@@ -193,6 +193,19 @@ export function TokenProSwap({
               {pct}%
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              if (sellBalance <= 0) return;
+              onSellAmount(
+                sellBalance < 1 ? sellBalance.toFixed(6) : String(sellBalance),
+              );
+            }}
+            disabled={sellBalance <= 0}
+            className="market-preset-btn market-preset-btn--max"
+          >
+            MAX
+          </button>
         </div>
       </div>
 

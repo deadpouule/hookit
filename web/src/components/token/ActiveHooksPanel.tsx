@@ -336,6 +336,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                     floorPriceHuman={live.floorPriceHuman}
                     quoteLabel={live.quoteLabel}
                     embedded
+                    theme={hook.theme}
                   />
                 ) : null}
               </HookModuleBadge>
