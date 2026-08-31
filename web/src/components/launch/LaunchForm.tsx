@@ -15,7 +15,6 @@ import {
   FeeBreakdown,
   FormDivider,
   FormPanel,
-  ModuleRow,
   SectionLabel,
   SegmentedControl,
 } from "@/components/ui/form-primitives";
@@ -410,7 +409,17 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
               <HookModulePicker
                 modules={form.modules}
-                onToggle={(id, next) => updateModules({ [HOOK_MODULE_FIELD[id]]: next })}
+                onToggle={(id, next) => {
+                  if (id === "creator-share-to-hook" && next) {
+                    updateModules({ creatorShareToHook: true, buybackVesting: false });
+                    return;
+                  }
+                  if (id === "buyback-vesting" && next) {
+                    updateModules({ buybackVesting: true, creatorShareToHook: false });
+                    return;
+                  }
+                  updateModules({ [HOOK_MODULE_FIELD[id]]: next });
+                }}
                 onUpdate={updateModules}
                 floorEst={floorEst}
                 multiMarket={form.markets.length > 1}
@@ -448,46 +457,6 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                     Extra fee for hook modules · leftover → protocol
                   </p>
                 </div>
-              </div>
-
-              <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/40 px-5 py-2 sm:px-6 sm:py-3">
-                <ModuleRow
-                  label="Creator → hook"
-                  description="Send your 70% of the base 1% into the hook pot (floor / burn / donate / airdrop) instead of claiming escrow."
-                  enabled={form.modules.creatorShareToHook}
-                  onToggle={(next) =>
-                    updateModules({
-                      creatorShareToHook: next,
-                      ...(next ? { buybackVesting: false } : {}),
-                    })
-                  }
-                >
-                  {form.modules.creatorShareToHook && (
-                    <p className="text-xs leading-relaxed text-zinc-500">
-                      {form.modules.backedFloor ||
-                      form.modules.autoBurn ||
-                      form.modules.lpDonate ||
-                      form.modules.holderAirdrop ||
-                      form.hookTaxBps > 0 ? (
-                        <>
-                          Your base share joins the same hook pot as the hook tax, split across enabled
-                          modules.
-                        </>
-                      ) : (
-                        <>
-                          No hook modules selected — your 70% base share still routes to the hook pot
-                          and unallocated amounts go to the protocol treasury. Enable floor, burn, donate,
-                          or airdrop above to direct it.
-                        </>
-                      )}
-                      {form.modules.buybackVesting && (
-                        <span className="mt-1 block text-amber-600/90">
-                          Disabled while buyback vesting is on — they cannot run together.
-                        </span>
-                      )}
-                    </p>
-                  )}
-                </ModuleRow>
               </div>
             </>
           )}
