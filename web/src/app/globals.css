@@ -1873,7 +1873,7 @@
     }
 
     .token-desk--wide {
-      grid-template-columns: minmax(0, 5fr) minmax(320px, 5fr);
+      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
       grid-template-areas: "center right";
       align-items: start;
     }
