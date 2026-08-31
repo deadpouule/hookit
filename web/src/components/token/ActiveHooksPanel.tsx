@@ -8,7 +8,6 @@ import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
@@ -20,6 +19,7 @@ import {
   buildModulesSummarySentence,
   isModuleEnabled,
   moduleTooltipText,
+  resolveTokenModules,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, type HookTheme, type MasterHookId } from "@/lib/master-hooks";
 import {
@@ -59,17 +59,7 @@ function quoteDecimals(quote: Address): number {
 }
 
 function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: number } | null {
-  if (pool.modules) {
-    return { modules: pool.modules, hookTaxBps: pool.hookTaxBps ?? 0 };
-  }
-  if (pool.bitmask) {
-    try {
-      return unpackLaunchBitmask(BigInt(pool.bitmask));
-    } catch {
-      return null;
-    }
-  }
-  return null;
+  return resolveTokenModules(pool);
 }
 
 function ModuleMeter({
@@ -193,6 +183,13 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!airdropVault && !!token && needAirdrop, refetchInterval: 30_000 },
   });
 
+  const { data: airdropEpochSec } = useReadContract({
+    address: airdropVault as Address | undefined,
+    abi: holderAirdropVaultAbi,
+    functionName: "EPOCH",
+    query: { enabled: !!airdropVault && needAirdrop },
+  });
+
   const { data: buybackStream } = useReadContract({
     address: buybackVaultAddr as Address | undefined,
     abi: buybackVaultAbi,
@@ -268,6 +265,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
         : null,
     airdropSecondsLeft: airdropSeconds !== undefined ? Number(airdropSeconds) : null,
     airdropLastAtSec: airdropLastAt !== undefined ? Number(airdropLastAt) : null,
+    airdropEpochSec: airdropEpochSec !== undefined ? Number(airdropEpochSec) : null,
     burnedPct,
     lpDonatePendingHuman:
       pendingLpDonateWei !== undefined
@@ -308,7 +306,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
           const meterPct = moduleMeterPct(hook.id, resolvedModules, pool, live);
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
-              <ModuleTip tip={moduleTooltipText(hook.description, hook.id, resolvedModules)}>
+              <ModuleTip tip={moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps)}>
                 <span
                   className={cn(
                     "token-hooks-chip orb-hook-desc-badge",

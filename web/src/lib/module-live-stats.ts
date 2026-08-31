@@ -7,6 +7,7 @@ export type ModuleLiveStats = {
   airdropPendingHuman: number | null;
   airdropSecondsLeft: number | null;
   airdropLastAtSec: number | null;
+  airdropEpochSec: number | null;
   burnedPct: number | null;
   lpDonatePendingHuman: number | null;
   buybackTotalHuman: number | null;
@@ -128,8 +129,10 @@ export function moduleMeterPct(
     }
     case "holder-airdrop": {
       if (live.airdropSecondsLeft == null) return null;
+      const epoch = live.airdropEpochSec ?? 15 * 60;
+      if (epoch <= 0) return null;
       if (live.airdropSecondsLeft <= 0) return 100;
-      return ((15 * 60 - live.airdropSecondsLeft) / (15 * 60)) * 100;
+      return Math.max(0, Math.min(100, ((epoch - live.airdropSecondsLeft) / epoch) * 100));
     }
     default:
       return null;

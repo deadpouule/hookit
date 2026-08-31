@@ -414,6 +414,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                 onUpdate={updateModules}
                 floorEst={floorEst}
                 multiMarket={form.markets.length > 1}
+                hookTaxBps={form.hookTaxBps}
               />
 
               <FormDivider />

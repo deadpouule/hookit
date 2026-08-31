@@ -37,13 +37,15 @@ function HookAsciiMark({ id, theme }: { id: HookId; theme: HookTheme }) {
 export function LaunchSummaryModuleRow({
   id,
   modules,
+  hookTaxBps = 0,
 }: {
   id: HookId;
   modules: LaunchModules;
+  hookTaxBps?: number;
 }) {
   const def = HOOK_MARKS[id];
   const theme = resolveHookTheme(id);
-  const detail = hookMarkSummaryDetail(id, modules);
+  const detail = hookMarkSummaryDetail(id, modules, hookTaxBps);
   const masterId = HOOK_MARK_TO_MASTER[id];
 
   if (!masterId) {

@@ -39,6 +39,8 @@ export function TokenCard({
   const [imageBroken, setImageBroken] = useState(false);
   const fullAddress = pool.contractAddress ?? pool.id;
   const poolHookIds = masterHookIdsForPool(pool);
+  const modules = pool.modules;
+  const hookTaxBps = pool.hookTaxBps ?? 0;
   const media = resolveMediaUrl(pool.image);
   const displayMcap =
     pool.marketCap > 0
@@ -166,12 +168,35 @@ export function TokenCard({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {pool.hooks.antiSnipe && <HookChip id="antiSnipe" />}
-          {pool.hooks.backedFloor && <HookChip id="backedFloor" />}
-          {pool.hooks.antiMev && <HookChip id="antiMev" />}
-          {pool.hooks.maxTx && <HookChip id="maxTx" />}
-          {pool.hooks.maxWallet && <HookChip id="maxWallet" />}
-          {pool.hooks.holderAirdrop && <HookChip id="holderAirdrop" />}
+          {pool.hooks.antiSnipe && (
+            <HookChip id="antiSnipe" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.backedFloor && (
+            <HookChip id="backedFloor" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.antiMev && <HookChip id="antiMev" modules={modules} hookTaxBps={hookTaxBps} />}
+          {pool.hooks.maxTx && <HookChip id="maxTx" modules={modules} hookTaxBps={hookTaxBps} />}
+          {pool.hooks.maxWallet && (
+            <HookChip id="maxWallet" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.dynamicFees && (
+            <HookChip id="dynamicFees" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.buybackVesting && (
+            <HookChip id="buybackVesting" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.autoBurn && (
+            <HookChip id="autoBurn" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.lpDonate && (
+            <HookChip id="lpDonate" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.holderAirdrop && (
+            <HookChip id="holderAirdrop" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
+          {pool.hooks.creatorShareToHook && (
+            <HookChip id="creatorShareToHook" modules={modules} hookTaxBps={hookTaxBps} />
+          )}
           {pool.hooks.customHook && <HookChip id="custom" />}
         </div>
       </div>

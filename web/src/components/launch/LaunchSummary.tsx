@@ -138,7 +138,12 @@ export function LaunchSummary({
           </p>
           <ul className="space-y-2 text-xs">
             {summaryHooks.map((id) => (
-              <LaunchSummaryModuleRow key={id} id={id} modules={form.modules} />
+              <LaunchSummaryModuleRow
+                key={id}
+                id={id}
+                modules={form.modules}
+                hookTaxBps={form.hookTaxBps}
+              />
             ))}
           </ul>
         </div>

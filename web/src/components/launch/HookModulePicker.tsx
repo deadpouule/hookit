@@ -58,12 +58,14 @@ export function HookModulePicker({
   onUpdate,
   floorEst,
   multiMarket = false,
+  hookTaxBps = 0,
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
   onUpdate: (patch: Partial<LaunchModules>) => void;
   floorEst: number;
   multiMarket?: boolean;
+  hookTaxBps?: number;
 }) {
   const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
   const enabledHooks = MASTER_HOOKS.filter(
@@ -99,7 +101,7 @@ export function HookModulePicker({
               key={hook.id}
               hook={hook}
               selected={selected}
-              configHint={moduleCardHint(hook.id, modules)}
+              configHint={moduleCardHint(hook.id, modules, hookTaxBps)}
               onClick={() => {
                 if (disabled) return;
                 if (selected) {
@@ -134,7 +136,12 @@ export function HookModulePicker({
               )}
               onClick={() => setFocus(hook.id)}
             >
-              <HookConfigHeader hook={hook} active={focus === hook.id} />
+              <HookConfigHeader
+                hook={hook}
+                active={focus === hook.id}
+                modules={modules}
+                hookTaxBps={hookTaxBps}
+              />
               <HookSettings
                 hookId={hook.id}
                 modules={modules}
@@ -149,7 +156,17 @@ export function HookModulePicker({
   );
 }
 
-function HookConfigHeader({ hook, active }: { hook: MasterHook; active: boolean }) {
+function HookConfigHeader({
+  hook,
+  active,
+  modules,
+  hookTaxBps = 0,
+}: {
+  hook: MasterHook;
+  active: boolean;
+  modules: LaunchModules;
+  hookTaxBps?: number;
+}) {
   return (
     <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
       <div className="pick-config-head-copy">
@@ -163,7 +180,7 @@ function HookConfigHeader({ hook, active }: { hook: MasterHook; active: boolean 
             <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
             <span>{hook.title}</span>
           </h2>
-          <HookSettingsTooltip hook={hook} />
+          <HookSettingsTooltip hook={hook} modules={modules} hookTaxBps={hookTaxBps} />
         </div>
         <p className="pick-config-copy">{capitalizeDescription(hook.description)}</p>
       </div>

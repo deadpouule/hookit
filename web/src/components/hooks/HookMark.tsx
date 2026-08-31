@@ -1,5 +1,12 @@
+"use client";
+
+import type { ReactNode } from "react";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { HookId } from "@/lib/hook-marks";
 import { HOOK_MARKS } from "@/lib/hook-marks";
+import { hookMarkTooltipText } from "@/lib/launch-module-summary";
+import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 function Glyph({ id }: { id: HookId }) {
@@ -126,6 +133,24 @@ function Glyph({ id }: { id: HookId }) {
   }
 }
 
+function HookChipTip({ tip, children }: { tip: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-help">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        showArrow={false}
+        className="max-w-[260px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
+      >
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function HookMark({
   id,
   size = "md",
@@ -152,12 +177,19 @@ export function HookMark({
 export function HookChip({
   id,
   className,
+  modules,
+  hookTaxBps = 0,
+  tip,
 }: {
   id: HookId;
   className?: string;
+  modules?: LaunchModules;
+  hookTaxBps?: number;
+  tip?: string;
 }) {
   const def = HOOK_MARKS[id];
-  return (
+  const resolvedTip = tip ?? hookMarkTooltipText(id, modules, hookTaxBps);
+  const chip = (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-1.5 py-0.5 pr-2 text-[10px] font-medium",
@@ -173,6 +205,8 @@ export function HookChip({
       {def.short}
     </span>
   );
+
+  return <HookChipTip tip={resolvedTip}>{chip}</HookChipTip>;
 }
 
 export function HookTile({

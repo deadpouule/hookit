@@ -4,16 +4,26 @@ import { Info } from "lucide-react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getHookPresetDetails, type HookPresetDetails } from "@/lib/hook-presets";
+import { moduleDetailLine } from "@/lib/launch-module-summary";
 import type { MasterHook } from "@/lib/master-hooks";
+import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type HookSettingsTooltipProps = {
   hook: MasterHook;
+  modules?: LaunchModules;
+  hookTaxBps?: number;
   className?: string;
 };
 
-export function HookSettingsTooltip({ hook, className }: HookSettingsTooltipProps) {
+export function HookSettingsTooltip({
+  hook,
+  modules,
+  hookTaxBps = 0,
+  className,
+}: HookSettingsTooltipProps) {
   const preset = getHookPresetDetails(hook);
+  const tokenConfig = modules ? moduleDetailLine(hook.id, modules, hookTaxBps) : null;
 
   return (
     <Tooltip>
@@ -37,9 +47,23 @@ export function HookSettingsTooltip({ hook, className }: HookSettingsTooltipProp
         sideOffset={10}
         className="hook-settings-tooltip border-0 bg-transparent p-0 shadow-none"
       >
-        <HookSettingsPanel preset={preset} />
+        {tokenConfig ? (
+          <TokenConfigPanel hook={hook} config={tokenConfig} />
+        ) : (
+          <HookSettingsPanel preset={preset} />
+        )}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function TokenConfigPanel({ hook, config }: { hook: MasterHook; config: string }) {
+  return (
+    <div className="hook-settings-panel">
+      <p className="hook-settings-panel-title">{hook.title}</p>
+      <p className="hook-settings-panel-meta font-medium text-foreground">{config}</p>
+      <p className="hook-settings-panel-meta">{hook.description}</p>
+    </div>
   );
 }
 
