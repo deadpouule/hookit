@@ -1,6 +1,5 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
-import { formatAge } from "@/lib/format";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -44,19 +43,19 @@ export function moduleLiveStatLine(
   modules: LaunchModules,
   live: ModuleLiveStats,
   pool: { launchedAt?: number; creator?: string },
-  hookTaxBps = 0,
+  _hookTaxBps = 0,
 ): string | null {
   switch (id) {
     case "anti-snipe": {
-      if (!pool.launchedAt) return `${modules.antiSnipeInitialTax}% tax at launch`;
+      if (!pool.launchedAt) return null;
       const left = pool.launchedAt + modules.antiSnipeDuration - Math.floor(Date.now() / 1000);
-      if (left <= 0) return "Protection ended";
-      return `${left}s left · ${modules.antiSnipeInitialTax}% tax`;
+      if (left <= 0) return null;
+      return `${left}s left`;
     }
     case "backed-floor":
       return `Vault ${formatAmount(live.floorReserveHuman, live.quoteLabel)} · floor ${formatAmount(live.floorPriceHuman, live.quoteLabel, 6)}`;
     case "anti-mev":
-      return "Same-block bot trades blocked";
+      return null;
     case "max-tx":
       return `Max ${(modules.maxTxBps / 100).toFixed(1)}% of supply per trade`;
     case "max-wallet":
@@ -64,47 +63,42 @@ export function moduleLiveStatLine(
     case "dynamic-fees":
       return "Swap fee adjusts with volume";
     case "buyback-vesting": {
+      const days = modules.buybackVestingDurationDays ?? 365 * 5;
       if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) {
-        const days = modules.buybackVestingDurationDays ?? 365 * 5;
         return days >= 365
-          ? `Creator fees vest over ${(days / 365).toFixed(1)} years`
-          : `Creator fees vest over ${days} days`;
+          ? `Unlocks over ${Math.round(days / 365)} years`
+          : `Unlocks over ${days} days`;
       }
-      const claimable = formatAmount(live.buybackClaimableHuman, live.quoteLabel);
-      const claimed = formatAmount(live.buybackClaimedHuman, live.quoteLabel);
+      const claimable = live.buybackClaimableHuman ?? 0;
+      if (claimable > 0) {
+        return `${formatAmount(claimable, live.quoteLabel)} ready to claim`;
+      }
       const vest =
-        live.buybackVestSecondsLeft != null
-          ? formatDuration(live.buybackVestSecondsLeft)
-          : "—";
-      return `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} vesting · ${claimable} claimable · ${claimed} claimed · ${vest}`;
+        live.buybackVestSecondsLeft != null ? formatDuration(live.buybackVestSecondsLeft) : null;
+      return vest
+        ? `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} locked · ${vest}`
+        : `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} locked`;
     }
     case "auto-burn":
-      return live.burnedPct != null
-        ? `${live.burnedPct.toFixed(2)}% supply burned · ${modules.autoBurnPct}% of fees`
-        : `${modules.autoBurnPct}% of fees burned on swaps`;
+      return live.burnedPct != null && live.burnedPct > 0
+        ? `${live.burnedPct.toFixed(2)}% burned`
+        : null;
     case "lp-donate": {
       const pending = formatAmount(live.lpDonatePendingHuman, live.quoteLabel);
       return `${modules.lpDonatePct}% of hook fees · ${pending} queued for LPs`;
     }
     case "holder-airdrop": {
-      const pot = formatAmount(live.airdropPendingHuman, live.quoteLabel);
-      const next =
-        live.airdropSecondsLeft == null
-          ? "—"
-          : live.airdropSecondsLeft <= 0
-            ? "ready to drop"
-            : formatCountdown(live.airdropSecondsLeft);
-      const last =
-        live.airdropLastAtSec != null && live.airdropLastAtSec > 0
-          ? `last drop ${formatAge(Math.floor(Date.now() / 1000) - live.airdropLastAtSec)} ago`
-          : "no drop yet";
-      return `${modules.holderAirdropPct}% of fees · pot ${pot} · next ${next} · ${last}`;
+      const potHuman = live.airdropPendingHuman;
+      if (potHuman == null || potHuman <= 0) {
+        return `${modules.holderAirdropPct}% of fees → holders`;
+      }
+      const pot = formatAmount(potHuman, live.quoteLabel);
+      if (live.airdropSecondsLeft == null) return `Pot ${pot}`;
+      if (live.airdropSecondsLeft <= 0) return `Pot ${pot} · ready`;
+      return `Pot ${pot} · in ${formatCountdown(live.airdropSecondsLeft)}`;
     }
-    case "creator-share-to-hook": {
-      const hookTax =
-        hookTaxBps > 0 ? `${(hookTaxBps / 100).toFixed(1)}% hook tax active` : "no extra hook tax";
-      return `70% of base fee → hook pot · ${hookTax}`;
-    }
+    case "creator-share-to-hook":
+      return null;
     default:
       return null;
   }

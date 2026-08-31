@@ -321,7 +321,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
               </ModuleTip>
               {stat ? <p className="token-hooks-live">{stat}</p> : null}
               {meterPct != null ? (
-                <ModuleMeter label={stat ?? hook.title} pct={meterPct} theme={hook.theme} />
+                <ModuleMeter label={hook.title} pct={meterPct} theme={hook.theme} />
               ) : null}
               <HookInlineAction
                 id={hook.id}
