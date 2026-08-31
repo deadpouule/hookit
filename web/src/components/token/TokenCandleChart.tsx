@@ -25,12 +25,14 @@ export function TokenCandleChart({
   onInterval,
   marketCap,
   change24h,
+  compact = false,
 }: {
   candles: LiveCandle[];
   interval: ChartInterval;
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
   change24h?: number;
+  compact?: boolean;
 }) {
   const visible = useMemo(
     () => candlesForChartInterval(candles, interval),
@@ -94,7 +96,12 @@ export function TokenCandleChart({
         </div>
       </div>
 
-      <div className="relative h-[340px] bg-chart-bg sm:h-[420px]">
+      <div
+        className={cn(
+          "relative bg-chart-bg",
+          compact ? "h-[240px] sm:h-[280px]" : "h-[340px] sm:h-[420px]",
+        )}
+      >
         <div className="candle-grid absolute inset-0" />
         {visible.length === 0 ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center">
