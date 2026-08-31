@@ -15,23 +15,27 @@ import {
   fetchBondingLaunchById,
   fetchLaunchById,
   launchToTokenPool,
-  type OnChainLaunch,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
+import {
+  LAUNCHES_REFETCH_MS,
+  LAUNCHES_STALE_MS,
+} from "@/lib/query-cache";
 import type { TokenPool } from "@/lib/types";
 
-export function useLaunches() {
+export function useLaunches(initialPools?: TokenPool[]) {
   const live = shouldFetchLiveLaunches();
 
   return useQuery({
     queryKey: ["launches"],
     enabled: live,
+    initialData: initialPools?.length ? initialPools : undefined,
     queryFn: async (): Promise<TokenPool[]> => {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 20_000);
       try {
-        const res = await fetch("/api/launches", { cache: "no-store", signal: controller.signal });
+        const res = await fetch("/api/launches", { signal: controller.signal });
         if (!res.ok) throw new Error("Failed to fetch launches");
         const body = (await res.json()) as { pools?: TokenPool[]; factoryConfigured?: boolean };
         return body.pools ?? [];
@@ -39,8 +43,9 @@ export function useLaunches() {
         window.clearTimeout(timer);
       }
     },
+    staleTime: LAUNCHES_STALE_MS,
     retry: 2,
-    refetchInterval: 15_000,
+    refetchInterval: LAUNCHES_REFETCH_MS,
   });
 }
 
@@ -53,23 +58,14 @@ export function useLaunchPool(id: string) {
   return useQuery({
     queryKey: ["launch-pool", factory, bonding, id, publicClient?.chain?.id],
     enabled: ready,
+    staleTime: LAUNCHES_STALE_MS,
     retry: 1,
     queryFn: async (): Promise<TokenPool | null> => {
-      const needle = id.toLowerCase();
-
-      // Fast path: server API (avoids browser RPC + 50k-block getLogs scan).
       try {
-        const res = await fetch("/api/launches", { cache: "no-store" });
+        const res = await fetch(`/api/launches/${encodeURIComponent(id)}`);
         if (res.ok) {
-          const body = (await res.json()) as { pools?: TokenPool[] };
-          const fromApi =
-            body.pools?.find(
-              (p) =>
-                p.id.toLowerCase() === needle ||
-                p.contractAddress?.toLowerCase() === needle ||
-                (p.launchId != null && String(p.launchId) === id),
-            ) ?? null;
-          if (fromApi) return fromApi;
+          const body = (await res.json()) as { pool?: TokenPool };
+          if (body.pool) return body.pool;
         }
       } catch {
         /* fall through to chain */

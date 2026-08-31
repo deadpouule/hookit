@@ -1,17 +1,22 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { zeroAddress } from "viem";
 
+import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
-import { fetchIndexerToken, fetchIndexerTrades, type IndexerTokenSummary } from "@/lib/indexer-client";
+import { type IndexerTokenSummary } from "@/lib/indexer-client";
+import {
+  INDEXER_STALE_MS,
+  TOKEN_STATS_REFETCH_MS,
+} from "@/lib/query-cache";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { DevBuyInfo } from "@/lib/token-dev-buy";
 import {
   activityFromTrades,
   emptyTokenWindowStats,
   mapWindowVolumes,
-  quoteVolToUsd,
   type StatsWindow,
   type TokenWindowStats,
 } from "@/lib/token-window-stats";
@@ -136,64 +141,66 @@ function fallbackFromPool(pool: TokenPool, ethUsd: number): TokenDeskStats {
   };
 }
 
+function computeDeskStats(
+  pool: TokenPool,
+  ethUsd: number,
+  indexer: ReturnType<typeof useTokenIndexerData>["data"],
+  devBuyFallback?: DevBuyInfo | null,
+): TokenDeskStats {
+  let base = fallbackFromPool(pool, ethUsd);
+  const isEth = !pool.quoteAddress || pool.quoteAddress === zeroAddress || pool.quoteAsset === "ETH";
+
+  if (indexer?.summary) {
+    base = mapIndexerWindows(indexer.summary, pool, ethUsd);
+    if (!indexer.summary.windows && indexer.trades.length > 0) {
+      const qd = indexer.summary.quoteDecimals || (isEth ? 18 : 6);
+      base.windows = mapWindowVolumes(activityFromTrades(indexer.trades), qd, isEth, ethUsd);
+    }
+  } else if (indexer?.trades.length) {
+    const qd = isEth ? 18 : 6;
+    base.windows = mapWindowVolumes(activityFromTrades(indexer.trades), qd, isEth, ethUsd);
+  }
+
+  if (!base.devBuy.completed && devBuyFallback?.completed) {
+    base.devBuy = devBuyFallback;
+  }
+
+  return base;
+}
+
 export function useTokenStats(pool: TokenPool) {
   const address = pool.contractAddress ?? pool.address;
   const ethUsd = resolveEthUsd(pool);
+  const indexer = useTokenIndexerData(address, { tradesLimit: 500 });
 
-  return useQuery({
-    queryKey: ["token-desk-stats", address],
-    enabled: !!address,
-    refetchInterval: 25_000,
+  const devBuyQuery = useQuery({
+    queryKey: ["token-dev-buy", address],
+    enabled: !!address && !indexer.data?.summary?.devBuyCompleted,
+    staleTime: 60_000,
+    refetchInterval: TOKEN_STATS_REFETCH_MS,
     retry: 1,
-    queryFn: async (): Promise<TokenDeskStats> => {
-      let base = fallbackFromPool(pool, ethUsd);
-
-      try {
-        const summary = await fetchIndexerToken(address);
-        base = mapIndexerWindows(summary, pool, ethUsd);
-
-        if (!summary.windows) {
-          try {
-            const { trades } = await fetchIndexerTrades(address, 500);
-            if (trades.length > 0) {
-              const computed = activityFromTrades(trades);
-              const isEth =
-                !pool.quoteAddress || pool.quoteAddress === zeroAddress || pool.quoteAsset === "ETH";
-              const qd = summary.quoteDecimals || (isEth ? 18 : 6);
-              base.windows = mapWindowVolumes(computed, qd, isEth, ethUsd);
-            }
-          } catch {
-            /* trades optional */
-          }
-        }
-      } catch {
-        try {
-          const { trades } = await fetchIndexerTrades(address, 500);
-          if (trades.length > 0) {
-            const isEth =
-              !pool.quoteAddress || pool.quoteAddress === zeroAddress || pool.quoteAsset === "ETH";
-            const qd = isEth ? 18 : 6;
-            const computed = activityFromTrades(trades);
-            base.windows = mapWindowVolumes(computed, qd, isEth, ethUsd);
-          }
-        } catch {
-          /* indexer optional */
-        }
-      }
-
-      if (!base.devBuy.completed) {
-        try {
-          const res = await fetch(`/api/token/${address}/dev-buy`, { cache: "no-store" });
-          if (res.ok) {
-            const body = (await res.json()) as { devBuy?: DevBuyInfo };
-            if (body.devBuy?.completed) base.devBuy = body.devBuy;
-          }
-        } catch {
-          /* on-chain fallback optional */
-        }
-      }
-
-      return base;
+    queryFn: async (): Promise<DevBuyInfo | null> => {
+      const res = await fetch(`/api/token/${address}/dev-buy`);
+      if (!res.ok) return null;
+      const body = (await res.json()) as { devBuy?: DevBuyInfo };
+      return body.devBuy?.completed ? body.devBuy : null;
     },
   });
+
+  const data = useMemo(
+    () => computeDeskStats(pool, ethUsd, indexer.data, devBuyQuery.data),
+    [pool, ethUsd, indexer.data, devBuyQuery.data],
+  );
+
+  return {
+    data,
+    isLoading: indexer.isLoading,
+    isFetching: indexer.isFetching || devBuyQuery.isFetching,
+    isError: indexer.isError,
+    error: indexer.error,
+    refetch: indexer.refetch,
+    dataUpdatedAt: Math.max(indexer.dataUpdatedAt, devBuyQuery.dataUpdatedAt),
+    isStale: indexer.isStale || devBuyQuery.isStale,
+    staleTime: INDEXER_STALE_MS,
+  };
 }

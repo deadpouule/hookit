@@ -80,7 +80,7 @@ function parseCategoryParam(value: string | null): CategoryKey {
   return "all";
 }
 
-function MarketplaceContent() {
+function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
@@ -89,7 +89,7 @@ function MarketplaceContent() {
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const factoryConfigured = isFactoryConfigured();
   const liveLaunches = shouldFetchLiveLaunches();
-  const { data: onChainPools, isLoading, isError, isFetched } = useLaunches();
+  const { data: onChainPools, isLoading, isError, isFetched } = useLaunches(initialPools);
 
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
@@ -341,7 +341,7 @@ function MarketplaceContent() {
   );
 }
 
-export function Marketplace() {
+export function Marketplace({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   return (
     <Suspense
       fallback={
@@ -350,7 +350,7 @@ export function Marketplace() {
         </p>
       }
     >
-      <MarketplaceContent />
+      <MarketplaceContent initialPools={initialPools} />
     </Suspense>
   );
 }

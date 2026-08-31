@@ -3,13 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
-import {
-  fetchIndexerCandles,
-  fetchIndexerHolders,
-  fetchIndexerToken,
-  fetchIndexerTrades,
-} from "@/lib/indexer-client";
 import { marketCapUsd } from "@/lib/pool-price";
 import {
   candleFdvScale,
@@ -44,7 +39,7 @@ function resolveEthUsd(pool: TokenPool): number {
 }
 
 async function fetchOnChainLiveApi(address: string): Promise<LiveTokenState | null> {
-  const res = await fetch(`/api/token/${address}/live`, { cache: "no-store" });
+  const res = await fetch(`/api/token/${address}/live`);
   if (!res.ok) return null;
   const body = (await res.json()) as { live?: LiveTokenState };
   return body.live ?? null;
@@ -64,7 +59,6 @@ export function useLiveToken(pool: TokenPool) {
           marketCap: pool.marketCap > 0 ? pool.marketCap : prev.marketCap,
           volume24h: pool.volume24h && pool.volume24h > 0 ? pool.volume24h : prev.volume24h,
           change24h: pool.change24h ?? prev.change24h,
-          // `pool.liquidity` is TVL USD after enrichPoolsWithSpotPrices.
           liquidity: pool.liquidity > 0 ? pool.liquidity : prev.liquidity,
           priceUsd:
             pool.marketCap > 0 ? pool.marketCap / TOTAL_SUPPLY : prev.priceUsd,
@@ -87,28 +81,7 @@ export function useLiveToken(pool: TokenPool) {
     ethUsd,
   ]);
 
-  const indexerQuery = useQuery({
-    queryKey: ["indexer-live", address],
-    enabled: !!address,
-    queryFn: async () => {
-      if (!address) return null;
-      const [summary, tradesRes, holdersRes, candlesRes] = await Promise.all([
-        fetchIndexerToken(address).catch(() => null),
-        fetchIndexerTrades(address, 40).catch(() => ({ trades: [] })),
-        fetchIndexerHolders(address, 20).catch(() => ({ holders: [] })),
-        fetchIndexerCandles(address, 500).catch(() => ({ candles: [] })),
-      ]);
-      if (!summary) return null;
-      return {
-        summary,
-        trades: tradesRes.trades,
-        holders: holdersRes.holders,
-        candles: candlesRes.candles,
-      };
-    },
-    refetchInterval: 20_000,
-    retry: false,
-  });
+  const indexerQuery = useTokenIndexerData(address);
 
   const onchainQuery = useQuery({
     queryKey: ["onchain-live", address],
@@ -166,24 +139,25 @@ export function useLiveToken(pool: TokenPool) {
           ? [{ o: mcap, h: mcap, l: mcap, c: mcap }]
           : [];
 
+    const recentTrades = trades.slice(0, 40);
+
     setSource("indexer");
     setLive({
       priceUsd,
       marketCap: mcap,
       volume24h: quoteVolUsd > 0 ? quoteVolUsd : pool.volume24h ?? 0,
-      // Prefer enriched on-chain TVL; indexer has no TVL field.
       liquidity: pool.liquidity > 0 ? pool.liquidity : mcap,
       change24h: summary.change24h ?? pool.change24h ?? 0,
       change5m: 0,
       change1h: (summary.change24h ?? 0) * 0.2,
       change6h: (summary.change24h ?? 0) * 0.55,
       holders: summary.holdersIndexed || 0,
-      txns: summary.tradesIndexed || trades.length,
+      txns: summary.tradesIndexed || recentTrades.length,
       buyPct:
-        trades.length > 0
-          ? (trades.filter((t) => t.side === "buy").length / trades.length) * 100
+        recentTrades.length > 0
+          ? (recentTrades.filter((t) => t.side === "buy").length / recentTrades.length) * 100
           : 50,
-      swaps: trades.map((t, i) => {
+      swaps: recentTrades.map((t, i) => {
         const qRaw = Number(t.quoteAmount);
         const totalUsd = isEth
           ? (qRaw / 1e18) * eth

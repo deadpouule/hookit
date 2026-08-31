@@ -1,27 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 const INDEXER_URL = process.env.INDEXER_URL?.trim().replace(/\/$/, "") ?? "";
+
+const HEALTH_CACHE_SEC = 10;
+const READ_CACHE_SEC = 8;
+
+function cacheControlForPath(path: string[]): string {
+  const isHealth = path.length === 0 || path[0] === "health";
+  const sec = isHealth ? HEALTH_CACHE_SEC : READ_CACHE_SEC;
+  return `public, s-maxage=${sec}, stale-while-revalidate=30`;
+}
 
 async function proxy(req: NextRequest, path: string[]) {
   if (!INDEXER_URL) {
     const isHealth = path.length === 0 || path[0] === "health";
     if (isHealth) {
-      // 200 so dev tools / StatusBar don't spam 503 errors when indexer isn't wired yet.
-      return NextResponse.json({
-        ok: false,
-        configured: false,
-        chainId: 0,
-        cursor: "",
-        updatedAt: Date.now(),
-        lastPollAt: null,
-        lastPollError: null,
-        latestBlock: null,
-        lagBlocks: null,
-        tokens: 0,
-      });
+      return NextResponse.json(
+        {
+          ok: false,
+          configured: false,
+          chainId: 0,
+          cursor: "",
+          updatedAt: Date.now(),
+          lastPollAt: null,
+          lastPollError: null,
+          latestBlock: null,
+          lagBlocks: null,
+          tokens: 0,
+        },
+        { headers: { "cache-control": cacheControlForPath(path) } },
+      );
     }
     return NextResponse.json(
       {
@@ -36,17 +44,20 @@ async function proxy(req: NextRequest, path: string[]) {
   const target = new URL(`${INDEXER_URL}${suffix.startsWith("/") ? suffix : `/${suffix}`}`);
   target.search = req.nextUrl.search;
 
+  const isHealth = path.length === 0 || path[0] === "health";
+  const revalidate = isHealth ? HEALTH_CACHE_SEC : READ_CACHE_SEC;
+
   try {
     const upstream = await fetch(target.toString(), {
       headers: { accept: "application/json" },
-      cache: "no-store",
+      next: { revalidate },
     });
     const body = await upstream.text();
     return new NextResponse(body, {
       status: upstream.status,
       headers: {
         "content-type": upstream.headers.get("content-type") ?? "application/json",
-        "cache-control": "no-store",
+        "cache-control": cacheControlForPath(path),
       },
     });
   } catch {

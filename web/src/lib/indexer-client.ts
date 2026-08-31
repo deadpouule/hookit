@@ -117,7 +117,7 @@ export type IndexerHealth = {
 const base = () => "/api/indexer";
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${base()}${path}`, { cache: "no-store" });
+  const res = await fetch(`${base()}${path}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error ?? `indexer ${res.status}`);

@@ -3,7 +3,9 @@
 import { BookOpen } from "lucide-react";
 import Link from "next/link";
 
+import { useIndexerHealth } from "@/hooks/useIndexerHealth";
 import { GITHUB_REPO_URL, TWITTER_URL } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -22,9 +24,32 @@ function XIcon({ className }: { className?: string }) {
 }
 
 export function StatusBar() {
+  const { data: health, isFetched } = useIndexerHealth();
+
+  const live = isFetched && !!health?.ok;
+  const standby = isFetched && health?.configured === false;
+  const lag = health?.lagBlocks;
+
   return (
     <div className="status-bar">
       <div className="market-shell status-bar-inner">
+        <span className="inline-flex items-center gap-2 text-[11px] text-zinc-500">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              live ? "bg-emerald-400" : isFetched ? "bg-red-500" : "bg-zinc-600",
+            )}
+          />
+          {live
+            ? lag != null && lag > 50
+              ? `Indexer · ${lag} blocks behind`
+              : "Indexer live"
+            : standby
+              ? "Indexer standby"
+              : isFetched
+                ? "Indexer offline"
+                : "Checking…"}
+        </span>
         <div className="status-bar-links">
           <a
             href={GITHUB_REPO_URL}
