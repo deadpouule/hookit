@@ -54,7 +54,7 @@ export function moduleLiveStatLine(
       return `${left}s left`;
     }
     case "backed-floor":
-      return `Vault ${formatAmount(live.floorReserveHuman, live.quoteLabel)} · floor ${formatAmount(live.floorPriceHuman, live.quoteLabel, 6)}`;
+      return null;
     case "anti-mev":
       return null;
     case "max-tx":
