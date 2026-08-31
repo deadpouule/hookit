@@ -298,12 +298,9 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
-        <span className="token-type-badge token-type-badge--master token-hooks-master-badge">
-          <MasterHookGlyph className="token-type-badge-glyph" />
-          Master modules
-        </span>
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
-          {enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}
+          <MasterHookGlyph className="token-type-badge-glyph" />
+          {enabledHooks.length} master module{enabledHooks.length === 1 ? "" : "s"}
         </span>
       </header>
 
