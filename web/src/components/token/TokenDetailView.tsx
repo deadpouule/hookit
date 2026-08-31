@@ -65,7 +65,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   };
 
   return (
-    <div className="market-shell token-detail-shell bg-background py-4 pb-6">
+    <div className="market-shell bg-background py-4 pb-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition hover:text-foreground"
@@ -80,7 +80,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <BondingProgress pool={pool} />
         </aside>
 
-        <div className="token-desk-main min-w-0 space-y-3">
+        <div className="token-desk-main min-w-0 space-y-4">
           <div className="desk-card token-hero-card">
             <header className="flex flex-wrap items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
               <div
@@ -177,17 +177,14 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             onInterval={setInterval}
             marketCap={live.marketCap}
             change24h={live.change24h}
-            compact
           />
-          <div className="token-desk-tx">
-            <TokenTxTable
-              tab={tab}
-              onTab={setTab}
-              swaps={live.swaps}
-              holders={live.holderRows}
-              ticker={pool.ticker}
-            />
-          </div>
+          <TokenTxTable
+            tab={tab}
+            onTab={setTab}
+            swaps={live.swaps}
+            holders={live.holderRows}
+            ticker={pool.ticker}
+          />
         </div>
 
         <aside className="token-desk-rail token-desk-rail--right space-y-3">
