@@ -233,7 +233,9 @@ abstract contract InkForkTestBase is Test {
                 tickSpacing: tickSpacing,
                 startingTick: 0,
                 bitmask: bitmask,
-                customHook: IHooks(address(0))
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         r.key = factory.poolKeyOf(r.launchId);

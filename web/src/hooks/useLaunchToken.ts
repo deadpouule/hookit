@@ -29,6 +29,8 @@ import {
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { deployCustomHook } from "@/lib/deploy-custom-hook";
+import { hasDevBuyConfigured, resolveDevBuyQuoteWei } from "@/lib/dev-buy-launch";
+import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { buildMinimalOnChainMetadataUri, resolveLaunchImageUri, resolveOnChainMetadataUri } from "@/lib/launch-metadata";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 import { toast } from "@/lib/toast";
@@ -113,6 +115,31 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         throw new Error("Market weights must total 100%");
       }
       const isMulti = form.markets.length > 1;
+      const devBuyConfigured = hasDevBuyConfigured(form);
+      const devBuyQuoteWei = devBuyConfigured
+        ? resolveDevBuyQuoteWei(form, {
+            rail,
+            quote,
+          })
+        : null;
+
+      if (devBuyQuoteWei && devBuyQuoteWei > 0n && quote !== zeroAddress && creator) {
+        const allowance = (await publicClient.readContract({
+          address: quote,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [creator, factory],
+        })) as bigint;
+        if (allowance < devBuyQuoteWei) {
+          const approveHash = await writeContractAsync({
+            address: quote,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [factory, devBuyQuoteWei],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
+      }
 
       setPhase("launching");
       const loadingId = toast.loading(
@@ -123,6 +150,8 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       const imageUri = await resolveLaunchImageUri(form.imagePreview);
       let metadataURI = await resolveOnChainMetadataUri(form, imageUri);
       const launchFee = onChainLaunchFee ?? BigInt(500_000_000_000_000);
+      const devBuyEthValue =
+        devBuyQuoteWei && devBuyQuoteWei > 0n && quote === zeroAddress ? devBuyQuoteWei : 0n;
       let customHookAddress: Address | undefined;
       let hash: `0x${string}`;
 
@@ -139,9 +168,11 @@ export function useLaunchToken(rail: LaunchRail = "master") {
               totalSupply: BigInt(0),
               quote,
               creatorTaxBps: 0,
+              devBuyQuoteIn: devBuyQuoteWei ?? 0n,
+              minDevBuyTokensOut: devBuyQuoteWei && devBuyQuoteWei > 0n ? 1n : 0n,
             },
           ],
-          value: launchFee,
+          value: launchFee + devBuyEthValue,
         });
       } else {
         if (form.hookMode === "custom") {
@@ -184,6 +215,8 @@ export function useLaunchToken(rail: LaunchRail = "master") {
           tickSpacing: DEFAULT_TICK_SPACING,
           bitmask,
           customHook,
+          devBuyQuoteIn: devBuyQuoteWei ?? 0n,
+          minDevBuyTokensOut: devBuyQuoteWei && devBuyQuoteWei > 0n ? 1n : 0n,
         };
 
         const marketCount = form.markets.length;
@@ -195,6 +228,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
               factory,
               creator,
               launchFee,
+              devBuyEthValue,
               isMulti,
               marketCount,
               masterLaunchFields,
@@ -212,6 +246,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
                 factory,
                 creator,
                 launchFee,
+                devBuyEthValue,
                 isMulti,
                 marketCount,
                 masterLaunchFields,
@@ -238,7 +273,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
                 floorQuoteIndex: form.floorQuoteIndex,
               },
             ],
-            value: launchFee,
+            value: launchFee + devBuyEthValue,
             gas,
           });
         } else {
@@ -253,7 +288,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
                 startingTick: DEFAULT_STARTING_TICK,
               },
             ],
-            value: launchFee,
+            value: launchFee + devBuyEthValue,
             gas,
           });
         }
@@ -297,7 +332,6 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         }
       }
 
-      setPhase("done");
       const out: LaunchResult = {
         launchId,
         token,
@@ -306,6 +340,8 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         customHookAddress,
         rail,
       };
+
+      setPhase("done");
       setResult(out);
       await queryClient.invalidateQueries({ queryKey: ["launches"] });
       toast.dismiss(loadingId);
@@ -392,6 +428,7 @@ async function estimateLaunchGas(
   factory: Address,
   creator: Address,
   launchFee: bigint,
+  devBuyEthValue: bigint,
   isMulti: boolean,
   marketCount: number,
   fields: {
@@ -402,12 +439,15 @@ async function estimateLaunchGas(
     tickSpacing: number;
     bitmask: bigint;
     customHook: Address;
+    devBuyQuoteIn: bigint;
+    minDevBuyTokensOut: bigint;
   },
   marketQuotes: { quote: Address; bps: number }[],
   quote: Address,
   floorQuoteIndex: number,
 ): Promise<bigint> {
   const floor = launchGasFloor(isMulti, marketCount);
+  const txValue = launchFee + devBuyEthValue;
   const estimated = isMulti
     ? await publicClient.estimateContractGas({
         address: factory,
@@ -420,7 +460,7 @@ async function estimateLaunchGas(
             floorQuoteIndex,
           },
         ],
-        value: launchFee,
+        value: txValue,
         account: creator,
       })
     : await publicClient.estimateContractGas({
@@ -434,7 +474,7 @@ async function estimateLaunchGas(
             startingTick: DEFAULT_STARTING_TICK,
           },
         ],
-        value: launchFee,
+        value: txValue,
         account: creator,
       });
   const buffered = estimated + estimated / 4n;

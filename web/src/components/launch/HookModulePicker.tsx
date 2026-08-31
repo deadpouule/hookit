@@ -69,7 +69,6 @@ export function HookModulePicker({
 }) {
   const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
   const enabledHooks = MASTER_HOOKS.filter((h) => isModuleEnabled(modules, h.id));
-  const selectedCount = enabledHooks.length;
   const [focus, setFocus] = useState<MasterHookId | null>(enabledHooks[0]?.id ?? null);
 
   useEffect(() => {
@@ -86,10 +85,7 @@ export function HookModulePicker({
 
   return (
     <div>
-      <p className="pick-kicker">
-        —hooks: {selectedCount} live · {MASTER_HOOKS.length} modules available
-      </p>
-      <p className="pick-heading">pick your hooks</p>
+      <p className="pick-heading">Pick your hooks</p>
       <div className="pick-grid pick-grid--hooks">
         {MASTER_HOOKS.map((hook) => {
           const selected = isModuleEnabled(modules, hook.id);

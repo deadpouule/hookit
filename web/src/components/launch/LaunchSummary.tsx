@@ -9,10 +9,13 @@ import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
+import { hasDevBuyConfigured, resolveDevBuyQuoteWei } from "@/lib/dev-buy-launch";
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import type { HookId } from "@/lib/hook-marks";
 import { formatBps } from "@/lib/format";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { zeroAddress } from "viem";
 
 export type LaunchPhase = "idle" | "deploying-hook" | "launching" | "done";
 
@@ -72,6 +75,22 @@ export function LaunchSummary({
   const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
   const showActiveModules = summaryHooks.length > 0;
 
+  const primaryQuoteId = form.markets[0]?.id ?? form.quoteAsset;
+  const quoteAddr =
+    primaryQuoteId === "eth"
+      ? zeroAddress
+      : primaryQuoteId === "usdg"
+        ? STABLE_QUOTE_ADDRESS
+        : zeroAddress;
+  const devBuyConfigured = hasDevBuyConfigured(form);
+  const devBuyQuoteWei = devBuyConfigured
+    ? resolveDevBuyQuoteWei(form, {
+        rail: variant === "classic" ? "classic" : "master",
+        quote: quoteAddr,
+      })
+    : null;
+  const devBuyPayLabel = primaryQuoteId === "eth" ? "ETH" : formatPairingTicker(primaryQuoteId);
+
   const canLaunch =
     !!form.name &&
     !!form.ticker &&
@@ -129,6 +148,16 @@ export function LaunchSummary({
             </dd>
           </div>
         )}
+        {devBuyConfigured && devBuyQuoteWei && devBuyQuoteWei > 0n && (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Dev buy</dt>
+            <dd className="font-mono text-right text-zinc-200">
+              {form.devBuyMode === "supply"
+                ? `${form.devBuySupplyPct.toFixed(2)}% supply`
+                : `${form.devBuyEth} ${devBuyPayLabel}`}
+            </dd>
+          </div>
+        )}
       </dl>
 
       {showActiveModules && (
@@ -177,7 +206,7 @@ export function LaunchSummary({
             ) : (
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
             )}
-            Create pool & token
+            Create pool & token{devBuyConfigured ? " + dev buy" : ""}
           </li>
         </ol>
       )}

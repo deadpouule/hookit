@@ -13,6 +13,8 @@ export const bondingFactoryAbi = [
           { name: "totalSupply", type: "uint256" },
           { name: "quote", type: "address" },
           { name: "creatorTaxBps", type: "uint16" },
+          { name: "devBuyQuoteIn", type: "uint256" },
+          { name: "minDevBuyTokensOut", type: "uint256" },
         ],
       },
     ],
@@ -118,6 +120,13 @@ export const bondingFactoryAbi = [
         ],
       },
     ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "graduationQuoteWei",
+    inputs: [{ name: "quote", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
   {

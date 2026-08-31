@@ -37,7 +37,9 @@ contract SmokeClassicInkScript is Script {
                 metadataURI: "ipfs://hooktest-classic",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 0
+                creatorTaxBps: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 

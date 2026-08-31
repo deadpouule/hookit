@@ -113,11 +113,12 @@ export function PairingPicker({
         —{markets.length} market{markets.length === 1 ? "" : "s"} · pick 1–{isMulti ? MAX_MARKETS : 1} quote
         {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
       </p>
-      <p className="pick-heading">pick your pair{isMulti ? "s" : ""}</p>
+      <p className="pick-heading">Pick your pair{isMulti ? "s" : ""}</p>
       <div className="pick-grid pick-grid--pairs">
         {PAIRING_TOKENS.map((token) => (
           <PickCard
             key={token.id}
+            variant="pair"
             selected={selectedIds.has(token.id)}
             title={token.ticker}
             subtitle={

@@ -66,7 +66,9 @@ contract ForkInkBondingTest is InkForkTestBase {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 200
+                creatorTaxBps: 200,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -81,7 +83,9 @@ contract ForkInkBondingTest is InkForkTestBase {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: usdg,
-                creatorTaxBps: 1
+                creatorTaxBps: 1,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -110,7 +114,9 @@ contract ForkInkBondingTest is InkForkTestBase {
                 metadataURI: "",
                 totalSupply: 0,
                 quote: Currency.wrap(address(0)),
-                creatorTaxBps: 1
+                creatorTaxBps: 1,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }

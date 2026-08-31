@@ -40,7 +40,9 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: 0,
-                customHook: IHooks(address(customHook))
+                customHook: IHooks(address(customHook)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
 

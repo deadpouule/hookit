@@ -17,6 +17,7 @@ import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {LaunchFactoryLib} from "./libraries/LaunchFactoryLib.sol";
+import {LaunchDevBuyLib} from "./libraries/LaunchDevBuyLib.sol";
 import {QuotronBridge} from "./libraries/QuotronBridge.sol";
 import {TokenAddressMiner} from "./libraries/TokenAddressMiner.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
@@ -59,6 +60,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 startingTick;
         uint256 bitmask;
         IHooks customHook;
+        uint256 devBuyQuoteIn;
+        uint256 minDevBuyTokensOut;
     }
 
     struct MarketInput {
@@ -77,6 +80,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         IHooks customHook;
         /// @dev Reserved for future backed-floor multi support; must index a selected market today.
         uint8 floorQuoteIndex;
+        uint256 devBuyQuoteIn;
+        uint256 minDevBuyTokensOut;
     }
 
     struct LaunchInfo {
@@ -153,6 +158,10 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickLower,
         int24 tickUpper,
         uint128 liquidity
+    );
+
+    event DevBuyExecuted(
+        uint256 indexed launchId, address indexed buyer, uint256 quoteIn, uint256 tokensOut
     );
 
     error InvalidQuote();
@@ -339,7 +348,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
         if (spacing <= 0) revert InvalidTickSpacing();
 
-        _collectLaunchFee(params.quote.isAddressZero());
+        _collectLaunchFee(params.quote.isAddressZero(), params.devBuyQuoteIn);
 
         token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
 
@@ -372,6 +381,10 @@ contract LaunchFactory is Owned, IUnlockCallback {
         emit TokenLaunched(
             launchId, token, msg.sender, poolId, hooks, useCustom, plan.tickLower, plan.tickUpper, plan.liquidity
         );
+
+        _devBuyAfterLaunch(
+            launchId, plan.key, token, params.quote, params.totalSupply, params.devBuyQuoteIn, params.minDevBuyTokensOut
+        );
     }
 
     /// @notice Deploy one token and 1–5 permanently locked v4 markets atomically (PAIR-style multi-pair).
@@ -401,7 +414,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
             _resolveLaunchConfig(params.customHook, params.bitmask);
         if ((packed & BitmaskConfig.BACKED_FLOOR_ENABLED) != 0) revert FloorNotSupportedInMulti();
 
-        _collectLaunchFee(hasNative);
+        _collectLaunchFee(hasNative, params.devBuyQuoteIn);
 
         token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
 
@@ -476,11 +489,27 @@ contract LaunchFactory is Owned, IUnlockCallback {
             plans[0].tickUpper,
             plans[0].liquidity
         );
+
+        _devBuyAfterLaunch(
+            launchId,
+            plans[0].key,
+            token,
+            params.markets[0].quote,
+            params.totalSupply,
+            params.devBuyQuoteIn,
+            params.minDevBuyTokensOut
+        );
     }
 
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         if (msg.sender != address(poolManager)) revert NotPoolManager();
-        LaunchFactoryLib.executeUnlockSeeds(poolManager, LAUNCH_SALT, abi.decode(data, (LaunchFactoryLib.PoolSeed[])), address(this));
+        uint8 kind = abi.decode(data, (uint8));
+        if (kind == 1) {
+            (, LaunchDevBuyLib.SwapCall memory call) = abi.decode(data, (uint8, LaunchDevBuyLib.SwapCall));
+            return LaunchDevBuyLib.handleUnlockSwap(poolManager, call);
+        }
+        (, LaunchFactoryLib.PoolSeed[] memory seeds) = abi.decode(data, (uint8, LaunchFactoryLib.PoolSeed[]));
+        LaunchFactoryLib.executeUnlockSeeds(poolManager, LAUNCH_SALT, seeds, address(this));
         return "";
     }
 
@@ -499,18 +528,54 @@ contract LaunchFactory is Owned, IUnlockCallback {
         token = TokenAddressMiner.deploy(address(this), initCode, entropy);
     }
 
-    function _collectLaunchFee(bool needsNativeDust) internal {
-        if (msg.value < launchFee) revert LaunchFeeRequired();
+    function _collectLaunchFee(bool needsNativeDust, uint256 devBuyQuoteIn) internal {
+        uint256 required = launchFee + (needsNativeDust ? devBuyQuoteIn : 0);
+        if (msg.value < required) revert LaunchFeeRequired();
         uint256 keep = needsNativeDust && launchFee > 0 ? 1 : 0;
         uint256 toTreasury = launchFee - keep;
         if (toTreasury > 0) {
             CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, toTreasury);
         }
-        uint256 extra = msg.value - launchFee;
+        uint256 extra = msg.value - required;
         if (extra > 0) {
-            if (!needsNativeDust) revert NativeNotAccepted();
+            if (!needsNativeDust && devBuyQuoteIn == 0) revert NativeNotAccepted();
             CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, extra);
         }
+    }
+
+    function _devBuyAfterLaunch(
+        uint256 launchId,
+        PoolKey memory key,
+        address token,
+        Currency quote,
+        uint256 totalSupply,
+        uint256 devBuyQuoteIn,
+        uint256 minTokensOut
+    ) internal {
+        if (devBuyQuoteIn == 0) return;
+
+        LaunchDevBuyLib.validateDevBuyQuote(devBuyQuoteIn, _mcapQuote(quote));
+
+        address quoteAddr = Currency.unwrap(quote);
+        if (quoteAddr != address(0)) {
+            LaunchDevBuyLib.pullQuoteToken(quoteAddr, msg.sender, devBuyQuoteIn);
+        }
+
+        bool tokenIs0 = uint160(token) < uint160(quoteAddr);
+        bool zeroForOne = !tokenIs0;
+
+        LaunchDevBuyLib.SwapCall memory call = LaunchDevBuyLib.SwapCall({
+            payer: address(this),
+            recipient: msg.sender,
+            key: key,
+            zeroForOne: zeroForOne,
+            amountIn: devBuyQuoteIn,
+            minAmountOut: minTokensOut,
+            maxTokensOut: LaunchDevBuyLib.maxDevBuyTokens(totalSupply)
+        });
+
+        uint256 tokensOut = abi.decode(poolManager.unlock(abi.encode(uint8(1), call)), (uint256));
+        emit DevBuyExecuted(launchId, msg.sender, devBuyQuoteIn, tokensOut);
     }
 
     function _resolveLaunchConfig(IHooks customHook, uint256 bitmask)
@@ -587,7 +652,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
                 liquidityDelta: int256(uint256(plan.liquidity))
             });
         }
-        poolManager.unlock(abi.encode(seeds));
+        poolManager.unlock(abi.encode(uint8(0), seeds));
     }
 
     function _recordSingleLaunch(

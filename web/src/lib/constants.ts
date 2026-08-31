@@ -52,6 +52,8 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     creatorShareToHook: false,
   },
   hookTaxBps: 0,
+  devBuyMode: "supply",
+  devBuySupplyPct: 0,
   devBuyEth: "",
   quoteAsset: "eth",
   markets: [{ id: "eth", bps: 10_000 }],
