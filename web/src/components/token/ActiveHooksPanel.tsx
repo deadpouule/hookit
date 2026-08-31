@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { formatUnits, zeroAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
 
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
@@ -14,10 +15,10 @@ import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
 import {
-  hookTaxSummary,
   isModuleEnabled,
-  moduleDetailLine,
-  totalFeeSummary,
+  moduleTooltipText,
+  totalFeePlain,
+  totalFeeTooltip,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { poolQuoteLabel } from "@/lib/payment-assets";
@@ -26,6 +27,24 @@ import type { LaunchModules, TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LAUNCH_SUPPLY_WEI = BigInt(TOTAL_SUPPLY) * 10n ** 18n;
+
+function ModuleTip({ tip, children }: { tip: string; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-help">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        showArrow={false}
+        className="max-w-[260px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
+      >
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 function quoteDecimals(quote: Address): number {
   if (quote === zeroAddress) return 18;
@@ -64,65 +83,65 @@ function liveStatusForHook(
 ): string | null {
   switch (id) {
     case "anti-snipe": {
-      if (!pool.launchedAt) return "Decay tax on opening buys";
+      if (!pool.launchedAt) return "Launch protection active";
       const endsAt = pool.launchedAt + modules.antiSnipeDuration;
       const left = endsAt - Math.floor(Date.now() / 1000);
-      if (left <= 0) return "Window closed";
-      return `${left}s left · ${modules.antiSnipeInitialTax}% open tax`;
+      if (left <= 0) return "Protection ended";
+      return `${left}s left · ${modules.antiSnipeInitialTax}% extra tax`;
     }
     case "backed-floor": {
       if (live.floorPriceHuman == null && live.floorReserveHuman == null) {
-        return `${modules.floorAllocation}% of fees → vault`;
+        return `${modules.floorAllocation}% of fees → floor`;
       }
       const price =
         live.floorPriceHuman != null
-          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${live.quoteLabel}`
+          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
           : "—";
       const reserve =
         live.floorReserveHuman != null
           ? `${live.floorReserveHuman.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${live.quoteLabel}`
           : "—";
-      return `P_floor ${price} · vault ${reserve}`;
+      return `Floor ${price} · vault ${reserve}`;
     }
     case "anti-mev":
-      return "Same-block opposing swaps blocked";
+      return "Same-block bot trades blocked";
     case "max-tx":
-      return `Cap ${(modules.maxTxBps / 100).toFixed(1)}% supply / swap`;
+      return `Max ${(modules.maxTxBps / 100).toFixed(1)}% of supply per trade`;
     case "max-wallet":
-      return `Cap ${(modules.maxWalletBps / 100).toFixed(1)}% supply / wallet`;
+      return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
     case "dynamic-fees":
-      return "Volatility-adjusted LP fee flag";
+      return "Swap fee adjusts with activity";
     case "buyback-vesting": {
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
-        ? `Creator fees vest ${(days / 365).toFixed(1)}y`
-        : `Creator fees vest ${days}d`;
+        ? `Creator fees unlock over ${(days / 365).toFixed(1)} years`
+        : `Creator fees unlock over ${days} days`;
     }
     case "auto-burn": {
-      if (live.burnedPct == null) return `${modules.autoBurnPct}% of fees → burn`;
-      return `${live.burnedPct.toFixed(2)}% supply burned · ${modules.autoBurnPct}% of fees`;
+      if (live.burnedPct == null) return `${modules.autoBurnPct}% of fees burned`;
+      return `${live.burnedPct.toFixed(2)}% of supply burned`;
     }
     case "lp-donate":
-      return `${modules.lpDonatePct}% of fees → in-range LPs`;
+      return `${modules.lpDonatePct}% of fees shared with LPs`;
     case "holder-airdrop": {
       const pot =
         live.airdropPendingHuman != null
-          ? `${live.airdropPendingHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
+          ? `${live.airdropPendingHuman.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${live.quoteLabel}`
           : "—";
       const window =
         live.airdropSecondsLeft == null
           ? "—"
           : live.airdropSecondsLeft <= 0
-            ? "Ready"
-            : `${Math.floor(live.airdropSecondsLeft / 60)}m ${(live.airdropSecondsLeft % 60)
+            ? "Ready to drop"
+            : `Next drop in ${Math.floor(live.airdropSecondsLeft / 60)}m ${(live.airdropSecondsLeft % 60)
                 .toString()
                 .padStart(2, "0")}s`;
-      return `Pot ${pot} · next ${window}`;
+      return `Pot ${pot} · ${window}`;
     }
     case "creator-share-to-hook":
-      return "70% of base 1% → hook pot";
+      return "Creator fees feed hook modules";
     default:
-      return moduleDetailLine(id, modules);
+      return null;
   }
 }
 
@@ -238,13 +257,15 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
         <div>
-          <p className="token-hooks-kicker">Active hooks</p>
+          <p className="token-hooks-kicker">Active on this token</p>
           <h2 className="token-hooks-title">Master modules</h2>
         </div>
-        <div className="token-hooks-fee">
-          <span>{totalFeeSummary(hookTaxBps)}</span>
-          <span className="token-hooks-fee-sub">{hookTaxSummary(hookTaxBps)}</span>
-        </div>
+        <ModuleTip tip={totalFeeTooltip(hookTaxBps)}>
+          <div className="token-hooks-fee">
+            <span>{totalFeePlain(hookTaxBps)}</span>
+            <span className="token-hooks-fee-sub">{enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}</span>
+          </div>
+        </ModuleTip>
       </header>
 
       <ul className="token-hooks-list">
@@ -252,7 +273,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
           const status = liveStatusForHook(hook.id, modules, pool, live);
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
-              <div className="token-hooks-row-main">
+              <ModuleTip tip={moduleTooltipText(hook.description, hook.id, modules)}>
                 <span
                   className={cn(
                     "token-hooks-chip orb-hook-desc-badge",
@@ -262,15 +283,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                   <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
                   <span>{hook.title}</span>
                 </span>
-                <span
-                  className={cn(
-                    "token-hooks-detail orb-hook-desc-badge",
-                    `orb-hook-desc-badge--${hook.theme}`,
-                  )}
-                >
-                  {moduleDetailLine(hook.id, modules)}
-                </span>
-              </div>
+              </ModuleTip>
               {status ? <p className="token-hooks-live">{status}</p> : null}
               <HookInlineAction
                 id={hook.id}

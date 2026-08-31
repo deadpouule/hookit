@@ -12,6 +12,15 @@ export function isModuleEnabled(modules: LaunchModules, id: MasterHookId): boole
   return Boolean(modules[HOOK_MODULE_FIELD[id]]);
 }
 
+export function moduleTooltipText(
+  description: string,
+  id: MasterHookId,
+  modules: LaunchModules,
+): string {
+  const lead = description.charAt(0).toUpperCase() + description.slice(1);
+  return `${lead} · ${moduleDetailLine(id, modules)}`;
+}
+
 export function moduleDetailLine(id: MasterHookId, modules: LaunchModules): string {
   switch (id) {
     case "anti-snipe":
@@ -81,6 +90,18 @@ export function hookTaxSummary(hookTaxBps: number): string {
 export function totalFeeSummary(hookTaxBps: number): string {
   const total = 100 + hookTaxBps;
   return `${(total / 100).toFixed(1)}% max steady (1% base + fees)`;
+}
+
+export function totalFeePlain(hookTaxBps: number): string {
+  const total = 100 + hookTaxBps;
+  return `Up to ${(total / 100).toFixed(1)}% per swap`;
+}
+
+export function totalFeeTooltip(hookTaxBps: number): string {
+  if (hookTaxBps <= 0) {
+    return "1% base swap fee. Extra module fees only apply if the creator sends their share into hooks.";
+  }
+  return `1% base fee + ${(hookTaxBps / 100).toFixed(1)}% hook fee on swaps.`;
 }
 
 export function hookMarkSummaryDetail(id: HookId, modules: LaunchModules): string {
