@@ -73,14 +73,16 @@ export function moduleDetailLine(
   }
 }
 
-/** Token-aware tooltip: config from on-chain bitmask, not generic catalog copy. */
+/** Token page tooltip: brief hook explanation + this token's saved config. */
 export function moduleTooltipText(
-  _description: string,
+  description: string,
   id: MasterHookId,
   modules: LaunchModules,
   hookTaxBps = 0,
 ): string {
-  return moduleDetailLine(id, modules, hookTaxBps);
+  const lead = description.charAt(0).toUpperCase() + description.slice(1);
+  const config = moduleDetailLine(id, modules, hookTaxBps);
+  return `${lead} · ${config}`;
 }
 
 export function hookMarkTooltipText(
