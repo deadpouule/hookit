@@ -624,6 +624,10 @@
     text-transform: lowercase;
   }
 
+  .pick-card--pair .pick-card-title {
+    text-transform: none;
+  }
+
   .pick-card-sub {
     margin: 0;
     max-width: 100%;
