@@ -146,6 +146,34 @@
     @apply mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6;
   }
 
+  .launch-shell .field-input:focus,
+  .launch-shell .field-textarea:focus {
+    border-color: rgb(149 20 209 / 0.55);
+    box-shadow: 0 0 0 1px rgb(149 20 209 / 0.35), 0 0 16px rgb(149 20 209 / 0.2);
+  }
+
+  .launch-shell .pick-card:hover {
+    border-color: rgb(149 20 209 / 0.45);
+  }
+
+  .launch-shell .pick-card.is-on {
+    border-color: #9514d1 !important;
+    box-shadow:
+      0 0 0 1px #9514d1,
+      0 0 20px rgb(149 20 209 / 0.38) !important;
+  }
+
+  .launch-shell .pick-card.is-on .pick-card-title {
+    color: #e9d5ff;
+  }
+
+  .launch-shell .pick-config--focused {
+    border-color: rgb(149 20 209 / 0.45) !important;
+    box-shadow:
+      0 0 0 1px rgb(149 20 209 / 0.25),
+      0 0 24px rgb(149 20 209 / 0.12) !important;
+  }
+
   .pick-kicker {
     margin: 0 0 0.35rem;
     font-size: 11px;
@@ -599,7 +627,7 @@
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.55rem;
     border-radius: 6px;
     padding: 5px 11px;
     font-family: var(--font-geist-mono), ui-monospace, monospace;
