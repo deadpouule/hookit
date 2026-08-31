@@ -5,6 +5,7 @@ import { formatUnits, zeroAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
 
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
@@ -86,17 +87,19 @@ function ModuleMeter({
   label,
   pct,
   theme,
+  showValue = true,
 }: {
   label: string;
   pct: number;
   theme: HookTheme;
+  showValue?: boolean;
 }) {
   const clamped = Math.max(0, Math.min(100, pct));
   return (
     <div className="token-hooks-meter">
       <div className="token-hooks-meter-head">
         <span className="token-hooks-meter-label">{label}</span>
-        <span className="token-hooks-meter-value">{Math.round(clamped)}%</span>
+        {showValue ? <span className="token-hooks-meter-value">{Math.round(clamped)}%</span> : null}
       </div>
       <div className="token-hooks-meter-track" aria-hidden>
         <span
@@ -126,9 +129,7 @@ function ModuleVisualBar({
       if (!pool.launchedAt || modules.antiSnipeDuration <= 0) return null;
       const endsAt = pool.launchedAt + modules.antiSnipeDuration;
       const left = endsAt - Math.floor(Date.now() / 1000);
-      if (left <= 0) {
-        return <ModuleMeter label="Launch protection ended" pct={100} theme={theme} />;
-      }
+      if (left <= 0) return null;
       const elapsedPct =
         ((modules.antiSnipeDuration - left) / modules.antiSnipeDuration) * 100;
       return (
@@ -163,20 +164,7 @@ function ModuleVisualBar({
           label={ready ? `Pot ${pot} · ready to drop` : `Pot ${pot} · ${formatCountdown(left)}`}
           pct={pct}
           theme={theme}
-        />
-      );
-    }
-    case "backed-floor": {
-      if (live.floorReserveHuman == null || live.floorReserveHuman <= 0) return null;
-      const price =
-        live.floorPriceHuman != null
-          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
-          : "—";
-      return (
-        <ModuleMeter
-          label={`Floor ${price} · vault funded`}
-          pct={100}
-          theme={theme}
+          showValue={!ready}
         />
       );
     }
@@ -297,13 +285,21 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
-        <h2 className="token-hooks-title">Master modules</h2>
+        <span className="token-type-badge token-type-badge--master token-hooks-master-badge">
+          <MasterHookGlyph className="token-type-badge-glyph" />
+          Master modules
+        </span>
         <span className="token-hooks-count">
           {enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}
         </span>
       </header>
 
-      {summary ? <p className="token-hooks-summary">{summary}</p> : null}
+      {summary ? (
+        <p className="token-type-badge token-type-badge--master token-hooks-summary-badge">
+          <MasterHookGlyph className="token-type-badge-glyph shrink-0" />
+          <span>{summary}</span>
+        </p>
+      ) : null}
 
       <ul className="token-hooks-list">
         {enabledHooks.map((hook) => (
