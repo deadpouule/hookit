@@ -326,6 +326,9 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                 pool={pool}
                 floorVault={floorVault as Address | undefined}
                 floorReserveWei={floorReserveWei}
+                airdropVault={airdropVault as Address | undefined}
+                airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
+                airdropSecondsLeft={live.airdropSecondsLeft}
                 decimals={decimals}
                 floorPriceHuman={live.floorPriceHuman}
                 quoteLabel={live.quoteLabel}

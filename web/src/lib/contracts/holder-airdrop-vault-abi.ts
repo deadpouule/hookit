@@ -27,4 +27,14 @@ export const holderAirdropVaultAbi = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "airdrop",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "holders", type: "address[]" },
+    ],
+    outputs: [{ name: "distributed", type: "uint256" }],
+    stateMutability: "nonpayable",
+  },
 ] as const;
