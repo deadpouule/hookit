@@ -77,7 +77,7 @@ export function FloorVaultInline({
 
   if (embedded) {
     return (
-      <div className="token-hooks-chip-actions">
+      <div className="token-hooks-chip-actions token-hooks-chip-actions--floor">
         <input
           value={redeemAmount}
           onChange={(e) => setRedeemAmount(e.target.value)}

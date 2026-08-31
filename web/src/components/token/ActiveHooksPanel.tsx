@@ -34,7 +34,7 @@ function ModuleTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex cursor-help">{children}</span>
+        <span className="block min-w-0 cursor-help">{children}</span>
       </TooltipTrigger>
       <TooltipContent
         side="top"

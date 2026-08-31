@@ -12,6 +12,7 @@ import type { PaymentAssetId } from "@/lib/payment-assets";
 import { type SwapAsset, needsCompositeSell, poolQuoteSwapAsset, STABLE_SWAP_ASSET } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { BondingQuoteResult } from "@/lib/bonding-quote";
 
 const ETH_USD = 1000;
 const BALANCE_PRESETS = [15, 25, 50] as const;
@@ -84,6 +85,7 @@ export function TokenProSwap({
   slippagePct,
   sellBalance,
   tokenPriceEth,
+  quoteMeta,
 }: {
   pool: TokenPool;
   sellAsset: SwapAsset;
@@ -97,6 +99,7 @@ export function TokenProSwap({
   slippagePct: number;
   sellBalance: number;
   tokenPriceEth?: number;
+  quoteMeta?: BondingQuoteResult | null;
 }) {
   const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
   const [flipAnim, setFlipAnim] = useState(false);
@@ -128,12 +131,26 @@ export function TokenProSwap({
   };
 
   const route = (() => {
+    if (quoteMeta?.route) return quoteMeta.route;
     if (!receiveAmount || Number(sellAmount) <= 0) return "—";
     if (needsCompositeSell(pool, buyAsset)) {
       return `${sellAsset.symbol} → ${poolQuoteSwapAsset(pool).symbol} → ${buyAsset.symbol}`;
     }
     return `${sellAsset.symbol} → ${buyAsset.symbol}`;
   })();
+
+  const minReceivedLabel = (() => {
+    if (quoteMeta && quoteMeta.minAmountOut > 0n) {
+      return `${formatTokenAmount(Number(formatUnits(quoteMeta.minAmountOut, buyAsset.decimals)))} ${buyAsset.symbol}`;
+    }
+    if (receiveAmount && Number(receiveAmount) > 0) {
+      return `${formatTokenAmount(Number(receiveAmount) * (1 - slippagePct / 100))} ${buyAsset.symbol}`;
+    }
+    return "—";
+  })();
+
+  const priceImpactLabel =
+    quoteMeta != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : "—";
 
   return (
     <div className="mt-3">
@@ -208,15 +225,8 @@ export function TokenProSwap({
       </div>
 
       <dl className="market-details">
-        <Detail
-          label="Minimum received"
-          value={
-            receiveAmount
-              ? `${formatTokenAmount(Number(receiveAmount))} ${buyAsset.symbol}`
-              : "—"
-          }
-        />
-        <Detail label="Price impact" value="—" />
+        <Detail label="Minimum received" value={minReceivedLabel} />
+        <Detail label="Price impact" value={priceImpactLabel} />
         <Detail label="Route" value={route} />
         <Detail label="Max slippage" value={`${slippagePct}%`} />
         <Detail label="Platform fee" value="Free" valueClass="text-white" />
