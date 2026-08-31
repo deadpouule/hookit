@@ -552,40 +552,23 @@
 
   .token-hooks-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 0.85rem;
-  }
-
-  .token-hooks-kicker {
-    margin: 0;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #71717a;
+    margin-bottom: 0.75rem;
   }
 
   .token-hooks-title {
-    margin: 0.2rem 0 0;
+    margin: 0;
     font-size: 1rem;
     font-weight: 600;
     color: #fafafa;
   }
 
-  .token-hooks-fee {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.15rem;
+  .token-hooks-count {
+    flex-shrink: 0;
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 11px;
-    color: #d4d4d8;
-    text-align: right;
-  }
-
-  .token-hooks-fee-sub {
     color: #71717a;
   }
 
@@ -596,8 +579,9 @@
     border: 1px solid var(--border);
     background: color-mix(in srgb, var(--surface-muted) 45%, transparent);
     font-size: 12px;
+    font-weight: 600;
     line-height: 1.45;
-    color: #d4d4d8;
+    color: #f4f4f5;
   }
 
   .token-hooks-list {
@@ -1430,7 +1414,7 @@
 
   @media (min-width: 1100px) {
     .token-desk {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 9fr) minmax(300px, 3fr);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 10fr) minmax(300px, 3fr);
       grid-template-areas: "left center right";
       align-items: start;
     }

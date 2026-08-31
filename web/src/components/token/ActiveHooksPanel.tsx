@@ -18,8 +18,6 @@ import {
   buildModulesSummarySentence,
   isModuleEnabled,
   moduleTooltipText,
-  totalFeePlain,
-  totalFeeTooltip,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, type HookTheme, type MasterHookId } from "@/lib/master-hooks";
 import { poolQuoteLabel } from "@/lib/payment-assets";
@@ -299,18 +297,10 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
-        <div>
-          <p className="token-hooks-kicker">Active on this token</p>
-          <h2 className="token-hooks-title">Master modules</h2>
-        </div>
-        <ModuleTip tip={totalFeeTooltip(hookTaxBps)}>
-          <div className="token-hooks-fee">
-            <span>{totalFeePlain(hookTaxBps)}</span>
-            <span className="token-hooks-fee-sub">
-              {enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}
-            </span>
-          </div>
-        </ModuleTip>
+        <h2 className="token-hooks-title">Master modules</h2>
+        <span className="token-hooks-count">
+          {enabledHooks.length} module{enabledHooks.length === 1 ? "" : "s"}
+        </span>
       </header>
 
       {summary ? <p className="token-hooks-summary">{summary}</p> : null}
