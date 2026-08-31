@@ -76,6 +76,34 @@ export function HookModulePicker({
     setFocus(enabledHooks[0]?.id ?? null);
   }, [enabledHooks, focus]);
 
+  useEffect(() => {
+    if (enabledHooks.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const top = visible[0];
+        if (!top) return;
+        const id = top.target.getAttribute("data-hook-id") as MasterHookId | null;
+        if (id) setFocus(id);
+      },
+      {
+        root: null,
+        rootMargin: "-28% 0px -38% 0px",
+        threshold: [0.15, 0.35, 0.55, 0.75],
+      },
+    );
+
+    for (const hook of enabledHooks) {
+      const el = panelRefs.current[hook.id];
+      if (el) observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [enabledHooks]);
+
   const scrollToPanel = (id: MasterHookId) => {
     setFocus(id);
     requestAnimationFrame(() => {
@@ -120,6 +148,7 @@ export function HookModulePicker({
           {enabledHooks.map((hook) => (
             <div
               key={hook.id}
+              data-hook-id={hook.id}
               ref={(el) => {
                 panelRefs.current[hook.id] = el;
               }}
@@ -128,7 +157,6 @@ export function HookModulePicker({
                 `pick-config--${hook.theme}`,
                 focus === hook.id && "pick-config--focused",
               )}
-              onClick={() => setFocus(hook.id)}
             >
               <HookConfigHeader
                 hook={hook}
