@@ -15,18 +15,18 @@ export function HookArchitectureSection({ mode, onChange }: Props) {
       <p className="pick-heading">Hook architecture</p>
 
       <div className="mb-4">
-        <div className="launch-hook-arch-toggle" role="tablist" aria-label="Hook architecture">
+        <div className="launch-mode-toggle" role="tablist" aria-label="Hook architecture">
           <button
             type="button"
             role="tab"
             aria-selected={mode === "master"}
             onClick={() => onChange("master")}
             className={cn(
-              "launch-hook-arch-toggle__btn launch-hook-arch-toggle__btn--master",
+              "launch-mode-toggle__btn launch-mode-toggle__btn--master",
               mode === "master" && "is-active",
             )}
           >
-            <MasterHookGlyph className="launch-hook-arch-toggle__glyph" />
+            <MasterHookGlyph className="launch-mode-toggle__glyph" />
             Master Hook
           </button>
           <button
@@ -35,11 +35,11 @@ export function HookArchitectureSection({ mode, onChange }: Props) {
             aria-selected={mode === "custom"}
             onClick={() => onChange("custom")}
             className={cn(
-              "launch-hook-arch-toggle__btn launch-hook-arch-toggle__btn--custom",
+              "launch-mode-toggle__btn launch-mode-toggle__btn--custom",
               mode === "custom" && "is-active",
             )}
           >
-            <CustomsGlyph className="launch-hook-arch-toggle__glyph launch-hook-arch-toggle__glyph--code" />
+            <CustomsGlyph className="launch-mode-toggle__glyph launch-mode-toggle__glyph--code" />
             Custom Solidity
           </button>
         </div>

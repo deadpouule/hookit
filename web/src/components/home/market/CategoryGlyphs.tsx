@@ -12,6 +12,15 @@ export function MasterHookGlyph({ className }: { className?: string }) {
   );
 }
 
+export function SinglePairGlyph({ className }: { className?: string }) {
+  return (
+    <span className={cn("category-single-pair-glyph", className)} aria-hidden>
+      <span>╭─●─╮</span>
+      <span>╰───╯</span>
+    </span>
+  );
+}
+
 export function CustomsGlyph({ className }: { className?: string }) {
   return <Code2 className={cn("category-customs-icon", className)} aria-hidden />;
 }
