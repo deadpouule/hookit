@@ -12,7 +12,7 @@ import type { PaymentAssetId } from "@/lib/payment-assets";
 import { type SwapAsset, needsCompositeSell, poolQuoteSwapAsset, STABLE_SWAP_ASSET } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import type { BondingQuoteResult } from "@/lib/bonding-quote";
+import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
 
 const ETH_USD = 1000;
 const BALANCE_PRESETS = [15, 25, 50] as const;
@@ -99,7 +99,7 @@ export function TokenProSwap({
   slippagePct: number;
   sellBalance: number;
   tokenPriceEth?: number;
-  quoteMeta?: BondingQuoteResult | null;
+  quoteMeta?: SwapQuoteDisplayMeta | null;
 }) {
   const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
   const [flipAnim, setFlipAnim] = useState(false);
@@ -150,7 +150,7 @@ export function TokenProSwap({
   })();
 
   const priceImpactLabel =
-    quoteMeta != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : "—";
+    quoteMeta?.priceImpactPct != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : "—";
 
   return (
     <div className="mt-3">

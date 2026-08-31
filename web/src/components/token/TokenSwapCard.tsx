@@ -6,9 +6,10 @@ import { ChevronDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { TokenProSwap, useProQuoteAmount } from "@/components/token/TokenProSwap";
+import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
 import { useBondingQuote } from "@/hooks/useBondingQuote";
+import { usePoolSwapQuote } from "@/hooks/usePoolSwapQuote";
 import { useSwapToken, useTokenBalance } from "@/hooks/useSwapToken";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
@@ -169,16 +170,24 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const payDecimals =
     side === "buy" ? paymentAssetById(effectivePayWith).decimals : payAsset.decimals;
   const quoteDecimals =
-    !pool.quoteAddress || pool.quoteAddress === zeroAddress ? 18 : 6;
+    !pool.quoteAddress || pool.quoteAddress === zeroAddress
+      ? 18
+      : pool.quoteAsset?.match(/^w.+x$/i)
+        ? 18
+        : 6;
 
-  const receiveAmount = useProQuoteAmount({
-    amount,
+  const receiveDecimals =
+    side === "buy" ? buyAsset.decimals : payAsset.isNative ? 18 : payAsset.decimals;
+
+  const poolSwapQuote = usePoolSwapQuote({
+    pool,
     side,
+    amount,
     payWith: effectivePayWith,
     receiveAsset: buyAsset,
     decimalsIn: payDecimals,
-    decimalsOut: side === "buy" ? buyAsset.decimals : buyAsset.decimals,
-    quoteExactIn: swap.quoteExactIn,
+    decimalsOut: receiveDecimals,
+    slippagePct,
     enabled: !onBonding,
   });
 
@@ -192,8 +201,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     enabled: onBonding,
   });
 
-  const quotedReceive = onBonding ? bondingQuote.receiveAmount : receiveAmount;
-  const swapQuoteMeta = onBonding ? bondingQuote.quote : null;
+  const quotedReceive = onBonding ? bondingQuote.receiveAmount : poolSwapQuote.receiveAmount;
+  const swapQuoteMeta = onBonding ? bondingQuote.quote : poolSwapQuote.quote;
 
   const hasAmount = !!amount && Number(amount) > 0;
   const tokenPriceUsd = (pool.priceEth ?? 0) * ETH_USD;
@@ -544,14 +553,18 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
               <SwapDetailRow
                 label="Price impact"
                 value={
-                  swapQuoteMeta != null
+                  swapQuoteMeta?.priceImpactPct != null
                     ? `${swapQuoteMeta.priceImpactPct.toFixed(2)}%`
                     : "—"
                 }
               />
               <SwapDetailRow
                 label="Route"
-                value={swapQuoteMeta?.route ?? (onBonding ? "Bonding curve" : "—")}
+                value={
+                  swapQuoteMeta && "estimated" in swapQuoteMeta && swapQuoteMeta.estimated
+                    ? `${swapQuoteMeta.route} (est.)`
+                    : (swapQuoteMeta?.route ?? (onBonding ? "Bonding curve" : "—"))
+                }
               />
               <SwapDetailRow label="Max slippage" value={`${slippagePct}%`} />
               <SwapDetailRow label="Platform fee" value="1% base" valueClass="text-white" />
