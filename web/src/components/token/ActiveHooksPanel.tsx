@@ -102,13 +102,7 @@ function HookModuleBadge({
   );
 }
 
-export function ActiveHooksPanel({
-  pool,
-  variant = "rail",
-}: {
-  pool: TokenPool;
-  variant?: "rail" | "strip";
-}) {
+export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const factory = getLaunchFactoryAddress();
   const isMaster = pool.rail === "master" && pool.hookType === "Master" && !pool.hooks.customHook;
   const resolved = useMemo(() => (isMaster ? resolveModules(pool) : null), [isMaster, pool]);
@@ -301,10 +295,8 @@ export function ActiveHooksPanel({
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
   const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
-  const isStrip = variant === "strip";
-
   return (
-    <section className={cn("token-hooks-panel desk-card", isStrip && "token-hooks-panel--strip")}>
+    <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />
@@ -313,18 +305,13 @@ export function ActiveHooksPanel({
       </header>
 
       {summary ? (
-        <p
-          className={cn(
-            "token-type-badge token-type-badge--master token-hooks-summary-badge",
-            isStrip && "token-hooks-summary-badge--strip",
-          )}
-        >
+        <p className="token-type-badge token-type-badge--master token-hooks-summary-badge">
           <MasterHookGlyph className="token-type-badge-glyph shrink-0" />
           <span>{summary}</span>
         </p>
       ) : null}
 
-      <ul className={cn("token-hooks-list", isStrip && "token-hooks-list--strip")}>
+      <ul className="token-hooks-list">
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
           const tip = moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps);

@@ -922,34 +922,6 @@
     list-style: none;
   }
 
-  .token-hooks-panel--strip {
-    padding: 0.75rem 1rem;
-  }
-
-  .token-hooks-panel--strip .token-hooks-head {
-    margin-bottom: 0.5rem;
-  }
-
-  .token-hooks-summary-badge--strip {
-    margin-bottom: 0.65rem;
-  }
-
-  .token-hooks-list--strip {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .token-hooks-list--strip .token-hooks-row {
-    flex: 0 1 auto;
-    min-width: min(100%, 12rem);
-  }
-
-  .token-hooks-list--strip .token-hooks-chip.orb-hook-desc-badge {
-    height: 100%;
-  }
-
   .token-hooks-row {
     display: flex;
     flex-direction: column;
@@ -2012,7 +1984,7 @@
 
   @media (min-width: 1100px) {
     .token-desk--hooks {
-      grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(300px, 3fr);
+      grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
       grid-template-areas: "left center right";
       align-items: start;
     }
