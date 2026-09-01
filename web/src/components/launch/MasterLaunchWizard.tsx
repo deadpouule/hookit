@@ -15,7 +15,7 @@ import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import { LaunchWizardNav } from "@/components/launch/LaunchWizardNav";
 import { LaunchWizardStepSummary } from "@/components/launch/LaunchWizardStepSummary";
 import { LaunchWizardStepper } from "@/components/launch/LaunchWizardStepper";
-import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
   FormDivider,
@@ -234,18 +234,18 @@ export function MasterLaunchWizard() {
   const showWizardChrome = !result && step < reviewStep;
 
   return (
-    <div className={cn("launch-shell launch-wizard-compact", !result && "pt-1 sm:pt-2")}>
+    <div className={cn("launch-shell launch-wizard-compact", !result && "pt-0 sm:pt-1")}>
       <div className="launch-wizard-top">
         <div className="launch-wizard-top-main">
-          <span className="launch-wizard-master-badge orb-hook-desc-badge orb-hook-desc-badge--void">
-            <MasterHookAsciiIcon hookId="anti-snipe" className="launch-wizard-master-badge-icon" />
-            Master launch
+          <span className="token-type-badge token-type-badge--master token-hooks-count-badge launch-wizard-master-badge">
+            <MasterHookGlyph className="token-type-badge-glyph" />
+            Master
           </span>
-          <h1 className="terminal-title mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h1 className="terminal-title mt-1.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             Create a hooked token
           </h1>
           {draftLoaded && (
-            <p className="mx-auto mt-2 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
+            <p className="mx-auto mt-1.5 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
           )}
         </div>
         <Link href="/launch" className="launch-wizard-nav-btn launch-wizard-exit-btn">

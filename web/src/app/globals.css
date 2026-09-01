@@ -191,53 +191,42 @@
   }
 
   .launch-wizard-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
+    position: relative;
+    margin-bottom: 0.5rem;
+    padding-right: 0;
   }
 
   .launch-wizard-top-main {
-    flex: 1;
-    min-width: 0;
+    margin: 0 auto;
+    max-width: 36rem;
     text-align: center;
   }
 
   .launch-wizard-master-badge {
-    display: inline-flex;
-    width: auto;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.35rem 0.65rem 0.35rem 0.4rem;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    margin-bottom: 0;
   }
 
-  .launch-wizard-master-badge-icon {
-    width: 1.35rem;
-    height: 1.35rem;
-  }
-
-  .launch-wizard-master-badge-icon .ascii-shape {
-    font-size: 3px;
+  .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
+    color: #c084fc;
   }
 
   .launch-wizard-exit-btn {
-    flex-shrink: 0;
-    white-space: nowrap;
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
   }
 
   @media (max-width: 640px) {
     .launch-wizard-top {
-      flex-direction: column-reverse;
-      align-items: stretch;
+      padding-top: 2.75rem;
     }
 
     .launch-wizard-exit-btn {
-      align-self: flex-end;
+      top: 0;
+      right: 0;
+      font-size: 13px;
+      padding: 0.55rem 0.85rem;
     }
   }
 
