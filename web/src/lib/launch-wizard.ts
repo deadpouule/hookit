@@ -14,10 +14,13 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
 > = {
   1: null,
   2: "Shield your launch — block bots, cap trade size, and limit wallet holdings.",
-  3: "Tune swap fees — dynamic volume pricing, a fixed hook fee, or routing creator share into your hook pot.",
+  3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax, plus optional creator share routing.",
   4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops.",
   5: "Review your token and launch when ready.",
 };
+
+export const MASTER_WIZARD_STEP_INTRO =
+  "Name your token, pick a quote pair, then stack protection, fees, and tokenomics hooks.";
 
 /** Hook groups per wizard step (Master launch). */
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Rocket } from "lucide-react";
+import { Loader2, Rocket, ImagePlus } from "lucide-react";
 
 import { LaunchSummaryModuleRow } from "@/components/launch/LaunchSummaryModuleRow";
 import { PairingMark } from "@/components/launch/PairingMark";
@@ -175,6 +175,22 @@ export function LaunchSummary({
             <span className="ml-2 font-mono text-sm text-zinc-500">${form.ticker}</span>
           )}
         </h2>
+        <div
+          className={cn(
+            "launch-summary-logo mt-3 flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/15 bg-black/30",
+            form.imagePreview && "border-white/20 p-0",
+          )}
+        >
+          {form.imagePreview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.imagePreview} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center gap-1 px-2 text-center">
+              <ImagePlus className="h-5 w-5 text-zinc-600" aria-hidden />
+              <span className="text-[10px] leading-tight text-zinc-500">Logo</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <dl className="space-y-2.5 text-sm">

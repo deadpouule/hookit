@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
+import { ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
@@ -19,7 +18,6 @@ import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
   FormDivider,
   FormPanel,
-  SectionLabel,
 } from "@/components/ui/form-primitives";
 import { Label } from "@/components/ui/label";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
@@ -40,6 +38,7 @@ import { rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import {
   LAUNCH_WIZARD_HOOK_IDS,
   MASTER_LAUNCH_STEPS,
+  MASTER_WIZARD_STEP_INTRO,
   MASTER_WIZARD_STEP_SUBTITLES,
   masterHookWizardStep,
 } from "@/lib/launch-wizard";
@@ -143,6 +142,7 @@ export function MasterLaunchWizard() {
     }
     if (id === "dynamic-fees" && !next) {
       updateModules({ dynamicFees: false });
+      setForm((p) => ({ ...p, hookTaxBps: 0 }));
       return;
     }
     if (
@@ -252,11 +252,12 @@ export function MasterLaunchWizard() {
   return (
     <div className={cn("launch-shell launch-wizard-compact", !result && "pt-0 sm:pt-1")}>
       <div className="launch-wizard-top">
-        <Link href="/launch" className="launch-wizard-nav-btn launch-wizard-exit-btn">
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-          Back to launch models
-        </Link>
         <div className="launch-wizard-top-main">
+          {step === 1 && !result ? (
+            <p className="terminal-title mx-auto mb-1.5 max-w-lg text-sm font-medium tracking-tight text-zinc-400 sm:text-base">
+              {MASTER_WIZARD_STEP_INTRO}
+            </p>
+          ) : null}
           <span className="token-type-badge token-type-badge--master token-hooks-count-badge launch-wizard-master-badge">
             <MasterHookGlyph className="token-type-badge-glyph" />
             Master launch
@@ -388,7 +389,7 @@ export function MasterLaunchWizard() {
             <FormPanel className="launch-wizard-panel">
               {step === 1 && (
                 <>
-                  <SectionLabel>Token details</SectionLabel>
+                  <p className="pick-heading">Token details</p>
 
                   <div className="mt-3 flex flex-col gap-4 sm:flex-row">
                     <div
