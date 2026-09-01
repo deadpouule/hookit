@@ -4,15 +4,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
+import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  hookPickTip,
-  isModuleEnabled,
-  moduleCardHint,
-} from "@/lib/launch-module-summary";
+import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
 import {
   hookAccentColor,
   MASTER_HOOKS,
@@ -42,8 +39,13 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
           <Info className="h-3 w-3" aria-hidden />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" align="center" sideOffset={6} className="max-w-[200px] text-xs">
-        {hookPickTip(hook.id)}
+      <TooltipContent
+        side="top"
+        align="center"
+        sideOffset={8}
+        className="hook-settings-tooltip border-0 bg-transparent p-0 shadow-none"
+      >
+        <HookDetailPanel hook={hook} />
       </TooltipContent>
     </Tooltip>
   );
@@ -73,16 +75,7 @@ function HookPickCard({
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={hovered || selected} />
       </div>
       <p className="pick-card-title">{hook.title.toLowerCase()}</p>
-      {selected && (
-        <span
-          className={cn(
-            "pick-card-status orb-hook-desc-badge",
-            `orb-hook-desc-badge--${hook.theme}`,
-          )}
-        >
-          hooked
-        </span>
-      )}
+      <p className="pick-card-sub pick-card-sub--hook">{hookPickTagline(hook.id)}</p>
     </button>
   );
 }
@@ -260,8 +253,6 @@ function HookConfigHeader({
   modules: LaunchModules;
   hookTaxBps?: number;
 }) {
-  const configHint = moduleCardHint(hook.id, modules, hookTaxBps);
-
   return (
     <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
       <div className="pick-config-head-copy">
@@ -277,25 +268,6 @@ function HookConfigHeader({
           </h2>
           <HookSettingsTooltip hook={hook} modules={modules} hookTaxBps={hookTaxBps} />
         </div>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-desc-badge",
-            `orb-hook-desc-badge--${hook.theme}`,
-          )}
-        >
-          <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-          <span>{hookPickTip(hook.id)}</span>
-        </span>
-        {configHint && (
-          <span
-            className={cn(
-              "orb-hook-desc-badge pick-config-hint-badge",
-              `orb-hook-desc-badge--${hook.theme}`,
-            )}
-          >
-            {configHint}
-          </span>
-        )}
       </div>
       <div className="pick-config-ascii" aria-hidden>
         <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />

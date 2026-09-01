@@ -2,9 +2,10 @@
 
 import { Info } from "lucide-react";
 
+import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getHookPresetDetails, type HookPresetDetails } from "@/lib/hook-presets";
-import { moduleDetailLine } from "@/lib/launch-module-summary";
+import { getHookPresetDetails } from "@/lib/hook-presets";
+import { hookPickDetail, moduleDetailLine } from "@/lib/launch-module-summary";
 import type { MasterHook } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,7 @@ export function HookSettingsTooltip({
   className,
 }: HookSettingsTooltipProps) {
   const preset = getHookPresetDetails(hook);
-  const tokenConfig = modules ? moduleDetailLine(hook.id, modules, hookTaxBps) : null;
+  const launchConfig = modules ? moduleDetailLine(hook.id, modules, hookTaxBps) : null;
 
   return (
     <Tooltip>
@@ -47,39 +48,22 @@ export function HookSettingsTooltip({
         sideOffset={10}
         className="hook-settings-tooltip border-0 bg-transparent p-0 shadow-none"
       >
-        {tokenConfig ? (
-          <TokenConfigPanel hook={hook} config={tokenConfig} />
+        {modules ? (
+          <HookDetailPanel hook={hook} launchConfig={launchConfig} />
         ) : (
-          <HookSettingsPanel preset={preset} />
+          <BrowseHookPanel hook={hook} presetSummary={preset.summary} />
         )}
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function TokenConfigPanel({ hook, config }: { hook: MasterHook; config: string }) {
+function BrowseHookPanel({ hook, presetSummary }: { hook: MasterHook; presetSummary: string }) {
   return (
     <div className="hook-settings-panel">
       <p className="hook-settings-panel-title">{hook.title}</p>
-      <p className="hook-settings-panel-meta font-medium text-foreground">{config}</p>
-      <p className="hook-settings-panel-meta">{hook.description}</p>
-    </div>
-  );
-}
-
-function HookSettingsPanel({ preset }: { preset: HookPresetDetails }) {
-  return (
-    <div className="hook-settings-panel">
-      <p className="hook-settings-panel-title">{preset.title}</p>
-      <ul className="hook-settings-panel-list">
-        {preset.lines.map((line) => (
-          <li key={line}>+ {line}</li>
-        ))}
-      </ul>
-      <p className="hook-settings-panel-meta">{preset.summary}</p>
-      {preset.savedAt !== "Block —" && (
-        <p className="hook-settings-panel-meta">{preset.savedAt}</p>
-      )}
+      <p className="hook-settings-panel-body">{hookPickDetail(hook.id)}</p>
+      <p className="hook-settings-panel-meta">{presetSummary}</p>
     </div>
   );
 }
