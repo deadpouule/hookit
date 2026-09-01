@@ -298,7 +298,7 @@ export function HookModulePicker({
     ? MASTER_HOOKS.filter((hook) => hookIds.includes(hook.id))
     : MASTER_HOOKS;
   const enabledHooks = visibleHooks.filter((h) => isModuleEnabled(modules, h.id));
-  const fixedFeeEnabled = includeFixedFee && hookTaxBps > 0;
+  const fixedFeeEnabled = includeFixedFee && hookTaxBps > 0 && !modules.dynamicFees;
   const [focus, setFocus] = useState<PickerFocusId | null>(
     enabledHooks[0]?.id ?? (fixedFeeEnabled ? "fixed-fee" : null),
   );
@@ -358,7 +358,8 @@ export function HookModulePicker({
       setFocus(next);
       return;
     }
-    applyHookTax(hookTaxBps > 0 ? hookTaxBps : DEFAULT_FIXED_FEE_BPS);
+    onUpdate({ dynamicFees: false });
+    applyHookTax(DEFAULT_FIXED_FEE_BPS);
     scrollToPanel("fixed-fee");
   };
 

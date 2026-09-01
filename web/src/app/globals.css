@@ -193,13 +193,26 @@
   .launch-wizard-top {
     position: relative;
     margin-bottom: 0.5rem;
-    padding-left: 0;
   }
 
   .launch-wizard-top-main {
     margin: 0 auto;
     max-width: 36rem;
     text-align: center;
+  }
+
+  .launch-wizard-compact .launch-wizard-step-shell,
+  .launch-wizard-compact .launch-wizard-review {
+    margin-left: auto;
+    margin-right: auto;
+    transform: translateX(0.65rem);
+  }
+
+  @media (max-width: 640px) {
+    .launch-wizard-compact .launch-wizard-step-shell,
+    .launch-wizard-compact .launch-wizard-review {
+      transform: none;
+    }
   }
 
   .launch-wizard-master-badge {
@@ -215,26 +228,9 @@
     color: #c084fc;
   }
 
-  .launch-wizard-exit-btn {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    font-size: 12px;
-    padding: 0.45rem 0.75rem;
-    gap: 0.35rem;
-  }
-
   @media (max-width: 640px) {
     .launch-wizard-top {
-      padding-top: 2.75rem;
-    }
-
-    .launch-wizard-exit-btn {
-      top: 0;
-      left: 0;
-      font-size: 13px;
-      padding: 0.55rem 0.85rem;
+      padding-top: 0;
     }
   }
 
