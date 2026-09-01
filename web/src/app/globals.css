@@ -146,6 +146,23 @@
     @apply mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6;
   }
 
+  .launch-shell .field-input,
+  .launch-shell .field-textarea {
+    border-radius: 0;
+  }
+
+  .launch-shell .launch-social-toggle {
+    border-radius: 0;
+  }
+
+  .launch-shell .launch-mode-toggle {
+    border-radius: 0;
+  }
+
+  .launch-shell .launch-mode-toggle__btn {
+    border-radius: 0;
+  }
+
   .launch-shell .field-input:focus,
   .launch-shell .field-textarea:focus {
     border-color: rgb(149 20 209 / 0.55);

@@ -307,7 +307,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           <button
             type="button"
             onClick={() => setSocialsOpen(!socialsOpen)}
-            className="mt-4 flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
+            className="mt-4 flex w-full items-center justify-between border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
           >
             Social links
             <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />

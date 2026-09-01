@@ -65,11 +65,16 @@ export function DevBuySection({ form, variant, onChange }: Props) {
 
   return (
     <section className="dev-buy-section">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-white">
-          Dev buy <span className="font-normal text-zinc-500">(optional)</span>
-        </p>
-        <div className="launch-mode-toggle launch-mode-toggle--compact" role="tablist" aria-label="Dev buy input mode">
+      <p className="pick-heading">
+        Dev buy <span className="font-normal text-zinc-500">(optional)</span>
+      </p>
+
+      <div className="mt-4">
+        <div
+          className="launch-mode-toggle launch-mode-toggle--compact"
+          role="tablist"
+          aria-label="Dev buy input mode"
+        >
           {(
             [
               { value: "supply" as const, label: "% of supply" },
