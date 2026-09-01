@@ -50,6 +50,7 @@ export function TokenCandleChart({
   onInterval,
   marketCap,
   change24h,
+  expanded = false,
   compact = false,
 }: {
   candles: LiveCandle[];
@@ -58,6 +59,7 @@ export function TokenCandleChart({
   marketCap?: number;
   change24h?: number;
   compact?: boolean;
+  expanded?: boolean;
 }) {
   const chartAreaRef = useRef<HTMLDivElement>(null);
   const [activeTool, setActiveTool] = useState<ChartToolId>("cursor");
@@ -205,7 +207,11 @@ export function TokenCandleChart({
       <div
         className={cn(
           "relative bg-chart-bg",
-          compact ? "h-[240px] sm:h-[280px]" : "h-[340px] sm:h-[420px]",
+          expanded
+            ? "h-[460px] sm:h-[560px]"
+            : compact
+              ? "h-[240px] sm:h-[280px]"
+              : "h-[340px] sm:h-[420px]",
         )}
       >
         <div className="candle-grid absolute inset-0" />
