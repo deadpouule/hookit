@@ -27,13 +27,13 @@ function BuildOnUniswapUnit() {
       <Image
         src="/brand/uniswap-logo.png"
         alt=""
-        width={34}
-        height={34}
+        width={26}
+        height={26}
         className="live-on-ink-ticker__logo live-on-ink-ticker__logo--uniswap"
         draggable={false}
       />
       <span className="live-on-ink-ticker__label">
-        <span className="live-on-ink-ticker__accent live-on-ink-ticker__accent--uniswap">build</span>
+        <span className="live-on-ink-ticker__accent live-on-ink-ticker__accent--uniswap">BUILD</span>
         <span className="live-on-ink-ticker__on"> ON UNISWAP</span>
       </span>
     </span>

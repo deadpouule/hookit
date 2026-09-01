@@ -23,7 +23,7 @@ const LINES: TypewriterLine[] = [
     segments: [
       { kind: "text", value: "Tokenized stocks, " },
       { kind: "logo", id: "eth" },
-      { kind: "text", value: " and " },
+      { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },
       { kind: "text", value: " curves hook" },
     ],
@@ -71,8 +71,8 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
       <Image
         src="/pairing/usdg.png"
         alt=""
-        width={22}
-        height={22}
+        width={38}
+        height={38}
         className="hero-typewriter-mark__photo"
         draggable={false}
       />
