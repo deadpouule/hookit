@@ -155,6 +155,55 @@ export function hookPickTip(id: MasterHookId): string {
   return MODULE_SUMMARY_PHRASE[id];
 }
 
+const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
+  "anti-snipe": "Launch sniper tax",
+  "backed-floor": "Quote price floor",
+  "anti-mev": "Block bot trades",
+  "max-tx": "Cap swap size",
+  "max-wallet": "Cap wallet size",
+  "dynamic-fees": "Volume-based fees",
+  "buyback-vesting": "Creator fee vest",
+  "auto-burn": "Burn on swap",
+  "lp-donate": "Reward LPs",
+  "holder-airdrop": "Holder airdrops",
+  "creator-share-to-hook": "Fees → hook pot",
+};
+
+/** 2–3 word label under pick cards. */
+export function hookPickTagline(id: MasterHookId): string {
+  return HOOK_PICK_TAGLINE[id];
+}
+
+const HOOK_PICK_DETAIL: Record<MasterHookId, string> = {
+  "anti-snipe":
+    "Adds a decaying tax on early buys during your launch window. Snipers pay the highest rate at open; the tax steps down over the duration you choose until it matches your base swap fee.",
+  "backed-floor":
+    "Skims a share of hook fees into a FloorVault backed by the quote asset. The floor price ratchets up with each deposit and never decreases — holders can redeem tokens against the vault.",
+  "anti-mev":
+    "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
+  "max-tx":
+    "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert — useful against whale dumps or bot-sized trades.",
+  "max-wallet":
+    "Caps how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
+  "dynamic-fees":
+    "Enables Uniswap v4 dynamic fees on the pool. Swap fee ramps with recent flow so quiet periods stay cheap and heavy volume pays more — all deducted in quote only.",
+  "buyback-vesting":
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page.",
+  "auto-burn":
+    "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
+  "lp-donate":
+    "Donates a share of hook fees to liquidity providers who are in-range at swap time. Rewards active LPs and keeps depth where it matters.",
+  "holder-airdrop":
+    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each 15-minute epoch. Permissionless — anyone can trigger the push.",
+  "creator-share-to-hook":
+    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled.",
+};
+
+/** Longer copy for pick-card and config tooltips. */
+export function hookPickDetail(id: MasterHookId): string {
+  return HOOK_PICK_DETAIL[id];
+}
+
 const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "anti-snipe": "blocks snipers at launch",
   "backed-floor": "has a price floor",
