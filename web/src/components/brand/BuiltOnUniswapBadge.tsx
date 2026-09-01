@@ -26,8 +26,8 @@ export function BuiltOnUniswapBadge({
       <Image
         src="/brand/uniswap-logo.png"
         alt=""
-        width={variant === "inline" ? 22 : 20}
-        height={variant === "inline" ? 22 : 20}
+        width={variant === "inline" ? 28 : 20}
+        height={variant === "inline" ? 28 : 20}
         className="built-on-uniswap-badge__logo"
         draggable={false}
       />
