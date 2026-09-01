@@ -236,10 +236,14 @@ export function MasterLaunchWizard() {
   return (
     <div className={cn("launch-shell launch-wizard-compact", !result && "pt-0 sm:pt-1")}>
       <div className="launch-wizard-top">
+        <Link href="/launch" className="launch-wizard-nav-btn launch-wizard-exit-btn">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to launch models
+        </Link>
         <div className="launch-wizard-top-main">
           <span className="token-type-badge token-type-badge--master token-hooks-count-badge launch-wizard-master-badge">
             <MasterHookGlyph className="token-type-badge-glyph" />
-            Master
+            Master launch
           </span>
           <h1 className="terminal-title mt-1.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             Create a hooked token
@@ -248,10 +252,6 @@ export function MasterLaunchWizard() {
             <p className="mx-auto mt-1.5 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
           )}
         </div>
-        <Link href="/launch" className="launch-wizard-nav-btn launch-wizard-exit-btn">
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to launch models
-        </Link>
       </div>
 
       {!factoryConfigured && (
