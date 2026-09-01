@@ -25,7 +25,7 @@ function BuildOnUniswapUnit() {
   return (
     <span className="live-on-ink-ticker__unit inline-flex shrink-0 items-center">
       <Image
-        src="/brand/uniswap-logo.png"
+        src="/brand/uniswap-mark.png"
         alt=""
         width={26}
         height={26}

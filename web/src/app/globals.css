@@ -2092,10 +2092,12 @@
     white-space: nowrap;
   }
 
-  .built-on-uniswap-badge--inline {
+  .built-on-uniswap-badge--hero {
     margin-inline: 0.15rem 0.25rem;
-    padding: 0.22rem 0.55rem;
+    gap: 0.55rem;
+    padding: 0.35rem 0.75rem;
     vertical-align: middle;
+    box-shadow: 0 0 0 1px rgb(255 0 122 / 0.15);
   }
 
   .built-on-uniswap-badge__logo {
@@ -2106,13 +2108,13 @@
     object-fit: contain;
   }
 
-  .built-on-uniswap-badge--inline .built-on-uniswap-badge__logo {
-    height: 38px;
-    width: 38px;
+  .built-on-uniswap-badge--hero .built-on-uniswap-badge__logo {
+    height: 32px;
+    width: 32px;
   }
 
-  .hero-uniswap-badge.built-on-uniswap-badge--inline {
-    padding: 0.28rem 0.65rem;
+  .hero-uniswap-badge.built-on-uniswap-badge--hero {
+    padding: 0.38rem 0.8rem;
   }
 
   .built-on-uniswap-badge__text {
@@ -2123,10 +2125,11 @@
     color: #fff;
   }
 
-  .built-on-uniswap-badge--inline .built-on-uniswap-badge__text {
-    font-size: inherit;
-    font-weight: 600;
-    text-transform: lowercase;
+  .built-on-uniswap-badge--hero .built-on-uniswap-badge__text {
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-transform: none;
+    color: rgb(255 255 255 / 0.95);
   }
 
   .hero-uniswap-badge {
@@ -2144,8 +2147,8 @@
   }
 
   .hero-typewriter-mark--eth {
-    height: 2.25rem;
-    width: 2.25rem;
+    height: 2.85rem;
+    width: 2.85rem;
     background: #627eea;
   }
 
@@ -2156,8 +2159,8 @@
   }
 
   .hero-typewriter-mark__glyph {
-    height: 1.4rem;
-    width: 1.4rem;
+    height: 1.75rem;
+    width: 1.75rem;
   }
 
   .hero-typewriter-mark__photo {

@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 type BuiltOnUniswapBadgeProps = {
   className?: string;
-  /** Ticker strip uses title case; hero typewriter uses lowercase trailing text. */
-  variant?: "ticker" | "inline";
+  /** Hero uses transparent mark + Built on Uniswap; ticker uses compact png. */
+  variant?: "ticker" | "inline" | "hero";
   text?: string;
 };
 
@@ -13,21 +13,23 @@ export function BuiltOnUniswapBadge({
   variant = "ticker",
   text,
 }: BuiltOnUniswapBadgeProps) {
-  const label = text ?? (variant === "inline" ? "build on uniswap" : "Built on Uniswap");
+  const isHero = variant === "inline" || variant === "hero";
+  const label = text ?? (isHero ? "Built on Uniswap" : "Built on Uniswap");
+  const logoSrc = isHero ? "/brand/uniswap-mark.png" : "/brand/uniswap-logo.png";
 
   return (
     <span
       className={cn(
         "built-on-uniswap-badge",
-        variant === "inline" && "built-on-uniswap-badge--inline",
+        isHero && "built-on-uniswap-badge--hero",
         className,
       )}
     >
       <Image
-        src="/brand/uniswap-logo.png"
+        src={logoSrc}
         alt=""
-        width={variant === "inline" ? 38 : 20}
-        height={variant === "inline" ? 38 : 20}
+        width={isHero ? 32 : 20}
+        height={isHero ? 32 : 20}
         className="built-on-uniswap-badge__logo"
         draggable={false}
       />
