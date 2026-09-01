@@ -79,9 +79,8 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
     }
 
     function testCustomHookRevertsWhenNotAllowlisted() public {
-        address flags = address(
-            uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC058) << 144)
-        );
+        address flags =
+            address(uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG) | (uint160(0xC058) << 144));
         deployCodeTo("HookitCustomHook.sol:HookitCustomHook", abi.encode(manager), flags);
         HookitCustomHook unlisted = HookitCustomHook(payable(flags));
 

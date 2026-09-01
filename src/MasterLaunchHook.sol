@@ -283,17 +283,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             );
         }
 
-        uint256 totalFeeBps =
-            uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(effectiveHookTax) + uint256(snipeBps);
+        uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(effectiveHookTax) + uint256(snipeBps);
         if (totalFeeBps > ProtocolConstants.BPS_DENOMINATOR) {
             snipeBps = uint16(ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - effectiveHookTax);
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
         if (isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
-            _checkMaxWalletBeforeBuy(
-                st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps
-            );
+            _checkMaxWalletBeforeBuy(st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps);
         }
 
         bool quoteIsSpecified = isBuy ? exactInput : !exactInput;

@@ -200,7 +200,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         vm.expectRevert();
         swapRouter.swap{value: 0.01 ether}(
             key,
-            SwapParams({zeroForOne: true, amountSpecified: -int256(0.01 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1}),
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(0.01 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""
         );

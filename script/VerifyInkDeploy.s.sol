@@ -25,8 +25,7 @@ contract VerifyInkDeployScript is Script {
         GraduatedFeeHook graduated = GraduatedFeeHook(payable(_addr("GRADUATED_FEE_HOOK")));
         FloorVault vault = FloorVault(payable(_addr("FLOOR_VAULT")));
         FeeEscrow escrow = FeeEscrow(payable(_addr("FEE_ESCROW")));
-        ProtocolRevenueDistributor distributor =
-            ProtocolRevenueDistributor(payable(_addr("DISTRIBUTOR")));
+        ProtocolRevenueDistributor distributor = ProtocolRevenueDistributor(payable(_addr("DISTRIBUTOR")));
         address router = _addr("HOOKIT_SWAP_ROUTER");
         FeeEthRail feeRail = FeeEthRail(payable(_addr("FEE_ETH_RAIL")));
         address nativeToken = _addr("NATIVE_TOKEN");
