@@ -77,7 +77,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     if (!resolved) return 0;
     return MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id)).length;
   }, [isClassicDesk, pool]);
-  const compactHooksLayout = activeHookCount > 0 && activeHookCount <= 3;
+  const expandChart = activeHookCount > 0 && activeHookCount <= 3;
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -95,16 +95,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         Back to explore
       </Link>
 
-      <div
-        className={cn(
-          "token-desk mt-4",
-          isClassicDesk ? "token-desk--wide" : "token-desk--hooks",
-          compactHooksLayout && "token-desk--hooks-compact",
-        )}
-      >
+      <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
         {!isClassicDesk && (
           <aside className="token-desk-rail token-desk-rail--left space-y-3">
-            <ActiveHooksPanel pool={pool} compact={compactHooksLayout} />
+            <ActiveHooksPanel pool={pool} />
           </aside>
         )}
 
@@ -205,6 +199,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             onInterval={setInterval}
             marketCap={live.marketCap}
             change24h={live.change24h}
+            expanded={expandChart}
           />
           <TokenTxTable
             tab={tab}
