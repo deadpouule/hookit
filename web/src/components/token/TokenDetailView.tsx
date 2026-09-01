@@ -179,10 +179,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
   const chart = (
     <TokenCandleChart
-      className={cn(
-        "token-desk-chart",
-        balancedDesk && "token-candle-chart--bleed",
-      )}
+      className="token-desk-chart"
       candles={live.candles}
       interval={interval}
       onInterval={setInterval}
@@ -194,10 +191,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
   const txTable = (
     <TokenTxTable
-      className={cn(
-        "token-desk-table",
-        balancedDesk && "token-desk-table--bleed",
-      )}
+      className="token-desk-table"
       tab={tab}
       onTab={setTab}
       swaps={live.swaps}

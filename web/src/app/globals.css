@@ -1138,6 +1138,8 @@
   .token-hooks-panel {
     position: relative;
     z-index: 2;
+    min-width: 0;
+    overflow: hidden;
     padding: 1rem;
   }
 
@@ -1245,11 +1247,12 @@
   .token-hooks-chip-copy {
     display: inline;
     min-width: 0;
+    overflow-wrap: anywhere;
     text-align: left;
   }
 
   .token-hooks-chip-title {
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .token-hooks-chip-sep {
@@ -1293,7 +1296,7 @@
 
   .token-hooks-chip-actions--floor {
     flex-direction: column;
-    padding-left: 1.45rem;
+    padding-left: 0;
     gap: 0.4rem;
   }
 
@@ -2154,11 +2157,31 @@
     background: #627eea;
   }
 
+  .hero-typewriter-mark--aapl {
+    height: 2.85rem;
+    width: 2.85rem;
+    background: #f5f5f7;
+  }
+
   .hero-typewriter-mark--mstr,
+  .hero-typewriter-mark--tsla,
   .hero-typewriter-mark--usdg {
     height: 2.85rem;
     width: 2.85rem;
     background: rgb(255 255 255 / 0.08);
+  }
+
+  .hero-typewriter-stock-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.08rem;
+    margin-inline: 0.08rem;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .hero-typewriter-mark--stock {
+    margin-inline: 0;
   }
 
   .hero-typewriter-mark__glyph {
@@ -2174,7 +2197,8 @@
   }
 
   .hero-typewriter-mark--usdg .hero-typewriter-mark__photo,
-  .hero-typewriter-mark--mstr .hero-typewriter-mark__photo {
+  .hero-typewriter-mark--mstr .hero-typewriter-mark__photo,
+  .hero-typewriter-mark--tsla .hero-typewriter-mark__photo {
     height: 118%;
     width: 118%;
     transform: scale(1.22);
@@ -2421,37 +2445,38 @@
     .token-desk--balanced {
       gap: 8px;
       grid-template-rows: auto auto auto;
-      grid-template-areas:
-        "left hero right"
-        "left chart right"
-        "left table right";
       align-items: stretch;
     }
 
     .token-desk--balanced .token-desk-rail--left {
-      grid-area: left;
+      grid-column: 1;
+      grid-row: 1;
       align-self: start;
       position: relative;
       z-index: 2;
+      min-width: 0;
     }
 
     .token-desk--balanced .token-desk-hero {
-      grid-area: hero;
+      grid-column: 2;
+      grid-row: 1;
       min-width: 0;
     }
 
     .token-desk--balanced .token-desk-chart {
-      grid-area: chart;
+      grid-column: 1 / 3;
+      grid-row: 2;
       min-width: 0;
     }
 
     .token-desk--balanced .token-desk-table {
-      grid-area: table;
+      grid-column: 1 / 3;
+      grid-row: 3;
       min-width: 0;
     }
 
     .token-desk--balanced .token-desk-rail--right {
-      grid-area: right;
+      grid-column: 3;
       grid-row: 1 / -1;
       display: flex;
       min-height: 0;
@@ -2469,13 +2494,6 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-    }
-
-    /* Bleed chart + table left into hooks column (3fr / 11fr ≈ 27.3%) */
-    .token-candle-chart--bleed,
-    .token-desk-table--bleed {
-      margin-left: calc(-8px - 27.3%);
-      width: calc(100% + 8px + 27.3%);
     }
   }
 
