@@ -26,7 +26,7 @@ import {
   MIN_ANTI_SNIPE_DURATION_SEC,
   MIN_ANTI_SNIPE_TAX_PCT,
   MIN_SUPPLY_CAP_SLIDER_PCT,
-  HOLDER_AIRDROP_EPOCH_MIN_MINUTES,
+  HOLDER_AIRDROP_EPOCH_MINUTES,
   HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
   HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES,
   bpsToSupplyPct,
@@ -853,7 +853,7 @@ function HookSettings({
             accentColor={accent}
             value={[epochMinutes]}
             onValueChange={([v]) => onUpdate({ holderAirdropEpochSeconds: v * 60 })}
-            min={HOLDER_AIRDROP_EPOCH_MIN_MINUTES}
+            min={HOLDER_AIRDROP_EPOCH_MINUTES}
             max={HOLDER_AIRDROP_EPOCH_MAX_MINUTES}
             step={1}
           />

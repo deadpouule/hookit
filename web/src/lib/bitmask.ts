@@ -87,8 +87,6 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
       throw new Error("Holder airdrop epoch must be 1 minute to 7 days");
     }
   }
-    throw new Error("Hook pot shares are capped at 100% each");
-  }
 
   const floorAllocationBps = BigInt(modules.floorAllocation * 100);
   const autoBurnBps = BigInt(modules.autoBurnPct * 100);
