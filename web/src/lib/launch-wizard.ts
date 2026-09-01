@@ -8,11 +8,6 @@ export const MASTER_LAUNCH_STEPS = [
   { id: 5, label: "Review & launch" },
 ] as const;
 
-export const CLASSIC_LAUNCH_STEPS = [
-  { id: 1, label: "Token & pair" },
-  { id: 2, label: "Review & launch" },
-] as const;
-
 /** Hook groups per wizard step (Master launch). */
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
   2: ["anti-mev", "anti-snipe", "max-tx", "max-wallet"],
