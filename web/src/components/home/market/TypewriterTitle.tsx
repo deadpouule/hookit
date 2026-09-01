@@ -45,11 +45,7 @@ function lineLength(line: TypewriterLine): number {
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (id === "uniswap") {
     return (
-      <BuiltOnUniswapBadge
-        variant="inline"
-        text="build on uniswap"
-        className="hero-uniswap-badge"
-      />
+      <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />
     );
   }
 
