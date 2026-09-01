@@ -33,7 +33,7 @@ function BuildOnUniswapUnit() {
         draggable={false}
       />
       <span className="live-on-ink-ticker__label">
-        <span className="live-on-ink-ticker__accent live-on-ink-ticker__accent--uniswap">BUILD</span>
+        <span className="live-on-ink-ticker__accent live-on-ink-ticker__accent--uniswap">BUILT</span>
         <span className="live-on-ink-ticker__on"> ON UNISWAP</span>
       </span>
     </span>
