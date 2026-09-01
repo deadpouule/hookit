@@ -26,6 +26,47 @@ function pairSummary(form: LaunchFormState): string {
   return formatPairingTicker(form.markets[0]?.id ?? form.quoteAsset);
 }
 
+export function summarizeCompletedSteps(
+  step: number,
+  form: LaunchFormState,
+): WizardContextBlock[] {
+  const blocks: WizardContextBlock[] = [];
+
+  if (step > 1) {
+    blocks.push({
+      title: "Token & pair",
+      detail: `${form.name || "Untitled"} · $${form.ticker || "???"} · ${pairSummary(form)}`,
+    });
+  }
+
+  if (step > 2) {
+    blocks.push({
+      title: "Protection",
+      detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[2]),
+    });
+  }
+
+  if (step > 3) {
+    const parts: string[] = [];
+    if (form.modules.dynamicFees) parts.push("Dynamic fees");
+    if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
+    if (form.modules.creatorShareToHook) parts.push("Creator → hook");
+    blocks.push({
+      title: "Trading fees",
+      detail: parts.length > 0 ? parts.join(" · ") : "None selected",
+    });
+  }
+
+  if (step > 4) {
+    blocks.push({
+      title: "Tokenomics",
+      detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[4]),
+    });
+  }
+
+  return blocks;
+}
+
 export function summarizePreviousStep(
   step: number,
   form: LaunchFormState,

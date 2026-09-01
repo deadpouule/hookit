@@ -15,6 +15,7 @@ import { LaunchSummary } from "@/components/launch/LaunchSummary";
 import { LaunchWizardNav } from "@/components/launch/LaunchWizardNav";
 import { LaunchWizardStepSummary } from "@/components/launch/LaunchWizardStepSummary";
 import { LaunchWizardStepper } from "@/components/launch/LaunchWizardStepper";
+import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
   FormDivider,
@@ -233,25 +234,24 @@ export function MasterLaunchWizard() {
   const showWizardChrome = !result && step < reviewStep;
 
   return (
-    <div className={cn("launch-shell launch-wizard-compact", !result && "pt-3 sm:pt-4")}>
-      <Link
-        href="/launch"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-300"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to launch models
-      </Link>
-
-      <div className="mb-5 text-center">
-        <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
-          Master launch
-        </p>
-        <h1 className="terminal-title text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          Create a hooked token
-        </h1>
-        {draftLoaded && (
-          <p className="mx-auto mt-3 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
-        )}
+    <div className={cn("launch-shell launch-wizard-compact", !result && "pt-1 sm:pt-2")}>
+      <div className="launch-wizard-top">
+        <div className="launch-wizard-top-main">
+          <span className="launch-wizard-master-badge orb-hook-desc-badge orb-hook-desc-badge--void">
+            <MasterHookAsciiIcon hookId="anti-snipe" className="launch-wizard-master-badge-icon" />
+            Master launch
+          </span>
+          <h1 className="terminal-title mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            Create a hooked token
+          </h1>
+          {draftLoaded && (
+            <p className="mx-auto mt-2 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
+          )}
+        </div>
+        <Link href="/launch" className="launch-wizard-nav-btn launch-wizard-exit-btn">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to launch models
+        </Link>
       </div>
 
       {!factoryConfigured && (
@@ -332,10 +332,9 @@ export function MasterLaunchWizard() {
 
       {!result && step === reviewStep ? (
         <div className="launch-wizard-review mx-auto max-w-6xl">
-          <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-4" />
-          <LaunchWizardStepSummary step={step} form={form} />
+          <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-3" />
 
-          <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
             <FormPanel className="launch-wizard-panel">
               <DevBuySection
                 form={form}
@@ -346,26 +345,38 @@ export function MasterLaunchWizard() {
               <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />
             </FormPanel>
 
-            <LaunchSummary
-              form={form}
-              variant="custom"
-              launchFee={launchFee}
-              launchFeeEth={launchFeeEth}
-              walletReady={walletReady}
-              factoryConfigured={factoryConfigured}
-              isPending={isPending}
-              phase={phase}
-              activeHooks={activeHooks}
-              onLaunch={handleLaunch}
-            />
+            <div className="space-y-4">
+              <LaunchWizardStepSummary step={step} form={form} />
+              <LaunchSummary
+                form={form}
+                variant="custom"
+                launchFee={launchFee}
+                launchFeeEth={launchFeeEth}
+                walletReady={walletReady}
+                factoryConfigured={factoryConfigured}
+                isPending={isPending}
+                phase={phase}
+                activeHooks={activeHooks}
+                onLaunch={handleLaunch}
+              />
+            </div>
           </div>
         </div>
       ) : !result ? (
-        <div className="launch-wizard-step-shell mx-auto max-w-3xl">
-          <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-3" />
-          <LaunchWizardStepSummary step={step} form={form} />
+        <div
+          className={cn(
+            "launch-wizard-step-shell mx-auto",
+            step > 1 ? "max-w-5xl" : "max-w-3xl",
+          )}
+        >
+          <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-2" />
 
-          <FormPanel className="launch-wizard-panel mt-3">
+          <div
+            className={cn(
+              step > 1 && "grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_240px]",
+            )}
+          >
+            <FormPanel className="launch-wizard-panel">
             {step === 1 && (
               <>
                 <SectionLabel>Token details</SectionLabel>
@@ -606,6 +617,9 @@ export function MasterLaunchWizard() {
               <LaunchWizardNav step={step} onBack={goBack} onContinue={goNext} />
             )}
           </FormPanel>
+
+            {step > 1 ? <LaunchWizardStepSummary step={step} form={form} /> : null}
+          </div>
         </div>
       ) : null}
     </div>
