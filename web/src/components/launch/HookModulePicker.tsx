@@ -87,21 +87,28 @@ function PickConfigControl({
   children,
 }: {
   theme: HookTheme;
-  label: string;
+  label?: string;
   value: string;
   children: ReactNode;
 }) {
   return (
     <div className="pick-config-control">
-      <div className="pick-config-control-head">
-        <span
-          className={cn(
-            "pick-config-control-badge orb-hook-desc-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
-          {label}
-        </span>
+      <div
+        className={cn(
+          "pick-config-control-head",
+          !label && "pick-config-control-head--value-only",
+        )}
+      >
+        {label ? (
+          <span
+            className={cn(
+              "pick-config-control-badge orb-hook-desc-badge",
+              `orb-hook-desc-badge--${theme}`,
+            )}
+          >
+            {label}
+          </span>
+        ) : null}
         <span
           className={cn(
             "pick-config-control-value orb-hook-desc-badge",
@@ -362,7 +369,6 @@ function HookSettings({
     return (
       <PickConfigControl
         theme={theme}
-        label="Cap"
         value={`${(modules.maxWalletBps / 100).toFixed(1)}% supply`}
       >
         <AccentSlider
@@ -381,7 +387,6 @@ function HookSettings({
     return (
       <PickConfigControl
         theme={theme}
-        label="Cap"
         value={`${(modules.maxTxBps / 100).toFixed(1)}% supply`}
       >
         <AccentSlider

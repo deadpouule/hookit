@@ -778,6 +778,10 @@
     gap: 0.5rem;
   }
 
+  .pick-config-control-head--value-only {
+    justify-content: flex-start;
+  }
+
   .pick-config-control-badge.orb-hook-desc-badge,
   .pick-config-control-value.orb-hook-desc-badge {
     width: auto;
