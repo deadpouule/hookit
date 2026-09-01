@@ -6,7 +6,8 @@ import { ArrowRight } from "lucide-react";
 
 import { HookBuilder } from "@/components/builder/HookBuilder";
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { EMPTY_BUILDER_DRAFT, buyOverheadBps, feeRoutePct, saveBuilderDraft, type BuilderDraft } from "@/lib/hook-builder";
+import { EMPTY_BUILDER_DRAFT, buyOverheadBps, saveBuilderDraft, type BuilderDraft } from "@/lib/hook-builder";
+import { feeRouteIsComplete } from "@/lib/hook-fee-route";
 
 export function BuilderPage() {
   const [draft, setDraft] = useState<BuilderDraft>(EMPTY_BUILDER_DRAFT);
@@ -19,9 +20,9 @@ export function BuilderPage() {
   const persistDraft = () => {
     saveBuilderDraft(draft);
   };
-  const routeOverflow = feeRoutePct(draft.modules) > 100;
+  const routeInvalid = !feeRouteIsComplete(draft.modules);
   const openOverflow = buyOverheadBps(draft.modules, draft.hookTaxBps).atOpen > 10_000;
-  const launchBlocked = routeOverflow || openOverflow;
+  const launchBlocked = routeInvalid || openOverflow;
 
   return (
     <>

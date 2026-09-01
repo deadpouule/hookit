@@ -13,10 +13,17 @@ export const FLYWHEEL_SHARE_BPS = 8000;
 /** Max hook tax so base (1%) + tax ≤ 10% total steady fee. */
 export const MAX_HOOK_TAX_BPS = 900;
 export const MAX_TOTAL_FEE_BPS = 1000;
+/** Default total fee cap when enabling dynamic fees (3%). */
+export const DYNAMIC_FEE_DEFAULT_MAX_BPS = 300;
+/** Default 24h quote volume scale that fully ramps fees (10 × 1e18 quote units). */
+export const DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE = 10;
 export const BUYBACK_VESTING_DEFAULT_DAYS = 365 * 5;
 export const BUYBACK_VESTING_MIN_DAYS = 7;
 export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
 export const SECONDS_PER_DAY = 86_400;
+
+/** Max % of total supply per swap / wallet — mirrors ProtocolConstants (10_000 bps = 100%). */
+export { MIN_SUPPLY_CAP_BPS, MAX_SUPPLY_CAP_BPS } from "@/lib/protocol-limits";
 
 /** Upload-your-own Solidity hooks — disabled for Ink soft launch; enable later via factory owner. */
 export const CUSTOM_SOLIDITY_HOOKS_ENABLED = false;
@@ -52,6 +59,10 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     dynamicFees: false,
+    dynamicFeeMinBps: BASE_FEE_BPS,
+    dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
+    dynamicFeeRampUp: true,
+    dynamicFeeVolumeTargetScale: DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
     creatorShareToHook: false,
   },
   hookTaxBps: 0,
@@ -86,6 +97,10 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     dynamicFees: false,
+    dynamicFeeMinBps: BASE_FEE_BPS,
+    dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
+    dynamicFeeRampUp: true,
+    dynamicFeeVolumeTargetScale: DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
     creatorShareToHook: false,
   },
 };

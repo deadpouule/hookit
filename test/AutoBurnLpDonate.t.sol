@@ -20,7 +20,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 500;
         m.autoBurn = true;
-        m.autoBurnBps = 5_000;
+        m.autoBurnBps = 10_000;
         (, address token, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 supplyBefore = LaunchTokenLike(token).totalSupply();
@@ -36,7 +36,7 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 500;
         m.lpDonate = true;
-        m.lpDonateBps = 5_000;
+        m.lpDonateBps = 10_000;
         (,, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         buyExactIn(key, 5 ether);
@@ -51,8 +51,8 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         m.hookTaxBps = 400;
         m.autoBurn = true;
         m.lpDonate = true;
-        m.autoBurnBps = 2_000;
-        m.lpDonateBps = 2_000;
+        m.autoBurnBps = 5_000;
+        m.lpDonateBps = 5_000;
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 supplyBefore = LaunchTokenLike(token).totalSupply();

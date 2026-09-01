@@ -13,6 +13,33 @@ import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
 import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
 import { formatBps } from "@/lib/format";
 import {
+  clampDynamicFeeRange,
+  formatTotalFeePercent,
+  resolveDynamicFeeMaxBps,
+  resolveDynamicFeeMinBps,
+} from "@/lib/fee-range";
+import {
+  clampSupplyCapBps,
+  MAX_ANTI_SNIPE_DURATION_SEC,
+  MAX_ANTI_SNIPE_TAX_PCT,
+  MAX_SUPPLY_CAP_SLIDER_PCT,
+  MIN_ANTI_SNIPE_DURATION_SEC,
+  MIN_ANTI_SNIPE_TAX_PCT,
+  MIN_SUPPLY_CAP_SLIDER_PCT,
+  bpsToSupplyPct,
+  formatSupplyCap,
+  supplyPctToBps,
+} from "@/lib/protocol-limits";
+import { BASE_FEE_BPS, DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE, MAX_TOTAL_FEE_BPS } from "@/lib/constants";
+import {
+  feeRouteSliderMax,
+  feeRouteTotalPct,
+  listEnabledFeeRoutes,
+  rebalanceFeeRoutes,
+  setFeeRouteShare,
+  type FeeRouteKey,
+} from "@/lib/hook-fee-route";
+import {
   hookAccentColor,
   hookThemeAccentColor,
   MASTER_HOOKS,
@@ -23,7 +50,7 @@ import {
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const NO_CONFIG_HOOKS = new Set<MasterHookId>(["anti-mev", "dynamic-fees"]);
+const NO_CONFIG_HOOKS = new Set<MasterHookId>(["anti-mev"]);
 const FIXED_FEE_THEME: HookTheme = "rose";
 const DEFAULT_FIXED_FEE_BPS = 50;
 type PickerFocusId = MasterHookId | "fixed-fee";
@@ -241,6 +268,7 @@ export function HookModulePicker({
   modules,
   onToggle,
   onUpdate,
+  onHookTaxChange,
   floorEst,
   multiMarket = false,
   hookTaxBps = 0,
@@ -252,6 +280,7 @@ export function HookModulePicker({
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
   onUpdate: (patch: Partial<LaunchModules>) => void;
+  onHookTaxChange?: (hookTaxBps: number) => void;
   floorEst: number;
   multiMarket?: boolean;
   hookTaxBps?: number;
@@ -314,14 +343,18 @@ export function HookModulePicker({
   };
 
   const toggleFixedFee = () => {
-    if (!onHookTaxBpsChange) return;
+    const applyHookTax = (bps: number) => {
+      onHookTaxBpsChange?.(bps);
+      onHookTaxChange?.(bps);
+    };
+    if (!onHookTaxBpsChange && !onHookTaxChange) return;
     if (fixedFeeEnabled) {
-      onHookTaxBpsChange(0);
+      applyHookTax(0);
       const next = enabledHooks[0]?.id ?? null;
       setFocus(next);
       return;
     }
-    onHookTaxBpsChange(hookTaxBps > 0 ? hookTaxBps : DEFAULT_FIXED_FEE_BPS);
+    applyHookTax(hookTaxBps > 0 ? hookTaxBps : DEFAULT_FIXED_FEE_BPS);
     scrollToPanel("fixed-fee");
   };
 
@@ -402,7 +435,10 @@ export function HookModulePicker({
                   <FixedFeeConfigPanel
                     active={focus === "fixed-fee"}
                     hookTaxBps={hookTaxBps}
-                    onHookTaxBpsChange={onHookTaxBpsChange ?? (() => {})}
+                    onHookTaxBpsChange={(bps) => {
+                      onHookTaxBpsChange?.(bps);
+                      onHookTaxChange?.(bps);
+                    }}
                   />
                 </div>
               );
@@ -434,6 +470,7 @@ export function HookModulePicker({
                   hook={hook}
                   modules={modules}
                   onUpdate={onUpdate}
+                  onHookTaxChange={onHookTaxChange}
                   floorEst={floorEst}
                   hookTaxBps={hookTaxBps}
                 />
@@ -484,12 +521,14 @@ function HookSettings({
   hook,
   modules,
   onUpdate,
+  onHookTaxChange,
   floorEst,
   hookTaxBps = 0,
 }: {
   hook: MasterHook;
   modules: LaunchModules;
   onUpdate: (patch: Partial<LaunchModules>) => void;
+  onHookTaxChange?: (hookTaxBps: number) => void;
   floorEst: number;
   hookTaxBps?: number;
 }) {
@@ -512,8 +551,8 @@ function HookSettings({
             accentColor={accent}
             value={[modules.antiSnipeDuration]}
             onValueChange={([v]) => onUpdate({ antiSnipeDuration: v })}
-            min={1}
-            max={10}
+            min={MIN_ANTI_SNIPE_DURATION_SEC}
+            max={MAX_ANTI_SNIPE_DURATION_SEC}
             step={1}
           />
         </PickConfigControl>
@@ -526,28 +565,34 @@ function HookSettings({
             accentColor={accent}
             value={[modules.antiSnipeInitialTax]}
             onValueChange={([v]) => onUpdate({ antiSnipeInitialTax: v })}
-            min={50}
-            max={99}
+            min={MIN_ANTI_SNIPE_TAX_PCT}
+            max={MAX_ANTI_SNIPE_TAX_PCT}
             step={1}
           />
         </PickConfigControl>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Snipe tax and window are fixed at launch (up to {MAX_ANTI_SNIPE_TAX_PCT}% · {MAX_ANTI_SNIPE_DURATION_SEC}s max)
+        </span>
       </div>
     );
   }
 
   if (hook.id === "backed-floor") {
+    const routeKey: FeeRouteKey = "floorAllocation";
     return (
       <div>
-        <PickConfigControl theme={theme} label="Fee to floor" value={`${modules.floorAllocation}%`}>
-          <AccentSlider
-            accentColor={accent}
-            value={[modules.floorAllocation]}
-            onValueChange={([v]) => onUpdate({ floorAllocation: v })}
-            min={0}
-            max={50}
-            step={1}
-          />
-        </PickConfigControl>
+        <FeeRouteShareControl
+          routeKey={routeKey}
+          modules={modules}
+          theme={theme}
+          accent={accent}
+          onUpdate={onUpdate}
+        />
         {floorEst > 0 && (
           <span
             className={cn(
@@ -564,37 +609,159 @@ function HookSettings({
 
   if (hook.id === "max-wallet") {
     return (
-      <PickConfigControl
-        theme={theme}
-        value={`${(modules.maxWalletBps / 100).toFixed(1)}% supply`}
-      >
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.maxWalletBps / 100]}
-          onValueChange={([v]) => onUpdate({ maxWalletBps: Math.round(v * 100) })}
-          min={0.5}
-          max={5}
-          step={0.1}
-        />
-      </PickConfigControl>
+      <div>
+        <PickConfigControl
+          theme={theme}
+          label="Cap"
+          value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
+        >
+          <AccentSlider
+            accentColor={accent}
+            value={[bpsToSupplyPct(modules.maxWalletBps)]}
+            onValueChange={([v]) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
+            min={MIN_SUPPLY_CAP_SLIDER_PCT}
+            max={MAX_SUPPLY_CAP_SLIDER_PCT}
+            step={0.1}
+          />
+        </PickConfigControl>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge mt-2",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
+        </span>
+      </div>
     );
   }
 
   if (hook.id === "max-tx") {
     return (
-      <PickConfigControl
-        theme={theme}
-        value={`${(modules.maxTxBps / 100).toFixed(1)}% supply`}
-      >
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.maxTxBps / 100]}
-          onValueChange={([v]) => onUpdate({ maxTxBps: Math.round(v * 100) })}
-          min={0.5}
-          max={5}
-          step={0.1}
-        />
-      </PickConfigControl>
+      <div>
+        <PickConfigControl
+          theme={theme}
+          label="Cap"
+          value={`${formatSupplyCap(modules.maxTxBps)} of supply`}
+        >
+          <AccentSlider
+            accentColor={accent}
+            value={[bpsToSupplyPct(modules.maxTxBps)]}
+            onValueChange={([v]) => onUpdate({ maxTxBps: clampSupplyCapBps(supplyPctToBps(v)) })}
+            min={MIN_SUPPLY_CAP_SLIDER_PCT}
+            max={MAX_SUPPLY_CAP_SLIDER_PCT}
+            step={0.1}
+          />
+        </PickConfigControl>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge mt-2",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
+        </span>
+      </div>
+    );
+  }
+
+  if (hook.id === "dynamic-fees") {
+    const minBps = resolveDynamicFeeMinBps(modules);
+    const maxBps = resolveDynamicFeeMaxBps(modules, hookTaxBps);
+
+    const applyRange = (nextMin: number, nextMax: number) => {
+      const clamped = clampDynamicFeeRange(nextMin, nextMax);
+      onUpdate({
+        dynamicFeeMinBps: clamped.dynamicFeeMinBps,
+        dynamicFeeMaxBps: clamped.dynamicFeeMaxBps,
+      });
+      onHookTaxChange?.(clamped.hookTaxBps);
+    };
+
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PickConfigControl
+          theme={theme}
+          label="Min total fee"
+          value={formatTotalFeePercent(minBps)}
+        >
+          <AccentSlider
+            accentColor={accent}
+            value={[minBps]}
+            onValueChange={([v]) => applyRange(v, maxBps)}
+            min={BASE_FEE_BPS}
+            max={MAX_TOTAL_FEE_BPS - 10}
+            step={10}
+          />
+        </PickConfigControl>
+        <PickConfigControl
+          theme={theme}
+          label="Max total fee"
+          value={formatTotalFeePercent(maxBps)}
+        >
+          <AccentSlider
+            accentColor={accent}
+            value={[maxBps]}
+            onValueChange={([v]) => applyRange(minBps, v)}
+            min={BASE_FEE_BPS + 10}
+            max={MAX_TOTAL_FEE_BPS}
+            step={10}
+          />
+        </PickConfigControl>
+        <div className="sm:col-span-2 grid gap-2">
+          <span className="text-xs text-zinc-500">Fee vs activity</span>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className={cn(
+                "rounded-lg border px-3 py-2 text-left text-xs transition-colors",
+                modules.dynamicFeeRampUp !== false
+                  ? "border-violet-500/50 bg-violet-500/10 text-zinc-100"
+                  : "border-white/10 bg-black/40 text-zinc-500 hover:border-white/20",
+              )}
+              onClick={() => onUpdate({ dynamicFeeRampUp: true })}
+            >
+              <span className="block font-medium">Rise with volume</span>
+              <span className="mt-0.5 block text-zinc-500">Low activity → min fee</span>
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-lg border px-3 py-2 text-left text-xs transition-colors",
+                modules.dynamicFeeRampUp === false
+                  ? "border-violet-500/50 bg-violet-500/10 text-zinc-100"
+                  : "border-white/10 bg-black/40 text-zinc-500 hover:border-white/20",
+              )}
+              onClick={() => onUpdate({ dynamicFeeRampUp: false })}
+            >
+              <span className="block font-medium">Fall with volume</span>
+              <span className="mt-0.5 block text-zinc-500">High activity → min fee</span>
+            </button>
+          </div>
+        </div>
+        <PickConfigControl
+          theme={theme}
+          label="24h volume to max ramp"
+          value={`${modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE}×`}
+        >
+          <AccentSlider
+            accentColor={accent}
+            value={[modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE]}
+            onValueChange={([v]) => onUpdate({ dynamicFeeVolumeTargetScale: Math.round(v) })}
+            min={1}
+            max={1000}
+            step={1}
+          />
+        </PickConfigControl>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Fees adjust on-chain from 24h quote volume · scale = quote units (×1e18) to saturate the ramp · fixed hook fee slider is disabled
+        </span>
+      </div>
     );
   }
 
@@ -619,51 +786,41 @@ function HookSettings({
   }
 
   if (hook.id === "auto-burn") {
+    const routeKey: FeeRouteKey = "autoBurnPct";
     return (
-      <PickConfigControl theme={theme} label="Burn share" value={`${modules.autoBurnPct}%`}>
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.autoBurnPct]}
-          onValueChange={([v]) => onUpdate({ autoBurnPct: v })}
-          min={1}
-          max={50}
-          step={1}
-        />
-      </PickConfigControl>
+      <FeeRouteShareControl
+        routeKey={routeKey}
+        modules={modules}
+        theme={theme}
+        accent={accent}
+        onUpdate={onUpdate}
+      />
     );
   }
 
   if (hook.id === "lp-donate") {
+    const routeKey: FeeRouteKey = "lpDonatePct";
     return (
-      <PickConfigControl theme={theme} label="LP donate share" value={`${modules.lpDonatePct}%`}>
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.lpDonatePct]}
-          onValueChange={([v]) => onUpdate({ lpDonatePct: v })}
-          min={1}
-          max={50}
-          step={1}
-        />
-      </PickConfigControl>
+      <FeeRouteShareControl
+        routeKey={routeKey}
+        modules={modules}
+        theme={theme}
+        accent={accent}
+        onUpdate={onUpdate}
+      />
     );
   }
 
   if (hook.id === "holder-airdrop") {
+    const routeKey: FeeRouteKey = "holderAirdropPct";
     return (
-      <PickConfigControl
+      <FeeRouteShareControl
+        routeKey={routeKey}
+        modules={modules}
         theme={theme}
-        label="Fee to airdrop"
-        value={`${modules.holderAirdropPct}%`}
-      >
-        <AccentSlider
-          accentColor={accent}
-          value={[modules.holderAirdropPct]}
-          onValueChange={([v]) => onUpdate({ holderAirdropPct: v })}
-          min={1}
-          max={50}
-          step={1}
-        />
-      </PickConfigControl>
+        accent={accent}
+        onUpdate={onUpdate}
+      />
     );
   }
 
@@ -691,4 +848,69 @@ function HookSettings({
   }
 
   return null;
+}
+
+function FeeRouteShareControl({
+  routeKey,
+  modules,
+  theme,
+  accent,
+  onUpdate,
+}: {
+  routeKey: FeeRouteKey;
+  modules: LaunchModules;
+  theme: HookTheme;
+  accent: string;
+  onUpdate: (patch: Partial<LaunchModules>) => void;
+}) {
+  const enabled = listEnabledFeeRoutes(modules);
+  const solo = enabled.length === 1;
+  const value = modules[routeKey];
+
+  if (solo) {
+    return (
+      <span
+        className={cn(
+          "orb-hook-desc-badge pick-config-hint-badge",
+          `orb-hook-desc-badge--${theme}`,
+        )}
+      >
+        100% of hook tax · sole enabled module
+      </span>
+    );
+  }
+
+  return (
+    <div>
+      <PickConfigControl theme={theme} label="Share of hook tax" value={`${value}%`}>
+        <AccentSlider
+          accentColor={accent}
+          value={[value]}
+          onValueChange={([v]) => onUpdate(setFeeRouteShare(modules, routeKey, v))}
+          min={1}
+          max={feeRouteSliderMax(modules, routeKey)}
+          step={1}
+        />
+      </PickConfigControl>
+      <FeeRouteHint modules={modules} theme={theme} />
+    </div>
+  );
+}
+
+function FeeRouteHint({ modules, theme }: { modules: LaunchModules; theme: HookTheme }) {
+  const enabled = listEnabledFeeRoutes(modules);
+  if (enabled.length <= 1) return null;
+  const total = feeRouteTotalPct(modules);
+
+  return (
+    <span
+      className={cn(
+        "orb-hook-desc-badge pick-config-hint-badge mt-2 block",
+        `orb-hook-desc-badge--${theme}`,
+        total !== 100 && "border-amber-500/40 text-amber-100",
+      )}
+    >
+      Enabled modules must share exactly 100% of the hook tax · total {total}%
+    </span>
+  );
 }

@@ -104,7 +104,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     function testFork_MaxWallet_RevertsOnExcess() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.maxWallet = true;
-        m.maxWalletBps = 5;
+        m.maxWalletBps = 10;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000_000e18, "MW", "MW");
 

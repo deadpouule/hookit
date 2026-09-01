@@ -27,7 +27,7 @@ contract HolderAirdropTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         m.holderAirdrop = true;
-        m.holderAirdropBps = 5_000; // 50% of hook tax pot
+        m.holderAirdropBps = 10_000; // 100% of hook tax pot
 
         (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
 
@@ -73,7 +73,7 @@ contract HolderAirdropTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         m.holderAirdrop = true;
-        m.holderAirdropBps = 5_000;
+        m.holderAirdropBps = 10_000;
 
         (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         _buyAs(alice, key, 1 ether);

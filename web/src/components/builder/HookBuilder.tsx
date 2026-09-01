@@ -18,6 +18,7 @@ import {
   isBlockEnabled,
   type LiveBlockId,
 } from "@/lib/hook-builder";
+import { feeRouteIsComplete } from "@/lib/hook-fee-route";
 import type { LaunchModules } from "@/lib/types";
 
 type Props = {
@@ -42,7 +43,7 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
   );
   const enabledIds = enabledLiveBlocks(modules, hookTaxBps);
   const routed = feeRoutePct(modules);
-  const routeOverflow = routed > 100;
+  const routeInvalid = !feeRouteIsComplete(modules);
   const openOverflow = overhead.atOpen > 10_000;
   const activeSelected =
     selected && enabledIds.includes(selected) ? selected : (enabledIds[0] ?? null);
@@ -79,9 +80,9 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
           label="Fee route"
           value={`${routed}%`}
           hint={
-            routeOverflow
-              ? "Floor + burn + donate cannot exceed 100%"
-              : "Of quote fees → floor / burn / LP"
+            routeInvalid
+              ? "Shares must total exactly 100%"
+              : "100% of hook tax across enabled modules"
           }
         />
       </div>
@@ -93,13 +94,13 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
         </p>
       ) : null}
 
-      {routeOverflow ? (
+      {routeInvalid ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
-          Floor ({modules.backedFloor ? `${modules.floorAllocation}%` : "off"}) + Auto
-          Burn ({modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + LP Donate (
+          Floor ({modules.backedFloor ? `${modules.floorAllocation}%` : "off"}) + Auto Burn (
+          {modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + LP Donate (
           {modules.lpDonate ? `${modules.lpDonatePct}%` : "off"}) + Airdrop (
-          {modules.holderAirdrop ? `${modules.holderAirdropPct}%` : "off"}) = {routed}%. Lower a
-          slider before launch.
+          {modules.holderAirdrop ? `${modules.holderAirdropPct}%` : "off"}) = {routed}%. Adjust
+          sliders so the total is exactly 100% before launch.
         </p>
       ) : null}
 

@@ -26,6 +26,14 @@ export interface LaunchModules {
   maxTxBps: number;
   /** UI toggle — packed into Master bitmask. */
   dynamicFees?: boolean;
+  /** Total fee at low activity when dynamic fees is on (bps, includes 1% base). */
+  dynamicFeeMinBps?: number;
+  /** Total fee cap when dynamic fees is on (bps, includes 1% base). Encoded as max hook tax on-chain. */
+  dynamicFeeMaxBps?: number;
+  /** When true, fees rise with 24h volume; when false, fees fall as activity increases. */
+  dynamicFeeRampUp?: boolean;
+  /** Quote volume (× 1e18) in 24h that saturates the ramp (default 10). */
+  dynamicFeeVolumeTargetScale?: number;
   /** UI toggle — packed into Master bitmask. */
   buybackVesting?: boolean;
   /** Linear vest duration when buyback vesting is on (days). */
@@ -36,7 +44,7 @@ export interface LaunchModules {
   lpDonatePct: number;
   /** Quote-fee share accrued for periodic holder airdrops (Master). */
   holderAirdrop: boolean;
-  /** Percent of hook pot routed to HolderAirdropVault (1–50). */
+  /** Percent of hook pot routed to HolderAirdropVault (share of 100% with other sinks). */
   holderAirdropPct: number;
   /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;

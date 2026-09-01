@@ -25,13 +25,16 @@ import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
   DEFAULT_LAUNCH_STATE,
   CUSTOM_SOLIDITY_HOOKS_ENABLED,
+  DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
   LAUNCH_FEE_ETH,
 } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
+import { clampDynamicFeeRange } from "@/lib/fee-range";
 import { estimateFloorPrice } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
 import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
+import { rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import {
   LAUNCH_WIZARD_HOOK_IDS,
   MASTER_LAUNCH_STEPS,
@@ -114,6 +117,54 @@ export function MasterLaunchWizard() {
     }
     if (id === "buyback-vesting" && next) {
       updateModules({ buybackVesting: true, creatorShareToHook: false });
+      return;
+    }
+    if (id === "dynamic-fees" && next) {
+      const clamped = clampDynamicFeeRange(
+        form.modules.dynamicFeeMinBps ?? 100,
+        Math.max(form.modules.dynamicFeeMaxBps ?? 300, 100 + form.hookTaxBps),
+      );
+      updateModules({
+        dynamicFees: true,
+        dynamicFeeMinBps: clamped.dynamicFeeMinBps,
+        dynamicFeeMaxBps: clamped.dynamicFeeMaxBps,
+        dynamicFeeRampUp: form.modules.dynamicFeeRampUp ?? true,
+        dynamicFeeVolumeTargetScale:
+          form.modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+      });
+      setForm((p) => ({ ...p, hookTaxBps: clamped.hookTaxBps }));
+      return;
+    }
+    if (id === "dynamic-fees" && !next) {
+      updateModules({ dynamicFees: false });
+      return;
+    }
+    if (
+      (id === "backed-floor" ||
+        id === "auto-burn" ||
+        id === "lp-donate" ||
+        id === "holder-airdrop") &&
+      next
+    ) {
+      const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: true };
+      updateModules({
+        [HOOK_MODULE_FIELD[id]]: true,
+        ...rebalanceFeeRoutes(nextModules),
+      });
+      return;
+    }
+    if (
+      (id === "backed-floor" ||
+        id === "auto-burn" ||
+        id === "lp-donate" ||
+        id === "holder-airdrop") &&
+      !next
+    ) {
+      const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: false };
+      updateModules({
+        [HOOK_MODULE_FIELD[id]]: false,
+        ...rebalanceFeeRoutes(nextModules),
+      });
       return;
     }
     updateModules({ [HOOK_MODULE_FIELD[id]]: next });
@@ -499,6 +550,7 @@ export function MasterLaunchWizard() {
                       modules={form.modules}
                       onToggle={toggleModule}
                       onUpdate={updateModules}
+                      onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                       floorEst={floorEst}
                       multiMarket={form.markets.length > 1}
                       hookTaxBps={form.hookTaxBps}
@@ -522,10 +574,11 @@ export function MasterLaunchWizard() {
                     modules={form.modules}
                     onToggle={toggleModule}
                     onUpdate={updateModules}
+                    onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
+                    onHookTaxBpsChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                     floorEst={floorEst}
                     multiMarket={form.markets.length > 1}
                     hookTaxBps={form.hookTaxBps}
-                    onHookTaxBpsChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                   />
                 </div>
               </>
@@ -543,6 +596,7 @@ export function MasterLaunchWizard() {
                     modules={form.modules}
                     onToggle={toggleModule}
                     onUpdate={updateModules}
+                    onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                     floorEst={floorEst}
                     multiMarket={form.markets.length > 1}
                     hookTaxBps={form.hookTaxBps}

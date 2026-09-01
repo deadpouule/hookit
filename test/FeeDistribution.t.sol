@@ -58,12 +58,15 @@ contract FeeDistributionTest is Test {
             antiSnipeDurationSeconds: 3600,
             maxTxBps: 100,
             maxWalletBps: 200,
-            floorAllocationBps: 1_500,
+            floorAllocationBps: 2_500,
             initialSnipeTaxBps: 4_000,
-            autoBurnBps: 1_000,
-            lpDonateBps: 1_000,
-            holderAirdropBps: 2_000,
-            buybackVestingDurationSeconds: uint32(180 days)
+            autoBurnBps: 2_500,
+            lpDonateBps: 2_500,
+            holderAirdropBps: 2_500,
+            buybackVestingDurationSeconds: uint32(180 days),
+            dynamicFeeMinTotalBps: 150,
+            dynamicFeeRampUp: true,
+            dynamicFeeVolumeTargetScale: 10
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
@@ -76,11 +79,11 @@ contract FeeDistributionTest is Test {
         assertEq(out.antiSnipeDurationSeconds, 3600);
         assertEq(out.maxTxBps, 100);
         assertEq(out.maxWalletBps, 200);
-        assertEq(out.floorAllocationBps, 1_500);
+        assertEq(out.floorAllocationBps, 2_500);
         assertEq(out.initialSnipeTaxBps, 4_000);
-        assertEq(out.autoBurnBps, 1_000);
-        assertEq(out.lpDonateBps, 1_000);
-        assertEq(out.holderAirdropBps, 2_000);
+        assertEq(out.autoBurnBps, 2_500);
+        assertEq(out.lpDonateBps, 2_500);
+        assertEq(out.holderAirdropBps, 2_500);
         assertEq(out.buybackVestingDurationSeconds, 180 days);
     }
 
@@ -92,6 +95,17 @@ contract FeeDistributionTest is Test {
         BitmaskConfig.Modules memory m;
         m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS + 1;
         vm.expectRevert(BitmaskConfig.HookTaxTooHigh.selector);
+        this.packModules(m);
+    }
+
+    function testFeeRouteIncomplete() public {
+        BitmaskConfig.Modules memory m;
+        m.hookTaxBps = 200;
+        m.backedFloor = true;
+        m.autoBurn = true;
+        m.floorAllocationBps = 4_000;
+        m.autoBurnBps = 4_000;
+        vm.expectRevert(BitmaskConfig.FeeRouteIncomplete.selector);
         this.packModules(m);
     }
 
