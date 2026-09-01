@@ -8,10 +8,13 @@ import { useLaunches } from "@/hooks/useLaunches";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import {
   MASTER_HOOK_FILTERS,
-  MASTER_HOOKS,
+  EXPLORE_HOOKS,
   countHookUsage,
+  type BrowseHookId,
   type MasterHookCategory,
+  type MasterHookId,
 } from "@/lib/master-hooks";
+import { resolveTokenModules } from "@/lib/launch-module-summary";
 import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,9 +35,17 @@ function ExplorePageContent() {
 
   const usage = useMemo(() => countHookUsage(pools), [pools]);
 
+  const fixedFeeUses = useMemo(() => {
+    return pools.filter((pool) => {
+      if (pool.hookType === "Classic" || pool.hooks.customHook) return false;
+      const resolved = resolveTokenModules(pool);
+      return Boolean(resolved && resolved.hookTaxBps > 0 && !resolved.modules.dynamicFees);
+    }).length;
+  }, [pools]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MASTER_HOOKS.filter((hook) => {
+    return EXPLORE_HOOKS.filter((hook) => {
       const matchesCategory = category === "all" || hook.category === category;
       const matchesQuery =
         !q ||
@@ -43,9 +54,12 @@ function ExplorePageContent() {
       return matchesCategory && matchesQuery;
     }).map((hook) => ({
       ...hook,
-      uses: usage[hook.id] ?? 0,
+      uses:
+        hook.id === "fixed-fee"
+          ? fixedFeeUses
+          : usage[hook.id as MasterHookId] ?? 0,
     }));
-  }, [category, query, usage]);
+  }, [category, query, usage, fixedFeeUses]);
 
   return (
     <div className="market-shell space-y-6 bg-background pt-8 pb-10">

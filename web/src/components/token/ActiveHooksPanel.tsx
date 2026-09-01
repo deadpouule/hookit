@@ -102,7 +102,13 @@ function HookModuleBadge({
   );
 }
 
-export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
+export function ActiveHooksPanel({
+  pool,
+  compact = false,
+}: {
+  pool: TokenPool;
+  compact?: boolean;
+}) {
   const factory = getLaunchFactoryAddress();
   const isMaster = pool.rail === "master" && pool.hookType === "Master" && !pool.hooks.customHook;
   const resolved = useMemo(() => (isMaster ? resolveModules(pool) : null), [isMaster, pool]);
@@ -296,7 +302,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
   return (
-    <section className="token-hooks-panel desk-card">
+    <section className={cn("token-hooks-panel desk-card", compact && "token-hooks-panel--compact")}>
       <header className="token-hooks-head">
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />

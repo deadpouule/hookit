@@ -5,7 +5,7 @@ import {
   MAX_TOTAL_FEE_BPS,
   PROTOCOL_SHARE_BPS,
 } from "@/lib/constants";
-import type { MasterHook, MasterHookId } from "@/lib/master-hooks";
+import type { BrowseHook, MasterHook, MasterHookId } from "@/lib/master-hooks";
 
 export type HookPresetDetails = {
   title: string;
@@ -17,7 +17,15 @@ export type HookPresetDetails = {
 const LAUNCH = DEFAULT_LAUNCH_STATE.modules;
 
 /** On-chain + launch UI defaults for tooltip copy on the hooks browse page. */
-export function getHookPresetDetails(hook: MasterHook): HookPresetDetails {
+export function getHookPresetDetails(hook: MasterHook | BrowseHook): HookPresetDetails {
+  if (hook.id === "fixed-fee") {
+    return {
+      title: "Exact saved settings",
+      lines: FIXED_FEE_PRESET_LINES,
+      savedAt: hook.savedAt,
+      summary: hook.summary,
+    };
+  }
   return {
     title: "Exact saved settings",
     lines: PRESET_LINES[hook.id],
@@ -25,6 +33,14 @@ export function getHookPresetDetails(hook: MasterHook): HookPresetDetails {
     summary: hook.summary,
   };
 }
+
+const FIXED_FEE_PRESET_LINES = [
+  "DEFAULT 0.5% HOOK TAX · LAUNCH PRESET",
+  "QUOTE-ONLY FEE DEDUCTION",
+  "1% BASE FEE + HOOK TAX ON SWAPS",
+  `MAX HOOK TAX ${MAX_HOOK_TAX_BPS / 100}%`,
+  "NOT COMBINABLE WITH DYNAMIC FEES",
+];
 
 const PRESET_LINES: Record<MasterHookId, string[]> = {
   "anti-snipe": [

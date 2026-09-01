@@ -63,6 +63,7 @@ export function MasterLaunchWizard() {
 
   const [step, setStep] = useState(() => {
     const hook = searchParams.get("hook");
+    if (hook === "fixed-fee") return 3;
     if (hook && MASTER_HOOKS.some((item) => item.id === hook)) {
       return masterHookWizardStep(hook as (typeof MASTER_HOOKS)[number]["id"]);
     }

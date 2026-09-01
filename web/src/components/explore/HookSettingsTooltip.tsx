@@ -6,12 +6,12 @@ import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getHookPresetDetails } from "@/lib/hook-presets";
 import { hookPickDetail, moduleDetailLine } from "@/lib/launch-module-summary";
-import type { MasterHook } from "@/lib/master-hooks";
+import type { BrowseHook, MasterHook } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type HookSettingsTooltipProps = {
-  hook: MasterHook;
+  hook: BrowseHook | MasterHook;
   modules?: LaunchModules;
   hookTaxBps?: number;
   className?: string;
@@ -24,7 +24,10 @@ export function HookSettingsTooltip({
   className,
 }: HookSettingsTooltipProps) {
   const preset = getHookPresetDetails(hook);
-  const launchConfig = modules ? moduleDetailLine(hook.id, modules, hookTaxBps) : null;
+  const launchConfig =
+    modules && hook.id !== "fixed-fee"
+      ? moduleDetailLine(hook.id, modules, hookTaxBps)
+      : null;
 
   return (
     <Tooltip>
@@ -58,7 +61,13 @@ export function HookSettingsTooltip({
   );
 }
 
-function BrowseHookPanel({ hook, presetSummary }: { hook: MasterHook; presetSummary: string }) {
+function BrowseHookPanel({
+  hook,
+  presetSummary,
+}: {
+  hook: BrowseHook | MasterHook;
+  presetSummary: string;
+}) {
   return (
     <div className="hook-settings-panel">
       <p className="hook-settings-panel-title">{hook.title}</p>

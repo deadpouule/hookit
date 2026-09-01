@@ -29,7 +29,8 @@ export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
   4: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "lp-donate"],
 };
 
-export function masterHookWizardStep(hookId: MasterHookId): 2 | 3 | 4 {
+export function masterHookWizardStep(hookId: MasterHookId | "fixed-fee"): 2 | 3 | 4 {
+  if (hookId === "fixed-fee") return 3;
   if (LAUNCH_WIZARD_HOOK_IDS[2].includes(hookId)) return 2;
   if (LAUNCH_WIZARD_HOOK_IDS[3].includes(hookId)) return 3;
   return 4;

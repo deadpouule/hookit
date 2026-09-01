@@ -28,6 +28,8 @@ export type MasterHookId =
   | "holder-airdrop"
   | "creator-share-to-hook";
 
+export type BrowseHookId = MasterHookId | "fixed-fee";
+
 export type HookTheme =
   | "fire"
   | "gold"
@@ -274,6 +276,43 @@ export const MASTER_HOOKS: MasterHook[] = [
   },
 ];
 
+export interface BrowseHook extends Omit<MasterHook, "id"> {
+  id: BrowseHookId;
+}
+
+export const FIXED_FEE_HOOK: BrowseHook = {
+  id: "fixed-fee",
+  number: 12,
+  title: "Fixed fees",
+  description: "flat extra fee on every swap — deducted in quote only, zero sell pressure",
+  category: "trading-fees",
+  icon: Gauge,
+  theme: "rose",
+  keyword: "FIXED",
+  creator: CREATOR,
+  uses: 0,
+  royalty: "0% of hook fees",
+  savedAt: "Block —",
+  summary: "1% base + fixed hook tax on swaps",
+  settings: [
+    "+ FLAT HOOK TAX ON SWAPS",
+    "+ QUOTE-ONLY DEDUCTION",
+    "+ LEFTOVER → PROTOCOL",
+  ],
+};
+
+const dynamicFeesIndex = MASTER_HOOKS.findIndex((hook) => hook.id === "dynamic-fees");
+
+export const EXPLORE_HOOKS: BrowseHook[] = [
+  ...MASTER_HOOKS.slice(0, dynamicFeesIndex + 1).map((hook) => ({ ...hook })),
+  FIXED_FEE_HOOK,
+  ...MASTER_HOOKS.slice(dynamicFeesIndex + 1).map((hook) => ({ ...hook })),
+];
+
+export function isBrowseHookId(value: string | null): value is BrowseHookId {
+  return value === "fixed-fee" || isMasterHookId(value);
+}
+
 export function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -409,7 +448,7 @@ export function isMasterHookId(value: string | null): value is MasterHookId {
   return !!value && value in HOOK_MODULE_FIELD;
 }
 
-export function launchWithHookHref(id: MasterHookId) {
+export function launchWithHookHref(id: BrowseHookId) {
   return `/launch/custom?hook=${id}`;
 }
 
@@ -422,6 +461,14 @@ export function withMasterHookEnabled(
   state: import("@/lib/types").LaunchFormState,
   hookId: string | null,
 ): import("@/lib/types").LaunchFormState {
+  if (hookId === "fixed-fee") {
+    return {
+      ...state,
+      hookMode: "master",
+      hookTaxBps: state.hookTaxBps > 0 ? state.hookTaxBps : 50,
+      modules: { ...state.modules, dynamicFees: false },
+    };
+  }
   if (!isMasterHookId(hookId)) return state;
   const field = HOOK_MODULE_FIELD[hookId];
   return {
