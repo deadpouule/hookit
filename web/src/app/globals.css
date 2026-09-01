@@ -2021,6 +2021,8 @@
   }
 
   .live-on-ink-ticker__logo--uniswap {
+    height: 34px;
+    width: 34px;
     border-radius: 0;
     object-fit: contain;
   }
@@ -2033,6 +2035,14 @@
     line-height: 1;
     text-transform: none;
     white-space: nowrap;
+  }
+
+  .live-on-ink-ticker__accent--ink {
+    color: #9514d1;
+  }
+
+  .live-on-ink-ticker__accent--uniswap {
+    color: #ff007a;
   }
 
   .live-on-ink-ticker__live {
@@ -2056,8 +2066,8 @@
   }
 
   .built-on-uniswap-badge--inline {
-    margin-inline: 0.2rem 0.35rem;
-    padding: 0.18rem 0.45rem;
+    margin-inline: 0.15rem 0.25rem;
+    padding: 0.22rem 0.55rem;
     vertical-align: middle;
   }
 
@@ -2070,8 +2080,8 @@
   }
 
   .built-on-uniswap-badge--inline .built-on-uniswap-badge__logo {
-    height: 18px;
-    width: 18px;
+    height: 28px;
+    width: 28px;
   }
 
   .built-on-uniswap-badge__text {
@@ -2089,7 +2099,41 @@
   }
 
   .hero-uniswap-badge {
-    transform: translateY(-0.06rem);
+    transform: translateY(-0.08rem);
+  }
+
+  .hero-typewriter-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline: 0.12rem;
+    vertical-align: middle;
+    overflow: hidden;
+    border-radius: 999px;
+  }
+
+  .hero-typewriter-mark--eth {
+    height: 1.35rem;
+    width: 1.35rem;
+    background: #627eea;
+  }
+
+  .hero-typewriter-mark--usdg {
+    height: 1.35rem;
+    width: 1.35rem;
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  .hero-typewriter-mark__glyph {
+    height: 0.85rem;
+    width: 0.85rem;
+  }
+
+  .hero-typewriter-mark__photo {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
   }
 
   .market-shell {
