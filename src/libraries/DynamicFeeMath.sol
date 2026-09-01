@@ -27,8 +27,7 @@ library DynamicFeeMath {
         uint16 minTotal = BitmaskConfig.dynamicFeeMinTotalBps(packed);
         if (minTotal < ProtocolConstants.BASE_FEE_BPS) minTotal = ProtocolConstants.BASE_FEE_BPS;
 
-        uint16 minHook =
-            minTotal > ProtocolConstants.BASE_FEE_BPS ? minTotal - ProtocolConstants.BASE_FEE_BPS : 0;
+        uint16 minHook = minTotal > ProtocolConstants.BASE_FEE_BPS ? minTotal - ProtocolConstants.BASE_FEE_BPS : 0;
         if (minHook >= maxHook) return maxHook;
 
         uint256 target = volumeTarget(BitmaskConfig.dynamicFeeVolumeTargetScale(packed));
@@ -49,11 +48,7 @@ library DynamicFeeMath {
     }
 
     /// @dev Upper 64 bits = window start timestamp; lower 192 bits = quote volume in window.
-    function accrueVolume(uint256 windowPacked, uint256 quoteNotional, uint256 nowTs)
-        internal
-        pure
-        returns (uint256)
-    {
+    function accrueVolume(uint256 windowPacked, uint256 quoteNotional, uint256 nowTs) internal pure returns (uint256) {
         uint64 start = windowStart(windowPacked);
         uint256 volume = windowVolume(windowPacked);
 

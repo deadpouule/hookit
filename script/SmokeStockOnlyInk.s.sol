@@ -146,15 +146,7 @@ contract SmokeStockOnlyInkScript is Script {
             IERC20(usdg).approve(address(router), usdgIn);
             bool hookZfo = Currency.unwrap(hookKey.currency1) == token;
             uint256 out = router.swapExactInComposite(
-                bridgeKey,
-                bridgeZfo,
-                usdgIn,
-                hookKey,
-                hookZfo,
-                Currency.wrap(W_NVDA),
-                1,
-                0,
-                0
+                bridgeKey, bridgeZfo, usdgIn, hookKey, hookZfo, Currency.wrap(W_NVDA), 1, 0, 0
             );
             console.log("tokensOut", out);
         }
@@ -182,11 +174,7 @@ contract SmokeStockOnlyInkScript is Script {
         IERC20(token).approve(address(router), tokenBal);
         bool sellZfo = Currency.unwrap(hookKey.currency0) == token;
         router.swapExactIn(
-            hookKey,
-            sellZfo,
-            tokenBal,
-            1,
-            sellZfo ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+            hookKey, sellZfo, tokenBal, 1, sellZfo ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
         );
         vm.stopBroadcast();
         console.log("STOCK_SELL_OK");

@@ -100,11 +100,7 @@ library ModuleMatrix {
     }
 
     /// @dev Enabled fee-route modules must total 100% of the hook tax pot.
-    function _rebalanceFeeRoutes(BitmaskConfig.Modules memory m)
-        private
-        pure
-        returns (BitmaskConfig.Modules memory)
-    {
+    function _rebalanceFeeRoutes(BitmaskConfig.Modules memory m) private pure returns (BitmaskConfig.Modules memory) {
         uint256 count;
         if (m.backedFloor) count++;
         if (m.autoBurn) count++;
