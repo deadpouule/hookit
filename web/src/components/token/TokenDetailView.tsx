@@ -17,6 +17,7 @@ import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
+import { shouldUseCompactHooksLayout } from "@/lib/launch-module-summary";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
@@ -69,6 +70,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
+  const compactHooksLayout = useMemo(() => shouldUseCompactHooksLayout(pool), [pool]);
+  const useWideDesk = isClassicDesk || compactHooksLayout;
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -86,10 +89,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         Back to explore
       </Link>
 
-      <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
-        {!isClassicDesk && (
+      <div className={cn("token-desk mt-4", useWideDesk ? "token-desk--wide" : "token-desk--hooks")}>
+        {!isClassicDesk && !compactHooksLayout && (
           <aside className="token-desk-rail token-desk-rail--left space-y-3">
-            <ActiveHooksPanel pool={pool} />
+            <ActiveHooksPanel pool={pool} variant="rail" />
           </aside>
         )}
 
@@ -183,6 +186,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               <Metric label="Holders" value={live.holders.toString()} />
             </div>
           </div>
+
+          {!isClassicDesk && compactHooksLayout && (
+            <ActiveHooksPanel pool={pool} variant="strip" />
+          )}
 
           <TokenCandleChart
             candles={live.candles}
