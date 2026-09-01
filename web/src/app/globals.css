@@ -356,6 +356,33 @@
     top: 4.5rem;
   }
 
+  .launch-wizard-review-actions {
+    padding-inline: 0.15rem;
+  }
+
+  .launch-wizard-review-actions .launch-wizard-nav {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .launch-wizard-review-launch {
+    margin-left: auto;
+  }
+
+  .launch-summary-stats--boxed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .launch-summary-stat {
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.55rem 0.7rem;
+  }
+
   @media (max-width: 1023px) {
     .launch-wizard-review-devbuy {
       position: static;
@@ -2117,20 +2144,20 @@
   }
 
   .hero-typewriter-mark--eth {
-    height: 1.85rem;
-    width: 1.85rem;
+    height: 2.25rem;
+    width: 2.25rem;
     background: #627eea;
   }
 
   .hero-typewriter-mark--usdg {
-    height: 2.35rem;
-    width: 2.35rem;
+    height: 2.85rem;
+    width: 2.85rem;
     background: rgb(255 255 255 / 0.08);
   }
 
   .hero-typewriter-mark__glyph {
-    height: 1.15rem;
-    width: 1.15rem;
+    height: 1.4rem;
+    width: 1.4rem;
   }
 
   .hero-typewriter-mark__photo {

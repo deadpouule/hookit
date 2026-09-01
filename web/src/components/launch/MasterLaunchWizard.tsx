@@ -356,7 +356,29 @@ export function MasterLaunchWizard() {
           <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-3" />
 
           <div className="launch-wizard-review-grid grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,320px)]">
-            <LaunchSummary {...summaryProps} showLaunchCta={false} sticky={false} />
+            <div className="launch-wizard-review-main min-w-0">
+              <LaunchSummary
+                {...summaryProps}
+                showLaunchCta={false}
+                sticky={false}
+                boxedStats
+              />
+
+              <div className="launch-wizard-review-actions mt-3 flex flex-wrap items-center justify-between gap-3">
+                <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />
+                <LaunchSummaryCta
+                  form={form}
+                  variant="custom"
+                  launchFeeEth={launchFeeEth}
+                  walletReady={walletReady}
+                  factoryConfigured={factoryConfigured}
+                  isPending={isPending}
+                  phase={phase}
+                  onLaunch={handleLaunch}
+                  className="launch-wizard-review-launch inline-flex px-5 py-2.5"
+                />
+              </div>
+            </div>
 
             <FormPanel className="launch-wizard-panel launch-wizard-review-devbuy">
               <DevBuySection
@@ -365,21 +387,6 @@ export function MasterLaunchWizard() {
                 onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
               />
             </FormPanel>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />
-            <LaunchSummaryCta
-              form={form}
-              variant="custom"
-              launchFeeEth={launchFeeEth}
-              walletReady={walletReady}
-              factoryConfigured={factoryConfigured}
-              isPending={isPending}
-              phase={phase}
-              onLaunch={handleLaunch}
-              className="inline-flex px-5 py-2.5"
-            />
           </div>
         </div>
       ) : !result ? (
