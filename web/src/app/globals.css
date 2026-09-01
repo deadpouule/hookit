@@ -1136,6 +1136,8 @@
   }
 
   .token-hooks-panel {
+    position: relative;
+    z-index: 2;
     padding: 1rem;
   }
 
@@ -2094,8 +2096,8 @@
 
   .built-on-uniswap-badge--hero {
     margin-inline: 0.15rem 0.25rem;
-    gap: 0.7rem;
-    padding: 0.54rem 1.08rem;
+    gap: 0.75rem;
+    padding: 0.58rem 1.15rem;
     vertical-align: middle;
     box-shadow: 0 0 0 1px rgb(255 0 122 / 0.15);
   }
@@ -2109,12 +2111,12 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__logo {
-    height: 52px;
-    width: 52px;
+    height: 56px;
+    width: 56px;
   }
 
   .hero-uniswap-badge.built-on-uniswap-badge--hero {
-    padding: 0.58rem 1.12rem;
+    padding: 0.62rem 1.2rem;
   }
 
   .built-on-uniswap-badge__text {
@@ -2126,10 +2128,18 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__text {
-    font-size: 1.38rem;
+    font-size: 1.45rem;
     font-weight: 700;
     text-transform: none;
     color: rgb(255 255 255 / 0.95);
+  }
+
+  .hero-uniswap-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    white-space: nowrap;
+    vertical-align: middle;
   }
 
   .hero-uniswap-badge {
@@ -2414,9 +2424,47 @@
       grid-area: right;
     }
 
-    .token-candle-chart--bleed {
-      margin-left: calc(-8px - 13.5%);
-      width: calc(100% + 8px + 13.5%);
+    .token-desk--balanced {
+      grid-template-rows: auto auto;
+      grid-template-areas:
+        "left chart right"
+        "left table right";
+      align-items: stretch;
+    }
+
+    .token-desk--balanced .token-desk-rail--left {
+      grid-area: left;
+      align-self: stretch;
+    }
+
+    .token-desk--balanced .token-desk-chart {
+      grid-area: chart;
+      min-width: 0;
+    }
+
+    .token-desk--balanced .token-desk-table {
+      grid-area: table;
+      min-width: 0;
+    }
+
+    .token-desk--balanced .token-desk-rail--right {
+      grid-area: right;
+      grid-row: 1 / -1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .token-desk--balanced .token-desk-swap-stack {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .token-desk--balanced .token-desk-swap-stack > .desk-card:first-child {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
   }
 

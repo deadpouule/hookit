@@ -12,15 +12,17 @@ export function TokenTxTable({
   swaps,
   holders,
   ticker,
+  className,
 }: {
   tab: "swaps" | "holders";
   onTab: (next: "swaps" | "holders") => void;
   swaps: LiveSwap[];
   holders: LiveHolder[];
   ticker: string;
+  className?: string;
 }) {
   return (
-    <div className="desk-card overflow-hidden">
+    <div className={cn("desk-card overflow-hidden", className)}>
       <div className="flex items-center gap-5 border-b border-white/10 px-4">
         {(["swaps", "holders"] as const).map((id) => (
           <button

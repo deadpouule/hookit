@@ -81,7 +81,8 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
   let remaining = typedCount;
   const nodes: ReactNode[] = [];
 
-  for (const segment of line.segments) {
+  for (let index = 0; index < line.segments.length; index += 1) {
+    const segment = line.segments[index];
     if (remaining <= 0) break;
 
     if (segment.kind === "text") {
@@ -90,6 +91,23 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
         nodes.push(segment.value.slice(0, take));
       }
       remaining -= take;
+      continue;
+    }
+
+    const next = line.segments[index + 1];
+    const tailText = next?.kind === "text" ? next.value : "";
+    const hasTail = segment.id === "uniswap" && tailText.length > 0;
+
+    if (hasTail) {
+      const tailTake = Math.min(Math.max(remaining - 1, 0), tailText.length);
+      nodes.push(
+        <span key="uniswap-inline" className="hero-uniswap-inline">
+          <HeroInlineMark id={segment.id} />
+          {tailTake > 0 ? <span>{tailText.slice(0, tailTake)}</span> : null}
+        </span>,
+      );
+      remaining -= 1 + tailTake;
+      index += 1;
       continue;
     }
 
