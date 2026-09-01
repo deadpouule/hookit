@@ -2420,7 +2420,7 @@
 
     .token-desk--balanced {
       gap: 8px;
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto auto;
       grid-template-areas:
         "left hero right"
         "left chart right"
@@ -2443,7 +2443,6 @@
     .token-desk--balanced .token-desk-chart {
       grid-area: chart;
       min-width: 0;
-      align-self: stretch;
     }
 
     .token-desk--balanced .token-desk-table {
@@ -2472,15 +2471,11 @@
       flex-direction: column;
     }
 
-    .token-candle-chart--bleed {
-      margin-left: calc(-8px - 13.5%);
-      width: calc(100% + 8px + 13.5%);
-    }
-
-    .token-desk--balanced .token-candle-chart--fill {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
+    /* Bleed chart + table left into hooks column (3fr / 11fr ≈ 27.3%) */
+    .token-candle-chart--bleed,
+    .token-desk-table--bleed {
+      margin-left: calc(-8px - 27.3%);
+      width: calc(100% + 8px + 27.3%);
     }
   }
 

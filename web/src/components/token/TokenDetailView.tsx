@@ -189,13 +189,15 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       marketCap={live.marketCap}
       change24h={live.change24h}
       expanded={balancedDesk}
-      fillHeight={balancedDesk}
     />
   );
 
   const txTable = (
     <TokenTxTable
-      className="token-desk-table"
+      className={cn(
+        "token-desk-table",
+        balancedDesk && "token-desk-table--bleed",
+      )}
       tab={tab}
       onTab={setTab}
       swaps={live.swaps}
