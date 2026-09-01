@@ -10,7 +10,7 @@ import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
   launchWithHookHref,
-  type MasterHook,
+  type BrowseHook,
 } from "@/lib/master-hooks";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ function capitalizeDescription(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[] }) {
+export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[] }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
 
@@ -59,7 +59,7 @@ export function HookCard({ hook, pools }: { hook: MasterHook; pools: TokenPool[]
 
           <div className="orb-footer-actions">
             <a
-              href={marketplaceHrefForHook(hook.id)}
+              href={hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id)}
               className="orb-use-badge"
               onClick={(event) => event.stopPropagation()}
             >

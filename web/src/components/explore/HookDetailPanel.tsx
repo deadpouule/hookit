@@ -1,13 +1,13 @@
 "use client";
 
 import { hookPickDetail } from "@/lib/launch-module-summary";
-import type { MasterHook } from "@/lib/master-hooks";
+import type { BrowseHook, MasterHook } from "@/lib/master-hooks";
 
 export function HookDetailPanel({
   hook,
   launchConfig,
 }: {
-  hook: MasterHook;
+  hook: MasterHook | BrowseHook;
   launchConfig?: string | null;
 }) {
   return (

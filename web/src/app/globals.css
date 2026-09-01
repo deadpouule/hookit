@@ -2094,8 +2094,8 @@
 
   .built-on-uniswap-badge--hero {
     margin-inline: 0.15rem 0.25rem;
-    gap: 0.65rem;
-    padding: 0.45rem 0.95rem;
+    gap: 0.7rem;
+    padding: 0.52rem 1.05rem;
     vertical-align: middle;
     box-shadow: 0 0 0 1px rgb(255 0 122 / 0.15);
   }
@@ -2109,12 +2109,12 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__logo {
-    height: 42px;
-    width: 42px;
+    height: 50px;
+    width: 50px;
   }
 
   .hero-uniswap-badge.built-on-uniswap-badge--hero {
-    padding: 0.48rem 1rem;
+    padding: 0.55rem 1.1rem;
   }
 
   .built-on-uniswap-badge__text {
@@ -2126,7 +2126,7 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__text {
-    font-size: 1.22rem;
+    font-size: 1.35rem;
     font-weight: 700;
     text-transform: none;
     color: rgb(255 255 255 / 0.95);
@@ -2404,6 +2404,41 @@
 
     .token-desk--hooks .token-desk-rail--left {
       grid-area: left;
+    }
+
+    .token-desk--hooks-compact {
+      grid-template-columns: minmax(0, 4.75fr) minmax(0, 9.25fr) minmax(260px, 4fr);
+      align-items: stretch;
+    }
+
+    .token-desk--hooks-compact .token-desk-rail--left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .token-hooks-panel--compact {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .token-hooks-panel--compact .token-hooks-list {
+      flex: 1;
+      justify-content: space-between;
+    }
+
+    .token-hooks-panel--compact .token-hooks-row {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .token-hooks-panel--compact .token-hooks-chip.orb-hook-desc-badge {
+      min-height: 4.75rem;
+      justify-content: center;
+    }
+
+    .token-hooks-panel--compact .token-hooks-chip--expanded {
+      min-height: 6.5rem;
     }
 
     .token-desk-main {

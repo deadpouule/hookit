@@ -16,7 +16,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { isModuleEnabled, resolveTokenModules } from "@/lib/launch-module-summary";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
+import { MASTER_HOOKS } from "@/lib/master-hooks";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
@@ -69,6 +71,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
+  const activeHookCount = useMemo(() => {
+    if (isClassicDesk) return 0;
+    const resolved = resolveTokenModules(pool);
+    if (!resolved) return 0;
+    return MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id)).length;
+  }, [isClassicDesk, pool]);
+  const compactHooksLayout = activeHookCount > 0 && activeHookCount <= 3;
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -86,10 +95,16 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         Back to explore
       </Link>
 
-      <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
+      <div
+        className={cn(
+          "token-desk mt-4",
+          isClassicDesk ? "token-desk--wide" : "token-desk--hooks",
+          compactHooksLayout && "token-desk--hooks-compact",
+        )}
+      >
         {!isClassicDesk && (
           <aside className="token-desk-rail token-desk-rail--left space-y-3">
-            <ActiveHooksPanel pool={pool} />
+            <ActiveHooksPanel pool={pool} compact={compactHooksLayout} />
           </aside>
         )}
 
