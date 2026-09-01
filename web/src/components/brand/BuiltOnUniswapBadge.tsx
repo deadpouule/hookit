@@ -28,8 +28,8 @@ export function BuiltOnUniswapBadge({
       <Image
         src={logoSrc}
         alt=""
-        width={isHero ? 32 : 20}
-        height={isHero ? 32 : 20}
+        width={isHero ? 42 : 20}
+        height={isHero ? 42 : 20}
         className="built-on-uniswap-badge__logo"
         draggable={false}
       />

@@ -2094,8 +2094,8 @@
 
   .built-on-uniswap-badge--hero {
     margin-inline: 0.15rem 0.25rem;
-    gap: 0.55rem;
-    padding: 0.35rem 0.75rem;
+    gap: 0.65rem;
+    padding: 0.45rem 0.95rem;
     vertical-align: middle;
     box-shadow: 0 0 0 1px rgb(255 0 122 / 0.15);
   }
@@ -2109,12 +2109,12 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__logo {
-    height: 32px;
-    width: 32px;
+    height: 42px;
+    width: 42px;
   }
 
   .hero-uniswap-badge.built-on-uniswap-badge--hero {
-    padding: 0.38rem 0.8rem;
+    padding: 0.48rem 1rem;
   }
 
   .built-on-uniswap-badge__text {
@@ -2126,7 +2126,7 @@
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__text {
-    font-size: 1.05rem;
+    font-size: 1.22rem;
     font-weight: 700;
     text-transform: none;
     color: rgb(255 255 255 / 0.95);
@@ -2167,6 +2167,18 @@
     display: block;
     height: 100%;
     width: 100%;
+    object-fit: cover;
+  }
+
+  .hero-typewriter-mark--usdg .hero-typewriter-mark__photo {
+    height: 118%;
+    width: 118%;
+    transform: scale(1.22);
+    object-fit: cover;
+  }
+
+  .live-on-ink-ticker__logo--ink {
+    border-radius: 999px;
     object-fit: cover;
   }
 

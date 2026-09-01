@@ -10,7 +10,7 @@ function LiveOnInkUnit() {
         alt=""
         width={26}
         height={26}
-        className="live-on-ink-ticker__logo"
+        className="live-on-ink-ticker__logo live-on-ink-ticker__logo--ink"
         draggable={false}
       />
       <span className="live-on-ink-ticker__label">

@@ -26,7 +26,7 @@ const LINES: TypewriterLine[] = [
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },
-      { kind: "text", value: " curves hook." },
+      { kind: "text", value: " curves hooks." },
     ],
   },
 ];
