@@ -277,6 +277,7 @@ export function HookModulePicker({
   heading = "Pick your hooks",
   includeFixedFee = false,
   configLayout = "stack",
+  configHeading,
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
@@ -290,6 +291,7 @@ export function HookModulePicker({
   heading?: string;
   includeFixedFee?: boolean;
   configLayout?: "stack" | "aside";
+  configHeading?: string;
 }) {
   const panelRefs = useRef<Partial<Record<PickerFocusId, HTMLDivElement | null>>>({});
   const visibleHooks = hookIds
@@ -424,9 +426,13 @@ export function HookModulePicker({
         )}
       >
         {configLayout === "stack" ? (
-          <p className="text-xs text-zinc-500">
-            All active modules — settings stay visible when you switch focus.
-          </p>
+          configHeading ? (
+            <p className="pick-heading">{configHeading}</p>
+          ) : (
+            <p className="text-xs text-zinc-500">
+              All active modules — settings stay visible when you switch focus.
+            </p>
+          )
         ) : (
           <p className="text-xs text-zinc-500">Active module settings</p>
         )}
