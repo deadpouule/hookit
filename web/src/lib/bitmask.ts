@@ -1,4 +1,11 @@
 import type { LaunchModules } from "@/lib/types";
+import { resolveEffectiveHookTaxBps } from "@/lib/fee-range";
+import {
+  MAX_SUPPLY_CAP_BPS,
+  MIN_SUPPLY_CAP_BPS,
+  MAX_SUPPLY_CAP_SLIDER_PCT,
+  MIN_SUPPLY_CAP_SLIDER_PCT,
+} from "@/lib/protocol-limits";
 
 const FLAG_ANTI_SNIPE = BigInt(1) << BigInt(0);
 const FLAG_BACKED_FLOOR = BigInt(1) << BigInt(1);
@@ -22,6 +29,9 @@ const SHIFT_AUTO_BURN_BPS = BigInt(113);
 const SHIFT_LP_DONATE_BPS = BigInt(129);
 const SHIFT_HOLDER_AIRDROP_BPS = BigInt(146);
 const SHIFT_BUYBACK_VESTING_DURATION = BigInt(163);
+const SHIFT_DYNAMIC_FEE_MIN_TOTAL = BigInt(195);
+const FLAG_DYNAMIC_FEE_RAMP_UP = BigInt(1) << BigInt(211);
+const SHIFT_DYNAMIC_FEE_VOLUME_TARGET = BigInt(212);
 
 const MAX_HOOK_TAX_BPS = BigInt(900);
 const MAX_TOTAL_FEE_BPS = BigInt(1000);
@@ -32,10 +42,20 @@ const SECONDS_PER_DAY = 86_400;
 
 /** Packs UI module config into the on-chain uint256 bitmask (matches BitmaskConfig.sol). */
 export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): bigint {
-  if (hookTaxBps > Number(MAX_HOOK_TAX_BPS)) {
+  const effectiveHookTax = resolveEffectiveHookTaxBps(modules, hookTaxBps);
+
+  if (modules.dynamicFees) {
+    const min = modules.dynamicFeeMinBps ?? 100;
+    const max = modules.dynamicFeeMaxBps ?? 300;
+    if (min < 100 || max > Number(MAX_TOTAL_FEE_BPS) || max < min + 10) {
+      throw new Error("Dynamic fee range must be 1.00%–10.00% with max at least 0.10% above min");
+    }
+  }
+
+  if (effectiveHookTax > Number(MAX_HOOK_TAX_BPS)) {
     throw new Error("Hook tax exceeds protocol maximum (9%, so base+tax ≤ 10%)");
   }
-  if (100 + hookTaxBps > Number(MAX_TOTAL_FEE_BPS)) {
+  if (100 + effectiveHookTax > Number(MAX_TOTAL_FEE_BPS)) {
     throw new Error("Base fee + hook tax cannot exceed 10%");
   }
 
@@ -45,14 +65,23 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   }
 
   if (modules.antiSnipe) {
-    const openBps = 100 + hookTaxBps + modules.antiSnipeInitialTax * 100;
+    const openBps = 100 + effectiveHookTax + modules.antiSnipeInitialTax * 100;
     if (openBps > 10_000) {
       throw new Error("Anti-snipe + base fee + hook tax cannot exceed 100% at open");
     }
   }
 
-  if (modules.autoBurnPct > 50 || modules.lpDonatePct > 50 || modules.holderAirdropPct > 50) {
-    throw new Error("Auto Burn, LP Donate, and Holder Airdrop are capped at 50% of hook tax each");
+  if (modules.maxTx && (modules.maxTxBps < MIN_SUPPLY_CAP_BPS || modules.maxTxBps > MAX_SUPPLY_CAP_BPS)) {
+    throw new Error(`Max tx must be between ${MIN_SUPPLY_CAP_SLIDER_PCT}% and ${MAX_SUPPLY_CAP_SLIDER_PCT}% of supply`);
+  }
+  if (modules.maxWallet && (modules.maxWalletBps < MIN_SUPPLY_CAP_BPS || modules.maxWalletBps > MAX_SUPPLY_CAP_BPS)) {
+    throw new Error(
+      `Max wallet must be between ${MIN_SUPPLY_CAP_SLIDER_PCT}% and ${MAX_SUPPLY_CAP_SLIDER_PCT}% of supply`,
+    );
+  }
+
+  if (modules.autoBurnPct > 100 || modules.lpDonatePct > 100 || modules.holderAirdropPct > 100) {
+    throw new Error("Hook pot shares are capped at 100% each");
   }
 
   const floorAllocationBps = BigInt(modules.floorAllocation * 100);
@@ -68,7 +97,15 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (routed > 100) {
     throw new Error("Floor + Auto Burn + LP Donate + Holder Airdrop cannot exceed 100% of hook tax");
   }
-  if (routed > 0 && hookTaxBps === 0 && !modules.creatorShareToHook) {
+  const feeRouteCount =
+    (modules.backedFloor ? 1 : 0) +
+    (modules.autoBurn ? 1 : 0) +
+    (modules.lpDonate ? 1 : 0) +
+    (modules.holderAirdrop ? 1 : 0);
+  if (feeRouteCount > 0 && routed !== 100) {
+    throw new Error("Fee routes must total exactly 100% of the hook tax — nothing left unallocated");
+  }
+  if (routed > 0 && effectiveHookTax === 0 && !modules.creatorShareToHook) {
     throw new Error(
       "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / donate / airdrop",
     );
@@ -94,7 +131,7 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.holderAirdrop) packed |= FLAG_HOLDER_AIRDROP;
   if (modules.creatorShareToHook) packed |= FLAG_CREATOR_SHARE_TO_HOOK;
 
-  packed |= BigInt(hookTaxBps) << SHIFT_HOOK_TAX;
+  packed |= BigInt(effectiveHookTax) << SHIFT_HOOK_TAX;
   packed |= BigInt(modules.antiSnipeDuration) << SHIFT_SNIPE_DURATION;
   packed |= BigInt(modules.maxTxBps) << SHIFT_MAX_TX;
   packed |= BigInt(modules.maxWalletBps) << SHIFT_MAX_WALLET;
@@ -106,6 +143,13 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.buybackVesting) {
     const days = modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
     packed |= BigInt(days * SECONDS_PER_DAY) << SHIFT_BUYBACK_VESTING_DURATION;
+  }
+
+  if (modules.dynamicFees) {
+    const minTotal = modules.dynamicFeeMinBps ?? 100;
+    packed |= BigInt(minTotal) << SHIFT_DYNAMIC_FEE_MIN_TOTAL;
+    if (modules.dynamicFeeRampUp !== false) packed |= FLAG_DYNAMIC_FEE_RAMP_UP;
+    packed |= BigInt(modules.dynamicFeeVolumeTargetScale ?? 10) << SHIFT_DYNAMIC_FEE_VOLUME_TARGET;
   }
 
   return packed;
@@ -145,6 +189,9 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const lpDonateBps = Number((packed >> SHIFT_LP_DONATE_BPS) & UINT16_MASK);
   const holderAirdropBps = Number((packed >> SHIFT_HOLDER_AIRDROP_BPS) & UINT16_MASK);
   const buybackVestingDurationSeconds = Number((packed >> SHIFT_BUYBACK_VESTING_DURATION) & UINT32_MASK);
+  const dynamicFeeMinTotalBps = Number((packed >> SHIFT_DYNAMIC_FEE_MIN_TOTAL) & UINT16_MASK);
+  const dynamicFeeRampUp = (packed & FLAG_DYNAMIC_FEE_RAMP_UP) !== BigInt(0);
+  const dynamicFeeVolumeTargetScale = Number((packed >> SHIFT_DYNAMIC_FEE_VOLUME_TARGET) & UINT16_MASK);
   const buybackVestingDurationDays = Math.max(
     MIN_BUYBACK_VESTING_DAYS,
     Math.round(buybackVestingDurationSeconds / SECONDS_PER_DAY) || MAX_BUYBACK_VESTING_DAYS,
@@ -164,6 +211,12 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       maxTx,
       maxTxBps,
       dynamicFees,
+      dynamicFeeMinBps:
+        dynamicFeeMinTotalBps === 0 && dynamicFees ? 100 : dynamicFeeMinTotalBps || undefined,
+      dynamicFeeMaxBps: dynamicFees ? 100 + hookTaxBps : undefined,
+      dynamicFeeRampUp: dynamicFees ? dynamicFeeRampUp : undefined,
+      dynamicFeeVolumeTargetScale:
+        dynamicFees && dynamicFeeVolumeTargetScale > 0 ? dynamicFeeVolumeTargetScale : dynamicFees ? 10 : undefined,
       buybackVesting,
       buybackVestingDurationDays,
       autoBurn,

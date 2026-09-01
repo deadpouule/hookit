@@ -29,6 +29,7 @@ interface IERC20Supply {
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
+import {DynamicFeeMath} from "./libraries/DynamicFeeMath.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
@@ -62,6 +63,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     HolderAirdropVault public immutable airdropVault;
 
     mapping(PoolId => uint256) public override configs;
+    mapping(PoolId => uint256) public dynamicFeeWindows;
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
@@ -145,6 +147,19 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
     function launchState(PoolId poolId) external view returns (LaunchState memory) {
         return _launchState[poolId];
+    }
+
+    /// @notice Rolling-window volume and live hook tax for dynamic-fee pools.
+    function dynamicFeeSnapshot(PoolId poolId)
+        external
+        view
+        returns (uint64 windowStart, uint256 windowVolume, uint16 currentHookTaxBps)
+    {
+        uint256 packed = configs[poolId];
+        uint256 windowPacked = dynamicFeeWindows[poolId];
+        windowStart = DynamicFeeMath.windowStart(windowPacked);
+        windowVolume = DynamicFeeMath.windowVolume(windowPacked);
+        currentHookTaxBps = DynamicFeeMath.effectiveHookTaxBps(packed, windowVolume);
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -251,6 +266,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
 
+        uint256 windowPacked = dynamicFeeWindows[id];
+        uint256 volumeBefore = DynamicFeeMath.windowVolume(windowPacked);
+        uint16 effectiveHookTax = DynamicFeeMath.effectiveHookTaxBps(packed, volumeBefore);
+
         if (packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
             _checkMaxTx(st.token, packed.maxTxBps(), specifiedAbs, isBuy, exactInput);
         }
@@ -264,9 +283,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             );
         }
 
-        uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(packed.hookTaxBps()) + uint256(snipeBps);
+        uint256 totalFeeBps =
+            uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(effectiveHookTax) + uint256(snipeBps);
         if (totalFeeBps > ProtocolConstants.BPS_DENOMINATOR) {
-            snipeBps = uint16(ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - packed.hookTaxBps());
+            snipeBps = uint16(ProtocolConstants.BPS_DENOMINATOR - ProtocolConstants.BASE_FEE_BPS - effectiveHookTax);
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
@@ -296,6 +316,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 quoteNotional =
             _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
+
+        if (packed.enabled(BitmaskConfig.DYNAMIC_FEES_ENABLED)) {
+            dynamicFeeWindows[id] = DynamicFeeMath.accrueVolume(windowPacked, quoteNotional, block.timestamp);
+        }
+
         uint256 feeAmount = FixedPointMath.applyBps(quoteNotional, totalFeeBps);
         if (feeAmount == 0) {
             uint24 lpOverride =
@@ -304,7 +329,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         st.quote.take(poolManager, address(this), feeAmount, true);
-        _distributeFees(id, st, packed, feeAmount, snipeBps);
+        _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
@@ -397,10 +422,15 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return FixedPointMath.quoteFromToken(specifiedAbs, sqrtPriceX96, st.tokenIsCurrency0);
     }
 
-    function _distributeFees(PoolId id, LaunchState storage st, uint256 packed, uint256 feeAmount, uint16 snipeBps)
-        private
-    {
-        uint16 hookTaxBps_ = packed.hookTaxBps();
+    function _distributeFees(
+        PoolId id,
+        LaunchState storage st,
+        uint256 packed,
+        uint256 feeAmount,
+        uint16 snipeBps,
+        uint16 effectiveHookTaxBps
+    ) private {
+        uint16 hookTaxBps_ = effectiveHookTaxBps;
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
         if (totalBps == 0) return;
 

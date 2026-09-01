@@ -6,7 +6,27 @@ import { X } from "lucide-react";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
+import {
+  clampSupplyCapBps,
+  MAX_ANTI_SNIPE_DURATION_SEC,
+  MAX_ANTI_SNIPE_TAX_PCT,
+  MAX_SUPPLY_CAP_SLIDER_PCT,
+  MIN_ANTI_SNIPE_DURATION_SEC,
+  MIN_ANTI_SNIPE_TAX_PCT,
+  MIN_SUPPLY_CAP_SLIDER_PCT,
+  bpsToSupplyPct,
+  formatSupplyCap,
+  supplyPctToBps,
+} from "@/lib/protocol-limits";
 import { ALL_LIVE_BY_ID, type LiveBlockId } from "@/lib/hook-builder";
+import {
+  feeRouteIsComplete,
+  feeRouteSliderMax,
+  feeRouteTotalPct,
+  listEnabledFeeRoutes,
+  setFeeRouteShare,
+  type FeeRouteKey,
+} from "@/lib/hook-fee-route";
 import type { LaunchModules } from "@/lib/types";
 
 type Props = {
@@ -94,8 +114,8 @@ export function BuilderTuner({
               valueLabel={`${modules.antiSnipeDuration}s`}
               color={def.accent.color}
               value={modules.antiSnipeDuration}
-              min={1}
-              max={10}
+              min={MIN_ANTI_SNIPE_DURATION_SEC}
+              max={MAX_ANTI_SNIPE_DURATION_SEC}
               step={1}
               onChange={(v) => onModulesChange({ antiSnipeDuration: v })}
             />
@@ -104,114 +124,117 @@ export function BuilderTuner({
               valueLabel={`${modules.antiSnipeInitialTax}%`}
               color={def.accent.color}
               value={modules.antiSnipeInitialTax}
-              min={50}
-              max={99}
+              min={MIN_ANTI_SNIPE_TAX_PCT}
+              max={MAX_ANTI_SNIPE_TAX_PCT}
               step={1}
               onChange={(v) => onModulesChange({ antiSnipeInitialTax: v })}
             />
+            <p className="text-xs leading-relaxed text-zinc-600">
+              Snipe tax and window fixed at launch (up to {MAX_ANTI_SNIPE_TAX_PCT}% · {MAX_ANTI_SNIPE_DURATION_SEC}s max).
+            </p>
           </div>
         ) : null}
 
         {selected === "backedFloor" ? (
           <div>
-            <SliderRow
-              label="Fee to floor"
-              valueLabel={`${modules.floorAllocation}%`}
+            <FeeRouteSlider
+              routeKey="floorAllocation"
+              label="Share of hook tax"
+              modules={modules}
               color={def.accent.color}
-              value={modules.floorAllocation}
-              min={0}
-              max={50}
-              step={1}
-              onChange={(v) => onModulesChange({ floorAllocation: v })}
+              onModulesChange={onModulesChange}
             />
             <p className="mt-2 font-mono text-[11px]" style={{ color: `${def.accent.color}cc` }}>
               Est. floor ≈ {estimateFloorPrice(modules.floorAllocation, 0).toFixed(6)} ETH / token
             </p>
+            <FeeRouteHint modules={modules} />
           </div>
         ) : null}
 
         {selected === "autoBurn" ? (
           <div>
-            <SliderRow
-              label="Fee to buyback & burn"
-              valueLabel={`${modules.autoBurnPct}%`}
+            <FeeRouteSlider
+              routeKey="autoBurnPct"
+              label="Share of hook tax"
+              modules={modules}
               color={def.accent.color}
-              value={modules.autoBurnPct}
-              min={1}
-              max={50}
-              step={1}
-              onChange={(v) => onModulesChange({ autoBurnPct: v })}
+              onModulesChange={onModulesChange}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              After the swap, this cut of quote fees buys the token and burns it. Nested buy
-              skips extra hook tax. Floor + burn + LP donate cannot exceed 100%.
+              After the swap, this cut buys the token and burns it. Nested buy skips extra hook tax.
             </p>
+            <FeeRouteHint modules={modules} />
           </div>
         ) : null}
 
         {selected === "lpDonate" ? (
           <div>
-            <SliderRow
-              label="Fee donated to LP"
-              valueLabel={`${modules.lpDonatePct}%`}
+            <FeeRouteSlider
+              routeKey="lpDonatePct"
+              label="Share of hook tax"
+              modules={modules}
               color={def.accent.color}
-              value={modules.lpDonatePct}
-              min={1}
-              max={50}
-              step={1}
-              onChange={(v) => onModulesChange({ lpDonatePct: v })}
+              onModulesChange={onModulesChange}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Uniswap v4 donate to in-range LPs. If the pool has no in-range liquidity yet,
-              the cut falls back to the floor vault.
+              Uniswap v4 donate to in-range LPs. If no in-range liquidity, the cut falls back to the
+              floor vault.
             </p>
+            <FeeRouteHint modules={modules} />
           </div>
         ) : null}
 
         {selected === "holderAirdrop" ? (
           <div>
-            <SliderRow
-              label="Fee to holder airdrop"
-              valueLabel={`${modules.holderAirdropPct}%`}
+            <FeeRouteSlider
+              routeKey="holderAirdropPct"
+              label="Share of hook tax"
+              modules={modules}
               color={def.accent.color}
-              value={modules.holderAirdropPct}
-              min={1}
-              max={50}
-              step={1}
-              onChange={(v) => onModulesChange({ holderAirdropPct: v })}
+              onModulesChange={onModulesChange}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Quote fees accrue in a vault. Every 15 minutes anyone can push a pro-rata
-              airdrop to holders (in ETH / USDG / wStock). Floor + burn + LP + airdrop
-              cannot exceed 100%.
+              Quote fees accrue in a vault. Every 15 minutes anyone can push a pro-rata airdrop to
+              holders.
             </p>
+            <FeeRouteHint modules={modules} />
           </div>
         ) : null}
 
         {selected === "maxWallet" ? (
-          <SliderRow
-            label="Cap"
-            valueLabel={`${(modules.maxWalletBps / 100).toFixed(1)}% supply`}
-            color={def.accent.color}
-            value={modules.maxWalletBps / 100}
-            min={0.5}
-            max={5}
-            step={0.1}
-            onChange={(v) => onModulesChange({ maxWalletBps: Math.round(v * 100) })}
-          />
+          <div>
+            <SliderRow
+              label="Cap"
+              valueLabel={`${formatSupplyCap(modules.maxWalletBps)} supply`}
+              color={def.accent.color}
+              value={bpsToSupplyPct(modules.maxWalletBps)}
+              min={MIN_SUPPLY_CAP_SLIDER_PCT}
+              max={MAX_SUPPLY_CAP_SLIDER_PCT}
+              step={0.1}
+              onChange={(v) => onModulesChange({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply.
+            </p>
+          </div>
         ) : null}
 
         {selected === "maxTx" ? (
-          <SliderRow
-            label="Cap"
-            valueLabel={`${(modules.maxTxBps / 100).toFixed(1)}% supply`}
-            color={def.accent.color}
-            value={modules.maxTxBps / 100}
-            min={0.5}
-            max={5}
-            step={0.1}
-            onChange={(v) => onModulesChange({ maxTxBps: Math.round(v * 100) })}
-          />
+          <div>
+            <SliderRow
+              label="Cap"
+              valueLabel={`${formatSupplyCap(modules.maxTxBps)} supply`}
+              color={def.accent.color}
+              value={bpsToSupplyPct(modules.maxTxBps)}
+              min={MIN_SUPPLY_CAP_SLIDER_PCT}
+              max={MAX_SUPPLY_CAP_SLIDER_PCT}
+              step={0.1}
+              onChange={(v) => onModulesChange({ maxTxBps: clampSupplyCapBps(supplyPctToBps(v)) })}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply.
+            </p>
+          </div>
         ) : null}
 
         {selected === "hookTax" ? (
@@ -253,6 +276,52 @@ function Mounted({ children }: { children: ReactNode }) {
   }, []);
   if (!ok) return null;
   return children;
+}
+
+function FeeRouteSlider({
+  routeKey,
+  label,
+  modules,
+  color,
+  onModulesChange,
+}: {
+  routeKey: FeeRouteKey;
+  label: string;
+  modules: LaunchModules;
+  color: string;
+  onModulesChange: (patch: Partial<LaunchModules>) => void;
+}) {
+  const enabled = listEnabledFeeRoutes(modules);
+  if (enabled.length === 1) {
+    return (
+      <p className="text-xs leading-relaxed text-zinc-600">100% of hook tax · sole enabled module.</p>
+    );
+  }
+
+  const value = modules[routeKey];
+  return (
+    <SliderRow
+      label={label}
+      valueLabel={`${value}%`}
+      color={color}
+      value={value}
+      min={1}
+      max={feeRouteSliderMax(modules, routeKey)}
+      step={1}
+      onChange={(v) => onModulesChange(setFeeRouteShare(modules, routeKey, v))}
+    />
+  );
+}
+
+function FeeRouteHint({ modules }: { modules: LaunchModules }) {
+  const enabled = listEnabledFeeRoutes(modules);
+  if (enabled.length <= 1) return null;
+  const total = feeRouteTotalPct(modules);
+  return (
+    <p className={`mt-2 text-xs leading-relaxed ${total !== 100 ? "text-amber-200" : "text-zinc-600"}`}>
+      Enabled modules must share exactly 100% of the hook tax (total {total}%).
+    </p>
+  );
 }
 
 function SliderRow({

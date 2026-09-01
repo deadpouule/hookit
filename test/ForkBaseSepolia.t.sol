@@ -107,7 +107,7 @@ contract ForkBaseSepoliaTest is Test {
         m.antiSnipeDurationSeconds = 120;
         m.initialSnipeTaxBps = 2_000;
         m.hookTaxBps = 50;
-        m.floorAllocationBps = 1_000;
+        m.floorAllocationBps = 10_000;
 
         (, address token, PoolId poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({

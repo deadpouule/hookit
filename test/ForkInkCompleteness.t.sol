@@ -28,7 +28,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 200;
         m.backedFloor = true;
-        m.floorAllocationBps = 1_500;
+        m.floorAllocationBps = 10_000;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000e18, "Floor", "FLR");
 

@@ -97,7 +97,10 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             autoBurnBps: 0,
             lpDonateBps: 0,
             holderAirdropBps: 0,
-            buybackVestingDurationSeconds: 0
+            buybackVestingDurationSeconds: 0,
+            dynamicFeeMinTotalBps: 0,
+            dynamicFeeRampUp: false,
+            dynamicFeeVolumeTargetScale: 0
         });
     }
 
@@ -121,13 +124,7 @@ abstract contract LaunchpadTestBase is Test, Deployers {
                 minDevBuyTokensOut: 0
             })
         );
-        key = PoolKey({
-            currency0: Currency.wrap(address(0)),
-            currency1: Currency.wrap(token),
-            fee: 0,
-            tickSpacing: 60,
-            hooks: IHooks(address(hook))
-        });
+        key = factory.poolKeyOf(launchId);
     }
 
     function buyExactIn(PoolKey memory key, uint256 ethIn) internal {

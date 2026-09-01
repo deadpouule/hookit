@@ -168,7 +168,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
     function testMaxTxReverts() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxTx = true;
-        m.maxTxBps = 1; // 0.01% of supply
+        m.maxTxBps = 10; // 0.1% of supply
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000e18);
         buyExactIn(key, 1 ether);
         uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
@@ -206,7 +206,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 100;
         m.backedFloor = true;
-        m.floorAllocationBps = 1_000;
+        m.floorAllocationBps = 10_000;
         (, address token,, PoolKey memory key) = launchToken(m, 180_000, 1_000_000e18);
         vault.deposit{value: 50 ether}(token, Currency.wrap(address(0)), 50 ether);
         buyExactIn(key, 0.01 ether);

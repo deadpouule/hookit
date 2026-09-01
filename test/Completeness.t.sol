@@ -40,7 +40,7 @@ contract CompletenessTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         m.backedFloor = true;
-        m.floorAllocationBps = 1_000;
+        m.floorAllocationBps = 10_000;
         (uint256 launchId, address token, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
         key = factory.poolKeyOf(launchId);
 

@@ -28,7 +28,10 @@ import {
   CUSTOM_SOLIDITY_HOOKS_ENABLED,
   LAUNCH_FEE_ETH,
   MAX_HOOK_TAX_BPS,
+  DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
 } from "@/lib/constants";
+import { clampDynamicFeeRange } from "@/lib/fee-range";
+import { rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
@@ -411,40 +414,96 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
                         updateModules({ buybackVesting: true, creatorShareToHook: false });
                         return;
                       }
+                      if (id === "dynamic-fees" && next) {
+                        const clamped = clampDynamicFeeRange(
+                          form.modules.dynamicFeeMinBps ?? 100,
+                          Math.max(
+                            form.modules.dynamicFeeMaxBps ?? 300,
+                            100 + form.hookTaxBps,
+                          ),
+                        );
+                        updateModules({
+                          dynamicFees: true,
+                          dynamicFeeMinBps: clamped.dynamicFeeMinBps,
+                          dynamicFeeMaxBps: clamped.dynamicFeeMaxBps,
+                          dynamicFeeRampUp: form.modules.dynamicFeeRampUp ?? true,
+                          dynamicFeeVolumeTargetScale:
+                            form.modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+                        });
+                        setForm((p) => ({ ...p, hookTaxBps: clamped.hookTaxBps }));
+                        return;
+                      }
+                      if (id === "dynamic-fees" && !next) {
+                        updateModules({ dynamicFees: false });
+                        return;
+                      }
+                      if (
+                        (id === "backed-floor" ||
+                          id === "auto-burn" ||
+                          id === "lp-donate" ||
+                          id === "holder-airdrop") &&
+                        next
+                      ) {
+                        const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: true };
+                        updateModules({
+                          [HOOK_MODULE_FIELD[id]]: true,
+                          ...rebalanceFeeRoutes(nextModules),
+                        });
+                        return;
+                      }
+                      if (
+                        (id === "backed-floor" ||
+                          id === "auto-burn" ||
+                          id === "lp-donate" ||
+                          id === "holder-airdrop") &&
+                        !next
+                      ) {
+                        const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: false };
+                        updateModules({
+                          [HOOK_MODULE_FIELD[id]]: false,
+                          ...rebalanceFeeRoutes(nextModules),
+                        });
+                        return;
+                      }
                       updateModules({ [HOOK_MODULE_FIELD[id]]: next });
                     }}
                     onUpdate={updateModules}
+                    onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                     floorEst={floorEst}
                     multiMarket={form.markets.length > 1}
                     hookTaxBps={form.hookTaxBps}
                   />
 
-                  <FormDivider />
+                  {!form.modules.dynamicFees && (
+                    <>
+                      <FormDivider />
 
-                  <p className="pick-heading">Fees & rewards</p>
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Fees deducted in quote asset only — zero sell pressure on your token.
-                  </p>
+                      <p className="pick-heading">Fees & rewards</p>
+                      <p className="mt-1 text-xs text-zinc-600">
+                        Fees deducted in quote asset only — zero sell pressure on your token.
+                      </p>
 
-                  <div className="mt-4 max-w-sm">
-                    <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
-                    <div className="field-input flex items-center justify-between bg-black/60">
-                      <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-                    </div>
-                    <div className="mt-2">
-                      <AccentSlider
-                        accentColor="#9514d1"
-                        value={[form.hookTaxBps]}
-                        onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
-                        min={0}
-                        max={MAX_HOOK_TAX_BPS}
-                        step={10}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-xs text-zinc-500">
-                      Extra fee for hook modules · leftover → protocol
-                    </p>
-                  </div>
+                      <div className="mt-4 max-w-sm">
+                        <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
+                        <div className="field-input flex items-center justify-between bg-black/60">
+                          <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
+                        </div>
+                        <div className="mt-2">
+                          <AccentSlider
+                            accentColor="#9514d1"
+                            value={[form.hookTaxBps]}
+                            onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
+                            min={0}
+                            max={MAX_HOOK_TAX_BPS}
+                            step={10}
+                          />
+                        </div>
+                        <p className="mt-1.5 text-xs text-zinc-500">
+                          Extra fee for hook modules · leftover → protocol
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </>

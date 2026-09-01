@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { BASE_FEE_BPS } from "@/lib/constants";
+import { rebalanceFeeRoutes, setFeeRouteShare, type FeeRouteKey } from "@/lib/hook-fee-route";
 import { HOOK_MODULE_ACCENTS, type HookModuleAccent } from "@/lib/hook-modules";
 import type { LaunchModules } from "@/lib/types";
 
@@ -325,5 +326,9 @@ export function applyBlockToggle(
   const feeSink =
     id === "backedFloor" || id === "autoBurn" || id === "lpDonate" || id === "holderAirdrop";
   if (enabled && feeSink && hookTaxBps === 0 && !nextModules.creatorShareToHook) hookTaxBps = 50;
+  if (feeSink) {
+    const routePatch = rebalanceFeeRoutes(enabled ? nextModules : { ...nextModules, [id]: false });
+    return { ...draft, modules: { ...nextModules, ...routePatch }, hookTaxBps };
+  }
   return { ...draft, modules: nextModules, hookTaxBps };
 }

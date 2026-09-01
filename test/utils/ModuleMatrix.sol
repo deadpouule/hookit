@@ -27,7 +27,7 @@ library ModuleMatrix {
     function fromMask(uint16 mask) internal pure returns (BitmaskConfig.Modules memory m) {
         m = _coreFromMask(mask & (MASK_SPACE - 1));
         m = _applyExtendedBits(m, mask);
-        return m;
+        return _rebalanceFeeRoutes(m);
     }
 
     function fromExtendedMask(uint16 mask) internal pure returns (BitmaskConfig.Modules memory m) {
@@ -61,8 +61,8 @@ library ModuleMatrix {
             m.antiSnipeDurationSeconds = 900;
             m.initialSnipeTaxBps = 1_500;
         }
-        if (m.maxTx) m.maxTxBps = 500;
-        if (m.maxWallet) m.maxWalletBps = 500;
+        if (m.maxTx) m.maxTxBps = 100;
+        if (m.maxWallet) m.maxWalletBps = 200;
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.lpDonate) m.lpDonateBps = 1_000;
@@ -88,6 +88,57 @@ library ModuleMatrix {
         if (m.lpDonate) routed += m.lpDonateBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) m.hookTaxBps = 200;
+        if (m.dynamicFees) {
+            if (m.dynamicFeeMinTotalBps == 0) m.dynamicFeeMinTotalBps = ProtocolConstants.BASE_FEE_BPS;
+            if (m.hookTaxBps == 0) m.hookTaxBps = 200;
+            m.dynamicFeeRampUp = true;
+            if (m.dynamicFeeVolumeTargetScale == 0) {
+                m.dynamicFeeVolumeTargetScale = ProtocolConstants.DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE;
+            }
+        }
+        return m;
+    }
+
+    /// @dev Enabled fee-route modules must total 100% of the hook tax pot.
+    function _rebalanceFeeRoutes(BitmaskConfig.Modules memory m)
+        private
+        pure
+        returns (BitmaskConfig.Modules memory)
+    {
+        uint256 count;
+        if (m.backedFloor) count++;
+        if (m.autoBurn) count++;
+        if (m.lpDonate) count++;
+        if (m.holderAirdrop) count++;
+        if (count == 0) return m;
+
+        uint16 base = uint16(ProtocolConstants.BPS_DENOMINATOR / count);
+        uint16 rem = uint16(ProtocolConstants.BPS_DENOMINATOR - base * count);
+        uint256 idx;
+
+        if (m.backedFloor) {
+            m.floorAllocationBps = base + (idx < rem ? 1 : 0);
+            idx++;
+        } else {
+            m.floorAllocationBps = 0;
+        }
+        if (m.autoBurn) {
+            m.autoBurnBps = base + (idx < rem ? 1 : 0);
+            idx++;
+        } else {
+            m.autoBurnBps = 0;
+        }
+        if (m.lpDonate) {
+            m.lpDonateBps = base + (idx < rem ? 1 : 0);
+            idx++;
+        } else {
+            m.lpDonateBps = 0;
+        }
+        if (m.holderAirdrop) {
+            m.holderAirdropBps = base + (idx < rem ? 1 : 0);
+        } else {
+            m.holderAirdropBps = 0;
+        }
         return m;
     }
 }

@@ -70,7 +70,9 @@ contract SmokeStockOnlyInkScript is Script {
                 tickSpacing: ProtocolConstants.DEFAULT_TICK_SPACING,
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
-                floorQuoteIndex: 0
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
         vm.stopBroadcast();

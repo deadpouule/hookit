@@ -7,6 +7,8 @@ import { PairingMark } from "@/components/launch/PairingMark";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
+import { formatDynamicFeeRange, totalFeeBps } from "@/lib/fee-range";
+import { feeRouteIsComplete } from "@/lib/hook-fee-route";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
@@ -98,7 +100,8 @@ export function LaunchSummary({
     walletReady &&
     factoryConfigured &&
     !isPending &&
-    (form.hookMode !== "custom" || (hookAnalysis?.valid ?? false));
+    (form.hookMode !== "custom" || (hookAnalysis?.valid ?? false)) &&
+    (form.hookMode !== "master" || feeRouteIsComplete(form.modules));
 
   const ctaLabel = !walletReady
     ? "Connect wallet"
@@ -144,7 +147,9 @@ export function LaunchSummary({
           <div className="flex justify-between gap-4">
             <dt className="text-zinc-500">Fees</dt>
             <dd className="font-mono text-right text-zinc-200">
-              {formatBps(BASE_FEE_BPS + form.hookTaxBps)}
+              {form.modules.dynamicFees
+                ? formatDynamicFeeRange(form.modules, form.hookTaxBps)
+                : formatBps(totalFeeBps(form.modules, form.hookTaxBps))}
             </dd>
           </div>
         )}

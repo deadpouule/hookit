@@ -71,7 +71,9 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: 0,
-                customHook: IHooks(address(customHook))
+                customHook: IHooks(address(customHook)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -94,7 +96,9 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: 0,
-                customHook: IHooks(address(unlisted))
+                customHook: IHooks(address(unlisted)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }
@@ -116,7 +120,9 @@ contract CustomHookLaunchTest is LaunchpadTestBase {
                 tickSpacing: 60,
                 startingTick: 0,
                 bitmask: BitmaskConfig.pack(m),
-                customHook: IHooks(address(customHook))
+                customHook: IHooks(address(customHook)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
             })
         );
     }

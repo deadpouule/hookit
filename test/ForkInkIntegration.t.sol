@@ -240,7 +240,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 200; // 2% hook tax pot
         m.backedFloor = true;
-        m.floorAllocationBps = 2_000; // 20% of hook tax pot
+        m.floorAllocationBps = 10_000;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Floor", "FLR");
 
@@ -276,7 +276,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 300;
         m.autoBurn = true;
-        m.autoBurnBps = 3_000;
+        m.autoBurnBps = 10_000;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Burn", "BRN");
 
@@ -290,7 +290,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 300;
         m.lpDonate = true;
-        m.lpDonateBps = 4_000;
+        m.lpDonateBps = 10_000;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Donate", "DON"
         );
@@ -307,8 +307,8 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         m.hookTaxBps = 300;
         m.autoBurn = true;
         m.lpDonate = true;
-        m.autoBurnBps = 1_500;
-        m.lpDonateBps = 1_500;
+        m.autoBurnBps = 5_000;
+        m.lpDonateBps = 5_000;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Combo", "CMB");
 

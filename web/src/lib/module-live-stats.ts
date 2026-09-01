@@ -1,5 +1,6 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
+import { formatDynamicFeeRange } from "@/lib/fee-range";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -68,7 +69,7 @@ export function moduleLiveStatLine(
     case "max-wallet":
       return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
     case "dynamic-fees":
-      return "Swap fee adjusts with volume";
+      return formatDynamicFeeRange(modules, _hookTaxBps);
     case "buyback-vesting": {
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) {

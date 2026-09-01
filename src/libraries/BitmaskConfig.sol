@@ -5,6 +5,8 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 
 /// @title BitmaskConfig
 /// @notice Packs/unpacks per-pool launch modules into a single `uint256`.
+/// @dev Launcher picks enabled modules and percentages at launch; the bitmask is immutable after deploy.
+///      Validation only rejects values outside hook math bounds (fee sums, bps fields), not product policy.
 /// @dev Layout:
 ///      bit 0        ANTI_SNIPE_ENABLED
 ///      bit 1        BACKED_FLOOR_ENABLED
@@ -27,6 +29,9 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bits 146-161 holderAirdropBps (uint16) — % of hook pot
 ///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 70% of base into the hook pot
 ///      bits 163-194 buybackVestingDurationSeconds (uint32) — linear vest for creator proceeds
+///      bits 195-210 dynamicFeeMinTotalBps (uint16) — min total swap fee when dynamic fees on
+///      bit 211       DYNAMIC_FEE_RAMP_UP — fees rise with volume (clear = fees fall with volume)
+///      bits 212-227  dynamicFeeVolumeTargetScale (uint16) — ramp saturates at scale × 1e18 quote / 24h
 library BitmaskConfig {
     uint256 internal constant ANTI_SNIPE_ENABLED = 1 << 0;
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
@@ -50,6 +55,9 @@ library BitmaskConfig {
     uint256 internal constant LP_DONATE_BPS_SHIFT = 129;
     uint256 internal constant HOLDER_AIRDROP_BPS_SHIFT = 146;
     uint256 internal constant BUYBACK_VESTING_DURATION_SHIFT = 163;
+    uint256 internal constant DYNAMIC_FEE_MIN_TOTAL_SHIFT = 195;
+    uint256 internal constant DYNAMIC_FEE_RAMP_UP_ENABLED = 1 << 211;
+    uint256 internal constant DYNAMIC_FEE_VOLUME_TARGET_SHIFT = 212;
 
     uint256 internal constant UINT16_MASK = 0xFFFF;
     uint256 internal constant UINT32_MASK = 0xFFFFFFFF;
@@ -77,6 +85,9 @@ library BitmaskConfig {
         uint16 lpDonateBps;
         uint16 holderAirdropBps;
         uint32 buybackVestingDurationSeconds;
+        uint16 dynamicFeeMinTotalBps;
+        bool dynamicFeeRampUp;
+        uint16 dynamicFeeVolumeTargetScale;
     }
 
     function pack(Modules memory m) internal pure returns (uint256 packed) {
@@ -92,7 +103,10 @@ library BitmaskConfig {
             | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
             | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT) | (uint256(m.lpDonateBps) << LP_DONATE_BPS_SHIFT)
             | (uint256(m.holderAirdropBps) << HOLDER_AIRDROP_BPS_SHIFT)
-            | (uint256(m.buybackVestingDurationSeconds) << BUYBACK_VESTING_DURATION_SHIFT);
+            | (uint256(m.buybackVestingDurationSeconds) << BUYBACK_VESTING_DURATION_SHIFT)
+            | (uint256(m.dynamicFeeMinTotalBps) << DYNAMIC_FEE_MIN_TOTAL_SHIFT)
+            | (m.dynamicFeeRampUp ? DYNAMIC_FEE_RAMP_UP_ENABLED : 0)
+            | (uint256(m.dynamicFeeVolumeTargetScale) << DYNAMIC_FEE_VOLUME_TARGET_SHIFT);
     }
 
     function unpack(uint256 packed) internal pure returns (Modules memory m) {
@@ -117,6 +131,9 @@ library BitmaskConfig {
         m.lpDonateBps = uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
         m.holderAirdropBps = uint16((packed >> HOLDER_AIRDROP_BPS_SHIFT) & UINT16_MASK);
         m.buybackVestingDurationSeconds = uint32((packed >> BUYBACK_VESTING_DURATION_SHIFT) & UINT32_MASK);
+        m.dynamicFeeMinTotalBps = uint16((packed >> DYNAMIC_FEE_MIN_TOTAL_SHIFT) & UINT16_MASK);
+        m.dynamicFeeRampUp = packed & DYNAMIC_FEE_RAMP_UP_ENABLED != 0;
+        m.dynamicFeeVolumeTargetScale = uint16((packed >> DYNAMIC_FEE_VOLUME_TARGET_SHIFT) & UINT16_MASK);
     }
 
     function enabled(uint256 packed, uint256 flag) internal pure returns (bool) {
@@ -163,6 +180,22 @@ library BitmaskConfig {
         return duration;
     }
 
+    function dynamicFeeMinTotalBps(uint256 packed) internal pure returns (uint16) {
+        uint16 minTotal = uint16((packed >> DYNAMIC_FEE_MIN_TOTAL_SHIFT) & UINT16_MASK);
+        if (minTotal == 0 && packed & DYNAMIC_FEES_ENABLED != 0) {
+            return ProtocolConstants.BASE_FEE_BPS;
+        }
+        return minTotal;
+    }
+
+    function dynamicFeeVolumeTargetScale(uint256 packed) internal pure returns (uint16) {
+        uint16 scale = uint16((packed >> DYNAMIC_FEE_VOLUME_TARGET_SHIFT) & UINT16_MASK);
+        if (scale == 0 && packed & DYNAMIC_FEES_ENABLED != 0) {
+            return ProtocolConstants.DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE;
+        }
+        return scale;
+    }
+
     function initialSnipeTaxBps(uint256 packed) internal pure returns (uint16) {
         uint16 tax = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         if (tax == 0 && packed & ANTI_SNIPE_ENABLED != 0) {
@@ -176,6 +209,8 @@ library BitmaskConfig {
         if (m.initialSnipeTaxBps > ProtocolConstants.MAX_SNIPE_TAX_BPS) revert SnipeTaxTooHigh();
         if (m.maxTxBps > ProtocolConstants.MAX_TX_BPS) revert MaxTxTooHigh();
         if (m.maxWalletBps > ProtocolConstants.MAX_WALLET_BPS) revert MaxWalletTooHigh();
+        if (m.maxTx && m.maxTxBps < ProtocolConstants.MIN_TX_BPS) revert MaxTxTooLow();
+        if (m.maxWallet && m.maxWalletBps < ProtocolConstants.MIN_WALLET_BPS) revert MaxWalletTooLow();
         if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
         if (m.lpDonateBps > ProtocolConstants.MAX_LP_DONATE_BPS) revert LpDonateTooHigh();
@@ -190,6 +225,7 @@ library BitmaskConfig {
         if (m.lpDonate) routed += m.lpDonateBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
         if (routed > ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteTooHigh();
+        if (routed > 0 && routed != ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteIncomplete();
         // Fee sinks need a funded hook pot: hook tax and/or creator's 70% of base.
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) revert HookFundingRequired();
         if (m.creatorShareToHook && m.buybackVesting) revert CreatorShareConflict();
@@ -198,6 +234,15 @@ library BitmaskConfig {
             if (duration == 0) duration = uint32(ProtocolConstants.BUYBACK_VESTING_DURATION);
             if (duration < ProtocolConstants.MIN_BUYBACK_VESTING_DURATION) revert BuybackVestingTooShort();
             if (duration > ProtocolConstants.MAX_BUYBACK_VESTING_DURATION) revert BuybackVestingTooLong();
+        }
+        if (m.dynamicFees) {
+            uint16 minTotal = m.dynamicFeeMinTotalBps;
+            if (minTotal == 0) minTotal = ProtocolConstants.BASE_FEE_BPS;
+            if (minTotal < ProtocolConstants.BASE_FEE_BPS) revert DynamicFeeMinTooLow();
+            uint256 maxTotal = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
+            if (minTotal + ProtocolConstants.MIN_DYNAMIC_FEE_TOTAL_GAP_BPS > maxTotal) {
+                revert DynamicFeeRangeInvalid();
+            }
         }
         uint256 openFee = uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps;
         if (m.antiSnipe) openFee += m.initialSnipeTaxBps;
@@ -210,13 +255,18 @@ library BitmaskConfig {
     error TotalFeeTooHigh();
     error SnipeTaxTooHigh();
     error MaxTxTooHigh();
+    error MaxTxTooLow();
     error MaxWalletTooHigh();
+    error MaxWalletTooLow();
     error FloorAllocTooHigh();
     error AutoBurnTooHigh();
     error LpDonateTooHigh();
     error HolderAirdropTooHigh();
     error FeeRouteTooHigh();
+    error FeeRouteIncomplete();
     error OpenFeeTooHigh();
     error BuybackVestingTooShort();
     error BuybackVestingTooLong();
+    error DynamicFeeMinTooLow();
+    error DynamicFeeRangeInvalid();
 }

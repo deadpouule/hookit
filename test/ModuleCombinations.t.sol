@@ -181,7 +181,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function testMaxWallet_RevertsWhenBalanceExceedsCap() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxWallet = true;
-        m.maxWalletBps = 2_000; // 20%
+        m.maxWalletBps = 200; // 2%
         (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
         key = factory.poolKeyOf(launchId);
 
@@ -193,7 +193,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function testMaxWallet_RevertsWithoutHookData() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxWallet = true;
-        m.maxWalletBps = 2_000;
+        m.maxWalletBps = 200;
         (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
 
         vm.prank(buyer);
@@ -217,7 +217,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     function testMaxTx_RevertsAboveCap() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxTx = true;
-        m.maxTxBps = 1;
+        m.maxTxBps = 10;
         (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, 1_000e18);
         key = factory.poolKeyOf(launchId);
 
@@ -260,9 +260,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         m.backedFloor = true;
         m.autoBurn = true;
         m.lpDonate = true;
-        m.floorAllocationBps = 1_500;
-        m.autoBurnBps = 1_500;
-        m.lpDonateBps = 1_500;
+        m.floorAllocationBps = 3_334;
+        m.autoBurnBps = 3_333;
+        m.lpDonateBps = 3_333;
         (uint256 launchId, address token, PoolId poolId,) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         PoolKey memory key = factory.poolKeyOf(launchId);
 

@@ -438,7 +438,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "03",
               title: "Module cuts",
-              text: "Of the hook pot (hook tax ± creator share), optional % go to floor, auto-burn, LP donate, and/or holder airdrop. Together ≤ 100%. Needs hook tax and/or creator→hook when any sink is on.",
+              text: "Of the hook pot (hook tax ± creator share), optional % go to floor, auto-burn, LP donate, and/or holder airdrop. Together they must equal exactly 100% when any sink is on.",
             },
             {
               num: "04",
@@ -462,7 +462,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `Trade pays 1% base + 2% hook tax. Creator sets auto-burn 50% and floor 50% of the hook tax. Then 2% of the trade funds those sinks 50/50. The 1% base still splits ${CREATOR_FEE_PCT}/${PROTOCOL_FEE_PCT} creator/protocol.`,
+          text: `Trade pays 1% base + 2% hook tax. Creator sets auto-burn 80% and floor 20% of the hook tax (100% of the pot). The 1% base still splits ${CREATOR_FEE_PCT}/${PROTOCOL_FEE_PCT} creator/protocol.`,
         },
         {
           type: "h3",
@@ -505,8 +505,9 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Important limits",
           items: [
-            "Floor + auto-burn + LP donate + holder airdrop shares of the hook-tax pot cannot exceed 100%.",
-            "Auto-burn, LP donate, and holder airdrop are each capped at 50% of that pot.",
+            "Floor + auto-burn + LP donate + holder airdrop shares of the hook-tax pot must total exactly 100% — nothing left unallocated.",
+            "One module alone gets 100%; with two or more, split however you like (e.g. 50/50, 75/25, 80/10/10).",
+            "Max tx and max wallet: launcher picks between 0.1% and 2.5% of supply (fixed in the bitmask at launch).",
             "Any fee sink requires hook tax > 0.",
             "Base fee (1%) + hook tax cannot exceed 10%.",
             "Anti-snipe only affects opening buys and fades out — it is not a permanent tax.",
@@ -535,7 +536,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Max trade caps how large a single swap can be as a % of total supply. Max wallet caps how many tokens one address can hold after a buy. Both are optional and set at launch.",
+          text: "Max trade caps how large a single swap can be as a % of total supply (0.1%–2.5%). Max wallet caps how many tokens one address can hold after a buy (same range). Both are optional and set at launch.",
         },
         {
           type: "h3",

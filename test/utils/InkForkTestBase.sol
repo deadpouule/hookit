@@ -199,7 +199,10 @@ abstract contract InkForkTestBase is Test {
             autoBurnBps: 0,
             lpDonateBps: 0,
             holderAirdropBps: 0,
-            buybackVestingDurationSeconds: 0
+            buybackVestingDurationSeconds: 0,
+            dynamicFeeMinTotalBps: 0,
+            dynamicFeeRampUp: false,
+            dynamicFeeVolumeTargetScale: 0
         });
     }
 

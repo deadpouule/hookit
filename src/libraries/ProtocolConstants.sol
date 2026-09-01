@@ -30,13 +30,16 @@ library ProtocolConstants {
 
     /// @dev Max Chainlink age for launch FDV / bonding graduation pricing.
     uint256 internal constant ORACLE_MAX_AGE = 1 hours;
-    uint16 internal constant MAX_TX_BPS = 10_000;
-    uint16 internal constant MAX_WALLET_BPS = 10_000;
+    /// @dev Max tx / max wallet (% of total supply). Launcher picks between min and max at launch.
+    uint16 internal constant MIN_TX_BPS = 10;
+    uint16 internal constant MAX_TX_BPS = 250;
+    uint16 internal constant MIN_WALLET_BPS = 10;
+    uint16 internal constant MAX_WALLET_BPS = 250;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
-    uint16 internal constant MAX_AUTO_BURN_BPS = 5_000; // 50% of quote-fee pool
-    uint16 internal constant MAX_LP_DONATE_BPS = 5_000;
-    /// @dev Max share of the quote-fee pool routed to holder airdrops (50%).
-    uint16 internal constant MAX_HOLDER_AIRDROP_BPS = 5_000;
+    uint16 internal constant MAX_AUTO_BURN_BPS = 10_000;
+    uint16 internal constant MAX_LP_DONATE_BPS = 10_000;
+    /// @dev Max share of the quote-fee pool routed to holder airdrops (100% — combined routes capped at 100%).
+    uint16 internal constant MAX_HOLDER_AIRDROP_BPS = 10_000;
     /// @dev Minimum time between permissionless holder airdrops.
     uint256 internal constant HOLDER_AIRDROP_EPOCH = 15 minutes;
 
@@ -48,6 +51,14 @@ library ProtocolConstants {
     int24 internal constant DEFAULT_TICK_SPACING = 60;
 
     uint24 internal constant DYNAMIC_FEE_FLAG = 0x800000;
+
+    /// @dev Rolling window for on-chain dynamic fee volume (quote notional).
+    uint256 internal constant DYNAMIC_FEE_WINDOW_SECONDS = 24 hours;
+    /// @dev Min gap between dynamic min/max total fees (0.10%).
+    uint16 internal constant MIN_DYNAMIC_FEE_TOTAL_GAP_BPS = 10;
+    /// @dev Default saturation: 10 quote units (1e19 wei for 18-decimal quote) per 24h.
+    uint16 internal constant DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE = 10;
+    uint256 internal constant DYNAMIC_FEE_DEFAULT_TARGET_QUOTE = 10e18;
 
     /// @dev Fixed fully-diluted valuation at launch ($4,000 with 18-decimal USD scale).
     uint256 internal constant TARGET_LAUNCH_MCAP_USD_X18 = 4_000e18;

@@ -1,4 +1,5 @@
 import { CREATOR_SHARE_BPS } from "@/lib/constants";
+import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
@@ -48,7 +49,7 @@ export function moduleDetailLine(
     case "max-wallet":
       return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
     case "dynamic-fees":
-      return "Swap fee adapts to volume";
+      return formatDynamicFeeRange(modules, hookTaxBps);
     case "buyback-vesting": {
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
@@ -142,7 +143,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "anti-mev": "Blocks same-block bot trades",
   "max-tx": "Caps swap size vs supply",
   "max-wallet": "Caps wallet holdings",
-  "dynamic-fees": "Fees rise with volume",
+  "dynamic-fees": "Fees track 24h volume",
   "buyback-vesting": "Creator fees vest over time",
   "auto-burn": "Burns tokens on swaps",
   "lp-donate": "Rewards in-range LPs",
@@ -210,7 +211,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "anti-mev": "blocks bot trades",
   "max-tx": "limits trade size",
   "max-wallet": "limits wallet size",
-  "dynamic-fees": "adjusts fees with activity",
+  "dynamic-fees": "ramps fees with 24h volume",
   "buyback-vesting": "locks creator fees over time",
   "auto-burn": "burns tokens on swaps",
   "lp-donate": "rewards liquidity providers",
