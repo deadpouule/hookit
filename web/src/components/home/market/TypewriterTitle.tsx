@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { BuiltOnUniswapBadge } from "@/components/brand/BuiltOnUniswapBadge";
 
 type TextSegment = { kind: "text"; value: string };
-type LogoSegment = { kind: "logo"; id: "uniswap" | "eth" | "usdg" };
+type LogoSegment = { kind: "logo"; id: "uniswap" | "eth" | "usdg" | "mstr" };
 type LineSegment = TextSegment | LogoSegment;
 
 type TypewriterLine = {
@@ -22,7 +22,9 @@ const LINES: TypewriterLine[] = [
   },
   {
     segments: [
-      { kind: "text", value: "Tokenized stocks, ETH " },
+      { kind: "text", value: "Tokenized stocks" },
+      { kind: "logo", id: "mstr" },
+      { kind: "text", value: ", ETH " },
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },
@@ -33,7 +35,7 @@ const LINES: TypewriterLine[] = [
 
 const TYPE_MS = 70;
 const DELETE_MS = 40;
-const HOLD_MS = 3500;
+const HOLD_MS_BY_LINE = [5500, 3500];
 
 function lineLength(line: TypewriterLine): number {
   return line.segments.reduce(
@@ -46,6 +48,21 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (id === "uniswap") {
     return (
       <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />
+    );
+  }
+
+  if (id === "mstr") {
+    return (
+      <span className="hero-typewriter-mark hero-typewriter-mark--mstr" aria-hidden>
+        <Image
+          src="/pairing/wmstrx.png"
+          alt=""
+          width={46}
+          height={46}
+          className="hero-typewriter-mark__photo"
+          draggable={false}
+        />
+      </span>
     );
   }
 
@@ -81,8 +98,7 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
   let remaining = typedCount;
   const nodes: ReactNode[] = [];
 
-  for (let index = 0; index < line.segments.length; index += 1) {
-    const segment = line.segments[index];
+  for (const segment of line.segments) {
     if (remaining <= 0) break;
 
     if (segment.kind === "text") {
@@ -91,23 +107,6 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
         nodes.push(segment.value.slice(0, take));
       }
       remaining -= take;
-      continue;
-    }
-
-    const next = line.segments[index + 1];
-    const tailText = next?.kind === "text" ? next.value : "";
-    const hasTail = segment.id === "uniswap" && tailText.length > 0;
-
-    if (hasTail) {
-      const tailTake = Math.min(Math.max(remaining - 1, 0), tailText.length);
-      nodes.push(
-        <span key="uniswap-inline" className="hero-uniswap-inline">
-          <HeroInlineMark id={segment.id} />
-          {tailTake > 0 ? <span>{tailText.slice(0, tailTake)}</span> : null}
-        </span>,
-      );
-      remaining -= 1 + tailTake;
-      index += 1;
       continue;
     }
 
@@ -142,7 +141,10 @@ export function TypewriterTitle() {
           setTypedCount((current) => current + 1);
         }, TYPE_MS);
       } else {
-        timeout = window.setTimeout(() => setPhase("deleting"), HOLD_MS);
+        timeout = window.setTimeout(
+          () => setPhase("deleting"),
+          HOLD_MS_BY_LINE[index] ?? 3500,
+        );
       }
     } else if (typedCount > 0) {
       timeout = window.setTimeout(() => {

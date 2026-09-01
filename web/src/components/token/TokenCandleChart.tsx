@@ -52,6 +52,7 @@ export function TokenCandleChart({
   change24h,
   expanded = false,
   compact = false,
+  fillHeight = false,
   className,
 }: {
   candles: LiveCandle[];
@@ -61,6 +62,7 @@ export function TokenCandleChart({
   change24h?: number;
   compact?: boolean;
   expanded?: boolean;
+  fillHeight?: boolean;
   className?: string;
 }) {
   const chartAreaRef = useRef<HTMLDivElement>(null);
@@ -161,7 +163,7 @@ export function TokenCandleChart({
   const chartInteractive = visible.length > 0 && activeTool !== "cursor" && activeTool !== "volume";
 
   return (
-    <div className={cn("desk-card overflow-hidden", className)}>
+    <div className={cn("desk-card overflow-hidden", fillHeight && "token-candle-chart--fill", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-3 py-2">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
           <span>Market Cap</span>
@@ -209,11 +211,13 @@ export function TokenCandleChart({
       <div
         className={cn(
           "relative bg-chart-bg",
-          expanded
-            ? "h-[460px] sm:h-[560px]"
-            : compact
-              ? "h-[240px] sm:h-[280px]"
-              : "h-[340px] sm:h-[420px]",
+          fillHeight
+            ? "min-h-[360px] flex-1"
+            : expanded
+              ? "h-[460px] sm:h-[560px]"
+              : compact
+                ? "h-[240px] sm:h-[280px]"
+                : "h-[340px] sm:h-[420px]",
         )}
       >
         <div className="candle-grid absolute inset-0" />

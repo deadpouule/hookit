@@ -179,13 +179,17 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
   const chart = (
     <TokenCandleChart
-      className="token-desk-chart"
+      className={cn(
+        "token-desk-chart",
+        balancedDesk && "token-candle-chart--bleed",
+      )}
       candles={live.candles}
       interval={interval}
       onInterval={setInterval}
       marketCap={live.marketCap}
       change24h={live.change24h}
       expanded={balancedDesk}
+      fillHeight={balancedDesk}
     />
   );
 
@@ -202,7 +206,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
   const rightRail = (
     <aside className="token-desk-rail token-desk-rail--right">
-      <div className="token-desk-swap-stack space-y-3">
+      <div className="token-desk-swap-stack">
         <TokenSwapCard pool={pool} />
         {isClassicDesk && <BondingProgress pool={pool} />}
         <CreatorActions pool={pool} />
@@ -230,24 +234,28 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </div>
           {rightRail}
         </div>
+      ) : balancedDesk ? (
+        <div className={cn("token-desk mt-4", "token-desk--hooks", "token-desk--balanced")}>
+          <aside className="token-desk-rail token-desk-rail--left">
+            <ActiveHooksPanel pool={pool} />
+          </aside>
+          <div className="token-desk-hero min-w-0">{heroCard}</div>
+          {chart}
+          {txTable}
+          {rightRail}
+        </div>
       ) : (
-        <>
-          <div className="mt-4">{heroCard}</div>
-          <div
-            className={cn(
-              "token-desk mt-4",
-              "token-desk--hooks",
-              balancedDesk && "token-desk--balanced",
-            )}
-          >
-            <aside className="token-desk-rail token-desk-rail--left">
-              <ActiveHooksPanel pool={pool} />
-            </aside>
+        <div className={cn("token-desk mt-4", "token-desk--hooks")}>
+          <aside className="token-desk-rail token-desk-rail--left">
+            <ActiveHooksPanel pool={pool} />
+          </aside>
+          <div className="token-desk-main min-w-0 space-y-4">
+            {heroCard}
             {chart}
             {txTable}
-            {rightRail}
           </div>
-        </>
+          {rightRail}
+        </div>
       )}
     </div>
   );

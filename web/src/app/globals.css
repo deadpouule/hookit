@@ -2134,14 +2134,6 @@
     color: rgb(255 255 255 / 0.95);
   }
 
-  .hero-uniswap-inline {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.1rem;
-    white-space: nowrap;
-    vertical-align: middle;
-  }
-
   .hero-uniswap-badge {
     transform: translateY(-0.08rem);
   }
@@ -2162,6 +2154,7 @@
     background: #627eea;
   }
 
+  .hero-typewriter-mark--mstr,
   .hero-typewriter-mark--usdg {
     height: 2.85rem;
     width: 2.85rem;
@@ -2180,7 +2173,8 @@
     object-fit: cover;
   }
 
-  .hero-typewriter-mark--usdg .hero-typewriter-mark__photo {
+  .hero-typewriter-mark--usdg .hero-typewriter-mark__photo,
+  .hero-typewriter-mark--mstr .hero-typewriter-mark__photo {
     height: 118%;
     width: 118%;
     transform: scale(1.22);
@@ -2425,8 +2419,10 @@
     }
 
     .token-desk--balanced {
-      grid-template-rows: auto auto;
+      gap: 8px;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       grid-template-areas:
+        "left hero right"
         "left chart right"
         "left table right";
       align-items: stretch;
@@ -2434,12 +2430,20 @@
 
     .token-desk--balanced .token-desk-rail--left {
       grid-area: left;
-      align-self: stretch;
+      align-self: start;
+      position: relative;
+      z-index: 2;
+    }
+
+    .token-desk--balanced .token-desk-hero {
+      grid-area: hero;
+      min-width: 0;
     }
 
     .token-desk--balanced .token-desk-chart {
       grid-area: chart;
       min-width: 0;
+      align-self: stretch;
     }
 
     .token-desk--balanced .token-desk-table {
@@ -2458,6 +2462,7 @@
       display: flex;
       flex: 1;
       flex-direction: column;
+      gap: 8px;
       min-height: 0;
     }
 
@@ -2465,6 +2470,17 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+    }
+
+    .token-candle-chart--bleed {
+      margin-left: calc(-8px - 13.5%);
+      width: calc(100% + 8px + 13.5%);
+    }
+
+    .token-desk--balanced .token-candle-chart--fill {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
   }
 
