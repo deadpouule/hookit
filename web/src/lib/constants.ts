@@ -105,6 +105,15 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
   },
 };
 
+/** Master wizard starts with no hooks — users opt in on each step. */
+export const DEFAULT_MASTER_WIZARD_STATE: LaunchFormState = {
+  ...DEFAULT_LAUNCH_STATE,
+  hookTaxBps: 0,
+  modules: {
+    ...DEFAULT_CLASSIC_LAUNCH_STATE.modules,
+  },
+};
+
 export const GITHUB_REPO_URL = "https://github.com/deadpouule/hookit";
 export const TWITTER_URL = "https://x.com/hookitfun";
 

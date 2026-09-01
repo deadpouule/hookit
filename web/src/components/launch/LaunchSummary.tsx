@@ -48,51 +48,30 @@ function SummaryPairValue({ form }: { form: LaunchFormState }) {
   );
 }
 
-type Props = {
+type LaunchSummaryCtaProps = {
   form: LaunchFormState;
   variant?: "classic" | "custom";
-  launchFee?: bigint;
   launchFeeEth: number;
   walletReady: boolean;
   factoryConfigured: boolean;
   isPending: boolean;
   phase: LaunchPhase;
-  activeHooks: HookId[];
   onLaunch: () => void;
+  className?: string;
 };
 
-export function LaunchSummary({
+export function LaunchSummaryCta({
   form,
   variant = "custom",
-  launchFeeEth,
   walletReady,
   factoryConfigured,
   isPending,
   phase,
-  activeHooks,
   onLaunch,
-}: Props) {
+  className,
+}: LaunchSummaryCtaProps) {
   const hookAnalysis =
     form.hookMode === "custom" ? analyzeCustomHookSource(form.customHookSource) : null;
-
-  const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
-  const showActiveModules = summaryHooks.length > 0;
-
-  const primaryQuoteId = form.markets[0]?.id ?? form.quoteAsset;
-  const quoteAddr =
-    primaryQuoteId === "eth"
-      ? zeroAddress
-      : primaryQuoteId === "usdg"
-        ? STABLE_QUOTE_ADDRESS
-        : zeroAddress;
-  const devBuyConfigured = hasDevBuyConfigured(form);
-  const devBuyQuoteWei = devBuyConfigured
-    ? resolveDevBuyQuoteWei(form, {
-        rail: variant === "classic" ? "classic" : "master",
-        quote: quoteAddr,
-      })
-    : null;
-  const devBuyPayLabel = primaryQuoteId === "eth" ? "ETH" : formatPairingTicker(primaryQuoteId);
 
   const canLaunch =
     !!form.name &&
@@ -112,6 +91,80 @@ export function LaunchSummary({
         : form.hookMode === "custom"
           ? "Deploy hook & launch"
           : "Launch token";
+
+  if (!walletReady) {
+    return (
+      <div className={cn("space-y-3", className)}>
+        <p className="text-xs text-zinc-500">Connect a wallet on {getNetworkLabel()} to launch.</p>
+        <ConnectButton className="w-full justify-center py-2.5" />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onLaunch}
+      disabled={!canLaunch}
+      className={cn(
+        "launch-coin-nav justify-center rounded-xl disabled:cursor-not-allowed disabled:opacity-40",
+        className,
+      )}
+    >
+      {isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Rocket className="h-4 w-4" />
+      )}
+      {ctaLabel}
+    </button>
+  );
+}
+
+type Props = {
+  form: LaunchFormState;
+  variant?: "classic" | "custom";
+  launchFee?: bigint;
+  launchFeeEth: number;
+  walletReady: boolean;
+  factoryConfigured: boolean;
+  isPending: boolean;
+  phase: LaunchPhase;
+  activeHooks: HookId[];
+  onLaunch: () => void;
+  showLaunchCta?: boolean;
+};
+
+export function LaunchSummary({
+  form,
+  variant = "custom",
+  launchFeeEth,
+  walletReady,
+  factoryConfigured,
+  isPending,
+  phase,
+  activeHooks,
+  onLaunch,
+  showLaunchCta = true,
+}: Props) {
+  const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
+  const showActiveModules = summaryHooks.length > 0;
+
+  const primaryQuoteId = form.markets[0]?.id ?? form.quoteAsset;
+  const quoteAddr =
+    primaryQuoteId === "eth"
+      ? zeroAddress
+      : primaryQuoteId === "usdg"
+        ? STABLE_QUOTE_ADDRESS
+        : zeroAddress;
+  const devBuyConfigured = hasDevBuyConfigured(form);
+  const devBuyQuoteWei = devBuyConfigured
+    ? resolveDevBuyQuoteWei(form, {
+        rail: variant === "classic" ? "classic" : "master",
+        quote: quoteAddr,
+      })
+    : null;
+  const devBuyPayLabel = primaryQuoteId === "eth" ? "ETH" : formatPairingTicker(primaryQuoteId);
 
   return (
     <aside className="panel sticky top-20 flex flex-col gap-4 p-5 lg:top-24">
@@ -219,26 +272,28 @@ export function LaunchSummary({
         </ol>
       )}
 
-      {!walletReady ? (
-        <div className="space-y-3">
-          <p className="text-xs text-zinc-500">Connect a wallet on {getNetworkLabel()} to launch.</p>
-          <ConnectButton className="w-full justify-center py-2.5" />
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={onLaunch}
-          disabled={!canLaunch}
-          className="launch-coin-nav w-full justify-center rounded-xl disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+      {showLaunchCta ? (
+        <>
+          {!walletReady ? (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-500">Connect a wallet on {getNetworkLabel()} to launch.</p>
+              <ConnectButton className="w-full justify-center py-2.5" />
+            </div>
           ) : (
-            <Rocket className="h-4 w-4" />
+            <LaunchSummaryCta
+              form={form}
+              variant={variant}
+              launchFeeEth={launchFeeEth}
+              walletReady={walletReady}
+              factoryConfigured={factoryConfigured}
+              isPending={isPending}
+              phase={phase}
+              onLaunch={onLaunch}
+              className="w-full"
+            />
           )}
-          {ctaLabel}
-        </button>
-      )}
+        </>
+      ) : null}
 
       {!factoryConfigured && (
         <p className="text-xs text-amber-200/80">
