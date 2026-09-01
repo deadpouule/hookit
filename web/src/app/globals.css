@@ -193,7 +193,7 @@
   .launch-wizard-top {
     position: relative;
     margin-bottom: 0.5rem;
-    padding-right: 0;
+    padding-left: 0;
   }
 
   .launch-wizard-top-main {
@@ -204,16 +204,21 @@
 
   .launch-wizard-master-badge {
     margin-bottom: 0;
+    padding: 6px 13px;
+    font-size: 14px;
+    gap: 0.6rem;
   }
 
   .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
+    width: 1.15rem;
+    font-size: 0.38rem;
     color: #c084fc;
   }
 
   .launch-wizard-exit-btn {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     z-index: 1;
   }
 
@@ -224,7 +229,7 @@
 
     .launch-wizard-exit-btn {
       top: 0;
-      right: 0;
+      left: 0;
       font-size: 13px;
       padding: 0.55rem 0.85rem;
     }
