@@ -276,6 +276,7 @@ export function HookModulePicker({
   hookIds,
   heading = "Pick your hooks",
   includeFixedFee = false,
+  configLayout = "stack",
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
@@ -288,6 +289,7 @@ export function HookModulePicker({
   hookIds?: MasterHookId[];
   heading?: string;
   includeFixedFee?: boolean;
+  configLayout?: "stack" | "aside";
 }) {
   const panelRefs = useRef<Partial<Record<PickerFocusId, HTMLDivElement | null>>>({});
   const visibleHooks = hookIds
@@ -407,78 +409,108 @@ export function HookModulePicker({
       : []),
   ];
 
-  return (
-    <div>
-      <p className="pick-heading">{heading}</p>
-      <div className="pick-grid pick-grid--hooks">{renderPickCards()}</div>
+  const visibleConfigIds =
+    configLayout === "aside" && focus
+      ? configPanelIds.filter((id) => id === focus)
+      : configPanelIds;
 
-      {configPanelIds.length > 0 && (
-        <div className="mt-5 space-y-3">
+  const configPanels =
+    visibleConfigIds.length > 0 ? (
+      <div
+        className={cn(
+          configLayout === "aside"
+            ? "launch-wizard-hook-config space-y-3 lg:sticky lg:top-20"
+            : "mt-5 space-y-3",
+        )}
+      >
+        {configLayout === "stack" ? (
           <p className="text-xs text-zinc-500">
             All active modules — settings stay visible when you switch focus.
           </p>
-          {configPanelIds.map((panelId) => {
-            if (panelId === "fixed-fee") {
-              return (
-                <div
-                  key="fixed-fee"
-                  data-hook-id="fixed-fee"
-                  ref={(el) => {
-                    panelRefs.current["fixed-fee"] = el;
-                  }}
-                  className={cn(
-                    "pick-config pick-config--panel transition-shadow",
-                    `pick-config--${FIXED_FEE_THEME}`,
-                    focus === "fixed-fee" && "pick-config--focused",
-                  )}
-                >
-                  <FixedFeeConfigPanel
-                    active={focus === "fixed-fee"}
-                    hookTaxBps={hookTaxBps}
-                    onHookTaxBpsChange={(bps) => {
-                      onHookTaxBpsChange?.(bps);
-                      onHookTaxChange?.(bps);
-                    }}
-                  />
-                </div>
-              );
-            }
-
-            const hook = enabledHooks.find((item) => item.id === panelId);
-            if (!hook) return null;
-
+        ) : (
+          <p className="text-xs text-zinc-500">Active module settings</p>
+        )}
+        {visibleConfigIds.map((panelId) => {
+          if (panelId === "fixed-fee") {
             return (
               <div
-                key={hook.id}
-                data-hook-id={hook.id}
+                key="fixed-fee"
+                data-hook-id="fixed-fee"
                 ref={(el) => {
-                  panelRefs.current[hook.id] = el;
+                  panelRefs.current["fixed-fee"] = el;
                 }}
                 className={cn(
                   "pick-config pick-config--panel transition-shadow",
-                  `pick-config--${hook.theme}`,
-                  focus === hook.id && "pick-config--focused",
+                  `pick-config--${FIXED_FEE_THEME}`,
+                  focus === "fixed-fee" && "pick-config--focused",
                 )}
               >
-                <HookConfigHeader
-                  hook={hook}
-                  active={focus === hook.id}
-                  modules={modules}
+                <FixedFeeConfigPanel
+                  active={focus === "fixed-fee"}
                   hookTaxBps={hookTaxBps}
-                />
-                <HookSettings
-                  hook={hook}
-                  modules={modules}
-                  onUpdate={onUpdate}
-                  onHookTaxChange={onHookTaxChange}
-                  floorEst={floorEst}
-                  hookTaxBps={hookTaxBps}
+                  onHookTaxBpsChange={(bps) => {
+                    onHookTaxBpsChange?.(bps);
+                    onHookTaxChange?.(bps);
+                  }}
                 />
               </div>
             );
-          })}
-        </div>
-      )}
+          }
+
+          const hook = enabledHooks.find((item) => item.id === panelId);
+          if (!hook) return null;
+
+          return (
+            <div
+              key={hook.id}
+              data-hook-id={hook.id}
+              ref={(el) => {
+                panelRefs.current[hook.id] = el;
+              }}
+              className={cn(
+                "pick-config pick-config--panel transition-shadow",
+                `pick-config--${hook.theme}`,
+                focus === hook.id && "pick-config--focused",
+              )}
+            >
+              <HookConfigHeader
+                hook={hook}
+                active={focus === hook.id}
+                modules={modules}
+                hookTaxBps={hookTaxBps}
+              />
+              <HookSettings
+                hook={hook}
+                modules={modules}
+                onUpdate={onUpdate}
+                onHookTaxChange={onHookTaxChange}
+                floorEst={floorEst}
+                hookTaxBps={hookTaxBps}
+              />
+            </div>
+          );
+        })}
+      </div>
+    ) : configLayout === "aside" ? (
+      <div className="launch-wizard-hook-config launch-wizard-hook-config--empty lg:sticky lg:top-20">
+        <p className="text-xs leading-relaxed text-zinc-500">
+          Select a hook to configure its settings here.
+        </p>
+      </div>
+    ) : null;
+
+  return (
+    <div className={cn(configLayout === "aside" && "launch-wizard-hook-picker")}>
+      <p className="pick-heading">{heading}</p>
+      <div
+        className={cn(
+          configLayout === "aside" &&
+            "grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)]",
+        )}
+      >
+        <div className="pick-grid pick-grid--hooks pick-grid--hooks-wizard">{renderPickCards()}</div>
+        {configPanels}
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronRight, ExternalLink, ImagePlus } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
@@ -12,10 +12,11 @@ import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookArchitectureSection } from "@/components/launch/HookArchitectureSection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
+import { LaunchWizardNav } from "@/components/launch/LaunchWizardNav";
+import { LaunchWizardStepSummary } from "@/components/launch/LaunchWizardStepSummary";
 import { LaunchWizardStepper } from "@/components/launch/LaunchWizardStepper";
 import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
-  FormDivider,
   FormPanel,
   SectionLabel,
 } from "@/components/ui/form-primitives";
@@ -332,184 +333,185 @@ export function MasterLaunchWizard() {
         <div className="launch-wizard-review mx-auto max-w-6xl">
           <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-8" />
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-            <FormPanel>
-              <DevBuySection
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+            <div className="space-y-6">
+              <FormPanel>
+                <DevBuySection
+                  form={form}
+                  variant="custom"
+                  onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+                />
+
+                <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />
+              </FormPanel>
+
+              <LaunchSummary
                 form={form}
                 variant="custom"
-                onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+                launchFee={launchFee}
+                launchFeeEth={launchFeeEth}
+                walletReady={walletReady}
+                factoryConfigured={factoryConfigured}
+                isPending={isPending}
+                phase={phase}
+                activeHooks={activeHooks}
+                onLaunch={handleLaunch}
               />
+            </div>
 
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-6">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="launch-wizard-back inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </button>
-              </div>
-            </FormPanel>
-
-            <LaunchSummary
-              form={form}
-              variant="custom"
-              launchFee={launchFee}
-              launchFeeEth={launchFeeEth}
-              walletReady={walletReady}
-              factoryConfigured={factoryConfigured}
-              isPending={isPending}
-              phase={phase}
-              activeHooks={activeHooks}
-              onLaunch={handleLaunch}
-            />
+            <LaunchWizardStepSummary step={step} form={form} />
           </div>
         </div>
       ) : !result ? (
-        <div className="launch-wizard-step-shell mx-auto max-w-3xl">
+        <div className="launch-wizard-step-shell mx-auto max-w-6xl">
           <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-8" />
 
-          <FormPanel>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+            <FormPanel>
             {step === 1 && (
-              <>
-                <SectionLabel>Token details</SectionLabel>
+              <div className="launch-wizard-step1-grid">
+                <div className="launch-wizard-step1-col">
+                  <SectionLabel>Token details</SectionLabel>
 
-                <div className="mt-4 flex flex-col gap-5 sm:flex-row">
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => fileRef.current?.click()}
-                    onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      handleImage(e.dataTransfer.files[0]);
-                    }}
-                    className={cn(
-                      "flex h-[140px] w-full shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 transition hover:border-white/25 sm:w-[140px]",
-                      form.imagePreview && "border-white/20 p-0",
-                    )}
+                  <div className="mt-4 flex flex-col gap-5 sm:flex-row">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => fileRef.current?.click()}
+                      onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleImage(e.dataTransfer.files[0]);
+                      }}
+                      className={cn(
+                        "flex h-[120px] w-full shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 transition hover:border-white/25 sm:h-[140px] sm:w-[120px]",
+                        form.imagePreview && "border-white/20 p-0",
+                      )}
+                    >
+                      {form.imagePreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={form.imagePreview}
+                          alt=""
+                          className="h-full w-full rounded-xl object-cover"
+                        />
+                      ) : (
+                        <>
+                          <ImagePlus className="mb-2 h-6 w-6 text-zinc-600" />
+                          <span className="px-3 text-center text-xs leading-relaxed text-zinc-500">
+                            Logo
+                            <br />
+                            JPG, PNG · max 1.5MB
+                          </span>
+                        </>
+                      )}
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImage(e.target.files?.[0])}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1 space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label className="mb-1.5 block text-xs text-zinc-500">Name</Label>
+                          <input
+                            className="field-input"
+                            placeholder="My Token"
+                            value={form.name}
+                            onChange={(e) => updateField("name", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="mb-1.5 block text-xs text-zinc-500">Symbol</Label>
+                          <input
+                            className="field-input font-mono uppercase"
+                            placeholder="TKN"
+                            maxLength={8}
+                            value={form.ticker}
+                            onChange={(e) => updateField("ticker", e.target.value.toUpperCase())}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
+                        <textarea
+                          className="field-textarea launch-wizard-step1-desc"
+                          placeholder="What makes this token hooked?"
+                          value={form.description}
+                          onChange={(e) => updateField("description", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSocialsOpen(!socialsOpen)}
+                    className="mt-4 flex w-full items-center justify-between border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
                   >
-                    {form.imagePreview ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={form.imagePreview}
-                        alt=""
-                        className="h-full w-full rounded-xl object-cover"
-                      />
-                    ) : (
-                      <>
-                        <ImagePlus className="mb-2 h-6 w-6 text-zinc-600" />
-                        <span className="px-3 text-center text-xs leading-relaxed text-zinc-500">
-                          Logo
-                          <br />
-                          JPG, PNG · max 1.5MB
-                        </span>
-                      </>
-                    )}
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImage(e.target.files?.[0])}
-                    />
-                  </div>
+                    Social links
+                    <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />
+                  </button>
 
-                  <div className="min-w-0 flex-1 space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label className="mb-1.5 block text-xs text-zinc-500">Name</Label>
-                        <input
-                          className="field-input"
-                          placeholder="My Token"
-                          value={form.name}
-                          onChange={(e) => updateField("name", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="mb-1.5 block text-xs text-zinc-500">Symbol</Label>
-                        <input
-                          className="field-input font-mono uppercase"
-                          placeholder="TKN"
-                          maxLength={8}
-                          value={form.ticker}
-                          onChange={(e) => updateField("ticker", e.target.value.toUpperCase())}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
-                      <textarea
-                        className="field-textarea"
-                        placeholder="What makes this token hooked?"
-                        value={form.description}
-                        onChange={(e) => updateField("description", e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <AnimatePresence>
+                    {socialsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                          {(["twitter", "telegram", "website"] as const).map((field) => (
+                            <input
+                              key={field}
+                              className="field-input"
+                              placeholder={
+                                field === "twitter"
+                                  ? "@handle"
+                                  : field === "telegram"
+                                    ? "t.me/..."
+                                    : "https://"
+                              }
+                              value={form[field]}
+                              onChange={(e) => updateField(field, e.target.value)}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setSocialsOpen(!socialsOpen)}
-                  className="mt-4 flex w-full items-center justify-between border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
-                >
-                  Social links
-                  <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />
-                </button>
-
-                <AnimatePresence>
-                  {socialsOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                        {(["twitter", "telegram", "website"] as const).map((field) => (
-                          <input
-                            key={field}
-                            className="field-input"
-                            placeholder={
-                              field === "twitter"
-                                ? "@handle"
-                                : field === "telegram"
-                                  ? "t.me/..."
-                                  : "https://"
-                            }
-                            value={form[field]}
-                            onChange={(e) => updateField(field, e.target.value)}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <FormDivider />
-
-                <PairingPicker
-                  markets={form.markets}
-                  floorQuoteIndex={form.floorQuoteIndex}
-                  onMarketsChange={(markets) =>
-                    setForm((p) => ({
-                      ...p,
-                      markets,
-                      quoteAsset: markets[0]?.id ?? p.quoteAsset,
-                      modules:
-                        markets.length > 1 && p.modules.backedFloor
-                          ? { ...p.modules, backedFloor: false }
-                          : p.modules,
-                    }))
-                  }
-                  onFloorQuoteIndexChange={(floorQuoteIndex) =>
-                    setForm((p) => ({ ...p, floorQuoteIndex }))
-                  }
-                />
-              </>
+                <div className="launch-wizard-step1-col">
+                  <SectionLabel>Pick your pair</SectionLabel>
+                  <div className="mt-4">
+                    <PairingPicker
+                      markets={form.markets}
+                      floorQuoteIndex={form.floorQuoteIndex}
+                      onMarketsChange={(markets) =>
+                        setForm((p) => ({
+                          ...p,
+                          markets,
+                          quoteAsset: markets[0]?.id ?? p.quoteAsset,
+                          modules:
+                            markets.length > 1 && p.modules.backedFloor
+                              ? { ...p.modules, backedFloor: false }
+                              : p.modules,
+                        }))
+                      }
+                      onFloorQuoteIndexChange={(floorQuoteIndex) =>
+                        setForm((p) => ({ ...p, floorQuoteIndex }))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             )}
 
             {step === 2 && (
@@ -547,6 +549,7 @@ export function MasterLaunchWizard() {
                     <HookModulePicker
                       heading="Protection hooks"
                       hookIds={LAUNCH_WIZARD_HOOK_IDS[2]}
+                      configLayout="aside"
                       modules={form.modules}
                       onToggle={toggleModule}
                       onUpdate={updateModules}
@@ -571,6 +574,7 @@ export function MasterLaunchWizard() {
                     heading="Trading fee hooks"
                     hookIds={LAUNCH_WIZARD_HOOK_IDS[3]}
                     includeFixedFee
+                    configLayout="aside"
                     modules={form.modules}
                     onToggle={toggleModule}
                     onUpdate={updateModules}
@@ -593,6 +597,7 @@ export function MasterLaunchWizard() {
                   <HookModulePicker
                     heading="Tokenomics hooks"
                     hookIds={LAUNCH_WIZARD_HOOK_IDS[4]}
+                    configLayout="aside"
                     modules={form.modules}
                     onToggle={toggleModule}
                     onUpdate={updateModules}
@@ -606,30 +611,12 @@ export function MasterLaunchWizard() {
             )}
 
             {showWizardChrome && (
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-6">
-                {step > 1 ? (
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="launch-wizard-back inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="launch-wizard-continue inline-flex items-center gap-2"
-                >
-                  Continue
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+              <LaunchWizardNav step={step} onBack={goBack} onContinue={goNext} />
             )}
           </FormPanel>
+
+            <LaunchWizardStepSummary step={step} form={form} />
+          </div>
         </div>
       ) : null}
     </div>

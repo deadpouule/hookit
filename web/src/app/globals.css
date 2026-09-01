@@ -190,6 +190,118 @@
     letter-spacing: -0.01em;
   }
 
+  .launch-wizard-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .launch-wizard-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgb(149 20 209 / 0.55);
+    background: rgb(149 20 209 / 0.18);
+    padding: 0.65rem 1.15rem;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f5f3ff;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .launch-wizard-nav-btn:hover {
+    border-color: rgb(149 20 209 / 0.85);
+    background: rgb(149 20 209 / 0.32);
+    box-shadow: 0 0 18px rgb(149 20 209 / 0.35);
+  }
+
+  .launch-wizard-context {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: 5rem;
+  }
+
+  .launch-wizard-context-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .launch-wizard-context-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(161 161 170);
+  }
+
+  .launch-wizard-context-card {
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(0 0 0 / 0.35);
+    padding: 0.85rem 1rem;
+  }
+
+  .launch-wizard-context-card--next {
+    border-color: rgb(149 20 209 / 0.25);
+    background: rgb(149 20 209 / 0.08);
+  }
+
+  .launch-wizard-context-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .launch-wizard-context-detail {
+    margin-top: 0.35rem;
+    font-size: 12px;
+    line-height: 1.45;
+    color: rgb(161 161 170);
+  }
+
+  .launch-wizard-step1-grid {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (min-width: 1024px) {
+    .launch-wizard-step1-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  .launch-wizard-step1-desc {
+    min-height: 4.5rem;
+    resize: vertical;
+  }
+
+  .launch-wizard-hook-picker .pick-grid--hooks-wizard {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .launch-wizard-hook-config--empty {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .launch-wizard-hook-config--empty {
+      display: block;
+      border: 1px dashed rgb(255 255 255 / 0.1);
+      background: rgb(0 0 0 / 0.2);
+      padding: 1rem;
+      min-height: 120px;
+    }
+  }
+
   .launch-wizard-continue {
     border: 1px solid rgb(149 20 209 / 0.55);
     background: rgb(149 20 209 / 0.18);
