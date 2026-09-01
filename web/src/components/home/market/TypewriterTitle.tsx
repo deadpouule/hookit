@@ -28,7 +28,7 @@ const LINES: TypewriterLine[] = [
       { kind: "logo", id: "mstr" },
       { kind: "logo", id: "aapl" },
       { kind: "logo", id: "tsla" },
-      { kind: "text", value: " ETH " },
+      { kind: "text", value: ", ETH " },
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },

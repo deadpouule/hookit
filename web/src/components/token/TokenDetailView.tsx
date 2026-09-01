@@ -77,7 +77,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     if (!resolved) return 0;
     return MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id)).length;
   }, [isClassicDesk, pool]);
-  const balancedDesk = !isClassicDesk && activeHookCount > 0 && activeHookCount <= 3;
+  const balancedDesk = !isClassicDesk && activeHookCount === 1;
+  const compactHeroDesk = !isClassicDesk && activeHookCount >= 2;
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
@@ -86,7 +87,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   };
 
   const heroCard = (
-    <div className="desk-card token-hero-card">
+    <div
+      className={cn(
+        "desk-card token-hero-card",
+        balancedDesk && "token-hero-card--balanced",
+        compactHeroDesk && "token-hero-card--compact",
+      )}
+    >
       <header className="flex flex-wrap items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
         <div
           className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border sm:h-20 sm:w-20"
@@ -232,6 +239,16 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
       ) : balancedDesk ? (
         <div className={cn("token-desk mt-4", "token-desk--hooks", "token-desk--balanced")}>
+          <aside className="token-desk-rail token-desk-rail--left">
+            <ActiveHooksPanel pool={pool} />
+          </aside>
+          <div className="token-desk-hero min-w-0">{heroCard}</div>
+          {chart}
+          {txTable}
+          {rightRail}
+        </div>
+      ) : compactHeroDesk ? (
+        <div className={cn("token-desk mt-4", "token-desk--hooks", "token-desk--multi-hooks")}>
           <aside className="token-desk-rail token-desk-rail--left">
             <ActiveHooksPanel pool={pool} />
           </aside>
