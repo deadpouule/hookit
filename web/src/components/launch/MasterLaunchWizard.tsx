@@ -253,11 +253,6 @@ export function MasterLaunchWizard() {
     <div className={cn("launch-shell launch-wizard-compact", !result && "pt-0 sm:pt-1")}>
       <div className="launch-wizard-top">
         <div className="launch-wizard-top-main">
-          {step === 1 && !result ? (
-            <p className="terminal-title mx-auto mb-1.5 max-w-lg text-sm font-medium tracking-tight text-zinc-400 sm:text-base">
-              {MASTER_WIZARD_STEP_INTRO}
-            </p>
-          ) : null}
           <span className="token-type-badge token-type-badge--master token-hooks-count-badge launch-wizard-master-badge">
             <MasterHookGlyph className="token-type-badge-glyph" />
             Master launch
@@ -265,7 +260,11 @@ export function MasterLaunchWizard() {
           <h1 className="terminal-title mt-1.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             Create a hooked token
           </h1>
-          {stepSubtitle ? (
+          {step === 1 && !result ? (
+            <p className="terminal-title mx-auto mt-1 max-w-lg text-sm font-medium tracking-tight text-zinc-400 sm:text-base">
+              {MASTER_WIZARD_STEP_INTRO}
+            </p>
+          ) : stepSubtitle ? (
             <p className="terminal-title mx-auto mt-1 max-w-xl text-base font-medium tracking-tight text-zinc-400 sm:text-lg">
               {stepSubtitle}
             </p>
@@ -356,15 +355,15 @@ export function MasterLaunchWizard() {
         <div className="launch-wizard-review mx-auto max-w-md">
           <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-3" />
 
-          <LaunchSummary {...summaryProps} showLaunchCta={false} />
+          <LaunchSummary {...summaryProps} showLaunchCta={false} sticky={false} />
 
-          <div className="mt-4">
+          <FormPanel className="launch-wizard-panel mt-4">
             <DevBuySection
               form={form}
               variant="custom"
               onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
             />
-          </div>
+          </FormPanel>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />

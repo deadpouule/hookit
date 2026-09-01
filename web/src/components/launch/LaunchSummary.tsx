@@ -133,6 +133,7 @@ type Props = {
   activeHooks: HookId[];
   onLaunch: () => void;
   showLaunchCta?: boolean;
+  sticky?: boolean;
 };
 
 export function LaunchSummary({
@@ -146,6 +147,7 @@ export function LaunchSummary({
   activeHooks,
   onLaunch,
   showLaunchCta = true,
+  sticky = true,
 }: Props) {
   const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
   const showActiveModules = summaryHooks.length > 0;
@@ -167,7 +169,12 @@ export function LaunchSummary({
   const devBuyPayLabel = primaryQuoteId === "eth" ? "ETH" : formatPairingTicker(primaryQuoteId);
 
   return (
-    <aside className="panel sticky top-20 flex flex-col gap-4 p-5 lg:top-24">
+    <aside
+      className={cn(
+        "panel flex flex-col gap-4 p-5",
+        sticky && "sticky top-20 lg:top-24",
+      )}
+    >
       <div>
         <h2 className="text-lg font-medium text-white">
           {form.name || "Untitled token"}

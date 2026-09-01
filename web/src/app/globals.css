@@ -265,7 +265,7 @@
   }
 
   .launch-wizard-compact {
-    padding-bottom: 1.5rem;
+    padding-bottom: 6rem;
   }
 
   .launch-wizard-compact .launch-wizard-stepper-track {
@@ -341,6 +341,10 @@
     margin-top: 0;
     padding-top: 0;
     border-top: 0;
+  }
+
+  .launch-wizard-review {
+    padding-bottom: 2rem;
   }
 
   .launch-pairing-compact .pick-heading {
