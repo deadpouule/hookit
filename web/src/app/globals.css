@@ -146,6 +146,72 @@
     @apply mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6;
   }
 
+  .launch-wizard-stepper {
+    text-align: center;
+  }
+
+  .launch-wizard-stepper-count {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: #d8b4fe;
+  }
+
+  .launch-wizard-stepper-track {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 0.75rem;
+  }
+
+  .launch-wizard-stepper-dot {
+    height: 3px;
+    width: 2.5rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .launch-wizard-stepper-dot--done {
+    background: rgb(149 20 209 / 0.45);
+  }
+
+  .launch-wizard-stepper-dot--active {
+    background: #9514d1;
+    box-shadow: 0 0 12px rgb(149 20 209 / 0.55);
+  }
+
+  .launch-wizard-stepper-label {
+    margin-top: 0.65rem;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--foreground);
+    letter-spacing: -0.01em;
+  }
+
+  .launch-wizard-continue {
+    border: 1px solid rgb(149 20 209 / 0.55);
+    background: rgb(149 20 209 / 0.18);
+    padding: 0.65rem 1.15rem;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f5f3ff;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .launch-wizard-continue:hover {
+    border-color: rgb(149 20 209 / 0.85);
+    background: rgb(149 20 209 / 0.32);
+    box-shadow: 0 0 18px rgb(149 20 209 / 0.35);
+  }
+
+  .launch-wizard-back {
+    border: 0;
+    background: transparent;
+    padding: 0.35rem 0;
+  }
+
   .launch-shell .field-input,
   .launch-shell .field-textarea {
     border-radius: 0;

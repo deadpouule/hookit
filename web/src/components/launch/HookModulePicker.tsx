@@ -130,6 +130,8 @@ export function HookModulePicker({
   floorEst,
   multiMarket = false,
   hookTaxBps = 0,
+  hookIds,
+  heading = "Pick your hooks",
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
@@ -137,9 +139,14 @@ export function HookModulePicker({
   floorEst: number;
   multiMarket?: boolean;
   hookTaxBps?: number;
+  hookIds?: MasterHookId[];
+  heading?: string;
 }) {
   const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
-  const enabledHooks = MASTER_HOOKS.filter((h) => isModuleEnabled(modules, h.id));
+  const visibleHooks = hookIds
+    ? MASTER_HOOKS.filter((hook) => hookIds.includes(hook.id))
+    : MASTER_HOOKS;
+  const enabledHooks = visibleHooks.filter((h) => isModuleEnabled(modules, h.id));
   const [focus, setFocus] = useState<MasterHookId | null>(enabledHooks[0]?.id ?? null);
 
   useEffect(() => {
@@ -184,9 +191,9 @@ export function HookModulePicker({
 
   return (
     <div>
-      <p className="pick-heading">Pick your hooks</p>
+      <p className="pick-heading">{heading}</p>
       <div className="pick-grid pick-grid--hooks">
-        {MASTER_HOOKS.map((hook) => {
+        {visibleHooks.map((hook) => {
           const selected = isModuleEnabled(modules, hook.id);
           const disabled = multiMarket && hook.id === "backed-floor";
           return (

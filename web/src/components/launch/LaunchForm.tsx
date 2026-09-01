@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, ExternalLink, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
@@ -13,6 +13,7 @@ import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookArchitectureSection } from "@/components/launch/HookArchitectureSection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
+import { LaunchWizardStepper } from "@/components/launch/LaunchWizardStepper";
 import { PairingPicker } from "@/components/launch/PairingPicker";
 import {
   FormDivider,
@@ -34,18 +35,46 @@ import { estimateFloorPrice, formatBps } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
 import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
+import {
+  CLASSIC_LAUNCH_STEPS,
+  LAUNCH_WIZARD_HOOK_IDS,
+  MASTER_LAUNCH_STEPS,
+  masterHookWizardStep,
+} from "@/lib/launch-wizard";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
-import type { PairingTokenId } from "@/lib/pairing-tokens";
 import type { LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+function validateTokenStep(form: LaunchFormState): string | null {
+  if (!form.name.trim()) return "Token name is required.";
+  if (!form.ticker.trim()) return "Token symbol is required.";
+  if (form.markets.length > 1) {
+    const totalBps = form.markets.reduce((sum, market) => sum + market.bps, 0);
+    if (totalBps !== 10_000) return "Multi-pair liquidity split must total 100%.";
+  }
+  return null;
+}
+
 export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "custom" }) {
   const searchParams = useSearchParams();
+  const isClassic = variant === "classic";
+  const wizardSteps = isClassic ? CLASSIC_LAUNCH_STEPS : MASTER_LAUNCH_STEPS;
+  const reviewStep = isClassic ? 2 : 5;
+
+  const [step, setStep] = useState(() => {
+    if (isClassic) return 1;
+    const hook = searchParams.get("hook");
+    if (hook && MASTER_HOOKS.some((item) => item.id === hook)) {
+      return masterHookWizardStep(hook as (typeof MASTER_HOOKS)[number]["id"]);
+    }
+    return 1;
+  });
+
   const [form, setForm] = useState<LaunchFormState>(() =>
     withMasterHookEnabled(
-      variant === "classic" ? DEFAULT_CLASSIC_LAUNCH_STATE : DEFAULT_LAUNCH_STATE,
-      variant === "custom" ? searchParams.get("hook") : null,
+      isClassic ? DEFAULT_CLASSIC_LAUNCH_STATE : DEFAULT_LAUNCH_STATE,
+      !isClassic ? searchParams.get("hook") : null,
     ),
   );
   const [socialsOpen, setSocialsOpen] = useState(false);
@@ -62,10 +91,10 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     setError,
     result,
     resetResult,
-  } = useLaunchToken(variant === "classic" ? "classic" : "master");
+  } = useLaunchToken(isClassic ? "classic" : "master");
 
   useEffect(() => {
-    if (variant !== "custom") return;
+    if (isClassic) return;
     if (searchParams.get("from") !== "builder") return;
     const draft = loadBuilderDraft();
     if (!draft) return;
@@ -76,7 +105,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
       hookTaxBps: draft.hookTaxBps,
     }));
     setDraftLoaded(true);
-  }, [searchParams, variant]);
+  }, [isClassic, searchParams]);
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
   const network = getChainDeployment().networkLabel;
@@ -87,6 +116,18 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
   const updateModules = (patch: Partial<LaunchModules>) => {
     setForm((prev) => ({ ...prev, modules: { ...prev.modules, ...patch } }));
+  };
+
+  const toggleModule = (id: (typeof MASTER_HOOKS)[number]["id"], next: boolean) => {
+    if (id === "creator-share-to-hook" && next) {
+      updateModules({ creatorShareToHook: true, buybackVesting: false });
+      return;
+    }
+    if (id === "buyback-vesting" && next) {
+      updateModules({ buybackVesting: true, creatorShareToHook: false });
+      return;
+    }
+    updateModules({ [HOOK_MODULE_FIELD[id]]: next });
   };
 
   const floorEst = estimateFloorPrice(form.modules.floorAllocation, 0);
@@ -122,6 +163,41 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
     });
   };
 
+  const goNext = () => {
+    setError(null);
+    if (step === 1) {
+      const validationError = validateTokenStep(form);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+    if (step >= reviewStep) return;
+    if (isClassic && step === 1) {
+      setStep(2);
+      return;
+    }
+    setStep((current) => Math.min(reviewStep, current + 1));
+  };
+
+  const goBack = () => {
+    setError(null);
+    if (step <= 1) return;
+    if (isClassic && step === reviewStep) {
+      setStep(1);
+      return;
+    }
+    setStep((current) => Math.max(1, current - 1));
+  };
+
+  const handleLaunchAnother = () => {
+    resetResult();
+    setStep(1);
+    setForm(isClassic ? DEFAULT_CLASSIC_LAUNCH_STATE : DEFAULT_LAUNCH_STATE);
+  };
+
+  const showWizardChrome = !result && step < reviewStep;
+
   return (
     <div className="launch-shell pt-6 sm:pt-10">
       <Link
@@ -134,10 +210,10 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
 
       <div className="mb-10 text-center">
         <p className="mb-2 text-[11px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
-          {variant === "classic" ? "Classic launch" : "Custom launch"}
+          {isClassic ? "Classic launch" : "Master launch"}
         </p>
         <h1 className="terminal-title text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-          {variant === "classic" ? "Create a Classic coin" : "Create a hooked token"}
+          {isClassic ? "Create a Classic coin" : "Create a hooked token"}
         </h1>
         {draftLoaded && (
           <p className="mx-auto mt-3 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
@@ -150,7 +226,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           <p className="mt-1 text-amber-200/80">
             Deploy contracts, then set{" "}
             <code className="rounded bg-black/30 px-1 font-mono text-xs">
-              {variant === "classic" ? "NEXT_PUBLIC_BONDING_FACTORY" : "NEXT_PUBLIC_LAUNCH_FACTORY"}
+              {isClassic ? "NEXT_PUBLIC_BONDING_FACTORY" : "NEXT_PUBLIC_LAUNCH_FACTORY"}
             </code>{" "}
             in <code className="font-mono text-xs">web/.env.local</code>.
           </p>
@@ -206,7 +282,7 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
           </dl>
           <button
             type="button"
-            onClick={resetResult}
+            onClick={handleLaunchAnother}
             className="mt-4 text-xs text-emerald-300 underline-offset-2 hover:underline"
           >
             Launch another token
@@ -220,257 +296,336 @@ export function LaunchForm({ variant = "custom" }: { variant?: "classic" | "cust
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-        <FormPanel>
-          <SectionLabel>Token details</SectionLabel>
+      {!result && step === reviewStep ? (
+        <div className="launch-wizard-review mx-auto max-w-6xl">
+          <LaunchWizardStepper steps={wizardSteps} current={step} className="mb-8" />
 
-          <div className="mt-4 flex flex-col gap-5 sm:flex-row">
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => fileRef.current?.click()}
-              onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleImage(e.dataTransfer.files[0]);
-              }}
-              className={cn(
-                "flex h-[140px] w-full shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 transition hover:border-white/25 sm:w-[140px]",
-                form.imagePreview && "border-white/20 p-0",
-              )}
-            >
-              {form.imagePreview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={form.imagePreview}
-                  alt=""
-                  className="h-full w-full rounded-xl object-cover"
-                />
-              ) : (
-                <>
-                  <ImagePlus className="mb-2 h-6 w-6 text-zinc-600" />
-                  <span className="px-3 text-center text-xs leading-relaxed text-zinc-500">
-                    Logo
-                    <br />
-                    JPG, PNG · max 1.5MB
-                  </span>
-                </>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleImage(e.target.files?.[0])}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+            <FormPanel>
+              <DevBuySection
+                form={form}
+                variant={variant}
+                onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
               />
-            </div>
 
-            <div className="min-w-0 flex-1 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Name</Label>
-                  <input
-                    className="field-input"
-                    placeholder="My Token"
-                    value={form.name}
-                    onChange={(e) => updateField("name", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Symbol</Label>
-                  <input
-                    className="field-input font-mono uppercase"
-                    placeholder="TKN"
-                    maxLength={8}
-                    value={form.ticker}
-                    onChange={(e) => updateField("ticker", e.target.value.toUpperCase())}
-                  />
-                </div>
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-6">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="launch-wizard-back inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
               </div>
-              <div>
-                <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
-                <textarea
-                  className="field-textarea"
-                  placeholder={
-                    variant === "classic"
-                      ? "Describe your token — story, utility, or community."
-                      : "What makes this token hooked?"
-                  }
-                  value={form.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                />
-              </div>
-            </div>
+            </FormPanel>
+
+            <LaunchSummary
+              form={form}
+              variant={variant}
+              launchFee={launchFee}
+              launchFeeEth={launchFeeEth}
+              walletReady={walletReady}
+              factoryConfigured={factoryConfigured}
+              isPending={isPending}
+              phase={phase}
+              activeHooks={activeHooks}
+              onLaunch={handleLaunch}
+            />
           </div>
+        </div>
+      ) : !result ? (
+        <div className="launch-wizard-step-shell mx-auto max-w-3xl">
+          <LaunchWizardStepper steps={wizardSteps} current={step} className="mb-8" />
 
-          <button
-            type="button"
-            onClick={() => setSocialsOpen(!socialsOpen)}
-            className="mt-4 flex w-full items-center justify-between border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
-          >
-            Social links
-            <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />
-          </button>
+          <FormPanel>
+            {step === 1 && (
+              <>
+                <SectionLabel>Token details</SectionLabel>
 
-          <AnimatePresence>
-            {socialsOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  {(["twitter", "telegram", "website"] as const).map((field) => (
+                <div className="mt-4 flex flex-col gap-5 sm:flex-row">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => fileRef.current?.click()}
+                    onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleImage(e.dataTransfer.files[0]);
+                    }}
+                    className={cn(
+                      "flex h-[140px] w-full shrink-0 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-black/30 transition hover:border-white/25 sm:w-[140px]",
+                      form.imagePreview && "border-white/20 p-0",
+                    )}
+                  >
+                    {form.imagePreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={form.imagePreview}
+                        alt=""
+                        className="h-full w-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <>
+                        <ImagePlus className="mb-2 h-6 w-6 text-zinc-600" />
+                        <span className="px-3 text-center text-xs leading-relaxed text-zinc-500">
+                          Logo
+                          <br />
+                          JPG, PNG · max 1.5MB
+                        </span>
+                      </>
+                    )}
                     <input
-                      key={field}
-                      className="field-input"
-                      placeholder={
-                        field === "twitter" ? "@handle" : field === "telegram" ? "t.me/..." : "https://"
-                      }
-                      value={form[field]}
-                      onChange={(e) => updateField(field, e.target.value)}
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImage(e.target.files?.[0])}
                     />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </div>
 
-          <FormDivider />
-
-          <PairingPicker
-            markets={form.markets}
-            floorQuoteIndex={form.floorQuoteIndex}
-            onMarketsChange={(markets) =>
-              setForm((p) => ({
-                ...p,
-                markets,
-                quoteAsset: markets[0]?.id ?? p.quoteAsset,
-                modules:
-                  markets.length > 1 && p.modules.backedFloor
-                    ? { ...p.modules, backedFloor: false }
-                    : p.modules,
-              }))
-            }
-            onFloorQuoteIndexChange={(floorQuoteIndex) =>
-              setForm((p) => ({ ...p, floorQuoteIndex }))
-            }
-          />
-
-          <FormDivider />
-
-          {variant !== "classic" && (
-            <>
-              {CUSTOM_SOLIDITY_HOOKS_ENABLED ? (
-                <>
-                  <HookArchitectureSection
-                    mode={form.hookMode}
-                    onChange={(hookMode) => setForm((p) => ({ ...p, hookMode }))}
-                  />
-
-                  {form.hookMode === "custom" && (
-                    <div className="mt-4">
-                      <CustomHookEditor
-                        source={form.customHookSource}
-                        fileName={form.customHookFileName}
-                        onChange={({ source, fileName }) =>
-                          setForm((p) => ({
-                            ...p,
-                            customHookSource: source,
-                            customHookFileName: fileName,
-                          }))
+                  <div className="min-w-0 flex-1 space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <Label className="mb-1.5 block text-xs text-zinc-500">Name</Label>
+                        <input
+                          className="field-input"
+                          placeholder="My Token"
+                          value={form.name}
+                          onChange={(e) => updateField("name", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label className="mb-1.5 block text-xs text-zinc-500">Symbol</Label>
+                        <input
+                          className="field-input font-mono uppercase"
+                          placeholder="TKN"
+                          maxLength={8}
+                          value={form.ticker}
+                          onChange={(e) => updateField("ticker", e.target.value.toUpperCase())}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
+                      <textarea
+                        className="field-textarea"
+                        placeholder={
+                          isClassic
+                            ? "Describe your token — story, utility, or community."
+                            : "What makes this token hooked?"
                         }
+                        value={form.description}
+                        onChange={(e) => updateField("description", e.target.value)}
                       />
                     </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSocialsOpen(!socialsOpen)}
+                  className="mt-4 flex w-full items-center justify-between border border-white/[0.06] bg-black/30 px-4 py-3 text-sm text-zinc-400 transition hover:border-white/10 launch-social-toggle"
+                >
+                  Social links
+                  <ChevronDown className={cn("h-4 w-4 transition", socialsOpen && "rotate-180")} />
+                </button>
+
+                <AnimatePresence>
+                  {socialsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        {(["twitter", "telegram", "website"] as const).map((field) => (
+                          <input
+                            key={field}
+                            className="field-input"
+                            placeholder={
+                              field === "twitter"
+                                ? "@handle"
+                                : field === "telegram"
+                                  ? "t.me/..."
+                                  : "https://"
+                            }
+                            value={form[field]}
+                            onChange={(e) => updateField(field, e.target.value)}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
                   )}
-                </>
-              ) : (
-                <>
-                  <SectionLabel>Hook modules</SectionLabel>
-                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">
-                    Pre-built Hookit Master modules — anti-snipe, backed floor, anti-MEV, and quote-only fees.
-                    Custom Solidity hooks are not available at launch yet.
+                </AnimatePresence>
+
+                <FormDivider />
+
+                <PairingPicker
+                  markets={form.markets}
+                  floorQuoteIndex={form.floorQuoteIndex}
+                  onMarketsChange={(markets) =>
+                    setForm((p) => ({
+                      ...p,
+                      markets,
+                      quoteAsset: markets[0]?.id ?? p.quoteAsset,
+                      modules:
+                        markets.length > 1 && p.modules.backedFloor
+                          ? { ...p.modules, backedFloor: false }
+                          : p.modules,
+                    }))
+                  }
+                  onFloorQuoteIndexChange={(floorQuoteIndex) =>
+                    setForm((p) => ({ ...p, floorQuoteIndex }))
+                  }
+                />
+              </>
+            )}
+
+            {!isClassic && step === 2 && (
+              <>
+                {CUSTOM_SOLIDITY_HOOKS_ENABLED ? (
+                  <>
+                    <HookArchitectureSection
+                      mode={form.hookMode}
+                      onChange={(hookMode) => setForm((p) => ({ ...p, hookMode }))}
+                    />
+                    {form.hookMode === "custom" && (
+                      <div className="mt-4">
+                        <CustomHookEditor
+                          source={form.customHookSource}
+                          fileName={form.customHookFileName}
+                          onChange={({ source, fileName }) =>
+                            setForm((p) => ({
+                              ...p,
+                              customHookSource: source,
+                              customHookFileName: fileName,
+                            }))
+                          }
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Shield your launch — block bots, cap trade size, and limit wallet holdings.
                   </p>
-                </>
-              )}
+                )}
 
-              {(CUSTOM_SOLIDITY_HOOKS_ENABLED ? form.hookMode === "master" : true) && (
-                <>
-                  <FormDivider />
+                {(CUSTOM_SOLIDITY_HOOKS_ENABLED ? form.hookMode === "master" : true) && (
+                  <div className={cn(!CUSTOM_SOLIDITY_HOOKS_ENABLED && "mt-4")}>
+                    <HookModulePicker
+                      heading="Protection hooks"
+                      hookIds={LAUNCH_WIZARD_HOOK_IDS[2]}
+                      modules={form.modules}
+                      onToggle={toggleModule}
+                      onUpdate={updateModules}
+                      floorEst={floorEst}
+                      multiMarket={form.markets.length > 1}
+                      hookTaxBps={form.hookTaxBps}
+                    />
+                  </div>
+                )}
+              </>
+            )}
 
+            {!isClassic && step === 3 && (
+              <>
+                <p className="text-xs leading-relaxed text-zinc-600">
+                  Tune swap fees — dynamic volume pricing, a fixed hook fee, or routing creator share
+                  into your hook pot.
+                </p>
+                <div className="mt-4">
                   <HookModulePicker
+                    heading="Trading fee hooks"
+                    hookIds={LAUNCH_WIZARD_HOOK_IDS[3]}
                     modules={form.modules}
-                    onToggle={(id, next) => {
-                      if (id === "creator-share-to-hook" && next) {
-                        updateModules({ creatorShareToHook: true, buybackVesting: false });
-                        return;
-                      }
-                      if (id === "buyback-vesting" && next) {
-                        updateModules({ buybackVesting: true, creatorShareToHook: false });
-                        return;
-                      }
-                      updateModules({ [HOOK_MODULE_FIELD[id]]: next });
-                    }}
+                    onToggle={toggleModule}
                     onUpdate={updateModules}
                     floorEst={floorEst}
                     multiMarket={form.markets.length > 1}
                     hookTaxBps={form.hookTaxBps}
                   />
+                </div>
 
-                  <FormDivider />
+                <FormDivider />
 
-                  <p className="pick-heading">Fees & rewards</p>
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Fees deducted in quote asset only — zero sell pressure on your token.
-                  </p>
+                <p className="pick-heading">Fixed hook fee</p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Flat extra fee on swaps — deducted in quote only, zero sell pressure on your token.
+                </p>
 
-                  <div className="mt-4 max-w-sm">
-                    <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
-                    <div className="field-input flex items-center justify-between bg-black/60">
-                      <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-                    </div>
-                    <div className="mt-2">
-                      <AccentSlider
-                        accentColor="#9514d1"
-                        value={[form.hookTaxBps]}
-                        onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
-                        min={0}
-                        max={MAX_HOOK_TAX_BPS}
-                        step={10}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-xs text-zinc-500">
-                      Extra fee for hook modules · leftover → protocol
-                    </p>
+                <div className="mt-4 max-w-sm">
+                  <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
+                  <div className="field-input flex items-center justify-between bg-black/60">
+                    <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
                   </div>
-                </>
-              )}
-            </>
-          )}
+                  <div className="mt-2">
+                    <AccentSlider
+                      accentColor="#9514d1"
+                      value={[form.hookTaxBps]}
+                      onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
+                      min={0}
+                      max={MAX_HOOK_TAX_BPS}
+                      step={10}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-zinc-500">
+                    Extra fee for hook modules · leftover → protocol
+                  </p>
+                </div>
+              </>
+            )}
 
-          <FormDivider />
-          <DevBuySection
-            form={form}
-            variant={variant}
-            onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
-          />
-        </FormPanel>
+            {!isClassic && step === 4 && (
+              <>
+                <p className="text-xs leading-relaxed text-zinc-600">
+                  Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops.
+                </p>
+                <div className="mt-4">
+                  <HookModulePicker
+                    heading="Tokenomics hooks"
+                    hookIds={LAUNCH_WIZARD_HOOK_IDS[4]}
+                    modules={form.modules}
+                    onToggle={toggleModule}
+                    onUpdate={updateModules}
+                    floorEst={floorEst}
+                    multiMarket={form.markets.length > 1}
+                    hookTaxBps={form.hookTaxBps}
+                  />
+                </div>
+              </>
+            )}
 
-        <LaunchSummary
-          form={form}
-          variant={variant}
-          launchFee={launchFee}
-          launchFeeEth={launchFeeEth}
-          walletReady={walletReady}
-          factoryConfigured={factoryConfigured}
-          isPending={isPending}
-          phase={phase}
-          activeHooks={activeHooks}
-          onLaunch={handleLaunch}
-        />
-      </div>
+            {showWizardChrome && (
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-6">
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    className="launch-wizard-back inline-flex items-center gap-1.5 text-sm text-zinc-400 transition hover:text-zinc-200"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="launch-wizard-continue inline-flex items-center gap-2"
+                >
+                  Continue
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </FormPanel>
+        </div>
+      ) : null}
     </div>
   );
 }
