@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatEther } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
-import { AccentSlider } from "@/components/launch/AccentSlider";
 import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookArchitectureSection } from "@/components/launch/HookArchitectureSection";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
@@ -27,10 +26,9 @@ import {
   DEFAULT_LAUNCH_STATE,
   CUSTOM_SOLIDITY_HOOKS_ENABLED,
   LAUNCH_FEE_ETH,
-  MAX_HOOK_TAX_BPS,
 } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
-import { estimateFloorPrice, formatBps } from "@/lib/format";
+import { estimateFloorPrice } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
 import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
@@ -520,40 +518,15 @@ export function MasterLaunchWizard() {
                   <HookModulePicker
                     heading="Trading fee hooks"
                     hookIds={LAUNCH_WIZARD_HOOK_IDS[3]}
+                    includeFixedFee
                     modules={form.modules}
                     onToggle={toggleModule}
                     onUpdate={updateModules}
                     floorEst={floorEst}
                     multiMarket={form.markets.length > 1}
                     hookTaxBps={form.hookTaxBps}
+                    onHookTaxBpsChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                   />
-                </div>
-
-                <FormDivider />
-
-                <p className="pick-heading">Fixed hook fee</p>
-                <p className="mt-1 text-xs text-zinc-600">
-                  Flat extra fee on swaps — deducted in quote only, zero sell pressure on your token.
-                </p>
-
-                <div className="mt-4 max-w-sm">
-                  <Label className="mb-1.5 block text-xs text-zinc-500">Hook fee</Label>
-                  <div className="field-input flex items-center justify-between bg-black/60">
-                    <span className="font-mono">{formatBps(form.hookTaxBps)}</span>
-                  </div>
-                  <div className="mt-2">
-                    <AccentSlider
-                      accentColor="#9514d1"
-                      value={[form.hookTaxBps]}
-                      onValueChange={([v]) => setForm((p) => ({ ...p, hookTaxBps: v }))}
-                      min={0}
-                      max={MAX_HOOK_TAX_BPS}
-                      step={10}
-                    />
-                  </div>
-                  <p className="mt-1.5 text-xs text-zinc-500">
-                    Extra fee for hook modules · leftover → protocol
-                  </p>
                 </div>
               </>
             )}

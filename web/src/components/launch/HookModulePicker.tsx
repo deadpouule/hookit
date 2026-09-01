@@ -10,8 +10,11 @@ import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
+import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
+import { formatBps } from "@/lib/format";
 import {
   hookAccentColor,
+  hookThemeAccentColor,
   MASTER_HOOKS,
   type HookTheme,
   type MasterHook,
@@ -21,6 +24,117 @@ import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const NO_CONFIG_HOOKS = new Set<MasterHookId>(["anti-mev", "dynamic-fees"]);
+const FIXED_FEE_THEME: HookTheme = "rose";
+const DEFAULT_FIXED_FEE_BPS = 50;
+type PickerFocusId = MasterHookId | "fixed-fee";
+
+function FixedFeePickCard({
+  selected,
+  onClick,
+}: {
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "pick-card pick-card--hook",
+        `pick-card--${FIXED_FEE_THEME}`,
+        selected && "is-on",
+      )}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label="About fixed fees"
+            className="hook-pick-tooltip-trigger"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <Info className="h-3 w-3" aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          align="center"
+          sideOffset={8}
+          className="max-w-[260px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
+        >
+          Flat extra fee on every swap — deducted in quote only, zero sell pressure on your token.
+          Leftover fees route to the protocol.
+        </TooltipContent>
+      </Tooltip>
+      <div className="pick-card-mark pick-ascii">
+        <AsciiShape hookId="fixed-fee" theme={FIXED_FEE_THEME} isHovered={hovered || selected} />
+      </div>
+      <p className="pick-card-title">fixed fees</p>
+      <p className="pick-card-sub pick-card-sub--hook">Flat hook tax</p>
+    </button>
+  );
+}
+
+function FixedFeeConfigPanel({
+  active,
+  hookTaxBps,
+  onHookTaxBpsChange,
+}: {
+  active: boolean;
+  hookTaxBps: number;
+  onHookTaxBpsChange: (bps: number) => void;
+}) {
+  const accent = hookThemeAccentColor(FIXED_FEE_THEME);
+
+  return (
+    <>
+      <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
+        <div className="pick-config-head-copy">
+          <div className="pick-config-head-row">
+            <h2
+              className={cn(
+                "orb-hook-desc-badge orb-hook-title-badge pick-config-badge",
+                `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
+              )}
+            >
+              <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+              <span>Fixed fees</span>
+            </h2>
+          </div>
+        </div>
+        <div className="pick-config-ascii" aria-hidden>
+          <AsciiShape hookId="fixed-fee" theme={FIXED_FEE_THEME} isHovered />
+        </div>
+      </div>
+      <PickConfigControl theme={FIXED_FEE_THEME} label="Hook fee" value={formatBps(hookTaxBps)}>
+        <AccentSlider
+          accentColor={accent}
+          value={[hookTaxBps]}
+          onValueChange={([v]) => onHookTaxBpsChange(v)}
+          min={0}
+          max={MAX_HOOK_TAX_BPS}
+          step={10}
+        />
+      </PickConfigControl>
+      <span
+        className={cn(
+          "orb-hook-desc-badge pick-config-hint-badge mt-2",
+          `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
+        )}
+      >
+        Extra fee for hook modules · leftover → protocol
+      </span>
+    </>
+  );
+}
 
 function HookPickTooltip({ hook }: { hook: MasterHook }) {
   return (
@@ -130,8 +244,10 @@ export function HookModulePicker({
   floorEst,
   multiMarket = false,
   hookTaxBps = 0,
+  onHookTaxBpsChange,
   hookIds,
   heading = "Pick your hooks",
+  includeFixedFee = false,
 }: {
   modules: LaunchModules;
   onToggle: (id: MasterHookId, next: boolean) => void;
@@ -139,23 +255,31 @@ export function HookModulePicker({
   floorEst: number;
   multiMarket?: boolean;
   hookTaxBps?: number;
+  onHookTaxBpsChange?: (bps: number) => void;
   hookIds?: MasterHookId[];
   heading?: string;
+  includeFixedFee?: boolean;
 }) {
-  const panelRefs = useRef<Partial<Record<MasterHookId, HTMLDivElement | null>>>({});
+  const panelRefs = useRef<Partial<Record<PickerFocusId, HTMLDivElement | null>>>({});
   const visibleHooks = hookIds
     ? MASTER_HOOKS.filter((hook) => hookIds.includes(hook.id))
     : MASTER_HOOKS;
   const enabledHooks = visibleHooks.filter((h) => isModuleEnabled(modules, h.id));
-  const [focus, setFocus] = useState<MasterHookId | null>(enabledHooks[0]?.id ?? null);
+  const fixedFeeEnabled = includeFixedFee && hookTaxBps > 0;
+  const [focus, setFocus] = useState<PickerFocusId | null>(
+    enabledHooks[0]?.id ?? (fixedFeeEnabled ? "fixed-fee" : null),
+  );
 
   useEffect(() => {
+    if (focus === "fixed-fee" && fixedFeeEnabled) return;
     if (focus && enabledHooks.some((h) => h.id === focus)) return;
-    setFocus(enabledHooks[0]?.id ?? null);
-  }, [enabledHooks, focus]);
+    setFocus(enabledHooks[0]?.id ?? (fixedFeeEnabled ? "fixed-fee" : null));
+  }, [enabledHooks, fixedFeeEnabled, focus]);
 
   useEffect(() => {
-    if (enabledHooks.length === 0) return;
+    const observed: PickerFocusId[] = [...enabledHooks.map((h) => h.id)];
+    if (fixedFeeEnabled) observed.push("fixed-fee");
+    if (observed.length === 0) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -164,7 +288,7 @@ export function HookModulePicker({
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         const top = visible[0];
         if (!top) return;
-        const id = top.target.getAttribute("data-hook-id") as MasterHookId | null;
+        const id = top.target.getAttribute("data-hook-id") as PickerFocusId | null;
         if (id) setFocus(id);
       },
       {
@@ -174,82 +298,148 @@ export function HookModulePicker({
       },
     );
 
-    for (const hook of enabledHooks) {
-      const el = panelRefs.current[hook.id];
+    for (const id of observed) {
+      const el = panelRefs.current[id];
       if (el) observer.observe(el);
     }
 
     return () => observer.disconnect();
-  }, [enabledHooks]);
+  }, [enabledHooks, fixedFeeEnabled]);
 
-  const scrollToPanel = (id: MasterHookId) => {
+  const scrollToPanel = (id: PickerFocusId) => {
     setFocus(id);
     requestAnimationFrame(() => {
       panelRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   };
 
+  const toggleFixedFee = () => {
+    if (!onHookTaxBpsChange) return;
+    if (fixedFeeEnabled) {
+      onHookTaxBpsChange(0);
+      const next = enabledHooks[0]?.id ?? null;
+      setFocus(next);
+      return;
+    }
+    onHookTaxBpsChange(hookTaxBps > 0 ? hookTaxBps : DEFAULT_FIXED_FEE_BPS);
+    scrollToPanel("fixed-fee");
+  };
+
+  const renderPickCards = () =>
+    visibleHooks.flatMap((hook) => {
+      const selected = isModuleEnabled(modules, hook.id);
+      const disabled = multiMarket && hook.id === "backed-floor";
+      const cards = [
+        <HookPickCard
+          key={hook.id}
+          hook={hook}
+          selected={selected}
+          onClick={() => {
+            if (disabled) return;
+            if (selected) {
+              onToggle(hook.id, false);
+              const next = enabledHooks.find((item) => item.id !== hook.id);
+              setFocus(next?.id ?? (fixedFeeEnabled ? "fixed-fee" : null));
+              return;
+            }
+            onToggle(hook.id, true);
+            scrollToPanel(hook.id);
+          }}
+        />,
+      ];
+
+      if (includeFixedFee && hook.id === "dynamic-fees") {
+        cards.push(
+          <FixedFeePickCard
+            key="fixed-fee"
+            selected={fixedFeeEnabled}
+            onClick={toggleFixedFee}
+          />,
+        );
+      }
+
+      return cards;
+    });
+
+  const configPanelIds: PickerFocusId[] = [
+    ...enabledHooks.flatMap((hook) => {
+      const ids: PickerFocusId[] = [hook.id];
+      if (includeFixedFee && fixedFeeEnabled && hook.id === "dynamic-fees") {
+        ids.push("fixed-fee");
+      }
+      return ids;
+    }),
+    ...(includeFixedFee && fixedFeeEnabled && !enabledHooks.some((h) => h.id === "dynamic-fees")
+      ? (["fixed-fee"] as const)
+      : []),
+  ];
+
   return (
     <div>
       <p className="pick-heading">{heading}</p>
-      <div className="pick-grid pick-grid--hooks">
-        {visibleHooks.map((hook) => {
-          const selected = isModuleEnabled(modules, hook.id);
-          const disabled = multiMarket && hook.id === "backed-floor";
-          return (
-            <HookPickCard
-              key={hook.id}
-              hook={hook}
-              selected={selected}
-              onClick={() => {
-                if (disabled) return;
-                if (selected) {
-                  onToggle(hook.id, false);
-                  const next = enabledHooks.find((item) => item.id !== hook.id);
-                  setFocus(next?.id ?? null);
-                  return;
-                }
-                onToggle(hook.id, true);
-                scrollToPanel(hook.id);
-              }}
-            />
-          );
-        })}
-      </div>
+      <div className="pick-grid pick-grid--hooks">{renderPickCards()}</div>
 
-      {enabledHooks.length > 0 && (
+      {configPanelIds.length > 0 && (
         <div className="mt-5 space-y-3">
           <p className="text-xs text-zinc-500">
             All active modules — settings stay visible when you switch focus.
           </p>
-          {enabledHooks.map((hook) => (
-            <div
-              key={hook.id}
-              data-hook-id={hook.id}
-              ref={(el) => {
-                panelRefs.current[hook.id] = el;
-              }}
-              className={cn(
-                "pick-config pick-config--panel transition-shadow",
-                `pick-config--${hook.theme}`,
-                focus === hook.id && "pick-config--focused",
-              )}
-            >
-              <HookConfigHeader
-                hook={hook}
-                active={focus === hook.id}
-                modules={modules}
-                hookTaxBps={hookTaxBps}
-              />
-              <HookSettings
-                hook={hook}
-                modules={modules}
-                onUpdate={onUpdate}
-                floorEst={floorEst}
-                hookTaxBps={hookTaxBps}
-              />
-            </div>
-          ))}
+          {configPanelIds.map((panelId) => {
+            if (panelId === "fixed-fee") {
+              return (
+                <div
+                  key="fixed-fee"
+                  data-hook-id="fixed-fee"
+                  ref={(el) => {
+                    panelRefs.current["fixed-fee"] = el;
+                  }}
+                  className={cn(
+                    "pick-config pick-config--panel transition-shadow",
+                    `pick-config--${FIXED_FEE_THEME}`,
+                    focus === "fixed-fee" && "pick-config--focused",
+                  )}
+                >
+                  <FixedFeeConfigPanel
+                    active={focus === "fixed-fee"}
+                    hookTaxBps={hookTaxBps}
+                    onHookTaxBpsChange={onHookTaxBpsChange ?? (() => {})}
+                  />
+                </div>
+              );
+            }
+
+            const hook = enabledHooks.find((item) => item.id === panelId);
+            if (!hook) return null;
+
+            return (
+              <div
+                key={hook.id}
+                data-hook-id={hook.id}
+                ref={(el) => {
+                  panelRefs.current[hook.id] = el;
+                }}
+                className={cn(
+                  "pick-config pick-config--panel transition-shadow",
+                  `pick-config--${hook.theme}`,
+                  focus === hook.id && "pick-config--focused",
+                )}
+              >
+                <HookConfigHeader
+                  hook={hook}
+                  active={focus === hook.id}
+                  modules={modules}
+                  hookTaxBps={hookTaxBps}
+                />
+                <HookSettings
+                  hook={hook}
+                  modules={modules}
+                  onUpdate={onUpdate}
+                  floorEst={floorEst}
+                  hookTaxBps={hookTaxBps}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef } from "react";
 
 import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
 
+export type AsciiShapeId = MasterHookId | "fixed-fee";
+
 const RAMP = ".:-=+*#%@";
 
-const SHAPES: Record<MasterHookId, string[]> = {
+const SHAPES: Record<AsciiShapeId, string[]> = {
   "anti-snipe": [
     "      ################      ",
     "    ####################    ",
@@ -163,6 +165,18 @@ const SHAPES: Record<MasterHookId, string[]> = {
     "      ##   ########   ##    ",
     "       ################     ",
   ],
+  "fixed-fee": [
+    "    ####################    ",
+    "   ##                ##   ",
+    "   ##   ##########   ##   ",
+    "   ##   ##      ##   ##   ",
+    "   ##   ##  ##  ##   ##   ",
+    "   ##   ##  ##  ##   ##   ",
+    "   ##   ##      ##   ##   ",
+    "   ##   ##########   ##   ",
+    "   ##                ##   ",
+    "    ####################    ",
+  ],
 };
 
 function sampleField(nx: number, ny: number, t: number, speed: number) {
@@ -205,7 +219,7 @@ export function AsciiShape({
   theme,
   isHovered,
 }: {
-  hookId: MasterHookId;
+  hookId: AsciiShapeId;
   theme: HookTheme;
   isHovered: boolean;
 }) {
