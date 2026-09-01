@@ -28,35 +28,62 @@ import {EthUsdgBridgeLib} from "../src/libraries/EthUsdgBridgeLib.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Resume Ink deploy after partial `DeployHookitCore` (stops before Chainlink sync on some RPC paths).
-contract ResumeDeployHookitInkScript is Script {
+/// @notice Full Ink redeploy of Hookit core (module fixes + V4ClaimsRedeemer).
+/// @dev Run when ready — does NOT touch existing live addresses until broadcast.
+///
+///   export PRIVATE_KEY=...
+///   export OPS_TREASURY=0x...          # optional
+///   export NATIVE_TOKEN_NAME=HOOKTEST  # optional
+///   export NATIVE_TOKEN_SYMBOL=HTST    # optional
+///   export SKIP_FAIR_LAUNCH=1          # optional — skip HKIT fair launch
+///
+///   forge script script/RedeployHookitInk.s.sol:RedeployHookitInkScript \
+///     --rpc-url $INK_RPC_URL --broadcast --slow -vvvv
+///
+/// After broadcast, copy console `ENV_*` lines into web `.env`:
+///   NEXT_PUBLIC_LAUNCH_FACTORY
+///   NEXT_PUBLIC_BONDING_FACTORY
+///   NEXT_PUBLIC_HOOKIT_SWAP_ROUTER
+///   NEXT_PUBLIC_CLAIMS_REDEEMER
+///   NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR
+///   NEXT_PUBLIC_HKIT_BUYBACK
+///   NEXT_PUBLIC_NATIVE_TOKEN
+contract RedeployHookitInkScript is Script {
     function run() public {
+        require(block.chainid == QuotronStockQuotes.INK_MAINNET, "Ink only");
+
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(pk);
         address ops = vm.envOr("OPS_TREASURY", deployer);
+        bool skipFairLaunch = vm.envOr("SKIP_FAIR_LAUNCH", false);
         string memory nativeName = vm.envOr("NATIVE_TOKEN_NAME", string("HOOKTEST"));
         string memory nativeSymbol = vm.envOr("NATIVE_TOKEN_SYMBOL", string("HTST"));
         string memory nativeUri = vm.envOr("NATIVE_TOKEN_URI", string("ipfs://hooktest-native"));
 
         UniswapV4Deployments.Deployment memory v4 = UniswapV4Deployments.get(block.chainid);
-        require(block.chainid == QuotronStockQuotes.INK_MAINNET, "Ink only");
         IPoolManager manager = IPoolManager(v4.poolManager);
-
-        FloorVault vault = FloorVault(payable(vm.envAddress("FLOOR_VAULT")));
-        FeeEscrow escrow = FeeEscrow(payable(vm.envAddress("FEE_ESCROW")));
-        ProtocolRevenueDistributor distributor = ProtocolRevenueDistributor(payable(vm.envAddress("DISTRIBUTOR")));
-        BuybackVault buybacks = BuybackVault(payable(vm.envAddress("BUYBACK_VAULT")));
-        HolderAirdropVault airdrops = HolderAirdropVault(payable(vm.envAddress("HOLDER_AIRDROP_VAULT")));
-        MasterLaunchHook hook = MasterLaunchHook(payable(vm.envAddress("MASTER_LAUNCH_HOOK")));
-        LaunchFactory factory = LaunchFactory(payable(vm.envAddress("LAUNCH_FACTORY")));
 
         vm.startBroadcast(pk);
 
-        // Finish Master quote allowlist (USDG + feed already set on partial deploy).
-        QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
-        for (uint256 i; i < stocks.length; ++i) {
-            factory.setQuote(stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0));
-        }
+        FloorVault vault = new FloorVault(deployer, manager);
+        FeeEscrow escrow = new FeeEscrow(deployer, manager);
+        ProtocolRevenueDistributor distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
+        BuybackVault buybacks = new BuybackVault(deployer, manager);
+        HolderAirdropVault airdrops = new HolderAirdropVault(deployer, manager);
+
+        uint160 masterFlags = uint160(
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
+                | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
+        );
+        bytes memory masterArgs = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
+        (address masterPredicted, bytes32 masterSalt) =
+            HookMiner.find(HookMiner.CREATE2_DEPLOYER, masterFlags, type(MasterLaunchHook).creationCode, masterArgs);
+        MasterLaunchHook hook =
+            new MasterLaunchHook{salt: masterSalt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
+        require(address(hook) == masterPredicted, "master hook mismatch");
+
+        LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
+        HookitDeployLib.seedQuotes(factory);
 
         uint160 gradFlags =
             uint160(Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
@@ -89,21 +116,50 @@ contract ResumeDeployHookitInkScript is Script {
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
-        (uint256 launchId, address nativeToken, PoolId poolId, PoolKey memory key) =
-            HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri);
+        address nativeToken = address(0);
+        if (!skipFairLaunch) {
+            (uint256 launchId, address token, PoolId poolId, PoolKey memory key) =
+                HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri);
+            nativeToken = token;
+            console.log("NativeToken launchId", launchId);
+            console.logBytes32(PoolId.unwrap(poolId));
+            console.log("NativeToken pool fee", key.fee);
+        }
 
         vm.stopBroadcast();
 
+        console.log("=== Redeploy complete (Ink) ===");
+        console.log("FloorVault", address(vault));
+        console.log("FeeEscrow", address(escrow));
+        console.log("Distributor", address(distributor));
+        console.log("BuybackVault", address(buybacks));
+        console.log("HolderAirdropVault", address(airdrops));
+        console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
         console.log("GraduatedFeeHook", address(graduated));
         console.log("BondingLaunchFactory", address(bonding));
+        console.log("LiquidityLocker", address(bonding.locker()));
         console.log("HookitSwapRouter", address(router));
         console.log("V4ClaimsRedeemer", address(claimsRedeemer));
         console.log("FeeEthRail", address(feeRail));
+        console.log("FeeEthRail bridge set", feeRail.ethBridgeSet());
         console.log("HkitBuyback", address(hkitBuyback));
-        console.log("NativeToken", nativeToken);
-        console.log("NativeToken launchId", launchId);
-        console.logBytes32(PoolId.unwrap(poolId));
-        console.log("RESUME_OK");
+        if (nativeToken != address(0)) {
+            console.log("NativeToken", nativeToken);
+            console.log("NativeToken name", nativeName);
+            console.log("NativeToken symbol", nativeSymbol);
+        }
+        console.log("launch fee wei", ProtocolConstants.LAUNCH_FEE_WEI);
+        console.log("--- web env (paste into .env) ---");
+        console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY", address(factory));
+        console.log("ENV_NEXT_PUBLIC_BONDING_FACTORY", address(bonding));
+        console.log("ENV_NEXT_PUBLIC_HOOKIT_SWAP_ROUTER", address(router));
+        console.log("ENV_NEXT_PUBLIC_CLAIMS_REDEEMER", address(claimsRedeemer));
+        console.log("ENV_NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR", address(distributor));
+        console.log("ENV_NEXT_PUBLIC_HKIT_BUYBACK", address(hkitBuyback));
+        if (nativeToken != address(0)) {
+            console.log("ENV_NEXT_PUBLIC_NATIVE_TOKEN", nativeToken);
+        }
+        console.log("REDEPLOY_INK_OK");
     }
 }

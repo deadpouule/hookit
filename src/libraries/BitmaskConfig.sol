@@ -30,8 +30,9 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 70% of base into the hook pot
 ///      bits 163-194 buybackVestingDurationSeconds (uint32) — linear vest for creator proceeds
 ///      bits 195-210 dynamicFeeMinTotalBps (uint16) — min total swap fee when dynamic fees on
-///      bit 211       DYNAMIC_FEE_RAMP_UP — fees rise with volume (clear = fees fall with volume)
-///      bits 212-227  dynamicFeeVolumeTargetScale (uint16) — ramp saturates at scale × 1e18 quote / 24h
+///      bit 211       DYNAMIC_FEE_RAMP_UP — legacy; depth ramp always rises with consumption
+///      bits 212-227  dynamicFeeDepthSaturationBps (uint16) — max fee when depth consumed ≥ this (bps)
+///      bits 228-259  holderAirdropEpochSeconds (uint32)
 library BitmaskConfig {
     uint256 internal constant ANTI_SNIPE_ENABLED = 1 << 0;
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
@@ -57,7 +58,8 @@ library BitmaskConfig {
     uint256 internal constant BUYBACK_VESTING_DURATION_SHIFT = 163;
     uint256 internal constant DYNAMIC_FEE_MIN_TOTAL_SHIFT = 195;
     uint256 internal constant DYNAMIC_FEE_RAMP_UP_ENABLED = 1 << 211;
-    uint256 internal constant DYNAMIC_FEE_VOLUME_TARGET_SHIFT = 212;
+    uint256 internal constant DYNAMIC_FEE_TRADE_TARGET_SHIFT = 212;
+    uint256 internal constant HOLDER_AIRDROP_EPOCH_SHIFT = 228;
 
     uint256 internal constant UINT16_MASK = 0xFFFF;
     uint256 internal constant UINT32_MASK = 0xFFFFFFFF;
@@ -87,7 +89,8 @@ library BitmaskConfig {
         uint32 buybackVestingDurationSeconds;
         uint16 dynamicFeeMinTotalBps;
         bool dynamicFeeRampUp;
-        uint16 dynamicFeeVolumeTargetScale;
+        uint16 dynamicFeeDepthSaturationBps;
+        uint32 holderAirdropEpochSeconds;
     }
 
     function pack(Modules memory m) internal pure returns (uint256 packed) {
@@ -106,7 +109,8 @@ library BitmaskConfig {
             | (uint256(m.buybackVestingDurationSeconds) << BUYBACK_VESTING_DURATION_SHIFT)
             | (uint256(m.dynamicFeeMinTotalBps) << DYNAMIC_FEE_MIN_TOTAL_SHIFT)
             | (m.dynamicFeeRampUp ? DYNAMIC_FEE_RAMP_UP_ENABLED : 0)
-            | (uint256(m.dynamicFeeVolumeTargetScale) << DYNAMIC_FEE_VOLUME_TARGET_SHIFT);
+            | (uint256(m.dynamicFeeDepthSaturationBps) << DYNAMIC_FEE_TRADE_TARGET_SHIFT)
+            | (uint256(m.holderAirdropEpochSeconds) << HOLDER_AIRDROP_EPOCH_SHIFT);
     }
 
     function unpack(uint256 packed) internal pure returns (Modules memory m) {
@@ -133,7 +137,8 @@ library BitmaskConfig {
         m.buybackVestingDurationSeconds = uint32((packed >> BUYBACK_VESTING_DURATION_SHIFT) & UINT32_MASK);
         m.dynamicFeeMinTotalBps = uint16((packed >> DYNAMIC_FEE_MIN_TOTAL_SHIFT) & UINT16_MASK);
         m.dynamicFeeRampUp = packed & DYNAMIC_FEE_RAMP_UP_ENABLED != 0;
-        m.dynamicFeeVolumeTargetScale = uint16((packed >> DYNAMIC_FEE_VOLUME_TARGET_SHIFT) & UINT16_MASK);
+        m.dynamicFeeDepthSaturationBps = uint16((packed >> DYNAMIC_FEE_TRADE_TARGET_SHIFT) & UINT16_MASK);
+        m.holderAirdropEpochSeconds = uint32((packed >> HOLDER_AIRDROP_EPOCH_SHIFT) & UINT32_MASK);
     }
 
     function enabled(uint256 packed, uint256 flag) internal pure returns (bool) {
@@ -188,12 +193,20 @@ library BitmaskConfig {
         return minTotal;
     }
 
-    function dynamicFeeVolumeTargetScale(uint256 packed) internal pure returns (uint16) {
-        uint16 scale = uint16((packed >> DYNAMIC_FEE_VOLUME_TARGET_SHIFT) & UINT16_MASK);
-        if (scale == 0 && packed & DYNAMIC_FEES_ENABLED != 0) {
-            return ProtocolConstants.DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE;
+    function dynamicFeeDepthSaturationBps(uint256 packed) internal pure returns (uint16) {
+        uint16 bps = uint16((packed >> DYNAMIC_FEE_TRADE_TARGET_SHIFT) & UINT16_MASK);
+        if (bps == 0 && packed & DYNAMIC_FEES_ENABLED != 0) {
+            return ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
         }
-        return scale;
+        return bps;
+    }
+
+    function holderAirdropEpochSeconds(uint256 packed) internal pure returns (uint32) {
+        uint32 epoch = uint32((packed >> HOLDER_AIRDROP_EPOCH_SHIFT) & UINT32_MASK);
+        if (epoch == 0 && packed & HOLDER_AIRDROP_ENABLED != 0) {
+            return ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
+        }
+        return epoch;
     }
 
     function initialSnipeTaxBps(uint256 packed) internal pure returns (uint16) {
@@ -215,6 +228,12 @@ library BitmaskConfig {
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
         if (m.lpDonateBps > ProtocolConstants.MAX_LP_DONATE_BPS) revert LpDonateTooHigh();
         if (m.holderAirdropBps > ProtocolConstants.MAX_HOLDER_AIRDROP_BPS) revert HolderAirdropTooHigh();
+        if (m.holderAirdrop) {
+            uint32 epoch = m.holderAirdropEpochSeconds;
+            if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
+            if (epoch < ProtocolConstants.MIN_HOLDER_AIRDROP_EPOCH_SECONDS) revert HolderAirdropEpochTooShort();
+            if (epoch > ProtocolConstants.MAX_HOLDER_AIRDROP_EPOCH_SECONDS) revert HolderAirdropEpochTooLong();
+        }
         // Steady fees (base + hook tax) capped at 10% on every Master launch.
         if (uint256(ProtocolConstants.BASE_FEE_BPS) + m.hookTaxBps > ProtocolConstants.MAX_TOTAL_FEE_BPS) {
             revert TotalFeeTooHigh();
@@ -262,6 +281,8 @@ library BitmaskConfig {
     error AutoBurnTooHigh();
     error LpDonateTooHigh();
     error HolderAirdropTooHigh();
+    error HolderAirdropEpochTooShort();
+    error HolderAirdropEpochTooLong();
     error FeeRouteTooHigh();
     error FeeRouteIncomplete();
     error OpenFeeTooHigh();

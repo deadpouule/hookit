@@ -143,7 +143,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "anti-mev": "Blocks same-block bot trades",
   "max-tx": "Caps swap size vs supply",
   "max-wallet": "Caps wallet holdings",
-  "dynamic-fees": "Fees track 24h volume",
+  "dynamic-fees": "Fees scale with LP depth used",
   "buyback-vesting": "Creator fees vest over time",
   "auto-burn": "Burns tokens on swaps",
   "lp-donate": "Rewards in-range LPs",
@@ -162,7 +162,7 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "anti-mev": "Block bot trades",
   "max-tx": "Cap swap size",
   "max-wallet": "Cap wallet size",
-  "dynamic-fees": "Volume-based fees",
+  "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
   "lp-donate": "Reward LPs",
@@ -187,7 +187,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "max-wallet":
     "Caps how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
   "dynamic-fees":
-    "Enables Uniswap v4 dynamic fees on the pool. Swap fee ramps with recent flow so quiet periods stay cheap and heavy volume pays more — all deducted in quote only.",
+    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
     "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page.",
   "auto-burn":
@@ -216,7 +216,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "anti-mev": "blocks bot trades",
   "max-tx": "limits trade size",
   "max-wallet": "limits wallet size",
-  "dynamic-fees": "ramps fees with 24h volume",
+  "dynamic-fees": "fee vs in-range LP depth",
   "buyback-vesting": "locks creator fees over time",
   "auto-burn": "burns tokens on swaps",
   "lp-donate": "rewards liquidity providers",

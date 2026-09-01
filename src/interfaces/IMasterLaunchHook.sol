@@ -15,6 +15,7 @@ interface IMasterLaunchHook is IHooks {
         uint64 launchTimestamp;
         int24 tickLower;
         int24 tickUpper;
+        uint128 seedLiquidity;
         bool tokenIsCurrency0;
         bool initialized;
     }

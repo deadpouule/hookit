@@ -1,6 +1,13 @@
 export const buybackVaultAbi = [
   {
     type: "function",
+    name: "claim",
+    inputs: [{ name: "launchToken", type: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
     name: "streams",
     inputs: [
       { name: "beneficiary", type: "address" },

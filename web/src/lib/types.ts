@@ -30,10 +30,10 @@ export interface LaunchModules {
   dynamicFeeMinBps?: number;
   /** Total fee cap when dynamic fees is on (bps, includes 1% base). Encoded as max hook tax on-chain. */
   dynamicFeeMaxBps?: number;
-  /** When true, fees rise with 24h volume; when false, fees fall as activity increases. */
+  /** Legacy bitmask bit — depth ramp always rises with consumption. */
   dynamicFeeRampUp?: boolean;
-  /** Quote volume (× 1e18) in 24h that saturates the ramp (default 10). */
-  dynamicFeeVolumeTargetScale?: number;
+  /** In-range depth consumption (bps) that reaches max fee — default 10000 = 100%. */
+  dynamicFeeDepthSaturationBps?: number;
   /** UI toggle — packed into Master bitmask. */
   buybackVesting?: boolean;
   /** Linear vest duration when buyback vesting is on (days). */
@@ -46,6 +46,8 @@ export interface LaunchModules {
   holderAirdrop: boolean;
   /** Percent of hook pot routed to HolderAirdropVault (share of 100% with other sinks). */
   holderAirdropPct: number;
+  /** Airdrop epoch duration in seconds (launcher picks at launch). */
+  holderAirdropEpochSeconds?: number;
   /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
 }

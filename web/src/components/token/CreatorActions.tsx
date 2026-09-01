@@ -85,6 +85,8 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   if (!isClassic && pool.hooks.customHook) return null;
   if (isClassic && pool.bondingPhase === 0) return null;
   if (!isCreator) return null;
+  // Buyback vesting routes creator fees to BuybackVault — claim lives in ActiveHooksPanel.
+  if (!isClassic && pool.hooks.buybackVesting) return null;
 
   const claim = async () => {
     if (!escrow) return;

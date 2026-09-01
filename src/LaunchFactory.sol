@@ -353,7 +353,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         _collectLaunchFee(params.quote.isAddressZero(), params.devBuyQuoteIn);
 
-        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
+        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI, params.bitmask);
 
         (IHooks hooks, bool useCustom, uint256 packed, uint24 fee) =
             _resolveLaunchConfig(params.customHook, params.bitmask);
@@ -411,7 +411,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         _collectLaunchFee(hasNative, params.devBuyQuoteIn);
 
-        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI);
+        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI, params.bitmask);
 
         uint256[] memory tokenAmounts = LaunchFactoryLib.splitSupply(params.totalSupply, _libMarkets(params.markets));
 
@@ -513,11 +513,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
         string memory symbol_,
         uint256 totalSupply,
         address creator,
-        string memory metadataURI_
+        string memory metadataURI_,
+        uint256 bitmask
     ) internal returns (address token) {
+        address tracker;
+        if (BitmaskConfig.unpack(bitmask).holderAirdrop) {
+            tracker = masterHook.holderAirdropVault();
+        }
         bytes memory initCode = abi.encodePacked(
             type(LaunchToken).creationCode,
-            abi.encode(name_, symbol_, totalSupply, creator, address(this), metadataURI_)
+            abi.encode(name_, symbol_, totalSupply, creator, address(this), metadataURI_, tracker)
         );
         bytes32 entropy = keccak256(abi.encodePacked(name_, symbol_, creator, totalSupply, metadataURI_, launchCount));
         token = TokenAddressMiner.deploy(address(this), initCode, entropy);

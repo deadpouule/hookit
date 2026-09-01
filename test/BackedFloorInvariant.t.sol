@@ -16,7 +16,7 @@ contract BackedFloorInvariantTest is Test {
 
     function setUp() public {
         vault = new FloorVault(address(this), IPoolManager(address(0)));
-        token = new LaunchToken("Floor", "FLR", 1_000_000_000e18, address(this), address(this), "");
+        token = new LaunchToken("Floor", "FLR", 1_000_000_000e18, address(this), address(this), "", address(0));
         vault.setOperator(address(this), true);
 
         handler = new FloorHandler(vault, token);

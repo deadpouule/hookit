@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolId} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
@@ -27,46 +26,59 @@ contract HolderAirdropTest is LaunchpadTestBase {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         m.holderAirdrop = true;
-        m.holderAirdropBps = 10_000; // 100% of hook tax pot
+        m.holderAirdropBps = 10_000;
+        m.holderAirdropEpochSeconds = 120;
 
         (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
 
         _buyAs(alice, key, 1 ether);
-        _buyAs(bob, key, 3 ether);
+        _buyAs(bob, key, 1 ether);
+        _buyAs(alice, key, 0.2 ether);
 
-        uint256 pot = airdrops.reserve(token);
-        assertGt(pot, 0, "fees should accrue to airdrop vault");
+        vm.warp(block.timestamp + 120);
+        uint64 lastBefore = airdrops.lastAirdropAt(token);
+        _buyAs(bob, key, 0.05 ether);
+        assertTrue(hook.airdropDue(token));
+        _buyAs(alice, key, 0.05 ether);
+        assertGt(airdrops.lastAirdropAt(token), lastBefore);
+    }
 
-        uint256 aliceBal = LaunchTokenLike(token).balanceOf(alice);
-        uint256 bobBal = LaunchTokenLike(token).balanceOf(bob);
-        assertGt(aliceBal, 0);
-        assertGt(bobBal, 0);
+    function testHookTriggersAutoAirdropAfterEpoch() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.holderAirdrop = true;
+        m.holderAirdropBps = 10_000;
+        m.holderAirdropEpochSeconds = 120;
 
-        address[] memory holders = _circulatingHolders(token, alice, bob);
+        (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
 
-        uint256 aliceEthBefore = alice.balance;
-        uint256 bobEthBefore = bob.balance;
+        _buyAs(alice, key, 1 ether);
+        _buyAs(bob, key, 1 ether);
+        _buyAs(alice, key, 0.2 ether);
 
-        uint256 distributed = airdrops.airdrop(token, holders);
-        assertGt(distributed, 0);
-        assertEq(airdrops.lastAirdropAt(token), uint64(block.timestamp));
+        vm.warp(block.timestamp + 120);
+        assertGt(airdrops.reserve(token), 0);
+        assertGe(airdrops.holderCount(token), 2);
 
-        uint256 aliceGot = alice.balance - aliceEthBefore;
-        uint256 bobGot = bob.balance - bobEthBefore;
-        assertGt(aliceGot, 0);
-        assertGt(bobGot, 0);
-        // Pro-rata within 1%: aliceGot/aliceBal ≈ bobGot/bobBal
-        assertApproxEqRel(aliceGot * bobBal, bobGot * aliceBal, 0.01e18);
+        uint64 lastBefore = airdrops.lastAirdropAt(token);
+        _buyAs(bob, key, 0.05 ether);
+        assertTrue(hook.airdropDue(token));
+        _buyAs(alice, key, 0.05 ether);
+        assertGt(airdrops.lastAirdropAt(token), lastBefore);
+    }
 
-        vm.expectRevert(HolderAirdropVault.EpochNotElapsed.selector);
-        airdrops.airdrop(token, holders);
+    function testTryAutoAirdropCallableByHook() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.holderAirdrop = true;
+        m.holderAirdropBps = 10_000;
+        m.holderAirdropEpochSeconds = 60;
 
-        vm.warp(block.timestamp + ProtocolConstants.HOLDER_AIRDROP_EPOCH);
+        (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         _buyAs(alice, key, 0.5 ether);
-        if (airdrops.reserve(token) > 0) {
-            holders = _circulatingHolders(token, alice, bob);
-            airdrops.airdrop(token, holders);
-        }
+
+        vm.prank(address(hook));
+        assertTrue(airdrops.tryAutoAirdrop(token));
     }
 
     function testIncompleteHolderSetReverts() public {
@@ -86,6 +98,23 @@ contract HolderAirdropTest is LaunchpadTestBase {
         airdrops.airdrop(token, onlyAlice);
     }
 
+    function testSyncHolderTracksBuyersOnChain() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.holderAirdrop = true;
+        m.hookTaxBps = 200;
+        m.holderAirdropBps = 10_000;
+
+        (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        assertEq(airdrops.holderCount(token), 0);
+
+        _buyAs(alice, key, 0.2 ether);
+        assertGt(airdrops.holderCount(token), 0);
+        assertGt(LaunchTokenLike(token).balanceOf(alice), 0);
+
+        _buyAs(bob, key, 0.2 ether);
+        assertGe(airdrops.holderCount(token), 2);
+    }
+
     function _buyAs(address user, PoolKey memory key, uint256 ethIn) internal {
         vm.prank(user);
         swapRouter.swap{value: ethIn}(
@@ -96,25 +125,5 @@ contract HolderAirdropTest is LaunchpadTestBase {
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(user)
         );
-    }
-
-    function _circulatingHolders(address token, address a, address b) internal view returns (address[] memory holders) {
-        address[8] memory candidates =
-            [a, b, address(this), address(swapRouter), address(factory), ops, address(escrow), address(distributor)];
-        uint256 n;
-        for (uint256 i; i < candidates.length; ++i) {
-            address c = candidates[i];
-            if (c == address(0)) continue;
-            if (airdrops.excluded(token, c)) continue;
-            if (LaunchTokenLike(token).balanceOf(c) > 0) n++;
-        }
-        holders = new address[](n);
-        uint256 j;
-        for (uint256 i; i < candidates.length; ++i) {
-            address c = candidates[i];
-            if (c == address(0)) continue;
-            if (airdrops.excluded(token, c)) continue;
-            if (LaunchTokenLike(token).balanceOf(c) > 0) holders[j++] = c;
-        }
     }
 }

@@ -15,8 +15,10 @@ export const MAX_HOOK_TAX_BPS = 900;
 export const MAX_TOTAL_FEE_BPS = 1000;
 /** Default total fee cap when enabling dynamic fees (3%). */
 export const DYNAMIC_FEE_DEFAULT_MAX_BPS = 300;
-/** Default 24h quote volume scale that fully ramps fees (10 × 1e18 quote units). */
-export const DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE = 10;
+/** Default depth consumption (bps) for max dynamic fee — 100% of in-range quote depth. */
+export const DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS = 10_000;
+export const DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT = 10;
+export const DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT = 100;
 export const BUYBACK_VESTING_DEFAULT_DAYS = 365 * 5;
 export const BUYBACK_VESTING_MIN_DAYS = 7;
 export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
@@ -56,13 +58,13 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     lpDonatePct: 20,
     holderAirdrop: false,
     holderAirdropPct: 50,
+    holderAirdropEpochSeconds: 15 * 60,
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
-    dynamicFeeRampUp: true,
-    dynamicFeeVolumeTargetScale: DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+    dynamicFeeDepthSaturationBps: DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
     creatorShareToHook: false,
   },
   hookTaxBps: 0,
@@ -94,13 +96,13 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     lpDonatePct: 20,
     holderAirdrop: false,
     holderAirdropPct: 50,
+    holderAirdropEpochSeconds: 15 * 60,
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
-    dynamicFeeRampUp: true,
-    dynamicFeeVolumeTargetScale: DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+    dynamicFeeDepthSaturationBps: DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
     creatorShareToHook: false,
   },
 };

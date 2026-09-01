@@ -171,18 +171,17 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
 
         if (quote.isAddressZero()) {
-            _routerBuy(trader, l.key, l.token, 0.25 ether);
+            _routerBuy(trader, l.key, l.token, 0.01 ether);
         } else if (quote == usdg) {
-            _routerBuy(trader, l.key, l.token, 1_000e6);
+            _routerBuy(trader, l.key, l.token, 10e6);
         } else {
-            _routerBuy(trader, l.key, l.token, 0.05e18);
+            _routerBuy(trader, l.key, l.token, 0.005e18);
         }
         assertGt(_tokenBalance(l.token, trader), 0);
 
         assertGt(vault.reserve(l.token), 0);
-        (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
-        assertGt(streamed, 0);
         assertLt(IERC20(l.token).totalSupply(), supplyBefore);
+        assertGt(airdrops.reserve(l.token), 0);
         (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
         assertTrue(g0After > g0Before || g1After > g1Before);
 

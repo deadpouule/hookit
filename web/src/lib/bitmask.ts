@@ -31,7 +31,8 @@ const SHIFT_HOLDER_AIRDROP_BPS = BigInt(146);
 const SHIFT_BUYBACK_VESTING_DURATION = BigInt(163);
 const SHIFT_DYNAMIC_FEE_MIN_TOTAL = BigInt(195);
 const FLAG_DYNAMIC_FEE_RAMP_UP = BigInt(1) << BigInt(211);
-const SHIFT_DYNAMIC_FEE_VOLUME_TARGET = BigInt(212);
+const SHIFT_DYNAMIC_FEE_DEPTH_SATURATION = BigInt(212);
+const SHIFT_HOLDER_AIRDROP_EPOCH = BigInt(228);
 
 const MAX_HOOK_TAX_BPS = BigInt(900);
 const MAX_TOTAL_FEE_BPS = BigInt(1000);
@@ -80,7 +81,12 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
     );
   }
 
-  if (modules.autoBurnPct > 100 || modules.lpDonatePct > 100 || modules.holderAirdropPct > 100) {
+  if (modules.holderAirdrop) {
+    const epochSec = modules.holderAirdropEpochSeconds ?? 15 * 60;
+    if (epochSec < 60 || epochSec > 7 * 24 * 3600) {
+      throw new Error("Holder airdrop epoch must be 1 minute to 7 days");
+    }
+  }
     throw new Error("Hook pot shares are capped at 100% each");
   }
 
@@ -149,7 +155,12 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
     const minTotal = modules.dynamicFeeMinBps ?? 100;
     packed |= BigInt(minTotal) << SHIFT_DYNAMIC_FEE_MIN_TOTAL;
     if (modules.dynamicFeeRampUp !== false) packed |= FLAG_DYNAMIC_FEE_RAMP_UP;
-    packed |= BigInt(modules.dynamicFeeVolumeTargetScale ?? 10) << SHIFT_DYNAMIC_FEE_VOLUME_TARGET;
+    packed |= BigInt(modules.dynamicFeeDepthSaturationBps ?? 10_000) << SHIFT_DYNAMIC_FEE_DEPTH_SATURATION;
+  }
+
+  if (modules.holderAirdrop) {
+    const epochSec = modules.holderAirdropEpochSeconds ?? 15 * 60;
+    packed |= BigInt(epochSec) << SHIFT_HOLDER_AIRDROP_EPOCH;
   }
 
   return packed;
@@ -191,7 +202,8 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const buybackVestingDurationSeconds = Number((packed >> SHIFT_BUYBACK_VESTING_DURATION) & UINT32_MASK);
   const dynamicFeeMinTotalBps = Number((packed >> SHIFT_DYNAMIC_FEE_MIN_TOTAL) & UINT16_MASK);
   const dynamicFeeRampUp = (packed & FLAG_DYNAMIC_FEE_RAMP_UP) !== BigInt(0);
-  const dynamicFeeVolumeTargetScale = Number((packed >> SHIFT_DYNAMIC_FEE_VOLUME_TARGET) & UINT16_MASK);
+  const dynamicFeeDepthSaturationBps = Number((packed >> SHIFT_DYNAMIC_FEE_DEPTH_SATURATION) & UINT16_MASK);
+  const holderAirdropEpochSecondsRaw = Number((packed >> SHIFT_HOLDER_AIRDROP_EPOCH) & UINT32_MASK);
   const buybackVestingDurationDays = Math.max(
     MIN_BUYBACK_VESTING_DAYS,
     Math.round(buybackVestingDurationSeconds / SECONDS_PER_DAY) || MAX_BUYBACK_VESTING_DAYS,
@@ -215,8 +227,12 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
         dynamicFeeMinTotalBps === 0 && dynamicFees ? 100 : dynamicFeeMinTotalBps || undefined,
       dynamicFeeMaxBps: dynamicFees ? 100 + hookTaxBps : undefined,
       dynamicFeeRampUp: dynamicFees ? dynamicFeeRampUp : undefined,
-      dynamicFeeVolumeTargetScale:
-        dynamicFees && dynamicFeeVolumeTargetScale > 0 ? dynamicFeeVolumeTargetScale : dynamicFees ? 10 : undefined,
+      dynamicFeeDepthSaturationBps:
+        dynamicFees && dynamicFeeDepthSaturationBps > 0
+          ? dynamicFeeDepthSaturationBps
+          : dynamicFees
+            ? 10_000
+            : undefined,
       buybackVesting,
       buybackVestingDurationDays,
       autoBurn,
@@ -226,6 +242,12 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       holderAirdrop,
       holderAirdropPct:
         holderAirdropBps === 0 ? 50 : Math.max(1, Math.round(holderAirdropBps / 100)),
+      holderAirdropEpochSeconds:
+        holderAirdrop && holderAirdropEpochSecondsRaw > 0
+          ? holderAirdropEpochSecondsRaw
+          : holderAirdrop
+            ? 15 * 60
+            : undefined,
       creatorShareToHook,
     },
   };

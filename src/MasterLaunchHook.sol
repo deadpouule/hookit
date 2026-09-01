@@ -63,11 +63,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     HolderAirdropVault public immutable airdropVault;
 
     mapping(PoolId => uint256) public override configs;
-    mapping(PoolId => uint256) public dynamicFeeWindows;
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
     mapping(PoolId => uint256) public pendingLpDonate;
+    mapping(address => bool) public airdropDue;
 
     bytes32 private constant FEE_ACTION_SLOT = keccak256("hookit.feeAction");
 
@@ -149,17 +149,26 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return _launchState[poolId];
     }
 
-    /// @notice Rolling-window volume and live hook tax for dynamic-fee pools.
-    function dynamicFeeSnapshot(PoolId poolId)
+    /// @notice Hook tax bps for a swap of `quoteNotional` given live pool depth (preview).
+    function dynamicFeeForSwap(PoolId poolId, uint256 quoteNotional, bool isBuy)
         external
         view
-        returns (uint64 windowStart, uint256 windowVolume, uint16 currentHookTaxBps)
+        returns (uint16 hookTaxBps)
     {
-        uint256 packed = configs[poolId];
-        uint256 windowPacked = dynamicFeeWindows[poolId];
-        windowStart = DynamicFeeMath.windowStart(windowPacked);
-        windowVolume = DynamicFeeMath.windowVolume(windowPacked);
-        currentHookTaxBps = DynamicFeeMath.effectiveHookTaxBps(packed, windowVolume);
+        LaunchState memory st = _launchState[poolId];
+        if (!st.initialized) return 0;
+        (uint160 sqrtPriceX96,, uint128 activeLiquidity,) = poolManager.getSlot0(poolId);
+        uint128 liquidity = activeLiquidity == 0 ? st.seedLiquidity : activeLiquidity;
+        return DynamicFeeMath.effectiveHookTaxBps(
+            configs[poolId],
+            quoteNotional,
+            sqrtPriceX96,
+            liquidity,
+            st.tickLower,
+            st.tickUpper,
+            !st.tokenIsCurrency0,
+            isBuy
+        );
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -193,6 +202,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             launchTimestamp: 0,
             tickLower: params.tickLower,
             tickUpper: params.tickUpper,
+            seedLiquidity: 0,
             tokenIsCurrency0: params.tokenIsCurrency0,
             initialized: false
         });
@@ -212,22 +222,31 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
             airdropVault.setExcluded(st.token, address(poolManager), true);
             airdropVault.setExcluded(st.token, address(this), true);
+            airdropVault.setExcluded(st.token, factory, true);
             airdropVault.setExcluded(st.token, address(vault), true);
             airdropVault.setExcluded(st.token, address(airdropVault), true);
             airdropVault.setExcluded(st.token, address(escrow), true);
             airdropVault.setExcluded(st.token, address(buybacks), true);
             airdropVault.setExcluded(st.token, address(0), true);
+            airdropVault.configureEpoch(st.token, configs[id].holderAirdropEpochSeconds());
         }
         return this.beforeInitialize.selector;
     }
 
-    function _beforeAddLiquidity(address, PoolKey calldata key, ModifyLiquidityParams calldata, bytes calldata)
-        internal
-        view
-        override
-        returns (bytes4)
-    {
-        if (!_launchState[key.toId()].initialized) revert UnknownPool();
+    function _beforeAddLiquidity(
+        address,
+        PoolKey calldata key,
+        ModifyLiquidityParams calldata params,
+        bytes calldata
+    ) internal override returns (bytes4) {
+        LaunchState storage st = _launchState[key.toId()];
+        if (!st.initialized) revert UnknownPool();
+        if (
+            params.liquidityDelta > 0 && params.tickLower == st.tickLower && params.tickUpper == st.tickUpper
+                && st.seedLiquidity == 0
+        ) {
+            st.seedLiquidity = uint128(uint256(params.liquidityDelta));
+        }
         return this.beforeAddLiquidity.selector;
     }
 
@@ -264,17 +283,31 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         _antiMev(id, packed, isBuy);
 
-        uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
-
-        uint256 windowPacked = dynamicFeeWindows[id];
-        uint256 volumeBefore = DynamicFeeMath.windowVolume(windowPacked);
-        uint16 effectiveHookTax = DynamicFeeMath.effectiveHookTaxBps(packed, volumeBefore);
-
-        if (packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
-            _checkMaxTx(st.token, packed.maxTxBps(), specifiedAbs, isBuy, exactInput);
+        if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED) && airdropDue[st.token]) {
+            if (airdropVault.tryAutoAirdrop(st.token)) {
+                airdropDue[st.token] = false;
+            }
         }
 
-        (uint160 sqrtPriceX96,, uint128 liquidity,) = poolManager.getSlot0(id);
+        uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
+
+        (uint160 sqrtPriceX96,, uint128 activeLiquidity,) = poolManager.getSlot0(id);
+        uint128 liquidity = activeLiquidity == 0 ? st.seedLiquidity : activeLiquidity;
+
+        bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
+        uint256 quoteNotional =
+            _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
+        bool quoteIsCurrency0 = !tokenIs0;
+        uint16 effectiveHookTax = DynamicFeeMath.effectiveHookTaxBps(
+            packed,
+            quoteNotional,
+            sqrtPriceX96,
+            liquidity,
+            st.tickLower,
+            st.tickUpper,
+            quoteIsCurrency0,
+            isBuy
+        );
 
         uint16 snipeBps;
         if (isBuy && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
@@ -289,11 +322,13 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
+        if (packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
+            _checkMaxTx(st, packed.maxTxBps(), specifiedAbs, isBuy, exactInput, sqrtPriceX96, totalFeeBps);
+        }
+
         if (isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
             _checkMaxWalletBeforeBuy(st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps);
         }
-
-        bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
 
         // Floor intercept: sell that is already at/below floor OR would cross the floor in this swap.
         if (!isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
@@ -307,15 +342,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
                     IERC20Supply(st.token).totalSupply(),
                     tokenAmt
                 )) {
-                return _floorFill(key, st, params, exactInput, specifiedAbs);
+                return _floorFill(
+                    key, id, st, packed, params, exactInput, specifiedAbs, snipeBps, effectiveHookTax, totalFeeBps
+                );
             }
-        }
-
-        uint256 quoteNotional =
-            _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
-
-        if (packed.enabled(BitmaskConfig.DYNAMIC_FEES_ENABLED)) {
-            dynamicFeeWindows[id] = DynamicFeeMath.accrueVolume(windowPacked, quoteNotional, block.timestamp);
         }
 
         uint256 feeAmount = FixedPointMath.applyBps(quoteNotional, totalFeeBps);
@@ -326,7 +356,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         st.quote.take(poolManager, address(this), feeAmount, true);
-        _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax);
+        _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, true);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
@@ -356,29 +386,39 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 donateCut = pendingLpDonate[id];
         if (burnCut > 0) {
             pendingAutoBurn[id] = 0;
-            _autoBurn(key, st, burnCut);
+            if (!_autoBurn(key, st, burnCut)) {
+                pendingAutoBurn[id] = burnCut;
+            }
         }
         if (donateCut > 0) {
             pendingLpDonate[id] = 0;
-            _lpDonate(key, st, donateCut);
+            if (!_lpDonate(key, st, donateCut)) {
+                pendingLpDonate[id] = donateCut;
+            }
+        }
+        if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
+            _markAirdropDue(st.token);
         }
         return (this.afterSwap.selector, 0);
     }
 
     function _floorFill(
         PoolKey calldata key,
+        PoolId id,
         LaunchState storage st,
+        uint256 packed,
         SwapParams calldata,
-        /* params */
         bool exactInput,
-        uint256 specifiedAbs
+        uint256 specifiedAbs,
+        uint16 snipeBps,
+        uint16 effectiveHookTax,
+        uint256 totalFeeBps
     ) private returns (bytes4, BeforeSwapDelta, uint24) {
         Currency tokenCur = Currency.wrap(st.token);
         uint256 tokenIn;
         if (exactInput) {
             tokenIn = specifiedAbs;
         } else {
-            // exact-out quote: invert floor to tokens required
             uint256 supply = IERC20Supply(st.token).totalSupply();
             uint256 res = vault.reserve(st.token);
             tokenIn = res == 0 ? 0 : (specifiedAbs * supply + res - 1) / res;
@@ -387,20 +427,33 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
         }
 
+        uint256 supplyNow = IERC20Supply(st.token).totalSupply();
+        uint256 grossQuote = FixedPointMath.quoteAtFloor(tokenIn, vault.reserve(st.token), supplyNow);
+        uint256 feeAmount = FixedPointMath.applyBps(grossQuote, totalFeeBps);
+        if (feeAmount > grossQuote) feeAmount = grossQuote;
+
         tokenCur.take(poolManager, address(this), tokenIn, false);
         IERC20Supply(st.token).approve(address(vault), tokenIn);
         uint256 quoteOut = vault.drawForFloor(st.token, st.quote, tokenIn, address(this));
-        st.quote.settle(poolManager, address(this), quoteOut, false);
 
-        emit FloorFill(key.toId(), tokenIn, quoteOut);
+        if (feeAmount > 0) {
+            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, false);
+        }
+
+        uint256 userQuote = quoteOut - feeAmount;
+        if (userQuote > 0) {
+            st.quote.settle(poolManager, address(this), userQuote, false);
+        }
+
+        emit FloorFill(key.toId(), tokenIn, userQuote);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
         if (exactInput) {
             specifiedDelta = tokenIn.toInt128();
-            unspecifiedDelta = -quoteOut.toInt128();
+            unspecifiedDelta = -userQuote.toInt128();
         } else {
-            specifiedDelta = -quoteOut.toInt128();
+            specifiedDelta = -userQuote.toInt128();
             unspecifiedDelta = tokenIn.toInt128();
         }
         return (this.beforeSwap.selector, toBeforeSwapDelta(specifiedDelta, unspecifiedDelta), 0);
@@ -425,7 +478,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 packed,
         uint256 feeAmount,
         uint16 snipeBps,
-        uint16 effectiveHookTaxBps
+        uint16 effectiveHookTaxBps,
+        bool fromPoolClaims
     ) private {
         uint16 hookTaxBps_ = effectiveHookTaxBps;
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
@@ -448,20 +502,20 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             creatorEscrowAmt = 0;
         } else if (st.token == distributor.nativeToken() && distributor.nativeToken() != address(0)) {
             buybackAmt = creatorEscrowAmt;
-            _pushQuote(st.quote, address(distributor), buybackAmt);
+            _fundQuote(st.quote, address(distributor), buybackAmt, fromPoolClaims);
             if (buybackAmt > 0) distributor.notifyBuybackInternal(st.quote, buybackAmt);
             creatorEscrowAmt = 0;
         } else if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED) && creatorEscrowAmt > 0) {
             buybackAmt = creatorEscrowAmt;
             creatorEscrowAmt = 0;
-            _pushQuote(st.quote, address(buybacks), buybackAmt);
+            _fundQuote(st.quote, address(buybacks), buybackAmt, fromPoolClaims);
             if (buybackAmt > 0) {
                 buybacks.creditInternal(
                     st.creator, st.token, st.quote, buybackAmt, packed.buybackVestingDurationSeconds()
                 );
             }
         } else {
-            _pushQuote(st.quote, address(escrow), creatorEscrowAmt);
+            _fundQuote(st.quote, address(escrow), creatorEscrowAmt, fromPoolClaims);
             if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);
         }
 
@@ -493,13 +547,13 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         // Unallocated hook pot → protocol.
         uint256 protocolShare = protocolFromBase + (hookPot - routed);
 
-        _pushQuote(st.quote, address(distributor), protocolShare);
+        _fundQuote(st.quote, address(distributor), protocolShare, fromPoolClaims);
         if (protocolShare > 0) distributor.notifyInternal(st.quote, protocolShare);
 
-        _pushQuote(st.quote, address(vault), floorCut);
+        _fundQuote(st.quote, address(vault), floorCut, fromPoolClaims);
         if (floorCut > 0) vault.depositInternal(st.token, st.quote, floorCut);
 
-        _pushQuote(st.quote, address(airdropVault), airdropCut);
+        _fundQuote(st.quote, address(airdropVault), airdropCut, fromPoolClaims);
         if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
 
         pendingAutoBurn[id] = autoBurnCut;
@@ -510,9 +564,13 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         );
     }
 
-    function _pushQuote(Currency quote, address to, uint256 amount) private {
+    function _fundQuote(Currency quote, address to, uint256 amount, bool fromPoolClaims) private {
         if (amount == 0) return;
-        poolManager.transfer(to, quote.toId(), amount);
+        if (fromPoolClaims) {
+            poolManager.transfer(to, quote.toId(), amount);
+        } else {
+            quote.transfer(to, amount);
+        }
     }
 
     function _antiMev(PoolId id, uint256 packed, bool isBuy) private {
@@ -526,13 +584,32 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         lastSwapPacked[id][origin] = (block.number << 8) | dir;
     }
 
-    function _checkMaxTx(address token, uint16 bps, uint256 specifiedAbs, bool isBuy, bool exactInput) private view {
-        uint256 cap = FixedPointMath.applyBps(IERC20Supply(token).totalSupply(), bps);
+    function _checkMaxTx(
+        LaunchState storage st,
+        uint16 bps,
+        uint256 specifiedAbs,
+        bool isBuy,
+        bool exactInput,
+        uint160 sqrtPriceX96,
+        uint256 totalFeeBps
+    ) private view {
+        uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), bps);
         if (cap == 0) return;
-        bool tokenIsSpecified = isBuy ? !exactInput : exactInput;
-        if (tokenIsSpecified) {
-            if (specifiedAbs > cap) revert MaxTxExceeded();
+
+        uint256 tokenAmt;
+        if (isBuy) {
+            if (exactInput) {
+                uint256 quoteNet = specifiedAbs - FixedPointMath.applyBps(specifiedAbs, totalFeeBps);
+                tokenAmt = FixedPointMath.tokenFromQuote(quoteNet, sqrtPriceX96, st.tokenIsCurrency0);
+            } else {
+                tokenAmt = specifiedAbs;
+            }
+        } else if (exactInput) {
+            tokenAmt = specifiedAbs;
+        } else {
+            tokenAmt = FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, st.tokenIsCurrency0);
         }
+        if (tokenAmt > cap) revert MaxTxExceeded();
     }
 
     function _decodeRecipient(bytes calldata hookData) private pure returns (address recipient) {
@@ -567,7 +644,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (IERC20Supply(st.token).balanceOf(recipient) + tokenIn > cap) revert MaxWalletExceeded();
     }
 
-    function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private {
+    function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
         bool zeroForOne = !st.tokenIsCurrency0;
         _setFeeAction(true);
         BalanceDelta delta;
@@ -585,8 +662,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             delta = d;
         } catch {
             _setFeeAction(false);
-            _quoteToFloor(st, quoteAmount);
-            return;
+            return false;
         }
         _setFeeAction(false);
 
@@ -600,27 +676,29 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             ILaunchToken(st.token).burn(tokenOut);
         }
         emit AutoBurn(key.toId(), quotePaid, tokenOut);
+        return tokenOut > 0;
     }
 
-    function _lpDonate(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private {
+    function _lpDonate(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
         if (poolManager.getLiquidity(key.toId()) == 0) {
-            _quoteToFloor(st, quoteAmount);
-            return;
+            return false;
         }
         uint256 amount0 = st.tokenIsCurrency0 ? 0 : quoteAmount;
         uint256 amount1 = st.tokenIsCurrency0 ? quoteAmount : 0;
         try poolManager.donate(key, amount0, amount1, "") {
             st.quote.settle(poolManager, address(this), quoteAmount, true);
             emit LpDonated(key.toId(), quoteAmount);
+            return true;
         } catch {
-            _quoteToFloor(st, quoteAmount);
+            return false;
         }
     }
 
-    function _quoteToFloor(LaunchState storage st, uint256 quoteAmount) private {
-        if (quoteAmount == 0) return;
-        _pushQuote(st.quote, address(vault), quoteAmount);
-        vault.depositInternal(st.token, st.quote, quoteAmount);
+    function _markAirdropDue(address token) private {
+        if (airdropVault.reserve(token) == 0) return;
+        if (airdropVault.registeredHolderCount(token) == 0) return;
+        if (airdropVault.secondsUntilAirdrop(token) > 0) return;
+        airdropDue[token] = true;
     }
 
     function _inFeeAction() private view returns (bool flagged) {

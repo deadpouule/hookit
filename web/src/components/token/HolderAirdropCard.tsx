@@ -4,6 +4,7 @@ import { formatUnits, zeroAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
 
 import { HookChip } from "@/components/hooks/HookMark";
+import { V4ClaimsClaimAction } from "@/components/token/V4ClaimsClaimAction";
 import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
@@ -95,9 +96,10 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
         </div>
       </dl>
       <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
-        Quote fees accrue here. Once the 15m window is open, the next swap on this token can push the
-        pot pro-rata to holders (router supplies the holder set) — no separate keeper bot.
+        Quote fees accrue here. Holders are tracked on-chain via token transfers. Once the epoch
+        window opens, the next swap automatically pays every holder pro-rata — no keeper bot.
       </p>
+      <V4ClaimsClaimAction quote={quote} decimals={decimals} quoteLabel={quoteLabel} />
     </div>
   );
 }

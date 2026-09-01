@@ -147,7 +147,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
 
-        _routerBuy(trader, l.key, l.token, 0.2 ether);
+        _routerBuy(trader, l.key, l.token, 0.01 ether);
         assertGt(_tokenBalance(l.token, trader), 0);
 
         if (m.backedFloor) assertGt(vault.reserve(l.token), 0);

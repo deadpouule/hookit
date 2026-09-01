@@ -202,7 +202,8 @@ abstract contract InkForkTestBase is Test {
             buybackVestingDurationSeconds: 0,
             dynamicFeeMinTotalBps: 0,
             dynamicFeeRampUp: false,
-            dynamicFeeVolumeTargetScale: 0
+            dynamicFeeDepthSaturationBps: 0,
+            holderAirdropEpochSeconds: 0
         });
     }
 

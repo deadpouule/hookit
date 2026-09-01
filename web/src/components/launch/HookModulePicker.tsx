@@ -26,11 +26,22 @@ import {
   MIN_ANTI_SNIPE_DURATION_SEC,
   MIN_ANTI_SNIPE_TAX_PCT,
   MIN_SUPPLY_CAP_SLIDER_PCT,
+  HOLDER_AIRDROP_EPOCH_MIN_MINUTES,
+  HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
+  HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES,
   bpsToSupplyPct,
   formatSupplyCap,
   supplyPctToBps,
 } from "@/lib/protocol-limits";
-import { BASE_FEE_BPS, DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE, MAX_TOTAL_FEE_BPS } from "@/lib/constants";
+import {
+  BASE_FEE_BPS,
+  DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
+  MAX_TOTAL_FEE_BPS,
+} from "@/lib/constants";
+import {
+  DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT,
+  DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT,
+} from "@/lib/protocol-limits";
 import {
   feeRouteSliderMax,
   feeRouteTotalPct,
@@ -747,49 +758,22 @@ function HookSettings({
             step={10}
           />
         </PickConfigControl>
-        <div className="sm:col-span-2 grid gap-2">
-          <span className="text-xs text-zinc-500">Fee vs activity</span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              className={cn(
-                "rounded-lg border px-3 py-2 text-left text-xs transition-colors",
-                modules.dynamicFeeRampUp !== false
-                  ? "border-violet-500/50 bg-violet-500/10 text-zinc-100"
-                  : "border-white/10 bg-black/40 text-zinc-500 hover:border-white/20",
-              )}
-              onClick={() => onUpdate({ dynamicFeeRampUp: true })}
-            >
-              <span className="block font-medium">Rise with volume</span>
-              <span className="mt-0.5 block text-zinc-500">Low activity → min fee</span>
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-lg border px-3 py-2 text-left text-xs transition-colors",
-                modules.dynamicFeeRampUp === false
-                  ? "border-violet-500/50 bg-violet-500/10 text-zinc-100"
-                  : "border-white/10 bg-black/40 text-zinc-500 hover:border-white/20",
-              )}
-              onClick={() => onUpdate({ dynamicFeeRampUp: false })}
-            >
-              <span className="block font-medium">Fall with volume</span>
-              <span className="mt-0.5 block text-zinc-500">High activity → min fee</span>
-            </button>
-          </div>
-        </div>
         <PickConfigControl
           theme={theme}
-          label="24h volume to max ramp"
-          value={`${modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE}×`}
+          label="Depth % for max fee"
+          value={`${Math.round((modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100)}%`}
         >
           <AccentSlider
             accentColor={accent}
-            value={[modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE]}
-            onValueChange={([v]) => onUpdate({ dynamicFeeVolumeTargetScale: Math.round(v) })}
-            min={1}
-            max={1000}
-            step={1}
+            value={[
+              (modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100,
+            ]}
+            onValueChange={([v]) =>
+              onUpdate({ dynamicFeeDepthSaturationBps: Math.round(v * 100) })
+            }
+            min={DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT}
+            max={DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT}
+            step={5}
           />
         </PickConfigControl>
         <span
@@ -798,7 +782,7 @@ function HookSettings({
             `orb-hook-desc-badge--${theme}`,
           )}
         >
-          Fees adjust on-chain from 24h quote volume · scale = quote units (×1e18) to saturate the ramp · fixed hook fee slider is disabled
+          Fee scales with how much in-range LP depth your swap consumes — same quote size pays more in a shallow pool · no oracle · ceiling is hard-rejected below base fee
         </span>
       </div>
     );
@@ -852,14 +836,37 @@ function HookSettings({
 
   if (hook.id === "holder-airdrop") {
     const routeKey: FeeRouteKey = "holderAirdropPct";
+    const epochMinutes = Math.round(
+      (modules.holderAirdropEpochSeconds ?? HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES * 60) / 60,
+    );
     return (
-      <FeeRouteShareControl
-        routeKey={routeKey}
-        modules={modules}
-        theme={theme}
-        accent={accent}
-        onUpdate={onUpdate}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FeeRouteShareControl
+          routeKey={routeKey}
+          modules={modules}
+          theme={theme}
+          accent={accent}
+          onUpdate={onUpdate}
+        />
+        <PickConfigControl theme={theme} label="Epoch" value={`${epochMinutes}m`}>
+          <AccentSlider
+            accentColor={accent}
+            value={[epochMinutes]}
+            onValueChange={([v]) => onUpdate({ holderAirdropEpochSeconds: v * 60 })}
+            min={HOLDER_AIRDROP_EPOCH_MIN_MINUTES}
+            max={HOLDER_AIRDROP_EPOCH_MAX_MINUTES}
+            step={1}
+          />
+        </PickConfigControl>
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically
+        </span>
+      </div>
     );
   }
 

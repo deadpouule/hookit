@@ -122,6 +122,13 @@ export function getProtocolDistributorAddress(): Address | undefined {
   return raw as Address;
 }
 
+/** V4ClaimsRedeemer — redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
+export function getClaimsRedeemerAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_CLAIMS_REDEEMER?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
 /** HkitBuyback keeper — set after DeployHookitCore. */
 export function getHkitBuybackAddress(): Address | undefined {
   const raw =

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { formatUnits, parseUnits, type Address } from "viem";
+import { formatUnits, parseUnits, zeroAddress, type Address } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 
+import { V4ClaimsClaimAction } from "@/components/token/V4ClaimsClaimAction";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
+import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
-import { fetchIndexerHolders } from "@/lib/indexer-client";
-import { isIndexerConfigured } from "@/lib/live-data";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
@@ -160,6 +160,90 @@ function formatAirdropWait(seconds: number | null): string {
   return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
 }
 
+export function BuybackVestingInline({
+  pool,
+  buybackVault,
+  claimableWei,
+  quoteLabel,
+  decimals,
+  embedded = false,
+}: {
+  pool: TokenPool;
+  buybackVault: Address | undefined;
+  claimableWei: bigint;
+  quoteLabel: string;
+  decimals: number;
+  embedded?: boolean;
+}) {
+  const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync, isPending } = useWriteContract();
+  const token = pool.contractAddress as Address | undefined;
+  const isCreator =
+    !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
+
+  const claimLabel = `${formatUnits(claimableWei, decimals)} ${quoteLabel}`;
+
+  const claim = async () => {
+    if (!buybackVault || !token || !address) return;
+    try {
+      const hash = await writeContractAsync({
+        address: buybackVault,
+        abi: buybackVaultAbi,
+        functionName: "claim",
+        args: [token],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      toast.success("Vested fees claimed");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Claim failed";
+      toast.error("Claim failed", msg.slice(0, 120));
+    }
+  };
+
+  if (!isCreator) {
+    return embedded ? null : (
+      <p className="token-hooks-vault-copy text-[11px] text-zinc-500">
+        Creator fees vest linearly — only the launcher can claim.
+      </p>
+    );
+  }
+
+  if (embedded) {
+    if (claimableWei <= BigInt(0)) return null;
+    return (
+      <div className="token-hooks-chip-actions token-hooks-chip-actions--buyback">
+        <span className="token-hooks-vault-copy text-[11px] text-zinc-400">{claimLabel} vested</span>
+        <button
+          type="button"
+          disabled={!buybackVault || claimableWei <= BigInt(0) || isPending || !address}
+          onClick={() => void claim()}
+          className="token-hooks-vault-btn"
+        >
+          Claim
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="token-hooks-vault">
+      <div className="token-hooks-vault-meta">
+        <span>Claimable</span>
+        <span>{claimLabel}</span>
+      </div>
+      <button
+        type="button"
+        disabled={!buybackVault || claimableWei <= BigInt(0) || isPending || !address}
+        onClick={() => void claim()}
+        className="token-hooks-vault-btn"
+      >
+        Claim vested fees
+      </button>
+    </div>
+  );
+}
+
 export function HolderAirdropInline({
   pool,
   airdropVault,
@@ -177,73 +261,33 @@ export function HolderAirdropInline({
   quoteLabel: string;
   embedded?: boolean;
 }) {
-  const { address } = useAccount();
-  const publicClient = usePublicClient();
-  const { writeContractAsync, isPending } = useWriteContract();
   const token = pool.contractAddress as Address | undefined;
+  const quote = (pool.quoteAddress ?? zeroAddress) as Address;
 
-  const { data: holderBalance } = useReadContract({
-    address: token,
-    abi: erc20Abi,
-    functionName: "balanceOf",
-    args: address ? [address] : undefined,
-    query: { enabled: !!token && !!address },
+  const { data: holderCount } = useReadContract({
+    address: airdropVault,
+    abi: holderAirdropVaultAbi,
+    functionName: "holderCount",
+    args: token ? [token] : undefined,
+    query: { enabled: !!airdropVault && !!token, refetchInterval: 15_000 },
   });
 
   const potLabel = `${formatUnits(reserveWei, decimals)} ${quoteLabel}`;
   const ready = reserveWei > BigInt(0) && secondsLeft != null && secondsLeft <= 0;
-  const holdsToken = ((holderBalance as bigint | undefined) ?? BigInt(0)) > BigInt(0);
-  const indexerReady = isIndexerConfigured();
-
-  const claimDrop = async () => {
-    if (!airdropVault || !token) return;
-    try {
-      const { holders } = await fetchIndexerHolders(token, 5000);
-      const addresses = holders
-        .filter((h) => BigInt(h.balance) > BigInt(0))
-        .map((h) => h.address as Address);
-      if (addresses.length === 0) {
-        toast.error("No holders indexed yet");
-        return;
-      }
-      const hash = await writeContractAsync({
-        address: airdropVault,
-        abi: holderAirdropVaultAbi,
-        functionName: "airdrop",
-        args: [token, addresses],
-      });
-      await publicClient?.waitForTransactionReceipt({ hash });
-      toast.success("Holder drop sent", "Quote was split pro-rata to all holders.");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Claim failed";
-      toast.error(
-        "Claim failed",
-        msg.includes("IncompleteHolderSet")
-          ? "Holder list incomplete — try again after more swaps are indexed."
-          : msg.slice(0, 120),
-      );
-    }
-  };
-
-  let disabledReason: string | null = null;
-  if (!address) disabledReason = "Connect wallet";
-  else if (!indexerReady) disabledReason = "Indexer required";
-  else if (reserveWei === BigInt(0)) disabledReason = "Pot empty";
-  else if (!ready) disabledReason = `Wait ${formatAirdropWait(secondsLeft)}`;
-  else if (!holdsToken) disabledReason = "Hold tokens to claim";
+  const status = ready
+    ? "Next swap pays holders automatically"
+    : `Payout opens in ${formatAirdropWait(secondsLeft)}`;
 
   if (embedded) {
     return (
-      <div className="token-hooks-chip-actions token-hooks-chip-actions--stack">
-        <button
-          type="button"
-          disabled={!airdropVault || isPending || !!disabledReason}
-          onClick={() => void claimDrop()}
-          className="token-hooks-vault-btn w-full"
-          title={disabledReason ?? undefined}
-        >
-          {isPending ? "Claiming…" : disabledReason ?? "Claim drop"}
-        </button>
+      <div className="space-y-2">
+        <p className="token-hooks-vault-copy text-[11px] leading-relaxed text-zinc-500">{status}</p>
+        <V4ClaimsClaimAction
+          quote={quote}
+          decimals={decimals}
+          quoteLabel={quoteLabel}
+          embedded
+        />
       </div>
     );
   }
@@ -257,18 +301,10 @@ export function HolderAirdropInline({
         </span>
       </div>
       <p className="token-hooks-vault-copy">
-        Quote is split pro-rata to all holders — no manual amount. Claim pushes the pot when the
-        window is open.
+        {Number(holderCount ?? 0).toLocaleString()} on-chain holders tracked. {status} — no keeper or
+        indexer required.
       </p>
-      <button
-        type="button"
-        disabled={!airdropVault || isPending || !!disabledReason}
-        onClick={() => void claimDrop()}
-        className="token-hooks-vault-btn w-full"
-        title={disabledReason ?? undefined}
-      >
-        {isPending ? "Claiming…" : disabledReason ?? "Claim drop"}
-      </button>
+      <V4ClaimsClaimAction quote={quote} decimals={decimals} quoteLabel={quoteLabel} />
     </div>
   );
 }
@@ -281,6 +317,8 @@ export function HookInlineAction({
   airdropVault,
   airdropReserveWei,
   airdropSecondsLeft,
+  buybackVault,
+  buybackClaimableWei,
   decimals,
   floorPriceHuman,
   quoteLabel,
@@ -294,6 +332,8 @@ export function HookInlineAction({
   airdropVault?: Address | undefined;
   airdropReserveWei?: bigint;
   airdropSecondsLeft?: number | null;
+  buybackVault?: Address | undefined;
+  buybackClaimableWei?: bigint;
   decimals: number;
   floorPriceHuman: number | null;
   quoteLabel: string;
@@ -324,6 +364,19 @@ export function HookInlineAction({
         secondsLeft={airdropSecondsLeft ?? null}
         decimals={decimals}
         quoteLabel={quoteLabel}
+        embedded={embedded}
+      />
+    );
+  }
+
+  if (id === "buyback-vesting") {
+    return (
+      <BuybackVestingInline
+        pool={pool}
+        buybackVault={buybackVault}
+        claimableWei={buybackClaimableWei ?? BigInt(0)}
+        quoteLabel={quoteLabel}
+        decimals={decimals}
         embedded={embedded}
       />
     );

@@ -12,6 +12,7 @@ import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
@@ -165,21 +166,35 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         sellExactIn(key, token, bal / 10);
     }
 
+    function testMaxTxRevertsOnBuyExactIn() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.maxTx = true;
+        m.maxTxBps = 10;
+        (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+        vm.expectRevert();
+        buyExactIn(key, 100 ether);
+    }
+
     function testMaxTxReverts() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.maxTx = true;
         m.maxTxBps = 10; // 0.1% of supply
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000e18);
-        buyExactIn(key, 1 ether);
+        uint256 cap = FixedPointMath.applyBps(LaunchTokenLike(token).totalSupply(), 10);
+        for (uint256 i; i < 200; ++i) {
+            buyExactIn(key, 0.00001 ether);
+            vm.roll(block.number + 1);
+        }
         uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
-        uint256 cap = LaunchTokenLike(token).totalSupply() * 1 / 10_000;
         assertGt(bal, cap, "need a fill larger than max tx");
         LaunchTokenLike(token).approve(address(swapRouter), bal);
         vm.expectRevert();
         swapRouter.swap(
             key,
             SwapParams({
-                zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+                zeroForOne: false,
+                amountSpecified: -int256(bal),
+                sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))

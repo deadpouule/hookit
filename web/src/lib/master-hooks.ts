@@ -174,7 +174,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     id: "dynamic-fees",
     number: 6,
     title: "Dynamic fees",
-    description: "Swap fee ramps with 24h quote volume between your min and max",
+    description: "Swap fee scales with in-range LP depth consumed — larger trades pay more, no oracle",
     category: "trading-fees",
     icon: TrendingUp,
     theme: "ember",
@@ -247,7 +247,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     uses: 0,
     royalty: "0% of hook fees",
     savedAt: "Block —",
-    summary: "quote fee share • 15m epoch airdrop",
+    summary: "quote fee share • auto epoch airdrop",
     settings: [
       "+ ROUTE QUOTE FEES TO VAULT",
       "+ AIRDROP ON SWAP AFTER 15M",

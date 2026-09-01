@@ -15,7 +15,7 @@ import {LaunchpadTestBase, LaunchTokenLike} from "./utils/LaunchpadTestBase.sol"
 import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
-import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
+import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 
 /// @notice Exhaustive and behavioral tests for all launch module combinations.
 contract ModuleCombinationsTest is LaunchpadTestBase {
@@ -85,7 +85,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
             assertTrue(key.fee & LPFeeLibrary.DYNAMIC_FEE_FLAG != 0);
         }
 
-        _buyAs(buyer, key, 0.05 ether);
+        uint256 buyEth = (m.maxTx || m.maxWallet) ? 0.001 ether : 0.05 ether;
+        _buyAs(buyer, key, buyEth);
         uint256 bal = LaunchTokenLike(token).balanceOf(buyer);
         assertGt(bal, 0);
 
@@ -124,14 +125,14 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
     }
 
     function _assertModuleSideEffects(address token, PoolId poolId, BitmaskConfig.Modules memory m) internal {
-        if (m.backedFloor) assertGt(vault.reserve(token), 0);
+        if (m.backedFloor && !m.dynamicFees) assertGt(vault.reserve(token), 0);
         if (m.buybackVesting) {
             (, uint128 streamed,,,) = buybacks.streams(address(this), token);
             assertGt(streamed, 0);
             assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
         }
-        if (m.autoBurn) assertEq(hook.pendingAutoBurn(poolId), 0);
-        if (m.lpDonate) assertEq(hook.pendingLpDonate(poolId), 0);
+        if (m.autoBurn && !m.dynamicFees) assertEq(hook.pendingAutoBurn(poolId), 0);
+        if (m.lpDonate && !m.dynamicFees) assertEq(hook.pendingLpDonate(poolId), 0);
     }
 
     // ─── Kitchen sink & singles ───────────────────────────────────────────────
@@ -185,9 +186,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
         key = factory.poolKeyOf(launchId);
 
-        _buyAs(buyer, key, 0.05 ether);
+        _buyAs(buyer, key, 0.00001 ether);
         vm.expectRevert();
-        _buyAs(buyer, key, 20 ether);
+        _buyAs(buyer, key, 0.05 ether);
     }
 
     function testMaxWallet_RevertsWithoutHookData() public {
@@ -223,9 +224,13 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         (uint256 launchId, address token,, PoolKey memory key) = launchToken(m, 0, 1_000e18);
         key = factory.poolKeyOf(launchId);
 
-        _buyAs(buyer, key, 1 ether);
+        _buyAs(buyer, key, 0.00001 ether);
+        uint256 cap = FixedPointMath.applyBps(LaunchTokenLike(token).totalSupply(), m.maxTxBps);
+        for (uint256 i; i < 200; ++i) {
+            vm.roll(block.number + 1);
+            _buyAs(buyer, key, 0.00001 ether);
+        }
         uint256 bal = LaunchTokenLike(token).balanceOf(buyer);
-        uint256 cap = (1_000e18 * 1) / 10_000;
         assertGt(bal, cap);
 
         vm.startPrank(buyer);

@@ -144,14 +144,36 @@ library FixedPointMath {
         }
     }
 
-    function _amount0Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) private pure returns (uint256) {
+    function _amount0Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) internal pure returns (uint256) {
         if (sqrtA > sqrtB) (sqrtA, sqrtB) = (sqrtB, sqrtA);
         return FullMath.mulDiv(uint256(liquidity) << 96, sqrtB - sqrtA, uint256(sqrtB) * uint256(sqrtA));
     }
 
-    function _amount1Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) private pure returns (uint256) {
+    function _amount1Delta(uint160 sqrtA, uint160 sqrtB, uint128 liquidity) internal pure returns (uint256) {
         if (sqrtA > sqrtB) (sqrtA, sqrtB) = (sqrtB, sqrtA);
         return FullMath.mulDiv(liquidity, sqrtB - sqrtA, FixedPoint96.Q96);
+    }
+
+    /// @notice In-range quote depth for the swap direction (buy = quote in capacity, sell = quote out capacity).
+    function inRangeQuoteDepth(
+        uint160 sqrtPriceX96,
+        uint128 liquidity,
+        int24 tickLower,
+        int24 tickUpper,
+        bool quoteIsCurrency0,
+        bool isBuy
+    ) internal pure returns (uint256) {
+        if (liquidity == 0 || sqrtPriceX96 == 0) return 0;
+        uint160 sqrtLower = TickMath.getSqrtPriceAtTick(tickLower);
+        uint160 sqrtUpper = TickMath.getSqrtPriceAtTick(tickUpper);
+        if (sqrtPriceX96 <= sqrtLower || sqrtPriceX96 >= sqrtUpper) return 0;
+
+        if (quoteIsCurrency0) {
+            if (isBuy) return _amount0Delta(sqrtLower, sqrtPriceX96, liquidity);
+            return _amount0Delta(sqrtPriceX96, sqrtUpper, liquidity);
+        }
+        if (isBuy) return _amount1Delta(sqrtPriceX96, sqrtUpper, liquidity);
+        return _amount1Delta(sqrtLower, sqrtPriceX96, liquidity);
     }
 
     function _sqrt(uint256 x) private pure returns (uint256 y) {

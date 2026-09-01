@@ -25,7 +25,7 @@ import { useLaunchToken } from "@/hooks/useLaunchToken";
 import {
   DEFAULT_MASTER_WIZARD_STATE,
   CUSTOM_SOLIDITY_HOOKS_ENABLED,
-  DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+  DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
   LAUNCH_FEE_ETH,
 } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
@@ -135,8 +135,8 @@ export function MasterLaunchWizard() {
         dynamicFeeMinBps: clamped.dynamicFeeMinBps,
         dynamicFeeMaxBps: clamped.dynamicFeeMaxBps,
         dynamicFeeRampUp: form.modules.dynamicFeeRampUp ?? true,
-        dynamicFeeVolumeTargetScale:
-          form.modules.dynamicFeeVolumeTargetScale ?? DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE,
+        dynamicFeeDepthSaturationBps:
+          form.modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
       });
       setForm((p) => ({ ...p, hookTaxBps: clamped.hookTaxBps }));
       return;

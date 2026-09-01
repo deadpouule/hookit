@@ -20,6 +20,7 @@ import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
+import {V4ClaimsRedeemer} from "../src/V4ClaimsRedeemer.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
@@ -74,6 +75,7 @@ contract DeployHookitCoreScript is Script {
         HookitDeployLib.seedBondingQuotes(bonding);
 
         HookitSwapRouter router = new HookitSwapRouter(manager);
+        V4ClaimsRedeemer claimsRedeemer = new V4ClaimsRedeemer(manager);
         FeeEthRail feeRail = new FeeEthRail(deployer, manager, v4.stableQuote);
         HkitBuyback hkitBuyback = new HkitBuyback(deployer, manager, distributor);
 
@@ -107,6 +109,7 @@ contract DeployHookitCoreScript is Script {
         console.log("BondingLaunchFactory", address(bonding));
         console.log("LiquidityLocker", address(bonding.locker()));
         console.log("HookitSwapRouter", address(router));
+        console.log("V4ClaimsRedeemer", address(claimsRedeemer));
         console.log("FeeEthRail", address(feeRail));
         console.log("FeeEthRail bridge set", feeRail.ethBridgeSet());
         console.log("HkitBuyback", address(hkitBuyback));
@@ -117,5 +120,13 @@ contract DeployHookitCoreScript is Script {
         console.logBytes32(PoolId.unwrap(poolId));
         console.log("NativeToken pool fee", key.fee);
         console.log("launch fee wei", ProtocolConstants.LAUNCH_FEE_WEI);
+        console.log("--- web env (paste into .env) ---");
+        console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY", address(factory));
+        console.log("ENV_NEXT_PUBLIC_BONDING_FACTORY", address(bonding));
+        console.log("ENV_NEXT_PUBLIC_HOOKIT_SWAP_ROUTER", address(router));
+        console.log("ENV_NEXT_PUBLIC_CLAIMS_REDEEMER", address(claimsRedeemer));
+        console.log("ENV_NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR", address(distributor));
+        console.log("ENV_NEXT_PUBLIC_HKIT_BUYBACK", address(hkitBuyback));
+        console.log("ENV_NEXT_PUBLIC_NATIVE_TOKEN", nativeToken);
     }
 }

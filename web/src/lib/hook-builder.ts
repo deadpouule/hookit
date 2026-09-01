@@ -50,6 +50,7 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   lpDonatePct: 20,
   holderAirdrop: false,
   holderAirdropPct: 50,
+  holderAirdropEpochSeconds: 15 * 60,
   creatorShareToHook: false,
 };
 

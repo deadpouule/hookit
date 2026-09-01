@@ -18,8 +18,14 @@ export const MAX_ANTI_SNIPE_TAX_PCT = MAX_SNIPE_TAX_BPS / 100;
 export const MIN_ANTI_SNIPE_DURATION_SEC = 1;
 export const MAX_ANTI_SNIPE_DURATION_SEC = 3600;
 
-export const HOLDER_AIRDROP_EPOCH_MINUTES = 15;
-export const DYNAMIC_FEE_WINDOW_HOURS = 24;
+export const HOLDER_AIRDROP_EPOCH_MINUTES = 1;
+export const HOLDER_AIRDROP_EPOCH_MAX_MINUTES = 7 * 24 * 60;
+export const HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES = 15;
+export {
+  DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
+  DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT,
+  DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT,
+} from "@/lib/constants";
 
 export function bpsToSupplyPct(bps: number): number {
   return bps / 100;

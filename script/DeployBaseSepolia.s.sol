@@ -103,7 +103,8 @@ contract DeployBaseSepoliaScript is Script {
                 buybackVestingDurationSeconds: 0,
                 dynamicFeeMinTotalBps: 0,
                 dynamicFeeRampUp: false,
-                dynamicFeeVolumeTargetScale: 0
+                dynamicFeeDepthSaturationBps: 0,
+                holderAirdropEpochSeconds: 0
             })
         );
 

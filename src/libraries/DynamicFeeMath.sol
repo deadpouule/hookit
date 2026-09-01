@@ -2,23 +2,27 @@
 pragma solidity ^0.8.26;
 
 import {FullMath} from "@uniswap/v4-core/src/libraries/FullMath.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {BitmaskConfig} from "./BitmaskConfig.sol";
+import {FixedPointMath} from "./FixedPointMath.sol";
 import {ProtocolConstants} from "./ProtocolConstants.sol";
 
 /// @title DynamicFeeMath
-/// @notice Rolling 24h quote volume → linear hook-tax ramp between configured min/max totals.
+/// @notice LP fee ramps with how much in-range depth a swap consumes — no oracle.
 library DynamicFeeMath {
     uint256 internal constant RAMP_SCALE = 1e18;
-    uint256 internal constant VOLUME_UNIT = 1e18;
 
-    /// @notice Quote volume in the current window that fully saturates the ramp.
-    function volumeTarget(uint16 scale) internal pure returns (uint256) {
-        if (scale == 0) return ProtocolConstants.DYNAMIC_FEE_DEFAULT_TARGET_QUOTE;
-        return uint256(scale) * VOLUME_UNIT;
-    }
-
-    /// @notice Hook tax bps for this swap given rolling-window quote volume (pre-swap).
-    function effectiveHookTaxBps(uint256 packed, uint256 volume) internal pure returns (uint16) {
+    /// @notice Hook tax bps for this swap given quote notional vs in-range quote depth.
+    function effectiveHookTaxBps(
+        uint256 packed,
+        uint256 quoteNotional,
+        uint160 sqrtPriceX96,
+        uint128 liquidity,
+        int24 tickLower,
+        int24 tickUpper,
+        bool quoteIsCurrency0,
+        bool isBuy
+    ) internal pure returns (uint16) {
         if (!BitmaskConfig.enabled(packed, BitmaskConfig.DYNAMIC_FEES_ENABLED)) {
             return BitmaskConfig.hookTaxBps(packed);
         }
@@ -30,33 +34,32 @@ library DynamicFeeMath {
         uint16 minHook = minTotal > ProtocolConstants.BASE_FEE_BPS ? minTotal - ProtocolConstants.BASE_FEE_BPS : 0;
         if (minHook >= maxHook) return maxHook;
 
-        uint256 target = volumeTarget(BitmaskConfig.dynamicFeeVolumeTargetScale(packed));
-        uint256 ratio = volume >= target ? RAMP_SCALE : FullMath.mulDiv(volume, RAMP_SCALE, target);
-
-        if (BitmaskConfig.enabled(packed, BitmaskConfig.DYNAMIC_FEE_RAMP_UP_ENABLED)) {
-            return minHook + uint16(FullMath.mulDiv(uint256(maxHook - minHook), ratio, RAMP_SCALE));
+        uint160 sqrtLower = TickMath.getSqrtPriceAtTick(tickLower);
+        uint160 sqrtUpper = TickMath.getSqrtPriceAtTick(tickUpper);
+        uint160 depthPrice = sqrtPriceX96;
+        if (depthPrice <= sqrtLower || depthPrice == 0) {
+            depthPrice = sqrtLower + 1;
+        } else if (depthPrice >= sqrtUpper) {
+            depthPrice = sqrtUpper - 1;
         }
-        return maxHook - uint16(FullMath.mulDiv(uint256(maxHook - minHook), ratio, RAMP_SCALE));
-    }
 
-    function windowVolume(uint256 windowPacked) internal pure returns (uint256) {
-        return windowPacked & type(uint192).max;
-    }
+        uint256 depth = FixedPointMath.inRangeQuoteDepth(
+            depthPrice, liquidity, tickLower, tickUpper, quoteIsCurrency0, isBuy
+        );
 
-    function windowStart(uint256 windowPacked) internal pure returns (uint64) {
-        return uint64(windowPacked >> 192);
-    }
+        uint16 saturationBps = BitmaskConfig.dynamicFeeDepthSaturationBps(packed);
+        if (saturationBps == 0) saturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
 
-    /// @dev Upper 64 bits = window start timestamp; lower 192 bits = quote volume in window.
-    function accrueVolume(uint256 windowPacked, uint256 quoteNotional, uint256 nowTs) internal pure returns (uint256) {
-        uint64 start = windowStart(windowPacked);
-        uint256 volume = windowVolume(windowPacked);
-
-        if (start == 0 || nowTs >= uint256(start) + ProtocolConstants.DYNAMIC_FEE_WINDOW_SECONDS) {
-            start = uint64(nowTs);
-            volume = 0;
+        uint256 ratio;
+        if (depth == 0 || quoteNotional == 0) {
+            ratio = quoteNotional == 0 ? 0 : RAMP_SCALE;
+        } else {
+            uint256 consumptionBps = FullMath.mulDiv(quoteNotional, ProtocolConstants.BPS_DENOMINATOR, depth);
+            ratio = consumptionBps >= saturationBps
+                ? RAMP_SCALE
+                : FullMath.mulDiv(consumptionBps, RAMP_SCALE, saturationBps);
         }
-        volume += quoteNotional;
-        return (uint256(start) << 192) | volume;
+
+        return minHook + uint16(FullMath.mulDiv(uint256(maxHook - minHook), ratio, RAMP_SCALE));
     }
 }

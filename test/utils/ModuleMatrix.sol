@@ -78,6 +78,7 @@ library ModuleMatrix {
         m.holderAirdrop = mask & BIT_HOLDER_AIRDROP != 0;
         m.creatorShareToHook = mask & BIT_CREATOR_SHARE_TO_HOOK != 0;
         if (m.holderAirdrop) m.holderAirdropBps = 500;
+        if (m.holderAirdrop) m.holderAirdropEpochSeconds = 900;
         return _ensureHookTax(m);
     }
 
@@ -92,8 +93,8 @@ library ModuleMatrix {
             if (m.dynamicFeeMinTotalBps == 0) m.dynamicFeeMinTotalBps = ProtocolConstants.BASE_FEE_BPS;
             if (m.hookTaxBps == 0) m.hookTaxBps = 200;
             m.dynamicFeeRampUp = true;
-            if (m.dynamicFeeVolumeTargetScale == 0) {
-                m.dynamicFeeVolumeTargetScale = ProtocolConstants.DYNAMIC_FEE_DEFAULT_VOLUME_TARGET_SCALE;
+            if (m.dynamicFeeDepthSaturationBps == 0) {
+                m.dynamicFeeDepthSaturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
             }
         }
         return m;

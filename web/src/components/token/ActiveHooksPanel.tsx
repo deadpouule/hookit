@@ -58,7 +58,11 @@ function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: 
   return resolveTokenModules(pool);
 }
 
-const EXPANDED_HOOK_IDS = new Set<MasterHookId>(["backed-floor", "holder-airdrop"]);
+const EXPANDED_HOOK_IDS = new Set<MasterHookId>([
+  "backed-floor",
+  "holder-airdrop",
+  "buyback-vesting",
+]);
 
 function HookModuleBadge({
   hook,
@@ -200,8 +204,9 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const { data: airdropEpochSec } = useReadContract({
     address: airdropVault as Address | undefined,
     abi: holderAirdropVaultAbi,
-    functionName: "EPOCH",
-    query: { enabled: !!airdropVault && needAirdrop },
+    functionName: "epochSeconds",
+    args: token ? [token] : undefined,
+    query: { enabled: !!airdropVault && !!token && needAirdrop },
   });
 
   const { data: buybackStream } = useReadContract({
@@ -329,6 +334,8 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                     airdropVault={airdropVault as Address | undefined}
                     airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
                     airdropSecondsLeft={live.airdropSecondsLeft}
+                    buybackVault={buybackVaultAddr as Address | undefined}
+                    buybackClaimableWei={(buybackClaimableWei as bigint | undefined) ?? BigInt(0)}
                     decimals={decimals}
                     floorPriceHuman={live.floorPriceHuman}
                     quoteLabel={live.quoteLabel}

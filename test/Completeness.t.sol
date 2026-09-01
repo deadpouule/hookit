@@ -59,6 +59,29 @@ contract CompletenessTest is LaunchpadTestBase {
         poolId;
     }
 
+    function testFloorFillSell_CollectsFees() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.backedFloor = true;
+        m.floorAllocationBps = 10_000;
+        (uint256 launchId, address token, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
+        key = factory.poolKeyOf(launchId);
+
+        vault.deposit{value: 40 ether}(token, Currency.wrap(address(0)), 40 ether);
+        uint256 escrowBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        uint256 protocolBefore = distributor.pending(Currency.wrap(address(0)));
+
+        _buyAs(trader, key, 0.05 ether);
+        vm.roll(block.number + 1);
+
+        uint256 bal = LaunchTokenLike(token).balanceOf(trader);
+        _sellAs(trader, key, token, bal / 2);
+
+        assertGt(escrow.balanceOf(address(this), Currency.wrap(address(0))), escrowBefore);
+        assertGt(distributor.pending(Currency.wrap(address(0))), protocolBefore);
+        poolId;
+    }
+
     function testRedeemFloor_DirectBurnPath() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.backedFloor = true;
@@ -224,7 +247,7 @@ contract CompletenessTest is LaunchpadTestBase {
         uint160 limit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
         vm.startPrank(trader);
         usdc.approve(address(router), type(uint256).max);
-        router.swapExactIn(key, zeroForOne, 500e6, 1, limit);
+        router.swapExactIn(key, zeroForOne, 1e6, 1, limit);
         vm.stopPrank();
 
         assertGt(LaunchTokenLike(token).balanceOf(trader), 0);

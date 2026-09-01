@@ -27,7 +27,7 @@ contract FeeDistributionTest is Test {
         vault = new FloorVault(address(this), IPoolManager(address(0)));
         distributor = new ProtocolRevenueDistributor(address(this), ops, IPoolManager(address(0)));
         buybacks = new BuybackVault(address(this), IPoolManager(address(0)));
-        nativeToken = new LaunchToken("Hookit", "HOOK", 1_000_000e18, address(this), address(this), "");
+        nativeToken = new LaunchToken("Hookit", "HOOK", 1_000_000e18, address(this), address(this), "", address(0));
 
         escrow.setOperator(address(this), true);
         vault.setOperator(address(this), true);
@@ -66,7 +66,8 @@ contract FeeDistributionTest is Test {
             buybackVestingDurationSeconds: uint32(180 days),
             dynamicFeeMinTotalBps: 150,
             dynamicFeeRampUp: true,
-            dynamicFeeVolumeTargetScale: 10
+            dynamicFeeDepthSaturationBps: 10_000,
+            holderAirdropEpochSeconds: 900
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
@@ -191,7 +192,7 @@ contract FeeDistributionTest is Test {
         distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn);
         distributor.setBuybackExecutor(buybackWallet);
 
-        LaunchToken usdg = new LaunchToken("USDG", "USDG", 1_000_000e18, address(this), address(this), "");
+        LaunchToken usdg = new LaunchToken("USDG", "USDG", 1_000_000e18, address(this), address(this), "", address(0));
         usdg.transfer(address(distributor), 2 ether);
 
         distributor.notifyBuybackInternal(Currency.wrap(address(usdg)), 2 ether);
