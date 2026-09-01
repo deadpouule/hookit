@@ -2021,8 +2021,8 @@
   }
 
   .live-on-ink-ticker__logo--uniswap {
-    height: 34px;
-    width: 34px;
+    height: 26px;
+    width: 26px;
     border-radius: 0;
     object-fit: contain;
   }
@@ -2080,8 +2080,12 @@
   }
 
   .built-on-uniswap-badge--inline .built-on-uniswap-badge__logo {
-    height: 28px;
-    width: 28px;
+    height: 38px;
+    width: 38px;
+  }
+
+  .hero-uniswap-badge.built-on-uniswap-badge--inline {
+    padding: 0.28rem 0.65rem;
   }
 
   .built-on-uniswap-badge__text {
@@ -2113,20 +2117,20 @@
   }
 
   .hero-typewriter-mark--eth {
-    height: 1.35rem;
-    width: 1.35rem;
+    height: 1.85rem;
+    width: 1.85rem;
     background: #627eea;
   }
 
   .hero-typewriter-mark--usdg {
-    height: 1.35rem;
-    width: 1.35rem;
+    height: 2.35rem;
+    width: 2.35rem;
     background: rgb(255 255 255 / 0.08);
   }
 
   .hero-typewriter-mark__glyph {
-    height: 0.85rem;
-    width: 0.85rem;
+    height: 1.15rem;
+    width: 1.15rem;
   }
 
   .hero-typewriter-mark__photo {
