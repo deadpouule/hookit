@@ -47,11 +47,13 @@ export function PairingPicker({
   floorQuoteIndex,
   onMarketsChange,
   onFloorQuoteIndexChange,
+  compact = false,
 }: {
   markets: LaunchMarketInput[];
   floorQuoteIndex: number;
   onMarketsChange: (markets: LaunchMarketInput[]) => void;
   onFloorQuoteIndexChange: (index: number) => void;
+  compact?: boolean;
 }) {
   const isMulti = markets.length > 1;
   const selectedIds = new Set(markets.map((m) => m.id));
@@ -96,20 +98,24 @@ export function PairingPicker({
   const totalBps = markets.reduce((sum, m) => sum + m.bps, 0);
 
   return (
-    <div>
-      <div className="mb-4">
+    <div className={compact ? "launch-pairing-compact" : undefined}>
+      <div className={compact ? "mb-3" : "mb-4"}>
         <PairModeToggle value={isMulti ? "multi" : "single"} onChange={(mode) => setMode(mode)} />
-        <p className="mt-2 text-xs text-zinc-600">
-          {isMulti
-            ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
-            : "Classic one-pool launch against a single quote asset."}
-        </p>
+        {!compact ? (
+          <p className="mt-2 text-xs text-zinc-600">
+            {isMulti
+              ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
+              : "Classic one-pool launch against a single quote asset."}
+          </p>
+        ) : null}
       </div>
 
-      <p className="pick-kicker">
-        —{markets.length} market{markets.length === 1 ? "" : "s"} · pick 1–{isMulti ? MAX_MARKETS : 1} quote
-        {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
-      </p>
+      {!compact ? (
+        <p className="pick-kicker">
+          —{markets.length} market{markets.length === 1 ? "" : "s"} · pick 1–{isMulti ? MAX_MARKETS : 1} quote
+          {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
+        </p>
+      ) : null}
       <p className="pick-heading">Pick your pair{isMulti ? "s" : ""}</p>
       <div className="pick-grid pick-grid--pairs">
         {PAIRING_TOKENS.map((token) => (

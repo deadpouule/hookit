@@ -19,26 +19,23 @@ export function LaunchWizardStepSummary({
   if (!previous && !next) return null;
 
   return (
-    <aside className="launch-wizard-context">
+    <div className="launch-wizard-context-inline">
       {previous ? (
-        <section className="launch-wizard-context-block">
-          <p className="launch-wizard-context-label">Previous step</p>
-          <div className="launch-wizard-context-card">
-            <p className="launch-wizard-context-title">{previous.title}</p>
-            <p className="launch-wizard-context-detail">{previous.detail}</p>
-          </div>
-        </section>
+        <p className="launch-wizard-context-inline-line">
+          <span className="launch-wizard-context-inline-label">Previous</span>
+          <span className="launch-wizard-context-inline-title">{previous.title}</span>
+          <span className="launch-wizard-context-inline-sep">·</span>
+          <span className="launch-wizard-context-inline-detail">{previous.detail}</span>
+        </p>
       ) : null}
-
       {next ? (
-        <section className="launch-wizard-context-block">
-          <p className="launch-wizard-context-label">Up next</p>
-          <div className="launch-wizard-context-card launch-wizard-context-card--next">
-            <p className="launch-wizard-context-title">{next.title}</p>
-            <p className="launch-wizard-context-detail">{next.detail}</p>
-          </div>
-        </section>
+        <p className="launch-wizard-context-inline-line">
+          <span className="launch-wizard-context-inline-label">Next</span>
+          <span className="launch-wizard-context-inline-title">{next.title}</span>
+          <span className="launch-wizard-context-inline-sep">·</span>
+          <span className="launch-wizard-context-inline-detail">{next.detail}</span>
+        </p>
       ) : null}
-    </aside>
+    </div>
   );
 }
