@@ -352,18 +352,20 @@ export function MasterLaunchWizard() {
       )}
 
       {!result && step === reviewStep ? (
-        <div className="launch-wizard-review mx-auto max-w-md">
+        <div className="launch-wizard-review mx-auto max-w-5xl">
           <LaunchWizardStepper steps={MASTER_LAUNCH_STEPS} current={step} className="mb-3" />
 
-          <LaunchSummary {...summaryProps} showLaunchCta={false} sticky={false} />
+          <div className="launch-wizard-review-grid grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(260px,320px)]">
+            <LaunchSummary {...summaryProps} showLaunchCta={false} sticky={false} />
 
-          <FormPanel className="launch-wizard-panel mt-4">
-            <DevBuySection
-              form={form}
-              variant="custom"
-              onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
-            />
-          </FormPanel>
+            <FormPanel className="launch-wizard-panel launch-wizard-review-devbuy">
+              <DevBuySection
+                form={form}
+                variant="custom"
+                onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
+              />
+            </FormPanel>
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <LaunchWizardNav step={step} onBack={goBack} showContinue={false} />

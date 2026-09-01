@@ -347,6 +347,21 @@
     padding-bottom: 2rem;
   }
 
+  .launch-wizard-review-grid .panel {
+    padding: 1.25rem 1.35rem;
+  }
+
+  .launch-wizard-review-devbuy {
+    position: sticky;
+    top: 4.5rem;
+  }
+
+  @media (max-width: 1023px) {
+    .launch-wizard-review-devbuy {
+      position: static;
+    }
+  }
+
   .launch-pairing-compact .pick-heading {
     margin-bottom: 0.5rem;
     font-size: 1.15rem;
@@ -1982,23 +1997,7 @@
     overflow: hidden;
     border-bottom: 1px solid rgb(255 255 255 / 0.06);
     background: #000000;
-    min-height: 52px;
     padding-block: 14px;
-  }
-
-  .live-on-ink-ticker__layer {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    opacity: 0;
-    transition: opacity 0.65s ease;
-    pointer-events: none;
-  }
-
-  .live-on-ink-ticker__layer--active {
-    opacity: 1;
   }
 
   .live-on-ink-ticker__track {
@@ -2008,7 +2007,7 @@
   }
 
   .live-on-ink-ticker__unit {
-    gap: 4.5rem;
+    gap: 1.15rem;
     padding-inline: 2.25rem;
   }
 
@@ -2019,6 +2018,11 @@
     flex-shrink: 0;
     border-radius: 6px;
     object-fit: cover;
+  }
+
+  .live-on-ink-ticker__logo--uniswap {
+    border-radius: 0;
+    object-fit: contain;
   }
 
   .live-on-ink-ticker__label {
