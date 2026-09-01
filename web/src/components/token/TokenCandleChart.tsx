@@ -159,7 +159,7 @@ export function TokenCandleChart({
   const chartInteractive = visible.length > 0 && activeTool !== "cursor" && activeTool !== "volume";
 
   return (
-    <div className="desk-card overflow-hidden">
+    <div className={cn("desk-card overflow-hidden", expanded && "token-candle-chart--bleed")}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-3 py-2">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
           <span>Market Cap</span>
