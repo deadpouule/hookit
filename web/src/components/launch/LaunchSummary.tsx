@@ -134,6 +134,7 @@ type Props = {
   onLaunch: () => void;
   showLaunchCta?: boolean;
   sticky?: boolean;
+  boxedStats?: boolean;
 };
 
 export function LaunchSummary({
@@ -148,6 +149,7 @@ export function LaunchSummary({
   onLaunch,
   showLaunchCta = true,
   sticky = true,
+  boxedStats = false,
 }: Props) {
   const summaryHooks = activeHooks.filter((id) => id !== "quoteFee");
   const showActiveModules = summaryHooks.length > 0;
@@ -200,27 +202,37 @@ export function LaunchSummary({
         </div>
       </div>
 
-      <dl className="space-y-2.5 text-sm">
-        <div className="flex justify-between gap-4">
+      <dl
+        className={cn(
+          "text-sm",
+          boxedStats ? "launch-summary-stats launch-summary-stats--boxed" : "space-y-2.5",
+        )}
+      >
+        <div className={cn("flex justify-between gap-4", boxedStats && "launch-summary-stat")}>
           <dt className="text-zinc-500">Launch FDV</dt>
           <dd className="font-mono text-zinc-200">${TARGET_LAUNCH_MCAP_USD.toLocaleString()}</dd>
         </div>
-        <div className="flex justify-between gap-4">
+        <div className={cn("flex justify-between gap-4", boxedStats && "launch-summary-stat")}>
           <dt className="text-zinc-500">Supply</dt>
           <dd className="font-mono text-zinc-200">1B</dd>
         </div>
-        <div className="flex justify-between gap-4">
+        <div className={cn("flex justify-between gap-4", boxedStats && "launch-summary-stat")}>
           <dt className="text-zinc-500">{form.markets.length > 1 ? "Pairs" : "Pair"}</dt>
           <dd className="text-right">
             <SummaryPairValue form={form} />
           </dd>
         </div>
-        <div className="flex justify-between gap-4 border-t border-white/[0.06] pt-2.5">
+        <div
+          className={cn(
+            "flex justify-between gap-4",
+            boxedStats ? "launch-summary-stat" : "border-t border-white/[0.06] pt-2.5",
+          )}
+        >
           <dt className="text-zinc-500">Launch fee</dt>
           <dd className="font-mono text-zinc-200">{launchFeeEth} ETH</dd>
         </div>
         {form.hookMode === "master" && variant !== "classic" && (
-          <div className="flex justify-between gap-4">
+          <div className={cn("flex justify-between gap-4", boxedStats && "launch-summary-stat")}>
             <dt className="text-zinc-500">Fees</dt>
             <dd className="font-mono text-right text-zinc-200">
               {form.modules.dynamicFees
@@ -230,7 +242,7 @@ export function LaunchSummary({
           </div>
         )}
         {devBuyConfigured && devBuyQuoteWei && devBuyQuoteWei > 0n && (
-          <div className="flex justify-between gap-4">
+          <div className={cn("flex justify-between gap-4", boxedStats && "launch-summary-stat")}>
             <dt className="text-zinc-500">Dev buy</dt>
             <dd className="font-mono text-right text-zinc-200">
               {form.devBuyMode === "supply"

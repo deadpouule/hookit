@@ -17,15 +17,16 @@ const LINES: TypewriterLine[] = [
     segments: [
       { kind: "text", value: "Launch programmable hooks V4 " },
       { kind: "logo", id: "uniswap" },
+      { kind: "text", value: "." },
     ],
   },
   {
     segments: [
-      { kind: "text", value: "Tokenized stocks, " },
+      { kind: "text", value: "Tokenized stocks, ETH " },
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },
-      { kind: "text", value: " curves hook" },
+      { kind: "text", value: " curves hook." },
     ],
   },
 ];
@@ -71,8 +72,8 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
       <Image
         src="/pairing/usdg.png"
         alt=""
-        width={38}
-        height={38}
+        width={46}
+        height={46}
         className="hero-typewriter-mark__photo"
         draggable={false}
       />
