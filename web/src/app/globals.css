@@ -190,6 +190,57 @@
     letter-spacing: -0.01em;
   }
 
+  .launch-wizard-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .launch-wizard-top-main {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .launch-wizard-master-badge {
+    display: inline-flex;
+    width: auto;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.65rem 0.35rem 0.4rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .launch-wizard-master-badge-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .launch-wizard-master-badge-icon .ascii-shape {
+    font-size: 3px;
+  }
+
+  .launch-wizard-exit-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .launch-wizard-top {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    .launch-wizard-exit-btn {
+      align-self: flex-end;
+    }
+  }
+
   .launch-wizard-nav {
     display: flex;
     flex-wrap: wrap;
@@ -224,8 +275,8 @@
     padding-bottom: 1.5rem;
   }
 
-  .launch-wizard-compact .launch-wizard-stepper-label {
-    font-size: 14px;
+  .launch-wizard-compact .launch-wizard-stepper-track {
+    margin-top: 0.5rem;
   }
 
   .launch-wizard-panel {
@@ -252,39 +303,44 @@
     resize: vertical;
   }
 
-  .launch-wizard-context-inline {
+  .launch-wizard-recap {
+    position: sticky;
+    top: 4.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    text-align: center;
+    gap: 0.55rem;
   }
 
-  .launch-wizard-context-inline-line {
-    margin: 0;
-    font-size: 11px;
-    line-height: 1.4;
-    color: rgb(161 161 170);
-  }
-
-  .launch-wizard-context-inline-label {
-    margin-right: 0.35rem;
+  .launch-wizard-recap-label {
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: rgb(113 113 122);
   }
 
-  .launch-wizard-context-inline-title {
+  .launch-wizard-recap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .launch-wizard-recap-card {
+    border: 1px solid rgb(149 20 209 / 0.22);
+    background: rgb(149 20 209 / 0.07);
+    padding: 0.7rem 0.8rem;
+  }
+
+  .launch-wizard-recap-title {
+    font-size: 12px;
     font-weight: 600;
-    color: rgb(212 212 216);
+    color: #e9d5ff;
   }
 
-  .launch-wizard-context-inline-sep {
-    margin: 0 0.3rem;
-    color: rgb(82 82 91);
-  }
-
-  .launch-wizard-context-inline-detail {
+  .launch-wizard-recap-detail {
+    margin-top: 0.3rem;
+    font-size: 11px;
+    line-height: 1.45;
     color: rgb(161 161 170);
   }
 

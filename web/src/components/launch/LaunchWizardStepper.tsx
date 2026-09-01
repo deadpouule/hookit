@@ -14,7 +14,6 @@ export function LaunchWizardStepper({
   className?: string;
 }) {
   const total = steps.length;
-  const active = steps.find((step) => step.id === current);
 
   return (
     <div className={cn("launch-wizard-stepper", className)}>
@@ -33,7 +32,6 @@ export function LaunchWizardStepper({
           />
         ))}
       </div>
-      {active ? <p className="launch-wizard-stepper-label">{active.label}</p> : null}
     </div>
   );
 }

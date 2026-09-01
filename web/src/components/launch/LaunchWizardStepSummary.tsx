@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  summarizeNextStep,
-  summarizePreviousStep,
-} from "@/lib/launch-wizard-summary";
+import { summarizeCompletedSteps } from "@/lib/launch-wizard-summary";
 import type { LaunchFormState } from "@/lib/types";
 
 export function LaunchWizardStepSummary({
@@ -13,29 +10,21 @@ export function LaunchWizardStepSummary({
   step: number;
   form: LaunchFormState;
 }) {
-  const previous = summarizePreviousStep(step, form);
-  const next = summarizeNextStep(step);
+  const completed = summarizeCompletedSteps(step, form);
 
-  if (!previous && !next) return null;
+  if (completed.length === 0) return null;
 
   return (
-    <div className="launch-wizard-context-inline">
-      {previous ? (
-        <p className="launch-wizard-context-inline-line">
-          <span className="launch-wizard-context-inline-label">Previous</span>
-          <span className="launch-wizard-context-inline-title">{previous.title}</span>
-          <span className="launch-wizard-context-inline-sep">·</span>
-          <span className="launch-wizard-context-inline-detail">{previous.detail}</span>
-        </p>
-      ) : null}
-      {next ? (
-        <p className="launch-wizard-context-inline-line">
-          <span className="launch-wizard-context-inline-label">Next</span>
-          <span className="launch-wizard-context-inline-title">{next.title}</span>
-          <span className="launch-wizard-context-inline-sep">·</span>
-          <span className="launch-wizard-context-inline-detail">{next.detail}</span>
-        </p>
-      ) : null}
-    </div>
+    <aside className="launch-wizard-recap">
+      <p className="launch-wizard-recap-label">Your progress</p>
+      <div className="launch-wizard-recap-list">
+        {completed.map((block) => (
+          <section key={block.title} className="launch-wizard-recap-card">
+            <p className="launch-wizard-recap-title">{block.title}</p>
+            <p className="launch-wizard-recap-detail">{block.detail}</p>
+          </section>
+        ))}
+      </div>
+    </aside>
   );
 }
