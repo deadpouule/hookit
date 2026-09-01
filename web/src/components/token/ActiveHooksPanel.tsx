@@ -102,7 +102,13 @@ function HookModuleBadge({
   );
 }
 
-export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
+export function ActiveHooksPanel({
+  pool,
+  variant = "rail",
+}: {
+  pool: TokenPool;
+  variant?: "rail" | "strip";
+}) {
   const factory = getLaunchFactoryAddress();
   const isMaster = pool.rail === "master" && pool.hookType === "Master" && !pool.hooks.customHook;
   const resolved = useMemo(() => (isMaster ? resolveModules(pool) : null), [isMaster, pool]);
@@ -295,8 +301,10 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
   const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
+  const isStrip = variant === "strip";
+
   return (
-    <section className="token-hooks-panel desk-card">
+    <section className={cn("token-hooks-panel desk-card", isStrip && "token-hooks-panel--strip")}>
       <header className="token-hooks-head">
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />
@@ -305,13 +313,18 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       </header>
 
       {summary ? (
-        <p className="token-type-badge token-type-badge--master token-hooks-summary-badge">
+        <p
+          className={cn(
+            "token-type-badge token-type-badge--master token-hooks-summary-badge",
+            isStrip && "token-hooks-summary-badge--strip",
+          )}
+        >
           <MasterHookGlyph className="token-type-badge-glyph shrink-0" />
           <span>{summary}</span>
         </p>
       ) : null}
 
-      <ul className="token-hooks-list">
+      <ul className={cn("token-hooks-list", isStrip && "token-hooks-list--strip")}>
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
           const tip = moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps);

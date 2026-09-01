@@ -236,3 +236,25 @@ export function hookMarkSummaryDetail(id: HookId, modules: LaunchModules, hookTa
 
   return HOOK_MARKS[id]?.hint ?? "Enabled";
 }
+
+/** Hooks with inline vault actions need the left rail layout. */
+const EXPANDED_HOOK_LAYOUT_IDS = new Set<MasterHookId>(["backed-floor", "holder-airdrop"]);
+
+/** ≤2 passive hooks → horizontal strip under hero; otherwise left rail. */
+export function shouldUseCompactHooksLayout(
+  pool: Pick<TokenPool, "modules" | "bitmask" | "hookTaxBps" | "rail" | "hookType" | "hooks">,
+): boolean {
+  if (pool.rail !== "master" || pool.hookType !== "Master" || pool.hooks.customHook) {
+    return false;
+  }
+
+  const resolved = resolveTokenModules(pool);
+  if (!resolved) return false;
+
+  const enabledHooks = MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id));
+  if (enabledHooks.length === 0 && resolved.hookTaxBps <= 0) return false;
+  if (enabledHooks.length > 2) return false;
+  if (enabledHooks.some((hook) => EXPANDED_HOOK_LAYOUT_IDS.has(hook.id))) return false;
+
+  return true;
+}
