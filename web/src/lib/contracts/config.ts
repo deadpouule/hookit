@@ -93,6 +93,13 @@ export function getLaunchFactoryAddress(): Address | undefined {
   return raw as Address;
 }
 
+/** Paginated launch index — set NEXT_PUBLIC_LAUNCH_FACTORY_QUERY after deploy. */
+export function getLaunchFactoryQueryAddress(): Address | undefined {
+  const raw = process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY?.trim();
+  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
+  return raw as Address;
+}
+
 /** Classic bonding rail. Set NEXT_PUBLIC_BONDING_FACTORY after deploy. */
 export function getBondingFactoryAddress(): Address | undefined {
   const raw = process.env.NEXT_PUBLIC_BONDING_FACTORY?.trim();

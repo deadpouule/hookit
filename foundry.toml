@@ -7,8 +7,8 @@ script = "script"
 solc_version = "0.8.26"
 evm_version = "cancun"
 optimizer = true
-# Low runs shrink bytecode so LaunchFactory fits EIP-170 (24,576 B). High runs blew past the limit.
-optimizer_runs = 200
+# Low runs shrink bytecode so LaunchFactory fits EIP-170 (24,576 B).
+optimizer_runs = 1
 via_ir = true
 ffi = true
 bytecode_hash = "none"

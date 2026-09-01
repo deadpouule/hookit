@@ -63,6 +63,8 @@ library LaunchFactoryLib {
     error StalePrice();
     error InvalidMarketBps();
     error DuplicateQuote();
+    error LaunchFeeRequired();
+    error NativeNotAccepted();
 
     function usdFromFeed(address feed, uint256 maxAge) external view returns (uint256) {
         return _usdFromFeed(feed, maxAge);
@@ -117,6 +119,87 @@ library LaunchFactoryLib {
         if (bpsSum != ProtocolConstants.BPS_DENOMINATOR) revert InvalidMarketBps();
     }
 
+    function computeMultiPlans(
+        address token,
+        MarketInput[] calldata markets,
+        uint256[] memory tokenAmounts,
+        uint256 totalSupply,
+        int24 spacing,
+        IHooks hooks,
+        uint24 fee,
+        uint256[] memory mcapQuotes
+    ) external pure returns (PoolPlan[] memory plans) {
+        uint256 marketLen = markets.length;
+        plans = new PoolPlan[](marketLen);
+        for (uint256 i; i < marketLen; ++i) {
+            MarketInput calldata m = markets[i];
+            plans[i] = _computePoolPlan(
+                token, m.quote, tokenAmounts[i], totalSupply, spacing, hooks, fee, mcapQuotes[i]
+            );
+            plans[i].bps = m.bps;
+        }
+    }
+
+    function buildPoolKey(address token, Currency quote, uint24 fee, int24 tickSpacing, IHooks hooks)
+        external
+        pure
+        returns (PoolKey memory key)
+    {
+        bool tokenIs0 = uint160(token) < uint160(Currency.unwrap(quote));
+        key = PoolKey({
+            currency0: tokenIs0 ? Currency.wrap(token) : quote,
+            currency1: tokenIs0 ? quote : Currency.wrap(token),
+            fee: fee,
+            tickSpacing: tickSpacing,
+            hooks: hooks
+        });
+    }
+
+    function poolPlansToSeeds(PoolPlan[] memory plans) external pure returns (PoolSeed[] memory seeds) {
+        uint256 len = plans.length;
+        seeds = new PoolSeed[](len);
+        for (uint256 i; i < len; ++i) {
+            PoolPlan memory plan = plans[i];
+            seeds[i] = PoolSeed({
+                key: plan.key,
+                sqrtPriceX96: plan.sqrtPriceX96,
+                tickLower: plan.tickLower,
+                tickUpper: plan.tickUpper,
+                liquidityDelta: int256(uint256(plan.liquidity))
+            });
+        }
+    }
+
+    function collectLaunchFee(
+        address treasury,
+        uint256 launchFee,
+        bool needsNativeDust,
+        uint256 devBuyQuoteIn,
+        uint256 msgValue,
+        address sender
+    ) external {
+        uint256 required = launchFee + (needsNativeDust ? devBuyQuoteIn : 0);
+        if (msgValue < required) revert LaunchFeeRequired();
+        uint256 keep = needsNativeDust && launchFee > 0 ? 1 : 0;
+        uint256 toTreasury = launchFee - keep;
+        if (toTreasury > 0) {
+            CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, toTreasury);
+        }
+        uint256 extra = msgValue - required;
+        if (extra > 0) {
+            if (!needsNativeDust && devBuyQuoteIn == 0) revert NativeNotAccepted();
+            CurrencyLibrary.ADDRESS_ZERO.transfer(sender, extra);
+        }
+    }
+
+    function copyMarkets(MarketInput[] calldata markets) external pure returns (MarketInput[] memory out) {
+        uint256 len = markets.length;
+        out = new MarketInput[](len);
+        for (uint256 i; i < len; ++i) {
+            out[i] = markets[i];
+        }
+    }
+
     function computePoolPlan(
         address token,
         Currency quote,
@@ -127,6 +210,19 @@ library LaunchFactoryLib {
         uint24 fee,
         uint256 mcapQuote
     ) external pure returns (PoolPlan memory plan) {
+        return _computePoolPlan(token, quote, tokenAmount, priceSupply, spacing, hooks, fee, mcapQuote);
+    }
+
+    function _computePoolPlan(
+        address token,
+        Currency quote,
+        uint256 tokenAmount,
+        uint256 priceSupply,
+        int24 spacing,
+        IHooks hooks,
+        uint24 fee,
+        uint256 mcapQuote
+    ) private pure returns (PoolPlan memory plan) {
         if (tokenAmount == 0 || priceSupply == 0) revert InvalidSupply();
 
         bool tokenIsCurrency0 = uint160(token) < uint160(Currency.unwrap(quote));

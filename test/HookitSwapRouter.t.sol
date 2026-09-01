@@ -7,14 +7,17 @@ import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
+import {LaunchFactoryQuery} from "../src/LaunchFactoryQuery.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 
 contract HookitSwapRouterTest is LaunchpadTestBase {
     HookitSwapRouter internal router;
+    LaunchFactoryQuery internal factoryQuery;
     address internal trader = address(0xA11CE);
 
     function setUp() public {
         deployProtocol();
+        factoryQuery = new LaunchFactoryQuery(factory);
         router = new HookitSwapRouter(manager);
         vm.deal(trader, 50 ether);
     }
@@ -53,7 +56,7 @@ contract HookitSwapRouterTest is LaunchpadTestBase {
             uint256[] memory bitmasks,
             uint64[] memory timestamps,
             uint256 total
-        ) = factory.getLaunchPage(1, 10);
+        ) = factoryQuery.getLaunchPage(1, 10);
 
         assertEq(total, 1);
         assertEq(infos.length, 1);

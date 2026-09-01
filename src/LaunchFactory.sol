@@ -11,15 +11,14 @@ import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 import {IERC20Minimal} from "@uniswap/v4-core/src/interfaces/external/IERC20Minimal.sol";
 
 import {Owned} from "./base/Owned.sol";
-import {LaunchToken} from "./LaunchToken.sol";
 import {MasterLaunchHook} from "./MasterLaunchHook.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
+import {QuotronBridge} from "./libraries/QuotronBridge.sol";
 import {LaunchFactoryLib} from "./libraries/LaunchFactoryLib.sol";
 import {LaunchDevBuyLib} from "./libraries/LaunchDevBuyLib.sol";
-import {QuotronBridge} from "./libraries/QuotronBridge.sol";
-import {TokenAddressMiner} from "./libraries/TokenAddressMiner.sol";
+import {LaunchTokenDeployLib} from "./libraries/LaunchTokenDeployLib.sol";
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 
 /// @title LaunchFactory
@@ -290,30 +289,6 @@ contract LaunchFactory is Owned, IUnlockCallback {
         });
     }
 
-    /// @notice Paginated launches for indexers / the app. `startId` is 1-indexed.
-    function getLaunchPage(uint256 startId, uint256 limit)
-        external
-        view
-        returns (LaunchInfo[] memory infos, uint256[] memory bitmasks, uint64[] memory timestamps, uint256 total)
-    {
-        total = launchCount;
-        if (startId == 0 || startId > total || limit == 0) {
-            return (new LaunchInfo[](0), new uint256[](0), new uint64[](0), total);
-        }
-        uint256 end = startId + limit - 1;
-        if (end > total) end = total;
-        uint256 n = end - startId + 1;
-        infos = new LaunchInfo[](n);
-        bitmasks = new uint256[](n);
-        timestamps = new uint64[](n);
-        for (uint256 i; i < n; ++i) {
-            uint256 id = startId + i;
-            infos[i] = launches[id];
-            bitmasks[i] = launchBitmasks[id];
-            timestamps[i] = launchedAt[id];
-        }
-    }
-
     function poolKeyOf(uint256 launchId) external view returns (PoolKey memory key) {
         return poolKeyOfMarket(launchId, 0);
     }
@@ -331,14 +306,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
             quote = launchQuote[launchId];
         }
 
-        bool tokenIs0 = uint160(info.token) < uint160(Currency.unwrap(quote));
-        key = PoolKey({
-            currency0: tokenIs0 ? Currency.wrap(info.token) : quote,
-            currency1: tokenIs0 ? quote : Currency.wrap(info.token),
-            fee: launchFeeFlag[launchId],
-            tickSpacing: launchTickSpacing[launchId],
-            hooks: info.hooks
-        });
+        return LaunchFactoryLib.buildPoolKey(
+            info.token, quote, launchFeeFlag[launchId], launchTickSpacing[launchId], info.hooks
+        );
     }
 
     /// @notice Create a token, initialize its Uniswap v4 pool, and lock 100% of supply as a unilateral position.
@@ -353,7 +323,17 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         _collectLaunchFee(params.quote.isAddressZero(), params.devBuyQuoteIn);
 
-        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI, params.bitmask);
+        token = LaunchTokenDeployLib.deploy(
+            address(this),
+            params.name,
+            params.symbol,
+            params.totalSupply,
+            msg.sender,
+            params.metadataURI,
+            params.bitmask,
+            masterHook,
+            launchCount
+        );
 
         (IHooks hooks, bool useCustom, uint256 packed, uint24 fee) =
             _resolveLaunchConfig(params.customHook, params.bitmask);
@@ -409,20 +389,33 @@ contract LaunchFactory is Owned, IUnlockCallback {
             _resolveLaunchConfig(params.customHook, params.bitmask);
         if ((packed & BitmaskConfig.BACKED_FLOOR_ENABLED) != 0) revert FloorNotSupportedInMulti();
 
-        _collectLaunchFee(hasNative, params.devBuyQuoteIn);
+        LaunchFactoryLib.collectLaunchFee(treasury, launchFee, hasNative, params.devBuyQuoteIn, msg.value, msg.sender);
 
-        token = _deployToken(params.name, params.symbol, params.totalSupply, msg.sender, params.metadataURI, params.bitmask);
+        token = LaunchTokenDeployLib.deploy(
+            address(this),
+            params.name,
+            params.symbol,
+            params.totalSupply,
+            msg.sender,
+            params.metadataURI,
+            params.bitmask,
+            masterHook,
+            launchCount
+        );
 
-        uint256[] memory tokenAmounts = LaunchFactoryLib.splitSupply(params.totalSupply, _libMarkets(params.markets));
-
-        LaunchFactoryLib.PoolPlan[] memory plans = new LaunchFactoryLib.PoolPlan[](marketLen);
+        LaunchFactoryLib.MarketInput[] memory libMarkets = _libMarkets(params.markets);
+        uint256[] memory tokenAmounts = LaunchFactoryLib.splitSupply(params.totalSupply, libMarkets);
+        uint256[] memory mcapQuotes = new uint256[](marketLen);
         for (uint256 i; i < marketLen; ++i) {
-            MarketInput calldata m = params.markets[i];
-            plans[i] = LaunchFactoryLib.computePoolPlan(
-                token, m.quote, tokenAmounts[i], params.totalSupply, spacing, hooks, fee, _mcapQuote(m.quote)
-            );
-            plans[i].bps = m.bps;
-            if (!useCustom) {
+            mcapQuotes[i] = _mcapQuote(params.markets[i].quote);
+        }
+
+        LaunchFactoryLib.PoolPlan[] memory plans = LaunchFactoryLib.computeMultiPlans(
+            token, libMarkets, tokenAmounts, params.totalSupply, spacing, hooks, fee, mcapQuotes
+        );
+
+        if (!useCustom) {
+            for (uint256 i; i < marketLen; ++i) {
                 _prepareMasterLaunch(plans[i], packed, msg.sender, token);
             }
         }
@@ -508,39 +501,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return "";
     }
 
-    function _deployToken(
-        string memory name_,
-        string memory symbol_,
-        uint256 totalSupply,
-        address creator,
-        string memory metadataURI_,
-        uint256 bitmask
-    ) internal returns (address token) {
-        address tracker;
-        if (BitmaskConfig.unpack(bitmask).holderAirdrop) {
-            tracker = masterHook.holderAirdropVault();
-        }
-        bytes memory initCode = abi.encodePacked(
-            type(LaunchToken).creationCode,
-            abi.encode(name_, symbol_, totalSupply, creator, address(this), metadataURI_, tracker)
-        );
-        bytes32 entropy = keccak256(abi.encodePacked(name_, symbol_, creator, totalSupply, metadataURI_, launchCount));
-        token = TokenAddressMiner.deploy(address(this), initCode, entropy);
-    }
-
     function _collectLaunchFee(bool needsNativeDust, uint256 devBuyQuoteIn) internal {
-        uint256 required = launchFee + (needsNativeDust ? devBuyQuoteIn : 0);
-        if (msg.value < required) revert LaunchFeeRequired();
-        uint256 keep = needsNativeDust && launchFee > 0 ? 1 : 0;
-        uint256 toTreasury = launchFee - keep;
-        if (toTreasury > 0) {
-            CurrencyLibrary.ADDRESS_ZERO.transfer(treasury, toTreasury);
-        }
-        uint256 extra = msg.value - required;
-        if (extra > 0) {
-            if (!needsNativeDust && devBuyQuoteIn == 0) revert NativeNotAccepted();
-            CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, extra);
-        }
+        LaunchFactoryLib.collectLaunchFee(treasury, launchFee, needsNativeDust, devBuyQuoteIn, msg.value, msg.sender);
     }
 
     function _devBuyAfterLaunch(
@@ -552,30 +514,19 @@ contract LaunchFactory is Owned, IUnlockCallback {
         uint256 devBuyQuoteIn,
         uint256 minTokensOut
     ) internal {
-        if (devBuyQuoteIn == 0) return;
-
-        LaunchDevBuyLib.validateDevBuyQuote(devBuyQuoteIn, _mcapQuote(quote));
-
-        address quoteAddr = Currency.unwrap(quote);
-        if (quoteAddr != address(0)) {
-            LaunchDevBuyLib.pullQuoteToken(quoteAddr, msg.sender, devBuyQuoteIn);
-        }
-
-        bool tokenIs0 = uint160(token) < uint160(quoteAddr);
-        bool zeroForOne = !tokenIs0;
-
-        LaunchDevBuyLib.SwapCall memory call = LaunchDevBuyLib.SwapCall({
-            payer: address(this),
-            recipient: msg.sender,
-            key: key,
-            zeroForOne: zeroForOne,
-            amountIn: devBuyQuoteIn,
-            minAmountOut: minTokensOut,
-            maxTokensOut: LaunchDevBuyLib.maxDevBuyTokens(totalSupply)
-        });
-
-        uint256 tokensOut = abi.decode(poolManager.unlock(abi.encode(uint8(1), call)), (uint256));
-        emit DevBuyExecuted(launchId, msg.sender, devBuyQuoteIn, tokensOut);
+        uint256 tokensOut = LaunchDevBuyLib.runDevBuy(
+            poolManager,
+            address(this),
+            msg.sender,
+            key,
+            token,
+            quote,
+            totalSupply,
+            devBuyQuoteIn,
+            minTokensOut,
+            _mcapQuote(quote)
+        );
+        if (devBuyQuoteIn > 0) emit DevBuyExecuted(launchId, msg.sender, devBuyQuoteIn, tokensOut);
     }
 
     function _resolveLaunchConfig(IHooks customHook, uint256 bitmask)
@@ -643,18 +594,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     function _unlockPlans(LaunchFactoryLib.PoolPlan[] memory plans) internal {
-        LaunchFactoryLib.PoolSeed[] memory seeds = new LaunchFactoryLib.PoolSeed[](plans.length);
-        for (uint256 i; i < plans.length; ++i) {
-            LaunchFactoryLib.PoolPlan memory plan = plans[i];
-            seeds[i] = LaunchFactoryLib.PoolSeed({
-                key: plan.key,
-                sqrtPriceX96: plan.sqrtPriceX96,
-                tickLower: plan.tickLower,
-                tickUpper: plan.tickUpper,
-                liquidityDelta: int256(uint256(plan.liquidity))
-            });
-        }
-        poolManager.unlock(abi.encode(uint8(0), seeds));
+        poolManager.unlock(abi.encode(uint8(0), LaunchFactoryLib.poolPlansToSeeds(plans)));
     }
 
     function _recordSingleLaunch(

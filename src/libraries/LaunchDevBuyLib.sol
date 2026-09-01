@@ -49,9 +49,46 @@ library LaunchDevBuyLib {
         if (devBuyQuoteIn > maxDevBuyQuoteWei(mcapQuoteWei)) revert DevBuyQuoteTooHigh();
     }
 
-    function pullQuoteToken(address quote, address payer, uint256 amount) internal {
+    function pullQuoteToken(address quote, address payer, address to, uint256 amount) internal {
         if (amount == 0 || quote == address(0)) return;
-        if (!IERC20Minimal(quote).transferFrom(payer, address(this), amount)) revert TransferFailed();
+        if (!IERC20Minimal(quote).transferFrom(payer, to, amount)) revert TransferFailed();
+    }
+
+    function runDevBuy(
+        IPoolManager poolManager,
+        address factory,
+        address buyer,
+        PoolKey memory key,
+        address token,
+        Currency quote,
+        uint256 totalSupply,
+        uint256 devBuyQuoteIn,
+        uint256 minTokensOut,
+        uint256 mcapQuote
+    ) external returns (uint256 tokensOut) {
+        if (devBuyQuoteIn == 0) return 0;
+
+        validateDevBuyQuote(devBuyQuoteIn, mcapQuote);
+
+        address quoteAddr = Currency.unwrap(quote);
+        if (quoteAddr != address(0)) {
+            pullQuoteToken(quoteAddr, buyer, factory, devBuyQuoteIn);
+        }
+
+        bool tokenIs0 = uint160(token) < uint160(quoteAddr);
+        bool zeroForOne = !tokenIs0;
+
+        SwapCall memory call = SwapCall({
+            payer: factory,
+            recipient: buyer,
+            key: key,
+            zeroForOne: zeroForOne,
+            amountIn: devBuyQuoteIn,
+            minAmountOut: minTokensOut,
+            maxTokensOut: maxDevBuyTokens(totalSupply)
+        });
+
+        tokensOut = abi.decode(poolManager.unlock(abi.encode(uint8(1), call)), (uint256));
     }
 
     function handleUnlockSwap(IPoolManager poolManager, SwapCall memory call) internal returns (bytes memory) {

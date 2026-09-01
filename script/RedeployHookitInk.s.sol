@@ -21,6 +21,7 @@ import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol"
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 import {V4ClaimsRedeemer} from "../src/V4ClaimsRedeemer.sol";
+import {LaunchFactoryQuery} from "../src/LaunchFactoryQuery.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../src/libraries/HookitDeployLib.sol";
 import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
@@ -99,6 +100,7 @@ contract RedeployHookitInkScript is Script {
 
         HookitSwapRouter router = new HookitSwapRouter(manager);
         V4ClaimsRedeemer claimsRedeemer = new V4ClaimsRedeemer(manager);
+        LaunchFactoryQuery launchQuery = new LaunchFactoryQuery(factory);
         FeeEthRail feeRail = new FeeEthRail(deployer, manager, v4.stableQuote);
         HkitBuyback hkitBuyback = new HkitBuyback(deployer, manager, distributor);
 
@@ -141,6 +143,7 @@ contract RedeployHookitInkScript is Script {
         console.log("LiquidityLocker", address(bonding.locker()));
         console.log("HookitSwapRouter", address(router));
         console.log("V4ClaimsRedeemer", address(claimsRedeemer));
+        console.log("LaunchFactoryQuery", address(launchQuery));
         console.log("FeeEthRail", address(feeRail));
         console.log("FeeEthRail bridge set", feeRail.ethBridgeSet());
         console.log("HkitBuyback", address(hkitBuyback));
@@ -152,6 +155,7 @@ contract RedeployHookitInkScript is Script {
         console.log("launch fee wei", ProtocolConstants.LAUNCH_FEE_WEI);
         console.log("--- web env (paste into .env) ---");
         console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY", address(factory));
+        console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY_QUERY", address(launchQuery));
         console.log("ENV_NEXT_PUBLIC_BONDING_FACTORY", address(bonding));
         console.log("ENV_NEXT_PUBLIC_HOOKIT_SWAP_ROUTER", address(router));
         console.log("ENV_NEXT_PUBLIC_CLAIMS_REDEEMER", address(claimsRedeemer));

@@ -2,7 +2,7 @@ import type { Address, PublicClient } from "viem";
 import { zeroAddress } from "viem";
 
 import { unpackLaunchBitmask } from "@/lib/bitmask";
-import { DEFAULT_TICK_SPACING } from "@/lib/contracts/config";
+import { DEFAULT_TICK_SPACING, getLaunchFactoryQueryAddress } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
@@ -411,8 +411,9 @@ export async function fetchAllLaunches(
   if (n === 0) return [];
 
   try {
+    const query = getLaunchFactoryQueryAddress() ?? factory;
     const page = await publicClient.readContract({
-      address: factory,
+      address: query,
       abi: launchFactoryAbi,
       functionName: "getLaunchPage",
       args: [BigInt(1), count],
