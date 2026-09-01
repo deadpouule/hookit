@@ -62,7 +62,7 @@ library ModuleMatrix {
             m.initialSnipeTaxBps = 1_500;
         }
         if (m.maxTx) m.maxTxBps = 500;
-        if (m.maxWallet) m.maxWalletBps = 2_000;
+        if (m.maxWallet) m.maxWalletBps = 500;
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.lpDonate) m.lpDonateBps = 1_000;
