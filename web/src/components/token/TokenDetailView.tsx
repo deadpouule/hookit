@@ -180,17 +180,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
       <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
         {!isClassicDesk && (
-          <div className="token-desk-hero min-w-0">{heroCard}</div>
-        )}
-
-        {!isClassicDesk && (
           <aside className="token-desk-rail token-desk-rail--left space-y-3">
             <ActiveHooksPanel pool={pool} />
           </aside>
         )}
 
         <div className="token-desk-main min-w-0 space-y-4">
-          {isClassicDesk ? heroCard : null}
+          {heroCard}
 
           <TokenCandleChart
             candles={live.candles}
