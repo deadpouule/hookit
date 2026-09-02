@@ -1,36 +1,40 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-08-30",
-  "deployBlock": 54547596,
+  "deployedAt": "2026-09-02",
+  "deployBlock": 54712334,
   "deployer": "0x67B436693b7f8ebAD6b1B1Caf88C2E197d961614",
   "contracts": {
-    "LaunchFactoryLib": "0x332011c08fdfd9fb65aa1fd2791c435196c698e7",
-    "FloorVault": "0xe86796188e5bfc826e402545398cd6b9604db3d2",
-    "FeeEscrow": "0x5cf0b9c93c128733ef2e9a6e8be1547367cee713",
-    "ProtocolRevenueDistributor": "0x436ad54eb2c36f58ce856e26fe42e1b0fe9c0bf1",
+    "LaunchFactoryLib": "0x872dd9a84f8c46031d9d8fae8707e236d828c9d8",
+    "LaunchDevBuyLib": "0x2de8b6093411b033a2e9935bed6a3230c2413117",
+    "LaunchTokenDeployLib": "0xdb426240397507fe2666d3dc1dcf80b8f5a47831",
+    "FloorVault": "0xff1ef27c6bd62583f00f62c53accc0bdcd0cd9b6",
+    "FeeEscrow": "0x0a060f5e97b7b344f5444caaaad9f5fe4428b05f",
+    "ProtocolRevenueDistributor": "0x302e52f0252360325796b7eb6a03409de40266ac",
     "BuybackVault": "0xd00f05243ae5ac4f4f1fc6c65ff212293674e286",
     "HolderAirdropVault": "0x564b2dd5a73501e341087edf4ebba23d7f36adca",
-    "MasterLaunchHook": "0xa33c80507b82816f84cce80f2aa0f6d5cd5beac8",
-    "LaunchFactory": "0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2",
-    "GraduatedFeeHook": "0x82bfc49342a5fac13ad78d44d9bf64ff57a72088",
-    "BondingLaunchFactory": "0x2003af38d2f995fb78cfa9feadcd2b05c903fb80",
-    "HookitSwapRouter": "0xe76b7f77ddcdcd892f6b808387a784997f3d8af2",
+    "MasterLaunchHook": "0xfe09ecab802e3567df96b94d2a4ec294b6272ac8",
+    "LaunchFactory": "0xeb05916ac2356956224c7d9b75c0c8c01503d24c",
+    "LaunchFactoryQuery": "0x9abeefb6addacdccaf85003bc6d0e4c636ddaeab",
+    "GraduatedFeeHook": "0xfe9be77c9b3349ba1095a150bd29a48fc9a9e088",
+    "BondingLaunchFactory": "0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe",
+    "HookitSwapRouter": "0x23dcdc9570ccfe93807da99b395db6a24a79a239",
+    "V4ClaimsRedeemer": "0xda616abb6d8350234febefbec2acd4e6bccf798e",
     "FeeEthRail": "0x903df3daed1062eb2abec4a0a4098d9152228c0a",
-    "HkitBuyback": "0xeccad668aa9601c2c8373561dfb0976bc6eb680c",
-    "NativeToken": "0x9E6D824deE12B586955116A8881f3186194Ee468"
+    "HkitBuyback": "0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9",
+    "NativeToken": "0x9403cc96dbc7a63bbd5af65123653acd6938f688"
   },
   "nativeToken": {
     "name": "HOOKTEST",
     "symbol": "HTST",
-    "address": "0x9E6D824deE12B586955116A8881f3186194Ee468"
+    "address": "0x9403cc96dbc7a63bbd5af65123653acd6938f688"
   },
   "indexer": {
-    "startBlock": 54547596,
+    "startBlock": 54712334,
     "url": "https://indexer.hookit.fun"
   },
   "notes": [
-    "Bytecode predates customHooksEnabled + max-wallet pre-swap hardening — see SOFT_LAUNCH_INK.md.",
-    "Run script/HardenInkSoftLaunch.s.sol once to enable custom-hook allowlist on the live factory."
+    "RedeployHookitInk.s.sol — hardened bytecode (EIP-170 fix, fee claim safety, LaunchFactoryQuery).",
+    "customHookAllowlistEnabled=true at deploy."
   ]
 }

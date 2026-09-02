@@ -33,11 +33,13 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
   const isClassic = pool.rail === "classic";
+  const isGraduatedClassic = isClassic && pool.bondingPhase !== 0;
   const isCreator =
     !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
   const quote = (pool.quoteAddress ?? zeroAddress) as Address;
   const quoteLabel = poolQuoteLabel(pool);
   const decimals = quoteDecimals(quote);
+  const poolId = pool.poolId as `0x${string}` | undefined;
 
   const { data: masterHook } = useReadContract({
     address: factory,
@@ -73,20 +75,52 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
   const escrow = (isClassic ? classicEscrow : masterEscrow) as Address | undefined;
 
+  const { data: pendingOnHook, refetch: refetchPending } = useReadContract({
+    address: feeHookAddr as Address | undefined,
+    abi: graduatedFeeHookAbi,
+    functionName: "pendingCreatorTax",
+    args: poolId && isGraduatedClassic ? [poolId, quote] : undefined,
+    query: { enabled: !!feeHookAddr && isGraduatedClassic && !!poolId },
+  });
+
   const { data: claimable, refetch: refetchClaimable } = useReadContract({
     address: escrow,
     abi: feeEscrowAbi,
     functionName: "balanceOf",
     args: address ? [address, quote] : undefined,
-    query: { enabled: !!escrow && !!address },
+    query: { enabled: !!escrow && !!address, refetchInterval: 12_000 },
   });
 
   // Master custom hooks have no protocol escrow path here.
   if (!isClassic && pool.hooks.customHook) return null;
-  if (isClassic && pool.bondingPhase === 0) return null;
   if (!isCreator) return null;
   // Buyback vesting routes creator fees to BuybackVault — claim lives in ActiveHooksPanel.
   if (!isClassic && pool.hooks.buybackVesting) return null;
+
+  const pendingWei = (pendingOnHook as bigint | undefined) ?? BigInt(0);
+  const claimWei = claimable ?? BigInt(0);
+  const needsSweep = isGraduatedClassic && pendingWei > BigInt(0);
+
+  const syncFees = async () => {
+    if (!feeHookAddr || !poolId) return;
+    setMessage(null);
+    try {
+      const hash = await writeContractAsync({
+        address: feeHookAddr,
+        abi: graduatedFeeHookAbi,
+        functionName: "sweepQuote",
+        args: [poolId],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      await Promise.all([refetchPending(), refetchClaimable()]);
+      setMessage("Fees synced to escrow");
+      toast.success("Fees synced — you can claim now");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sync failed";
+      setMessage(msg);
+      toast.error("Sync failed", msg.slice(0, 120));
+    }
+  };
 
   const claim = async () => {
     if (!escrow) return;
@@ -133,11 +167,32 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
     }
   };
 
-  const claimWei = claimable ?? BigInt(0);
-
   return (
     <div className="desk-card mt-3 space-y-3 p-4">
       <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Creator</p>
+
+      {needsSweep ? (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <div>
+            <p className="text-xs text-amber-200/90">Unsynced fees</p>
+            <p className="font-mono text-sm text-zinc-100">
+              {formatUnits(pendingWei, decimals)} {quoteLabel}
+            </p>
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Classic pools accrue on the fee hook until synced to escrow.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={!feeHookAddr || !poolId || isPending}
+            onClick={() => void syncFees()}
+            className="shrink-0 rounded-lg border border-amber-500/30 px-3 py-2 text-xs text-amber-100 transition hover:border-amber-400 disabled:opacity-40"
+          >
+            Sync fees
+          </button>
+        </div>
+      ) : null}
+
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs text-zinc-500">Creator fees</p>

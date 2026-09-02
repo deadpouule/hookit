@@ -171,6 +171,23 @@ export const graduatedFeeHookAbi = [
     outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "pendingCreatorTax",
+    inputs: [
+      { name: "id", type: "bytes32" },
+      { name: "currency", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "sweepQuote",
+    inputs: [{ name: "id", type: "bytes32" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
 ] as const;
 
 export const floorVaultAbi = [
