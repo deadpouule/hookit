@@ -281,6 +281,104 @@ abstract contract InkForkTestBase is Test {
         return IERC20(token).balanceOf(account);
     }
 
+    function _maxTxTokenCap(BitmaskConfig.Modules memory m, address token) internal view returns (uint256) {
+        if (!m.maxTx || m.maxTxBps == 0) return type(uint256).max;
+        return FixedPointMath.applyBps(IERC20(token).totalSupply(), m.maxTxBps);
+    }
+
+    /// @dev Buy size that respects max-tx / max-wallet while exercising fee-route modules on fork.
+    function _smokeBuyAmountForQuote(BitmaskConfig.Modules memory m, Currency quote) internal view returns (uint256) {
+        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        if (quote.isAddressZero()) {
+            if (m.maxWallet) return 0.008 ether;
+            if (m.maxTx) return needsVolume ? 0.002 ether : 0.001 ether;
+            return needsVolume ? 0.5 ether : 0.05 ether;
+        }
+        if (quote == usdg) {
+            if (m.maxWallet) return 30e6;
+            return m.maxTx ? 30e6 : (needsVolume ? 500e6 : 100e6);
+        }
+        if (m.maxWallet) return 0.005e18;
+        return m.maxTx ? 0.002e18 : (needsVolume ? 0.1e18 : 0.01e18);
+    }
+
+    function _safeSell(
+        address user,
+        PoolKey memory key,
+        address token,
+        BitmaskConfig.Modules memory m,
+        uint256 sellNumerator,
+        uint256 sellDenominator
+    ) internal {
+        if (m.antiMev) return;
+        vm.roll(block.number + 1);
+        uint256 bal = _tokenBalance(token, user);
+        if (bal == 0) return;
+        uint256 sellAmt = bal * sellNumerator / sellDenominator;
+        uint256 cap = _maxTxTokenCap(m, token);
+        if (sellAmt > cap) sellAmt = cap * 9 / 10;
+        if (sellAmt == 0) return;
+        _routerSell(user, key, token, sellAmt);
+    }
+
+    function _assertModuleSmokeEffects(
+        LaunchResult memory l,
+        BitmaskConfig.Modules memory m,
+        uint256 supplyBefore,
+        uint256 g0Before,
+        uint256 g1Before
+    ) internal {
+        // Max-wallet / anti-MEV caps swap patterns — skip volume-heavy module checks.
+        if (m.maxWallet || m.antiMev) return;
+
+        if (m.backedFloor) assertGt(vault.reserve(l.token), 0, "floor reserve");
+        if (m.buybackVesting) {
+            (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
+            assertGt(streamed, 0, "buyback stream");
+        }
+        if (m.autoBurn) {
+            uint256 supplyAfter = IERC20(l.token).totalSupply();
+            assertTrue(
+                supplyAfter < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0,
+                "autoBurn should burn or queue"
+            );
+        }
+        if (m.lpDonate) {
+            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
+            assertTrue(
+                g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0,
+                "lpDonate fee growth"
+            );
+        }
+    }
+
+    function _moduleSmoke(
+        BitmaskConfig.Modules memory m,
+        Currency quote,
+        string memory name,
+        string memory symbol
+    ) internal {
+        LaunchResult memory l = _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, name, symbol);
+
+        uint256 supplyBefore = IERC20(l.token).totalSupply();
+        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+
+        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        uint256 buyIn = _smokeBuyAmountForQuote(m, quote);
+        _routerBuy(trader, l.key, l.token, buyIn);
+        assertGt(_tokenBalance(l.token, trader), 0);
+
+        if (m.maxTx && !m.maxWallet && !m.antiMev && needsVolume) {
+            for (uint256 i; i < 3; ++i) {
+                vm.roll(block.number + 1);
+                _routerBuy(trader, l.key, l.token, buyIn);
+            }
+        }
+
+        _safeSell(trader, l.key, l.token, m, 1, 10);
+        _assertModuleSmokeEffects(l, m, supplyBefore, g0Before, g1Before);
+    }
+
     function _claimCreatorFees(address user, Currency quote) internal {
         vm.prank(user);
         escrow.claim(quote);

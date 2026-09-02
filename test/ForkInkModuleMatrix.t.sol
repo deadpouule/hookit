@@ -21,7 +21,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     // ─── Kitchen sink ─────────────────────────────────────────────────────────
 
     function testFork_KitchenSink_AllModules() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.MASK_SPACE - 1);
+        _moduleSmoke(ModuleMatrix.kitchenSink(), Currency.wrap(address(0)), "Mod", "MOD");
     }
 
     // ─── One module at a time ─────────────────────────────────────────────────
@@ -108,7 +108,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000_000e18, "MW", "MW");
 
-        _routerBuy(trader, l.key, l.token, 5 ether);
+        _routerBuy(trader, l.key, l.token, 0.001 ether);
         vm.expectRevert();
         _routerBuy(trader, l.key, l.token, 2 ether);
     }
@@ -127,8 +127,7 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     }
 
     function testFork_DynamicFees_FlagOnPool() public onlyFork {
-        BitmaskConfig.Modules memory m = _defaultModules();
-        m.dynamicFees = true;
+        BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(ModuleMatrix.BIT_DYNAMIC_FEES);
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "DF", "DF");
         assertTrue(l.key.fee & LPFeeLibrary.DYNAMIC_FEE_FLAG != 0);
@@ -138,33 +137,6 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     function _smokeLaunchAndSwap(uint16 mask) internal {
-        BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
-        BitmaskConfig.pack(m);
-
-        InkForkTestBase.LaunchResult memory l =
-            _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Mod", "MOD");
-
-        uint256 supplyBefore = IERC20(l.token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
-
-        _routerBuy(trader, l.key, l.token, 0.01 ether);
-        assertGt(_tokenBalance(l.token, trader), 0);
-
-        if (m.backedFloor) assertGt(vault.reserve(l.token), 0);
-        if (m.buybackVesting) {
-            (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
-            assertGt(streamed, 0);
-        }
-        if (m.autoBurn) assertLt(IERC20(l.token).totalSupply(), supplyBefore);
-        if (m.lpDonate) {
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(g0After > g0Before || g1After > g1Before);
-        }
-
-        if (!m.antiMev) {
-            vm.roll(block.number + 1);
-            uint256 bal = _tokenBalance(l.token, trader);
-            _routerSell(trader, l.key, l.token, bal / 8);
-        }
+        _moduleSmoke(ModuleMatrix.fromMask(mask), Currency.wrap(address(0)), "Mod", "MOD");
     }
 }

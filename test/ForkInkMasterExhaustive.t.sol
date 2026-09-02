@@ -69,34 +69,6 @@ contract ForkInkMasterExhaustiveTest is InkForkTestBase {
     }
 
     function _smoke(uint16 mask, Currency quote) internal {
-        BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(mask);
-        BitmaskConfig.pack(m);
-
-        InkForkTestBase.LaunchResult memory l =
-            _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Ex", "EX");
-
-        uint256 supplyBefore = IERC20(l.token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
-
-        uint256 buyIn = quote.isAddressZero() ? 0.15 ether : (quote == usdg ? 500e6 : 0.03e18);
-        _routerBuy(trader, l.key, l.token, buyIn);
-        assertGt(_tokenBalance(l.token, trader), 0);
-
-        if (m.backedFloor) assertGt(vault.reserve(l.token), 0);
-        if (m.buybackVesting) {
-            (, uint128 streamed,,,) = buybacks.streams(creator, l.token);
-            assertGt(streamed, 0);
-        }
-        if (m.autoBurn) assertLt(IERC20(l.token).totalSupply(), supplyBefore);
-        if (m.lpDonate) {
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(g0After > g0Before || g1After > g1Before);
-        }
-
-        if (!m.antiMev) {
-            vm.roll(block.number + 1);
-            uint256 bal = _tokenBalance(l.token, trader);
-            if (bal > 0) _routerSell(trader, l.key, l.token, bal / 10);
-        }
+        _moduleSmoke(ModuleMatrix.fromMask(mask), quote, "Ex", "EX");
     }
 }

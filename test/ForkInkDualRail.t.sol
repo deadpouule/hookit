@@ -24,7 +24,12 @@ contract ForkInkDualRailTest is InkForkTestBase {
         InkForkTestBase.LaunchResult memory master = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Master", "MST"
         );
-        _routerBuy(trader, master.key, master.token, 0.2 ether);
+        uint256 buyIn = _smokeBuyAmountForQuote(m, Currency.wrap(address(0)));
+        _routerBuy(trader, master.key, master.token, buyIn);
+        if (m.maxTx && m.backedFloor) {
+            vm.roll(block.number + 1);
+            _routerBuy(trader, master.key, master.token, buyIn);
+        }
         assertGt(_tokenBalance(master.token, trader), 0);
         assertGt(vault.reserve(master.token), 0);
 
