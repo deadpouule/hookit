@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 
 import {InkForkTestBase} from "./utils/InkForkTestBase.sol";
 import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
@@ -12,11 +13,13 @@ import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
 import {FeeEthRail} from "../src/FeeEthRail.sol";
 import {EthUsdgBridgeLib} from "../src/libraries/EthUsdgBridgeLib.sol";
+import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 import {EthUsdgBridgeSeeder} from "../src/EthUsdgBridgeSeeder.sol";
 
 /// @notice Ink fork: Master + Classic rails coexist; shared escrow/distributor; fee rail smoke.
 contract ForkInkDualRailTest is InkForkTestBase {
     using CurrencyLibrary for Currency;
+    using PoolIdLibrary for PoolKey;
 
     function testFork_DualRail_MasterAndBonding_SameProtocol() public onlyFork {
         // Master kitchen sink on ETH.
@@ -41,6 +44,21 @@ contract ForkInkDualRailTest is InkForkTestBase {
         PoolKey memory gKey = bonding.poolKeyOf(classic.launchId);
         _routerBuy(trader, gKey, classic.token, 0.05 ether);
         assertGt(_tokenBalance(classic.token, trader), 0);
+
+        // Classic post-grad protocol fees: sweep → distribute 20% ops / 80% buybackEth.
+        PoolId poolId = gKey.toId();
+        graduatedHook.sweepQuote(poolId);
+        Currency eth = Currency.wrap(address(0));
+        uint256 pending = distributor.pending(eth);
+        if (pending > 0) {
+            uint256 opsBefore = ops.balance;
+            uint256 buybackBefore = distributor.buybackEth();
+            distributor.distribute(eth);
+            uint256 opsReceived = ops.balance - opsBefore;
+            uint256 buybackReceived = distributor.buybackEth() - buybackBefore;
+            assertApproxEqRel(opsReceived, FixedPointMath.applyBps(pending, ProtocolConstants.OPS_SHARE_BPS), 0.02e18);
+            assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
+        }
 
         // Protocol fee sinks shared.
         (, uint128 streamed,,,) = buybacks.streams(creator, master.token);

@@ -164,6 +164,30 @@ contract FeeDistributionTest is Test {
         assertGt(vault.floorPriceX18(address(nativeToken)), 0);
     }
 
+    /// @dev BuybackBurn flywheel: 20% ops treasury, 80% `buybackEth` pot (production default).
+    function testBuybackBurnEightyTwentyEth() public {
+        distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn);
+
+        distributor.notify{value: 10 ether}(Currency.wrap(address(0)), 10 ether);
+        uint256 opsBefore = ops.balance;
+        uint256 buybackBefore = distributor.buybackEth();
+        distributor.distribute(Currency.wrap(address(0)));
+
+        assertEq(ops.balance - opsBefore, 2 ether, "ops treasury 20%");
+        assertEq(distributor.buybackEth() - buybackBefore, 8 ether, "buyback pot 80%");
+        assertEq(vault.reserve(address(nativeToken)), 0, "BuybackBurn must not deposit floor");
+    }
+
+    function testConstructorDefaultsToBuybackBurn() public {
+        ProtocolRevenueDistributor fresh =
+            new ProtocolRevenueDistributor(address(this), ops, IPoolManager(address(0)));
+        assertEq(
+            uint8(fresh.flywheelMode()),
+            uint8(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn),
+            "production default flywheel"
+        );
+    }
+
     function testCreatorPullClaim() public {
         escrow.credit{value: 1 ether}(creator, Currency.wrap(address(0)), 1 ether);
         vm.prank(creator);

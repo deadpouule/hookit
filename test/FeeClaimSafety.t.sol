@@ -92,6 +92,59 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
         assertEq(distributor.pending(ETH), 0);
     }
 
+    /// @dev Plain Master launch (default modules): protocol share splits 20% ops / 80% buybackEth.
+    function test_NormalToken_MasterRail_Protocol8020_OpsAndBuybackEth() public {
+        (, address token,, PoolKey memory key) = launchToken(defaultModules(), 0, 1_000_000_000e18);
+        token;
+
+        buyExactIn(key, 5 ether);
+        uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
+        sellExactIn(key, token, bal / 4);
+
+        uint256 pending = distributor.pending(ETH);
+        assertGt(pending, 0, "normal token accrues protocol fees");
+
+        uint256 opsBefore = ops.balance;
+        uint256 buybackBefore = distributor.buybackEth();
+        distributor.distribute(ETH);
+
+        uint256 opsReceived = ops.balance - opsBefore;
+        uint256 buybackReceived = distributor.buybackEth() - buybackBefore;
+        assertApproxEqRel(opsReceived, FixedPointMath.applyBps(pending, ProtocolConstants.OPS_SHARE_BPS), 0.02e18);
+        assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
+        assertEq(distributor.pending(ETH), 0);
+    }
+
+    /// @dev Classic rail post-graduation: sweep then distribute → same 20% ops / 80% buybackEth.
+    function test_ClassicRail_Protocol8020_OpsAndBuybackEth() public {
+        (PoolKey memory key, PoolId poolId,) = _graduateClassicPool();
+
+        vm.deal(trader, 10 ether);
+        vm.prank(trader);
+        swapRouter.swap{value: 2 ether}(
+            key,
+            SwapParams({
+                zeroForOne: true, amountSpecified: -int256(2 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+
+        feeHook.sweepQuote(poolId);
+
+        uint256 pending = distributor.pending(ETH);
+        assertGt(pending, 0, "classic graduated fees reach distributor after sweep");
+
+        uint256 opsBefore = ops.balance;
+        uint256 buybackBefore = distributor.buybackEth();
+        distributor.distribute(ETH);
+
+        uint256 opsReceived = ops.balance - opsBefore;
+        uint256 buybackReceived = distributor.buybackEth() - buybackBefore;
+        assertApproxEqRel(opsReceived, FixedPointMath.applyBps(pending, ProtocolConstants.OPS_SHARE_BPS), 0.02e18);
+        assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
+    }
+
     // ─── Contract creators CAN claim (Hookit uses pull escrow, not push) ───
 
     function test_ContractCreator_WithReceive_ClaimsFromEscrow() public {

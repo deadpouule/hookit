@@ -49,6 +49,41 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         assertGt(_tokenBalance(l.token, trader), tokens / 2);
     }
 
+    /// @dev Normal token (default modules): creator claim + protocol 20% ops / 80% buybackEth.
+    function testFork_NormalToken_FullFlow_ClaimAndProtocol8020() public onlyFork {
+        InkForkTestBase.LaunchResult memory l = _launch(
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "Normal",
+            "NRM"
+        );
+        Currency quote = Currency.wrap(address(0));
+
+        _routerBuy(trader, l.key, l.token, 2 ether);
+        vm.roll(block.number + 1);
+        uint256 tokens = _tokenBalance(l.token, trader);
+        _routerSell(trader, l.key, l.token, tokens / 5);
+
+        uint256 creatorBefore = creator.balance;
+        _claimCreatorFees(creator, quote);
+        assertGt(creator.balance, creatorBefore, "creator claims 70% share");
+
+        uint256 pending = distributor.pending(quote);
+        assertGt(pending, 0);
+
+        uint256 opsBefore = ops.balance;
+        uint256 buybackBefore = distributor.buybackEth();
+        _distributeProtocol(quote);
+
+        uint256 opsReceived = ops.balance - opsBefore;
+        uint256 buybackReceived = distributor.buybackEth() - buybackBefore;
+        assertApproxEqRel(opsReceived, FixedPointMath.applyBps(pending, ProtocolConstants.OPS_SHARE_BPS), 0.02e18);
+        assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
+    }
+
     function testFork_LaunchUsdgQuote_BuyAndSell() public onlyFork {
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "InkUSDG", "IUSD");
