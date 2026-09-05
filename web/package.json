@@ -8,7 +8,11 @@
     "dev:webpack": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke:onchain": "node --env-file=.env.local scripts/smoke-onchain.mjs",
+    "smoke:ui": "playwright test",
+    "smoke:ui:headed": "playwright test --headed --project=desktop",
+    "smoke": "npm run smoke:onchain && npm run smoke:ui"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",
@@ -33,6 +37,7 @@
     "wagmi": "^2.16.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
