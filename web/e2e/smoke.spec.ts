@@ -37,14 +37,16 @@ test.describe("Hookit UI smoke", () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
-  test("Mobile bottom nav present on small viewport", async ({ page }, testInfo) => {
+  test("Mobile top nav present on small viewport", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile project only");
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeVisible({
+    await expect(page.getByRole("navigation", { name: "Product" })).toBeVisible({
       timeout: 30_000,
     });
-    await expect(page.getByRole("link", { name: "Explore" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Swap" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Explore" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Hooks" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Connect/i }).first()).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Mobile" })).toHaveCount(0);
   });
 
   test("API launches returns pools", async ({ request }) => {
