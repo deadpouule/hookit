@@ -130,6 +130,20 @@ contract DynamicFeesTest is LaunchpadTestBase {
         assertGt(largeTax, tinyTax);
     }
 
+    function testEmptyDepthUsesMinHookTax() public pure {
+        BitmaskConfig.Modules memory m = _dynamicModules();
+        uint256 packed = BitmaskConfig.pack(m);
+        int24 tickLower = -887220;
+        int24 tickUpper = 887220;
+        uint160 sqrtPrice = TickMath.getSqrtPriceAtTick(0);
+
+        // liquidity=0 → depth=0 → must not ramp to max (would revert buys).
+        uint16 tax = DynamicFeeMath.effectiveHookTaxBps(
+            packed, 1 ether, sqrtPrice, 0, tickLower, tickUpper, false, true
+        );
+        assertEq(tax, 0, "empty depth stays at min hook tax");
+    }
+
     function testDynamicFeeRangeValidation() public {
         BitmaskConfig.Modules memory m = _dynamicModules();
         m.dynamicFeeMinTotalBps = 291;

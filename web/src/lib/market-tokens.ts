@@ -405,7 +405,7 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     imageUrl: hasCustomArt ? imageUrl : undefined,
     art,
     artAccent: "#e9d5ff",
-    marketCap: pool.marketCap || 4_000,
+    marketCap: pool.marketCap || 0,
     volume: pool.volume24h ?? 0,
     change1h: pool.change24h * 0.25,
     change24h: pool.change24h,

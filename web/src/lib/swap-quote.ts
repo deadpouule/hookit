@@ -7,7 +7,7 @@ import {
   poolQuoteLabel,
   type PaymentAssetId,
 } from "@/lib/payment-assets";
-import { poolKeyFromLaunch } from "@/lib/pool-key";
+import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
 import type { TokenPool } from "@/lib/types";
 import { needsCompositeSell, type SwapAsset } from "@/lib/swap-assets";
 import {
@@ -40,9 +40,12 @@ export async function quoteHookLeg(
   side: SwapSide,
   quoteAmountIn: bigint,
   recipient: Address = zeroAddress,
+  marketQuote?: Address,
 ): Promise<bigint | null> {
   if (quoteAmountIn <= BigInt(0)) return null;
-  const key = poolKeyFromLaunch(pool);
+  const key = marketQuote
+    ? poolKeyForQuote(pool, marketQuote) ?? poolKeyFromLaunch(pool, marketQuote)
+    : poolKeyFromLaunch(pool);
   const token = pool.contractAddress as Address | undefined;
   if (!key || !token) return null;
 
@@ -163,7 +166,8 @@ export async function quotePoolSwapWithMeta(
 
     if (isDirectBuy(pool, payment)) {
       route = `${payment.label} → ${pool.ticker}`;
-      amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient);
+      // Multi-market: quote against the matching USDG/ETH/stock pool, not always market-0.
+      amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient, payment.address);
     } else {
       const bridge = await findBridgeAmountOut(client, payment.address, poolQuote, amountIn);
       if (!bridge) {

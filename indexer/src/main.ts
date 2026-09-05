@@ -44,7 +44,7 @@ async function main() {
   const store = new Store(cfg.dataDir, cfg.chainId, cfg.excludeAddresses);
   const client = createClient(cfg);
 
-  console.log(`[indexer] chain=${cfg.chainId} rpc=${cfg.rpcUrl}`);
+  console.log(`[indexer] chain=${cfg.chainId} rpc=${cfg.rpcUrls.join(" → ")}`);
   console.log(`[indexer] factory=${cfg.launchFactory ?? "(unset)"} bonding=${cfg.bondingFactory ?? "(unset)"}`);
   console.log(
     `[indexer] data=${store.path} cursor=${store.data.cursor} startBlock=${cfg.startBlock} confirmations=${cfg.confirmations}`,

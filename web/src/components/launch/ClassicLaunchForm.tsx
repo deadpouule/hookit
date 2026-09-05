@@ -271,6 +271,7 @@ export function ClassicLaunchForm() {
           <FormDivider />
 
           <PairingPicker
+            variant="classic"
             markets={form.markets}
             floorQuoteIndex={form.floorQuoteIndex}
             onMarketsChange={(markets) =>

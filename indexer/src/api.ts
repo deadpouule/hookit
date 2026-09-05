@@ -128,6 +128,8 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         cursor: store.data.cursor,
         startBlock: cfg.startBlock.toString(),
         storePath: store.path,
+        rpcUrl: cfg.rpcUrl,
+        rpcUrls: cfg.rpcUrls,
         launchFactory: cfg.launchFactory ?? null,
         bondingFactory: cfg.bondingFactory ?? null,
         updatedAt: store.data.updatedAt,

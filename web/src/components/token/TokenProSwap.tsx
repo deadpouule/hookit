@@ -13,8 +13,8 @@ import { type SwapAsset, needsCompositeSell, poolQuoteSwapAsset, STABLE_SWAP_ASS
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
+import { resolveQuoteKind } from "@/lib/quote-usd";
 
-const ETH_USD = 1000;
 const BALANCE_PRESETS = [15, 25, 50] as const;
 
 function EthMark() {
@@ -85,6 +85,8 @@ export function TokenProSwap({
   slippagePct,
   sellBalance,
   tokenPriceEth,
+  ethUsd = 3000,
+  quoteUsd,
   quoteMeta,
 }: {
   pool: TokenPool;
@@ -99,24 +101,33 @@ export function TokenProSwap({
   slippagePct: number;
   sellBalance: number;
   tokenPriceEth?: number;
+  /** Live ETH/USD — never hardcode $1000. */
+  ethUsd?: number;
+  /** USD price of one pool quote unit (ETH / USDG / stock). */
+  quoteUsd?: number;
   quoteMeta?: SwapQuoteDisplayMeta | null;
 }) {
   const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
   const [flipAnim, setFlipAnim] = useState(false);
 
+  const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+  const qUsd = quoteUsd ?? (kind === "eth" ? ethUsd : kind === "stable" ? 1 : ethUsd);
+  const tokenPriceUsd = (tokenPriceEth ?? 0) * qUsd;
+
   const sellUsd = (() => {
     const n = Number(sellAmount);
     if (!(n > 0)) return 0;
-    if (sellAsset.isNative) return n * ETH_USD;
-    return n * (tokenPriceEth ?? 0) * ETH_USD;
+    if (sellAsset.isNative) return n * ethUsd;
+    if (sellAsset.address?.toLowerCase() === STABLE_SWAP_ASSET.address?.toLowerCase()) return n;
+    return n * tokenPriceUsd;
   })();
 
   const receiveUsd = (() => {
     const n = Number(receiveAmount);
     if (!(n > 0)) return 0;
-    if (buyAsset.isNative) return n * ETH_USD;
+    if (buyAsset.isNative) return n * ethUsd;
     if (buyAsset.address?.toLowerCase() === STABLE_SWAP_ASSET.address?.toLowerCase()) return n;
-    return n * (tokenPriceEth ?? 0) * ETH_USD;
+    return n * tokenPriceUsd;
   })();
 
   const handleInvert = () => {

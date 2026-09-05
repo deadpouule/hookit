@@ -179,7 +179,7 @@ export async function buildLaunchMcapQuoteMap(
   return map;
 }
 
-/** RWA FDV anchored to on-chain $4k launch sizing — immune to bad xStocks API quotes. */
+/** RWA FDV anchored to on-chain $5k launch sizing — immune to bad xStocks API quotes. */
 export function marketCapUsdFromLaunchAnchor(
   quotePerToken: number,
   launchMcapQuoteHuman: number,
@@ -213,14 +213,25 @@ export function quoteUsdFromMap(
   return fallbackStockUsd(pool.quoteAddress) || 1;
 }
 
-/** FDV in USD from spot quote-per-token and quote USD price. */
+/** FDV in USD from spot quote-per-token and quote USD price. Deducts burned supply when provided. */
 export function marketCapFromQuotePrice(
   quotePerToken: number,
   quoteUsd: number,
   totalSupply = TOTAL_SUPPLY,
+  burnedTokens = 0,
 ): number {
   if (quotePerToken <= 0 || quoteUsd <= 0) return 0;
-  return quotePerToken * totalSupply * quoteUsd;
+  const circulating = Math.max(0, totalSupply - burnedTokens);
+  return quotePerToken * circulating * quoteUsd;
+}
+
+/** Circulating supply for FDV — excludes zero + dead burn sinks when balances known. */
+export function circulatingSupplyForFdv(
+  totalSupply = TOTAL_SUPPLY,
+  burnedToZero = 0,
+  burnedToDead = 0,
+): number {
+  return Math.max(0, totalSupply - burnedToZero - burnedToDead);
 }
 
 export function marketCapUsdForPool(

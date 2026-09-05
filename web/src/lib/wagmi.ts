@@ -1,5 +1,5 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { createConfig, http } from "wagmi";
+import { createConfig, fallback, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 
 import { baseSepolia, ink, resolveHookitChainKey } from "@/lib/chains";
@@ -11,10 +11,22 @@ const walletConnectProjectId =
 const primary = resolveHookitChainKey() === "ink" ? ink : baseSepolia;
 const secondary = resolveHookitChainKey() === "ink" ? baseSepolia : ink;
 
+function inkTransport() {
+  const primaryUrl =
+    process.env.NEXT_PUBLIC_INK_RPC_URL?.trim() || "https://rpc-gel.inkonchain.com";
+  const backupUrl =
+    process.env.NEXT_PUBLIC_INK_RPC_URL_BACKUP?.trim() || "https://rpc-qnd.inkonchain.com";
+  const urls = [primaryUrl, backupUrl].filter(
+    (u, i, arr) => u && arr.indexOf(u) === i,
+  );
+  const transports = urls.map((url) => http(url, { timeout: 10_000, retryCount: 0 }));
+  return transports.length === 1
+    ? transports[0]!
+    : fallback(transports, { rank: false, retryCount: 1 });
+}
+
 const transports = {
-  [ink.id]: http(process.env.NEXT_PUBLIC_INK_RPC_URL ?? "https://rpc-gel.inkonchain.com", {
-    timeout: 10_000,
-  }),
+  [ink.id]: inkTransport(),
   [baseSepolia.id]: http(
     process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ?? "https://sepolia.base.org",
     { timeout: 10_000 },

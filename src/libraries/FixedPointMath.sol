@@ -231,7 +231,7 @@ library FixedPointMath {
         return mcapQuoteWei(mcapUsdX18, quoteUsdX18, 18);
     }
 
-    /// @notice `$4k` FDV in the quote token's native decimals.
+    /// @notice `$5k` FDV in the quote token's native decimals.
     function mcapQuoteWei(uint256 mcapUsdX18, uint256 quoteUsdX18, uint8 decimals) internal pure returns (uint256) {
         if (quoteUsdX18 == 0) revert InvalidPrice();
         uint256 tokensX18 = FullMath.mulDiv(mcapUsdX18, 1e18, quoteUsdX18);

@@ -30,7 +30,7 @@ import {
   stableQuoteLabel,
   type PaymentAssetId,
 } from "@/lib/payment-assets";
-import { poolKeyFromLaunch } from "@/lib/pool-key";
+import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
 import type { TokenPool } from "@/lib/types";
 import {
   needsCompositeSell,
@@ -115,11 +115,15 @@ export function useSwapToken(pool: TokenPool) {
     ) => {
       setError(null);
       if (!publicClient || !address) throw new Error("Connect wallet");
-      const hookKey = poolKeyFromLaunch(pool);
+      const payment = paymentAssetById(paymentId);
+      // Prefer the market matching payment (USDG secondary, etc.); fall back to primary.
+      const hookKey =
+        side === "buy" && isDirectBuy(pool, payment)
+          ? (poolKeyForQuote(pool, payment.address) ?? poolKeyFromLaunch(pool))
+          : poolKeyFromLaunch(pool);
       const token = pool.contractAddress as Address | undefined;
       if (!hookKey || !token) throw new Error("Pool key unavailable for this launch");
 
-      const payment = paymentAssetById(paymentId);
       const poolQuote = poolQuoteAddress(pool);
       const payDecimals = side === "buy" ? payment.decimals : 18;
       const amountIn = parseUnits(amountHuman, payDecimals);
@@ -293,15 +297,20 @@ export function useSwapToken(pool: TokenPool) {
             : zeroAddress;
 
       if (side === "buy" && quoteToken !== zeroAddress) {
+        // Direct buy with payment token (may be secondary market USDG, not primary quote).
+        const spendToken =
+          isDirectBuy(pool, payment) && payment.address !== zeroAddress
+            ? payment.address
+            : quoteToken;
         const allowance = (await publicClient.readContract({
-          address: quoteToken,
+          address: spendToken,
           abi: erc20Abi,
           functionName: "allowance",
           args: [address, router],
         })) as bigint;
         if (allowance < amountIn) {
           const approveHash = await writeContractAsync({
-            address: quoteToken,
+            address: spendToken,
             abi: erc20Abi,
             functionName: "approve",
             args: [router, amountIn],

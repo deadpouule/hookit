@@ -13,7 +13,10 @@ export const ink = defineChain({
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_INK_RPC_URL ?? "https://rpc-gel.inkonchain.com"],
+      http: [
+        process.env.NEXT_PUBLIC_INK_RPC_URL ?? "https://rpc-gel.inkonchain.com",
+        process.env.NEXT_PUBLIC_INK_RPC_URL_BACKUP ?? "https://rpc-qnd.inkonchain.com",
+      ],
     },
   },
   blockExplorers: {

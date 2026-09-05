@@ -14,9 +14,8 @@ import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
-import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
-import { paymentAssetById, stableQuoteLabel, type PaymentAssetId } from "@/lib/payment-assets";
+import { formatTokenAmount } from "@/lib/format";
+import { paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
   isStableSwapAsset,
@@ -29,10 +28,18 @@ import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type Mode = "market" | "instant";
 type Side = "buy" | "sell";
 
-const ETH_USD = 1000;
+function resolveEthUsd(pool: TokenPool): number {
+  if (pool.quoteUsd && pool.quoteUsd > 100 && (!pool.quoteAddress || pool.quoteAddress === zeroAddress)) {
+    return pool.quoteUsd;
+  }
+  if (pool.priceEth && pool.priceEth > 0 && pool.marketCap > 0) {
+    const implied = pool.marketCap / (pool.priceEth * 1_000_000_000);
+    if (implied > 100 && implied < 1_000_000) return implied;
+  }
+  return 3000;
+}
 
 function deriveSide(sell: SwapAsset, buy: SwapAsset, pool: TokenPool): Side {
   const tokenKey = poolToSwapAsset(pool).key;
@@ -81,7 +88,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const fetchEthBalance = useTokenBalance(undefined);
   const fetchUsdgBalance = useTokenBalance(STABLE_QUOTE_ADDRESS);
 
-  const [mode, setMode] = useState<Mode>("instant");
   const [side, setSide] = useState<Side>("buy");
   const [sellAsset, setSellAsset] = useState<SwapAsset>(NATIVE_ETH_ASSET);
   const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => poolToSwapAsset(pool));
@@ -94,6 +100,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const [tokenBal, setTokenBal] = useState<number>(0);
   const [ethBal, setEthBal] = useState<number>(0);
   const [usdgBal, setUsdgBal] = useState<number>(0);
+
+  const ethUsd = resolveEthUsd(pool);
 
   const applySide = useCallback(
     (nextSide: Side) => {
@@ -112,7 +120,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     const sideParam = searchParams.get("side");
     if (buy && Number(buy) > 0) {
       setAmount(buy);
-      setMode("instant");
       applySide("buy");
     } else if (sideParam === "buy" || sideParam === "sell") {
       applySide(sideParam);
@@ -203,30 +210,12 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const swapQuoteMeta = onBonding ? bondingQuote.quote : poolSwapQuote.quote;
 
   const hasAmount = !!amount && Number(amount) > 0;
-  const tokenPriceUsd = (pool.priceEth ?? 0) * ETH_USD;
 
   const canTrade = useMemo(
     () => walletReady && !!pool.contractAddress && hasAmount,
     [walletReady, pool.contractAddress, hasAmount],
   );
 
-  const tokenValueUsd = tokenBal * tokenPriceUsd;
-  const payUnitUsd =
-    effectivePayWith === "USDC" ? 1 : effectivePayWith === "ETH" ? ETH_USD : tokenPriceUsd;
-  const amountUsd = hasAmount ? Number(amount) * payUnitUsd : 0;
-  const stableLabel = stableQuoteLabel();
-  const instantAmountTicker =
-    side === "buy"
-      ? onBonding
-        ? (pool.quoteAsset ?? "ETH")
-        : payAsset.symbol
-      : sellAsset.symbol;
-  const walletBalance =
-    side === "buy"
-      ? effectivePayWith === "USDC"
-        ? usdgBal
-        : ethBal
-      : tokenBal;
   const marketSellBalance = sellAsset.isNative
     ? ethBal
     : isStableSwapAsset(sellAsset)
@@ -257,25 +246,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     setSide(deriveSide(sellAsset, asset, pool));
     setAmount("");
     setPreset(null);
-  };
-
-  const applyMaxBalance = () => {
-    if (walletBalance <= 0) return;
-    setAmount(walletBalance < 1 ? walletBalance.toFixed(6) : String(walletBalance));
-    setPreset(null);
-  };
-
-  const applyUsdPreset = (usd: number) => {
-    if (side === "buy") {
-      if (effectivePayWith === "USDC") {
-        setAmount(String(usd));
-      } else {
-        setAmount(String(usd / ETH_USD));
-      }
-    } else if (tokenPriceUsd > 0) {
-      setAmount(String(usd / tokenPriceUsd));
-    }
-    setPreset(usd);
   };
 
   const submit = async () => {
@@ -364,27 +334,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     <div className="desk-card p-4">
       <h2 className="swap-card-title">Swap</h2>
 
-      <div className="swap-mode-toggle">
-        {(
-          [
-            { id: "market" as const, label: "Market" },
-            { id: "instant" as const, label: "Instant" },
-          ] as const
-        ).map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setMode(id)}
-            className={cn(
-              "swap-mode-toggle__btn",
-              mode === id && "swap-mode-toggle__btn--active",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {onBonding && (
         <p className="mt-3 rounded-lg border border-[#9514d1]/30 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
           Classic bonding curve — trades until 4.2 ETH-equiv graduation.
@@ -393,194 +342,26 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
       <SwapSideTabs side={side} onSide={applySide} />
 
-      {mode === "market" ? (
-        <TokenProSwap
-          pool={pool}
-          sellAsset={sellAsset}
-          buyAsset={buyAsset}
-          onSellAsset={handleSellAsset}
-          onBuyAsset={handleBuyAsset}
-          sellAmount={amount}
-          onSellAmount={(v) => {
-            setAmount(v);
-            setPreset(null);
-          }}
-          onInvert={handleInvert}
-          receiveAmount={quotedReceive}
-          slippagePct={slippagePct}
-          sellBalance={marketSellBalance}
-          tokenPriceEth={pool.priceEth}
-          quoteMeta={swapQuoteMeta}
-        />
-      ) : (
-        <>
-          <div className="mt-3">
-            <div className="swap-stat-row">
-              <span>Balance</span>
-              <span className="swap-stat-row__value">
-                {walletReady ? formatTokenAmount(tokenBal) : "0"}
-              </span>
-            </div>
-            <div className="swap-stat-row">
-              <span>Value</span>
-              <span className="swap-stat-row__value">
-                {walletReady ? formatCompactUsd(tokenValueUsd) : "$0"}
-              </span>
-            </div>
-            <div className="swap-stat-row">
-              <span>PnL</span>
-              <span className="swap-stat-row__value">—</span>
-            </div>
-          </div>
-
-          <div className="swap-amount-row">
-            <span className="swap-amount-row__label">Amount</span>
-            <div className="swap-amount-field">
-              <input
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
-                  setPreset(null);
-                }}
-                placeholder="0.0"
-                inputMode="decimal"
-              />
-              <span className="swap-amount-ticker">{instantAmountTicker}</span>
-            </div>
-          </div>
-          <p className="swap-usd-estimate">≈ {formatCompactUsd(amountUsd)}</p>
-
-          <div className="swap-preset-row">
-            {QUICK_BUY_AMOUNTS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => applyUsdPreset(value)}
-                className={cn(
-                  "swap-preset-btn",
-                  preset === value && "swap-preset-btn--active",
-                )}
-              >
-                ${value}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={applyMaxBalance}
-              disabled={!walletReady || walletBalance <= 0}
-              className="swap-preset-btn swap-preset-btn--max"
-            >
-              MAX
-            </button>
-          </div>
-
-          {walletReady && (
-            <p className="mt-2 text-[11px] text-zinc-500">
-              Balance:{" "}
-              {walletBalance < 1 ? walletBalance.toFixed(6) : formatTokenAmount(walletBalance)}{" "}
-              {side === "buy" ? instantAmountTicker : ticker}
-            </p>
-          )}
-
-          {side === "buy" && !onBonding && (
-            <div className="swap-detail-row">
-              <span className="swap-detail-row__label">Pay with</span>
-              <select
-                value={effectivePayWith}
-                onChange={(e) => {
-                  const id = e.target.value as PaymentAssetId;
-                  setPayWith(id);
-                  if (id === "USDC") {
-                    setSellAsset(STABLE_SWAP_ASSET);
-                    setBuyAsset(poolToSwapAsset(pool));
-                    setSide("buy");
-                  } else {
-                    setSellAsset(NATIVE_ETH_ASSET);
-                    setBuyAsset(poolToSwapAsset(pool));
-                    setSide("buy");
-                  }
-                  setAmount("");
-                  setPreset(null);
-                }}
-                className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
-              >
-                <option value="ETH">ETH</option>
-                <option value="USDC">{stableLabel}</option>
-              </select>
-            </div>
-          )}
-
-          {side === "sell" && !onBonding && (
-            <div className="swap-detail-row">
-              <span className="swap-detail-row__label">Receive in</span>
-              <select
-                value={effectivePayWith}
-                onChange={(e) => {
-                  const id = e.target.value as PaymentAssetId;
-                  setPayWith(id);
-                  if (id === "USDC") {
-                    setSellAsset(poolToSwapAsset(pool));
-                    setBuyAsset(STABLE_SWAP_ASSET);
-                    setSide("sell");
-                  } else {
-                    setSellAsset(poolToSwapAsset(pool));
-                    setBuyAsset(NATIVE_ETH_ASSET);
-                    setSide("sell");
-                  }
-                  setAmount("");
-                  setPreset(null);
-                }}
-                className="rounded-md border border-white/10 bg-[#1a1a1c] px-2 py-1 text-xs text-zinc-200 outline-none"
-              >
-                <option value="ETH">ETH</option>
-                <option value="USDC">{stableLabel}</option>
-              </select>
-            </div>
-          )}
-
-          <div className="swap-detail-row">
-            <span className="swap-detail-row__label">You receive</span>
-            <span className="swap-detail-row__value font-mono text-[12px]">
-              {quotedReceive
-                ? `${formatTokenAmount(Number(quotedReceive))} ${side === "buy" ? ticker : payAsset.symbol}`
-                : "—"}
-            </span>
-          </div>
-
-          {(onBonding || quotedReceive) && (
-            <dl className="market-details mt-3">
-              <SwapDetailRow
-                label="Minimum received"
-                value={
-                  swapQuoteMeta
-                    ? `${formatTokenAmount(Number(formatUnits(swapQuoteMeta.minAmountOut, side === "buy" ? 18 : quoteDecimals)))} ${side === "buy" ? ticker : payAsset.symbol}`
-                    : quotedReceive
-                      ? `${formatTokenAmount(Number(quotedReceive) * (1 - slippagePct / 100))} ${side === "buy" ? ticker : payAsset.symbol}`
-                      : "—"
-                }
-              />
-              <SwapDetailRow
-                label="Price impact"
-                value={
-                  swapQuoteMeta?.priceImpactPct != null
-                    ? `${swapQuoteMeta.priceImpactPct.toFixed(2)}%`
-                    : "—"
-                }
-              />
-              <SwapDetailRow
-                label="Route"
-                value={
-                  swapQuoteMeta && "estimated" in swapQuoteMeta && swapQuoteMeta.estimated
-                    ? `${swapQuoteMeta.route} (est.)`
-                    : (swapQuoteMeta?.route ?? (onBonding ? "Bonding curve" : "—"))
-                }
-              />
-              <SwapDetailRow label="Max slippage" value={`${slippagePct}%`} />
-              <SwapDetailRow label="Platform fee" value="1% base" valueClass="text-white" />
-            </dl>
-          )}
-        </>
-      )}
+      <TokenProSwap
+        pool={pool}
+        sellAsset={sellAsset}
+        buyAsset={buyAsset}
+        onSellAsset={handleSellAsset}
+        onBuyAsset={handleBuyAsset}
+        sellAmount={amount}
+        onSellAmount={(v) => {
+          setAmount(v);
+          setPreset(null);
+        }}
+        onInvert={handleInvert}
+        receiveAmount={quotedReceive}
+        slippagePct={slippagePct}
+        sellBalance={marketSellBalance}
+        tokenPriceEth={pool.priceEth}
+        ethUsd={ethUsd}
+        quoteUsd={pool.quoteUsd}
+        quoteMeta={swapQuoteMeta}
+      />
 
       {!walletReady ? (
         <ConnectButton label="Connect to trade" className="launch-coin swap-cta swap-cta--ready" />
@@ -614,8 +395,8 @@ function SwapDetailRow({
 }) {
   return (
     <div className="market-details__row">
-      <dt className="market-details__label">{label}</dt>
-      <dd className={cn("market-details__value", valueClass)}>{value}</dd>
+      <dt>{label}</dt>
+      <dd className={valueClass}>{value}</dd>
     </div>
   );
 }

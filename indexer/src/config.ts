@@ -3,12 +3,18 @@ import { fileURLToPath } from "node:url";
 
 import { defineChain, type Address, type Hex } from "viem";
 
+/** Official Ink public RPCs (Gelato primary, QuickNode secondary). */
+export const INK_RPC_DEFAULTS = [
+  "https://rpc-gel.inkonchain.com",
+  "https://rpc-qnd.inkonchain.com",
+] as const;
+
 export const ink = defineChain({
   id: 57_073,
   name: "Ink",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: [process.env.INK_RPC_URL ?? "https://rpc-gel.inkonchain.com"] },
+    default: { http: [...INK_RPC_DEFAULTS] },
   },
 });
 
@@ -25,7 +31,10 @@ export const baseSepolia = defineChain({
 
 export type IndexerConfig = {
   chainId: number;
+  /** Primary RPC (first in `rpcUrls`) — kept for logs / health. */
   rpcUrl: string;
+  /** Ordered list — viem `fallback()` tries these in order on failure / stall. */
+  rpcUrls: string[];
   port: number;
   pollMs: number;
   chunkSize: bigint;
@@ -49,20 +58,60 @@ function addrList(env: string | undefined): Address[] {
   return env.split(",").map((s) => s.trim() as Address).filter(Boolean);
 }
 
+/** Dedupe while preserving order. */
+function uniqUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of urls) {
+    const u = raw.trim();
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
+}
+
+/**
+ * Resolve RPC URL list.
+ * - Comma-separated `INDEXER_RPC_URLS` / `INK_RPC_URLS` wins when set.
+ * - Else primary (`INK_RPC_URL` / …) + backup (`INK_RPC_URL_BACKUP` / `INDEXER_RPC_URL_BACKUP`).
+ * - Ink defaults: gel → qnd when nothing set.
+ */
+export function resolveRpcUrls(isInk: boolean): string[] {
+  const multi =
+    process.env.INDEXER_RPC_URLS?.trim() ||
+    process.env.INK_RPC_URLS?.trim() ||
+    "";
+  if (multi) return uniqUrls(multi.split(","));
+
+  if (isInk) {
+    const primary =
+      process.env.INK_RPC_URL?.trim() ||
+      process.env.NEXT_PUBLIC_INK_RPC_URL?.trim() ||
+      process.env.INDEXER_RPC_URL?.trim() ||
+      INK_RPC_DEFAULTS[0];
+    const backup =
+      process.env.INK_RPC_URL_BACKUP?.trim() ||
+      process.env.INDEXER_RPC_URL_BACKUP?.trim() ||
+      INK_RPC_DEFAULTS[1];
+    return uniqUrls([primary, backup]);
+  }
+
+  const primary =
+    process.env.BASE_SEPOLIA_RPC_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL?.trim() ||
+    process.env.INDEXER_RPC_URL?.trim() ||
+    "https://sepolia.base.org";
+  const backup = process.env.BASE_SEPOLIA_RPC_URL_BACKUP?.trim();
+  return uniqUrls(backup ? [primary, backup] : [primary]);
+}
+
 export function loadConfig(): IndexerConfig {
   const chainKey = (process.env.HOOKIT_CHAIN ?? process.env.NEXT_PUBLIC_HOOKIT_CHAIN ?? "ink").toLowerCase();
   const isInk = chainKey === "ink" || chainKey === "57073";
-  const chain = isInk ? ink : baseSepolia;
 
-  const rpcUrl = isInk
-    ? (process.env.INK_RPC_URL ??
-      process.env.NEXT_PUBLIC_INK_RPC_URL ??
-      process.env.INDEXER_RPC_URL ??
-      chain.rpcUrls.default.http[0])
-    : (process.env.BASE_SEPOLIA_RPC_URL ??
-      process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL ??
-      process.env.INDEXER_RPC_URL ??
-      chain.rpcUrls.default.http[0]);
+  const rpcUrls = resolveRpcUrls(isInk);
+  const rpcUrl = rpcUrls[0]!;
 
   const poolManager = (process.env.POOL_MANAGER ??
     (isInk
@@ -80,6 +129,7 @@ export function loadConfig(): IndexerConfig {
 
   const exclude = new Set<string>([
     "0x0000000000000000000000000000000000000000",
+    "0x000000000000000000000000000000000000dead",
     poolManager.toLowerCase(),
     ...addrList(process.env.INDEXER_EXCLUDE).map((a) => a.toLowerCase()),
   ]);
@@ -89,8 +139,9 @@ export function loadConfig(): IndexerConfig {
   const defaultData = join(fileURLToPath(new URL("..", import.meta.url)), "data");
 
   return {
-    chainId: chain.id,
+    chainId: isInk ? ink.id : baseSepolia.id,
     rpcUrl,
+    rpcUrls,
     port: Number(process.env.INDEXER_PORT ?? 8787),
     pollMs: Number(process.env.INDEXER_POLL_MS ?? 12_000),
     chunkSize: BigInt(process.env.INDEXER_CHUNK ?? (isInk ? 800 : 2_000)),

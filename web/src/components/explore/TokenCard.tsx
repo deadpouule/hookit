@@ -182,6 +182,11 @@ export function TokenCard({
           {pool.hooks.dynamicFees && (
             <HookChip id="dynamicFees" modules={modules} hookTaxBps={hookTaxBps} />
           )}
+          {hookTaxBps > 0 && !pool.hooks.dynamicFees && (
+            <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[10px] text-rose-200">
+              Fixed {(100 + hookTaxBps) / 100}%
+            </span>
+          )}
           {pool.hooks.buybackVesting && (
             <HookChip id="buybackVesting" modules={modules} hookTaxBps={hookTaxBps} />
           )}

@@ -157,6 +157,9 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       let hash: `0x${string}`;
 
       if (rail === "classic") {
+        if (form.markets.length > 1 || form.quoteAsset !== "eth") {
+          throw new Error("Classic Coin pairs only with native ETH.");
+        }
         hash = await writeContractAsync({
           address: factory,
           abi: bondingFactoryAbi,
@@ -167,7 +170,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
               symbol: form.ticker.trim().toUpperCase(),
               metadataURI,
               totalSupply: BigInt(0),
-              quote,
+              quote: zeroAddress,
               creatorTaxBps: 0,
               devBuyQuoteIn: devBuyQuoteWei ?? 0n,
               minDevBuyTokensOut: devBuyQuoteWei && devBuyQuoteWei > 0n ? 1n : 0n,

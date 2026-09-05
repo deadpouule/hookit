@@ -1,7 +1,7 @@
 import type { LaunchFormState, ProtocolMetrics, TokenPool } from "./types";
 
 export const LAUNCH_FEE_ETH = 0.0005;
-export const TARGET_LAUNCH_MCAP_USD = 4_000;
+export const TARGET_LAUNCH_MCAP_USD = 5_000;
 export const DEFAULT_LAUNCH_ETH_USD = 4_000;
 /** Classic bonding graduation target (~4.2 ETH or USD-equivalent). */
 export const GRADUATION_ETH = 4.2;

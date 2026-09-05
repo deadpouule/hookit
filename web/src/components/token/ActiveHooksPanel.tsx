@@ -21,8 +21,9 @@ import {
   moduleTooltipText,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
-import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
+import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
 import { moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
+import { hookTaxSummary, totalFeePlain } from "@/lib/launch-module-summary";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { LaunchModules, TokenPool } from "@/lib/types";
@@ -70,12 +71,12 @@ function HookModuleBadge({
   tip,
   children,
 }: {
-  hook: (typeof MASTER_HOOKS)[number];
+  hook: { id: string; title: string; theme: string };
   stat: string | null;
   tip: string;
   children?: ReactNode;
 }) {
-  const expanded = EXPANDED_HOOK_IDS.has(hook.id);
+  const expanded = EXPANDED_HOOK_IDS.has(hook.id as MasterHookId);
 
   return (
     <ModuleTip tip={tip}>
@@ -87,7 +88,10 @@ function HookModuleBadge({
         )}
       >
         <div className="token-hooks-chip-top">
-          <MasterHookAsciiIcon hookId={hook.id} className="token-hooks-ascii" />
+          <MasterHookAsciiIcon
+            hookId={hook.id === "fixed-fee" ? "dynamic-fees" : (hook.id as MasterHookId)}
+            className="token-hooks-ascii"
+          />
           <span className="token-hooks-chip-copy">
             <span className="token-hooks-chip-title">{hook.title}</span>
             {stat ? (
@@ -236,7 +240,8 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
   const { modules: resolvedModules, hookTaxBps } = resolved;
   const enabledHooks = MASTER_HOOKS.filter((hook) => isModuleEnabled(resolvedModules, hook.id));
-  if (enabledHooks.length === 0 && hookTaxBps <= 0) return null;
+  const showFixedFee = hookTaxBps > 0 && !resolvedModules.dynamicFees;
+  if (enabledHooks.length === 0 && !showFixedFee) return null;
 
   const burnedPct =
     totalSupply !== undefined && LAUNCH_SUPPLY_WEI > 0n
@@ -298,6 +303,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   };
 
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
+  const moduleCount = enabledHooks.length + (showFixedFee ? 1 : 0);
   const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
   return (
@@ -305,7 +311,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       <header className="token-hooks-head">
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />
-          {enabledHooks.length} master module{enabledHooks.length === 1 ? "" : "s"}
+          {moduleCount} master module{moduleCount === 1 ? "" : "s"}
         </span>
       </header>
 
@@ -317,6 +323,15 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       ) : null}
 
       <ul className="token-hooks-list">
+        {showFixedFee ? (
+          <li className="token-hooks-row token-hooks-row--rose">
+            <HookModuleBadge
+              hook={FIXED_FEE_HOOK}
+              stat={totalFeePlain(hookTaxBps)}
+              tip={hookTaxSummary(hookTaxBps)}
+            />
+          </li>
+        ) : null}
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
           const tip = moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps);

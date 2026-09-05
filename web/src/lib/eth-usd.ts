@@ -5,7 +5,7 @@ import { CHAINLINK_ETH_USD, chainlinkAggregatorAbi, getLaunchFactoryAddress } fr
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 
-/** ETH/USD stored on LaunchFactory — same oracle used to seed launch FDV (~$4k). */
+/** ETH/USD stored on LaunchFactory — same oracle used to seed launch FDV (~$5k). */
 export async function readLaunchEthUsd(client: PublicClient): Promise<number> {
   const factory = getLaunchFactoryAddress();
   if (factory) {

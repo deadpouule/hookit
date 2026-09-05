@@ -37,7 +37,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     uint256 public launchFee = ProtocolConstants.LAUNCH_FEE_WEI;
     uint256 public launchCount;
 
-    /// @notice ETH/USD price with 18 decimals — used to convert the fixed $4k FDV into ETH at launch.
+    /// @notice ETH/USD price with 18 decimals — used to convert the fixed $5k FDV into ETH at launch.
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
     /// @notice On-chain ETH/USD feed (Redstone push on Ink); anyone may `syncEthUsdPrice`.
     address public ethUsdFeed;
@@ -239,7 +239,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return quoteConfigs[token].allowed;
     }
 
-    /// @notice Target FDV in the quote's native wei ($4k at the configured USD price).
+    /// @notice Target FDV in the quote's native wei ($5k at the configured USD price).
     function mcapQuoteFor(address token) public view returns (uint256) {
         return _mcapQuote(Currency.wrap(token));
     }

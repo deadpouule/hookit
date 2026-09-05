@@ -50,9 +50,10 @@ library DynamicFeeMath {
         uint16 saturationBps = BitmaskConfig.dynamicFeeDepthSaturationBps(packed);
         if (saturationBps == 0) saturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
 
+        // Empty / unknown depth → stay at min hook tax (avoid 100% fee that reverts buys).
         uint256 ratio;
         if (depth == 0 || quoteNotional == 0) {
-            ratio = quoteNotional == 0 ? 0 : RAMP_SCALE;
+            ratio = 0;
         } else {
             uint256 consumptionBps = FullMath.mulDiv(quoteNotional, ProtocolConstants.BPS_DENOMINATOR, depth);
             ratio = consumptionBps >= saturationBps

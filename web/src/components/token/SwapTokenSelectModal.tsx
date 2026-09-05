@@ -25,7 +25,14 @@ import {
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const ETH_USD = 1000;
+function resolveEthUsd(pool?: TokenPool): number {
+  if (pool?.quoteUsd && pool.quoteUsd > 100) return pool.quoteUsd;
+  if (pool?.priceEth && pool.priceEth > 0 && pool.marketCap > 0) {
+    const implied = pool.marketCap / (pool.priceEth * 1_000_000_000);
+    if (implied > 100 && implied < 1_000_000) return implied;
+  }
+  return 3000;
+}
 
 function EthMark() {
   return (
@@ -127,10 +134,11 @@ export function SwapTokenSelectModal({
       try {
         const ethBal = await publicClient.getBalance({ address });
         const ethAmount = Number(formatUnits(ethBal, 18));
+        const ethUsd = resolveEthUsd(currentPool);
         rows.push({
           ...NATIVE_ETH_ASSET,
           balance: ethAmount,
-          valueUsd: ethAmount * ETH_USD,
+          valueUsd: ethAmount * ethUsd,
         });
       } catch {
         /* ignore */
@@ -176,7 +184,7 @@ export function SwapTokenSelectModal({
         rows.push({
           ...asset,
           balance: amount,
-          valueUsd: amount * (pool.priceEth ?? 0) * ETH_USD,
+          valueUsd: amount * (pool.priceEth ?? 0) * resolveEthUsd(pool),
           pool,
         });
       }

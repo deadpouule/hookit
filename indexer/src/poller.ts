@@ -3,6 +3,7 @@ import {
   type Hex,
   type PublicClient,
   createPublicClient,
+  fallback,
   http,
   parseAbiItem,
   zeroAddress,
@@ -48,9 +49,19 @@ const shortMasterLaunchEvent = parseAbiItem(
 
 export function createClient(cfg: IndexerConfig): PublicClient {
   const chain = cfg.chainId === ink.id ? ink : baseSepolia;
+  const urls = cfg.rpcUrls.length > 0 ? cfg.rpcUrls : [cfg.rpcUrl];
+  const transports = urls.map((url) =>
+    http(url, {
+      timeout: 20_000,
+      retryCount: 0, // outer rpcWithRetry + fallback handle retries
+    }),
+  );
   return createPublicClient({
     chain,
-    transport: http(cfg.rpcUrl),
+    transport:
+      transports.length === 1
+        ? transports[0]!
+        : fallback(transports, { rank: false, retryCount: 2 }),
   });
 }
 

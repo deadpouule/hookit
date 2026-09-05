@@ -19,6 +19,7 @@ const ZERO_HOOKS = "0x0000000000000000000000000000000000000000" as Address;
 
 const BRIDGE_CANDIDATES: { fee: number; tickSpacing: number }[] = [
   { fee: 0, tickSpacing: 60 },
+  { fee: 0x80_0000, tickSpacing: 60 }, // Hookit / Quotrons dynamic fee pools
   { fee: 500, tickSpacing: 10 },
   { fee: 3000, tickSpacing: 60 },
   { fee: 500, tickSpacing: 50 },

@@ -68,7 +68,7 @@ export function BuilderTuner({
         <p className="text-[11px] uppercase tracking-wider text-zinc-600">Market behavior</p>
         <p className="mt-2 text-xs leading-relaxed text-zinc-500">
           Select a rule to tune its parameters. Empty circuit = 1% quote fee, locked
-          unilateral LP, $4k FDV.
+          unilateral LP, $5k FDV.
         </p>
       </div>
     );

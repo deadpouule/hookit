@@ -2,7 +2,7 @@ import { getNetworkLabel } from "@/lib/chains";
 
 const ITEMS = [
   `Live on ${getNetworkLabel()}`,
-  "$4,000 launch FDV",
+  "$5,000 launch FDV",
   "Locked LP · no migration",
   "Quote-only swap fees",
   "Master modules or custom Solidity",

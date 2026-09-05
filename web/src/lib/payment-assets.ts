@@ -49,7 +49,9 @@ export function buyPaymentOptions(pool: TokenPool): PaymentAsset[] {
 }
 
 export function isDirectBuy(pool: TokenPool, payment: PaymentAsset): boolean {
-  return payment.address.toLowerCase() === poolQuoteAddress(pool).toLowerCase();
+  const pay = payment.address.toLowerCase();
+  if (poolQuoteAddress(pool).toLowerCase() === pay) return true;
+  return (pool.markets ?? []).some((m) => m.quoteAddress.toLowerCase() === pay);
 }
 
 export function sortV4Currencies(a: Address, b: Address): [Address, Address] {

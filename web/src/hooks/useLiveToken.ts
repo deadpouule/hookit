@@ -114,10 +114,10 @@ export function useLiveToken(pool: TokenPool) {
             : marketCapFromQuotePrice(priceQuote, quoteUsd ?? 1)
         : 0;
     const mcap =
-      pool.marketCap > 0
-        ? pool.marketCap
-        : mcapFromIndexer > 0
-          ? mcapFromIndexer
+      mcapFromIndexer > 0
+        ? mcapFromIndexer
+        : pool.marketCap > 0
+          ? pool.marketCap
           : live.marketCap;
     const priceUsd = mcap / TOTAL_SUPPLY;
 

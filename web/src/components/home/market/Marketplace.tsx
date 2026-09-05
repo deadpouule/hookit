@@ -143,13 +143,12 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
   const sourcePools = useMemo((): TokenPool[] => {
     if (!liveLaunches) return [];
-    if (isLoading) return [];
+    // Prefer cached / previous query data — never wipe the catalog during refetch.
     return onChainPools ?? [];
-  }, [liveLaunches, onChainPools, isLoading]);
+  }, [liveLaunches, onChainPools]);
 
   const sourceTokens = useMemo(() => {
     if (liveLaunches) {
-      if (isLoading) return [];
       if (onChainPools && onChainPools.length > 0) {
         return annotateCopyFlags(onChainPools.map(poolToMarketToken));
       }
@@ -161,7 +160,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     }
 
     return [];
-  }, [liveLaunches, onChainPools, isLoading]);
+  }, [liveLaunches, onChainPools]);
 
   const rankings = useMemo(() => buildMarketRankings(sourceTokens), [sourceTokens]);
 

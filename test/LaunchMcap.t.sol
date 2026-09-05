@@ -16,11 +16,11 @@ contract LaunchMcapTest is LaunchpadTestBase {
         deployProtocol();
     }
 
-    function testLaunchFdvIsFourThousandUsd() public {
+    function testLaunchFdvIsFiveThousandUsd() public {
         assertEq(factory.ethUsdPriceX18(), ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18);
 
         uint256 expectedMcapEth = factory.launchMcapQuoteWei();
-        assertEq(expectedMcapEth, 1 ether, "at $4k ETH price, FDV should be 1 ETH");
+        assertEq(expectedMcapEth, 1.25 ether, "at $4k ETH price, $5k FDV should be 1.25 ETH");
 
         uint256 supply = ProtocolConstants.DEFAULT_LAUNCH_SUPPLY;
         (, address token, PoolId poolId,) = launchToken(defaultModules(), 0, supply);
@@ -37,7 +37,7 @@ contract LaunchMcapTest is LaunchpadTestBase {
     function testLaunchMcapScalesWithEthUsdPrice() public {
         factory.setEthUsdPrice(2_000e18);
         uint256 expectedMcapEth = factory.launchMcapQuoteWei();
-        assertEq(expectedMcapEth, 2 ether);
+        assertEq(expectedMcapEth, 2.5 ether);
 
         (,, PoolId poolId,) = launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         (uint160 sqrtPriceX96,,,) = manager.getSlot0(poolId);

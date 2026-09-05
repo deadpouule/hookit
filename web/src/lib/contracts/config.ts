@@ -1,6 +1,17 @@
-import { type Address, zeroAddress } from "viem";
+import { getAddress, isAddress, type Address, zeroAddress } from "viem";
 
 import { resolveHookitChainKey } from "@/lib/chains";
+
+/**
+ * Normalize env addresses for viem. Mixed-case strings with a wrong EIP-55 checksum
+ * (common when copying forge/broadcast output) fail writeContract — lowercase then checksum.
+ */
+function parseEnvAddress(raw: string | undefined): Address | undefined {
+  const v = raw?.trim();
+  if (!v || v === "0x" || v.toLowerCase() === zeroAddress) return undefined;
+  if (!isAddress(v, { strict: false })) return undefined;
+  return getAddress(v.toLowerCase() as Address);
+}
 
 /** Paxos USDG on Ink mainnet (6 decimals). */
 export const USDG_INK_ADDRESS = "0xe343167631d89B6Ffc58B88d6b7fB0228795491D" as const;
@@ -88,23 +99,17 @@ export const chainlinkAggregatorAbi = [
 
 /** Set via NEXT_PUBLIC_LAUNCH_FACTORY after deploy script. */
 export function getLaunchFactoryAddress(): Address | undefined {
-  const raw = process.env.NEXT_PUBLIC_LAUNCH_FACTORY?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY);
 }
 
 /** Paginated launch index — set NEXT_PUBLIC_LAUNCH_FACTORY_QUERY after deploy. */
 export function getLaunchFactoryQueryAddress(): Address | undefined {
-  const raw = process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY);
 }
 
 /** Classic bonding rail. Set NEXT_PUBLIC_BONDING_FACTORY after deploy. */
 export function getBondingFactoryAddress(): Address | undefined {
-  const raw = process.env.NEXT_PUBLIC_BONDING_FACTORY?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_BONDING_FACTORY);
 }
 
 export function isFactoryConfigured(): boolean {
@@ -113,45 +118,39 @@ export function isFactoryConfigured(): boolean {
 
 /** Hookit router for hooked pools. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER after deploy. */
 export function getHookitSwapRouterAddress(): Address | undefined {
-  const raw =
-    process.env.NEXT_PUBLIC_HOOKIT_SWAP_ROUTER?.trim() ??
-    process.env.NEXT_PUBLIC_SWAP_ROUTER?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_HOOKIT_SWAP_ROUTER) ??
+    parseEnvAddress(process.env.NEXT_PUBLIC_SWAP_ROUTER)
+  );
 }
 
 /** ProtocolRevenueDistributor — set after DeployHookitCore. */
 export function getProtocolDistributorAddress(): Address | undefined {
-  const raw =
-    process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR?.trim() ??
-    process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR) ??
+    parseEnvAddress(process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR)
+  );
 }
 
 /** V4ClaimsRedeemer — redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
 export function getClaimsRedeemerAddress(): Address | undefined {
-  const raw = process.env.NEXT_PUBLIC_CLAIMS_REDEEMER?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER);
 }
 
 /** HkitBuyback keeper — set after DeployHookitCore. */
 export function getHkitBuybackAddress(): Address | undefined {
-  const raw =
-    process.env.NEXT_PUBLIC_HKIT_BUYBACK?.trim() ??
-    process.env.NEXT_PUBLIC_HOOK_BUYBACK?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_BUYBACK) ??
+    parseEnvAddress(process.env.NEXT_PUBLIC_HOOK_BUYBACK)
+  );
 }
 
 /** Fair-launched native token (HKIT / HOOKTEST). */
 export function getNativeTokenAddress(): Address | undefined {
-  const raw =
-    process.env.NEXT_PUBLIC_NATIVE_TOKEN?.trim() ??
-    process.env.NEXT_PUBLIC_HKIT_TOKEN?.trim();
-  if (!raw || raw === "0x" || raw === zeroAddress) return undefined;
-  return raw as Address;
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_NATIVE_TOKEN) ??
+    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_TOKEN)
+  );
 }
 
 /**

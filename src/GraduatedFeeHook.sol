@@ -172,7 +172,11 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         uint256 protocolShare = feeAmount - creatorShare;
 
         pendingCreatorTax[id][quoteCur] += creatorShare;
-        pendingFees[id][quoteCur] += protocolShare;
+        // Push protocol share to the distributor immediately so protocol stats aren't $0 until sweep.
+        if (protocolShare > 0) {
+            _push(quoteCur, address(distributor), protocolShare);
+            distributor.notifyInternal(quoteCur, protocolShare);
+        }
 
         emit FeesAccrued(id, quoteCur, creatorShare, protocolShare);
 

@@ -48,17 +48,25 @@ export function PairingPicker({
   onMarketsChange,
   onFloorQuoteIndexChange,
   compact = false,
+  variant = "master",
 }: {
   markets: LaunchMarketInput[];
   floorQuoteIndex: number;
   onMarketsChange: (markets: LaunchMarketInput[]) => void;
   onFloorQuoteIndexChange: (index: number) => void;
   compact?: boolean;
+  /** Classic rail is ETH-only — no multi-pair / USDG / stocks. */
+  variant?: "master" | "classic";
 }) {
-  const isMulti = markets.length > 1;
+  const classicOnly = variant === "classic";
+  const isMulti = !classicOnly && markets.length > 1;
   const selectedIds = new Set(markets.map((m) => m.id));
+  const selectableTokens = classicOnly
+    ? PAIRING_TOKENS.filter((t) => t.id === "eth")
+    : PAIRING_TOKENS;
 
   const setMode = (mode: "single" | "multi") => {
+    if (classicOnly) return;
     if (mode === "single") {
       const primary = markets[0] ?? { id: "eth" as PairingTokenId, bps: BPS_TOTAL };
       onMarketsChange([{ id: primary.id, bps: BPS_TOTAL }]);
@@ -77,6 +85,10 @@ export function PairingPicker({
   };
 
   const toggle = (id: PairingTokenId) => {
+    if (classicOnly) {
+      onMarketsChange([{ id: "eth", bps: BPS_TOTAL }]);
+      return;
+    }
     if (!isMulti) {
       onMarketsChange([{ id, bps: BPS_TOTAL }]);
       return;
@@ -99,16 +111,22 @@ export function PairingPicker({
 
   return (
     <div className={compact ? "launch-pairing-compact" : undefined}>
-      <div className={compact ? "mb-3" : "mb-4"}>
-        <PairModeToggle value={isMulti ? "multi" : "single"} onChange={(mode) => setMode(mode)} />
-        {!compact ? (
-          <p className="mt-2 text-xs text-zinc-600">
-            {isMulti
-              ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
-              : "Classic one-pool launch against a single quote asset."}
-          </p>
-        ) : null}
-      </div>
+      {!classicOnly ? (
+        <div className={compact ? "mb-3" : "mb-4"}>
+          <PairModeToggle value={isMulti ? "multi" : "single"} onChange={(mode) => setMode(mode)} />
+          {!compact ? (
+            <p className="mt-2 text-xs text-zinc-600">
+              {isMulti
+                ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
+                : "Classic one-pool launch against a single quote asset."}
+            </p>
+          ) : null}
+        </div>
+      ) : !compact ? (
+        <p className="mb-4 text-xs text-zinc-600">
+          Classic Coin pairs only with native ETH — multi-pair is Master-only.
+        </p>
+      ) : null}
 
       {!compact ? (
         <p className="pick-kicker">
@@ -118,11 +136,11 @@ export function PairingPicker({
       ) : null}
       <p className="pick-heading">Pick your pair{isMulti ? "s" : ""}</p>
       <div className="pick-grid pick-grid--pairs">
-        {PAIRING_TOKENS.map((token) => (
+        {selectableTokens.map((token) => (
           <PickCard
             key={token.id}
             variant="pair"
-            selected={selectedIds.has(token.id)}
+            selected={selectedIds.has(token.id) || (classicOnly && token.id === "eth")}
             title={formatPairingTicker(token.id)}
             subtitle={
               selectedIds.has(token.id) && isMulti

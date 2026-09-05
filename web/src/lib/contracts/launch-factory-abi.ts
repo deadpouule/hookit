@@ -222,6 +222,35 @@ export const launchFactoryAbi = [
     stateMutability: "view",
   },
   {
+    type: "function",
+    name: "poolKeyOfMarket",
+    inputs: [
+      { name: "launchId", type: "uint256" },
+      { name: "marketIndex", type: "uint256" },
+    ],
+    outputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "launchFeeFlag",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [{ name: "", type: "uint24" }],
+    stateMutability: "view",
+  },
+  {
     type: "event",
     name: "TokenLaunched",
     inputs: [

@@ -209,7 +209,15 @@ async function attachLaunchMarkets(
 
 async function hydrateLaunches(
   publicClient: PublicClient,
-  rows: { id: bigint; row: LaunchRow; bitmask?: bigint; launchedAt?: number; quote?: Address }[],
+  rows: {
+    id: bigint;
+    row: LaunchRow;
+    bitmask?: bigint;
+    launchedAt?: number;
+    quote?: Address;
+    fee?: number;
+    tickSpacing?: number;
+  }[],
 ): Promise<OnChainLaunch[]> {
   if (rows.length === 0) return [];
 
@@ -254,7 +262,7 @@ async function hydrateLaunches(
   });
 
   return Promise.all(
-    rows.map(async ({ id, row, bitmask, launchedAt, quote }, i) => {
+    rows.map(async ({ id, row, bitmask, launchedAt, quote, fee, tickSpacing }, i) => {
       const name = (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
       const symbol =
         (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
@@ -273,6 +281,8 @@ async function hydrateLaunches(
         bitmask: packed,
         launchedAt,
         quote: quote ?? zeroAddress,
+        fee,
+        tickSpacing,
         image,
       };
     }),
@@ -365,7 +375,7 @@ async function attachQuotesAndTimestamps(
   factory: Address,
   rows: { id: bigint; row: LaunchRow; bitmask?: bigint; launchedAt?: number }[],
 ) {
-  const [quotes, timestamps] = await Promise.all([
+  const [quotes, timestamps, poolKeys] = await Promise.all([
     publicClient.multicall({
       contracts: rows.map(({ id }) => ({
         address: factory,
@@ -384,17 +394,40 @@ async function attachQuotesAndTimestamps(
       })),
       allowFailure: true,
     }),
+    publicClient.multicall({
+      contracts: rows.map(({ id }) => ({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "poolKeyOf" as const,
+        args: [id] as const,
+      })),
+      allowFailure: true,
+    }),
   ]);
-  return rows.map((row, i) => ({
-    ...row,
-    quote: quotes[i]?.status === "success" ? (quotes[i].result as Address) : zeroAddress,
-    launchedAt:
-      row.launchedAt && row.launchedAt > 1_000_000_000
-        ? row.launchedAt
-        : timestamps[i]?.status === "success"
-          ? normalizeLaunchedAt(Number(timestamps[i].result as bigint))
-          : undefined,
-  }));
+  return rows.map((row, i) => {
+    const key =
+      poolKeys[i]?.status === "success"
+        ? (poolKeys[i].result as {
+            currency0: Address;
+            currency1: Address;
+            fee: number;
+            tickSpacing: number;
+            hooks: Address;
+          })
+        : null;
+    return {
+      ...row,
+      quote: quotes[i]?.status === "success" ? (quotes[i].result as Address) : zeroAddress,
+      launchedAt:
+        row.launchedAt && row.launchedAt > 1_000_000_000
+          ? row.launchedAt
+          : timestamps[i]?.status === "success"
+            ? normalizeLaunchedAt(Number(timestamps[i].result as bigint))
+            : undefined,
+      fee: key ? Number(key.fee) : undefined,
+      tickSpacing: key ? Number(key.tickSpacing) : undefined,
+    };
+  });
 }
 
 export async function fetchAllLaunches(

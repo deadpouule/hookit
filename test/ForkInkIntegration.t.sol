@@ -404,7 +404,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     // ─── FDV sanity ─────────────────────────────────────────────────────────
 
-    function testFork_LaunchMcapNearFourThousandUsd_Eth() public onlyFork {
+    function testFork_LaunchMcapNearFiveThousandUsd_Eth() public onlyFork {
         InkForkTestBase.LaunchResult memory l = _launch(
             creator,
             Currency.wrap(address(0)),

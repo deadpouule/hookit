@@ -134,12 +134,13 @@ contract BondingLaunchTest is Test, Deployers {
         );
 
         PoolId poolId = key.toId();
-        uint256 pendingEth = feeHook.pendingFees(poolId, Currency.wrap(address(0)))
-            + feeHook.pendingCreatorTax(poolId, Currency.wrap(address(0)));
+        // Protocol share hits distributor immediately; creator share stays pending until sweep.
+        assertGt(feeHook.pendingCreatorTax(poolId, Currency.wrap(address(0))), 0);
+        assertEq(feeHook.pendingFees(poolId, Currency.wrap(address(0))), 0);
         uint256 pendingTok =
             feeHook.pendingFees(poolId, Currency.wrap(token)) + feeHook.pendingCreatorTax(poolId, Currency.wrap(token));
-        assertGt(pendingEth, 0);
         assertEq(pendingTok, 0);
+        assertGt(distributor.pending(Currency.wrap(address(0))), 0);
     }
 
     function test_BondingSellBeforeGraduate() public {

@@ -227,7 +227,10 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
         );
 
         uint256 pending = feeHook.pendingFees(poolId, ETH) + feeHook.pendingCreatorTax(poolId, ETH);
-        assertGt(pending, 0, "fees accrue on GraduatedFeeHook first");
+        // Protocol share notifies distributor immediately; creator share stays pending until sweep.
+        assertGt(feeHook.pendingCreatorTax(poolId, ETH), 0, "creator fees accrue on GraduatedFeeHook first");
+        assertEq(feeHook.pendingFees(poolId, ETH), 0, "protocol share pushed to distributor on swap");
+        assertGt(pending, 0, "creator share still pending pre-sweep");
 
         // UGH-class trap if you only watch FeeEscrow: balance stays flat until sweep.
         assertEq(escrow.balanceOf(creator, ETH), escrowBeforeSwap, "escrow unchanged until sweepQuote");

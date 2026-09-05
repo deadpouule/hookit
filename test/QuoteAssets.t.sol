@@ -29,7 +29,7 @@ contract QuoteAssetsTest is LaunchpadTestBase {
     function testUsdcIsAllowedByDefault() public view {
         assertTrue(factory.isQuoteAllowed(address(0)));
         assertTrue(factory.isQuoteAllowed(address(usdc)));
-        assertEq(factory.mcapQuoteFor(address(usdc)), 4_000 * 1e6);
+        assertEq(factory.mcapQuoteFor(address(usdc)), 5_000 * 1e6);
     }
 
     function testUnknownErc20QuoteReverts() public {
@@ -51,12 +51,12 @@ contract QuoteAssetsTest is LaunchpadTestBase {
         );
     }
 
-    function testStockQuoteLaunchHitsFourThousandUsd() public {
+    function testStockQuoteLaunchHitsFiveThousandUsd() public {
         MockQuoteToken aapl = new MockQuoteToken("Apple", "AAPLc", 18);
         factory.setQuote(address(aapl), true, 18, 200e18, address(0));
 
         uint256 expected = factory.mcapQuoteFor(address(aapl));
-        assertEq(expected, 20 ether, "$4k / $200 = 20 shares");
+        assertEq(expected, 25 ether, "$5k / $200 = 25 shares");
 
         uint256 supply = ProtocolConstants.DEFAULT_LAUNCH_SUPPLY;
         (address token, PoolId poolId) = _launch(Currency.wrap(address(aapl)), supply);
@@ -70,7 +70,7 @@ contract QuoteAssetsTest is LaunchpadTestBase {
     function testSixDecimalStableMcap() public {
         MockQuoteToken usd = new MockQuoteToken("USD Coin", "USDC", 6);
         factory.setQuote(address(usd), true, 6, 1e18, address(0));
-        assertEq(factory.mcapQuoteFor(address(usd)), 4_000 * 1e6);
+        assertEq(factory.mcapQuoteFor(address(usd)), 5_000 * 1e6);
     }
 
     function testSixDecimalStableLaunch() public {
@@ -88,7 +88,7 @@ contract QuoteAssetsTest is LaunchpadTestBase {
     }
 
     function testStartingTickCurrency0Path() public pure {
-        int24 tick = FixedPointMath.startingTickForMcap(1_000_000_000e18, 4_000e6, 60, false);
+        int24 tick = FixedPointMath.startingTickForMcap(1_000_000_000e18, 5_000e6, 60, false);
         assertLt(int256(tick), int256(TickMath.maxUsableTick(60)));
         assertGt(int256(tick), int256(TickMath.minUsableTick(60)));
     }

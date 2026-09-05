@@ -20,8 +20,9 @@ npm run serve          # polls chain + serves API on :8787
 | --- | --- | --- |
 | `LAUNCH_FACTORY` | yes* | Master `LaunchFactory` |
 | `BONDING_FACTORY` | no | Classic rail when deployed |
-| `INDEXER_RPC_URL` | no | Optional dedicated RPC; defaults to `INK_RPC_URL` / gel public |
-| `INK_RPC_URL` | no | Loaded from repo root `.env` — `https://rpc-gel.inkonchain.com` |
+| `INK_RPC_URL` | no | Primary RPC — default `https://rpc-gel.inkonchain.com` |
+| `INK_RPC_URL_BACKUP` | no | Fallback RPC — default `https://rpc-qnd.inkonchain.com` |
+| `INDEXER_RPC_URLS` | no | Comma-separated list (overrides primary/backup) |
 | `HOOKIT_CHAIN` | no | `ink` (default) or `baseSepolia` |
 | `POOL_MANAGER` | no | Ink v4 PoolManager default baked in |
 | `INDEXER_PORT` | no | default `8787` |
