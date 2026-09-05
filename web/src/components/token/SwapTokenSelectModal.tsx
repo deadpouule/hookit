@@ -11,7 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useLaunches } from "@/hooks/useLaunches";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
@@ -80,6 +87,121 @@ export type WalletSwapRow = SwapAsset & {
   pool?: TokenPool;
 };
 
+function TokenSelectBody({
+  title,
+  query,
+  onQueryChange,
+  onClose,
+  loading,
+  filtered,
+  selectedKey,
+  onSelect,
+  stickySearch,
+}: {
+  title: string;
+  query: string;
+  onQueryChange: (q: string) => void;
+  onClose: () => void;
+  loading: boolean;
+  filtered: WalletSwapRow[];
+  selectedKey?: string;
+  onSelect: (asset: SwapAsset) => void;
+  stickySearch?: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={cn(
+          "flex flex-row items-center justify-between gap-3 border-b border-white/8 px-5 py-4",
+          stickySearch && "sticky top-0 z-10 bg-[#141416]",
+        )}
+      >
+        <p className="text-base font-semibold text-white">{title}</p>
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/5 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div
+        className={cn(
+          "border-b border-white/5 px-5 py-3",
+          stickySearch && "sticky top-[3.75rem] z-10 bg-[#141416]",
+        )}
+      >
+        <label className="swap-token-search">
+          <Search className="h-4 w-4 shrink-0 text-zinc-500" />
+          <input
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search name, symbol, or address…"
+            enterKeyHint="search"
+            className="min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-zinc-500 md:text-sm"
+          />
+        </label>
+      </div>
+
+      <div className="px-5 pt-3">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Your tokens</p>
+      </div>
+
+      <ul className="swap-token-list mt-2 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
+        {loading && (
+          <li className="px-3 py-6 text-center text-sm text-zinc-500">Loading wallet…</li>
+        )}
+        {!loading && filtered.length === 0 && (
+          <li className="px-3 py-6 text-center text-sm text-zinc-500">No tokens in wallet</li>
+        )}
+        {!loading &&
+          filtered.map((row) => (
+            <li key={row.key}>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(row);
+                  onClose();
+                }}
+                className={cn(
+                  "swap-token-row",
+                  selectedKey === row.key && "swap-token-row--active",
+                )}
+              >
+                <AssetIcon asset={row} />
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-sm font-medium text-white">{row.name}</p>
+                  <p className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-500">
+                    <span>{row.symbol}</span>
+                    {row.address && (
+                      <>
+                        <Link2 className="h-3 w-3 text-[#eab308]" />
+                        <span className="font-mono">{shortAddress(row.address)}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-white">{formatCompactUsd(row.valueUsd)}</p>
+                  <p className="mt-0.5 text-[11px] text-zinc-500">
+                    {row.balance < 1 ? row.balance.toFixed(6) : formatTokenAmount(row.balance)}{" "}
+                    {row.symbol}
+                  </p>
+                </div>
+              </button>
+            </li>
+          ))}
+      </ul>
+
+      <p className="border-t border-white/8 px-5 py-3 text-[10px] uppercase tracking-wide text-zinc-600">
+        Available on Hookit
+      </p>
+    </>
+  );
+}
+
 export function SwapTokenSelectModal({
   open,
   onOpenChange,
@@ -97,6 +219,7 @@ export function SwapTokenSelectModal({
   selectedKey?: string;
   onSelect: (asset: SwapAsset) => void;
 }) {
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -105,19 +228,12 @@ export function SwapTokenSelectModal({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      return;
-    }
-    if (!address || !publicClient) {
-      setWalletRows([]);
-      return;
-    }
+    if (!open || !address || !publicClient) return;
 
     let cancelled = false;
-    setLoading(true);
 
     void (async () => {
+      setLoading(true);
       const rows: WalletSwapRow[] = [];
       const poolByAddress = new Map<string, TokenPool>();
 
@@ -189,7 +305,6 @@ export function SwapTokenSelectModal({
         });
       }
 
-      // Buy side: allow selecting the page token even with zero balance.
       if (side === "buy") {
         const pageAsset = poolToSwapAsset(currentPool);
         if (!rows.some((r) => r.key === pageAsset.key)) {
@@ -216,99 +331,64 @@ export function SwapTokenSelectModal({
   }, [open, address, publicClient, pools, currentPool, side]);
 
   const filtered = useMemo(() => {
+    const rows = address && publicClient ? walletRows : [];
     const q = query.trim().toLowerCase();
-    if (!q) return walletRows;
-    return walletRows.filter(
+    if (!q) return rows;
+    return rows.filter(
       (row) =>
         row.symbol.toLowerCase().includes(q) ||
         row.name.toLowerCase().includes(q) ||
         row.address?.toLowerCase().includes(q),
     );
-  }, [walletRows, query]);
+  }, [walletRows, query, address, publicClient]);
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setQuery("");
+    onOpenChange(next);
+  };
+
+  const body = (
+    <TokenSelectBody
+      title={title}
+      query={query}
+      onQueryChange={setQuery}
+      onClose={() => handleOpenChange(false)}
+      loading={loading}
+      filtered={filtered}
+      selectedKey={selectedKey}
+      onSelect={onSelect}
+      stickySearch={isMobile}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="flex h-[min(92dvh,720px)] flex-col gap-0 overflow-hidden rounded-t-2xl border border-white/10 bg-[#141416] p-0 pb-[env(safe-area-inset-bottom)]"
+        >
+          <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
+          <SheetHeader className="sr-only">
+            <SheetTitle>{title}</SheetTitle>
+          </SheetHeader>
+          {body}
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="swap-token-modal max-h-[min(640px,90vh)] overflow-hidden border border-white/10 bg-[#141416] p-0 sm:max-w-md"
+        className="swap-token-modal max-h-[min(640px,90dvh)] overflow-hidden border border-white/10 bg-[#141416] p-0 sm:max-w-md"
       >
-        <DialogHeader className="flex flex-row items-center justify-between gap-3 border-b border-white/8 px-5 py-4">
-          <DialogTitle className="text-base font-semibold text-white">{title}</DialogTitle>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={() => onOpenChange(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/5 hover:text-white"
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-
-        <div className="px-5 pt-4">
-          <label className="swap-token-search">
-            <Search className="h-4 w-4 shrink-0 text-zinc-500" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search name, symbol, or address…"
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
-            />
-          </label>
-        </div>
-
-        <div className="mt-4 px-5">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Your tokens</p>
-        </div>
-
-        <ul className="swap-token-list mt-2 overflow-y-auto px-3 pb-4">
-          {loading && (
-            <li className="px-3 py-6 text-center text-sm text-zinc-500">Loading wallet…</li>
-          )}
-          {!loading && filtered.length === 0 && (
-            <li className="px-3 py-6 text-center text-sm text-zinc-500">No tokens in wallet</li>
-          )}
-          {!loading &&
-            filtered.map((row) => (
-              <li key={row.key}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelect(row);
-                    onOpenChange(false);
-                  }}
-                  className={cn(
-                    "swap-token-row",
-                    selectedKey === row.key && "swap-token-row--active",
-                  )}
-                >
-                  <AssetIcon asset={row} />
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-sm font-medium text-white">{row.name}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-[12px] text-zinc-500">
-                      <span>{row.symbol}</span>
-                      {row.address && (
-                        <>
-                          <Link2 className="h-3 w-3 text-[#eab308]" />
-                          <span className="font-mono">{shortAddress(row.address)}</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-white">{formatCompactUsd(row.valueUsd)}</p>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
-                      {row.balance < 1 ? row.balance.toFixed(6) : formatTokenAmount(row.balance)}{" "}
-                      {row.symbol}
-                    </p>
-                  </div>
-                </button>
-              </li>
-            ))}
-        </ul>
-
-        <p className="border-t border-white/8 px-5 py-3 text-[10px] uppercase tracking-wide text-zinc-600">
-          Available on Hookit
-        </p>
+        {body}
       </DialogContent>
     </Dialog>
   );

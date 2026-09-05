@@ -20,7 +20,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.error) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black px-6 text-center text-white">
+        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black px-6 text-center text-white">
           <p className="text-lg font-semibold">hook it — client error</p>
           <p className="max-w-lg text-sm text-zinc-400">
             The UI crashed during load. Try a hard refresh, disable browser extensions (Dashlane,

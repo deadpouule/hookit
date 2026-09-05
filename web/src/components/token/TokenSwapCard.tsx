@@ -364,16 +364,20 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       />
 
       {!walletReady ? (
-        <ConnectButton label="Connect to trade" className="launch-coin swap-cta swap-cta--ready" />
+        <div className="swap-cta-sticky">
+          <ConnectButton label="Connect to trade" className="launch-coin swap-cta swap-cta--ready" />
+        </div>
       ) : (
-        <button
-          type="button"
-          disabled={!canTrade || writing || swap.isPending}
-          onClick={() => void submit()}
-          className={cn("swap-cta", hasAmount ? "swap-cta--ready" : "swap-cta--idle")}
-        >
-          {ctaLabel}
-        </button>
+        <div className="swap-cta-sticky">
+          <button
+            type="button"
+            disabled={!canTrade || writing || swap.isPending}
+            onClick={() => void submit()}
+            className={cn("swap-cta", hasAmount ? "swap-cta--ready" : "swap-cta--idle")}
+          >
+            {ctaLabel}
+          </button>
+        </div>
       )}
 
       {status && <p className="mt-2 text-center text-[12px] text-emerald-400">{status}</p>}

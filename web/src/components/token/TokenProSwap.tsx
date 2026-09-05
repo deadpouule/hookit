@@ -182,6 +182,9 @@ export function TokenProSwap({
             onChange={(e) => onSellAmount(e.target.value)}
             placeholder="0.0"
             inputMode="decimal"
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            autoComplete="off"
+            enterKeyHint="done"
             className="market-token-block__input"
           />
           <p className="market-token-block__usd">≈ {formatCompactUsd(sellUsd)}</p>

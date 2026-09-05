@@ -31,7 +31,7 @@ export function TokenDexScreenerChart({ tokenAddress, className }: TokenDexScree
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
-      <div className="relative h-[340px] bg-[#0a0a0a] sm:h-[420px]">
+      <div className="relative h-[240px] bg-[#0a0a0a] sm:h-[340px] md:h-[420px]">
         {!normalized ? (
           <ChartMessage message="Invalid token address" />
         ) : isError || !embedUrl || !pageUrl ? (

@@ -1,12 +1,26 @@
 "use client";
 
 import { Toaster } from "sonner";
+import { useSyncExternalStore } from "react";
+
+function subscribeMq(cb: () => void) {
+  const mq = window.matchMedia("(max-width: 767px)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+function getMobile() {
+  return window.matchMedia("(max-width: 767px)").matches;
+}
 
 export function AppToaster() {
+  const mobile = useSyncExternalStore(subscribeMq, getMobile, () => false);
+
   return (
     <Toaster
       theme="dark"
-      position="bottom-right"
+      position={mobile ? "top-center" : "bottom-right"}
+      offset={mobile ? 16 : 24}
       richColors
       closeButton
       toastOptions={{

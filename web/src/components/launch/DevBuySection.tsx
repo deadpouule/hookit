@@ -131,8 +131,10 @@ export function DevBuySection({ form, variant, onChange }: Props) {
         <div className="mt-4">
           <Label className="mb-1.5 block text-xs text-zinc-500">{payLabel} amount</Label>
           <input
-            className="field-input font-mono"
+            className="field-input font-mono text-base md:text-sm"
             inputMode="decimal"
+            pattern="^[0-9]*[.,]?[0-9]*$"
+            autoComplete="off"
             placeholder={`${payLabel} amount, up to ~${maxHint}`}
             value={form.devBuyEth}
             onChange={(e) => onChange({ devBuyEth: e.target.value.replace(/[^\d.]/g, "") })}

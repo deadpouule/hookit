@@ -194,7 +194,7 @@ export function TokenCandleChart({
               type="button"
               onClick={() => onInterval(tf)}
               className={cn(
-                "rounded-md px-2 py-1 font-mono text-[11px] transition",
+                "min-h-11 min-w-11 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0 sm:min-w-0",
                 interval === tf
                   ? "bg-[#9514d1] text-white"
                   : "text-muted-foreground hover:text-foreground",
@@ -210,10 +210,10 @@ export function TokenCandleChart({
         className={cn(
           "relative bg-chart-bg",
           expanded
-            ? "h-[460px] sm:h-[560px]"
+            ? "h-[280px] sm:h-[460px] md:h-[560px]"
             : compact
-              ? "h-[240px] sm:h-[280px]"
-              : "h-[340px] sm:h-[420px]",
+              ? "h-[220px] sm:h-[280px]"
+              : "h-[240px] sm:h-[340px] md:h-[420px]",
         )}
       >
         <div className="candle-grid absolute inset-0" />
@@ -369,7 +369,7 @@ export function TokenCandleChart({
           </>
         )}
 
-        <div className="absolute bottom-2 left-3 z-10 flex items-center gap-0.5">
+        <div className="absolute bottom-2 left-3 z-10 hidden items-center gap-0.5 sm:flex">
           {TOOLS.map((tool) => {
             const isActive =
               tool.id === "volume" ? showVolume : activeTool === tool.id;
@@ -382,7 +382,7 @@ export function TokenCandleChart({
                 title={tool.label}
                 onClick={() => selectTool(tool.id)}
                 className={cn(
-                  "rounded-md p-1.5 transition",
+                  "flex h-11 w-11 items-center justify-center rounded-md transition sm:h-auto sm:w-auto sm:p-1.5",
                   isActive
                     ? "bg-[#9514d1] text-white"
                     : "text-zinc-600 hover:bg-white/5 hover:text-foreground",

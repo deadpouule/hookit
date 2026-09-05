@@ -22,7 +22,7 @@ function ClassicAsciiCoin() {
 
 export function LaunchModelPicker() {
   return (
-    <div className="launch-stars min-h-[calc(100vh-8rem)] px-4 pt-16 pb-20 sm:pt-24">
+    <div className="launch-stars min-h-[calc(100dvh-8rem)] px-4 pt-16 pb-20 sm:pt-24">
       <div className="mx-auto w-full max-w-3xl">
         <h1 className="terminal-title mb-10 text-center font-mono text-4xl font-semibold tracking-tight text-white sm:mb-14 sm:text-5xl">
           Choose a launch model.

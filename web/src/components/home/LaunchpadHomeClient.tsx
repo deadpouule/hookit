@@ -21,7 +21,7 @@ const LeanHero = dynamic(
 
 export function LaunchpadHomeClient({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   return (
-    <div className="min-h-screen bg-background pb-40">
+    <div className="min-h-dvh overflow-x-hidden bg-background pb-[calc(var(--mobile-chrome-pad)+2.5rem)] md:pb-40">
       <SiteHeader />
       <div className="market-shell space-y-6 pt-4">
         <LeanHero />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
@@ -18,6 +18,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import { poolToMarketToken } from "@/lib/market-tokens";
+import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,11 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
+
+  useEffect(() => {
+    const id = pool.contractAddress ?? pool.id;
+    if (id) rememberSwapHref(tokenHref(id));
+  }, [pool.contractAddress, pool.id]);
 
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;

@@ -31,9 +31,11 @@ import { cn } from "@/lib/utils";
 
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
+import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
 import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type LayoutMode = "grid" | "table";
 
@@ -83,6 +85,7 @@ function parseCategoryParam(value: string | null): CategoryKey {
 function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("top");
   const [category, setCategory] = useState<CategoryKey>(() => parseCategoryParam(searchParams.get("category")));
@@ -90,6 +93,8 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   const factoryConfigured = isFactoryConfigured();
   const liveLaunches = shouldFetchLiveLaunches();
   const { data: onChainPools, isLoading, isError, isFetched } = useLaunches(initialPools);
+
+  const effectiveLayout: LayoutMode = isMobile ? "grid" : layout;
 
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
@@ -287,6 +292,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           onActivateRwa={handleActivateRwa}
           layout={layout}
           onLayoutChange={setLayout}
+          hideLayoutToggle={isMobile}
         />
 
         {category === "master" && selectedHooks.length > 0 && (
@@ -315,7 +321,9 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
             No tokens match this filter.
           </p>
-        ) : layout === "grid" ? (
+        ) : isMobile ? (
+          <MobileExploreVirtualList tokens={tokens} />
+        ) : effectiveLayout === "grid" ? (
           <div className="token-grid">
             {tokens.map((token) => (
               <MarketTokenCard
@@ -365,7 +373,7 @@ function TokenTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="hidden w-full min-w-[640px] text-left text-sm md:table">
         <thead className="text-[11px] tracking-wide text-muted-foreground uppercase">
           <tr className="border-b border-border">
             <th className="px-4 py-3 font-medium">Token</th>

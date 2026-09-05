@@ -1,5 +1,5 @@
 import "@rainbow-me/rainbowkit/styles.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
@@ -39,14 +39,24 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark min-h-dvh antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground" suppressHydrationWarning>
+      <body
+        className="flex min-h-dvh flex-col overflow-x-hidden bg-background text-foreground touch-manipulation"
+        suppressHydrationWarning
+      >
         <AppErrorBoundary>
           <Web3Provider>
             <TooltipProvider>

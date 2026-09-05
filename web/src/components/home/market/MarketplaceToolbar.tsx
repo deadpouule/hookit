@@ -34,6 +34,7 @@ type MarketplaceToolbarProps = {
   onActivateRwa: () => void;
   layout: "grid" | "table";
   onLayoutChange: (layout: "grid" | "table") => void;
+  hideLayoutToggle?: boolean;
 };
 
 export function MarketplaceToolbar({
@@ -51,6 +52,7 @@ export function MarketplaceToolbar({
   onActivateRwa,
   layout,
   onLayoutChange,
+  hideLayoutToggle = false,
 }: MarketplaceToolbarProps) {
   return (
     <div className="market-toolbar" suppressHydrationWarning>
@@ -62,7 +64,7 @@ export function MarketplaceToolbar({
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search hookit tokens"
-            className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-base text-white placeholder:text-zinc-500 outline-none md:text-sm"
           />
         </label>
       </div>
@@ -108,16 +110,20 @@ export function MarketplaceToolbar({
             <FilterPill active={sort === "live"} onClick={() => onSortChange("live")} live label="Live feed" />
           </div>
 
-          <div className="market-toolbar-divider" aria-hidden />
+          {!hideLayoutToggle && (
+            <>
+              <div className="market-toolbar-divider" aria-hidden />
 
-          <div className="market-toolbar-view">
-            <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
-              <Table2 className="h-4 w-4" />
-            </IconToggle>
-            <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
-              <LayoutGrid className="h-4 w-4" />
-            </IconToggle>
-          </div>
+              <div className="market-toolbar-view">
+                <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
+                  <Table2 className="h-4 w-4" />
+                </IconToggle>
+                <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
+                  <LayoutGrid className="h-4 w-4" />
+                </IconToggle>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
