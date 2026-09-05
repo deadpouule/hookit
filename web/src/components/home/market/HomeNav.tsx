@@ -2,35 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
 import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { LaunchRocketIcon } from "@/components/brand/LaunchRocketIcon";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { cn } from "@/lib/utils";
-import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 
-function MenuMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CloseMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-      <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-const LINKS = [
+const PRODUCT_LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
   { href: "/stats", label: "Stats" },
-  { href: "/docs", label: "Docs" },
 ] as const;
 
 function isNavActive(href: string, pathname: string) {
@@ -38,43 +19,43 @@ function isNavActive(href: string, pathname: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+function ProductPills() {
   const pathname = usePathname();
 
   return (
-    <>
-      {LINKS.map((link) => {
+    <nav className="home-nav-pills" aria-label="Product">
+      {PRODUCT_LINKS.map((link) => {
         const active = isNavActive(link.href, pathname);
-        const className = cn("home-nav-link", active && "home-nav-link--active");
-
         return (
-          <Link key={link.label} href={link.href} onClick={onNavigate} className={className}>
+          <Link
+            key={link.href}
+            href={link.href}
+            className={cn("home-nav-pill", active && "home-nav-pill--active")}
+            aria-current={active ? "page" : undefined}
+          >
             {link.label}
           </Link>
         );
       })}
-    </>
+    </nav>
   );
 }
 
 export function HomeNav() {
-  const [open, setOpen] = useState(false);
-
   return (
     <header
-      className="sticky top-0 z-50 border-b border-border/60 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur-md"
+      className="sticky top-0 z-50 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur-md"
       suppressHydrationWarning
     >
-      <div className="market-shell flex h-14 items-center justify-between gap-2 sm:h-16 sm:gap-3">
-        <Link href="/" aria-label="hookit.fun home" className="flex min-w-0 shrink items-center">
-          <HookitFunLogo />
-        </Link>
+      <div className="market-shell home-nav-bar">
+        <div className="home-nav-left">
+          <Link href="/" aria-label="hookit.fun home" className="home-nav-brand">
+            <HookitFunLogo />
+          </Link>
+          <ProductPills />
+        </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
-          <nav className="hidden items-center gap-0.5 lg:flex">
-            <NavItems />
-          </nav>
-
+        <div className="home-nav-right">
           <Link
             href="/launch"
             className="launch-coin-nav launch-coin-nav--full"
@@ -83,41 +64,9 @@ export function HomeNav() {
             <LaunchRocketIcon />
             Launch coin
           </Link>
-          <div className="hidden md:block">
-            <ConnectButton compact />
-          </div>
-
-          <button
-            type="button"
-            {...TOOLBAR_BUTTON_PROPS}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-white/5 lg:hidden"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
-            aria-expanded={open}
-          >
-            {open ? <CloseMark /> : <MenuMark />}
-          </button>
+          <ConnectButton compact className="home-connect--accent" />
         </div>
       </div>
-
-      {open && (
-        <div className="border-t border-border bg-background px-4 py-3 lg:hidden">
-          <nav className="flex flex-col gap-1">
-            <NavItems onNavigate={() => setOpen(false)} />
-            <Link
-              href="/launch"
-              onClick={() => setOpen(false)}
-              className="launch-coin-nav mt-2 w-full"
-            >
-              <LaunchRocketIcon />
-              Launch coin
-            </Link>
-            <div className="mt-2 md:hidden">
-              <ConnectButton className="w-full justify-center" />
-            </div>
-          </nav>
-        </div>
-      )}
     </header>
   );
 }

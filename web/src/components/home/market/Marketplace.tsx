@@ -277,7 +277,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         </section>
       )}
 
-      <section id="tokens" className="market-section-panel scroll-mt-24 space-y-4 pb-32 md:space-y-4 md:border-0 md:bg-transparent md:p-0 md:pb-48">
+      <section id="tokens" className="market-section-panel scroll-mt-24 space-y-4 pb-16 md:space-y-4 md:border-0 md:bg-transparent md:p-0 md:pb-48">
         <header className="market-section-head md:hidden">
           <div className="market-section-title-row">
             <h2 className="market-section-title">Explore</h2>

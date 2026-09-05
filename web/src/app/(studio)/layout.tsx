@@ -1,6 +1,5 @@
 import { SiteHeader } from "@/components/home/market/SiteHeader";
 import { StatusBar } from "@/components/home/market/StatusBar";
-import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,7 +7,6 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
       <SiteHeader />
       <main className="app-main-pad flex-1 bg-background">{children}</main>
       <StatusBar />
-      <MobileBottomNav />
     </div>
   );
 }

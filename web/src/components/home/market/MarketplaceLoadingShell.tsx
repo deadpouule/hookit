@@ -14,7 +14,7 @@ function SkeletonCard() {
 /** Pre-hydration / loading shell — no demo tokens. */
 export function MarketplaceLoadingShell() {
   return (
-    <div className="min-h-dvh bg-background pb-[calc(var(--mobile-chrome-pad)+2.5rem)] md:pb-40">
+    <div className="min-h-dvh bg-background pb-24 md:pb-40">
       <SiteHeader />
       <div className="market-shell space-y-6 pt-4">
         <div className="h-40 animate-pulse rounded-[2rem] border border-white/10 bg-white/[0.03]" />
