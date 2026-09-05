@@ -185,7 +185,7 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
   trading: [
     {
       type: "p",
-      text: "Spot price comes from pool slot0 / bonding virtual reserves. Market swaps use the v4 quoter for expected out and slippage bounds. Instant mode is a one-click amount; Pro mode shows route, pay-with, and quotes.",
+      text: "Spot price comes from pool slot0 / bonding virtual reserves. Market swaps use the v4 quoter for expected out and slippage bounds, with route and pay-with controls on the desk.",
     },
     { type: "h3", text: "Limit & stop" },
     {
