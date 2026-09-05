@@ -3,16 +3,20 @@
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { BuiltOnUniswapBadge } from "@/components/brand/BuiltOnUniswapBadge";
+import type { PairingTokenId } from "@/lib/pairing-tokens";
+
+import { PairingLogoStack, STOCK_PAIRING_IDS } from "./PairingLogoStack";
+import { PairingMark } from "@/components/launch/PairingMark";
 
 type TextSegment = { kind: "text"; value: string };
-type LogoSegment = { kind: "logo"; id: "uniswap" | "eth" | "usdg" | "mstr" | "aapl" | "tsla" };
+type LogoSegment = { kind: "logo"; id: "uniswap" | PairingTokenId };
 type LineSegment = TextSegment | LogoSegment;
 
 type TypewriterLine = {
   segments: LineSegment[];
 };
 
-const STOCK_LOGO_IDS = new Set<LogoSegment["id"]>(["mstr", "aapl", "tsla"]);
+const STOCK_LOGO_IDS = new Set<LogoSegment["id"]>(STOCK_PAIRING_IDS);
 
 const LINES: TypewriterLine[] = [
   {
@@ -25,9 +29,7 @@ const LINES: TypewriterLine[] = [
   {
     segments: [
       { kind: "text", value: "Tokenized stocks " },
-      { kind: "logo", id: "mstr" },
-      { kind: "logo", id: "aapl" },
-      { kind: "logo", id: "tsla" },
+      ...STOCK_PAIRING_IDS.map((id) => ({ kind: "logo" as const, id })),
       { kind: "text", value: ", ETH " },
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
@@ -39,7 +41,7 @@ const LINES: TypewriterLine[] = [
 
 const TYPE_MS = 70;
 const DELETE_MS = 40;
-const HOLD_MS_BY_LINE = [5500, 3500];
+const HOLD_MS_BY_LINE = [5500, 5500];
 
 function lineLength(line: TypewriterLine): number {
   return line.segments.reduce(
@@ -53,47 +55,8 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
     return <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />;
   }
 
-  if (id === "mstr") {
-    return (
-      <span className="hero-typewriter-mark hero-typewriter-mark--stock hero-typewriter-mark--mstr" aria-hidden>
-        <Image
-          src="/pairing/wmstrx.png"
-          alt=""
-          width={46}
-          height={46}
-          className="hero-typewriter-mark__photo h-auto w-auto"
-          draggable={false}
-        />
-      </span>
-    );
-  }
-
-  if (id === "aapl") {
-    return (
-      <span className="hero-typewriter-mark hero-typewriter-mark--stock hero-typewriter-mark--aapl" aria-hidden>
-        <svg viewBox="0 0 24 24" className="hero-typewriter-mark__glyph">
-          <path
-            fill="#111"
-            d="M16.2 12.4c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.9-3.5.9-.7 0-1.9-.8-3.1-.8-1.6 0-3.1 1-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.1 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.6s-2.5-1-2.6-3.9Zm-2.4-7c.7-.8 1.1-1.9 1-3-.9.1-2 .7-2.7 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2-.6 2.7-1.4Z"
-          />
-        </svg>
-      </span>
-    );
-  }
-
-  if (id === "tsla") {
-    return (
-      <span className="hero-typewriter-mark hero-typewriter-mark--stock hero-typewriter-mark--tsla" aria-hidden>
-        <Image
-          src="/pairing/wtslax.png"
-          alt=""
-          width={46}
-          height={46}
-          className="hero-typewriter-mark__photo h-auto w-auto"
-          draggable={false}
-        />
-      </span>
-    );
+  if (STOCK_LOGO_IDS.has(id)) {
+    return <PairingMark id={id as PairingTokenId} />;
   }
 
   if (id === "eth") {
@@ -155,11 +118,10 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
 
       if (stockIds.length > 0) {
         nodes.push(
-          <span key={`stocks-${nodes.length}`} className="hero-typewriter-stock-group">
-            {stockIds.map((id) => (
-              <HeroInlineMark key={id} id={id} />
-            ))}
-          </span>,
+          <PairingLogoStack
+            key={`stocks-${nodes.length}`}
+            ids={stockIds as PairingTokenId[]}
+          />,
         );
         remaining -= stockIds.length;
         index = cursor - 1;
