@@ -38,17 +38,20 @@ test.describe("Hookit UI smoke", () => {
     ).toBeVisible({ timeout: 30_000 });
   });
 
-  test("Mobile top nav present on small viewport", async ({ page }, testInfo) => {
+  test("Mobile chrome matches BaseStonk layout", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile project only");
     await page.goto("/");
-    await expect(page.getByRole("navigation", { name: "Product" })).toBeVisible({
+    await expect(page.getByRole("navigation", { name: "Product" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeVisible({
       timeout: 30_000,
     });
-    await expect(page.getByRole("link", { name: "Explore" }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Hooks" }).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Analytics" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Tokens" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Launch a token" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Menu" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Connect/i }).first()).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Mobile" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Search tokens" })).toBeVisible();
+    await expect(page.getByText(/Live on Ink/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tokens" })).toBeVisible();
   });
 
   test("API launches returns pools", async ({ request }) => {

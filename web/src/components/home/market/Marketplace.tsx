@@ -31,6 +31,10 @@ import { cn } from "@/lib/utils";
 
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
+import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
+import { MobileLaunchHero } from "./MobileLaunchHero";
+import { MobileStatsRow } from "./MobileStatsRow";
+import { MobileTicker } from "./MobileTicker";
 import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
@@ -221,7 +225,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 md:space-y-5">
       {!liveLaunches && process.env.NODE_ENV === "development" && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
           Local dev — demo catalog. Set{" "}
@@ -255,37 +259,54 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
       )}
 
       {liveLaunches && isLoading && !isFetched && (
-        <div className="token-grid">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="market-card overflow-hidden border border-white/10 p-3">
-              <div className="mb-2 aspect-square animate-pulse rounded-2xl bg-white/[0.06]" />
-              <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-white/[0.08]" />
-              <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.05]" />
+        <>
+          <div className="space-y-3 md:hidden">
+            <div className="h-8 animate-pulse rounded-lg bg-white/[0.06]" />
+            <div className="h-48 animate-pulse rounded-2xl bg-white/[0.06]" />
+            <div className="h-14 animate-pulse rounded-lg bg-white/[0.06]" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 border-b border-white/[0.06] py-3">
+                <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-white/[0.08]" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-white/[0.08]" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.05]" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <div className="token-grid">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="market-card overflow-hidden border border-white/10 p-3">
+                  <div className="mb-2 aspect-square animate-pulse rounded-2xl bg-white/[0.06]" />
+                  <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-white/[0.08]" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.05]" />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        </>
       )}
 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
-      {!isMobile && (
-        <section id="party" className="scroll-mt-24">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
-          </div>
-          <TrendingStrip tokens={trending} rankings={rankings} />
-        </section>
-      )}
+      <div className="space-y-3 md:contents">
+        <MobileTicker tokens={trending.length > 0 ? trending : sourceTokens} />
+        <MobileLaunchHero />
+        <MobileStatsRow />
+      </div>
 
-      <section id="tokens" className="market-section-panel scroll-mt-24 space-y-4 pb-16 md:space-y-4 md:border-0 md:bg-transparent md:p-0 md:pb-48">
-        <header className="market-section-head md:hidden">
-          <div className="market-section-title-row">
-            <h2 className="market-section-title">Explore</h2>
-            <span className="market-section-count">{tokens.length}</span>
-          </div>
-          <p className="market-section-copy">
-            Programmable hooks still climbing on Ink.
-          </p>
+      <section id="party" className="market-trending scroll-mt-24">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
+        </div>
+        <TrendingStrip tokens={trending} rankings={rankings} />
+      </section>
+
+      <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 md:pb-48">
+        <header className="stonk-tokens-head md:hidden">
+          <h2 className="stonk-tokens-title">Tokens</h2>
+          <span className="stonk-tokens-count">{tokens.length} live</span>
         </header>
 
         <MarketplaceToolbar
@@ -332,23 +353,34 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
             No tokens match this filter.
           </p>
-        ) : effectiveLayout === "grid" || isMobile ? (
-          <div className="token-grid">
-            {tokens.map((token) => (
-              <MarketTokenCard
-                key={token.id}
-                token={token}
-                masterHookFilters={selectedHooks}
-                onMasterHookFiltersChange={handleMasterHooksChange}
-              />
-            ))}
-          </div>
         ) : (
-          <TokenTable
-            tokens={tokens}
-            selectedHooks={selectedHooks}
-            onMasterHooksChange={handleMasterHooksChange}
-          />
+          <>
+            <div className="md:hidden">
+              <MobileExploreVirtualList tokens={tokens} />
+            </div>
+            {effectiveLayout === "grid" ? (
+              <div className="hidden md:block">
+                <div className="token-grid">
+                  {tokens.map((token) => (
+                    <MarketTokenCard
+                      key={token.id}
+                      token={token}
+                      masterHookFilters={selectedHooks}
+                      onMasterHookFiltersChange={handleMasterHooksChange}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="hidden md:block">
+                <TokenTable
+                  tokens={tokens}
+                  selectedHooks={selectedHooks}
+                  onMasterHooksChange={handleMasterHooksChange}
+                />
+              </div>
+            )}
+          </>
         )}
       </section>
         </>

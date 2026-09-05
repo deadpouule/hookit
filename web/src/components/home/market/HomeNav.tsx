@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Search } from "lucide-react";
 
 import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { LaunchRocketIcon } from "@/components/brand/LaunchRocketIcon";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
 const PRODUCT_LINKS = [
@@ -41,6 +43,16 @@ function ProductPills() {
   );
 }
 
+function focusTokenSearch() {
+  const input = document.querySelector<HTMLInputElement>("#token-search");
+  if (input) {
+    document.getElementById("tokens")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => input.focus(), 80);
+    return;
+  }
+  window.location.assign("/#tokens");
+}
+
 export function HomeNav() {
   return (
     <header
@@ -52,13 +64,24 @@ export function HomeNav() {
           <Link href="/" aria-label="hookit.fun home" className="home-nav-brand">
             <HookitFunLogo />
           </Link>
-          <ProductPills />
+          <div className="hidden md:block">
+            <ProductPills />
+          </div>
         </div>
 
         <div className="home-nav-right">
+          <button
+            type="button"
+            className="home-nav-icon-btn md:hidden"
+            aria-label="Search tokens"
+            onClick={focusTokenSearch}
+            {...TOOLBAR_BUTTON_PROPS}
+          >
+            <Search className="h-4 w-4" strokeWidth={2.2} />
+          </button>
           <Link
             href="/launch"
-            className="launch-coin-nav launch-coin-nav--full"
+            className="launch-coin-nav launch-coin-nav--full hidden md:inline-flex"
             aria-label="Launch coin"
           >
             <LaunchRocketIcon />

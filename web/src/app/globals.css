@@ -76,8 +76,8 @@
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --mobile-nav-h: 0px;
-  --mobile-chrome-pad: var(--safe-bottom);
+  --mobile-nav-h: 4.25rem;
+  --mobile-chrome-pad: calc(var(--mobile-nav-h) + var(--safe-bottom));
 }
 
 @layer base {
@@ -164,28 +164,83 @@
     height: var(--mobile-nav-h);
     max-width: 32rem;
     margin-inline: auto;
-    padding-inline: 0.5rem;
+    padding: 0 0.5rem 0.35rem;
+    align-items: end;
   }
 
   .mobile-bottom-nav__item {
     display: inline-flex;
+    position: relative;
     min-height: 44px;
     min-width: 44px;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 0.2rem;
-    border-radius: 0.75rem;
+    padding-bottom: 0.15rem;
+    border-radius: 0;
+    background: transparent;
     font-size: 0.65rem;
     font-weight: 500;
     letter-spacing: 0.02em;
     color: #71717a;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition: color 0.15s ease;
   }
 
   .mobile-bottom-nav__item--active {
     color: #fff;
-    background: rgb(255 255 255 / 0.06);
+    background: transparent;
+  }
+
+  .mobile-bottom-nav__item--active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 1.65rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: var(--color-magenta);
+    transform: translateX(-50%);
+  }
+
+  .mobile-bottom-nav__launch {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.2rem;
+    padding-bottom: 0.15rem;
+    color: #71717a;
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+
+  .mobile-bottom-nav__launch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.15rem;
+    height: 3.15rem;
+    margin-top: -1.4rem;
+    border-radius: 9999px;
+    background: var(--color-magenta);
+    color: #fff;
+    box-shadow: 0 8px 22px rgb(149 20 209 / 0.45);
+  }
+
+  @media (max-width: 767px) {
+    .mobile-bottom-nav {
+      display: block;
+      position: fixed;
+      inset-inline: 0;
+      bottom: 0;
+      z-index: 50;
+      border-top: 1px solid rgb(255 255 255 / 0.08);
+      background: rgb(10 10 12 / 0.96);
+      padding-bottom: var(--safe-bottom);
+      backdrop-filter: blur(16px);
+    }
   }
 
   .swap-cta-sticky {
@@ -2388,14 +2443,37 @@
   }
 
   .home-nav-brand {
-    display: none;
+    display: flex;
     flex-shrink: 0;
     align-items: center;
   }
 
+  .home-nav-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(255 255 255 / 0.04);
+    color: #fff;
+  }
+
+  .home-nav-icon-btn:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+
   @media (min-width: 768px) {
-    .home-nav-brand {
-      display: flex;
+    .home-nav-icon-btn {
+      display: none;
+    }
+
+    .stonk-ticker,
+    .stonk-hero,
+    .stonk-stats,
+    .stonk-tokens-head {
+      display: none;
     }
   }
 
@@ -2403,7 +2481,8 @@
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
+    margin-left: auto;
   }
 
   .home-nav-pills {
@@ -2496,7 +2575,7 @@
     display: none;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 768px) {
     .launch-coin-nav--full {
       display: inline-flex;
     }
@@ -2554,7 +2633,16 @@
   }
 
   .home-connect--accent svg {
-    display: none;
+    display: block;
+  }
+
+  @media (max-width: 767px) {
+    .home-connect {
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 14px;
+      gap: 6px;
+    }
   }
 
   .hookit-fun-logo {
@@ -4153,6 +4241,258 @@
     color: rgb(255 255 255 / 0.5);
   }
 
+  .stonk-ticker {
+    overflow: hidden;
+    margin-inline: -16px;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    padding-block: 0.55rem;
+  }
+
+  .stonk-ticker-track {
+    display: flex;
+    width: max-content;
+    gap: 1.15rem;
+    padding-inline: 16px;
+    animation: stonk-marquee 32s linear infinite;
+  }
+
+  .stonk-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    color: inherit;
+  }
+
+  .stonk-ticker-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.78);
+  }
+
+  .stonk-ticker-chg {
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  .stonk-ticker-chg.up {
+    color: #34d399;
+  }
+
+  .stonk-ticker-chg.down {
+    color: #f87171;
+  }
+
+  @keyframes stonk-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stonk-ticker-track {
+      animation: none;
+    }
+  }
+
+  .stonk-hero {
+    border-radius: 1.35rem;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    background:
+      radial-gradient(circle at 88% 18%, rgb(149 20 209 / 0.16), transparent 42%),
+      linear-gradient(180deg, #16161a 0%, #101012 100%);
+    padding: 1.1rem 1rem 0.95rem;
+  }
+
+  .stonk-hero-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.5);
+  }
+
+  .stonk-hero-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+  }
+
+  .stonk-hero-title {
+    margin: 0.55rem 0 0;
+    max-width: 16rem;
+    font-size: 1.55rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    color: #fff;
+  }
+
+  .stonk-hero-copy {
+    margin: 0.45rem 0 0;
+    max-width: 18rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgb(255 255 255 / 0.5);
+  }
+
+  .stonk-hero-marks {
+    display: flex;
+    align-items: center;
+    margin-top: 0.9rem;
+  }
+
+  .stonk-hero-mark {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    margin-left: -8px;
+    overflow: hidden;
+    border: 2px solid #101012;
+    border-radius: 9999px;
+    background: #1a1a1e;
+  }
+
+  .stonk-hero-mark:first-child {
+    margin-left: 0;
+  }
+
+  .stonk-hero-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .stonk-hero-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    margin-top: 1rem;
+    border-radius: 9999px;
+    background: var(--color-magenta);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .stonk-hero-fee {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.7rem 0 0;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.42);
+  }
+
+  .stonk-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin: 0.15rem 0 0.35rem;
+    padding: 0.85rem 0;
+  }
+
+  .stonk-stats > div {
+    padding-inline: 0.65rem;
+    border-right: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .stonk-stats > div:first-child {
+    padding-left: 0;
+  }
+
+  .stonk-stats > div:last-child {
+    padding-right: 0;
+    border-right: none;
+  }
+
+  .stonk-stats dt {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.4);
+  }
+
+  .stonk-stats dd {
+    margin: 0.3rem 0 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .stonk-tokens-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+  }
+
+  .stonk-tokens-title {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .stonk-tokens-count {
+    font-size: 0.875rem;
+    color: rgb(255 255 255 / 0.4);
+  }
+
+  .stonk-pair-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.08);
+    padding: 0.05rem 0.4rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.7);
+  }
+
+  @media (max-width: 767px) {
+    .market-toolbar-row--search:not(:focus-within) {
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .market-toolbar-row--search:focus-within {
+      margin-bottom: 0.5rem;
+    }
+
+    .market-toolbar-row--controls {
+      gap: 0.5rem;
+    }
+
+    .market-filter-pill {
+      min-height: 34px;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
+    .market-trending,
+    .market-toolbar-view,
+    .market-toolbar-divider {
+      display: none;
+    }
+  }
+
   .market-toolbar-row--controls {
     justify-content: space-between;
     gap: 1.25rem;
@@ -4894,19 +5234,29 @@
   .mobile-token-row {
     position: relative;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.5rem;
-    border-radius: 1rem;
-    border: 1px solid rgb(255 255 255 / 0.08);
-    background: #111113;
-    padding: 0.75rem;
+    margin: 0;
+    border: none;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+    border-radius: 0;
+    background: transparent;
+    padding: 0.85rem 0;
     cursor: pointer;
     touch-action: manipulation;
   }
 
   .mobile-token-row:active {
-    border-color: rgb(149 20 209 / 0.45);
+    background: rgb(255 255 255 / 0.03);
+  }
+
+  .mobile-token-row .token-copy-badge,
+  .mobile-token-row .token-og-badge {
+    top: auto;
+    right: -2px;
+    bottom: -2px;
+    padding: 1px 4px;
+    font-size: 8px;
   }
 
   @media (min-width: 640px) {

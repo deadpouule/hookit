@@ -2,85 +2,75 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
-import { Compass, ArrowLeftRight, Wallet } from "lucide-react";
-import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
+import { useState } from "react";
+import { BarChart3, ArrowUp, Menu } from "lucide-react";
 
-import { getLastSwapHref, LAUNCH_HREF } from "@/lib/routes";
+import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { id: "explore", label: "Explore", href: "/", icon: Compass, match: (p: string) => p === "/" || p.startsWith("/explore") },
-  { id: "swap", label: "Swap", href: "swap", icon: ArrowLeftRight, match: (p: string) => p.startsWith("/token") },
-  { id: "wallet", label: "Wallet", href: "wallet", icon: Wallet, match: () => false },
+const MENU_LINKS = [
+  { href: "/", label: "Tokens" },
+  { href: "/explore", label: "Hooks" },
+  { href: "/stats", label: "Analytics" },
+  { href: "/docs", label: "Docs" },
+  { href: "/launch", label: "Launch" },
 ] as const;
-
-function subscribeNoop() {
-  return () => {};
-}
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  // Re-read after route changes (pathname forces re-render on navigation).
-  const swapHref = pathname ? getLastSwapHref() : LAUNCH_HREF;
+  const [open, setOpen] = useState(false);
+  const tokensActive = pathname === "/" || pathname.startsWith("/explore");
 
   return (
     <nav aria-label="Mobile" className="mobile-bottom-nav md:hidden">
       <div className="mobile-bottom-nav__inner">
-        {NAV.map((item) => {
-          const Icon = item.icon;
-          if (item.id === "wallet") {
-            return <WalletTab key={item.id} />;
-          }
-          const href = item.id === "swap" ? swapHref || LAUNCH_HREF : item.href;
-          const active = item.match(pathname);
-          return (
-            <Link
-              key={item.id}
-              href={href}
-              className={cn("mobile-bottom-nav__item", active && "mobile-bottom-nav__item--active")}
-            >
-              <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+        <Link
+          href="/"
+          className={cn("mobile-bottom-nav__item", tokensActive && "mobile-bottom-nav__item--active")}
+        >
+          <BarChart3 className="h-[22px] w-[22px]" strokeWidth={2} aria-hidden />
+          <span>Tokens</span>
+        </Link>
+
+        <Link href="/launch" className="mobile-bottom-nav__launch" aria-label="Launch a token">
+          <span className="mobile-bottom-nav__launch-btn">
+            <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
+          </span>
+          <span>Launch</span>
+        </Link>
+
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger
+            type="button"
+            className={cn("mobile-bottom-nav__item", open && "mobile-bottom-nav__item--active")}
+            aria-label="Menu"
+          >
+            <Menu className="h-[22px] w-[22px]" strokeWidth={2} aria-hidden />
+            <span>Menu</span>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="rounded-t-2xl border-white/10 bg-[#0a0a0c] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col gap-1 px-4 pb-4">
+              {MENU_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-3 py-3 text-base text-zinc-200 hover:bg-white/5"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="mt-2">
+                <ConnectButton className="w-full justify-center" />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </nav>
-  );
-}
-
-function WalletTab() {
-  const hydrated = useSyncExternalStore(
-    subscribeNoop,
-    () => true,
-    () => false,
-  );
-
-  if (!hydrated) {
-    return (
-      <button type="button" className="mobile-bottom-nav__item" disabled>
-        <Wallet className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-        <span>Wallet</span>
-      </button>
-    );
-  }
-
-  return (
-    <RainbowConnectButton.Custom>
-      {({ account, chain, openAccountModal, openConnectModal, mounted: rkMounted }) => {
-        const connected = rkMounted && account && chain;
-        return (
-          <button
-            type="button"
-            className={cn("mobile-bottom-nav__item", connected && "mobile-bottom-nav__item--active")}
-            onClick={() => (connected ? openAccountModal?.() : openConnectModal?.())}
-          >
-            <Wallet className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-            <span>{connected ? "Wallet" : "Connect"}</span>
-          </button>
-        );
-      }}
-    </RainbowConnectButton.Custom>
   );
 }

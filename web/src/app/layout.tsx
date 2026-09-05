@@ -2,6 +2,7 @@ import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
 import { Web3Provider } from "@/components/providers/Web3Provider";
 import { AppToaster } from "@/components/providers/AppToaster";
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Web3Provider>
             <TooltipProvider>
               {children}
+              <MobileBottomNav />
               <AppToaster />
               <Telemetry />
             </TooltipProvider>

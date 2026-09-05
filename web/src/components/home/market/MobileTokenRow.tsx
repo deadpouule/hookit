@@ -3,23 +3,28 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { HookitLogo } from "@/components/brand/HookitLogo";
-import { formatCompactUsd, formatPercent, formatUsd } from "@/lib/format";
+import { formatPercent, formatUsd } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-import { QuickBuy } from "./QuickBuy";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge } from "./TokenBadges";
 
-/** Compact explore row for mobile — replaces wide table columns. */
+function formatSpotUsd(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (value >= 1) return `$${value.toFixed(2)}`;
+  if (value >= 0.01) return `$${value.toFixed(4)}`;
+  return `$${value.toPrecision(3)}`;
+}
+
 export function MobileTokenRow({ token }: { token: MarketToken }) {
   const router = useRouter();
   const href = tokenHref(token.id);
   const spot = token.marketCap > 0 ? token.marketCap / TOTAL_SUPPLY : 0;
   const up = token.change24h >= 0;
+  const pair = token.pairings?.[0]?.name ?? token.quoteAsset ?? "ETH";
 
   return (
     <article
@@ -37,47 +42,33 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
       <div className="relative shrink-0">
         <TokenArt
           token={token}
-          className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl"
+          className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full"
           glyphClassName="text-lg"
         />
         <TokenCopyBadge token={token} />
-        {token.hookTaxBps != null && token.hookTaxBps > 0 && !token.dynamicFees && (
-          <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/55 font-mono text-[10px] font-bold text-rose-300">
-            {(100 + token.hookTaxBps) / 100}%
-          </span>
-        )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{token.name}</p>
-            <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-zinc-500">
-              <HookitLogo size="xs" />
-              ${token.ticker}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="font-mono text-sm text-white">
-              {spot > 0 ? formatCompactUsd(spot) : "—"}
-            </p>
-            <span
-              className={cn(
-                "mt-0.5 inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-                up ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400",
-              )}
-            >
-              {formatPercent(token.change24h, true)}
-            </span>
-          </div>
-        </div>
+        <p className="truncate text-[15px] font-semibold text-white">{token.name}</p>
+        <p className="mt-0.5 truncate font-mono text-[12px] text-zinc-500">
+          ${token.ticker}
+          <span className="mx-1.5 text-zinc-700">·</span>
+          <span className="stonk-pair-pill">{pair}</span>
+        </p>
+        <p className="mt-1 text-[11px] text-zinc-500">
+          MC <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
+          <span className="mx-1.5 text-zinc-700">·</span>
+          Vol <span className="text-zinc-300">{formatUsd(token.volume)}</span>
+        </p>
+      </div>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <p className="text-[11px] text-zinc-500">
-            FDV <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
-          </p>
-          <QuickBuy tokenId={token.id} size="sm" className="pointer-events-auto relative z-10" />
-        </div>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-sm font-medium text-white">
+          {formatSpotUsd(spot)}
+        </p>
+        <p className={cn("mt-0.5 text-[12px] font-medium", up ? "text-emerald-400" : "text-rose-400")}>
+          {up ? "▲" : "▼"} {formatPercent(Math.abs(token.change24h))}
+        </p>
       </div>
 
       <Link href={href} className="absolute inset-0 z-0" aria-label={`${token.name} $${token.ticker}`}>
