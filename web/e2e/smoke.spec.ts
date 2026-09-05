@@ -15,8 +15,7 @@ test.describe("Hookit UI smoke", () => {
     // Wait for marketplace / token grid or list
     const tokensSection = page.locator("#tokens, .token-grid, .mobile-token-row, .market-card").first();
     await expect(tokensSection).toBeVisible({ timeout: 45_000 });
-    // No Live on Ink ticker
-    await expect(page.getByText(/LIVE ON INK/i)).toHaveCount(0);
+    await expect(page.getByText(/Live on Ink/i).first()).toBeHidden();
   });
 
   test("Launch page renders wizard", async ({ page }) => {

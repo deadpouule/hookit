@@ -4470,7 +4470,6 @@
   }
 
   .stonk-stats {
-    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
     margin: 0.15rem 0 0.35rem;
@@ -4507,7 +4506,6 @@
   }
 
   .stonk-tokens-head {
-    display: flex;
     align-items: baseline;
     gap: 0.55rem;
   }
@@ -4523,6 +4521,25 @@
   .stonk-tokens-count {
     font-size: 0.875rem;
     color: rgb(255 255 255 / 0.4);
+  }
+
+  @media (max-width: 767px) {
+    .stonk-stats {
+      display: grid;
+    }
+
+    .stonk-tokens-head {
+      display: flex;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .stonk-ticker,
+    .stonk-hero,
+    .stonk-stats,
+    .stonk-tokens-head {
+      display: none;
+    }
   }
 
   .stonk-pair-pill {
@@ -5846,7 +5863,6 @@
   }
 
   .hero-typewriter--mobile {
-    display: flex;
     flex-wrap: wrap;
     align-items: center;
     column-gap: 0.35rem;
@@ -5888,6 +5904,18 @@
 
   .hero-typewriter--mobile .hero-uniswap-badge {
     transform: none;
+  }
+
+  @media (max-width: 767px) {
+    .hero-typewriter--mobile {
+      display: flex;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-typewriter--mobile {
+      display: none;
+    }
   }
 
   .hero-prompt {
