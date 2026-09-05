@@ -37,10 +37,15 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
       <div className="relative shrink-0">
         <TokenArt
           token={token}
-          className="flex h-11 w-11 items-center justify-center rounded-xl"
+          className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl"
           glyphClassName="text-lg"
         />
         <TokenCopyBadge token={token} />
+        {token.hookTaxBps != null && token.hookTaxBps > 0 && !token.dynamicFees && (
+          <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/55 font-mono text-[10px] font-bold text-rose-300">
+            {(100 + token.hookTaxBps) / 100}%
+          </span>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">

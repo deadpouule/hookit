@@ -80,26 +80,45 @@ export function HomeNav() {
       className="sticky top-0 z-50 border-b border-border bg-background pt-[env(safe-area-inset-top)]"
       suppressHydrationWarning
     >
-      <div className="market-shell flex h-16 items-center justify-between">
-        <Link href="/" aria-label="hookit.fun home" className="flex shrink-0 items-center">
+      <div className="market-shell flex h-14 items-center justify-between gap-3 sm:h-16">
+        <Link href="/" aria-label="hookit.fun home" className="flex min-w-0 shrink items-center">
           <HookitFunLogo />
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2 lg:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-3">
           <nav className="hidden items-center gap-0.5 lg:flex">
             <NavItems />
           </nav>
-          <Link href="/launch" className="launch-coin-nav hidden sm:inline-flex">
+
+          {/* Full launch CTA from sm up; icon-only on phones to free header space */}
+          <Link
+            href="/launch"
+            className="launch-coin-nav launch-coin-nav--full"
+            aria-label="Launch coin"
+          >
             <LaunchRocketIcon />
             Launch coin
           </Link>
-          <ConnectButton compact />
+          <Link
+            href="/launch"
+            className="launch-coin-nav launch-coin-nav--icon"
+            aria-label="Launch coin"
+          >
+            <LaunchRocketIcon />
+          </Link>
+
+          {/* Connect lives in the mobile bottom nav — keep header clean below md */}
+          <div className="hidden md:block">
+            <ConnectButton compact />
+          </div>
+
           <button
             type="button"
             {...TOOLBAR_BUTTON_PROPS}
             className="flex h-11 w-11 items-center justify-center rounded-lg text-foreground hover:text-muted-foreground lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
+            aria-expanded={open}
           >
             {open ? <CloseMark /> : <MenuMark />}
           </button>
@@ -118,6 +137,9 @@ export function HomeNav() {
               <LaunchRocketIcon />
               Launch coin
             </Link>
+            <div className="mt-2 md:hidden">
+              <ConnectButton className="w-full justify-center" />
+            </div>
           </nav>
         </div>
       )}

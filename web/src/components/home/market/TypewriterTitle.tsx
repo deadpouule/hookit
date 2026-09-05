@@ -50,9 +50,7 @@ function lineLength(line: TypewriterLine): number {
 
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (id === "uniswap") {
-    return (
-      <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />
-    );
+    return <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />;
   }
 
   if (id === "mstr") {
@@ -169,21 +167,47 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
       }
     }
 
-    nodes.push(
-      <HeroInlineMark key={`${segment.id}-${nodes.length}`} id={segment.id} />,
-    );
+    nodes.push(<HeroInlineMark key={`${segment.id}-${nodes.length}`} id={segment.id} />);
     remaining -= 1;
   }
 
   return nodes;
 }
 
+/** Static title on small screens — no mid-word typewriter orphans. */
+function MobileHeroTitle() {
+  return (
+    <h1 className="hero-typewriter hero-typewriter--mobile md:hidden">
+      <span className="hero-prompt">~$</span>
+      <span className="hero-typed">
+        <span className="hero-typed-line">Launch hooks on</span>{" "}
+        <BuiltOnUniswapBadge
+          variant="hero"
+          text="Uniswap"
+          className="hero-uniswap-badge"
+        />
+      </span>
+    </h1>
+  );
+}
+
 export function TypewriterTitle() {
   const [index, setIndex] = useState(0);
   const [typedCount, setTypedCount] = useState(0);
   const [phase, setPhase] = useState<"typing" | "deleting">("typing");
+  const [desktopAnim, setDesktopAnim] = useState(false);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setDesktopAnim(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!desktopAnim) return;
+
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       setTypedCount(lineLength(LINES[0]));
@@ -215,15 +239,18 @@ export function TypewriterTitle() {
     }
 
     return () => window.clearTimeout(timeout);
-  }, [index, phase, typedCount]);
+  }, [index, phase, typedCount, desktopAnim]);
 
   return (
-    <h1 className="hero-typewriter" aria-live="polite">
-      <span className="hero-prompt">~$</span>
-      <span className="hero-typed">{renderTypedLine(LINES[index], typedCount)}</span>
-      <span className="hero-cursor" aria-hidden>
-        |
-      </span>
-    </h1>
+    <>
+      <MobileHeroTitle />
+      <h1 className="hero-typewriter hidden md:block" aria-live="polite">
+        <span className="hero-prompt">~$</span>
+        <span className="hero-typed">{renderTypedLine(LINES[index], typedCount)}</span>
+        <span className="hero-cursor" aria-hidden>
+          |
+        </span>
+      </h1>
+    </>
   );
 }

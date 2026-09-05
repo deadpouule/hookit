@@ -58,6 +58,11 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
             glyphClassName="text-base"
           />
           <InkAvatarBadge />
+          {token.hookTaxBps != null && token.hookTaxBps > 0 && !token.dynamicFees && (
+            <span className="trending-card-fee-badge">
+              {(100 + token.hookTaxBps) / 100}%
+            </span>
+          )}
         </div>
 
         <div className="trending-card-text">

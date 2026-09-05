@@ -1,6 +1,9 @@
+"use client";
+
 import type { MarketToken } from "@/lib/market-tokens";
 import type { MarketRankings } from "@/lib/market-rankings";
 import { TRENDING_MAX } from "@/lib/market-rankings";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 import { TrendingTokenCard } from "./TrendingTokenCard";
 
@@ -9,8 +12,12 @@ type TrendingStripProps = {
   rankings: MarketRankings;
 };
 
+const MOBILE_TRENDING_MAX = 4;
+
 export function TrendingStrip({ tokens, rankings }: TrendingStripProps) {
-  const items = tokens.slice(0, TRENDING_MAX);
+  const isMobile = useIsMobile();
+  const limit = isMobile ? MOBILE_TRENDING_MAX : TRENDING_MAX;
+  const items = tokens.slice(0, limit);
 
   return (
     <div className="trending-strip no-scrollbar">
