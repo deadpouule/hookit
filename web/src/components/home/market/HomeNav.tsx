@@ -14,6 +14,7 @@ const PRODUCT_LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
   { href: "/stats", label: "Analytics" },
+  { href: "/docs", label: "Docs" },
 ] as const;
 
 function isNavActive(href: string, pathname: string) {

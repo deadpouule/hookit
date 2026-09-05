@@ -12,6 +12,7 @@ test.describe("Hookit UI smoke", () => {
     await page.goto("/");
     await expect(page.getByRole("navigation", { name: "Product" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Explore" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Docs" }).first()).toBeVisible();
     // Wait for marketplace / token grid or list
     const tokensSection = page.locator("#tokens, .token-grid, .mobile-token-row, .market-card").first();
     await expect(tokensSection).toBeVisible({ timeout: 45_000 });
