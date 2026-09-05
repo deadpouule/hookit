@@ -50,6 +50,7 @@ test.describe("Hookit UI smoke", () => {
     await expect(page.getByRole("button", { name: /Connect/i }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Search tokens" })).toBeVisible();
     await expect(page.getByText(/Live on Ink/i).first()).toBeVisible();
+    await expect(page.getByText(/Invite traders, earn creator fees/i)).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Tokens" })).toBeVisible();
   });
 

@@ -64,9 +64,6 @@ export function HomeNav() {
           <Link href="/" aria-label="hookit.fun home" className="home-nav-brand">
             <HookitFunLogo />
           </Link>
-          <div className="hidden md:block">
-            <ProductPills />
-          </div>
         </div>
 
         <div className="home-nav-right">
@@ -79,6 +76,9 @@ export function HomeNav() {
           >
             <Search className="h-4 w-4" strokeWidth={2.2} />
           </button>
+          <div className="hidden md:block">
+            <ProductPills />
+          </div>
           <Link
             href="/launch"
             className="launch-coin-nav launch-coin-nav--full hidden md:inline-flex"

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 
 import { PairingLogoStack } from "./PairingLogoStack";
 
@@ -18,10 +17,6 @@ export function MobileLaunchHero() {
       <Link href="/launch" className="stonk-hero-cta">
         Launch a token
       </Link>
-      <p className="stonk-hero-fee">
-        Invite traders, earn creator fees
-        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-      </p>
     </section>
   );
 }
