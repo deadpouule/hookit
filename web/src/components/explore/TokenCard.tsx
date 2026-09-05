@@ -108,7 +108,7 @@ export function TokenCard({
         style={{ background: pool.bannerGradient }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-[#141416] via-black/10 to-transparent" />
-        <div className="pointer-events-auto absolute top-3 left-3 z-20 flex gap-1.5">
+        <div className="pointer-events-auto absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
           {pool.hookType === "Custom" ? (
             <span
               className={cn(
@@ -132,6 +132,11 @@ export function TokenCard({
           ) : (
             <span className={masterBadgeClassName}>
               <span className="inline-flex items-center gap-1">Master</span>
+            </span>
+          )}
+          {hookTaxBps > 0 && !pool.hooks.dynamicFees && (
+            <span className="rounded-md border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-100 backdrop-blur-sm">
+              Fixed {(100 + hookTaxBps) / 100}%
             </span>
           )}
         </div>

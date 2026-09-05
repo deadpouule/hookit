@@ -7,6 +7,11 @@ import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 
 /** ETH/USD stored on LaunchFactory — same oracle used to seed launch FDV (~$5k). */
 export async function readLaunchEthUsd(client: PublicClient): Promise<number> {
+  // Prefer live feed: factory ethUsdPriceX18 can sit at the $4000 deploy seed until
+  // someone calls syncEthUsdPrice() — that was showing ~1.6× inflated ETH quotes/FDV.
+  const live = await readEthUsd(client);
+  if (live > 0) return live;
+
   const factory = getLaunchFactoryAddress();
   if (factory) {
     try {

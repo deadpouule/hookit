@@ -69,6 +69,11 @@ export function MarketTokenCard({
           glyphClassName="text-3xl drop-shadow-lg"
         />
         <TokenCopyBadge token={token} />
+        {token.hookTaxBps != null && token.hookTaxBps > 0 && !token.dynamicFees && (
+          <span className="absolute top-2 left-2 z-20 rounded-md border border-rose-400/35 bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-rose-100 backdrop-blur-sm">
+            Fixed {(100 + token.hookTaxBps) / 100}%
+          </span>
+        )}
       </div>
 
       <div className="token-card-body">

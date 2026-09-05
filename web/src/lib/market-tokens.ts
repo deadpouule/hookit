@@ -31,6 +31,9 @@ export interface MarketToken {
   isCopycat?: boolean;
   /** Enabled master hook modules (on-chain pools only). */
   masterHookIds?: import("@/lib/master-hooks").MasterHookId[];
+  /** Fixed hook tax (bps) when not dynamic. */
+  hookTaxBps?: number;
+  dynamicFees?: boolean;
   /** Canonical quote pools when launched via `launchMulti`. */
   marketCount?: number;
   markets?: import("@/lib/types").TokenPoolMarket[];
@@ -427,6 +430,8 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
       isRwaQuote(pool.quoteAsset, pool.quoteAddress) ||
       Boolean(pool.markets?.some((market) => isRwaQuote(market.quoteAsset, market.quoteAddress))),
     masterHookIds: masterHookIdsForPool(pool),
+    hookTaxBps: pool.hookTaxBps,
+    dynamicFees: Boolean(pool.hooks?.dynamicFees),
     marketCount: pool.marketCount,
     markets: pool.markets,
     pairings: pairingBadgesForPool(pool),

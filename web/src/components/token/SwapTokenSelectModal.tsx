@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useEthUsd } from "@/hooks/useEthUsd";
 import { useLaunches } from "@/hooks/useLaunches";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
@@ -32,7 +33,8 @@ import {
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function resolveEthUsd(pool?: TokenPool): number {
+function resolveEthUsd(pool?: TokenPool, liveEthUsd?: number): number {
+  if (liveEthUsd && liveEthUsd > 0) return liveEthUsd;
   if (pool?.quoteUsd && pool.quoteUsd > 100) return pool.quoteUsd;
   if (pool?.priceEth && pool.priceEth > 0 && pool.marketCap > 0) {
     const implied = pool.marketCap / (pool.priceEth * 1_000_000_000);
@@ -220,6 +222,7 @@ export function SwapTokenSelectModal({
   onSelect: (asset: SwapAsset) => void;
 }) {
   const isMobile = useIsMobile();
+  const liveEthUsd = useEthUsd();
   const [query, setQuery] = useState("");
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -250,7 +253,7 @@ export function SwapTokenSelectModal({
       try {
         const ethBal = await publicClient.getBalance({ address });
         const ethAmount = Number(formatUnits(ethBal, 18));
-        const ethUsd = resolveEthUsd(currentPool);
+        const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
         rows.push({
           ...NATIVE_ETH_ASSET,
           balance: ethAmount,
@@ -277,7 +280,10 @@ export function SwapTokenSelectModal({
         /* ignore */
       }
 
-      const candidates = Array.from(poolByAddress.values()).filter((p) => p.contractAddress);
+      const candidates = Array.from(poolByAddress.values())
+        .filter((p) => p.contractAddress)
+        .sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0))
+        .slice(0, 40);
       const balances = await Promise.all(
         candidates.map(async (pool) => {
           try {
@@ -300,7 +306,7 @@ export function SwapTokenSelectModal({
         rows.push({
           ...asset,
           balance: amount,
-          valueUsd: amount * (pool.priceEth ?? 0) * resolveEthUsd(pool),
+          valueUsd: amount * (pool.priceEth ?? 0) * resolveEthUsd(pool, liveEthUsd),
           pool,
         });
       }
@@ -328,7 +334,7 @@ export function SwapTokenSelectModal({
     return () => {
       cancelled = true;
     };
-  }, [open, address, publicClient, pools, currentPool, side]);
+  }, [open, address, publicClient, pools, currentPool, side, liveEthUsd]);
 
   const filtered = useMemo(() => {
     const rows = address && publicClient ? walletRows : [];

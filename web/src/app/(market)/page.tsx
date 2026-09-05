@@ -1,5 +1,5 @@
 import { LaunchpadHome } from "@/components/home/LaunchpadHome";
 
-export default function HomePage() {
+export default async function HomePage() {
   return <LaunchpadHome />;
 }

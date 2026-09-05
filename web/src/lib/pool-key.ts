@@ -18,8 +18,11 @@ export type V4PoolKey = {
 
 /** Resolve pool fee — dynamic launches must use 0x800000 or PoolId hashes diverge. */
 export function resolvePoolLpFee(pool: TokenPool): number {
+  // Prefer the dynamic flag whenever the module bit is set — never trust a stale
+  // static lpFee of 0 (indexer/UI hydration bug) which makes the quoter miss the pool.
+  if (pool.hooks?.dynamicFees) return DYNAMIC_FEE_FLAG;
+  if (pool.lpFee === DYNAMIC_FEE_FLAG) return DYNAMIC_FEE_FLAG;
   if (pool.lpFee != null && pool.lpFee > 0) return pool.lpFee;
-  if (pool.hooks.dynamicFees) return DYNAMIC_FEE_FLAG;
   return 0;
 }
 

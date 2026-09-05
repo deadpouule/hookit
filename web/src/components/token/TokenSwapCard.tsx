@@ -8,6 +8,7 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
 import { useBondingQuote } from "@/hooks/useBondingQuote";
+import { useEthUsd } from "@/hooks/useEthUsd";
 import { usePoolSwapQuote } from "@/hooks/usePoolSwapQuote";
 import { useSwapToken, useTokenBalance } from "@/hooks/useSwapToken";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
@@ -30,7 +31,8 @@ import { cn } from "@/lib/utils";
 
 type Side = "buy" | "sell";
 
-function resolveEthUsd(pool: TokenPool): number {
+function resolveEthUsd(pool: TokenPool, liveEthUsd?: number): number {
+  if (liveEthUsd && liveEthUsd > 0) return liveEthUsd;
   if (pool.quoteUsd && pool.quoteUsd > 100 && (!pool.quoteAddress || pool.quoteAddress === zeroAddress)) {
     return pool.quoteUsd;
   }
@@ -101,7 +103,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const [ethBal, setEthBal] = useState<number>(0);
   const [usdgBal, setUsdgBal] = useState<number>(0);
 
-  const ethUsd = resolveEthUsd(pool);
+  const liveEthUsd = useEthUsd();
+  const ethUsd = resolveEthUsd(pool, liveEthUsd);
 
   const applySide = useCallback(
     (nextSide: Side) => {

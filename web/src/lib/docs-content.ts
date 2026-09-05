@@ -316,7 +316,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Connect wallet on the token page.",
             "Choose buy or sell and enter an amount.",
-            "Instant mode — quick swap with default slippage.",
+            "Market swap — enter amount, review quote, slippage, and route before confirming.",
             "Pro mode — pick slippage, see estimated receive amount, optionally pay with ETH or a supported stable.",
             `Every swap pays a trading fee on the quote side (see Fees). Fees are taken in ETH/USDC/etc., never in the memecoin itself.`,
           ],
