@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
-import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
 import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
@@ -269,14 +268,26 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
-      <section id="party" className="scroll-mt-24">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
-        </div>
-        <TrendingStrip tokens={trending} rankings={rankings} />
-      </section>
+      {!isMobile && (
+        <section id="party" className="scroll-mt-24">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
+          </div>
+          <TrendingStrip tokens={trending} rankings={rankings} />
+        </section>
+      )}
 
-      <section id="tokens" className="scroll-mt-24 space-y-4 pb-48">
+      <section id="tokens" className="market-section-panel scroll-mt-24 space-y-4 pb-32 md:space-y-4 md:border-0 md:bg-transparent md:p-0 md:pb-48">
+        <header className="market-section-head md:hidden">
+          <div className="market-section-title-row">
+            <h2 className="market-section-title">Explore</h2>
+            <span className="market-section-count">{tokens.length}</span>
+          </div>
+          <p className="market-section-copy">
+            Programmable hooks still climbing on Ink.
+          </p>
+        </header>
+
         <MarketplaceToolbar
           query={query}
           onQueryChange={setQuery}
@@ -321,9 +332,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-6 text-center text-sm text-zinc-400">
             No tokens match this filter.
           </p>
-        ) : isMobile ? (
-          <MobileExploreVirtualList tokens={tokens} />
-        ) : effectiveLayout === "grid" ? (
+        ) : effectiveLayout === "grid" || isMobile ? (
           <div className="token-grid">
             {tokens.map((token) => (
               <MarketTokenCard

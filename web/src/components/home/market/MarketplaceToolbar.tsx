@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import {
   LayoutGrid,
+  Plus,
   Search,
   Table2,
   Trophy,
@@ -63,10 +65,14 @@ export function MarketplaceToolbar({
             {...SEARCH_FIELD_PROPS}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search hookit tokens"
+            placeholder="Search tokens"
             className="min-w-0 flex-1 bg-transparent text-base text-white placeholder:text-zinc-500 outline-none md:text-sm"
           />
         </label>
+        <Link href="/launch" className="market-toolbar-create md:hidden">
+          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+          Launch
+        </Link>
       </div>
 
       <div className="market-toolbar-row market-toolbar-row--controls">

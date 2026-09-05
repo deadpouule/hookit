@@ -9,6 +9,7 @@ import { formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
   isBonded,
+  tokenAgeLabel,
   type MarketToken,
 } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
@@ -47,6 +48,7 @@ export function MarketTokenCard({
 }) {
   const router = useRouter();
   const href = tokenHref(token.id);
+  const age = tokenAgeLabel(token.launchedAt);
 
   const prefetchToken = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -94,6 +96,18 @@ export function MarketTokenCard({
           onMasterHookFiltersChange={onMasterHookFiltersChange}
         />
 
+        <p className="token-card-mcap">
+          <span className="token-card-mcap-value">{formatUsd(token.marketCap)}</span>
+          <span className="token-card-mcap-label"> MC</span>
+          <span
+            className={
+              token.change24h >= 0 ? "token-card-mcap-chg up" : "token-card-mcap-chg down"
+            }
+          >
+            {formatPercent(token.change24h, true)}
+          </span>
+        </p>
+
         <dl className="pointer-events-none token-card-stats">
           <div>
             <dt>Mcap</dt>
@@ -110,6 +124,10 @@ export function MarketTokenCard({
             </dd>
           </div>
         </dl>
+
+        <div className="token-card-meta">
+          <span>{age} ago</span>
+        </div>
 
         <BondMeter token={token} />
       </div>

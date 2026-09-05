@@ -2465,6 +2465,13 @@
     object-position: left center;
   }
 
+  @media (max-width: 767px) {
+    .hookit-fun-logo {
+      height: 28px;
+      max-width: min(52vw, 10rem);
+    }
+  }
+
   @media (min-width: 640px) {
     .hookit-fun-logo {
       height: 35px;
@@ -3969,6 +3976,80 @@
   .market-toolbar-row--search {
     width: 100%;
     justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .market-toolbar-create {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    padding: 0.55rem 0.95rem;
+    border-radius: 9999px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #161616;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .market-toolbar-create:hover {
+    border-color: rgb(149 20 209 / 0.55);
+    background: #1a1a1a;
+  }
+
+  .market-section-panel {
+    border-radius: 1.5rem;
+    border: 1px solid rgb(149 20 209 / 0.28);
+    background:
+      radial-gradient(circle at 14% 0%, rgb(149 20 209 / 0.16), transparent 52%),
+      linear-gradient(145deg, #1a1220, #121214 64%);
+    padding: 1.15rem 0.95rem 1.25rem;
+  }
+
+  .market-section-head {
+    margin-bottom: 0.15rem;
+  }
+
+  .market-section-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .market-section-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .market-section-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    height: 1.4rem;
+    padding: 0 0.45rem;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.08);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #d4d4d8;
+  }
+
+  .market-section-copy {
+    margin: 0.4rem 0 0;
+    max-width: 22rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgb(255 255 255 / 0.5);
   }
 
   .market-toolbar-row--controls {
@@ -3992,8 +4073,8 @@
   .market-toolbar-search {
     display: flex;
     width: min(100%, 30rem);
-    min-width: 14rem;
-    flex: 0 1 auto;
+    min-width: 0;
+    flex: 1 1 auto;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;
@@ -4809,6 +4890,41 @@
     line-height: 1;
   }
 
+  .token-card-mcap {
+    display: none;
+    margin: 0.15rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+  }
+
+  .token-card-mcap-label {
+    font-weight: 500;
+    color: rgb(255 255 255 / 0.45);
+  }
+
+  .token-card-mcap-chg {
+    margin-left: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .token-card-mcap-chg.up {
+    color: #34d399;
+  }
+
+  .token-card-mcap-chg.down {
+    color: #fb7185;
+  }
+
+  .token-card-meta {
+    display: none;
+    margin-top: 0.15rem;
+    font-size: 0.65rem;
+    color: #71717a;
+  }
+
   .token-card-stats {
     display: grid;
     gap: 0.08rem;
@@ -4837,6 +4953,60 @@
 
   .token-card-stats .down {
     color: #ef4444;
+  }
+
+  @media (max-width: 767px) {
+    .token-grid {
+      gap: 10px;
+    }
+
+    .market-card {
+      border-radius: 1.15rem;
+      background: #1f1f1f;
+      padding: 0.55rem;
+    }
+
+    .token-thumb {
+      border-radius: 0.85rem;
+      overflow: hidden;
+    }
+
+    .token-card-body {
+      gap: 0.2rem;
+      padding: 0.55rem 0.15rem 0.2rem;
+    }
+
+    .token-card-name {
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: none;
+      letter-spacing: -0.02em;
+    }
+
+    .token-card-ticker {
+      font-size: 0.75rem;
+    }
+
+    .token-card-mcap {
+      display: block;
+    }
+
+    .token-card-stats {
+      display: none;
+    }
+
+    .token-card-meta {
+      display: block;
+    }
+
+    .market-card .token-type-badges {
+      margin-top: 0.15rem;
+    }
+
+    .market-toolbar-search {
+      min-width: 0;
+      width: auto;
+    }
   }
 
   .token-card-creator {

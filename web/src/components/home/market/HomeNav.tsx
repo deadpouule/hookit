@@ -47,21 +47,6 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
         const active = isNavActive(link.href, pathname);
         const className = cn("home-nav-link", active && "home-nav-link--active");
 
-        if ("external" in link && link.external) {
-          return (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onNavigate}
-              className={className}
-            >
-              {link.label}
-            </a>
-          );
-        }
-
         return (
           <Link key={link.label} href={link.href} onClick={onNavigate} className={className}>
             {link.label}
@@ -77,10 +62,10 @@ export function HomeNav() {
 
   return (
     <header
-      className="sticky top-0 z-50 border-b border-border bg-background pt-[env(safe-area-inset-top)]"
+      className="sticky top-0 z-50 border-b border-border/60 bg-background/90 pt-[env(safe-area-inset-top)] backdrop-blur-md"
       suppressHydrationWarning
     >
-      <div className="market-shell flex h-14 items-center justify-between gap-3 sm:h-16">
+      <div className="market-shell flex h-14 items-center justify-between gap-2 sm:h-16 sm:gap-3">
         <Link href="/" aria-label="hookit.fun home" className="flex min-w-0 shrink items-center">
           <HookitFunLogo />
         </Link>
@@ -90,7 +75,6 @@ export function HomeNav() {
             <NavItems />
           </nav>
 
-          {/* Full launch CTA from sm up; icon-only on phones to free header space */}
           <Link
             href="/launch"
             className="launch-coin-nav launch-coin-nav--full"
@@ -99,15 +83,6 @@ export function HomeNav() {
             <LaunchRocketIcon />
             Launch coin
           </Link>
-          <Link
-            href="/launch"
-            className="launch-coin-nav launch-coin-nav--icon"
-            aria-label="Launch coin"
-          >
-            <LaunchRocketIcon />
-          </Link>
-
-          {/* Connect lives in the mobile bottom nav — keep header clean below md */}
           <div className="hidden md:block">
             <ConnectButton compact />
           </div>
@@ -115,7 +90,7 @@ export function HomeNav() {
           <button
             type="button"
             {...TOOLBAR_BUTTON_PROPS}
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-foreground hover:text-muted-foreground lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-foreground hover:bg-white/5 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menu"
             aria-expanded={open}
