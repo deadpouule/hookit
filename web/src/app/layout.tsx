@@ -50,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark min-h-dvh antialiased`}
       suppressHydrationWarning
     >

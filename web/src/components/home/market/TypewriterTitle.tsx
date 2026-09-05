@@ -61,7 +61,7 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
           alt=""
           width={46}
           height={46}
-          className="hero-typewriter-mark__photo"
+          className="hero-typewriter-mark__photo h-auto w-auto"
           draggable={false}
         />
       </span>
@@ -89,7 +89,7 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
           alt=""
           width={46}
           height={46}
-          className="hero-typewriter-mark__photo"
+          className="hero-typewriter-mark__photo h-auto w-auto"
           draggable={false}
         />
       </span>
@@ -117,7 +117,7 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
         alt=""
         width={46}
         height={46}
-        className="hero-typewriter-mark__photo"
+        className="hero-typewriter-mark__photo h-auto w-auto"
         draggable={false}
       />
     </span>

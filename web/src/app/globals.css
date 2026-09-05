@@ -2279,16 +2279,18 @@
 
   .hero-typewriter-mark__photo {
     display: block;
-    height: 100%;
-    width: 100%;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: cover;
   }
 
   .hero-typewriter-mark--usdg .hero-typewriter-mark__photo,
   .hero-typewriter-mark--mstr .hero-typewriter-mark__photo,
   .hero-typewriter-mark--tsla .hero-typewriter-mark__photo {
-    height: 118%;
-    width: 118%;
+    max-height: none;
+    max-width: none;
     transform: scale(1.22);
     object-fit: cover;
   }
@@ -2386,9 +2388,15 @@
   }
 
   .home-nav-brand {
-    display: flex;
+    display: none;
     flex-shrink: 0;
     align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .home-nav-brand {
+      display: flex;
+    }
   }
 
   .home-nav-right {

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const PRODUCT_LINKS = [
   { href: "/", label: "Explore" },
   { href: "/explore", label: "Hooks" },
-  { href: "/stats", label: "Stats" },
+  { href: "/stats", label: "Analytics" },
 ] as const;
 
 function isNavActive(href: string, pathname: string) {

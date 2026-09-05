@@ -9,7 +9,7 @@ export function HookitFunLogo({ className }: { className?: string }) {
       alt="hookit.fun"
       width={934}
       height={176}
-      className={cn("hookit-fun-logo", className)}
+      className={cn("hookit-fun-logo h-auto w-auto", className)}
       priority
       draggable={false}
     />

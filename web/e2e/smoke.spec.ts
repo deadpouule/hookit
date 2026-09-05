@@ -10,7 +10,8 @@ import { expect, test } from "@playwright/test";
 test.describe("Hookit UI smoke", () => {
   test("Explore home loads tokens", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: /hookit\.fun home/i })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Product" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Explore" }).first()).toBeVisible();
     // Wait for marketplace / token grid or list
     const tokensSection = page.locator("#tokens, .token-grid, .mobile-token-row, .market-card").first();
     await expect(tokensSection).toBeVisible({ timeout: 45_000 });
@@ -45,6 +46,7 @@ test.describe("Hookit UI smoke", () => {
     });
     await expect(page.getByRole("link", { name: "Explore" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Hooks" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Analytics" }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /Connect/i }).first()).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Mobile" })).toHaveCount(0);
   });

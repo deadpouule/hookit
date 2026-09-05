@@ -30,7 +30,7 @@ export function BuiltOnUniswapBadge({
         alt=""
         width={isHero ? 56 : 20}
         height={isHero ? 56 : 20}
-        className="built-on-uniswap-badge__logo"
+        className="built-on-uniswap-badge__logo h-auto w-auto"
         draggable={false}
       />
       <span className="built-on-uniswap-badge__text">{label}</span>
