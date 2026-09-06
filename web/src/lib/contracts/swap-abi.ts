@@ -174,6 +174,15 @@ export const v4QuoterAbi = [
 
 export const feeEscrowAbi = [
   {
+    type: "event",
+    name: "Claimed",
+    inputs: [
+      { name: "account", type: "address", indexed: true },
+      { name: "currency", type: "address", indexed: true },
+      { name: "amount", type: "uint256", indexed: false },
+    ],
+  },
+  {
     type: "function",
     name: "balanceOf",
     inputs: [
