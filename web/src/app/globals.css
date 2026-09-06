@@ -2883,7 +2883,7 @@
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
       grid-template-rows: auto minmax(0, 1fr);
       grid-template-areas:
-        "hero hero right"
+        "hero hero hero"
         "left center right";
       align-items: stretch;
     }
