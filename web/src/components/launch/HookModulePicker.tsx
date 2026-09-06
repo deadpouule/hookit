@@ -297,9 +297,10 @@ export function HookModulePicker({
   configHeading?: string;
 }) {
   const panelRefs = useRef<Partial<Record<PickerFocusId, HTMLDivElement | null>>>({});
-  const visibleHooks = hookIds
+  const visibleHooks = (hookIds
     ? MASTER_HOOKS.filter((hook) => hookIds.includes(hook.id))
-    : MASTER_HOOKS;
+    : MASTER_HOOKS
+  ).filter((hook) => !(multiMarket && hook.id === "backed-floor"));
   const enabledHooks = visibleHooks.filter((h) => isModuleEnabled(modules, h.id));
   const fixedFeeEnabled = includeFixedFee && hookTaxBps > 0 && !modules.dynamicFees;
   const [focus, setFocus] = useState<PickerFocusId | null>(
@@ -369,14 +370,12 @@ export function HookModulePicker({
   const renderPickCards = () =>
     visibleHooks.flatMap((hook) => {
       const selected = isModuleEnabled(modules, hook.id);
-      const disabled = multiMarket && hook.id === "backed-floor";
       const cards = [
         <HookPickCard
           key={hook.id}
           hook={hook}
           selected={selected}
           onClick={() => {
-            if (disabled) return;
             if (selected) {
               onToggle(hook.id, false);
               const next = enabledHooks.find((item) => item.id !== hook.id);

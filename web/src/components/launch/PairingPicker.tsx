@@ -173,33 +173,6 @@ export function PairingPicker({
                 />
               </div>
           ))}
-          <div>
-            <p className="mb-2 text-xs text-zinc-500">
-              Floor quote (when backed floor ships for multi) — stored for later
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {markets.map((market, index) => (
-                  <button
-                    key={market.id}
-                    type="button"
-                    disabled
-                    title="Backed floor disabled for multi-pool launches in v1"
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
-                      floorQuoteIndex === index
-                        ? "border-emerald-600/50 text-emerald-400"
-                        : "border-zinc-800 text-zinc-600"
-                    }`}
-                  >
-                    <PairingMark id={market.id} size="sm" />
-                    {formatPairingTicker(market.id)}
-                  </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-xs text-amber-600/90">
-            Multi-pool: Backed floor is not available yet (single-pair only for now). Anti-snipe,
-            anti-MEV, fees, and other modules still apply on every pool.
-          </p>
         </div>
       )}
     </div>
