@@ -232,12 +232,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return this.beforeInitialize.selector;
     }
 
-    function _beforeAddLiquidity(
-        address,
-        PoolKey calldata key,
-        ModifyLiquidityParams calldata params,
-        bytes calldata
-    ) internal override returns (bytes4) {
+    function _beforeAddLiquidity(address, PoolKey calldata key, ModifyLiquidityParams calldata params, bytes calldata)
+        internal
+        override
+        returns (bytes4)
+    {
         LaunchState storage st = _launchState[key.toId()];
         if (!st.initialized) revert UnknownPool();
         if (
@@ -297,14 +296,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
         bool quoteIsCurrency0 = !tokenIs0;
         uint16 effectiveHookTax = DynamicFeeMath.effectiveHookTaxBps(
-            packed,
-            quoteNotional,
-            sqrtPriceX96,
-            liquidity,
-            st.tickLower,
-            st.tickUpper,
-            quoteIsCurrency0,
-            isBuy
+            packed, quoteNotional, sqrtPriceX96, liquidity, st.tickLower, st.tickUpper, quoteIsCurrency0, isBuy
         );
 
         uint16 snipeBps;

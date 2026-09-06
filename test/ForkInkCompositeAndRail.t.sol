@@ -72,8 +72,7 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
         vm.startPrank(trader);
         IERC20(Currency.unwrap(usdg)).approve(address(router), usdgIn);
         bool hookBuyZfo = _buyZeroForOne(l.key, l.token);
-        uint256 tokensOut =
-            router.swapExactInComposite(bridgeKey, bridgeZfo, usdgIn, l.key, hookBuyZfo, wspyx, 1, 0, 0);
+        uint256 tokensOut = router.swapExactInComposite(bridgeKey, bridgeZfo, usdgIn, l.key, hookBuyZfo, wspyx, 1, 0, 0);
         vm.stopPrank();
         assertGt(tokensOut, 0);
 
@@ -96,8 +95,7 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
 
         uint256 snapshot = _wspyxListingUsd();
         uint256 mcapLive = factory.mcapQuoteFor(Currency.unwrap(wspyx));
-        uint256 expectedLive =
-            FixedPointMath.mcapQuoteWei(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, live, 18);
+        uint256 expectedLive = FixedPointMath.mcapQuoteWei(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, live, 18);
         assertEq(mcapLive, expectedLive, "mcap must use live USD");
 
         if (live != snapshot) {
@@ -141,10 +139,7 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
         uint256 used = factory.quoteUsdPriceX18(address(0));
         assertGt(used, 0);
         uint256 expectedMcap = factory.launchMcapQuoteWei();
-        assertEq(
-            expectedMcap,
-            FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, used)
-        );
+        assertEq(expectedMcap, FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, used));
     }
 
     function _wspyxListingUsd() internal pure returns (uint256) {

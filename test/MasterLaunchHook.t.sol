@@ -192,9 +192,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         swapRouter.swap(
             key,
             SwapParams({
-                zeroForOne: false,
-                amountSpecified: -int256(bal),
-                sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+                zeroForOne: false, amountSpecified: -int256(bal), sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))

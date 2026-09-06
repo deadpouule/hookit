@@ -133,9 +133,8 @@ library LaunchFactoryLib {
         plans = new PoolPlan[](marketLen);
         for (uint256 i; i < marketLen; ++i) {
             MarketInput calldata m = markets[i];
-            plans[i] = _computePoolPlan(
-                token, m.quote, tokenAmounts[i], totalSupply, spacing, hooks, fee, mcapQuotes[i]
-            );
+            plans[i] =
+                _computePoolPlan(token, m.quote, tokenAmounts[i], totalSupply, spacing, hooks, fee, mcapQuotes[i]);
             plans[i].bps = m.bps;
         }
     }

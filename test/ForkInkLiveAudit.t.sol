@@ -269,8 +269,9 @@ contract ForkInkLiveAuditTest is Test {
             (uint160 sqrt, int24 tick,,) = manager.getSlot0(key.toId());
             assertGt(sqrt, 0, "pool initialized on PoolManager");
             uint128 inRangeLiq = manager.getLiquidity(key.toId());
-            (uint128 posLiq,,) =
-                manager.getPositionInfo(key.toId(), address(FACTORY), st.tickLower, st.tickUpper, keccak256("HOOKIT.LAUNCH"));
+            (uint128 posLiq,,) = manager.getPositionInfo(
+                key.toId(), address(FACTORY), st.tickLower, st.tickUpper, keccak256("HOOKIT.LAUNCH")
+            );
             console.log("  tick");
             console.logInt(int256(tick));
             console.log("  tickLower / tickUpper");
@@ -334,7 +335,11 @@ contract ForkInkLiveAuditTest is Test {
                 );
             }
             if (mods.holderAirdrop) {
-                assertGt(uint256(HolderAirdropVault(payable(address(HOOK.airdropVault()))).epochSeconds(token)), 0, "airdrop epoch");
+                assertGt(
+                    uint256(HolderAirdropVault(payable(address(HOOK.airdropVault()))).epochSeconds(token)),
+                    0,
+                    "airdrop epoch"
+                );
             }
         }
     }

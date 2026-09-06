@@ -20,11 +20,11 @@ contract CreatorFeeWallet {
         escrow.claimAll(currencies);
     }
 
-    function launchEth(
-        LaunchFactory factory,
-        uint256 bitmask,
-        uint256 totalSupply
-    ) external payable returns (uint256 launchId, address token, PoolId poolId) {
+    function launchEth(LaunchFactory factory, uint256 bitmask, uint256 totalSupply)
+        external
+        payable
+        returns (uint256 launchId, address token, PoolId poolId)
+    {
         return factory.launch{value: msg.value}(
             LaunchFactory.LaunchParams({
                 name: "Contract",

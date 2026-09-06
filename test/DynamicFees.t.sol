@@ -40,9 +40,7 @@ contract DynamicFeesTest is LaunchpadTestBase {
         uint160 sqrtPrice = TickMath.getSqrtPriceAtTick(0);
         uint128 liquidity = 1_000_000e18;
 
-        uint256 depth = FixedPointMath.inRangeQuoteDepth(
-            sqrtPrice, liquidity, tickLower, tickUpper, false, true
-        );
+        uint256 depth = FixedPointMath.inRangeQuoteDepth(sqrtPrice, liquidity, tickLower, tickUpper, false, true);
         assertGt(depth, 0);
     }
 
@@ -56,12 +54,8 @@ contract DynamicFeesTest is LaunchpadTestBase {
         uint128 shallow = 1e18;
         uint128 deep = 1e22;
 
-        uint256 shallowDepth = FixedPointMath.inRangeQuoteDepth(
-            sqrtPrice, shallow, tickLower, tickUpper, false, true
-        );
-        uint256 deepDepth = FixedPointMath.inRangeQuoteDepth(
-            sqrtPrice, deep, tickLower, tickUpper, false, true
-        );
+        uint256 shallowDepth = FixedPointMath.inRangeQuoteDepth(sqrtPrice, shallow, tickLower, tickUpper, false, true);
+        uint256 deepDepth = FixedPointMath.inRangeQuoteDepth(sqrtPrice, deep, tickLower, tickUpper, false, true);
         assertGt(shallowDepth, 0);
         assertGt(deepDepth, shallowDepth);
 
@@ -69,9 +63,8 @@ contract DynamicFeesTest is LaunchpadTestBase {
         uint16 shallowTax = DynamicFeeMath.effectiveHookTaxBps(
             packed, tradeQuote, sqrtPrice, shallow, tickLower, tickUpper, false, true
         );
-        uint16 deepTax = DynamicFeeMath.effectiveHookTaxBps(
-            packed, tradeQuote, sqrtPrice, deep, tickLower, tickUpper, false, true
-        );
+        uint16 deepTax =
+            DynamicFeeMath.effectiveHookTaxBps(packed, tradeQuote, sqrtPrice, deep, tickLower, tickUpper, false, true);
 
         assertGt(shallowTax, deepTax);
     }
@@ -85,17 +78,14 @@ contract DynamicFeesTest is LaunchpadTestBase {
         uint160 sqrtPrice = TickMath.getSqrtPriceAtTick(0);
         uint128 liquidity = 100e18;
 
-        uint256 depth = FixedPointMath.inRangeQuoteDepth(
-            sqrtPrice, liquidity, tickLower, tickUpper, false, true
-        );
+        uint256 depth = FixedPointMath.inRangeQuoteDepth(sqrtPrice, liquidity, tickLower, tickUpper, false, true);
         assertGt(depth, 0);
 
         uint16 atHalf = DynamicFeeMath.effectiveHookTaxBps(
             packed, depth / 2, sqrtPrice, liquidity, tickLower, tickUpper, false, true
         );
-        uint16 atFull = DynamicFeeMath.effectiveHookTaxBps(
-            packed, depth, sqrtPrice, liquidity, tickLower, tickUpper, false, true
-        );
+        uint16 atFull =
+            DynamicFeeMath.effectiveHookTaxBps(packed, depth, sqrtPrice, liquidity, tickLower, tickUpper, false, true);
         uint16 over = DynamicFeeMath.effectiveHookTaxBps(
             packed, depth * 2, sqrtPrice, liquidity, tickLower, tickUpper, false, true
         );
@@ -108,7 +98,7 @@ contract DynamicFeesTest is LaunchpadTestBase {
 
     function testSwap_LargerTradePaysHigherFeeRateThanSmall() public {
         BitmaskConfig.Modules memory m = _dynamicModules();
-        (, , PoolId poolId,) = launchToken(m, 60, 1_000_000_000e18);
+        (,, PoolId poolId,) = launchToken(m, 60, 1_000_000_000e18);
 
         MasterLaunchHook.LaunchState memory st = hook.launchState(poolId);
         assertGt(st.seedLiquidity, 0);
@@ -138,9 +128,8 @@ contract DynamicFeesTest is LaunchpadTestBase {
         uint160 sqrtPrice = TickMath.getSqrtPriceAtTick(0);
 
         // liquidity=0 → depth=0 → must not ramp to max (would revert buys).
-        uint16 tax = DynamicFeeMath.effectiveHookTaxBps(
-            packed, 1 ether, sqrtPrice, 0, tickLower, tickUpper, false, true
-        );
+        uint16 tax =
+            DynamicFeeMath.effectiveHookTaxBps(packed, 1 ether, sqrtPrice, 0, tickLower, tickUpper, false, true);
         assertEq(tax, 0, "empty depth stays at min hook tax");
     }
 

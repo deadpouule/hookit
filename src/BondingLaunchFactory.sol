@@ -262,7 +262,9 @@ contract BondingLaunchFactory is Owned {
             address(this),
             abi.encodePacked(
                 type(LaunchToken).creationCode,
-                abi.encode(params.name, params.symbol, supply, msg.sender, address(this), params.metadataURI, address(0))
+                abi.encode(
+                    params.name, params.symbol, supply, msg.sender, address(this), params.metadataURI, address(0)
+                )
             ),
             keccak256(abi.encodePacked(params.name, params.symbol, msg.sender, supply, params.metadataURI, launchCount))
         );

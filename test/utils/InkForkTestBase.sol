@@ -405,25 +405,20 @@ abstract contract InkForkTestBase is Test {
         if (m.autoBurn) {
             uint256 supplyAfter = IERC20(l.token).totalSupply();
             assertTrue(
-                supplyAfter < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0,
-                "autoBurn should burn or queue"
+                supplyAfter < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "autoBurn should burn or queue"
             );
         }
         if (m.lpDonate) {
             (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
             assertTrue(
-                g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0,
-                "lpDonate fee growth"
+                g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0, "lpDonate fee growth"
             );
         }
     }
 
-    function _moduleSmoke(
-        BitmaskConfig.Modules memory m,
-        Currency quote,
-        string memory name,
-        string memory symbol
-    ) internal {
+    function _moduleSmoke(BitmaskConfig.Modules memory m, Currency quote, string memory name, string memory symbol)
+        internal
+    {
         LaunchResult memory l = _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, name, symbol);
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();

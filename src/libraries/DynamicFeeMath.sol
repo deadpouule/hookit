@@ -43,9 +43,8 @@ library DynamicFeeMath {
             depthPrice = sqrtUpper - 1;
         }
 
-        uint256 depth = FixedPointMath.inRangeQuoteDepth(
-            depthPrice, liquidity, tickLower, tickUpper, quoteIsCurrency0, isBuy
-        );
+        uint256 depth =
+            FixedPointMath.inRangeQuoteDepth(depthPrice, liquidity, tickLower, tickUpper, quoteIsCurrency0, isBuy);
 
         uint16 saturationBps = BitmaskConfig.dynamicFeeDepthSaturationBps(packed);
         if (saturationBps == 0) saturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;

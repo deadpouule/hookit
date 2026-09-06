@@ -22,9 +22,8 @@ contract SeedQuotronStockQuotesScript is Script {
         for (uint256 i; i < stocks.length; ++i) {
             factory.setQuote(stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0));
             if (bondingAddr != address(0)) {
-                BondingLaunchFactory(payable(bondingAddr)).setQuote(
-                    stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0)
-                );
+                BondingLaunchFactory(payable(bondingAddr))
+                    .setQuote(stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0));
             }
         }
         vm.stopBroadcast();

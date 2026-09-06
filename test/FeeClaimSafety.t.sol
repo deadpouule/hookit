@@ -156,7 +156,8 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
         uint256 bitmask = BitmaskConfig.pack(m);
 
         vm.prank(address(wallet));
-        (uint256 launchId,,) = wallet.launchEth{value: ProtocolConstants.LAUNCH_FEE_WEI}(factory, bitmask, 1_000_000_000e18);
+        (uint256 launchId,,) =
+            wallet.launchEth{value: ProtocolConstants.LAUNCH_FEE_WEI}(factory, bitmask, 1_000_000_000e18);
         PoolKey memory key = factory.poolKeyOf(launchId);
 
         vm.deal(trader, 5 ether);
@@ -309,15 +310,14 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
         uint256 expectedCreator = FixedPointMath.applyBps(10 ether, ProtocolConstants.BASE_FEE_BPS);
         expectedCreator = FixedPointMath.applyBps(expectedCreator, ProtocolConstants.CREATOR_SHARE_BPS);
         assertApproxEqRel(creatorBal, expectedCreator, 0.02e18);
-        assertApproxEqRel(creatorBal + protoBal, FixedPointMath.applyBps(10 ether, ProtocolConstants.BASE_FEE_BPS), 0.02e18);
+        assertApproxEqRel(
+            creatorBal + protoBal, FixedPointMath.applyBps(10 ether, ProtocolConstants.BASE_FEE_BPS), 0.02e18
+        );
     }
 
     // ─── Helpers ────────────────────────────────────────────────────────────
 
-    function _graduateClassicPool()
-        internal
-        returns (PoolKey memory key, PoolId poolId, address token)
-    {
+    function _graduateClassicPool() internal returns (PoolKey memory key, PoolId poolId, address token) {
         vm.prank(creator);
         (uint256 launchId, address t) = bonding.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             BondingLaunchFactory.LaunchParams({

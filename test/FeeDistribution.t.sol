@@ -179,8 +179,7 @@ contract FeeDistributionTest is Test {
     }
 
     function testConstructorDefaultsToBuybackBurn() public {
-        ProtocolRevenueDistributor fresh =
-            new ProtocolRevenueDistributor(address(this), ops, IPoolManager(address(0)));
+        ProtocolRevenueDistributor fresh = new ProtocolRevenueDistributor(address(this), ops, IPoolManager(address(0)));
         assertEq(
             uint8(fresh.flywheelMode()),
             uint8(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn),
