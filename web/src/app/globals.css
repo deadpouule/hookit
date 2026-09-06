@@ -6037,7 +6037,7 @@
   .hero-carousel {
     position: relative;
     z-index: 10;
-    height: 280px;
+    height: 300px;
     overflow: hidden;
   }
 
@@ -6045,19 +6045,75 @@
     position: relative;
     height: 100%;
     width: 100%;
-    perspective: 1100px;
-    perspective-origin: 50% 48%;
   }
 
   .hero-carousel-item {
     position: absolute;
-    top: 50%;
+    top: 46%;
     left: 50%;
     width: 188px;
     margin-left: -94px;
     margin-top: -122px;
-    transform-style: preserve-3d;
     will-change: transform, opacity;
+  }
+
+  .hero-carousel-nav {
+    position: absolute;
+    top: 46%;
+    z-index: 20;
+    display: flex;
+    height: 32px;
+    width: 32px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-radius: 999px;
+    background: rgb(17 17 17 / 0.86);
+    color: #fff;
+    transform: translateY(-50%);
+  }
+
+  .hero-carousel-nav svg {
+    height: 16px;
+    width: 16px;
+  }
+
+  .hero-carousel-nav--prev {
+    left: 0.35rem;
+  }
+
+  .hero-carousel-nav--next {
+    right: 0.35rem;
+  }
+
+  .hero-carousel-nav:hover {
+    border-color: #9514d1;
+    color: #fff;
+  }
+
+  .hero-carousel-dots {
+    position: absolute;
+    right: 0;
+    bottom: 0.35rem;
+    left: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .hero-carousel-dot {
+    height: 6px;
+    width: 6px;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.28);
+    padding: 0;
+  }
+
+  .hero-carousel-dot.is-on {
+    width: 16px;
+    background: #9514d1;
   }
 
   .hero-hook-focus {
@@ -6191,7 +6247,7 @@
   }
 
   .hero-hook-ascii .ascii-shape {
-    font-size: 6.5px;
+    font-size: 7.6px;
     line-height: 1;
   }
 
@@ -6208,13 +6264,22 @@
     }
 
     .hero-carousel {
-      height: 180px;
+      height: 210px;
     }
 
     .hero-carousel-item {
       width: 132px;
       margin-left: -66px;
       margin-top: -88px;
+    }
+
+    .hero-carousel-nav {
+      height: 28px;
+      width: 28px;
+    }
+
+    .hero-carousel-dots {
+      bottom: 0.2rem;
     }
 
     .hero-hook-card {
@@ -6224,7 +6289,7 @@
     }
 
     .hero-hook-ascii .ascii-shape {
-      font-size: 4.5px;
+      font-size: 5.4px;
     }
 
     .hero-hook-card .hero-hook-title-badge {
@@ -6286,7 +6351,7 @@
     }
 
     .hero-hook-ascii .ascii-shape {
-      font-size: 7px;
+      font-size: 8.2px;
     }
   }
 

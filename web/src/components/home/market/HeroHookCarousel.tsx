@@ -2,58 +2,46 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { AsciiShape } from "@/components/explore/AsciiShape";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import {
+  FIXED_FEE_HOOK,
   MASTER_HOOKS,
   launchWithHookHref,
-  type MasterHook,
+  type BrowseHook,
 } from "@/lib/master-hooks";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
+const HOOKS: BrowseHook[] = [...MASTER_HOOKS, FIXED_FEE_HOOK];
 const SLOTS = [-2, -1, 0, 1, 2] as const;
 const EASE = "easeInOut" as const;
-const DURATION = 0.5;
-const ROTATE_MS = 2200;
+const DURATION = 0.45;
+const ROTATE_MS = 2800;
 
 function wrap(index: number, length: number) {
   return ((index % length) + length) % length;
 }
 
-function pose(offset: number, reduce: boolean) {
+function pose(offset: number) {
   const active = offset === 0;
-  const abs = Math.abs(offset);
-  const side = offset === 0 ? 0 : offset > 0 ? 1 : -1;
-
-  if (reduce) {
-    return {
-      x: offset * 118,
-      rotateY: 0,
-      scale: active ? 1 : 0.85,
-      opacity: active ? 1 : 0.4,
-    };
-  }
-
   return {
-    x: offset * 108,
-    rotateY: side * -42 * Math.min(abs, 2),
-    scale: active ? 1 : 0.85,
-    opacity: active ? 1 : 0.4,
+    x: offset * 148,
+    scale: active ? 1 : 0.86,
+    opacity: active ? 1 : 0.42,
   };
 }
 
 function MiniHookCard({
   hook,
   offset,
-  reduce,
   onSelect,
 }: {
-  hook: MasterHook;
+  hook: BrowseHook;
   offset: number;
-  reduce: boolean;
   onSelect: () => void;
 }) {
   const active = offset === 0;
@@ -77,26 +65,13 @@ function MiniHookCard({
   return (
     <motion.div
       className="hero-carousel-item"
-      initial={{ ...pose(offset, reduce), opacity: 0, scale: 0.72, x: offset * 156 }}
-      animate={pose(offset, reduce)}
-      exit={{
-        opacity: 0,
-        scale: 0.72,
-        x: offset * 156,
-        rotateY: offset * -48,
-      }}
+      initial={{ ...pose(offset), opacity: 0, scale: 0.78 }}
+      animate={pose(offset)}
+      exit={{ opacity: 0, scale: 0.78, x: offset * 180 }}
       transition={{ duration: DURATION, ease: EASE }}
-      style={{
-        transformPerspective: 1100,
-        transformOrigin: "center center",
-        zIndex: 10 - Math.abs(offset),
-      }}
+      style={{ zIndex: 10 - Math.abs(offset) }}
     >
-      <motion.div
-        className="hero-hook-focus"
-        animate={{ filter: reduce || active ? "blur(0px)" : "blur(2px)" }}
-        transition={{ duration: DURATION, ease: EASE }}
-      >
+      <div className="hero-hook-focus">
         {active ? (
           <Link
             href={launchWithHookHref(hook.id)}
@@ -115,7 +90,7 @@ function MiniHookCard({
             {body}
           </button>
         )}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -124,7 +99,7 @@ export function HeroHookCarousel() {
   const reduce = useReducedMotion();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const count = MASTER_HOOKS.length;
+  const count = HOOKS.length;
 
   useEffect(() => {
     if (paused || reduce) return;
@@ -142,21 +117,52 @@ export function HeroHookCarousel() {
       aria-roledescription="carousel"
       aria-label="Master hook modules"
     >
+      <button
+        type="button"
+        className="hero-carousel-nav hero-carousel-nav--prev"
+        aria-label="Previous hook"
+        onClick={() => setActive((index) => wrap(index - 1, count))}
+      >
+        <ChevronLeft />
+      </button>
+
       <div className="hero-carousel-scene">
         <AnimatePresence initial={false}>
           {SLOTS.map((offset) => {
-            const hook = MASTER_HOOKS[wrap(active + offset, count)];
+            const hook = HOOKS[wrap(active + offset, count)];
             return (
               <MiniHookCard
                 key={hook.id}
                 hook={hook}
                 offset={offset}
-                reduce={!!reduce}
                 onSelect={() => setActive(wrap(active + offset, count))}
               />
             );
           })}
         </AnimatePresence>
+      </div>
+
+      <button
+        type="button"
+        className="hero-carousel-nav hero-carousel-nav--next"
+        aria-label="Next hook"
+        onClick={() => setActive((index) => wrap(index + 1, count))}
+      >
+        <ChevronRight />
+      </button>
+
+      <div className="hero-carousel-dots" role="tablist" aria-label="Hook slides">
+        {HOOKS.map((hook, index) => (
+          <button
+            key={hook.id}
+            type="button"
+            role="tab"
+            aria-selected={index === active}
+            aria-label={hook.title}
+            className={cn("hero-carousel-dot", index === active && "is-on")}
+            onClick={() => setActive(index)}
+          />
+        ))}
       </div>
     </div>
   );
