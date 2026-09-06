@@ -306,9 +306,14 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
 
         address[] storage list = _holders[token];
         uint256 lastIdx = list.length;
-        list[idx - 1] = list[lastIdx - 1];
+        // Swap-and-pop; when the account is already last there is nothing to move
+        // (indexing `list[idx - 1]` after the pop would panic out of bounds).
+        if (idx != lastIdx) {
+            address moved = list[lastIdx - 1];
+            list[idx - 1] = moved;
+            _holderIndex[token][moved] = idx;
+        }
         list.pop();
-        _holderIndex[token][list[idx - 1]] = idx;
         _holderIndex[token][account] = 0;
         emit HolderSynced(token, account, false);
     }

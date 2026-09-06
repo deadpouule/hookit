@@ -115,6 +115,48 @@ contract HolderAirdropTest is LaunchpadTestBase {
         assertGe(airdrops.holderCount(token), 2);
     }
 
+    /// Selling / transferring a full balance drops the holder from the tracked set.
+    /// The last-indexed holder used to panic out of bounds in `_removeHolder`.
+    function testFullExitOfLastHolderDoesNotRevert() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.holderAirdrop = true;
+        m.hookTaxBps = 200;
+        m.holderAirdropBps = 10_000;
+
+        (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        _buyAs(alice, key, 0.2 ether);
+        _buyAs(bob, key, 0.2 ether);
+        uint256 before = airdrops.holderCount(token);
+        assertGe(before, 2);
+
+        address carol = address(0xCA201);
+        uint256 bobBal = LaunchTokenLike(token).balanceOf(bob);
+        vm.prank(bob);
+        LaunchTokenLike(token).transfer(carol, bobBal);
+
+        assertEq(LaunchTokenLike(token).balanceOf(bob), 0);
+        assertEq(airdrops.holderCount(token), before);
+        address[] memory holders = airdrops.holderList(token);
+        bool bobListed;
+        bool carolListed;
+        for (uint256 i; i < holders.length; ++i) {
+            if (holders[i] == bob) bobListed = true;
+            if (holders[i] == carol) carolListed = true;
+        }
+        assertFalse(bobListed);
+        assertTrue(carolListed);
+
+        // Removing a middle holder keeps the moved holder's index consistent.
+        uint256 aliceBal = LaunchTokenLike(token).balanceOf(alice);
+        vm.prank(alice);
+        LaunchTokenLike(token).transfer(carol, aliceBal);
+        holders = airdrops.holderList(token);
+        assertEq(holders.length, before - 1);
+        for (uint256 i; i < holders.length; ++i) {
+            assertTrue(holders[i] != alice && holders[i] != bob);
+        }
+    }
+
     function _buyAs(address user, PoolKey memory key, uint256 ethIn) internal {
         vm.prank(user);
         swapRouter.swap{value: ethIn}(
