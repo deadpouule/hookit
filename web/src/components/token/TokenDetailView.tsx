@@ -362,6 +362,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             <div className="token-desk-hero min-w-0">{heroCard}</div>
             <aside className="token-desk-rail token-desk-rail--left space-y-3">
               <ActiveHooksPanel pool={pool} />
+              <CreatorActions pool={activePool} />
             </aside>
           </>
         )}
@@ -412,8 +413,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               onBuyPrefillConsumed={() => setBuyPrefill(null)}
             />
           </div>
-          {isClassicDesk && <BondingProgress pool={pool} />}
-          <CreatorActions pool={activePool} />
+          {isClassicDesk && (
+            <>
+              <BondingProgress pool={pool} />
+              <CreatorActions pool={activePool} />
+            </>
+          )}
         </aside>
       </div>
     </div>

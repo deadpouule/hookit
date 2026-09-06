@@ -23,6 +23,14 @@ function quoteDecimals(quote: Address): number {
   return 18;
 }
 
+/** Compact fee amount: full precision stays in the title attribute. */
+function formatFeeAmount(wei: bigint, decimals: number): string {
+  if (wei === BigInt(0)) return "0";
+  const value = Number(formatUnits(wei, decimals));
+  if (value >= 1) return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  return Number(value.toPrecision(6)).toString();
+}
+
 /** Creator fee claim — floor redeem lives inside ActiveHooksPanel / Backed floor. */
 export function CreatorActions({ pool }: { pool: TokenPool }) {
   const { address } = useAccount();
@@ -143,29 +151,6 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
     }
   };
 
-  const claimAllQuotes = async () => {
-    if (!escrow) return;
-    setMessage(null);
-    try {
-      const currencies = Array.from(
-        new Set([quote, zeroAddress, STABLE_QUOTE_ADDRESS].map((c) => c.toLowerCase())),
-      ) as Address[];
-      const hash = await writeContractAsync({
-        address: escrow,
-        abi: feeEscrowAbi,
-        functionName: "claimAll",
-        args: [currencies],
-      });
-      await publicClient?.waitForTransactionReceipt({ hash });
-      await refetchClaimable();
-      setMessage("All quote fees claimed");
-      toast.success("All quote fees claimed");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Claim failed";
-      setMessage(msg);
-      toast.error("Claim failed", msg.slice(0, 120));
-    }
-  };
 
   return (
     <div className="desk-card space-y-3 border border-[#9514d1]/25 p-4">
@@ -183,7 +168,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
           <div>
             <p className="text-xs text-amber-200/90">Unsynced fees</p>
             <p className="font-mono text-sm text-zinc-100">
-              {formatUnits(pendingWei, decimals)} {quoteLabel}
+              {formatFeeAmount(pendingWei, decimals)} {quoteLabel}
             </p>
             <p className="mt-1 text-[11px] text-zinc-500">
               Classic pools accrue on the fee hook until synced to escrow.
@@ -201,31 +186,20 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       ) : null}
 
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-zinc-500">Available to claim</p>
-          <p className="font-mono text-lg text-foreground">
-            {formatUnits(claimWei, decimals)} {quoteLabel}
+          <p className="truncate font-mono text-lg text-foreground" title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}>
+            {formatFeeAmount(claimWei, decimals)} {quoteLabel}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={!escrow || claimWei === BigInt(0) || isPending}
-            onClick={() => void claim()}
-            className="rounded-lg bg-[#9514d1] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#a82be0] disabled:opacity-40"
-          >
-            Claim
-          </button>
-          <button
-            type="button"
-            disabled={!escrow || isPending}
-            onClick={() => void claimAllQuotes()}
-            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-400 transition hover:border-[#9514d1] disabled:opacity-40"
-            title="Claim ETH + stable quote balances"
-          >
-            Claim all
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={!escrow || claimWei === BigInt(0) || isPending}
+          onClick={() => void claim()}
+          className="shrink-0 rounded-lg bg-[#9514d1] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#a82be0] disabled:opacity-40"
+        >
+          Claim
+        </button>
       </div>
       {message && <p className="text-xs text-zinc-400">{message}</p>}
     </div>
