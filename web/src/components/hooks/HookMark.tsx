@@ -134,11 +134,11 @@ function Glyph({ id }: { id: HookId }) {
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
           <path
-            d="M12 1.55c-2.45-2.7-6.9-.55-6.6 3.25 0 3.75 6.6 8 6.6 8s6.6-4.25 6.6-8C18.9 1 14.45-1.15 12 1.55Z"
+            d="M12 4.55c-0.95-1.05-2.65-.22-2.55 1.2 0 1.4 2.55 2.85 2.55 2.85s2.55-1.45 2.55-2.85C14.65 4.33 12.95 3.5 12 4.55Z"
             fill={stroke}
             fillOpacity="0.28"
             stroke={stroke}
-            strokeWidth="1.8"
+            strokeWidth="1.45"
             strokeLinejoin="round"
           />
           <path d="M9.1 13.6V10.7a1.35 1.35 0 0 1 2.7 0v2.9" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
