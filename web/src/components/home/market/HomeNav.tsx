@@ -88,7 +88,7 @@ export function HomeNav() {
             <LaunchRocketIcon />
             Launch coin
           </Link>
-          <ConnectButton compact className="home-connect--accent" />
+          <ConnectButton compact />
         </div>
       </div>
     </header>

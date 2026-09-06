@@ -2528,7 +2528,7 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 9999px;
+    border-radius: 6px;
     border: 1px solid rgb(255 255 255 / 0.1);
     background: rgb(255 255 255 / 0.04);
     color: #fff;
@@ -2571,7 +2571,7 @@
     gap: 0;
     max-width: min(58vw, 16rem);
     overflow-x: auto;
-    border-radius: 9999px;
+    border-radius: 6px;
     background: rgb(255 255 255 / 0.06);
     padding: 3px;
     scrollbar-width: none;
@@ -2588,7 +2588,7 @@
     justify-content: center;
     min-height: 32px;
     padding: 0.4rem 0.6rem;
-    border-radius: 9999px;
+    border-radius: 4px;
     font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1;
@@ -2621,7 +2621,7 @@
     min-height: 44px;
     padding: 11px 22px;
     border: none;
-    border-radius: 9999px;
+    border-radius: 6px;
     background: var(--color-magenta);
     color: #ffffff;
     font-size: 15px;
@@ -2683,36 +2683,58 @@
     justify-content: center;
     gap: 8px;
     min-height: 44px;
-    border-radius: 9999px;
-    border: 1px solid transparent;
-    background: #111111;
+    border-radius: 6px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #000000;
     padding: 10px 14px;
     font-size: 15px;
     font-weight: 600;
     line-height: 1;
     color: #fff;
     white-space: nowrap;
-    transition: background 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
   }
 
   .home-connect:hover {
-    background: #1a1a1a;
-    border-color: #9514d1;
+    background: #0a0a0a;
+    border-color: rgb(255 255 255 / 0.2);
   }
 
-  .home-connect--accent {
-    border: none;
-    background: var(--color-magenta);
-    color: #fff;
+  .home-connect--warn {
+    border-color: rgb(245 158 11 / 0.45);
+    background: rgb(245 158 11 / 0.12);
+    color: #fde68a;
   }
 
-  .home-connect--accent:hover {
-    background: #a832e0;
-    border-color: transparent;
-    filter: none;
+  .home-connect--connected {
+    background: #000000;
+    border-color: rgb(255 255 255 / 0.12);
   }
 
-  .home-connect--accent svg {
+  .home-connect-live-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: #9514d1;
+    box-shadow: 0 0 8px rgb(149 20 209 / 0.7);
+    animation: home-connect-blink 1.15s ease-in-out infinite;
+  }
+
+  @keyframes home-connect-blink {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgb(149 20 209 / 0.55);
+    }
+
+    50% {
+      opacity: 0.35;
+      box-shadow: 0 0 0 4px rgb(149 20 209 / 0);
+    }
+  }
+
+  .home-connect svg {
     display: block;
   }
 
@@ -4692,6 +4714,28 @@
   .market-filter-pill--active {
     background: #2a2a2e;
     color: #fff;
+  }
+
+  .market-filter-pill--soon {
+    color: #52525b;
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
+
+  .market-filter-pill--soon:hover {
+    color: #52525b;
+  }
+
+  .market-filter-pill__hint {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    color: #71717a;
+  }
+
+  .market-filter-pill--soon .market-filter-pill__hint {
+    color: #52525b;
   }
 
   .master-hook-filter-menu {

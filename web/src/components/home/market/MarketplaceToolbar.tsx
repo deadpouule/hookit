@@ -72,18 +72,11 @@ export function MarketplaceToolbar({
 
       <div className="market-toolbar-row market-toolbar-row--controls">
         <div className="market-toolbar-group market-toolbar-group--category">
-          <FilterPill active={category === "all"} onClick={() => onCategoryChange("all")} label="All" />
           <MasterHookFilterMenu
             active={category === "master"}
             selectedHooks={masterHooks}
             onSelectedHooksChange={onMasterHooksChange}
             onActivateMaster={onActivateMaster}
-          />
-          <FilterPill
-            active={category === "customs"}
-            onClick={() => onCategoryChange("customs")}
-            glyph={<CustomsGlyph />}
-            label="Customs"
           />
           <RwaFilterMenu
             active={category === "rwa"}
@@ -93,9 +86,17 @@ export function MarketplaceToolbar({
           />
           <FilterPill
             active={category === "multi"}
-            onClick={() => onCategoryChange("multi")}
+            onClick={() => onCategoryChange(category === "multi" ? "all" : "multi")}
             glyph={<MultiPairGlyph />}
             label="Multi pair"
+          />
+          <FilterPill
+            active={false}
+            onClick={() => undefined}
+            glyph={<CustomsGlyph />}
+            label="Custom"
+            hint="coming soon"
+            disabled
           />
         </div>
 
@@ -148,6 +149,8 @@ function FilterPill({
   icon: Icon,
   glyph,
   live,
+  hint,
+  disabled,
 }: {
   active: boolean;
   onClick: () => void;
@@ -155,15 +158,20 @@ function FilterPill({
   icon?: typeof Trophy;
   glyph?: ReactNode;
   live?: boolean;
+  hint?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
+      title={disabled && hint ? `${label} — ${hint}` : undefined}
       {...TOOLBAR_BUTTON_PROPS}
       className={cn(
         "market-filter-pill",
         active && "market-filter-pill--active",
+        disabled && "market-filter-pill--soon",
       )}
     >
       {live ? (
@@ -173,7 +181,8 @@ function FilterPill({
       ) : Icon ? (
         <Icon className="h-3.5 w-3.5 shrink-0" />
       ) : null}
-      {label}
+      <span>{label}</span>
+      {hint ? <span className="market-filter-pill__hint">{hint}</span> : null}
     </button>
   );
 }

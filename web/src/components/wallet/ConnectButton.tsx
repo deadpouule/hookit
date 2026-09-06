@@ -39,7 +39,7 @@ export function ConnectButton({
         className={cn(
           compact
             ? "home-connect disabled:opacity-50"
-            : "rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-sm text-zinc-100 disabled:opacity-50",
+            : "rounded-md border border-white/15 bg-black px-4 py-1.5 text-sm text-zinc-100 disabled:opacity-50",
           className,
         )}
       >
@@ -76,7 +76,7 @@ export function ConnectButton({
               className={cn(
                 compact
                   ? "home-connect"
-                  : "rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-white/[0.08]",
+                  : "rounded-md border border-white/15 bg-black px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-zinc-950",
                 className,
               )}
             >
@@ -93,7 +93,9 @@ export function ConnectButton({
               onClick={openChainModal}
               {...TOOLBAR_BUTTON_PROPS}
               className={cn(
-                "rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition hover:bg-amber-500/20",
+                compact
+                  ? "home-connect home-connect--warn"
+                  : "rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-sm text-amber-200 transition hover:bg-amber-500/20",
                 className,
               )}
             >
@@ -109,12 +111,12 @@ export function ConnectButton({
             {...TOOLBAR_BUTTON_PROPS}
             className={cn(
               compact
-                ? "home-connect font-mono"
-                : "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 font-mono text-sm text-zinc-100 transition hover:bg-white/[0.08]",
+                ? "home-connect home-connect--connected font-mono"
+                : "inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-black px-3 py-1.5 font-mono text-sm text-zinc-100 transition hover:bg-zinc-950",
               className,
             )}
           >
-            <span className="h-2 w-2 rounded-full bg-[#9514d1] shadow-[0_0_8px_rgba(149,20,209,0.55)]" />
+            <span className="home-connect-live-dot" aria-hidden />
             {account.displayName}
           </button>
         );
