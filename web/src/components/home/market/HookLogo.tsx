@@ -123,18 +123,20 @@ function Glyph({ id }: { id: BrowseHookId }) {
       return (
         <svg viewBox="0 0 24 24" fill="none">
           <path
-            d="M12 4.55c-0.95-1.05-2.65-.22-2.55 1.2 0 1.4 2.55 2.85 2.55 2.85s2.55-1.45 2.55-2.85C14.65 4.33 12.95 3.5 12 4.55Z"
+            d="M12 2.15c-0.95-1.05-2.65-.22-2.55 1.2 0 1.4 2.55 2.85 2.55 2.85s2.55-1.45 2.55-2.85C14.65 1.93 12.95 1.1 12 2.15Z"
             fill={stroke}
             fillOpacity="0.28"
             stroke={stroke}
             strokeWidth="1.45"
             strokeLinejoin="round"
           />
-          <path d="M9.1 13.6V10.7a1.35 1.35 0 0 1 2.7 0v2.9" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M12.2 13.5V10.15a1.35 1.35 0 1 1 2.7 0V13.5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
-          <path d="M15.3 13.7v-2.3a1.35 1.35 0 1 1 2.7 0V15" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M6.15 14.9 4.05 12.7a1.2 1.2 0 0 1 1.7-1.7L7.55 14.2" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M7.2 14.25V11.55a1.2 1.2 0 0 1 2.4 0v2.7" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M9.85 13.6V10.7a1.3 1.3 0 0 1 2.6 0v2.9" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M12.7 13.5V10.15a1.3 1.3 0 1 1 2.6 0V13.5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M15.55 13.7v-2.25a1.25 1.25 0 1 1 2.5 0V15" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
           <path
-            d="M6.4 14.8c-1.15-.15-2.5.7-2.55 2.15-.05 1.15.7 1.9 1.7 2.55L8.4 21.2c.85.7 2 1.1 3.15 1.1h2.05c2.85 0 5.1-1.85 5.1-4.7v-2.7"
+            d="M7.2 14.4c-1.05.2-2.15 1.15-2.05 2.35.1 1.15 1.05 1.8 2.1 2.25L8.4 21.2c.85.7 2 1.1 3.15 1.1h2.05c2.85 0 5.1-1.85 5.1-4.7v-2.7"
             stroke={stroke}
             strokeWidth="1.75"
             strokeLinecap="round"
