@@ -59,6 +59,9 @@ function deriveSide(sell: SwapAsset, buy: SwapAsset, pool: TokenPool): Side {
   return "sell";
 }
 
+type RawBalances = { token: bigint; eth: bigint; usdg: bigint; quote: bigint };
+const ZERO_BALANCES: RawBalances = { token: 0n, eth: 0n, usdg: 0n, quote: 0n };
+
 function paymentIdFromAsset(asset: SwapAsset): PaymentAssetId {
   if (asset.isNative) return "ETH";
   if (isStableSwapAsset(asset)) return "USDC";
@@ -123,10 +126,8 @@ export function TokenSwapCard({
   const [slippagePct] = useState(5);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tokenBal, setTokenBal] = useState<number>(0);
-  const [ethBal, setEthBal] = useState<number>(0);
-  const [usdgBal, setUsdgBal] = useState<number>(0);
-  const [quoteBal, setQuoteBal] = useState<number>(0);
+  const [rawBalances, setRawBalances] = useState<RawBalances>(ZERO_BALANCES);
+  const tokenBal = Number(formatUnits(rawBalances.token, 18));
 
   const liveEthUsd = useEthUsd();
   const ethUsd = resolveEthUsd(pool, liveEthUsd);
@@ -172,39 +173,28 @@ export function TokenSwapCard({
 
   useEffect(() => {
     if (!walletReady) {
-      setTokenBal(0);
-      setEthBal(0);
-      setUsdgBal(0);
-      setQuoteBal(0);
+      setRawBalances(ZERO_BALANCES);
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const [tokenRaw, ethRaw, usdgRaw, quoteRaw] = await Promise.all([
+        const [token, eth, usdg, quote] = await Promise.all([
           fetchTokenBalance(),
           fetchEthBalance(),
           fetchUsdgBalance(),
           quoteErc20 ? fetchQuoteBalance() : Promise.resolve(BigInt(0)),
         ]);
         if (cancelled) return;
-        setTokenBal(Number(formatUnits(tokenRaw, 18)));
-        setEthBal(Number(formatUnits(ethRaw, 18)));
-        setUsdgBal(Number(formatUnits(usdgRaw, 6)));
-        setQuoteBal(Number(formatUnits(quoteRaw, poolQuote.decimals)));
+        setRawBalances({ token, eth, usdg, quote });
       } catch {
-        if (!cancelled) {
-          setTokenBal(0);
-          setEthBal(0);
-          setUsdgBal(0);
-          setQuoteBal(0);
-        }
+        if (!cancelled) setRawBalances(ZERO_BALANCES);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, fetchQuoteBalance, quoteErc20, poolQuote.decimals, address]);
+  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, fetchQuoteBalance, quoteErc20, address]);
 
   const payAsset = payAssetForSide(side, sellAsset, buyAsset);
   const effectivePayWith = paymentIdFromAsset(payAsset);
@@ -292,13 +282,14 @@ export function TokenSwapCard({
     [walletReady, pool.contractAddress, hasAmount, maxWalletWarn],
   );
 
-  const marketSellBalance = sellAsset.isNative
-    ? ethBal
+  const marketSellBalanceRaw = sellAsset.isNative
+    ? rawBalances.eth
     : isStableSwapAsset(sellAsset)
-      ? usdgBal
+      ? rawBalances.usdg
       : isPoolQuoteAsset(pool, sellAsset)
-        ? quoteBal
-        : tokenBal;
+        ? rawBalances.quote
+        : rawBalances.token;
+  const marketSellBalance = Number(formatUnits(marketSellBalanceRaw, sellAsset.decimals));
 
   const handleInvert = () => {
     let nextSell = buyAsset;
@@ -491,6 +482,7 @@ export function TokenSwapCard({
         receiveAmount={quotedReceive}
         slippagePct={slippagePct}
         sellBalance={marketSellBalance}
+        sellBalanceRaw={marketSellBalanceRaw}
         tokenPriceEth={pool.priceEth}
         ethUsd={ethUsd}
         quoteUsd={pool.quoteUsd}

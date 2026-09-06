@@ -16,6 +16,8 @@ import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
 import { resolveQuoteKind } from "@/lib/quote-usd";
 
 const BALANCE_PRESETS = [15, 25, 50] as const;
+/** ETH held back on MAX so the swap still has gas (L2 fees are far below this). */
+const ETH_GAS_RESERVE = parseEther("0.0005");
 
 function EthMark() {
   return (
@@ -84,6 +86,7 @@ export function TokenProSwap({
   receiveAmount,
   slippagePct,
   sellBalance,
+  sellBalanceRaw,
   tokenPriceEth,
   ethUsd = 3000,
   quoteUsd,
@@ -100,6 +103,8 @@ export function TokenProSwap({
   receiveAmount?: string;
   slippagePct: number;
   sellBalance: number;
+  /** Exact on-chain balance — presets / MAX derive from this so the amount never exceeds it. */
+  sellBalanceRaw?: bigint;
   tokenPriceEth?: number;
   /** Live ETH/USD — never hardcode $1000. */
   ethUsd?: number;
@@ -138,9 +143,32 @@ export function TokenProSwap({
     window.setTimeout(() => setFlipAnim(false), 350);
   };
 
+  const spendableRaw = (() => {
+    if (sellBalanceRaw === undefined) return undefined;
+    if (!sellAsset.isNative) return sellBalanceRaw;
+    // Keep a sliver of ETH for gas — sending the full balance as value fails on-chain.
+    return sellBalanceRaw > ETH_GAS_RESERVE ? sellBalanceRaw - ETH_GAS_RESERVE : 0n;
+  })();
+
   const applyPreset = (pct: number) => {
+    if (spendableRaw !== undefined) {
+      const part = (spendableRaw * BigInt(pct)) / 100n;
+      if (part <= 0n) return;
+      onSellAmount(formatUnits(part, sellAsset.decimals));
+      return;
+    }
     if (sellBalance <= 0) return;
     onSellAmount(String((sellBalance * pct) / 100));
+  };
+
+  const applyMax = () => {
+    if (spendableRaw !== undefined) {
+      if (spendableRaw <= 0n) return;
+      onSellAmount(formatUnits(spendableRaw, sellAsset.decimals));
+      return;
+    }
+    if (sellBalance <= 0) return;
+    onSellAmount(sellBalance < 1 ? sellBalance.toFixed(6) : String(sellBalance));
   };
 
   const route = (() => {
@@ -211,13 +239,8 @@ export function TokenProSwap({
           ))}
           <button
             type="button"
-            onClick={() => {
-              if (sellBalance <= 0) return;
-              onSellAmount(
-                sellBalance < 1 ? sellBalance.toFixed(6) : String(sellBalance),
-              );
-            }}
-            disabled={sellBalance <= 0}
+            onClick={applyMax}
+            disabled={spendableRaw !== undefined ? spendableRaw <= 0n : sellBalance <= 0}
             className="market-preset-btn market-preset-btn--max"
           >
             MAX
