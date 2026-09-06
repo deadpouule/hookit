@@ -26,10 +26,11 @@ import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import {
   NATIVE_ETH_ASSET,
+  allowEthInSwapPicker,
   isStableSwapAsset,
-  isStockQuotedPool,
   poolQuoteSwapAsset,
   poolToSwapAsset,
+  sellReceiveAssets,
   STABLE_SWAP_ASSET,
   type SwapAsset,
 } from "@/lib/swap-assets";
@@ -102,6 +103,7 @@ function TokenSelectBody({
   selectedKey,
   onSelect,
   stickySearch,
+  listHeading = "Your tokens",
 }: {
   title: string;
   query: string;
@@ -112,6 +114,7 @@ function TokenSelectBody({
   selectedKey?: string;
   onSelect: (asset: SwapAsset) => void;
   stickySearch?: boolean;
+  listHeading?: string;
 }) {
   return (
     <>
@@ -151,7 +154,7 @@ function TokenSelectBody({
       </div>
 
       <div className="px-5 pt-3">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Your tokens</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">{listHeading}</p>
       </div>
 
       <ul className="swap-token-list mt-2 flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
@@ -159,7 +162,7 @@ function TokenSelectBody({
           <li className="px-3 py-6 text-center text-sm text-zinc-500">Loading wallet…</li>
         )}
         {!loading && filtered.length === 0 && (
-          <li className="px-3 py-6 text-center text-sm text-zinc-500">No tokens in wallet</li>
+          <li className="px-3 py-6 text-center text-sm text-zinc-500">No tokens available</li>
         )}
         {!loading &&
           filtered.map((row) => (
@@ -257,8 +260,8 @@ export function SwapTokenSelectModal({
         const ethBal = await publicClient.getBalance({ address });
         const ethAmount = Number(formatUnits(ethBal, 18));
         const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
-        // Stock-quoted memes: USDG ↔ stock ↔ meme only — never offer ETH.
-        if (!isStockQuotedPool(currentPool)) {
+        // Hide ETH only for stock-only singles (no ETH market). Multi always keeps ETH.
+        if (allowEthInSwapPicker(currentPool)) {
           rows.push({
             ...NATIVE_ETH_ASSET,
             balance: ethAmount,
@@ -286,27 +289,60 @@ export function SwapTokenSelectModal({
         /* ignore */
       }
 
+      // Always surface every multi-pool quote leg (and USDG/ETH) when picking receive on sell.
+      if (side === "buy") {
+        const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
+        for (const dest of sellReceiveAssets(currentPool)) {
+          if (rows.some((r) => r.key === dest.key)) continue;
+          let balance = 0;
+          let valueUsd = 0;
+          try {
+            if (dest.isNative) {
+              const ethBal = await publicClient.getBalance({ address });
+              balance = Number(formatUnits(ethBal, 18));
+              valueUsd = balance * ethUsd;
+            } else if (dest.address) {
+              const bal = (await publicClient.readContract({
+                address: dest.address,
+                abi: erc20Abi,
+                functionName: "balanceOf",
+                args: [address],
+              })) as bigint;
+              balance = Number(formatUnits(bal, dest.decimals));
+              valueUsd = isStableSwapAsset(dest)
+                ? balance
+                : balance * (currentPool.quoteUsd ?? 0);
+            }
+          } catch {
+            /* keep zero */
+          }
+          rows.push({ ...dest, balance, valueUsd });
+        }
+      }
+
       const quoteAsset = poolQuoteSwapAsset(currentPool);
       if (!quoteAsset.isNative && !isStableSwapAsset(quoteAsset) && quoteAsset.address) {
-        try {
-          const quoteBal = (await publicClient.readContract({
-            address: quoteAsset.address,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [address],
-          })) as bigint;
-          const quoteAmount = Number(formatUnits(quoteBal, quoteAsset.decimals));
-          rows.push({
-            ...quoteAsset,
-            balance: quoteAmount,
-            valueUsd: quoteAmount * (currentPool.quoteUsd ?? 0),
-          });
-        } catch {
-          rows.push({
-            ...quoteAsset,
-            balance: 0,
-            valueUsd: 0,
-          });
+        if (!rows.some((r) => r.key === quoteAsset.key)) {
+          try {
+            const quoteBal = (await publicClient.readContract({
+              address: quoteAsset.address,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address],
+            })) as bigint;
+            const quoteAmount = Number(formatUnits(quoteBal, quoteAsset.decimals));
+            rows.push({
+              ...quoteAsset,
+              balance: quoteAmount,
+              valueUsd: quoteAmount * (currentPool.quoteUsd ?? 0),
+            });
+          } catch {
+            rows.push({
+              ...quoteAsset,
+              balance: 0,
+              valueUsd: 0,
+            });
+          }
         }
       }
 
@@ -394,6 +430,7 @@ export function SwapTokenSelectModal({
       selectedKey={selectedKey}
       onSelect={onSelect}
       stickySearch={isMobile}
+      listHeading={side === "buy" ? "Receive" : "Your tokens"}
     />
   );
 

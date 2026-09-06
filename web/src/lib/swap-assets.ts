@@ -80,6 +80,50 @@ export function poolQuoteSwapAsset(pool: TokenPool): SwapAsset {
   };
 }
 
+/** Quote asset for an arbitrary market leg (multi-pool). */
+export function marketQuoteSwapAsset(pool: TokenPool, quoteAddress: Address): SwapAsset {
+  return poolQuoteSwapAsset({ ...pool, quoteAddress });
+}
+
+/**
+ * Assets you can receive when selling this launch token.
+ * Always includes ETH (when an ETH market exists or the pool isn't stock-only),
+ * USDG, and every multi-pool quote leg — even with zero wallet balance.
+ */
+export function sellReceiveAssets(pool: TokenPool): SwapAsset[] {
+  const out: SwapAsset[] = [];
+  const seen = new Set<string>();
+  const push = (asset: SwapAsset) => {
+    if (seen.has(asset.key)) return;
+    seen.add(asset.key);
+    out.push(asset);
+  };
+
+  const hasEthMarket = poolHasQuoteMarket(pool, zeroAddress);
+  const multi = (pool.marketCount ?? pool.markets?.length ?? 1) > 1;
+  if (hasEthMarket || multi || !isStockQuotedPool(pool)) {
+    push(NATIVE_ETH_ASSET);
+  }
+  push(STABLE_SWAP_ASSET);
+
+  for (const market of pool.markets?.length ? pool.markets : []) {
+    push(marketQuoteSwapAsset(pool, market.quoteAddress));
+  }
+  // Single-pool fallback: include the active quote if not already covered.
+  if (!pool.markets?.length) {
+    push(poolQuoteSwapAsset(pool));
+  }
+
+  return out;
+}
+
+/** True when ETH should appear in the swap asset picker for this pool. */
+export function allowEthInSwapPicker(pool: TokenPool): boolean {
+  if (poolHasQuoteMarket(pool, zeroAddress)) return true;
+  if ((pool.marketCount ?? pool.markets?.length ?? 1) > 1) return true;
+  return !isStockQuotedPool(pool);
+}
+
 /** True when this asset is the selected pool’s quote (ETH, USDG, or wStock). */
 export function isPoolQuoteAsset(pool: TokenPool, asset: SwapAsset): boolean {
   const quote = poolQuoteAddress(pool);
