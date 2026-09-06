@@ -4675,10 +4675,10 @@
 
   .market-toolbar-search {
     display: flex;
-    width: 18rem;
+    width: 36rem;
     max-width: 100%;
     min-width: 0;
-    flex: 0 0 18rem;
+    flex: 0 0 36rem;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;

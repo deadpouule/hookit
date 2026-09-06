@@ -54,47 +54,63 @@ function Glyph({ id }: { id: HookId }) {
     case "maxTx":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <rect x="1.4" y="8.8" width="8" height="7.6" rx="0.5" stroke={stroke} strokeWidth="1.55" />
-          <path d="M1.4 8.8 5.4 12.1 9.4 8.8" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
-          <rect x="14.6" y="8.8" width="8" height="7.6" rx="0.5" stroke={stroke} strokeWidth="1.55" />
-          <path d="M14.6 8.8 18.6 12.1 22.6 8.8" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
-          <path d="M12 5.6v12.8" stroke={stroke} strokeWidth="1.9" strokeLinecap="round" />
+          <rect x="2" y="2.6" width="20" height="13.2" rx="1.6" stroke={stroke} strokeWidth="1.7" />
           <path
-            d="M14.7 7.7c0-1.35-1.2-2.2-2.7-2.2S9.3 6.35 9.3 7.6c0 2.9 5.4 1.3 5.4 4.25 0 1.35-1.25 2.3-2.7 2.3s-2.75-.95-2.75-2.3"
+            d="M4.6 5.6h3.3M4.6 7.7h3.3M4.6 9.8h3.3M4.6 11.9h3.3"
             stroke={stroke}
-            strokeWidth="1.7"
+            strokeWidth="1.35"
             strokeLinecap="round"
           />
+          <path
+            d="M16.1 5.6h3.3M16.1 7.7h3.3M16.1 9.8h3.3M16.1 11.9h3.3"
+            stroke={stroke}
+            strokeWidth="1.35"
+            strokeLinecap="round"
+          />
+          <path d="M12 4.6v10.2" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" />
+          <path
+            d="M14.35 6.35c0-1.15-1.05-1.85-2.35-1.85S9.65 5.2 9.65 6.25c0 2.45 4.7 1.1 4.7 3.6 0 1.15-1.1 1.95-2.35 1.95s-2.4-.8-2.4-1.95"
+            stroke={stroke}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path d="M3.2 20.1h17.6" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <rect x="16.1" y="18.15" width="2.6" height="3.9" rx="0.45" fill={stroke} />
         </svg>
       );
     case "holderAirdrop":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <circle cx="12" cy="3.3" r="1.45" fill={stroke} />
-          <circle cx="4.1" cy="7.8" r="1.45" fill={stroke} />
-          <circle cx="19.9" cy="7.8" r="1.45" fill={stroke} />
-          <ellipse cx="12" cy="16.6" rx="7.6" ry="3.5" stroke={stroke} strokeWidth="1.65" />
-          <path d="M12 11.2v4.4" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M3.8 10.2C3.8 5.4 7.4 2.2 12 2.2s8.2 3.2 8.2 8Z" fill={stroke} />
           <path
-            d="M13.45 12.15c0-.65-.7-1.05-1.45-1.05s-1.45.35-1.45.95c0 1.35 2.9.6 2.9 2 0 .65-.7 1.1-1.45 1.1s-1.5-.45-1.5-1.1"
+            d="M5.6 10.2 9.1 16.6M9.4 10.2 10.5 16.6M14.6 10.2 13.5 16.6M18.4 10.2 14.9 16.6"
             stroke={stroke}
-            strokeWidth="1.4"
+            strokeWidth="1.45"
             strokeLinecap="round"
           />
+          <rect x="8.2" y="16.4" width="7.6" height="5.2" rx="0.45" fill={stroke} />
+          <rect x="7.6" y="16.15" width="8.8" height="1.45" rx="0.3" fill={stroke} />
         </svg>
       );
     case "dynamicFees":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
           <path
-            d="M2.2 19 6.6 13.4 9.6 16.2 14.2 7.6"
-            stroke={stroke}
+            d="M2.2 18.8 6 14.6 8.6 16.6 12.4 9.4 15 11.2 18.2 5.2"
+            stroke="#22c55e"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <path d="M17.2 8.4 22.2 2.8" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M18.4 2.2 22.6 2.4 21.6 6.4Z" fill={stroke} />
+          <path d="M16.4 6.6 18.6 2.6 21.8 5.4Z" fill="#22c55e" />
+          <path
+            d="M2.4 5.4 6.2 9.2 8.6 6.6 12.6 14.2 15.2 11.8 18.6 18.6"
+            stroke="#ef4444"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M16.6 17.2 21.6 21.2 18.2 21.6Z" fill="#ef4444" />
         </svg>
       );
     case "buybackVesting":
@@ -117,23 +133,18 @@ function Glyph({ id }: { id: HookId }) {
     case "lpDonate":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <rect x="9.6" y="1.2" width="4.8" height="2.2" rx="0.8" stroke={stroke} strokeWidth="1.4" />
-          <rect x="7.4" y="3.2" width="9.2" height="3.6" rx="1.2" stroke={stroke} strokeWidth="1.4" />
           <path
-            d="M8 6.8v2.5M10.3 6.8v2.8M13.7 6.8v2.8M16 6.8v2.5"
+            d="M12.1 2.8c-1.15-1.25-3.45-.35-3.4 1.45 0 1.85 3.4 4 3.4 4s3.4-2.15 3.4-4c.05-1.8-2.25-2.7-3.4-1.45Z"
             stroke={stroke}
-            strokeWidth="1.45"
-            strokeLinecap="round"
+            strokeWidth="1.65"
+            strokeLinejoin="round"
           />
-          <path d="M12 10.6v4.6" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
           <path
-            d="M13.75 11.5c0-.75-.8-1.2-1.75-1.2s-1.75.4-1.75 1.1c0 1.55 3.5.7 3.5 2.3 0 .75-.8 1.25-1.75 1.25s-1.8-.5-1.8-1.25"
+            d="M4.2 14.6c-.15-1.7 1.15-2.7 2.7-2.7h4.6c.45-1.55 1.85-2.55 3.5-2.55 1.7 0 3.1 1.15 3.35 2.75 1.15.15 2.05 1.15 2.05 2.35 0 .7-.3 1.3-.8 1.7.55.4.9 1.05.9 1.8 0 1.25-1 2.25-2.25 2.25H6.8c-1.5 0-2.7-1.2-2.6-2.7z"
             stroke={stroke}
-            strokeWidth="1.45"
-            strokeLinecap="round"
+            strokeWidth="1.65"
+            strokeLinejoin="round"
           />
-          <ellipse cx="12" cy="18.35" rx="8.1" ry="2.05" stroke={stroke} strokeWidth="1.5" />
-          <path d="M4 18.35c.5 2.4 3.6 4.05 8 4.05s7.5-1.65 8-4.05" stroke={stroke} strokeWidth="1.5" />
         </svg>
       );
     case "creatorShareToHook":
