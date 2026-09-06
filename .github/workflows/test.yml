@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      INK_RPC_URL: ${{ secrets.INK_RPC_URL }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -31,5 +33,11 @@ jobs:
       - name: Run Forge build
         run: forge build
 
-      - name: Run Forge tests
-        run: forge test -vvv
+      # Fork suites hit a live RPC; the public Ink endpoint rate-limits GitHub runners (HTTP 429),
+      # so they only run when a dedicated INK_RPC_URL secret is configured.
+      - name: Run Forge tests (local)
+        run: forge test -vvv --no-match-path "test/Fork*.t.sol"
+
+      - name: Run Forge fork tests
+        if: ${{ env.INK_RPC_URL != '' }}
+        run: forge test -vvv --match-path "test/Fork*.t.sol"
