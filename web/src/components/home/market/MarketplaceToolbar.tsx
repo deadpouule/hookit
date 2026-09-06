@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Asterisk,
   LayoutGrid,
   Search,
   Table2,
@@ -72,6 +73,12 @@ export function MarketplaceToolbar({
 
       <div className="market-toolbar-row market-toolbar-row--controls">
         <div className="market-toolbar-group market-toolbar-group--category">
+          <FilterPill
+            active={category === "all"}
+            onClick={() => onCategoryChange("all")}
+            icon={Asterisk}
+            label="All"
+          />
           <MasterHookFilterMenu
             active={category === "master"}
             selectedHooks={masterHooks}

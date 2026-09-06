@@ -4915,12 +4915,15 @@
 
   .category-split-filter {
     position: relative;
+    display: inline-flex;
+    align-items: center;
     flex-shrink: 0;
   }
 
   .category-split-pill {
     display: inline-flex;
     align-items: stretch;
+    min-height: 44px;
     overflow: hidden;
     border-radius: 9999px;
     border: 1px solid transparent;
@@ -4939,7 +4942,7 @@
     gap: 0.35rem;
     border: none;
     background: transparent;
-    padding: 0.4rem 0.55rem 0.4rem 0.65rem;
+    padding: 0 0.55rem 0 0.65rem;
     font-size: 0.75rem;
     font-weight: 500;
     line-height: 1;
