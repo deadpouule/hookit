@@ -93,7 +93,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "anti-snipe",
     number: 1,
-    title: "Anti-snipe",
+    title: "Anti-Snipe",
     description: "decay tax on opening buys, fades over the launch window",
     category: "protection",
     icon: Shield,
@@ -109,7 +109,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "backed-floor",
     number: 2,
-    title: "Backed floor",
+    title: "Backed Floor",
     description: "ratcheting floor backed by quote in FloorVault",
     category: "protection",
     icon: Layers,
@@ -141,7 +141,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "max-tx",
     number: 4,
-    title: "Max tx",
+    title: "Max Tx",
     description: "caps each swap between 0.1% and 2.5% of total supply — fixed at launch",
     category: "protection",
     icon: Gauge,
@@ -157,7 +157,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "max-wallet",
     number: 5,
-    title: "Max wallet",
+    title: "Max Wallet",
     description: "caps each wallet between 0.1% and 2.5% of total supply — fixed at launch",
     category: "protection",
     icon: Wallet,
@@ -173,7 +173,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "dynamic-fees",
     number: 6,
-    title: "Dynamic fees",
+    title: "Dynamic Fees",
     description: "Swap fee scales with in-range LP depth consumed — larger trades pay more, no oracle",
     category: "trading-fees",
     icon: TrendingUp,
@@ -189,7 +189,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "buyback-vesting",
     number: 7,
-    title: "Buyback vesting",
+    title: "Buyback Vesting",
     description: "creator proceeds vest linearly over a chosen duration",
     category: "tokenomics",
     icon: Hourglass,
@@ -205,7 +205,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "auto-burn",
     number: 8,
-    title: "Auto-burn",
+    title: "Auto-Burn",
     description: "share of hook tax buys tokens from the pool and burns them after each swap",
     category: "tokenomics",
     icon: Flame,
@@ -221,7 +221,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "lp-donate",
     number: 9,
-    title: "LP donate",
+    title: "LP Donate",
     description: "share of hook tax donated to in-range LPs via Uniswap v4 donate",
     category: "rewards",
     icon: Coins,
@@ -237,7 +237,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "holder-airdrop",
     number: 10,
-    title: "Holder airdrop",
+    title: "Holder Airdrop",
     description: "quote fees accrue; a swap pushes pro-rata to holders every 15 minutes",
     category: "rewards",
     icon: Gift,
@@ -257,7 +257,7 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "creator-share-to-hook",
     number: 11,
-    title: "Creator → hook",
+    title: "Creator → Hook",
     description: "send your 70% of the base 1% into the hook pot instead of claiming escrow",
     category: "rewards",
     icon: Percent,
@@ -283,7 +283,7 @@ export interface BrowseHook extends Omit<MasterHook, "id"> {
 export const FIXED_FEE_HOOK: BrowseHook = {
   id: "fixed-fee",
   number: 12,
-  title: "Fixed fees",
+  title: "Fixed Fees",
   description: "flat extra fee on every swap — deducted in quote only, zero sell pressure",
   category: "trading-fees",
   icon: Gauge,

@@ -66,7 +66,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "graduation", label: "Graduation" },
       { id: "fees", label: "Fees and flywheel" },
       { id: "hooks", label: "Master hook modules" },
-      { id: "floor", label: "Backed floor" },
+      { id: "floor", label: "Backed Floor" },
     ],
   },
   {
@@ -413,7 +413,7 @@ export function buildDocsSections(): DocsSection[] {
               text: `Extra permanent fee (0–${MAX_HOOK_TAX_BPS / 100}% so base + tax ≤ 10%). Replaces the old creator tax: this cut funds Master modules (floor / burn / donate / airdrop). Unallocated → protocol.`,
             },
             {
-              term: "Anti-snipe (optional, Master)",
+              term: "Anti-Snipe (optional, Master)",
               text: "Temporary extra fee on buys only, decaying to 0 over the launch window. Stacked on top of base + hook tax at open; its share follows the base 70/30 split.",
             },
           ],
@@ -516,7 +516,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Anti-snipe",
+          text: "Anti-Snipe",
         },
         {
           type: "p",
@@ -548,7 +548,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Backed floor",
+          text: "Backed Floor",
         },
         {
           type: "p",
@@ -556,7 +556,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Auto-burn",
+          text: "Auto-Burn",
         },
         {
           type: "p",
@@ -564,7 +564,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "LP donate",
+          text: "LP Donate",
         },
         {
           type: "p",
@@ -572,7 +572,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Holder airdrop",
+          text: "Holder Airdrop",
         },
         {
           type: "p",
@@ -590,7 +590,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Buyback vesting (optional)",
+          text: "Buyback Vesting (optional)",
         },
         {
           type: "p",
@@ -612,7 +612,7 @@ export function buildDocsSections(): DocsSection[] {
     },
     {
       id: "floor",
-      title: "Backed floor",
+      title: "Backed Floor",
       group: "Protocol",
       blocks: [
         {

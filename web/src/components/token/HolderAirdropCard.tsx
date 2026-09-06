@@ -75,7 +75,7 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
     <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wider text-zinc-500 uppercase">
-          Holder airdrop
+          Holder Airdrop
         </p>
         <HookChip id="holderAirdrop" />
       </div>

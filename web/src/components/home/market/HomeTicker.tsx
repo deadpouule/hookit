@@ -3,7 +3,7 @@ import { getNetworkLabel } from "@/lib/chains";
 const ITEMS = [
   "Launch with programmable hooks",
   "Discover, reuse, and publish hooks",
-  "Anti-snipe · Floor · Anti-MEV",
+  "Anti-Snipe · Floor · Anti-MEV",
   "Quote-only swap fees",
   "Master modules or custom Solidity",
   `Live on ${getNetworkLabel()}`,

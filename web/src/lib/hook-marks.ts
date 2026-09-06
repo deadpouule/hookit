@@ -75,15 +75,15 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   dynamicFees: {
     id: "dynamicFees",
-    label: "Dynamic fees",
-    short: "Dyn fees",
+    label: "Dynamic Fees",
+    short: "Dyn Fees",
     hint: "Volatility-adjusted LP fee flag",
     color: "#f97316",
     glow: "rgba(249,115,22,0.4)",
   },
   buybackVesting: {
     id: "buybackVesting",
-    label: "Buyback vesting",
+    label: "Buyback Vesting",
     short: "Vest",
     hint: "Creator proceeds vest linearly",
     color: "#e879f9",
@@ -91,7 +91,7 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   autoBurn: {
     id: "autoBurn",
-    label: "Auto-burn",
+    label: "Auto-Burn",
     short: "Burn",
     hint: "Share of fees burned",
     color: "#dc2626",
@@ -99,7 +99,7 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   lpDonate: {
     id: "lpDonate",
-    label: "LP donate",
+    label: "LP Donate",
     short: "LP",
     hint: "Share of fees to in-range LPs",
     color: "#10b981",
@@ -107,8 +107,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   creatorShareToHook: {
     id: "creatorShareToHook",
-    label: "Creator → hook",
-    short: "→ hook",
+    label: "Creator → Hook",
+    short: "→ Hook",
     hint: "Creator base share funds hook modules",
     color: "#84cc16",
     glow: "rgba(132,204,22,0.4)",
@@ -123,7 +123,7 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   quoteFee: {
     id: "quoteFee",
-    label: "Quote-only fees",
+    label: "Quote-Only Fees",
     short: "Fees",
     hint: "Fees taken in ETH",
     color: "#34d399",

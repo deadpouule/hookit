@@ -114,7 +114,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
   {
     id: "autoBurn",
     live: true,
-    label: "Auto Burn",
+    label: "Auto-Burn",
     short: "buyback + burn",
     description: "A cut of quote fees buys the token from the pool and burns it.",
     accent: HOOK_MODULE_ACCENTS.autoBurn,
@@ -164,7 +164,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
   {
     id: "maxTx",
     live: true,
-    label: "Max TX",
+    label: "Max Tx",
     short: "size cap",
     description: "Caps each swap against a % of total supply.",
     accent: HOOK_MODULE_ACCENTS.maxTx,

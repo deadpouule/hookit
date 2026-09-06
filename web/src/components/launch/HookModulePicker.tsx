@@ -140,7 +140,7 @@ function FixedFeeConfigPanel({
               )}
             >
               <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-              <span>Fixed fees</span>
+              <span>Fixed Fees</span>
             </h2>
           </div>
         </div>
@@ -218,7 +218,7 @@ function HookPickCard({
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
-      <p className="pick-card-title">{hook.title.toLowerCase()}</p>
+      <p className="pick-card-title">{hook.title}</p>
       <p className="pick-card-sub pick-card-sub--hook">{hookPickTagline(hook.id)}</p>
     </button>
   );

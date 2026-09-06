@@ -6,7 +6,7 @@ const ITEMS = [
   "Locked LP · no migration",
   "Quote-only swap fees",
   "Master modules or custom Solidity",
-  "Anti-snipe · Floor · Anti-MEV",
+  "Anti-Snipe · Floor · Anti-MEV",
 ];
 
 export function TickerBar() {

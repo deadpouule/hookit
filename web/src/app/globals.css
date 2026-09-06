@@ -1143,7 +1143,7 @@
   }
 
   .pick-card--hook .pick-card-title {
-    text-transform: lowercase;
+    text-transform: none;
   }
 
   .pick-card-title--pair,

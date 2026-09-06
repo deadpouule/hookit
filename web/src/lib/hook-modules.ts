@@ -67,7 +67,7 @@ export const HOOK_MODULE_ACCENTS = {
   },
   maxTx: {
     id: "max-tx",
-    label: "Max TX",
+    label: "Max Tx",
     color: "#ff5ca8",
     glow: "rgba(255, 92, 168, 0.55)",
     bg: "bg-[#ff5ca8]/10",
@@ -97,7 +97,7 @@ export const HOOK_MODULE_ACCENTS = {
   },
   autoBurn: {
     id: "auto-burn",
-    label: "Auto Burn",
+    label: "Auto-Burn",
     color: "#ff5c5c",
     glow: "rgba(255, 92, 92, 0.55)",
     bg: "bg-[#ff5c5c]/12",
@@ -132,8 +132,10 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Backed Floor": HOOK_MODULE_ACCENTS.backedFloor,
   "Anti-MEV": HOOK_MODULE_ACCENTS.antiMev,
   "Max Wallet": HOOK_MODULE_ACCENTS.maxWallet,
+  "Max Tx": HOOK_MODULE_ACCENTS.maxTx,
   "Max TX": HOOK_MODULE_ACCENTS.maxTx,
   "Hook Tax": HOOK_MODULE_ACCENTS.hookTax,
+  "Auto-Burn": HOOK_MODULE_ACCENTS.autoBurn,
   "Auto Burn": HOOK_MODULE_ACCENTS.autoBurn,
   "LP Donate": HOOK_MODULE_ACCENTS.lpDonate,
   "Holder Airdrop": HOOK_MODULE_ACCENTS.holderAirdrop,

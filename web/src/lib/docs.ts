@@ -51,7 +51,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   {
     slug: "floor",
     href: "#floor",
-    title: "Backed floor",
+    title: "Backed Floor",
     description: "Ratcheting floor price backed by quote in FloorVault.",
     group: "Protocol",
     keywords: "floor vault redeem ratchet p_floor circulating",

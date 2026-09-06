@@ -48,9 +48,9 @@ export function summarizeCompletedSteps(
 
   if (step > 3) {
     const parts: string[] = [];
-    if (form.modules.dynamicFees) parts.push("Dynamic fees");
+    if (form.modules.dynamicFees) parts.push("Dynamic Fees");
     if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
-    if (form.modules.creatorShareToHook) parts.push("Creator → hook");
+    if (form.modules.creatorShareToHook) parts.push("Creator → Hook");
     blocks.push({
       title: "Trading fees",
       detail: parts.length > 0 ? parts.join(" · ") : "None selected",
@@ -84,9 +84,9 @@ export function summarizePreviousStep(
       };
     case 4: {
       const parts: string[] = [];
-      if (form.modules.dynamicFees) parts.push("Dynamic fees");
+      if (form.modules.dynamicFees) parts.push("Dynamic Fees");
       if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
-      if (form.modules.creatorShareToHook) parts.push("Creator → hook");
+      if (form.modules.creatorShareToHook) parts.push("Creator → Hook");
       return {
         title: "Trading fees",
         detail: parts.length > 0 ? parts.join(" · ") : "None selected",
@@ -104,7 +104,7 @@ export function summarizePreviousStep(
 
 const NEXT_STEP_HINTS: Record<number, string> = {
   2: "Anti-MEV, anti-snipe, max tx and max wallet caps.",
-  3: "Dynamic fees, fixed hook tax, and creator share routing.",
+  3: "Dynamic Fees, fixed hook tax, and creator share routing.",
   4: "Burn, floor, vesting, LP donate, and holder airdrops.",
   5: "Final review, optional dev buy, and launch.",
 };
