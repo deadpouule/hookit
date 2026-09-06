@@ -96,21 +96,21 @@ function Glyph({ id }: { id: HookId }) {
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
           <path
-            d="M2.2 18.8 6 14.6 8.6 16.6 12.4 9.4 15 11.2 18.2 5.2"
-            stroke="#22c55e"
-            strokeWidth="2"
+            d="M1.6 13.6C3.2 10.8 4.8 10.6 6 13.2C7.2 16.6 8.8 17.6 10.6 14.2C12.4 6.6 14 3.6 16.2 3.8C18.4 4 20.2 8 22.4 12.2"
+            stroke={stroke}
+            strokeWidth="1.85"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
-          <path d="M16.4 6.6 18.6 2.6 21.8 5.4Z" fill="#22c55e" />
+          <path d="M2 20.6h20" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
           <path
-            d="M2.4 5.4 6.2 9.2 8.6 6.6 12.6 14.2 15.2 11.8 18.6 18.6"
-            stroke="#ef4444"
-            strokeWidth="2"
+            d="M3.2 12.8V20.6M5.4 14.4V20.6M7.6 16.8V20.6M9.6 16.2V20.6M11.6 10.4V20.6M13.6 5.4V20.6M15.6 3.9V20.6M17.6 5.8V20.6M19.6 9.2V20.6M21.4 11.6V20.6"
+            stroke={stroke}
+            strokeWidth="1.15"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
-          <path d="M16.6 17.2 21.6 21.2 18.2 21.6Z" fill="#ef4444" />
+          <rect x="12.05" y="6.15" width="2.35" height="1.45" rx="0.35" fill={stroke} transform="rotate(-38 13.2 6.9)" />
+          <rect x="14.15" y="3.55" width="2.35" height="1.45" rx="0.35" fill={stroke} transform="rotate(-8 15.3 4.3)" />
+          <rect x="16.35" y="3.85" width="2.35" height="1.45" rx="0.35" fill={stroke} transform="rotate(16 17.5 4.6)" />
         </svg>
       );
     case "buybackVesting":
@@ -134,17 +134,25 @@ function Glyph({ id }: { id: HookId }) {
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
           <path
-            d="M12.1 2.8c-1.15-1.25-3.45-.35-3.4 1.45 0 1.85 3.4 4 3.4 4s3.4-2.15 3.4-4c.05-1.8-2.25-2.7-3.4-1.45Z"
+            d="M12 1.85c-2.3-2.5-6.55-.55-6.3 3.05 0 3.55 6.3 7.5 6.3 7.5s6.3-3.95 6.3-7.5C18.55 1.3 14.3-.65 12 1.85Z"
+            fill={stroke}
+            fillOpacity="0.22"
             stroke={stroke}
-            strokeWidth="1.65"
+            strokeWidth="1.75"
             strokeLinejoin="round"
           />
+          <rect x="6.55" y="12.55" width="2.25" height="4.7" rx="1.12" stroke={stroke} strokeWidth="1.55" />
+          <rect x="9.15" y="12.05" width="2.25" height="5.2" rx="1.12" stroke={stroke} strokeWidth="1.55" />
+          <rect x="11.75" y="11.85" width="2.25" height="5.4" rx="1.12" stroke={stroke} strokeWidth="1.55" />
+          <rect x="14.35" y="12.25" width="2.25" height="5" rx="1.12" stroke={stroke} strokeWidth="1.55" />
           <path
-            d="M4.2 14.6c-.15-1.7 1.15-2.7 2.7-2.7h4.6c.45-1.55 1.85-2.55 3.5-2.55 1.7 0 3.1 1.15 3.35 2.75 1.15.15 2.05 1.15 2.05 2.35 0 .7-.3 1.3-.8 1.7.55.4.9 1.05.9 1.8 0 1.25-1 2.25-2.25 2.25H6.8c-1.5 0-2.7-1.2-2.6-2.7z"
+            d="M6.5 16.1C4.35 15.15 3.15 13.35 3.55 11.75c.35-1.25 1.75-1.8 2.9-1.15"
             stroke={stroke}
-            strokeWidth="1.65"
-            strokeLinejoin="round"
+            strokeWidth="1.7"
+            strokeLinecap="round"
           />
+          <rect x="6.2" y="16.55" width="11.5" height="4.15" rx="1.55" stroke={stroke} strokeWidth="1.6" />
+          <path d="M9.1 20.7h5.8" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       );
     case "creatorShareToHook":
