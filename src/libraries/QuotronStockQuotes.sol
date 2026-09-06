@@ -27,6 +27,7 @@ library QuotronStockQuotes {
     address internal constant wAAPLx = 0x943BF64D566c32A2Bcd41AC92FB63C111cC9De8f;
     address internal constant wAMZNx = 0x910cabdE3EBa7Fc1Ce64fD14bD680b9f60fA0F90;
     address internal constant wGOOGLx = 0xf8c5308F80E459bb53d9EbE689854d9cBb2Caa6f;
+    address internal constant wMCDx = 0xc6639026a3a862cd4fcbae3f67cB2D25A2959d37;
     address internal constant wMSTRx = 0x30987adF0B11dc698438a99BA04ec3a1AB2c7EaB;
     address internal constant wNFLXx = 0x7d87fD6A379714194a797c0bBB8B40c30D250856;
     address internal constant wNVDAx = 0xa8ddb5Cd96b5222AFe198316E9A57CAA642850D5;
@@ -34,7 +35,7 @@ library QuotronStockQuotes {
     address internal constant wTSLAx = 0xc3FdBe3A68EE5dE461D30415a8165cf9Aefe1171;
 
     function listings() internal pure returns (Listing[] memory all) {
-        all = new Listing[](8);
+        all = new Listing[](9);
         // forgefmt: disable-next-item
         all[0] = Listing({
             token: wAAPLx,
@@ -58,34 +59,42 @@ library QuotronStockQuotes {
         });
         // forgefmt: disable-next-item
         all[3] = Listing({
+            token: wMCDx,
+            decimals: 18,
+            // Pool is live but still thin (0 trades on Quotrons as of 2026-09-06); offline fallback only.
+            usdPriceX18: 295 * 1e18,
+            quotronPoolId: 0x020595993f159c9865966f8762ebdba88c2cf465bb4af72b512eb3559f430254
+        });
+        // forgefmt: disable-next-item
+        all[4] = Listing({
             token: wMSTRx,
             decimals: 18,
             usdPriceX18: 121_57 * 1e16,
             quotronPoolId: 0xb7add80f794d65c978346f9e929971d2f12b4f862c89f4c14201872819a39a7d
         });
         // forgefmt: disable-next-item
-        all[4] = Listing({
+        all[5] = Listing({
             token: wNFLXx,
             decimals: 18,
             usdPriceX18: 8194 * 1e16,
             quotronPoolId: 0x9f11034d6b2a7bfea38a0c39548c590e4aabd215ffa2b6bbe9bacd29e40238b6
         });
         // forgefmt: disable-next-item
-        all[5] = Listing({
+        all[6] = Listing({
             token: wNVDAx,
             decimals: 18,
             usdPriceX18: 211_32 * 1e16,
             quotronPoolId: 0xebe5d3cc94d87cf07cf06c969ca82a67760697535c57800350e210df8547cd11
         });
         // forgefmt: disable-next-item
-        all[6] = Listing({
+        all[7] = Listing({
             token: wSPYx,
             decimals: 18,
             usdPriceX18: 767_582 * 1e15,
             quotronPoolId: 0x84b421dc355c6c003fcf4f8100691eddaa0319deb894acb7e9bbf633621694a7
         });
         // forgefmt: disable-next-item
-        all[7] = Listing({
+        all[8] = Listing({
             token: wTSLAx,
             decimals: 18,
             usdPriceX18: 351_9 * 1e16,

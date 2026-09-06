@@ -42,6 +42,15 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     fallbackUsd: 349.4,
   },
   {
+    symbol: "wMCDx",
+    name: "McDonald's",
+    address: "0xc6639026a3a862cd4fcbae3f67cB2D25A2959d37",
+    decimals: 18,
+    priceSymbol: "MCDx",
+    quotronPoolId: "0x020595993f159c9865966f8762ebdba88c2cf465bb4af72b512eb3559f430254",
+    fallbackUsd: 295,
+  },
+  {
     symbol: "wMSTRx",
     name: "Strategy",
     address: "0x30987adF0B11dc698438a99BA04ec3a1AB2c7EaB",
@@ -91,21 +100,24 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
 export const QUOTRONS_HOOK = "0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc" as Address;
 export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
-export const XSTOCKS_LOGO_BASE = "https://xstocks-metadata.backed.fi/logos/tokens";
+/** Official Quotrons Ink icons — https://www.quotrons.cash/stocks-ink/{SYM}.svg (TSLA uses /stocks/tsla.png). */
+export const QUOTRONS_LOGO_BASE = "https://www.quotrons.cash/stocks-ink";
 
-/** Local pairing assets override incorrect remote xStocks logos. */
-const LOCAL_QUOTRON_LOGOS: Partial<Record<QuotronStockListing["priceSymbol"], string>> = {
-  NVDAx: "/pairing/wnvdax.png",
-  SPYx: "/pairing/wspyx.png",
-  MSTRx: "/pairing/wmstrx.png",
-  NFLXx: "/pairing/wnflxx.png",
+/** Local copies of Quotrons icons under `public/pairing/` (synced from quotrons.cash). */
+const LOCAL_QUOTRON_LOGOS: Record<QuotronStockListing["priceSymbol"], string> = {
+  AAPLx: "/pairing/waaplx.svg",
+  AMZNx: "/pairing/wamznx.svg",
+  GOOGLx: "/pairing/wgooglx.svg",
+  MCDx: "/pairing/wmcdx.svg",
+  MSTRx: "/pairing/wmstrx.svg",
+  NFLXx: "/pairing/wnflxx.svg",
+  NVDAx: "/pairing/wnvdax.svg",
+  SPYx: "/pairing/wspyx.svg",
   TSLAx: "/pairing/wtslax.png",
 };
 
 export function quotronStockLogoUrl(listing: Pick<QuotronStockListing, "priceSymbol">): string {
-  const local = LOCAL_QUOTRON_LOGOS[listing.priceSymbol];
-  if (local) return local;
-  return `${XSTOCKS_LOGO_BASE}/${listing.priceSymbol}.png`;
+  return LOCAL_QUOTRON_LOGOS[listing.priceSymbol] ?? `${QUOTRONS_LOGO_BASE}/${listing.priceSymbol}.svg`;
 }
 
 /** @deprecated use INK_QUOTRON_STOCKS */

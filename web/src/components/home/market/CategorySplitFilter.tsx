@@ -285,7 +285,17 @@ function CategorySplitFilterItemVisual({ item }: { item: CategorySplitFilterItem
     return (
       <span className="category-split-menu__avatar">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.imageUrl} alt="" width={28} height={28} className="h-7 w-7 rounded-full object-cover" />
+        <img
+          src={item.imageUrl}
+          alt=""
+          width={28}
+          height={28}
+          className={
+            item.imageUrl.endsWith(".svg")
+              ? "h-7 w-7 rounded-full object-contain"
+              : "h-7 w-7 rounded-full object-cover"
+          }
+        />
       </span>
     );
   }

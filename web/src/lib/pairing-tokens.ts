@@ -4,6 +4,7 @@ export type PairingTokenId =
   | "waaplx"
   | "wamznx"
   | "wgooglx"
+  | "wmcdx"
   | "wmstrx"
   | "wnflxx"
   | "wnvdax"
@@ -24,6 +25,7 @@ export const PAIRING_TOKENS: PairingToken[] = [
   { id: "waaplx", ticker: "wAAPLx", name: "Apple", subtitle: "priced in wAAPLx" },
   { id: "wamznx", ticker: "wAMZNx", name: "Amazon", subtitle: "priced in wAMZNx" },
   { id: "wgooglx", ticker: "wGOOGLx", name: "Alphabet", subtitle: "priced in wGOOGLx" },
+  { id: "wmcdx", ticker: "wMCDx", name: "McDonald's", subtitle: "priced in wMCDx" },
   { id: "wmstrx", ticker: "wMSTRx", name: "MicroStrategy", subtitle: "priced in wMSTRx" },
   { id: "wnflxx", ticker: "wNFLXx", name: "Netflix", subtitle: "priced in wNFLXx" },
   { id: "wnvdax", ticker: "wNVDAx", name: "NVIDIA", subtitle: "priced in wNVDAx" },

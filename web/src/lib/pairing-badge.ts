@@ -10,6 +10,7 @@ export type PairingBadgeTone =
   | "waaplx"
   | "wamznx"
   | "wgooglx"
+  | "wmcdx"
   | "wmstrx"
   | "wnflxx"
   | "wnvdax"
@@ -151,6 +152,7 @@ const PAIRING_TONE: Partial<Record<PairingBadgeTone, true>> = {
   waaplx: true,
   wamznx: true,
   wgooglx: true,
+  wmcdx: true,
   wmstrx: true,
   wnflxx: true,
   wnvdax: true,

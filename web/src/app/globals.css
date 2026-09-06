@@ -5798,6 +5798,12 @@
     color: #93c5fd;
   }
 
+  .token-type-badge--pair-wmcdx {
+    border-color: rgb(250 204 21 / 0.55);
+    background: rgb(250 204 21 / 0.14);
+    color: #fde047;
+  }
+
   .token-type-badge--pair-wmstrx {
     border-color: rgb(249 115 22 / 0.5);
     background: rgb(249 115 22 / 0.14);

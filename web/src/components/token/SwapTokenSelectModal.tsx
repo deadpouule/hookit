@@ -26,6 +26,7 @@ import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import {
   NATIVE_ETH_ASSET,
+  isStockQuotedPool,
   poolToSwapAsset,
   STABLE_SWAP_ASSET,
   type SwapAsset,
@@ -254,11 +255,14 @@ export function SwapTokenSelectModal({
         const ethBal = await publicClient.getBalance({ address });
         const ethAmount = Number(formatUnits(ethBal, 18));
         const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
-        rows.push({
-          ...NATIVE_ETH_ASSET,
-          balance: ethAmount,
-          valueUsd: ethAmount * ethUsd,
-        });
+        // Stock-quoted memes: USDG ↔ stock ↔ meme only — never offer ETH.
+        if (!isStockQuotedPool(currentPool)) {
+          rows.push({
+            ...NATIVE_ETH_ASSET,
+            balance: ethAmount,
+            valueUsd: ethAmount * ethUsd,
+          });
+        }
       } catch {
         /* ignore */
       }

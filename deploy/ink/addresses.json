@@ -1,9 +1,9 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-09-02",
-  "deployBlock": 54712334,
-  "deployer": "0x67B436693b7f8ebAD6b1B1Caf88C2E197d961614",
+  "deployedAt": "2026-09-06",
+  "deployBlock": 54888359,
+  "deployer": "0x67b436693b7f8ebad6b1b1caf88c2e197d961614",
   "contracts": {
     "LaunchFactoryLib": "0x872dd9a84f8c46031d9d8fae8707e236d828c9d8",
     "LaunchDevBuyLib": "0x2de8b6093411b033a2e9935bed6a3230c2413117",
@@ -20,7 +20,7 @@
     "BondingLaunchFactory": "0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe",
     "HookitSwapRouter": "0x23dcdc9570ccfe93807da99b395db6a24a79a239",
     "V4ClaimsRedeemer": "0xda616abb6d8350234febefbec2acd4e6bccf798e",
-    "FeeEthRail": "0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71",
+    "FeeEthRail": "0xf1fdb0f7dbebfdc4ff7158f2bc2922722e27fe71",
     "HkitBuyback": "0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9",
     "NativeToken": "0x9403cc96dbc7a63bbd5af65123653acd6938f688"
   },
@@ -30,12 +30,11 @@
     "address": "0x9403cc96dbc7a63bbd5af65123653acd6938f688"
   },
   "indexer": {
-    "startBlock": 54712334,
+    "startBlock": 54888359,
     "url": "https://indexer.hookit.fun"
   },
   "notes": [
-    "RedeployHookitInk.s.sol — hardened bytecode (EIP-170 fix, fee claim safety, LaunchFactoryQuery).",
-    "customHookAllowlistEnabled=true at deploy.",
-    "BuybackVault / HolderAirdropVault / FeeEthRail are the addresses actually wired into MasterLaunchHook and the distributor (constructor immutables / feeRail()). Leftover unused deploys: BuybackVault 0xd00f0524…, HolderAirdropVault 0x564b2dd5…, FeeEthRail 0x903df3da…."
+    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-06.",
+    "customHookAllowlistEnabled expected true after harden."
   ]
 }

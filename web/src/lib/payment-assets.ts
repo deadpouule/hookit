@@ -42,9 +42,13 @@ export function paymentAssetById(id: PaymentAssetId): PaymentAsset {
   return asset;
 }
 
-/** Payment options shown on the buy panel (always ETH + USDC when different from pool quote). */
+/** Payment options shown on the buy panel. Stock-quoted pools: USDG only (no ETH hop). */
 export function buyPaymentOptions(pool: TokenPool): PaymentAsset[] {
   const quote = poolQuoteAddress(pool).toLowerCase();
+  const stockQuoted = INK_QUOTRON_STOCKS.some((s) => s.address.toLowerCase() === quote);
+  if (stockQuoted) {
+    return PAYMENT_ASSETS.filter((asset) => asset.id === "USDC");
+  }
   return PAYMENT_ASSETS.filter((asset) => asset.address.toLowerCase() !== quote);
 }
 

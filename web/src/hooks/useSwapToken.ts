@@ -36,6 +36,7 @@ import {
   needsCompositeSell,
   type SwapAsset,
 } from "@/lib/swap-assets";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 import {
   findBridgeAmountOut,
   findBridgeRoute,
@@ -198,6 +199,17 @@ export function useSwapToken(pool: TokenPool) {
         if (!supportsCompositeSwap()) {
           throw new Error(
             "Pay-with needs HookitSwapRouter deployed. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER in env.",
+          );
+        }
+        // Stock-quoted pools: only USDG → wStock → meme (no ETH hop on Ink yet).
+        if (
+          payment.address === zeroAddress &&
+          INK_QUOTRON_STOCKS.some(
+            (s) => s.address.toLowerCase() === poolQuote.toLowerCase(),
+          )
+        ) {
+          throw new Error(
+            `Pay with ${stableQuoteLabel()} for stock-paired tokens (ETH → stock bridge is not available).`,
           );
         }
         const bridge = await findBridgeRoute(

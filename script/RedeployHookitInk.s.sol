@@ -41,14 +41,9 @@ import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 ///   forge script script/RedeployHookitInk.s.sol:RedeployHookitInkScript \
 ///     --rpc-url $INK_RPC_URL --broadcast --slow -vvvv
 ///
-/// After broadcast, copy console `ENV_*` lines into web `.env`:
-///   NEXT_PUBLIC_LAUNCH_FACTORY
-///   NEXT_PUBLIC_BONDING_FACTORY
-///   NEXT_PUBLIC_HOOKIT_SWAP_ROUTER
-///   NEXT_PUBLIC_CLAIMS_REDEEMER
-///   NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR
-///   NEXT_PUBLIC_HKIT_BUYBACK
-///   NEXT_PUBLIC_NATIVE_TOKEN
+/// After broadcast, sync UI + indexer constants:
+///   node scripts/sync-ink-deploy.mjs --write-env [--reset-indexer]
+///   (rewrites deploy/ink/addresses.json + env examples from broadcast/run-latest.json)
 contract RedeployHookitInkScript is Script {
     function run() public {
         require(block.chainid == QuotronStockQuotes.INK_MAINNET, "Ink only");

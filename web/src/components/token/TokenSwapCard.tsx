@@ -23,9 +23,11 @@ import {
   defaultSwapPair,
   isDirectPoolReceive,
   isStableSwapAsset,
+  isStockQuotedPool,
   needsCompositeSell,
   poolQuoteSwapAsset,
   poolToSwapAsset,
+  STABLE_SWAP_ASSET,
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
@@ -287,8 +289,15 @@ export function TokenSwapCard({
       : tokenBal;
 
   const handleInvert = () => {
-    const nextSell = buyAsset;
-    const nextBuy = sellAsset;
+    let nextSell = buyAsset;
+    let nextBuy = sellAsset;
+    // Stock pools: never land on ETH as the payment leg after invert.
+    if (isStockQuotedPool(pool) && nextSell.isNative) {
+      nextSell = STABLE_SWAP_ASSET;
+    }
+    if (isStockQuotedPool(pool) && nextBuy.isNative) {
+      nextBuy = STABLE_SWAP_ASSET;
+    }
     setSellAsset(nextSell);
     setBuyAsset(nextBuy);
     setSide(deriveSide(nextSell, nextBuy, pool));
@@ -296,8 +305,12 @@ export function TokenSwapCard({
   };
 
   const handleSellAsset = (asset: SwapAsset) => {
-    setSellAsset(asset);
-    setSide(deriveSide(asset, buyAsset, pool));
+    const next =
+      isStockQuotedPool(pool) && asset.isNative && buyAsset.key === poolToSwapAsset(pool).key
+        ? STABLE_SWAP_ASSET
+        : asset;
+    setSellAsset(next);
+    setSide(deriveSide(next, buyAsset, pool));
     setAmount("");
   };
 

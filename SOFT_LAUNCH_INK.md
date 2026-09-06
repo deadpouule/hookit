@@ -30,9 +30,9 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 | **HkitBuyback** | `0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9` |
 | **BuybackVault** (hook immutable) | `0x7c2cce72da7fd791e7e4bd1e3b8dda4ee4ba53b1` |
 | **HolderAirdropVault** (hook immutable) | `0x869c3ff9f449f1f1470f8b257d73bcbaf52ffe77` |
-| **FeeEthRail** (distributor.feeRail) | `0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71` |
+| **FeeEthRail** (distributor.feeRail) | `0xf1fdb0f7dbebfdc4ff7158f2bc2922722e27fe71` |
 
-`INDEXER_START_BLOCK=54712334`
+`INDEXER_START_BLOCK=54888359`
 
 Prior factory `0xa2366b74…` (11 launches, start block `54547596`) is retired — indexer + www.hookit.fun use the addresses above.
 
@@ -49,7 +49,7 @@ forge script script/VerifyInkDeploy.s.sol --rpc-url $INK_RPC_URL -vv
 forge script script/HardenInkSoftLaunch.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 4) Optional: wire FeeEthRail when USDG/ETH pool exists
-FEE_ETH_RAIL=0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71 \
+FEE_ETH_RAIL=0xf1fdb0f7dbebfdc4ff7158f2bc2922722e27fe71 \
   forge script script/WireFeeEthRailInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 5) Dry-run latest bytecode on Ink fork
@@ -78,7 +78,7 @@ INDEXER_URL=https://indexer.hookit.fun
 ```
 LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c
 BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe
-INDEXER_START_BLOCK=54712334
+INDEXER_START_BLOCK=54888359
 INK_RPC_URL=https://rpc-gel.inkonchain.com
 INDEXER_DATA_DIR=/var/lib/hookit-indexer
 ```

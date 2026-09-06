@@ -3,6 +3,7 @@ import { type Address, zeroAddress } from "viem";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { poolQuoteAddress, poolQuoteLabel, stableQuoteLabel } from "@/lib/payment-assets";
 import { shortAddress } from "@/lib/master-hooks";
+import { isRwaQuote } from "@/lib/token-identity";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { INK_QUOTRON_STOCKS, quotronStockLogoUrl } from "@/lib/xstocks";
@@ -39,6 +40,11 @@ export function isStableSwapAsset(asset: SwapAsset): boolean {
     !!asset.address &&
     asset.address.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()
   );
+}
+
+/** True when this market leg is quoted in a Quotrons wStock (not ETH/USDG). */
+export function isStockQuotedPool(pool: TokenPool): boolean {
+  return isRwaQuote(pool.quoteAsset, pool.quoteAddress);
 }
 
 export function poolToSwapAsset(pool: TokenPool): SwapAsset {
@@ -89,6 +95,10 @@ export function needsCompositeSell(pool: TokenPool, receive: SwapAsset): boolean
   return quote.toLowerCase() !== STABLE_QUOTE_ADDRESS.toLowerCase();
 }
 
+/**
+ * Default swap pair for the desk.
+ * Stock-quoted memes always default to USDG → meme (Quotrons composite) — never ETH.
+ */
 export function defaultSwapPair(
   pool: TokenPool,
   side: "buy" | "sell",
@@ -96,13 +106,14 @@ export function defaultSwapPair(
   const token = poolToSwapAsset(pool);
   const quote = poolQuoteSwapAsset(pool);
   if (side === "buy") {
-    // wStock quotes: prefer USDG (composite via Quotrons) — most wallets don't hold wrapped equity.
-    const isStockQuote =
-      !!quote.address &&
-      !quote.isNative &&
-      !isStableSwapAsset(quote);
-    return { sell: isStockQuote ? STABLE_SWAP_ASSET : quote, buy: token };
+    if (isStockQuotedPool(pool)) {
+      return { sell: STABLE_SWAP_ASSET, buy: token };
+    }
+    return { sell: quote, buy: token };
   }
-  // Sell: receive the pool quote (direct). USDG exit is opt-in via asset picker.
+  // Stock pools: prefer USDG out so users don't get stuck holding wStock.
+  if (isStockQuotedPool(pool)) {
+    return { sell: token, buy: STABLE_SWAP_ASSET };
+  }
   return { sell: token, buy: quote };
 }
