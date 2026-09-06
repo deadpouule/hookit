@@ -134,25 +134,23 @@ function Glyph({ id }: { id: HookId }) {
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
           <path
-            d="M12 1.85c-2.3-2.5-6.55-.55-6.3 3.05 0 3.55 6.3 7.5 6.3 7.5s6.3-3.95 6.3-7.5C18.55 1.3 14.3-.65 12 1.85Z"
+            d="M12 1.55c-2.45-2.7-6.9-.55-6.6 3.25 0 3.75 6.6 8 6.6 8s6.6-4.25 6.6-8C18.9 1 14.45-1.15 12 1.55Z"
             fill={stroke}
-            fillOpacity="0.22"
+            fillOpacity="0.28"
             stroke={stroke}
-            strokeWidth="1.75"
+            strokeWidth="1.8"
             strokeLinejoin="round"
           />
-          <rect x="6.55" y="12.55" width="2.25" height="4.7" rx="1.12" stroke={stroke} strokeWidth="1.55" />
-          <rect x="9.15" y="12.05" width="2.25" height="5.2" rx="1.12" stroke={stroke} strokeWidth="1.55" />
-          <rect x="11.75" y="11.85" width="2.25" height="5.4" rx="1.12" stroke={stroke} strokeWidth="1.55" />
-          <rect x="14.35" y="12.25" width="2.25" height="5" rx="1.12" stroke={stroke} strokeWidth="1.55" />
+          <path d="M9.1 13.6V10.7a1.35 1.35 0 0 1 2.7 0v2.9" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M12.2 13.5V10.15a1.35 1.35 0 1 1 2.7 0V13.5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path d="M15.3 13.7v-2.3a1.35 1.35 0 1 1 2.7 0V15" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
           <path
-            d="M6.5 16.1C4.35 15.15 3.15 13.35 3.55 11.75c.35-1.25 1.75-1.8 2.9-1.15"
+            d="M6.4 14.8c-1.15-.15-2.5.7-2.55 2.15-.05 1.15.7 1.9 1.7 2.55L8.4 21.2c.85.7 2 1.1 3.15 1.1h2.05c2.85 0 5.1-1.85 5.1-4.7v-2.7"
             stroke={stroke}
-            strokeWidth="1.7"
+            strokeWidth="1.75"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <rect x="6.2" y="16.55" width="11.5" height="4.15" rx="1.55" stroke={stroke} strokeWidth="1.6" />
-          <path d="M9.1 20.7h5.8" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       );
     case "creatorShareToHook":
