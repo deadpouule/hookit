@@ -168,7 +168,23 @@ function loadBroadcast(path) {
   return { creates, factoryCreateBlock, deployer, prevNativeMeta, path };
 }
 
+/** Libs may be reused across redeploys (no CREATE in this broadcast) — carry from prior addresses.json. */
+const OPTIONAL_CARRY = new Set(["LaunchFactoryLib", "LaunchDevBuyLib", "LaunchTokenDeployLib"]);
+
 function requireContracts(creates) {
+  const prevPath = join(ROOT, "deploy/ink/addresses.json");
+  if (existsSync(prevPath)) {
+    try {
+      const prev = JSON.parse(readFileSync(prevPath, "utf8"));
+      for (const key of OPTIONAL_CARRY) {
+        if (!creates.has(key) && prev.contracts?.[key]) {
+          creates.set(key, lower(prev.contracts[key]));
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
   const missing = CONTRACT_KEYS.filter((k) => !creates.has(k));
   if (missing.length) {
     throw new Error(`Broadcast missing CREATE contracts: ${missing.join(", ")}`);
