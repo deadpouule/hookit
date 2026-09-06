@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo } from "react";
 
 import { formatCompactUsd, formatPercent } from "@/lib/format";
 import { candlesForChartInterval } from "@/lib/chart-candles";
@@ -82,7 +82,6 @@ export function TokenCandleChart({
   expanded?: boolean;
   className?: string;
 }) {
-  const [heatmap, setHeatmap] = useState(false);
   const gradId = useId().replace(/:/g, "");
   const areaUpId = `ponsAreaUp-${gradId}`;
   const areaDownId = `ponsAreaDown-${gradId}`;
@@ -157,11 +156,6 @@ export function TokenCandleChart({
     }));
   }, [visible]);
 
-  const volMax = useMemo(() => {
-    if (!heatmap || !visible.length) return 1;
-    return Math.max(...visible.map((c) => Math.abs(c.h - c.l) + Math.abs(c.c - c.o)), 1);
-  }, [heatmap, visible]);
-
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
@@ -194,28 +188,6 @@ export function TokenCandleChart({
               ))}
             </div>
           ) : null}
-          <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground">
-            <span
-              className={cn(
-                "relative h-5 w-9 rounded-full transition",
-                heatmap ? "bg-[#9514d1]/30" : "bg-zinc-800",
-              )}
-            >
-              <input
-                type="checkbox"
-                className="peer sr-only"
-                checked={heatmap}
-                onChange={(e) => setHeatmap(e.target.checked)}
-                aria-label="Heatmap"
-              />
-              <span
-                className={cn(
-                  "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-zinc-400 transition peer-checked:translate-x-4 peer-checked:bg-[#9514d1]",
-                )}
-              />
-            </span>
-            Heatmap
-          </label>
           <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5">
             {TIMEFRAMES.map((tf) => (
               <button
@@ -309,29 +281,6 @@ export function TokenCandleChart({
                   <stop offset="100%" stopColor={LINE_DOWN} stopOpacity="0" />
                 </linearGradient>
               </defs>
-
-              {heatmap &&
-                visible.map((c, i) => {
-                  const x0 = i === 0 ? 0 : ((i - 0.5) / (visible.length - 1 || 1)) * 100;
-                  const x1 =
-                    i === visible.length - 1
-                      ? 100
-                      : ((i + 0.5) / (visible.length - 1 || 1)) * 100;
-                  const intensity =
-                    (Math.abs(c.h - c.l) + Math.abs(c.c - c.o)) / volMax;
-                  const bull = c.c >= c.o;
-                  return (
-                    <rect
-                      key={`heat-${i}`}
-                      x={x0}
-                      y={70}
-                      width={Math.max(x1 - x0, 0.15)}
-                      height={30 * Math.max(intensity, 0.12)}
-                      fill={bull ? LINE_UP : LINE_DOWN}
-                      opacity={0.12 + intensity * 0.35}
-                    />
-                  );
-                })}
 
               <path
                 d={areaPath}

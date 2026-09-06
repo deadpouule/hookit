@@ -39,7 +39,6 @@ import {
   MASTER_LAUNCH_STEPS,
   MASTER_WIZARD_STEP_INTRO,
   MASTER_WIZARD_STEP_SUBTITLES,
-  masterHookWizardStep,
 } from "@/lib/launch-wizard";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
@@ -62,14 +61,8 @@ export function MasterLaunchWizard() {
   const searchParams = useSearchParams();
   const reviewStep = 5;
 
-  const [step, setStep] = useState(() => {
-    const hook = searchParams.get("hook");
-    if (hook === "fixed-fee") return 3;
-    if (hook && MASTER_HOOKS.some((item) => item.id === hook)) {
-      return masterHookWizardStep(hook as (typeof MASTER_HOOKS)[number]["id"]);
-    }
-    return 1;
-  });
+  // Always start at token/name — `?hook=` only preselects the module for its later step.
+  const [step, setStep] = useState(1);
 
   const [form, setForm] = useState<LaunchFormState>(() =>
     withMasterHookEnabled(DEFAULT_MASTER_WIZARD_STATE, searchParams.get("hook")),
