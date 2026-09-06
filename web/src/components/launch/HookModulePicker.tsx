@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Info } from "lucide-react";
 
-import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
+import { HookLogo } from "@/components/home/market/HookLogo";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
@@ -73,8 +73,6 @@ function FixedFeePickCard({
   selected: boolean;
   onClick: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <button
       type="button"
@@ -84,8 +82,6 @@ function FixedFeePickCard({
         selected && "is-on",
       )}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -113,7 +109,7 @@ function FixedFeePickCard({
         </TooltipContent>
       </Tooltip>
       <div className="pick-card-mark pick-ascii">
-        <AsciiShape hookId="fixed-fee" theme={FIXED_FEE_THEME} isHovered={hovered || selected} />
+        <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
       </div>
       <p className="pick-card-title">fixed fees</p>
       <p className="pick-card-sub pick-card-sub--hook">Flat hook tax</p>
@@ -149,7 +145,7 @@ function FixedFeeConfigPanel({
           </div>
         </div>
         <div className="pick-config-ascii" aria-hidden>
-          <AsciiShape hookId="fixed-fee" theme={FIXED_FEE_THEME} isHovered />
+          <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
         </div>
       </div>
       <PickConfigControl theme={FIXED_FEE_THEME} label="Hook fee" value={formatBps(hookTaxBps)}>
@@ -212,19 +208,15 @@ function HookPickCard({
   selected: boolean;
   onClick: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <button
       type="button"
       className={cn("pick-card pick-card--hook", `pick-card--${hook.theme}`, selected && "is-on")}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <HookPickTooltip hook={hook} />
       <div className="pick-card-mark pick-ascii">
-        <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={hovered || selected} />
+        <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
       <p className="pick-card-title">{hook.title.toLowerCase()}</p>
       <p className="pick-card-sub pick-card-sub--hook">{hookPickTagline(hook.id)}</p>
@@ -561,7 +553,7 @@ function HookConfigHeader({
         </div>
       </div>
       <div className="pick-config-ascii" aria-hidden>
-        <AsciiShape hookId={hook.id} theme={hook.theme} isHovered />
+        <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
     </div>
   );

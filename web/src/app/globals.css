@@ -1099,10 +1099,40 @@
     transition: transform 0.22s ease;
   }
 
-  .pick-ascii .ascii-shape {
-    font-size: 5px;
-    line-height: 1;
+  .pick-ascii .hook-logo {
+    width: 3.6rem;
+    height: 3.6rem;
   }
+
+  .hook-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .hook-logo svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hook-logo--stage {
+    width: 8.5rem;
+    height: 8.5rem;
+  }
+
+  .hook-logo--fire { color: #ef4444; }
+  .hook-logo--gold { color: #f59e0b; }
+  .hook-logo--void { color: #e879f9; }
+  .hook-logo--nature { color: #10b981; }
+  .hook-logo--volt { color: #03b1ed; }
+  .hook-logo--ice { color: #38bdf8; }
+  .hook-logo--ember { color: #f97316; }
+  .hook-logo--rose { color: #f43f5e; }
+  .hook-logo--steel { color: #6366f1; }
+  .hook-logo--crimson { color: #dc2626; }
+  .hook-logo--lime { color: #84cc16; }
 
   .pick-card-title {
     margin: 0.15rem 0 0;
@@ -1244,14 +1274,14 @@
     overflow: hidden;
   }
 
-  .pick-config-ascii .ascii-shape {
-    font-size: 4px;
-    line-height: 1;
+  .pick-config-ascii .hook-logo {
+    width: 3.4rem;
+    height: 3.4rem;
   }
 
-  .hook-ascii-mark .ascii-shape {
-    font-size: 1.65px;
-    line-height: 1;
+  .hook-ascii-mark .hook-logo {
+    width: 1rem;
+    height: 1rem;
   }
 
   .launch-summary-hook-chip.orb-hook-desc-badge {
@@ -1659,9 +1689,9 @@
     height: 1.1rem;
   }
 
-  .token-hooks-ascii .ascii-shape {
-    font-size: 3.5px;
-    line-height: 1;
+  .token-hooks-ascii .hook-logo {
+    width: 0.95rem;
+    height: 0.95rem;
   }
 
   .token-hooks-live {
@@ -2065,6 +2095,11 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+  }
+
+  .launch-reel-ascii .hook-logo {
+    width: 3.2rem;
+    height: 3.2rem;
   }
 
   .launch-reel-ascii .ascii-shape {
@@ -4928,9 +4963,9 @@
     background: rgb(255 255 255 / 0.06);
   }
 
-  .master-hook-ascii-icon .ascii-shape {
-    font-size: 3.6px;
-    line-height: 1;
+  .master-hook-ascii-icon .hook-logo {
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   .category-split-menu__empty {
@@ -6057,40 +6092,6 @@
     will-change: transform, opacity;
   }
 
-  .hero-carousel-nav {
-    position: absolute;
-    top: 46%;
-    z-index: 20;
-    display: flex;
-    height: 32px;
-    width: 32px;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgb(255 255 255 / 0.14);
-    border-radius: 999px;
-    background: rgb(17 17 17 / 0.86);
-    color: #fff;
-    transform: translateY(-50%);
-  }
-
-  .hero-carousel-nav svg {
-    height: 16px;
-    width: 16px;
-  }
-
-  .hero-carousel-nav--prev {
-    left: 0.35rem;
-  }
-
-  .hero-carousel-nav--next {
-    right: 0.35rem;
-  }
-
-  .hero-carousel-nav:hover {
-    border-color: #9514d1;
-    color: #fff;
-  }
-
   .hero-carousel-dots {
     position: absolute;
     right: 0;
@@ -6237,7 +6238,7 @@
     font-size: 0.26rem;
   }
 
-  .hero-hook-ascii {
+  .hero-hook-logo {
     display: flex;
     min-height: 0;
     flex: 1 1 auto;
@@ -6246,9 +6247,9 @@
     overflow: hidden;
   }
 
-  .hero-hook-ascii .ascii-shape {
-    font-size: 7.6px;
-    line-height: 1;
+  .hero-hook-logo .hook-logo {
+    width: 6.4rem;
+    height: 6.4rem;
   }
 
   @media (max-width: 767px) {
@@ -6273,11 +6274,6 @@
       margin-top: -88px;
     }
 
-    .hero-carousel-nav {
-      height: 28px;
-      width: 28px;
-    }
-
     .hero-carousel-dots {
       bottom: 0.2rem;
     }
@@ -6288,8 +6284,9 @@
       padding: 0.55rem 0.45rem 0.45rem;
     }
 
-    .hero-hook-ascii .ascii-shape {
-      font-size: 5.4px;
+    .hero-hook-logo .hook-logo {
+      width: 4.4rem;
+      height: 4.4rem;
     }
 
     .hero-hook-card .hero-hook-title-badge {
@@ -6350,8 +6347,9 @@
       width: 204px;
     }
 
-    .hero-hook-ascii .ascii-shape {
-      font-size: 8.2px;
+    .hero-hook-logo .hook-logo {
+      width: 7.1rem;
+      height: 7.1rem;
     }
   }
 

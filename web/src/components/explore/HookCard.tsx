@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
-import { AsciiShape } from "@/components/explore/AsciiShape";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
+import { HookLogo } from "@/components/home/market/HookLogo";
 import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
   launchWithHookHref,
@@ -22,13 +21,10 @@ function capitalizeDescription(text: string) {
 
 export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[] }) {
   const router = useRouter();
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <motion.article
         className={cn("orb-card", `orb-card--${hook.theme}`)}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         onClick={() => router.push(launchWithHookHref(hook.id))}
         whileHover={{ scale: 1.02, y: -4 }}
         whileTap={{ scale: 0.98 }}
@@ -48,7 +44,7 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
         </div>
 
         <div className="orb-stage my-2">
-          <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={isHovered} />
+          <HookLogo hookId={hook.id} theme={hook.theme} className="hook-logo--stage" />
         </div>
 
         <div className="orb-footer">

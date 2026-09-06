@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { AsciiShape } from "@/components/explore/AsciiShape";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
+import { HookLogo } from "@/components/home/market/HookLogo";
 import {
   FIXED_FEE_HOOK,
   MASTER_HOOKS,
@@ -56,8 +55,8 @@ function MiniHookCard({
         <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
         <span>{hook.title}</span>
       </h3>
-      <div className="hero-hook-ascii">
-        <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={active} />
+      <div className="hero-hook-logo">
+        <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
     </>
   );
@@ -117,15 +116,6 @@ export function HeroHookCarousel() {
       aria-roledescription="carousel"
       aria-label="Master hook modules"
     >
-      <button
-        type="button"
-        className="hero-carousel-nav hero-carousel-nav--prev"
-        aria-label="Previous hook"
-        onClick={() => setActive((index) => wrap(index - 1, count))}
-      >
-        <ChevronLeft />
-      </button>
-
       <div className="hero-carousel-scene">
         <AnimatePresence initial={false}>
           {SLOTS.map((offset) => {
@@ -141,15 +131,6 @@ export function HeroHookCarousel() {
           })}
         </AnimatePresence>
       </div>
-
-      <button
-        type="button"
-        className="hero-carousel-nav hero-carousel-nav--next"
-        aria-label="Next hook"
-        onClick={() => setActive((index) => wrap(index + 1, count))}
-      >
-        <ChevronRight />
-      </button>
 
       <div className="hero-carousel-dots" role="tablist" aria-label="Hook slides">
         {HOOKS.map((hook, index) => (

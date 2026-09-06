@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { AsciiShape } from "@/components/explore/AsciiShape";
+import { HookLogo } from "@/components/home/market/HookLogo";
 import { MASTER_HOOKS } from "@/lib/master-hooks";
 
 const SLOTS = [-2, -1, 0, 1, 2] as const;
@@ -78,7 +78,7 @@ export function LaunchHookReel() {
                 >
                   <p>{hook.title}</p>
                   <div className="launch-reel-ascii">
-                    <AsciiShape hookId={hook.id} theme={hook.theme} isHovered={isOn} />
+                    <HookLogo hookId={hook.id} theme={hook.theme} />
                   </div>
                 </motion.div>
               </motion.div>

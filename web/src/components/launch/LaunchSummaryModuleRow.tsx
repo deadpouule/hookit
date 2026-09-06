@@ -1,6 +1,6 @@
 "use client";
 
-import { AsciiShape } from "@/components/explore/AsciiShape";
+import { HookLogo } from "@/components/home/market/HookLogo";
 import { HookChip } from "@/components/hooks/HookMark";
 import {
   HOOK_MARKS,
@@ -29,7 +29,7 @@ function HookAsciiMark({ id, theme }: { id: HookId; theme: HookTheme }) {
       className="hook-ascii-mark inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden"
       aria-hidden
     >
-      <AsciiShape hookId={masterId} theme={theme} isHovered />
+      <HookLogo hookId={masterId} theme={theme} />
     </span>
   );
 }
