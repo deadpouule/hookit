@@ -143,11 +143,25 @@ export function TokenProSwap({
     window.setTimeout(() => setFlipAnim(false), 350);
   };
 
+  const sellingLaunchToken =
+    !sellAsset.isNative &&
+    !!sellAsset.address &&
+    !!pool.contractAddress &&
+    sellAsset.address.toLowerCase() === pool.contractAddress.toLowerCase();
+  const holderTracked = !!(pool.hooks.holderAirdrop || pool.modules?.holderAirdrop);
+
   const spendableRaw = (() => {
     if (sellBalanceRaw === undefined) return undefined;
-    if (!sellAsset.isNative) return sellBalanceRaw;
-    // Keep a sliver of ETH for gas — sending the full balance as value fails on-chain.
-    return sellBalanceRaw > ETH_GAS_RESERVE ? sellBalanceRaw - ETH_GAS_RESERVE : 0n;
+    if (sellAsset.isNative) {
+      // Keep a sliver of ETH for gas — sending the full balance as value fails on-chain.
+      return sellBalanceRaw > ETH_GAS_RESERVE ? sellBalanceRaw - ETH_GAS_RESERVE : 0n;
+    }
+    // Launch tokens deployed against the pre-fix HolderAirdropVault panic when the last
+    // tracked holder zeroes its balance; leaving 1 wei keeps MAX sells executable there.
+    if (sellingLaunchToken && holderTracked && sellBalanceRaw > 1n) {
+      return sellBalanceRaw - 1n;
+    }
+    return sellBalanceRaw;
   })();
 
   const applyPreset = (pct: number) => {
