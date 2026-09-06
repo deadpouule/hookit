@@ -380,6 +380,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
           <TokenCandleChart
             candles={live.candles}
+            swaps={live.swaps}
             interval={interval}
             onInterval={setInterval}
             marketCap={live.marketCap}

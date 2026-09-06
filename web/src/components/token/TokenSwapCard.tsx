@@ -1,6 +1,7 @@
 "use client";
 
 import { formatUnits, parseEther, parseUnits, zeroAddress } from "viem";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
@@ -112,6 +113,19 @@ export function TokenSwapCard({
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending: writing } = useWriteContract();
   const swap = useSwapToken(pool);
+  const queryClient = useQueryClient();
+  // Chart / trades / stats poll every ~20s; after our own swap, pull fresh data right away
+  // and again once the indexer has had time to ingest the block.
+  const refreshLiveData = useCallback(() => {
+    const invalidate = () => {
+      void queryClient.invalidateQueries({ queryKey: ["indexer-token-bundle"] });
+      void queryClient.invalidateQueries({ queryKey: ["onchain-live"] });
+      void queryClient.invalidateQueries({ queryKey: ["launch-pool"] });
+    };
+    invalidate();
+    window.setTimeout(invalidate, 6_000);
+    window.setTimeout(invalidate, 15_000);
+  }, [queryClient]);
   const poolQuote = useMemo(() => poolQuoteSwapAsset(pool), [pool]);
   const fetchTokenBalance = useTokenBalance(pool.contractAddress as `0x${string}` | undefined);
   const fetchEthBalance = useTokenBalance(undefined);
@@ -394,6 +408,7 @@ export function TokenSwapCard({
       if (hash) {
         setStatus("Trade confirmed");
         toast.success("Trade confirmed", hash.slice(0, 10) + "…");
+        refreshLiveData();
       }
     } catch (err) {
       toast.dismiss(loadingId);

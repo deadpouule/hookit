@@ -10,6 +10,8 @@ export type SwapSide = "buy" | "sell";
 export interface LiveSwap {
   id: string;
   ageSec: number;
+  /** Unix seconds — present when the swap timestamp is known (indexer / on-chain block). */
+  t?: number;
   recipient: string;
   side: SwapSide;
   amount: number;

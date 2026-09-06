@@ -34,19 +34,19 @@ function abs(n: bigint) {
   return n < BigInt(0) ? -n : n;
 }
 
-function seriesToCandles(mcapSeries: number[]): LiveCandle[] {
-  if (mcapSeries.length === 0) return [];
+function seriesToCandles(series: { mcap: number; t?: number }[]): LiveCandle[] {
+  if (series.length === 0) return [];
   const candles: LiveCandle[] = [];
-  const bucket = Math.max(1, Math.floor(mcapSeries.length / 48));
-  for (let i = 0; i < mcapSeries.length; i += bucket) {
-    const slice = mcapSeries.slice(i, i + bucket);
-    const o = slice[0]!;
-    const c = slice[slice.length - 1]!;
+  const bucket = Math.max(1, Math.floor(series.length / 48));
+  for (let i = 0; i < series.length; i += bucket) {
+    const slice = series.slice(i, i + bucket);
+    const values = slice.map((s) => s.mcap);
     candles.push({
-      o,
-      c,
-      h: Math.max(...slice),
-      l: Math.min(...slice),
+      o: values[0]!,
+      c: values[values.length - 1]!,
+      h: Math.max(...values),
+      l: Math.min(...values),
+      t: slice[0]!.t,
     });
   }
   return candles;
@@ -180,7 +180,7 @@ export async function fetchOnChainLive(
         ? pool.liquidity
         : marketCap;
 
-  const mcapSeries: number[] = [];
+  const mcapSeries: { mcap: number; t?: number }[] = [];
   const swaps: LiveSwap[] = [];
   let volumeQuoteWei = BigInt(0);
   let buys = 0;
@@ -219,6 +219,15 @@ export async function fetchOnChainLive(
     if (b) tsByBlock.set(n, Number(b.timestamp));
   });
   const now = Math.floor(Date.now() / 1000);
+  // Ink seals ~1 block/s: estimate timestamps for blocks we did not fetch from the newest known one.
+  const anchorBn = blockNums.length ? Math.max(...blockNums.filter((n) => tsByBlock.has(n)), 0) : 0;
+  const anchorTs = anchorBn > 0 ? tsByBlock.get(anchorBn) : undefined;
+  const estimateTs = (bn: number): number | undefined => {
+    const known = tsByBlock.get(bn);
+    if (known != null) return known;
+    if (anchorTs == null || bn <= 0) return undefined;
+    return anchorTs - (anchorBn - bn);
+  };
 
   for (const { log, args } of decoded) {
     const quoteDelta = tokenIs0 ? args.amount1 : args.amount0;
@@ -230,20 +239,21 @@ export async function fetchOnChainLive(
         ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
         : marketCap;
 
-    if (mcap > 0) mcapSeries.push(mcap);
+    const bn = Number(log.blockNumber ?? 0);
+    const ts = estimateTs(bn);
+    if (mcap > 0) mcapSeries.push({ mcap, t: ts });
 
     const side: "buy" | "sell" = quoteDelta > BigInt(0) ? "buy" : "sell";
     if (side === "buy") buys += 1;
 
     const totalUsd = quoteVolumeUsd(abs(quoteDelta), pool, ethUsd, quoteUsd);
     const tokenAmt = Number(abs(tokenDelta)) / 1e18;
-    const bn = Number(log.blockNumber ?? 0);
-    const ts = tsByBlock.get(bn);
-    const ageSec = ts != null ? Math.max(0, now - ts) : Math.max(0, Number(latest - BigInt(bn)) * 2);
+    const ageSec = ts != null ? Math.max(0, now - ts) : Math.max(0, Number(latest - BigInt(bn)));
 
     swaps.push({
       id: `${log.transactionHash ?? "0x"}-${log.logIndex ?? 0}`,
       ageSec,
+      t: ts,
       recipient: args.sender
         ? `${args.sender.slice(0, 6)}…${args.sender.slice(-4)}`
         : "—",
@@ -264,8 +274,8 @@ export async function fetchOnChainLive(
 
   const volume24h = quoteVolumeUsd(volumeQuoteWei, pool, ethUsd, quoteUsd);
 
-  const first = mcapSeries[0] ?? marketCap;
-  const last = mcapSeries[mcapSeries.length - 1] ?? marketCap;
+  const first = mcapSeries[0]?.mcap ?? marketCap;
+  const last = mcapSeries[mcapSeries.length - 1]?.mcap ?? marketCap;
   const change24h = first > 0 ? ((last - first) / first) * 100 : pool.change24h ?? 0;
 
   return {
