@@ -2,6 +2,7 @@
 
 import { useId, useMemo } from "react";
 
+import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { formatCompactUsd, formatPercent } from "@/lib/format";
 import { candlesForChartInterval } from "@/lib/chart-candles";
 import type { LiveCandle } from "@/lib/token-live";
@@ -73,7 +74,7 @@ export function TokenCandleChart({
   change6h?: number;
   change24h?: number;
   /** Multi-pair legs shown as pool tabs above the plot. */
-  marketLegs?: { label: string; share: string }[];
+  marketLegs?: { label: string; share: string; quoteAddress?: string; quoteAsset?: string }[];
   activeMarketIndex?: number;
   onMarketIndex?: (index: number) => void;
   /** Empty-state CTA — jump user into the swap card. */
@@ -176,12 +177,13 @@ export function TokenCandleChart({
                   aria-selected={activeMarketIndex === i}
                   onClick={() => onMarketIndex(i)}
                   className={cn(
-                    "min-h-9 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+                    "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
                     activeMarketIndex === i
                       ? "bg-[#9514d1] text-white"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <PoolQuoteMark quoteAddress={leg.quoteAddress} quoteAsset={leg.quoteAsset} />
                   {leg.label}
                   <span className="ml-1 opacity-70">{leg.share}</span>
                 </button>

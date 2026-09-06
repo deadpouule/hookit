@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
-import { PairingMark } from "@/components/launch/PairingMark";
+import { PoolMarketMark } from "@/components/token/PoolQuoteMark";
 import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
 import { useBondingQuote } from "@/hooks/useBondingQuote";
@@ -18,7 +18,6 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { formatTokenAmount, isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
-import { pairingBadgeFromQuoteAddress } from "@/lib/pairing-badge";
 import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
 import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import {
@@ -58,35 +57,6 @@ function deriveSide(sell: SwapAsset, buy: SwapAsset, pool: TokenPool): Side {
   if (sell.key === tokenKey) return "sell";
   if (sell.isNative || isStableSwapAsset(sell) || isPoolQuoteAsset(pool, sell)) return "buy";
   return "sell";
-}
-
-function PoolLegLogo({ market }: { market: TokenPoolMarket }) {
-  const badge = pairingBadgeFromQuoteAddress(market.quoteAddress);
-  if (badge) {
-    return <PairingMark id={badge.pairingId} size="sm" />;
-  }
-
-  const asset = poolQuoteSwapAsset({
-    quoteAddress: market.quoteAddress,
-    quoteAsset: market.quoteAsset,
-  } as TokenPool);
-
-  if (asset.imageUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={asset.imageUrl}
-        alt=""
-        className="h-4 w-4 shrink-0 rounded-full object-contain"
-      />
-    );
-  }
-
-  return (
-    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-[8px] font-bold text-zinc-200">
-      {asset.symbol.slice(0, 1)}
-    </span>
-  );
 }
 
 function paymentIdFromAsset(asset: SwapAsset): PaymentAssetId {
@@ -492,7 +462,7 @@ export function TokenSwapCard({
                     : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-foreground",
                 )}
               >
-                <PoolLegLogo market={m} />
+                <PoolMarketMark market={m} />
                 {marketLegLabel(m)}
                 <span className="opacity-60">{marketSharePct(m)} liq</span>
               </button>

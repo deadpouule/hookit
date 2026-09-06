@@ -85,7 +85,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const multi = isMultiPool(pool);
   const markets = useMemo(() => poolMarkets(pool), [pool]);
   const marketLegs = useMemo(
-    () => markets.map((m) => ({ label: marketLegLabel(m), share: marketSharePct(m) })),
+    () =>
+      markets.map((m) => ({
+        label: marketLegLabel(m),
+        share: marketSharePct(m),
+        quoteAddress: m.quoteAddress,
+        quoteAsset: m.quoteAsset,
+      })),
     [markets],
   );
   const masterHookAddr = pool.hooksAddress;
