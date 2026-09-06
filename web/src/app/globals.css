@@ -2882,25 +2882,40 @@
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
       grid-template-areas: "left center right";
-      align-items: start;
+      align-items: stretch;
     }
 
     .token-desk--wide {
       grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
       grid-template-areas: "center right";
-      align-items: start;
+      align-items: stretch;
     }
 
     .token-desk--hooks .token-desk-rail--left {
       grid-area: left;
+      align-self: start;
     }
 
     .token-desk-main {
       grid-area: center;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .token-desk-rail--right {
       grid-area: right;
+    }
+
+    .token-desk-tx {
+      flex: 1 1 auto;
+      min-height: 12rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .token-desk-tx .token-tx-body {
+      flex: 1 1 auto;
     }
   }
 
