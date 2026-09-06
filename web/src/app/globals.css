@@ -4675,9 +4675,10 @@
 
   .market-toolbar-search {
     display: flex;
-    width: min(100%, 18rem);
-    min-width: 11rem;
-    flex: 0 1 auto;
+    width: 18rem;
+    max-width: 100%;
+    min-width: 0;
+    flex: 0 0 18rem;
     align-items: center;
     gap: 0.5rem;
     border-radius: 9999px;
@@ -5641,6 +5642,7 @@
     .market-toolbar-search {
       min-width: 0;
       width: auto;
+      flex: 1 1 auto;
     }
   }
 
