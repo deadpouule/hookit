@@ -2,12 +2,17 @@ import { encodeAbiParameters, isAddress } from "viem";
 
 import { getBlockExplorerUrl } from "@/lib/chains";
 import { POOL_MANAGER_ADDRESS } from "@/lib/contracts/config";
+import { adminAuthorized, adminUnauthorizedResponse } from "@/lib/admin-auth";
 import { forgeVerifyContract, loadRepoEnv } from "@/lib/forge-env";
 
 export const runtime = "nodejs";
 export const maxDuration = 180;
 
 export async function POST(request: Request) {
+  // Optional lock: if HOOKIT_ADMIN_KEY is configured, require it (stops explorer-key burn).
+  if (process.env.HOOKIT_ADMIN_KEY?.trim() && !adminAuthorized(request)) {
+    return adminUnauthorizedResponse();
+  }
   loadRepoEnv();
 
   let body: {

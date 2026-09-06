@@ -205,9 +205,8 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
 
         uint256 claims =
             address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), currency.toId());
-        if (claims >= flushed) {
-            _redeemClaims(currency, address(this), flushed);
-        }
+        uint256 fromClaims = claims >= flushed ? flushed : claims;
+        if (fromClaims > 0) _redeemClaims(currency, address(this), fromClaims);
 
         if (currency.isAddressZero()) {
             buybackEth += flushed;

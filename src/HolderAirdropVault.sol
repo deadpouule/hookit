@@ -39,6 +39,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     mapping(address => address[]) private _holders;
     mapping(address => mapping(address => uint256)) private _holderIndex;
     mapping(address => PendingAirdrop) private _pending;
+    uint256 private _locked = 1;
 
     event OperatorSet(address indexed operator, bool allowed);
     event ExcludedSet(address indexed token, address indexed account, bool excluded);
@@ -62,10 +63,18 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     error TransferFailed();
     error EpochTooShort();
     error EpochTooLong();
+    error Reentrant();
 
     modifier onlyOperator() {
         if (!operators[msg.sender] && msg.sender != owner) revert NotOperator();
         _;
+    }
+
+    modifier nonReentrant() {
+        if (_locked != 1) revert Reentrant();
+        _locked = 2;
+        _;
+        _locked = 1;
     }
 
     constructor(address owner_, IPoolManager manager_) Owned(owner_) UnlockTaker(manager_) {}
@@ -168,7 +177,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         emit Deposited(token, quote, amount, reserve[token]);
     }
 
-    function tryAutoAirdrop(address token) external returns (bool) {
+    function tryAutoAirdrop(address token) external nonReentrant returns (bool) {
         uint256 pot = reserve[token];
         if (pot == 0) return false;
 
@@ -193,48 +202,45 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
             address(claimsManager) != address(0) ? claimsManager.balanceOf(address(this), quote.toId()) : 0;
         bool payClaims = claimsBal >= pending.pot;
 
-        uint256 batchPaid;
-        uint256 batchEnd = pending.cursor + MAX_HOLDERS_PER_SWAP;
+        uint256 batchStart = pending.cursor;
+        uint256 batchEnd = batchStart + MAX_HOLDERS_PER_SWAP;
         if (batchEnd > holders.length) batchEnd = holders.length;
 
-        if (payClaims) {
-            for (uint256 i = pending.cursor; i < batchEnd; ++i) {
-                address account = holders[i];
-                uint256 bal = IERC20Balance(token).balanceOf(account);
-                if (bal == 0) continue;
-                uint256 share = pending.pot * bal / pending.totalBal;
-                if (share == 0) continue;
-                batchPaid += share;
-                claimsManager.transfer(account, quote.toId(), share);
-            }
-        } else {
-            for (uint256 i = pending.cursor; i < batchEnd; ++i) {
-                address account = holders[i];
-                uint256 bal = IERC20Balance(token).balanceOf(account);
-                if (bal == 0) continue;
-                uint256 share = pending.pot * bal / pending.totalBal;
-                if (share == 0) continue;
-                batchPaid += share;
-            }
-            if (batchPaid > 0) {
-                _materializeQuote(quote, batchPaid);
-                uint256 sent;
-                for (uint256 i = pending.cursor; i < batchEnd; ++i) {
-                    address account = holders[i];
-                    uint256 bal = IERC20Balance(token).balanceOf(account);
-                    if (bal == 0) continue;
-                    uint256 share = pending.pot * bal / pending.totalBal;
-                    if (share == 0) continue;
-                    quote.transfer(account, share);
-                    sent += share;
-                }
-                batchPaid = sent;
+        // Precompute shares and commit cursor/reserve before any external call (CEI).
+        address[] memory payees = new address[](batchEnd - batchStart);
+        uint256[] memory shares = new uint256[](batchEnd - batchStart);
+        uint256 payCount;
+        uint256 batchPaid;
+        for (uint256 i = batchStart; i < batchEnd; ++i) {
+            address account = holders[i];
+            uint256 bal = IERC20Balance(token).balanceOf(account);
+            if (bal == 0) continue;
+            uint256 share = pending.pot * bal / pending.totalBal;
+            if (share == 0) continue;
+            payees[payCount] = account;
+            shares[payCount] = share;
+            batchPaid += share;
+            unchecked {
+                ++payCount;
             }
         }
 
         pending.cursor = batchEnd;
         pending.paid += batchPaid;
         reserve[token] -= batchPaid;
+
+        if (batchPaid > 0) {
+            if (payClaims) {
+                for (uint256 i; i < payCount; ++i) {
+                    claimsManager.transfer(payees[i], quote.toId(), shares[i]);
+                }
+            } else {
+                _materializeQuote(quote, batchPaid);
+                for (uint256 i; i < payCount; ++i) {
+                    quote.transfer(payees[i], shares[i]);
+                }
+            }
+        }
 
         if (pending.cursor < holders.length) {
             return false;
@@ -248,7 +254,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     }
 
     /// @notice Manual full-list airdrop (legacy / emergency). Prefer automatic `tryAutoAirdrop`.
-    function airdrop(address token, address[] calldata holders) external returns (uint256 distributed) {
+    function airdrop(address token, address[] calldata holders) external nonReentrant returns (uint256 distributed) {
         uint256 pot = reserve[token];
         if (pot == 0) revert ZeroAmount();
 
@@ -265,27 +271,30 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         uint256 claimsBal =
             address(claimsManager) != address(0) ? claimsManager.balanceOf(address(this), quote.toId()) : 0;
 
+        uint256[] memory shares = new uint256[](holders.length);
         uint256 paid;
-        if (claimsBal >= pot) {
-            for (uint256 i; i < holders.length; ++i) {
-                uint256 share = pot * bals[i] / totalBal;
-                if (share == 0) continue;
-                paid += share;
-                claimsManager.transfer(holders[i], quote.toId(), share);
-            }
-        } else {
-            _materializeQuote(quote, pot);
-            for (uint256 i; i < holders.length; ++i) {
-                uint256 share = pot * bals[i] / totalBal;
-                if (share == 0) continue;
-                paid += share;
-                quote.transfer(holders[i], share);
-            }
+        for (uint256 i; i < holders.length; ++i) {
+            uint256 share = pot * bals[i] / totalBal;
+            shares[i] = share;
+            paid += share;
         }
 
         reserve[token] = pot - paid;
         lastAirdropAt[token] = uint64(block.timestamp);
         distributed = paid;
+
+        if (claimsBal >= pot) {
+            for (uint256 i; i < holders.length; ++i) {
+                if (shares[i] == 0) continue;
+                claimsManager.transfer(holders[i], quote.toId(), shares[i]);
+            }
+        } else {
+            _materializeQuote(quote, pot);
+            for (uint256 i; i < holders.length; ++i) {
+                if (shares[i] == 0) continue;
+                quote.transfer(holders[i], shares[i]);
+            }
+        }
 
         emit Airdropped(token, quote, pot, distributed, holders.length, msg.sender);
     }

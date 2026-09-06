@@ -96,6 +96,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     error MaxWalletExceeded();
     error HookDataRequired();
     error UnknownPool();
+    error FloorFillInvalid();
 
     modifier onlyFactory() {
         if (msg.sender != factory) revert OnlyFactory();
@@ -413,9 +414,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             uint256 res = vault.reserve(st.token);
             tokenIn = res == 0 ? 0 : (specifiedAbs * supply + res - 1) / res;
         }
-        if (tokenIn == 0) {
-            return (this.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
-        }
+        if (tokenIn == 0) revert FloorFillInvalid();
 
         uint256 supplyNow = IERC20Supply(st.token).totalSupply();
         uint256 grossQuote = FixedPointMath.quoteAtFloor(tokenIn, vault.reserve(st.token), supplyNow);

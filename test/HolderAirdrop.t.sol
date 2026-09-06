@@ -12,6 +12,22 @@ import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
 
+contract AirdropReenter {
+    HolderAirdropVault public vault;
+    address public token;
+    uint256 public hits;
+
+    constructor(HolderAirdropVault vault_, address token_) {
+        vault = vault_;
+        token = token_;
+    }
+
+    receive() external payable {
+        hits += 1;
+        try vault.tryAutoAirdrop(token) {} catch {}
+    }
+}
+
 contract HolderAirdropTest is LaunchpadTestBase {
     address internal alice = address(0xA11CE);
     address internal bob = address(0xB0B2);
@@ -155,6 +171,35 @@ contract HolderAirdropTest is LaunchpadTestBase {
         for (uint256 i; i < holders.length; ++i) {
             assertTrue(holders[i] != alice && holders[i] != bob);
         }
+    }
+
+    function testReentrantAirdropCannotDoublePay() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.holderAirdrop = true;
+        m.holderAirdropBps = 10_000;
+        m.holderAirdropEpochSeconds = 60;
+
+        (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        _buyAs(alice, key, 1 ether);
+        _buyAs(bob, key, 1 ether);
+
+        AirdropReenter reenter = new AirdropReenter(airdrops, token);
+        uint256 slice = LaunchTokenLike(token).balanceOf(alice) / 2;
+        vm.prank(alice);
+        LaunchTokenLike(token).transfer(address(reenter), slice);
+
+        vm.warp(block.timestamp + 60);
+        uint256 reserveBefore = airdrops.reserve(token);
+        assertGt(reserveBefore, 0);
+
+        bool done = airdrops.tryAutoAirdrop(token);
+        assertTrue(done);
+        uint256 reserveAfter = airdrops.reserve(token);
+        assertLt(reserveAfter, reserveBefore);
+        // Malicious recipient may reenter once; accounting already committed so reserve cannot be drained twice.
+        assertLe(reenter.hits(), 1);
+        assertEq(airdrops.reserve(token), reserveAfter);
     }
 
     function _buyAs(address user, PoolKey memory key, uint256 ethIn) internal {

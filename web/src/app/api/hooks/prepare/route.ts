@@ -8,6 +8,7 @@ import { POOL_MANAGER_ADDRESS } from "@/lib/contracts/config";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { loadRepoEnv, REPO_ROOT } from "@/lib/forge-env";
 import { CREATE2_DEPLOYER, mineHookSalt, parseHookFlags } from "@/lib/hook-miner";
+import { adminAuthorized, adminUnauthorizedResponse } from "@/lib/admin-auth";
 import { prepareUserHookSource } from "@/lib/user-hook-source";
 
 const execFileAsync = promisify(execFile);
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+  if (!adminAuthorized(request)) return adminUnauthorizedResponse();
 
   loadRepoEnv();
   let body: { source?: string };

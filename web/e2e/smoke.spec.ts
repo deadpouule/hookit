@@ -28,7 +28,7 @@ test.describe("Hookit UI smoke", () => {
 
   test("Token desk opens from explore", async ({ page }) => {
     await page.goto("/");
-    const card = page.locator("a[href^='/token/'], .market-card, .mobile-token-row").first();
+    const card = page.locator(".market-card").first();
     await expect(card).toBeVisible({ timeout: 45_000 });
     await card.click();
     await expect(page).toHaveURL(/\/token\//, { timeout: 20_000 });
@@ -68,6 +68,33 @@ test.describe("Hookit UI smoke", () => {
     if (dynamic) {
       expect(dynamic.lpFee === 0x800000 || dynamic.hooks?.dynamicFees).toBeTruthy();
     }
+  });
+
+  test("Token desk chart scrubs and creator fees are public", async ({ page }) => {
+    await page.goto("/token/1");
+    await expect(page).toHaveURL(/\/token\//, { timeout: 20_000 });
+
+    const plot = page.locator(".bg-chart-bg").first();
+    await expect(plot).toBeVisible({ timeout: 30_000 });
+    const box = await plot.boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.move(box!.x + box!.width * 0.45, box!.y + box!.height * 0.5);
+    await expect(page.getByText(/Market cap/i).first()).toBeVisible({ timeout: 5_000 });
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.getByText(/Creator fees/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: /^Claim$/i })).toHaveCount(0);
+  });
+
+  test("Privileged API routes stay locked", async ({ request }) => {
+    const deploy = await request.post("/api/hooks/deploy", { data: { source: "contract X {}" } });
+    expect([401, 503]).toContain(deploy.status());
+
+    const prepare = await request.post("/api/hooks/prepare", { data: { source: "contract X {}" } });
+    expect([401, 503]).toContain(prepare.status());
+
+    const sneaky = await request.get("/api/indexer/admin");
+    expect(sneaky.status()).toBe(404);
   });
 
   test("API eth-usd is live-ish", async ({ request }) => {

@@ -138,9 +138,6 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         chainId: cfg.chainId,
         cursor: store.data.cursor,
         startBlock: cfg.startBlock.toString(),
-        storePath: store.path,
-        rpcUrl: cfg.rpcUrl,
-        rpcUrls: cfg.rpcUrls,
         launchFactory: cfg.launchFactory ?? null,
         bondingFactory: cfg.bondingFactory ?? null,
         updatedAt: store.data.updatedAt,
@@ -224,8 +221,8 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
     });
   });
 
-  server.listen(cfg.port, () => {
-    console.log(`[indexer] API http://127.0.0.1:${cfg.port}`);
+  server.listen(cfg.port, cfg.bindHost, () => {
+    console.log(`[indexer] API http://${cfg.bindHost}:${cfg.port}`);
   });
 
   return server;

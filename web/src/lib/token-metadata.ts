@@ -21,6 +21,56 @@ const IPFS_GATEWAY_FALLBACKS = [
   "https://ipfs.io/ipfs",
 ].filter((g): g is string => Boolean(g));
 
+/** Block SSRF: no localhost / RFC1918 / link-local / metadata IPs; https or known IPFS gateways only. */
+export function isSafeRemoteMetadataUrl(raw: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.username || parsed.password) return false;
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol !== "https:" && protocol !== "http:") return false;
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "0" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host === "metadata.google.internal"
+  ) {
+    return false;
+  }
+  if (isPrivateOrReservedHost(host)) return false;
+  if (protocol === "http:") {
+    return IPFS_GATEWAY_FALLBACKS.some((g) => raw.startsWith(`${g}/`));
+  }
+  return true;
+}
+
+function isPrivateOrReservedHost(host: string): boolean {
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    if (a === 10 || a === 0 || a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true;
+    if (a === 198 && (b === 18 || b === 19)) return true;
+  }
+  if (host.includes(":")) {
+    const h = host.toLowerCase();
+    if (h === "::1" || h.startsWith("fc") || h.startsWith("fd") || h.startsWith("fe80")) return true;
+  }
+  return false;
+}
+
 function ipfsHttpUrls(uri: string): string[] {
   if (!uri.startsWith("ipfs://")) return [uri];
   const cid = uri.slice("ipfs://".length).replace(/^ipfs\//, "");
@@ -128,6 +178,7 @@ export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFi
     if (cached) return cached;
 
     for (const httpUrl of ipfsHttpUrls(uri)) {
+      if (!isSafeRemoteMetadataUrl(httpUrl)) continue;
       try {
         const res = await fetch(httpUrl, {
           signal: AbortSignal.timeout(8_000),

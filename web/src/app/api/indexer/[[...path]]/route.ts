@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 
 const INDEXER_URL = process.env.INDEXER_URL?.trim().replace(/\/$/, "") ?? "";
 
+const INDEXER_ALLOWED = new Set(["trades", "holders", "candles"]);
+
+function isAllowedIndexerPath(path: string[]): boolean {
+  if (path.some((p) => p === ".." || p.includes("\\") || p.includes("\0"))) return false;
+  if (path.length === 0 || (path.length === 1 && path[0] === "health")) return true;
+  if (path[0] === "v1" && path[1] === "protocol" && path[2] === "stats" && path.length === 3) return true;
+  if (path[0] === "v1" && path[1] === "tokens") {
+    if (path.length === 2) return true;
+    if (path.length === 3) return true;
+    if (path.length === 4 && INDEXER_ALLOWED.has(path[3]!)) return true;
+  }
+  return false;
+}
+
 const HEALTH_CACHE_SEC = 10;
 const READ_CACHE_SEC = 8;
 
@@ -12,6 +26,9 @@ function cacheControlForPath(path: string[]): string {
 }
 
 async function proxy(req: NextRequest, path: string[]) {
+  if (!isAllowedIndexerPath(path)) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
   if (!INDEXER_URL) {
     const isHealth = path.length === 0 || path[0] === "health";
     if (isHealth) {
@@ -67,7 +84,6 @@ async function proxy(req: NextRequest, path: string[]) {
         hint: INDEXER_URL
           ? "Check INDEXER_URL is reachable from this deployment"
           : "Set INDEXER_URL to a hosted indexer when ready (charts / trades / holders)",
-        indexerUrl: INDEXER_URL || null,
       },
       { status: 503 },
     );

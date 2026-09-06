@@ -50,7 +50,10 @@ export function FloorVaultInline({
   const applyMax = () => {
     const bal = (tokenBalance as bigint | undefined) ?? BigInt(0);
     if (bal <= BigInt(0)) return;
-    setRedeemAmount(formatUnits(bal, 18));
+    // Leave 1 wei when holder-airdrop tracking is on so a full exit cannot
+    // hit the pre-fix `_removeHolder` OOB on already-deployed vaults.
+    const spend = pool.hooks.holderAirdrop && bal > BigInt(1) ? bal - BigInt(1) : bal;
+    setRedeemAmount(formatUnits(spend, 18));
   };
 
   const redeem = async () => {

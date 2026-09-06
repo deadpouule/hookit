@@ -89,11 +89,10 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
 
         uint256 claims =
             address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), s.currency.toId());
-        if (claims >= vested) {
-            _redeemClaims(s.currency, msg.sender, vested);
-        } else {
-            s.currency.transfer(msg.sender, vested);
-        }
+        uint256 fromClaims = claims >= vested ? vested : claims;
+        if (fromClaims > 0) _redeemClaims(s.currency, msg.sender, fromClaims);
+        uint256 remainder = vested - fromClaims;
+        if (remainder > 0) s.currency.transfer(msg.sender, remainder);
         emit Claimed(msg.sender, launchToken, s.currency, vested);
     }
 
