@@ -333,13 +333,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
         <div className="token-hero-links">
           <HeroLink href={twitterUrl} label="X">
-            <XGlyph className="h-4 w-4" />
+            <XGlyph className="h-[18px] w-[18px]" />
           </HeroLink>
           <HeroLink href={websiteUrl} label="Website">
-            <Globe className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            <Globe className="h-5 w-5" strokeWidth={1.75} />
           </HeroLink>
           <HeroLink href={githubUrl} label="GitHub">
-            <GithubGlyph className="h-[18px] w-[18px]" />
+            <GithubGlyph className="h-5 w-5" />
           </HeroLink>
         </div>
       </div>
