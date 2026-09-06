@@ -34,11 +34,17 @@ function Glyph({ id }: { id: BrowseHookId }) {
     case "max-tx":
       return (
         <svg viewBox="0 0 24 24" fill="none">
-          <path d="M3.4 8.2 6.6 6.4h4.2L14 8.2v6.2l-3.2 1.8H6.6L3.4 14.4z" stroke={stroke} strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M10 8.2 6.6 6.4" stroke={stroke} strokeWidth="1.6" />
-          <path d="M10.2 8.8 13.4 7h4.2L21 8.8v6.2l-3.4 1.8h-4.2l-3.2-1.8z" stroke={stroke} strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M16.8 8.8 13.4 7" stroke={stroke} strokeWidth="1.6" />
-          <path d="M8.5 11.6h7.2M14.2 10l1.6 1.6-1.6 1.6" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M1.8 8.6h9.2v9H1.8z" stroke={stroke} strokeWidth="1.55" />
+          <path d="M1.8 8.6 6.4 12.1 11 8.6" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
+          <path d="M13 6.6h9.2v9H13z" stroke={stroke} strokeWidth="1.55" />
+          <path d="M13 6.6 17.6 10.1 22.2 6.6" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
+          <path d="M12 6.4v11.4" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
+          <path
+            d="M14.45 8.55c0-1.2-1.1-1.95-2.45-1.95s-2.45.75-2.45 1.85c0 2.6 4.9 1.15 4.9 3.8 0 1.2-1.15 2.05-2.45 2.05s-2.5-.85-2.5-2.05"
+            stroke={stroke}
+            strokeWidth="1.55"
+            strokeLinecap="round"
+          />
         </svg>
       );
     case "max-wallet":
@@ -53,13 +59,15 @@ function Glyph({ id }: { id: BrowseHookId }) {
       return (
         <svg viewBox="0 0 24 24" fill="none">
           <path
-            d="M3.5 16.5 8 10.5l3.2 3.6 4.1-6.4 4.8 5.2"
+            d="M2.6 18.4 6.8 12.6 10 15.8 14.6 7.4"
             stroke={stroke}
             strokeWidth="1.9"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          <path d="M16.2 5.8h4.3V10" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M12.1 9.6 13.2 7.8M13.5 10.5 14.8 8.4" stroke={stroke} strokeWidth="1.35" strokeLinecap="round" />
+          <path d="M16.4 7.6 21.6 2.6" stroke={stroke} strokeWidth="1.85" strokeLinecap="round" />
+          <path d="M17.2 2.4h5v5" stroke={stroke} strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
     case "buyback-vesting":
@@ -91,31 +99,51 @@ function Glyph({ id }: { id: BrowseHookId }) {
     case "lp-donate":
       return (
         <svg viewBox="0 0 24 24" fill="none">
+          <rect x="9.5" y="1.4" width="5" height="2.3" rx="0.8" stroke={stroke} strokeWidth="1.45" />
           <path
-            d="M5.2 8.2c1.6-1.2 3.6-.4 4.3.8.5-1.6 2.3-2.3 3.7-1.4 1.5.9 1.6 2.8.6 4.1L9.6 16.4 5.4 11.4c-.9-1.1-.8-2.3-.2-3.2Z"
+            d="M7.2 3.6h9.6c.9 0 1.6.7 1.6 1.55 0 .5-.25.96-.66 1.22L14.6 8.2H9.4L6.26 6.37A1.5 1.5 0 0 1 5.6 5.15C5.6 4.3 6.3 3.6 7.2 3.6Z"
             stroke={stroke}
-            strokeWidth="1.6"
+            strokeWidth="1.45"
             strokeLinejoin="round"
           />
-          <circle cx="12" cy="12.1" r="1.15" fill={stroke} />
+          <path d="M8 7.9v1.7M10.4 8.3v1.9M13.6 8.3v1.9M16 7.9v1.7" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
+          <path d="M12 10.6v5.4" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
           <path
-            d="M8.6 17.6c1.4 1.6 3.9 1.8 5.6.4l3.6-3c1.1-.9 1.2-2.4.3-3.4"
+            d="M13.65 11.55c0-.7-.75-1.15-1.65-1.15s-1.65.4-1.65 1.05c0 1.5 3.3.7 3.3 2.2 0 .7-.75 1.2-1.65 1.2s-1.7-.5-1.7-1.2"
             stroke={stroke}
-            strokeWidth="1.6"
+            strokeWidth="1.45"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
+          <ellipse cx="12" cy="18.2" rx="8" ry="2.15" stroke={stroke} strokeWidth="1.55" />
+          <path d="M4.2 18.2c.45 2.35 3.5 4 7.8 4s7.35-1.65 7.8-4" stroke={stroke} strokeWidth="1.55" />
         </svg>
       );
     case "holder-airdrop":
       return (
         <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="6.2" cy="6.4" r="1.6" fill={stroke} />
-          <circle cx="12" cy="5.6" r="1.6" fill={stroke} />
-          <circle cx="17.8" cy="6.4" r="1.6" fill={stroke} />
-          <path d="M4.6 9.2c.4 1.3 1.3 2 2.6 2s2.2-.7 2.6-2M10.4 8.4c.4 1.3 1.3 2 2.6 2s2.2-.7 2.6-2M14.8 9.2c.4 1.3 1.3 2 2.6 2s2.2-.7 2.6-2" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
-          <ellipse cx="12" cy="17.2" rx="7.2" ry="3.1" stroke={stroke} strokeWidth="1.7" />
-          <path d="M8.4 13.6 12 16.4l3.6-2.8" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="3.3" r="1.45" fill={stroke} />
+          <circle cx="4.1" cy="7.8" r="1.45" fill={stroke} />
+          <circle cx="19.9" cy="7.8" r="1.45" fill={stroke} />
+          <path
+            d="M10 5.9c.4-1 1.2-1.5 2-1.5s1.6.5 2 1.5M2.5 10.3c.35-1 1.05-1.5 1.6-1.5s1.25.5 1.6 1.5M18.3 10.3c.35-1 1.05-1.5 1.6-1.5s1.25.5 1.6 1.5"
+            stroke={stroke}
+            strokeWidth="1.45"
+            strokeLinecap="round"
+          />
+          <ellipse cx="12" cy="16.6" rx="7.6" ry="3.5" stroke={stroke} strokeWidth="1.65" />
+          <path d="M12 11.2v4.4" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M13.45 12.15c0-.65-.7-1.05-1.45-1.05s-1.45.35-1.45.95c0 1.35 2.9.6 2.9 2 0 .65-.7 1.1-1.45 1.1s-1.5-.45-1.5-1.1"
+            stroke={stroke}
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.6 13.4 6.6 10.2M13.4 13.4 17.4 10.2"
+            stroke={stroke}
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
         </svg>
       );
     case "creator-share-to-hook":
@@ -129,10 +157,15 @@ function Glyph({ id }: { id: BrowseHookId }) {
     case "fixed-fee":
       return (
         <svg viewBox="0 0 24 24" fill="none">
-          <path d="M6.5 4.4h11L19 7.2H5z" fill={stroke} />
-          <rect x="5.2" y="7.2" width="13.6" height="10.4" rx="1.2" stroke={stroke} strokeWidth="1.7" />
-          <path d="M8.4 11.2h7.2M8.4 14.4h4.6" stroke={stroke} strokeWidth="1.6" strokeLinecap="round" />
-          <path d="M9.6 17.6h4.8V20H9.6z" fill={stroke} />
+          <path d="M6 2.6h8.6L19 7.2v14.2H6z" stroke={stroke} strokeWidth="1.65" strokeLinejoin="round" />
+          <path d="M14.6 2.6V7h4.4" stroke={stroke} strokeWidth="1.65" strokeLinejoin="round" />
+          <path d="M8.4 10.2h7.4M8.4 12.8h7.4M8.4 15.3h5" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M8.2 18.8c1.5-1.9 2.3 1 3.5-.35 1.15-1.2 1.85.85 3.15.1"
+            stroke={stroke}
+            strokeWidth="1.55"
+            strokeLinecap="round"
+          />
         </svg>
       );
   }

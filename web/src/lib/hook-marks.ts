@@ -62,8 +62,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Max Tx",
     short: "Tx",
     hint: "Per-swap supply cap",
-    color: "#03b1ed",
-    glow: "rgba(3,177,237,0.4)",
+    color: "#10b981",
+    glow: "rgba(16,185,129,0.4)",
   },
   holderAirdrop: {
     id: "holderAirdrop",

@@ -54,32 +54,47 @@ function Glyph({ id }: { id: HookId }) {
     case "maxTx":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path d="M1.8 8.6h9.2v9H1.8z" stroke={stroke} strokeWidth="1.55" />
+          <path d="M1.8 8.6 6.4 12.1 11 8.6" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
+          <path d="M13 6.6h9.2v9H13z" stroke={stroke} strokeWidth="1.55" />
+          <path d="M13 6.6 17.6 10.1 22.2 6.6" stroke={stroke} strokeWidth="1.55" strokeLinejoin="round" />
+          <path d="M12 6.4v11.4" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
           <path
-            d="M7 8h10M14 5l3 3-3 3M17 16H7M10 13l-3 3 3 3"
+            d="M14.45 8.55c0-1.2-1.1-1.95-2.45-1.95s-2.45.75-2.45 1.85c0 2.6 4.9 1.15 4.9 3.8 0 1.2-1.15 2.05-2.45 2.05s-2.5-.85-2.5-2.05"
             stroke={stroke}
-            strokeWidth="1.7"
+            strokeWidth="1.55"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
         </svg>
       );
     case "holderAirdrop":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <circle cx="12" cy="3.3" r="1.45" fill={stroke} />
+          <circle cx="4.1" cy="7.8" r="1.45" fill={stroke} />
+          <circle cx="19.9" cy="7.8" r="1.45" fill={stroke} />
+          <ellipse cx="12" cy="16.6" rx="7.6" ry="3.5" stroke={stroke} strokeWidth="1.65" />
+          <path d="M12 11.2v4.4" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
           <path
-            d="M12 4v3M8 7h8l1.5 3H6.5L8 7Z"
+            d="M13.45 12.15c0-.65-.7-1.05-1.45-1.05s-1.45.35-1.45.95c0 1.35 2.9.6 2.9 2 0 .65-.7 1.1-1.45 1.1s-1.5-.45-1.5-1.1"
             stroke={stroke}
-            strokeWidth="1.7"
-            strokeLinejoin="round"
+            strokeWidth="1.4"
+            strokeLinecap="round"
           />
-          <rect x="6" y="10" width="12" height="10" rx="1.5" stroke={stroke} strokeWidth="1.7" />
-          <path d="M12 10v10M6 14h12" stroke={stroke} strokeWidth="1.7" />
         </svg>
       );
     case "dynamicFees":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <path d="M4 16 8 8l4 6 3-4 5 6" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2.6 18.4 6.8 12.6 10 15.8 14.6 7.4"
+            stroke={stroke}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M16.4 7.6 21.6 2.6" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" />
+          <path d="M17.2 2.4h5v5" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
     case "buybackVesting":
@@ -102,8 +117,22 @@ function Glyph({ id }: { id: HookId }) {
     case "lpDonate":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <circle cx="9" cy="12" r="4.2" stroke={stroke} strokeWidth="1.7" />
-          <circle cx="15" cy="12" r="4.2" stroke={stroke} strokeWidth="1.7" />
+          <rect x="9.5" y="1.4" width="5" height="2.3" rx="0.8" stroke={stroke} strokeWidth="1.45" />
+          <path
+            d="M7.2 3.6h9.6c.9 0 1.6.7 1.6 1.55 0 .5-.25.96-.66 1.22L14.6 8.2H9.4L6.26 6.37A1.5 1.5 0 0 1 5.6 5.15C5.6 4.3 6.3 3.6 7.2 3.6Z"
+            stroke={stroke}
+            strokeWidth="1.45"
+            strokeLinejoin="round"
+          />
+          <path d="M12 10.4v5.2" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M13.65 11.4c0-.7-.75-1.15-1.65-1.15s-1.65.4-1.65 1.05c0 1.5 3.3.7 3.3 2.2 0 .7-.75 1.2-1.65 1.2s-1.7-.5-1.7-1.2"
+            stroke={stroke}
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+          <ellipse cx="12" cy="18.2" rx="8" ry="2.15" stroke={stroke} strokeWidth="1.5" />
+          <path d="M4.2 18.2c.45 2.35 3.5 4 7.8 4s7.35-1.65 7.8-4" stroke={stroke} strokeWidth="1.5" />
         </svg>
       );
     case "creatorShareToHook":

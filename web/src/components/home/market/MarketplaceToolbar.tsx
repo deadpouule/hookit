@@ -94,8 +94,7 @@ export function MarketplaceToolbar({
             active={false}
             onClick={() => undefined}
             glyph={<CustomsGlyph />}
-            label="Custom"
-            hint="coming soon"
+            label="Custom (Coming soon)"
             disabled
           />
         </div>

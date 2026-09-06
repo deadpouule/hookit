@@ -145,7 +145,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "caps each swap between 0.1% and 2.5% of total supply — fixed at launch",
     category: "protection",
     icon: Gauge,
-    theme: "volt",
+    theme: "nature",
     keyword: "TX",
     creator: CREATOR,
     uses: 6,
