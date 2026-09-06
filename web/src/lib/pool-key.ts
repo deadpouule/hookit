@@ -35,7 +35,8 @@ export function poolKeyFromLaunch(
   if (!token || !hooks) return null;
 
   const quote = (quoteOverride ?? pool.quoteAddress ?? zeroAddress) as Address;
-  const tokenIs0 = pool.tokenIsCurrency0 ?? BigInt(token) < BigInt(quote);
+  // Always derive from the currencies in this key — never reuse another leg's flag.
+  const tokenIs0 = BigInt(token) < BigInt(quote);
 
   return {
     currency0: tokenIs0 ? token : quote,

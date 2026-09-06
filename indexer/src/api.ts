@@ -33,10 +33,14 @@ function parseToken(raw: string | undefined): Address | null {
   }
 }
 
-function summarize(store: Store, address: Address) {
+function summarize(store: Store, address: Address, poolId?: string | null) {
   const row = store.getToken(address);
   if (!row) return null;
-  const last = row.trades[row.trades.length - 1];
+  const poolKey = poolId?.toLowerCase();
+  const trades = poolKey
+    ? row.trades.filter((t) => t.poolId?.toLowerCase() === poolKey)
+    : row.trades;
+  const last = trades[trades.length - 1];
   const holders = Object.keys(row.holders).length;
   const stats = store.stats24h(address);
   const activity = store.activityStats24h(address);
@@ -45,9 +49,14 @@ function summarize(store: Store, address: Address) {
   const changes = store.priceChanges(address);
   return {
     address: row.address,
-    poolId: row.poolId,
-    quote: row.quote,
-    tokenIsCurrency0: row.tokenIsCurrency0,
+    poolId: poolKey ?? row.poolId,
+    quote: poolKey
+      ? (row.markets?.find((m) => m.poolId.toLowerCase() === poolKey)?.quote ?? row.quote)
+      : row.quote,
+    tokenIsCurrency0: poolKey
+      ? (row.markets?.find((m) => m.poolId.toLowerCase() === poolKey)?.tokenIsCurrency0 ??
+        row.tokenIsCurrency0)
+      : row.tokenIsCurrency0,
     name: row.name,
     symbol: row.symbol,
     decimals: row.decimals,
@@ -68,9 +77,11 @@ function summarize(store: Store, address: Address) {
     markets: row.markets ?? null,
     price: last?.price ?? null,
     lastTradeAt: last?.timestamp ?? null,
-    tradesIndexed: row.trades.length,
+    tradesIndexed: trades.length,
     holdersIndexed: holders,
-    candles5m: row.candles5m.length,
+    candles5m: poolKey
+      ? (row.candles5mByPool?.[poolKey]?.length ?? 0)
+      : row.candles5m.length,
     volume24h: stats.volume24h,
     trades24h: stats.trades24h,
     change24h: stats.change24h ?? changes.change24h,
@@ -168,16 +179,18 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
 
       const limit = Math.min(Math.max(Number(u.searchParams.get("limit") ?? 50), 1), 500);
       const offset = Math.max(Number(u.searchParams.get("offset") ?? 0), 0);
+      const poolId = u.searchParams.get("poolId") ?? undefined;
 
       if (parts.length === 3) {
-        json(res, 200, summarize(store, token));
+        json(res, 200, summarize(store, token, poolId));
         return;
       }
 
       if (parts[3] === "trades") {
         json(res, 200, {
           token: token.toLowerCase(),
-          trades: store.trades(token, limit, offset),
+          poolId: poolId ?? null,
+          trades: store.trades(token, limit, offset, poolId),
         });
         return;
       }
@@ -189,8 +202,9 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         const interval = u.searchParams.get("interval") ?? "5m";
         json(res, 200, {
           token: token.toLowerCase(),
+          poolId: poolId ?? null,
           interval: interval === "5m" ? "5m" : "5m",
-          candles: store.candles(token, limit),
+          candles: store.candles(token, limit, poolId),
         });
         return;
       }
@@ -203,9 +217,9 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         "GET /v1/protocol/stats",
         "GET /v1/tokens",
         "GET /v1/tokens/:address",
-        "GET /v1/tokens/:address/trades?limit=50&offset=0",
+        "GET /v1/tokens/:address/trades?limit=50&offset=0&poolId=",
         "GET /v1/tokens/:address/holders?limit=50",
-        "GET /v1/tokens/:address/candles?limit=200",
+        "GET /v1/tokens/:address/candles?limit=200&poolId=",
       ],
     });
   });

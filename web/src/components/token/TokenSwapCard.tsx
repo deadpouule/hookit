@@ -405,6 +405,7 @@ export function TokenSwapCard({
           : `Sell ${ticker}`;
 
   const routeLabel = (() => {
+    if (swapQuoteMeta?.route) return swapQuoteMeta.route;
     if (side === "buy") {
       const payment = paymentAssetById(effectivePayWith);
       if (isDirectBuy(pool, payment)) return `${poolQuote.symbol} → ${ticker}`;

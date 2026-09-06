@@ -1,4 +1,4 @@
-import { isAddress, type Address } from "viem";
+import { isAddress, type Address, type Hex } from "viem";
 
 import {
   getBondingFactoryAddress,
@@ -13,6 +13,7 @@ import {
   launchToTokenPool,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
+import { poolMarkets, poolWithMarket } from "@/lib/pool-active-market";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { buildSparseLive, fetchOnChainLive } from "@/lib/token-onchain-live";
 import type { PublicClient } from "viem";
@@ -22,12 +23,13 @@ export const revalidate = 0;
 
 type Ctx = { params: Promise<{ address: string }> };
 
-export async function GET(_req: Request, ctx: Ctx) {
+export async function GET(req: Request, ctx: Ctx) {
   const { address: raw } = await ctx.params;
   if (!isAddress(raw)) {
     return Response.json({ error: "invalid address" }, { status: 400 });
   }
   const address = raw as Address;
+  const poolIdParam = new URL(req.url).searchParams.get("poolId") as Hex | null;
 
   const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
@@ -79,6 +81,14 @@ export async function GET(_req: Request, ctx: Ctx) {
       return Response.json({ error: "token not found" }, { status: 404 });
     }
 
+    if (poolIdParam) {
+      const markets = poolMarkets(pool);
+      const idx = markets.findIndex(
+        (m) => (m.poolId ?? "").toLowerCase() === poolIdParam.toLowerCase(),
+      );
+      if (idx >= 0) pool = poolWithMarket(pool, idx);
+    }
+
     const payload = await fetchOnChainLive(client, pool, ethUsd);
     return Response.json({
       ...payload,
@@ -89,6 +99,9 @@ export async function GET(_req: Request, ctx: Ctx) {
         quoteUsd: pool.quoteUsd,
         change24h: pool.change24h,
         liquidity: pool.liquidity,
+        poolId: pool.poolId,
+        quoteAddress: pool.quoteAddress,
+        tokenIsCurrency0: pool.tokenIsCurrency0,
       },
       fallback: buildSparseLive(pool, ethUsd),
     });

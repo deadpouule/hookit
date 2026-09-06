@@ -26,11 +26,18 @@ export function poolWithMarket(pool: TokenPool, marketIndex: number): TokenPool 
   const markets = poolMarkets(pool);
   const market = markets[Math.min(Math.max(0, marketIndex), markets.length - 1)];
   if (!market) return pool;
+  const quote = (market.quoteAddress ?? zeroAddress) as Address;
+  const token = (pool.contractAddress ?? pool.id) as Address;
+  const tokenIsCurrency0 =
+    /^0x[a-fA-F0-9]{40}$/.test(token) && /^0x[a-fA-F0-9]{40}$/.test(quote)
+      ? BigInt(token) < BigInt(quote)
+      : pool.tokenIsCurrency0;
   return {
     ...pool,
-    quoteAddress: market.quoteAddress,
-    quoteAsset: market.quoteAsset ?? poolQuoteLabel({ quoteAddress: market.quoteAddress } as TokenPool),
+    quoteAddress: quote,
+    quoteAsset: market.quoteAsset ?? poolQuoteLabel({ quoteAddress: quote } as TokenPool),
     poolId: market.poolId ?? pool.poolId,
+    tokenIsCurrency0,
     markets,
     marketCount: markets.length,
   };

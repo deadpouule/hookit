@@ -19,7 +19,6 @@ import {
   isProductionSwapRouter,
   supportsCompositeSwap,
   USDC_ADDRESS,
-  V4_QUOTER_ADDRESS,
 } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { hookitSwapRouterAbi, poolSwapTestAbi } from "@/lib/contracts/swap-abi";
@@ -38,12 +37,18 @@ import {
 } from "@/lib/swap-assets";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 import {
-  findBridgeAmountOut,
   findBridgeRoute,
   hookRecipientData,
   hookSwapDirection,
   sqrtLimit,
 } from "@/lib/v4-bridge";
+import {
+  quoteBestBuyPlan,
+  quoteBestSellRoute,
+  shouldAggregateMultiBuy,
+  shouldAggregateMultiSell,
+  type BestBuyLeg,
+} from "@/lib/multi-pool-route";
 import { quoteHookLeg, quotePoolSwapWithMeta } from "@/lib/swap-quote";
 
 export type SwapSide = import("@/lib/swap-quote").SwapSide;
@@ -117,15 +122,9 @@ export function useSwapToken(pool: TokenPool) {
       setError(null);
       if (!publicClient || !address) throw new Error("Connect wallet");
       const payment = paymentAssetById(paymentId);
-      // Prefer the market matching payment (USDG secondary, etc.); fall back to primary.
-      const hookKey =
-        side === "buy" && isDirectBuy(pool, payment)
-          ? (poolKeyForQuote(pool, payment.address) ?? poolKeyFromLaunch(pool))
-          : poolKeyFromLaunch(pool);
       const token = pool.contractAddress as Address | undefined;
-      if (!hookKey || !token) throw new Error("Pool key unavailable for this launch");
+      if (!token) throw new Error("Pool key unavailable for this launch");
 
-      const poolQuote = poolQuoteAddress(pool);
       const payDecimals = side === "buy" ? payment.decimals : 18;
       const amountIn = parseUnits(amountHuman, payDecimals);
       if (amountIn <= BigInt(0)) throw new Error("Enter an amount");
@@ -137,6 +136,155 @@ export function useSwapToken(pool: TokenPool) {
         throw e instanceof Error ? e : new Error(String(e));
       }
       const bps = Math.min(5_000, Math.max(1, Math.round(slippagePct * 100)));
+
+      // Multi-pool sell aggregator: quote all Hookit legs (+ optional bridge) and execute best.
+      if (side === "sell" && receiveAsset && shouldAggregateMultiSell(pool, receiveAsset)) {
+        const best = await quoteBestSellRoute(
+          publicClient,
+          pool,
+          amountIn,
+          receiveAsset,
+          address,
+        );
+        if (!best) {
+          throw new Error("No viable sell route across multi-pool markets");
+        }
+
+        if (best.kind === "direct") {
+          const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
+          const minOut =
+            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(token, router, amountIn);
+          const hash = await writeContractAsync({
+            address: router,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactIn",
+            args: [best.hookKey, zeroForOne, amountIn, minOut, sqrtLimit(zeroForOne)],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        }
+
+        if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
+          throw new Error(
+            "Best sell route needs HookitSwapRouter composite sell. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
+          );
+        }
+        const hookitRouter = getHookitSwapRouterAddress()!;
+        const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
+        const minOut =
+          (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+        await ensureErc20Allowance(token, hookitRouter, amountIn);
+        const hash = await writeContractAsync({
+          address: hookitRouter,
+          abi: hookitSwapRouterAbi,
+          functionName: "swapExactInCompositeSell",
+          args: [
+            best.bridge.key,
+            best.bridge.zeroForOne,
+            amountIn,
+            best.hookKey,
+            hookZeroForOne,
+            best.marketQuote,
+            minOut,
+            sqrtLimit(best.bridge.zeroForOne),
+            sqrtLimit(hookZeroForOne),
+          ],
+        });
+        await publicClient.waitForTransactionReceipt({ hash });
+        return hash;
+      }
+
+      // Multi-pool buy aggregator (+ optional split across pools).
+      if (side === "buy" && shouldAggregateMultiBuy(pool)) {
+        const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
+        if (!plan) {
+          throw new Error("No viable buy route across multi-pool markets");
+        }
+
+        const executeBuyLeg = async (leg: BestBuyLeg): Promise<`0x${string}`> => {
+          const minOut =
+            (leg.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          const hookZeroForOne = hookSwapDirection(leg.hookKey, token, "buy");
+
+          if (leg.kind === "direct") {
+            if (payment.address !== zeroAddress) {
+              await ensureErc20Allowance(payment.address, router, leg.amountIn);
+            }
+            const hash = await writeContractAsync({
+              address: router,
+              abi: hookitSwapRouterAbi,
+              functionName: "swapExactIn",
+              args: [
+                leg.hookKey,
+                hookZeroForOne,
+                leg.amountIn,
+                minOut,
+                sqrtLimit(hookZeroForOne),
+              ],
+              value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
+            });
+            await publicClient.waitForTransactionReceipt({ hash });
+            return hash;
+          }
+
+          if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
+            throw new Error(
+              "Best buy route needs HookitSwapRouter. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
+            );
+          }
+          const hookitRouter = getHookitSwapRouterAddress()!;
+          if (payment.address !== zeroAddress) {
+            await ensureErc20Allowance(payment.address, hookitRouter, leg.amountIn);
+          }
+          const hash = await writeContractAsync({
+            address: hookitRouter,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactInComposite",
+            args: [
+              leg.bridge.key,
+              leg.bridge.zeroForOne,
+              leg.amountIn,
+              leg.hookKey,
+              hookZeroForOne,
+              leg.marketQuote,
+              minOut,
+              sqrtLimit(leg.bridge.zeroForOne),
+              sqrtLimit(hookZeroForOne),
+            ],
+            value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        };
+
+        let lastHash: `0x${string}` | undefined;
+        for (const leg of plan.legs) {
+          lastHash = await executeBuyLeg(leg);
+        }
+        if (!lastHash) throw new Error("Buy aggregator produced no transactions");
+        return lastHash;
+      }
+
+      // Prefer the market matching payment (buy) or receive asset (sell) on multi launches.
+      const receiveQuote =
+        side === "sell" && receiveAsset
+          ? receiveAsset.isNative
+            ? zeroAddress
+            : receiveAsset.address
+          : undefined;
+      const hookKey =
+        side === "buy" && isDirectBuy(pool, payment)
+          ? (poolKeyForQuote(pool, payment.address) ?? poolKeyFromLaunch(pool))
+          : side === "sell" &&
+              receiveQuote !== undefined &&
+              (receiveAsset?.isNative || !!receiveAsset?.address) &&
+              !needsCompositeSell(pool, receiveAsset!)
+            ? (poolKeyForQuote(pool, receiveQuote) ?? poolKeyFromLaunch(pool))
+            : poolKeyFromLaunch(pool);
+      if (!hookKey) throw new Error("Pool key unavailable for this launch");
+
+      const poolQuote = poolQuoteAddress(pool);
 
       if (
         side === "sell" &&
@@ -153,9 +301,17 @@ export function useSwapToken(pool: TokenPool) {
         const hookZeroForOne = hookSwapDirection(hookKey, token, "sell");
         const hookLimit = sqrtLimit(hookZeroForOne);
 
-        const quotedQuote = await quoteHookLegLocal("sell", amountIn);
+        const quotedQuote = await quoteHookLeg(
+          publicClient,
+          pool,
+          "sell",
+          amountIn,
+          address,
+        );
         if (!quotedQuote || quotedQuote <= BigInt(0)) {
-          throw new Error("Could not quote pool leg for composite sell");
+          throw new Error(
+            `Could not quote ${pool.ticker} → ${pool.quoteAsset ?? "quote"} for composite sell. Try the ${stableQuoteLabel()} or ETH pool tab for a direct sell.`,
+          );
         }
 
         const bridge = await findBridgeRoute(

@@ -187,15 +187,22 @@ export class Store {
     if (row.trades.length > MAX_TRADES) {
       row.trades = row.trades.slice(-MAX_TRADES);
     }
-    this._updateCandle(row, trade);
+    const poolKey = trade.poolId?.toLowerCase();
+    const isPrimary = !poolKey || poolKey === row.poolId.toLowerCase();
+    if (isPrimary) this._updateCandleSeries(row.candles5m, trade);
+    if (poolKey) {
+      if (!row.candles5mByPool) row.candles5mByPool = {};
+      if (!row.candles5mByPool[poolKey]) row.candles5mByPool[poolKey] = [];
+      this._updateCandleSeries(row.candles5mByPool[poolKey]!, trade);
+    }
     return true;
   }
 
-  private _updateCandle(row: TokenRow, trade: IndexedTrade) {
+  private _updateCandleSeries(series: Candle[], trade: IndexedTrade) {
     const bucket = Math.floor(trade.timestamp / CANDLE_SEC) * CANDLE_SEC;
-    const last = row.candles5m[row.candles5m.length - 1];
+    const last = series[series.length - 1];
     if (!last || last.t !== bucket) {
-      row.candles5m.push({
+      series.push({
         t: bucket,
         o: trade.price,
         h: trade.price,
@@ -211,8 +218,8 @@ export class Store {
       last.vQuote = (BigInt(last.vQuote) + BigInt(trade.quoteAmount)).toString();
       last.trades += 1;
     }
-    if (row.candles5m.length > MAX_CANDLES) {
-      row.candles5m = row.candles5m.slice(-MAX_CANDLES);
+    if (series.length > MAX_CANDLES) {
+      series.splice(0, series.length - MAX_CANDLES);
     }
   }
 
@@ -372,17 +379,37 @@ export class Store {
       .slice(0, limit);
   }
 
-  candles(token: Address, limit: number): Candle[] {
+  candles(token: Address, limit: number, poolId?: string): Candle[] {
     const row = this.getToken(token);
     if (!row) return [];
+    if (poolId) {
+      const key = poolId.toLowerCase();
+      const series = row.candles5mByPool?.[key];
+      if (series?.length) return series.slice(-limit);
+      // Rebuild from trades when older data lacked candles5mByPool.
+      return this._candlesFromTrades(row, limit, key);
+    }
     return row.candles5m.slice(-limit);
   }
 
-  trades(token: Address, limit: number, offset = 0): IndexedTrade[] {
+  trades(token: Address, limit: number, offset = 0, poolId?: string): IndexedTrade[] {
     const row = this.getToken(token);
     if (!row) return [];
-    const slice = row.trades.slice().reverse();
+    const filtered = poolId
+      ? row.trades.filter((t) => t.poolId?.toLowerCase() === poolId.toLowerCase())
+      : row.trades;
+    const slice = filtered.slice().reverse();
     return slice.slice(offset, offset + limit);
+  }
+
+  private _candlesFromTrades(row: TokenRow, limit: number, poolKey: string): Candle[] {
+    const series: Candle[] = [];
+    for (const trade of row.trades) {
+      if (trade.poolId && trade.poolId.toLowerCase() !== poolKey) continue;
+      if (!trade.poolId && row.poolId.toLowerCase() !== poolKey) continue;
+      this._updateCandleSeries(series, trade);
+    }
+    return series.slice(-limit);
   }
 }
 

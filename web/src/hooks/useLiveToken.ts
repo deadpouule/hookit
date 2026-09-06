@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+import { isMultiPool } from "@/lib/pool-active-market";
 import { marketCapUsd } from "@/lib/pool-price";
 import {
   candleFdvScale,
@@ -38,8 +39,21 @@ function resolveEthUsd(pool: TokenPool): number {
   return DEFAULT_LAUNCH_ETH_USD;
 }
 
-async function fetchOnChainLiveApi(address: string): Promise<LiveTokenState | null> {
-  const res = await fetch(`/api/token/${address}/live`);
+function candlesLookBroken(candles: LiveCandle[], mcap: number): boolean {
+  if (candles.length === 0) return true;
+  const last = candles[candles.length - 1]!.c;
+  if (!(last > 0)) return true;
+  // Indexer mixed-quote corruption often produces near-zero FDV vs ~$5k spot.
+  if (mcap > 0 && last < mcap * 0.01) return true;
+  return false;
+}
+
+async function fetchOnChainLiveApi(
+  address: string,
+  poolId?: string | null,
+): Promise<LiveTokenState | null> {
+  const q = poolId ? `?poolId=${encodeURIComponent(poolId)}` : "";
+  const res = await fetch(`/api/token/${address}/live${q}`);
   if (!res.ok) return null;
   const body = (await res.json()) as { live?: LiveTokenState };
   return body.live ?? null;
@@ -48,8 +62,14 @@ async function fetchOnChainLiveApi(address: string): Promise<LiveTokenState | nu
 export function useLiveToken(pool: TokenPool) {
   const address = pool.contractAddress ?? (isLikelyAddress(pool.id) ? pool.id : null);
   const ethUsd = resolveEthUsd(pool);
+  const multi = isMultiPool(pool);
   const [live, setLive] = useState<LiveTokenState>(() => buildSparseLive(pool, ethUsd));
   const [source, setSource] = useState<"sparse" | "indexer" | "onchain">("sparse");
+
+  useEffect(() => {
+    setSource("sparse");
+    setLive(buildSparseLive(pool, ethUsd));
+  }, [pool.poolId, pool.id, ethUsd]);
 
   useEffect(() => {
     setLive((prev) => {
@@ -77,20 +97,25 @@ export function useLiveToken(pool: TokenPool) {
     pool.change24h,
     pool.liquidity,
     pool.id,
+    pool.poolId,
+    pool.quoteAddress,
     source,
     ethUsd,
   ]);
 
-  const indexerQuery = useTokenIndexerData(address);
+  const indexerQuery = useTokenIndexerData(address, { poolId: pool.poolId });
 
   const onchainQuery = useQuery({
-    queryKey: ["onchain-live", address],
-    enabled: !!address && !indexerQuery.data?.summary && !indexerQuery.isFetching,
+    queryKey: ["onchain-live", address, pool.poolId],
+    enabled:
+      !!address &&
+      (!!pool.poolId || !indexerQuery.data?.summary) &&
+      (multi || (!indexerQuery.data?.summary && !indexerQuery.isFetching)),
     queryFn: async () => {
       if (!address) return null;
-      return fetchOnChainLiveApi(address);
+      return fetchOnChainLiveApi(address, pool.poolId);
     },
-    refetchInterval: 20_000,
+    refetchInterval: 15_000,
     retry: 1,
   });
 
@@ -127,7 +152,7 @@ export function useLiveToken(pool: TokenPool) {
       : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
 
     const candleScale = candleFdvScale(pool, eth, quoteUsd, pool.launchMcapQuoteHuman);
-    const mappedCandles: LiveCandle[] =
+    let mappedCandles: LiveCandle[] =
       candles.length > 0
         ? candles.map((c) => ({
             o: Number(c.o) * candleScale,
@@ -139,6 +164,30 @@ export function useLiveToken(pool: TokenPool) {
         : mcap > 0
           ? [{ o: mcap, h: mcap, l: mcap, c: mcap }]
           : [];
+
+    if (candlesLookBroken(mappedCandles, mcap) && onchainQuery.data?.candles?.length) {
+      mappedCandles = onchainQuery.data.candles;
+      setSource("onchain");
+      setLive({
+        ...onchainQuery.data,
+        marketCap: mcap > 0 ? mcap : onchainQuery.data.marketCap,
+        liquidity: pool.liquidity > 0 ? pool.liquidity : onchainQuery.data.liquidity,
+        holders: summary.holdersIndexed || onchainQuery.data.holders,
+        holderRows:
+          holders.length > 0
+            ? holders.map((h) => ({
+                address: `${h.address.slice(0, 6)}…${h.address.slice(-4)}`,
+                pct: h.pct,
+                balance: Number(h.balance) / 1e18,
+              }))
+            : onchainQuery.data.holderRows,
+      });
+      return;
+    }
+
+    if (candlesLookBroken(mappedCandles, mcap) && mcap > 0) {
+      mappedCandles = [{ o: mcap, h: mcap, l: mcap, c: mcap }];
+    }
 
     const recentTrades = trades.slice(0, 40);
 
@@ -181,7 +230,16 @@ export function useLiveToken(pool: TokenPool) {
       candles: mappedCandles,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indexerQuery.dataUpdatedAt, pool.marketCap, pool.liquidity, pool.quoteAddress, pool.quoteAsset, pool.quoteUsd]);
+  }, [
+    indexerQuery.dataUpdatedAt,
+    onchainQuery.dataUpdatedAt,
+    pool.marketCap,
+    pool.liquidity,
+    pool.quoteAddress,
+    pool.quoteAsset,
+    pool.quoteUsd,
+    pool.poolId,
+  ]);
 
   useEffect(() => {
     if (indexerQuery.data?.summary) return;

@@ -143,9 +143,9 @@ export function loadConfig(): IndexerConfig {
     rpcUrl,
     rpcUrls,
     port: Number(process.env.INDEXER_PORT ?? 8787),
-    pollMs: Number(process.env.INDEXER_POLL_MS ?? 12_000),
+    pollMs: Number(process.env.INDEXER_POLL_MS ?? (isInk ? 4_000 : 12_000)),
     chunkSize: BigInt(process.env.INDEXER_CHUNK ?? (isInk ? 800 : 2_000)),
-    confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? 12),
+    confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? (isInk ? 3 : 12)),
     dataDir: process.env.INDEXER_DATA_DIR ?? defaultData,
     launchFactory,
     bondingFactory,
@@ -169,6 +169,8 @@ export type IndexedTrade = {
   price: string;
   sqrtPriceX96: string;
   actor?: string;
+  /** Uniswap v4 pool id — required for multi-market launches. */
+  poolId?: Hex;
 };
 
 export type Candle = {
@@ -218,6 +220,8 @@ export type TokenRow = {
   holders: Record<string, string>;
   trades: IndexedTrade[];
   candles5m: Candle[];
+  /** Per-pool OHLC for multi-market tokens (keyed by lowercase poolId). */
+  candles5mByPool?: Record<string, Candle[]>;
 };
 
 export type StoreFileV1 = {

@@ -8,8 +8,14 @@ import {
   type PaymentAssetId,
 } from "@/lib/payment-assets";
 import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
+import {
+  quoteBestBuyPlan,
+  quoteBestSellRoute,
+  shouldAggregateMultiBuy,
+  shouldAggregateMultiSell,
+} from "@/lib/multi-pool-route";
 import type { TokenPool } from "@/lib/types";
-import { needsCompositeSell, type SwapAsset } from "@/lib/swap-assets";
+import { needsCompositeSell, isDirectPoolReceive, type SwapAsset } from "@/lib/swap-assets";
 import {
   findBridgeAmountOut,
   hookRecipientData,
@@ -144,47 +150,84 @@ export async function quotePoolSwapWithMeta(
   let estimated = false;
 
   if (side === "sell") {
-    route = `${pool.ticker} → ${poolQuoteLabel(pool)}`;
-    amountOut = await quoteHookLeg(client, pool, "sell", amountIn, recipient);
-    if (
-      amountOut != null &&
-      receiveAsset &&
-      needsCompositeSell(pool, receiveAsset)
-    ) {
-      const poolQuote = poolQuoteAddress(pool);
-      const receiveCurrency = receiveAsset.isNative
+    const receiveCurrency = receiveAsset
+      ? receiveAsset.isNative
         ? zeroAddress
-        : (receiveAsset.address ?? zeroAddress);
-      const bridge = await findBridgeAmountOut(client, poolQuote, receiveCurrency, amountOut);
-      if (!bridge) return null;
-      amountOut = bridge.amountOut;
-      route = `${pool.ticker} → ${poolQuoteLabel(pool)} → ${receiveAsset.symbol}`;
+        : (receiveAsset.address ?? zeroAddress)
+      : poolQuoteAddress(pool);
+
+    if (receiveAsset && shouldAggregateMultiSell(pool, receiveAsset)) {
+      const best = await quoteBestSellRoute(client, pool, amountIn, receiveAsset, recipient);
+      if (best) {
+        amountOut = best.amountOut;
+        route = best.routeLabel;
+      }
+    }
+
+    if (amountOut == null) {
+      // Prefer a direct market leg when the receive asset is one of this launch's quotes.
+      const directKeyQuote =
+        receiveAsset && isDirectPoolReceive(pool, receiveAsset) ? receiveCurrency : undefined;
+
+      route = `${pool.ticker} → ${
+        receiveAsset?.symbol ?? poolQuoteLabel(pool)
+      }`;
+      amountOut = await quoteHookLeg(
+        client,
+        pool,
+        "sell",
+        amountIn,
+        recipient,
+        directKeyQuote,
+      );
+
+      if (
+        amountOut != null &&
+        receiveAsset &&
+        needsCompositeSell(pool, receiveAsset)
+      ) {
+        const poolQuote = poolQuoteAddress(pool);
+        const bridge = await findBridgeAmountOut(client, poolQuote, receiveCurrency, amountOut);
+        if (!bridge) return null;
+        amountOut = bridge.amountOut;
+        route = `${pool.ticker} → ${poolQuoteLabel(pool)} → ${receiveAsset.symbol}`;
+      }
     }
   } else {
     const payment = paymentAssetById(paymentId);
-    const poolQuote = poolQuoteAddress(pool);
 
-    if (isDirectBuy(pool, payment)) {
-      route = `${payment.label} → ${pool.ticker}`;
-      // Multi-market: quote against the matching USDG/ETH/stock pool, not always market-0.
-      amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient, payment.address);
-    } else {
-      const bridge = await findBridgeAmountOut(client, payment.address, poolQuote, amountIn);
-      if (!bridge) {
-        amountOut = spotQuoteFallback(pool, side, amountIn, payment.decimals, 18);
-        if (!amountOut) return null;
-        route = `${payment.label} → ${pool.ticker} (est.)`;
-        estimated = true;
+    if (shouldAggregateMultiBuy(pool)) {
+      const plan = await quoteBestBuyPlan(client, pool, payment, amountIn, recipient);
+      if (plan) {
+        amountOut = plan.amountOut;
+        route = plan.routeLabel;
+      }
+    }
+
+    if (amountOut == null) {
+      const poolQuote = poolQuoteAddress(pool);
+
+      if (isDirectBuy(pool, payment)) {
+        route = `${payment.label} → ${pool.ticker}`;
+        amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient, payment.address);
       } else {
-        route =
-          bridge.routeLabel ??
-          `${payment.label} → ${poolQuoteLabel(pool)} → ${pool.ticker}`;
-        amountOut = await quoteHookLeg(client, pool, "buy", bridge.amountOut, recipient);
-        if (!amountOut) {
+        const bridge = await findBridgeAmountOut(client, payment.address, poolQuote, amountIn);
+        if (!bridge) {
           amountOut = spotQuoteFallback(pool, side, amountIn, payment.decimals, 18);
           if (!amountOut) return null;
           route = `${payment.label} → ${pool.ticker} (est.)`;
           estimated = true;
+        } else {
+          route =
+            bridge.routeLabel ??
+            `${payment.label} → ${poolQuoteLabel(pool)} → ${pool.ticker}`;
+          amountOut = await quoteHookLeg(client, pool, "buy", bridge.amountOut, recipient);
+          if (!amountOut) {
+            amountOut = spotQuoteFallback(pool, side, amountIn, payment.decimals, 18);
+            if (!amountOut) return null;
+            route = `${payment.label} → ${pool.ticker} (est.)`;
+            estimated = true;
+          }
         }
       }
     }

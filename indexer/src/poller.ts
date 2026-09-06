@@ -558,11 +558,14 @@ async function indexRange(
         if (!row || !meta) continue;
 
         const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;
-        const tokenAmt = row.tokenIsCurrency0 ? absBig(args.amount0) : absBig(args.amount1);
-        const quoteAmt = row.tokenIsCurrency0 ? absBig(args.amount1) : absBig(args.amount0);
-        const quoteDelta = row.tokenIsCurrency0 ? args.amount1 : args.amount0;
-        const side = quoteDelta < 0n ? "buy" : "sell";
-        const price = quotePerToken(args.sqrtPriceX96, row.tokenIsCurrency0);
+        const market = row.markets?.find((m) => m.poolId.toLowerCase() === args.id.toLowerCase());
+        const tokenIsCurrency0 = market?.tokenIsCurrency0 ?? row.tokenIsCurrency0;
+        const tokenAmt = tokenIsCurrency0 ? absBig(args.amount0) : absBig(args.amount1);
+        const quoteAmt = tokenIsCurrency0 ? absBig(args.amount1) : absBig(args.amount0);
+        const quoteDelta = tokenIsCurrency0 ? args.amount1 : args.amount0;
+        // Quote inflow to the pool means a buy of the launch token.
+        const side = quoteDelta > 0n ? "buy" : "sell";
+        const price = quotePerToken(args.sqrtPriceX96, tokenIsCurrency0);
 
         const trade: IndexedTrade = {
           id: tradeId(meta.transactionHash, meta.logIndex),
@@ -576,6 +579,7 @@ async function indexRange(
           price,
           sqrtPriceX96: args.sqrtPriceX96.toString(),
           actor: args.sender,
+          poolId: args.id,
         };
         store.pushTrade(row.address, trade);
       }

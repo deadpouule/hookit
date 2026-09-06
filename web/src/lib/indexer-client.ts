@@ -135,13 +135,15 @@ export function fetchIndexerTokens() {
   return getJson<{ tokens: IndexerTokenSummary[] }>("/v1/tokens");
 }
 
-export function fetchIndexerToken(address: string) {
-  return getJson<IndexerTokenSummary>(`/v1/tokens/${address}`);
+export function fetchIndexerToken(address: string, poolId?: string) {
+  const q = poolId ? `?poolId=${encodeURIComponent(poolId)}` : "";
+  return getJson<IndexerTokenSummary>(`/v1/tokens/${address}${q}`);
 }
 
-export function fetchIndexerTrades(address: string, limit = 50, offset = 0) {
+export function fetchIndexerTrades(address: string, limit = 50, offset = 0, poolId?: string) {
+  const poolQ = poolId ? `&poolId=${encodeURIComponent(poolId)}` : "";
   return getJson<{ token: string; trades: IndexerTrade[] }>(
-    `/v1/tokens/${address}/trades?limit=${limit}&offset=${offset}`,
+    `/v1/tokens/${address}/trades?limit=${limit}&offset=${offset}${poolQ}`,
   );
 }
 
@@ -151,9 +153,10 @@ export function fetchIndexerHolders(address: string, limit = 50) {
   );
 }
 
-export function fetchIndexerCandles(address: string, limit = 200) {
+export function fetchIndexerCandles(address: string, limit = 200, poolId?: string) {
+  const poolQ = poolId ? `&poolId=${encodeURIComponent(poolId)}` : "";
   return getJson<{ token: string; interval: string; candles: IndexerCandle[] }>(
-    `/v1/tokens/${address}/candles?limit=${limit}`,
+    `/v1/tokens/${address}/candles?limit=${limit}${poolQ}`,
   );
 }
 

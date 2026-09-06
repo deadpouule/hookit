@@ -25,6 +25,7 @@ export type TokenIndexerBundle = {
 };
 
 type TokenIndexerOptions = {
+  poolId?: string | null;
   tradesLimit?: number;
   holdersLimit?: number;
   candlesLimit?: number;
@@ -38,19 +39,24 @@ export function useTokenIndexerData(
   const tradesLimit = opts?.tradesLimit ?? 80;
   const holdersLimit = opts?.holdersLimit ?? 20;
   const candlesLimit = opts?.candlesLimit ?? 200;
+  const poolId = opts?.poolId ?? undefined;
 
   return useQuery({
-    queryKey: ["indexer-token-bundle", address, tradesLimit, holdersLimit, candlesLimit],
+    queryKey: ["indexer-token-bundle", address, poolId, tradesLimit, holdersLimit, candlesLimit],
     enabled: !!address && opts?.enabled !== false,
     queryFn: async (): Promise<TokenIndexerBundle> => {
       if (!address) {
         return { summary: null, trades: [], holders: [], candles: [] };
       }
       const [summary, tradesRes, holdersRes, candlesRes] = await Promise.all([
-        fetchIndexerToken(address).catch(() => null),
-        fetchIndexerTrades(address, tradesLimit).catch(() => ({ trades: [] as IndexerTrade[] })),
+        fetchIndexerToken(address, poolId).catch(() => null),
+        fetchIndexerTrades(address, tradesLimit, 0, poolId).catch(() => ({
+          trades: [] as IndexerTrade[],
+        })),
         fetchIndexerHolders(address, holdersLimit).catch(() => ({ holders: [] as IndexerHolder[] })),
-        fetchIndexerCandles(address, candlesLimit).catch(() => ({ candles: [] as IndexerCandle[] })),
+        fetchIndexerCandles(address, candlesLimit, poolId).catch(() => ({
+          candles: [] as IndexerCandle[],
+        })),
       ]);
       return {
         summary,

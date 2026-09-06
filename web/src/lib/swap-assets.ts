@@ -2,6 +2,7 @@ import { type Address, zeroAddress } from "viem";
 
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { poolQuoteAddress, poolQuoteLabel, stableQuoteLabel } from "@/lib/payment-assets";
+import { poolHasQuoteMarket } from "@/lib/pool-key";
 import { shortAddress } from "@/lib/master-hooks";
 import { isRwaQuote } from "@/lib/token-identity";
 import { resolveMediaUrl } from "@/lib/token-metadata";
@@ -79,17 +80,24 @@ export function poolQuoteSwapAsset(pool: TokenPool): SwapAsset {
   };
 }
 
-/** True when the receive leg matches the pool quote (single swap). */
+/** True when the receive leg matches the pool quote (single swap), including multi markets. */
 export function isDirectPoolReceive(pool: TokenPool, receive: SwapAsset): boolean {
   const quote = poolQuoteAddress(pool);
-  if (receive.isNative) return quote === zeroAddress;
+  if (receive.isNative) {
+    return quote === zeroAddress || poolHasQuoteMarket(pool, zeroAddress);
+  }
   if (!receive.address) return false;
-  return receive.address.toLowerCase() === quote.toLowerCase();
+  if (receive.address.toLowerCase() === quote.toLowerCase()) return true;
+  return poolHasQuoteMarket(pool, receive.address);
 }
 
-/** Sell launch token, receive USDG while pool is quoted in wStock (or other non-stable quote). */
+/**
+ * Sell launch token for USDG/USDC via a bridge only when there is no direct stable market.
+ * Multi launches that already include a USDG pool must sell on that leg (not stock → stable).
+ */
 export function needsCompositeSell(pool: TokenPool, receive: SwapAsset): boolean {
   if (!isStableSwapAsset(receive)) return false;
+  if (poolHasQuoteMarket(pool, STABLE_QUOTE_ADDRESS)) return false;
   const quote = poolQuoteAddress(pool);
   if (quote === zeroAddress) return false;
   return quote.toLowerCase() !== STABLE_QUOTE_ADDRESS.toLowerCase();
@@ -97,7 +105,7 @@ export function needsCompositeSell(pool: TokenPool, receive: SwapAsset): boolean
 
 /**
  * Default swap pair for the desk.
- * Stock-quoted memes always default to USDG → meme (Quotrons composite) — never ETH.
+ * Multi / stock-quoted memes default sell receive to USDG when that market exists.
  */
 export function defaultSwapPair(
   pool: TokenPool,
@@ -105,15 +113,19 @@ export function defaultSwapPair(
 ): { sell: SwapAsset; buy: SwapAsset } {
   const token = poolToSwapAsset(pool);
   const quote = poolQuoteSwapAsset(pool);
+  const hasStableMarket = poolHasQuoteMarket(pool, STABLE_QUOTE_ADDRESS);
   if (side === "buy") {
-    if (isStockQuotedPool(pool)) {
+    if (isStockQuotedPool(pool) || (hasStableMarket && isMultiPoolLike(pool))) {
       return { sell: STABLE_SWAP_ASSET, buy: token };
     }
     return { sell: quote, buy: token };
   }
-  // Stock pools: prefer USDG out so users don't get stuck holding wStock.
-  if (isStockQuotedPool(pool)) {
+  if (isStockQuotedPool(pool) || hasStableMarket) {
     return { sell: token, buy: STABLE_SWAP_ASSET };
   }
   return { sell: token, buy: quote };
+}
+
+function isMultiPoolLike(pool: TokenPool): boolean {
+  return (pool.marketCount ?? pool.markets?.length ?? 1) > 1;
 }
