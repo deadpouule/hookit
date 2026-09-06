@@ -10,6 +10,8 @@ import {InkForkTestBase} from "./utils/InkForkTestBase.sol";
 import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {BondingConstants} from "../src/libraries/BondingConstants.sol";
+import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
+import {FullMath} from "@uniswap/v4-core/src/libraries/FullMath.sol";
 
 /// @notice Ink fork: Classic bonding → graduate → v4 swap → sweep across quotes.
 contract ForkInkBondingTest is InkForkTestBase {
@@ -20,9 +22,10 @@ contract ForkInkBondingTest is InkForkTestBase {
     }
 
     function testFork_Bonding_GraduationTargetUsdg() public onlyFork {
-        uint256 target = bonding.graduationQuoteWei(usdg);
-        // ETH @$4k → 4.2 ETH = $16,800 → 16800e6 USDG
-        assertEq(target, 16_800e6);
+        uint256 ethUsd = bonding.quoteUsdPriceX18(address(0));
+        uint256 graduationUsdX18 = FullMath.mulDiv(ProtocolConstants.GRADUATION_ETH_WEI, ethUsd, 1 ether);
+        uint256 expected = FixedPointMath.mcapQuoteWei(graduationUsdX18, 1e18, 6);
+        assertEq(bonding.graduationQuoteWei(usdg), expected);
     }
 
     function testFork_Bonding_GraduationTargetWspyx() public onlyFork {

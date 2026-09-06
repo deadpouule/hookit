@@ -11,8 +11,8 @@
     "FloorVault": "0xff1ef27c6bd62583f00f62c53accc0bdcd0cd9b6",
     "FeeEscrow": "0x0a060f5e97b7b344f5444caaaad9f5fe4428b05f",
     "ProtocolRevenueDistributor": "0x302e52f0252360325796b7eb6a03409de40266ac",
-    "BuybackVault": "0xd00f05243ae5ac4f4f1fc6c65ff212293674e286",
-    "HolderAirdropVault": "0x564b2dd5a73501e341087edf4ebba23d7f36adca",
+    "BuybackVault": "0x7c2cce72da7fd791e7e4bd1e3b8dda4ee4ba53b1",
+    "HolderAirdropVault": "0x869c3ff9f449f1f1470f8b257d73bcbaf52ffe77",
     "MasterLaunchHook": "0xfe09ecab802e3567df96b94d2a4ec294b6272ac8",
     "LaunchFactory": "0xeb05916ac2356956224c7d9b75c0c8c01503d24c",
     "LaunchFactoryQuery": "0x9abeefb6addacdccaf85003bc6d0e4c636ddaeab",
@@ -20,7 +20,7 @@
     "BondingLaunchFactory": "0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe",
     "HookitSwapRouter": "0x23dcdc9570ccfe93807da99b395db6a24a79a239",
     "V4ClaimsRedeemer": "0xda616abb6d8350234febefbec2acd4e6bccf798e",
-    "FeeEthRail": "0x903df3daed1062eb2abec4a0a4098d9152228c0a",
+    "FeeEthRail": "0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71",
     "HkitBuyback": "0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9",
     "NativeToken": "0x9403cc96dbc7a63bbd5af65123653acd6938f688"
   },
@@ -35,6 +35,7 @@
   },
   "notes": [
     "RedeployHookitInk.s.sol — hardened bytecode (EIP-170 fix, fee claim safety, LaunchFactoryQuery).",
-    "customHookAllowlistEnabled=true at deploy."
+    "customHookAllowlistEnabled=true at deploy.",
+    "BuybackVault / HolderAirdropVault / FeeEthRail are the addresses actually wired into MasterLaunchHook and the distributor (constructor immutables / feeRail()). Leftover unused deploys: BuybackVault 0xd00f0524…, HolderAirdropVault 0x564b2dd5…, FeeEthRail 0x903df3da…."
   ]
 }

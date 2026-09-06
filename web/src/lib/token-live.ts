@@ -28,6 +28,8 @@ export interface LiveCandle {
   h: number;
   l: number;
   c: number;
+  /** Unix seconds — present when sourced from indexer OHLC. */
+  t?: number;
 }
 
 export interface LiveTokenState {

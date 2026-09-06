@@ -14,7 +14,7 @@ import {QuotronBridge} from "./libraries/QuotronBridge.sol";
 
 /// @title HookitSwapRouter
 /// @notice Thin v4 swap router with exact-in, slippage, native refunds, hookData = recipient,
-///         and composite payment→quote→token buys in a single unlock.
+///         composite payment→quote→token buys, and token→quote→stable sells in a single unlock.
 contract HookitSwapRouter is IUnlockCallback {
     using CurrencyLibrary for Currency;
     using CurrencySettler for Currency;
@@ -119,6 +119,7 @@ contract HookitSwapRouter is IUnlockCallback {
         }
 
         _assertQuoteCurrency(hookKey, quoteCurrency);
+        _assertQuoteCurrency(bridgeKey, quoteCurrency);
 
         if (bridgeSqrtLimit == 0) {
             bridgeSqrtLimit = bridgeZeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
@@ -147,6 +148,50 @@ contract HookitSwapRouter is IUnlockCallback {
         if (leftover > 0) CurrencyLibrary.ADDRESS_ZERO.transfer(msg.sender, leftover);
     }
 
+    /// @notice Sell launch token on `hookKey`, then bridge quote→stable on `bridgeKey` in one tx.
+    /// @dev `quoteCurrency` must match the quote side of `hookKey` and the input of the bridge leg.
+    function swapExactInCompositeSell(
+        PoolKey calldata bridgeKey,
+        bool bridgeZeroForOne,
+        uint256 amountIn,
+        PoolKey calldata hookKey,
+        bool hookZeroForOne,
+        Currency quoteCurrency,
+        uint256 minAmountOut,
+        uint160 bridgeSqrtLimit,
+        uint160 hookSqrtLimit
+    ) external payable returns (uint256 amountOut) {
+        if (amountIn == 0) revert ZeroAmount();
+        if (msg.value != 0) revert NativeNotAccepted();
+        if (!QuotronBridge.isAllowedBridgeHook(address(bridgeKey.hooks))) revert UnauthorizedBridgeHook();
+
+        _assertQuoteCurrency(hookKey, quoteCurrency);
+        _assertQuoteCurrency(bridgeKey, quoteCurrency);
+
+        if (bridgeSqrtLimit == 0) {
+            bridgeSqrtLimit = bridgeZeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
+        }
+        if (hookSqrtLimit == 0) {
+            hookSqrtLimit = hookZeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
+        }
+
+        CompositeSwapCall memory call = CompositeSwapCall({
+            payer: msg.sender,
+            recipient: msg.sender,
+            bridgeKey: bridgeKey,
+            bridgeZeroForOne: bridgeZeroForOne,
+            amountIn: amountIn,
+            hookKey: hookKey,
+            hookZeroForOne: hookZeroForOne,
+            quoteCurrency: quoteCurrency,
+            minAmountOut: minAmountOut,
+            bridgeSqrtLimit: bridgeSqrtLimit,
+            hookSqrtLimit: hookSqrtLimit
+        });
+
+        amountOut = abi.decode(poolManager.unlock(abi.encode(uint8(2), call)), (uint256));
+    }
+
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         if (msg.sender != address(poolManager)) revert NotPoolManager();
 
@@ -154,6 +199,10 @@ contract HookitSwapRouter is IUnlockCallback {
         if (kind == 1) {
             (, CompositeSwapCall memory composite) = abi.decode(data, (uint8, CompositeSwapCall));
             return _unlockComposite(composite);
+        }
+        if (kind == 2) {
+            (, CompositeSwapCall memory sell) = abi.decode(data, (uint8, CompositeSwapCall));
+            return _unlockCompositeSell(sell);
         }
 
         (, SwapCall memory call) = abi.decode(data, (uint8, SwapCall));
@@ -186,7 +235,12 @@ contract HookitSwapRouter is IUnlockCallback {
         Currency bridgeIn = call.bridgeZeroForOne ? call.bridgeKey.currency0 : call.bridgeKey.currency1;
         int256 bridgeInDelta = poolManager.currencyDelta(address(this), bridgeIn);
         if (bridgeInDelta < 0) {
-            bridgeIn.settle(poolManager, call.payer, uint256(-bridgeInDelta), false);
+            uint256 owe = uint256(-bridgeInDelta);
+            if (bridgeIn.isAddressZero()) {
+                bridgeIn.settle(poolManager, call.payer, owe, false);
+            } else {
+                bridgeIn.settleWithBuffer(poolManager, call.payer, owe);
+            }
         }
 
         uint256 quoteIn = uint256(poolManager.currencyDelta(address(this), call.quoteCurrency));
@@ -206,10 +260,14 @@ contract HookitSwapRouter is IUnlockCallback {
         int256 d1 = poolManager.currencyDelta(address(this), call.hookKey.currency1);
 
         if (d0 < 0) {
-            call.hookKey.currency0.settle(poolManager, address(this), uint256(-d0), false);
+            Currency c0 = call.hookKey.currency0;
+            if (c0.isAddressZero()) c0.settle(poolManager, address(this), uint256(-d0), false);
+            else c0.settleWithBuffer(poolManager, address(this), uint256(-d0));
         }
         if (d1 < 0) {
-            call.hookKey.currency1.settle(poolManager, address(this), uint256(-d1), false);
+            Currency c1 = call.hookKey.currency1;
+            if (c1.isAddressZero()) c1.settle(poolManager, address(this), uint256(-d1), false);
+            else c1.settleWithBuffer(poolManager, address(this), uint256(-d1));
         }
         if (d0 > 0) {
             call.hookKey.currency0.take(poolManager, call.recipient, uint256(d0), false);
@@ -225,6 +283,60 @@ contract HookitSwapRouter is IUnlockCallback {
 
         uint256 amountOut = call.hookZeroForOne ? (d1 > 0 ? uint256(d1) : 0) : (d0 > 0 ? uint256(d0) : 0);
         if (amountOut < call.minAmountOut) revert InsufficientOutput();
+
+        return abi.encode(amountOut);
+    }
+
+    function _unlockCompositeSell(CompositeSwapCall memory call) internal returns (bytes memory) {
+        poolManager.swap(
+            call.hookKey,
+            SwapParams({
+                zeroForOne: call.hookZeroForOne,
+                amountSpecified: -int256(call.amountIn),
+                sqrtPriceLimitX96: call.hookSqrtLimit
+            }),
+            abi.encode(call.recipient)
+        );
+
+        Currency tokenIn = call.hookZeroForOne ? call.hookKey.currency0 : call.hookKey.currency1;
+        int256 tokenDelta = poolManager.currencyDelta(address(this), tokenIn);
+        if (tokenDelta < 0) {
+            tokenIn.settleWithBuffer(poolManager, call.payer, uint256(-tokenDelta));
+        }
+
+        int256 quoteCredit = poolManager.currencyDelta(address(this), call.quoteCurrency);
+        if (quoteCredit <= 0) revert InsufficientOutput();
+        uint256 quoteIn = uint256(quoteCredit);
+
+        poolManager.swap(
+            call.bridgeKey,
+            SwapParams({
+                zeroForOne: call.bridgeZeroForOne,
+                amountSpecified: -int256(quoteIn),
+                sqrtPriceLimitX96: call.bridgeSqrtLimit
+            }),
+            ""
+        );
+
+        int256 quoteLeft = poolManager.currencyDelta(address(this), call.quoteCurrency);
+        if (quoteLeft < 0) {
+            call.quoteCurrency.settleWithBuffer(poolManager, address(this), uint256(-quoteLeft));
+        } else if (quoteLeft > 0) {
+            call.quoteCurrency.take(poolManager, call.payer, uint256(quoteLeft), false);
+        }
+
+        Currency bridgeOut = call.bridgeZeroForOne ? call.bridgeKey.currency1 : call.bridgeKey.currency0;
+        int256 outDelta = poolManager.currencyDelta(address(this), bridgeOut);
+        uint256 amountOut = outDelta > 0 ? uint256(outDelta) : 0;
+        if (amountOut < call.minAmountOut) revert InsufficientOutput();
+        if (outDelta > 0) {
+            bridgeOut.take(poolManager, call.recipient, uint256(outDelta), false);
+        }
+
+        int256 tokenLeft = poolManager.currencyDelta(address(this), tokenIn);
+        if (tokenLeft > 0) {
+            tokenIn.take(poolManager, call.payer, uint256(tokenLeft), false);
+        }
 
         return abi.encode(amountOut);
     }

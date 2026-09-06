@@ -9,7 +9,7 @@ import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import type { PaymentAssetId } from "@/lib/payment-assets";
-import { type SwapAsset, needsCompositeSell, poolQuoteSwapAsset, STABLE_SWAP_ASSET } from "@/lib/swap-assets";
+import { type SwapAsset, isStableSwapAsset, needsCompositeSell, poolQuoteSwapAsset } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
@@ -111,24 +111,26 @@ export function TokenProSwap({
   const [flipAnim, setFlipAnim] = useState(false);
 
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
-  const qUsd = quoteUsd ?? (kind === "eth" ? ethUsd : kind === "stable" ? 1 : ethUsd);
-  const tokenPriceUsd = (tokenPriceEth ?? 0) * qUsd;
+  const qUsd = quoteUsd ?? (kind === "eth" ? ethUsd : kind === "stable" ? 1 : undefined);
+  const tokenPriceUsd = (tokenPriceEth ?? 0) * (qUsd ?? 0);
+  const poolQuote = poolQuoteSwapAsset(pool);
 
-  const sellUsd = (() => {
-    const n = Number(sellAmount);
-    if (!(n > 0)) return 0;
-    if (sellAsset.isNative) return n * ethUsd;
-    if (sellAsset.address?.toLowerCase() === STABLE_SWAP_ASSET.address?.toLowerCase()) return n;
-    return n * tokenPriceUsd;
-  })();
+  const assetUsd = (asset: SwapAsset, amount: number) => {
+    if (!(amount > 0)) return 0;
+    if (asset.isNative) return amount * ethUsd;
+    if (isStableSwapAsset(asset)) return amount;
+    if (
+      poolQuote.address &&
+      asset.address &&
+      asset.address.toLowerCase() === poolQuote.address.toLowerCase()
+    ) {
+      return qUsd && qUsd > 0 ? amount * qUsd : 0;
+    }
+    return amount * tokenPriceUsd;
+  };
 
-  const receiveUsd = (() => {
-    const n = Number(receiveAmount);
-    if (!(n > 0)) return 0;
-    if (buyAsset.isNative) return n * ethUsd;
-    if (buyAsset.address?.toLowerCase() === STABLE_SWAP_ASSET.address?.toLowerCase()) return n;
-    return n * tokenPriceUsd;
-  })();
+  const sellUsd = assetUsd(sellAsset, Number(sellAmount));
+  const receiveUsd = assetUsd(buyAsset, Number(receiveAmount));
 
   const handleInvert = () => {
     setFlipAnim(true);

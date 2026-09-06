@@ -8,7 +8,7 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 | Check | Status |
 | --- | --- |
 | Ink public RPC (`INK_RPC_URL`) | `https://rpc-gel.inkonchain.com` |
-| `DeployHookitCore` broadcast (57073) | **Live** — block `54547596` |
+| `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `54712334` |
 | `VerifyInkDeploy.s.sol` | Run after syncing `.env` from `deploy/ink/env.ink.example` |
 | Custom hook allowlist on factory | Run **`HardenInkSoftLaunch.s.sol`** once if `customHookAllowlistEnabled` is false |
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
@@ -20,16 +20,21 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 
 | Contract | Address |
 | --- | --- |
-| **LaunchFactory** | `0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2` |
-| **BondingLaunchFactory** | `0x2003af38d2f995fb78cfa9feadcd2b05c903fb80` |
-| **HookitSwapRouter** | `0xe76b7f77ddcdcd892f6b808387a784997f3d8af2` |
-| **MasterLaunchHook** | `0xa33c80507b82816f84cce80f2aa0f6d5cd5beac8` |
-| **GraduatedFeeHook** | `0x82bfc49342a5fac13ad78d44d9bf64ff57a72088` |
-| **Native token (HOOKTEST / HTST)** | `0x9E6D824deE12B586955116A8881f3186194Ee468` |
-| **ProtocolRevenueDistributor** | `0x436ad54eb2c36f58ce856e26fe42e1b0fe9c0bf1` |
-| **HkitBuyback** | `0xeccad668aa9601c2c8373561dfb0976bc6eb680c` |
+| **LaunchFactory** | `0xeb05916ac2356956224c7d9b75c0c8c01503d24c` |
+| **BondingLaunchFactory** | `0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe` |
+| **HookitSwapRouter** | `0x23dcdc9570ccfe93807da99b395db6a24a79a239` |
+| **MasterLaunchHook** | `0xfe09ecab802e3567df96b94d2a4ec294b6272ac8` |
+| **GraduatedFeeHook** | `0xfe9be77c9b3349ba1095a150bd29a48fc9a9e088` |
+| **Native token (HOOKTEST / HTST)** | `0x9403cc96dbc7a63bbd5af65123653acd6938f688` |
+| **ProtocolRevenueDistributor** | `0x302e52f0252360325796b7eb6a03409de40266ac` |
+| **HkitBuyback** | `0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9` |
+| **BuybackVault** (hook immutable) | `0x7c2cce72da7fd791e7e4bd1e3b8dda4ee4ba53b1` |
+| **HolderAirdropVault** (hook immutable) | `0x869c3ff9f449f1f1470f8b257d73bcbaf52ffe77` |
+| **FeeEthRail** (distributor.feeRail) | `0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71` |
 
-`INDEXER_START_BLOCK=54547596`
+`INDEXER_START_BLOCK=54712334`
+
+Prior factory `0xa2366b74…` (11 launches, start block `54547596`) is retired — indexer + www.hookit.fun use the addresses above.
 
 ## Post-deploy checklist
 
@@ -44,7 +49,7 @@ forge script script/VerifyInkDeploy.s.sol --rpc-url $INK_RPC_URL -vv
 forge script script/HardenInkSoftLaunch.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 4) Optional: wire FeeEthRail when USDG/ETH pool exists
-FEE_ETH_RAIL=0x903df3daed1062eb2abec4a0a4098d9152228c0a \
+FEE_ETH_RAIL=0xf1fdb0f7debefdc4ff7158f2bc2922722e27fe71 \
   forge script script/WireFeeEthRailInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 5) Dry-run latest bytecode on Ink fork
@@ -58,12 +63,12 @@ forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
 NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
-NEXT_PUBLIC_LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2
-NEXT_PUBLIC_BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80
-NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0xe76b7f77ddcdcd892f6b808387a784997f3d8af2
-NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x436ad54eb2c36f58ce856e26fe42e1b0fe9c0bf1
-NEXT_PUBLIC_HKIT_BUYBACK=0xeccad668aa9601c2c8373561dfb0976bc6eb680c
-NEXT_PUBLIC_NATIVE_TOKEN=0x9E6D824deE12B586955116A8881f3186194Ee468
+NEXT_PUBLIC_LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c
+NEXT_PUBLIC_BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe
+NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x23dcdc9570ccfe93807da99b395db6a24a79a239
+NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x302e52f0252360325796b7eb6a03409de40266ac
+NEXT_PUBLIC_HKIT_BUYBACK=0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9
+NEXT_PUBLIC_NATIVE_TOKEN=0x9403cc96dbc7a63bbd5af65123653acd6938f688
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
 INDEXER_URL=https://indexer.hookit.fun
 ```
@@ -71,9 +76,9 @@ INDEXER_URL=https://indexer.hookit.fun
 **Linode `/opt/hookit/.env`:**
 
 ```
-LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2
-BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80
-INDEXER_START_BLOCK=54547596
+LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c
+BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe
+INDEXER_START_BLOCK=54712334
 INK_RPC_URL=https://rpc-gel.inkonchain.com
 INDEXER_DATA_DIR=/var/lib/hookit-indexer
 ```
@@ -84,12 +89,12 @@ After changing factory or start block: delete `hookit-57073.json` store and rest
 
 ```bash
 # Classic bonding
-BONDING_FACTORY=0x2003af38d2f995fb78cfa9feadcd2b05c903fb80 \
+BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe \
   forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # Master + modules matrix
-LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2 \
-  HOOKIT_SWAP_ROUTER=0xe76b7f77ddcdcd892f6b808387a784997f3d8af2 \
+LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c \
+  HOOKIT_SWAP_ROUTER=0x23dcdc9570ccfe93807da99b395db6a24a79a239 \
   forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 ```
 
@@ -110,10 +115,15 @@ LAUNCH_FACTORY=0xa2366b74e2bdc6d80f7b32b6382c28d4ff9a74c2 \
 
 ### Bytecode note
 
-The live Ink deploy predates repo hardening (`customHooksEnabled`, max-wallet pre-swap, required `hookData`). For those fixes on-chain, run a **fresh** `DeployHookitCore` (new addresses — update indexer + Vercel). Until then:
+Live stack is `RedeployHookitInk` (block `54712334`): custom-hook allowlist on, custom hooks off. Source now includes (need a **new** factory / hook / router / graduated hook — existing tokens stay on old bytecode):
 
-- UI blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENABLED=false`).
-- Run `HardenInkSoftLaunch.s.sol` so the factory rejects non-allowlisted custom hooks.
+- `MasterLaunchHook` uses `getLiquidity()` (not `getSlot0` protocolFee) for depth / dynamic fees / floor.
+- `LaunchFactory.launch()` writes `poolLaunchId` / `poolMarketIndex` (live singles have `poolLaunchId = 0`).
+- `HookitSwapRouter.swapExactInCompositeSell` (live router has composite **buy** only).
+- Live ETH/USD for FDV (`_ethUsdX18` + deploy `syncEthUsdPrice`).
+- `GraduatedFeeHook` sweep impact guard uses **pre-swap** spot.
+
+Until that redeploy: UI blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENABLED=false`). `HardenInkSoftLaunch.s.sol` already ran on this factory. `FeeEthRail.ethBridgeSet` stays false until a public USDG↔ETH/WETH v4 pool exists (`WireFeeEthRailInk`).
 
 ## Do not
 

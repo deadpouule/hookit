@@ -157,8 +157,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     {
         LaunchState memory st = _launchState[poolId];
         if (!st.initialized) return 0;
-        (uint160 sqrtPriceX96,, uint128 activeLiquidity,) = poolManager.getSlot0(poolId);
-        uint128 liquidity = activeLiquidity == 0 ? st.seedLiquidity : activeLiquidity;
+        (uint160 sqrtPriceX96, uint128 liquidity) = _priceAndLiquidity(poolId, st.seedLiquidity);
         return DynamicFeeMath.effectiveHookTaxBps(
             configs[poolId],
             quoteNotional,
@@ -291,8 +290,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
 
-        (uint160 sqrtPriceX96,, uint128 activeLiquidity,) = poolManager.getSlot0(id);
-        uint128 liquidity = activeLiquidity == 0 ? st.seedLiquidity : activeLiquidity;
+        (uint160 sqrtPriceX96, uint128 liquidity) = _priceAndLiquidity(id, st.seedLiquidity);
 
         bool quoteIsSpecified = isBuy ? exactInput : !exactInput;
         uint256 quoteNotional =
@@ -713,5 +711,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         assembly {
             tstore(slot, flagged)
         }
+    }
+
+    /// @dev `getSlot0` returns (sqrtPrice, tick, protocolFee, lpFee) — never treat the 3rd word as liquidity.
+    function _priceAndLiquidity(PoolId id, uint128 seedFallback)
+        private
+        view
+        returns (uint160 sqrtPriceX96, uint128 liquidity)
+    {
+        (sqrtPriceX96,,,) = poolManager.getSlot0(id);
+        liquidity = poolManager.getLiquidity(id);
+        if (liquidity == 0) liquidity = seedFallback;
     }
 }

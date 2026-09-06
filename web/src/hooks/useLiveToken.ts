@@ -134,6 +134,7 @@ export function useLiveToken(pool: TokenPool) {
             h: Number(c.h) * candleScale,
             l: Number(c.l) * candleScale,
             c: Number(c.c) * candleScale,
+            t: typeof c.t === "number" ? c.t : undefined,
           }))
         : mcap > 0
           ? [{ o: mcap, h: mcap, l: mcap, c: mcap }]
@@ -148,9 +149,9 @@ export function useLiveToken(pool: TokenPool) {
       volume24h: quoteVolUsd > 0 ? quoteVolUsd : pool.volume24h ?? 0,
       liquidity: pool.liquidity > 0 ? pool.liquidity : mcap,
       change24h: summary.change24h ?? pool.change24h ?? 0,
-      change5m: 0,
-      change1h: (summary.change24h ?? 0) * 0.2,
-      change6h: (summary.change24h ?? 0) * 0.55,
+      change5m: summary.change5m ?? 0,
+      change1h: summary.change1h ?? (summary.change24h ?? 0) * 0.2,
+      change6h: summary.change6h ?? (summary.change24h ?? 0) * 0.55,
       holders: summary.holdersIndexed || 0,
       txns: summary.tradesIndexed || recentTrades.length,
       buyPct:

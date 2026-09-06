@@ -12,6 +12,7 @@ import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import {FullMath} from "@uniswap/v4-core/src/libraries/FullMath.sol";
 
 import {HookitSwapRouter} from "../../src/HookitSwapRouter.sol";
 import {HkitBuyback} from "../../src/HkitBuyback.sol";
@@ -29,6 +30,7 @@ import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
 import {UniswapV4Deployments} from "../../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../../src/libraries/HookitDeployLib.sol";
 import {QuotronStockQuotes} from "../../src/libraries/QuotronStockQuotes.sol";
+import {QuotronBridge} from "../../src/libraries/QuotronBridge.sol";
 import {FixedPointMath} from "../../src/libraries/FixedPointMath.sol";
 
 /// @notice Shared Ink mainnet fork harness: deploy Hookit on live v4 state, swap via `HookitSwapRouter`.
@@ -152,14 +154,16 @@ abstract contract InkForkTestBase is Test {
         distributor.setOperator(address(bonding), true);
         distributor.setOperator(address(graduatedHook), true);
 
-        // Mirror master quote allowlist for classic rail graduation equivalents.
         UniswapV4Deployments.Deployment memory d = UniswapV4Deployments.get(INK_CHAIN);
         bonding.setQuote(d.stableQuote, true, 6, 1e18, address(0));
-        bonding.setEthUsdPrice(ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18, address(0));
+        bonding.setEthUsdPrice(ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18, d.ethUsdFeed);
         QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
         for (uint256 i; i < stocks.length; ++i) {
             bonding.setQuote(stocks[i].token, true, stocks[i].decimals, stocks[i].usdPriceX18, address(0));
         }
+
+        try factory.syncEthUsdPrice() {} catch {}
+        try bonding.syncEthUsdPrice() {} catch {}
     }
 
     address internal constant USDG_WHALE = 0x3e17f00A166C278F357A9aaB4e2148b9c3CFd8E4;
@@ -243,6 +247,68 @@ abstract contract InkForkTestBase is Test {
         );
         r.key = factory.poolKeyOf(r.launchId);
         r.launcher = launcher;
+    }
+
+    function _launchMulti(
+        address launcher,
+        LaunchFactory.MarketInput[] memory markets,
+        string memory name,
+        string memory symbol
+    ) internal returns (LaunchResult memory r) {
+        vm.prank(launcher);
+        (r.launchId, r.token, r.poolId) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchMultiParams({
+                name: name,
+                symbol: symbol,
+                metadataURI: "ipfs://hookit-multi",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                markets: markets,
+                tickSpacing: 60,
+                bitmask: BitmaskConfig.pack(_defaultModules()),
+                customHook: IHooks(address(0)),
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
+            })
+        );
+        r.key = factory.poolKeyOf(r.launchId);
+        r.launcher = launcher;
+    }
+
+    function _quoteDecimals(Currency quote) internal view returns (uint8) {
+        address token = Currency.unwrap(quote);
+        if (token == address(0)) return 18;
+        (, uint8 dec,,) = factory.quoteConfigs(token);
+        return dec;
+    }
+
+    /// @dev Fully-diluted USD from live pool sqrtPrice × live quote USD (not listing snapshots).
+    function _spotFdvUsdX18(PoolKey memory key, address token, Currency quote) internal view returns (uint256) {
+        bool tokenIs0 = Currency.unwrap(key.currency0) == token;
+        (uint160 sqrtPriceX96,,,) = manager.getSlot0(key.toId());
+        uint256 mcapQuote =
+            FixedPointMath.quoteFromToken(ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, sqrtPriceX96, tokenIs0);
+        uint256 quoteUsd = factory.quoteUsdPriceX18(Currency.unwrap(quote));
+        return FullMath.mulDiv(mcapQuote, quoteUsd, 10 ** uint256(_quoteDecimals(quote)));
+    }
+
+    function _assertSpotFdvFiveThousandUsd(PoolKey memory key, address token, Currency quote) internal view {
+        uint256 fdv = _spotFdvUsdX18(key, token, quote);
+        assertApproxEqRel(fdv, ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, 0.05e18, "spot FDV != $5k");
+    }
+
+    function _compositeSellToUsdg(address user, PoolKey memory hookKey, address token, uint256 tokenIn, Currency quote)
+        internal
+        returns (uint256 usdgOut)
+    {
+        address stock = Currency.unwrap(quote);
+        PoolKey memory bridgeKey = QuotronBridge.poolKey(stock);
+        bool bridgeZfo = QuotronBridge.zeroForOne(stock, stock);
+        bool hookZfo = !_buyZeroForOne(hookKey, token);
+        vm.startPrank(user);
+        IERC20(token).approve(address(router), tokenIn);
+        usdgOut = router.swapExactInCompositeSell(bridgeKey, bridgeZfo, tokenIn, hookKey, hookZfo, quote, 1, 0, 0);
+        vm.stopPrank();
     }
 
     function _quoteCurrency(PoolKey memory key, address token) internal pure returns (Currency) {

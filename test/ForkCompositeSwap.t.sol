@@ -182,6 +182,76 @@ contract ForkCompositeSwapTest is Test {
         assertEq(LaunchTokenLike(token).balanceOf(trader), balBefore + tokensOut);
     }
 
+    function testForkCompositeSellTokenToEthToUsdc() public {
+        PoolKey memory bridgeKey = _seedBridgePool();
+
+        BitmaskConfig.Modules memory m;
+        (, address token,) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchParams({
+                name: "CompositeSell",
+                symbol: "CMS",
+                metadataURI: "",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                quote: Currency.wrap(address(0)),
+                tickSpacing: 60,
+                startingTick: 0,
+                bitmask: BitmaskConfig.pack(m),
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0
+            })
+        );
+
+        PoolKey memory hookKey = PoolKey({
+            currency0: Currency.wrap(address(0)),
+            currency1: Currency.wrap(token),
+            fee: 0,
+            tickSpacing: 60,
+            hooks: IHooks(address(hook))
+        });
+
+        uint256 usdcIn = 500e6;
+        usdc.transfer(trader, usdcIn);
+
+        vm.startPrank(trader);
+        usdc.approve(address(router), usdcIn);
+        uint256 tokensOut = router.swapExactInComposite(
+            bridgeKey,
+            false,
+            usdcIn,
+            hookKey,
+            true,
+            Currency.wrap(address(0)),
+            1,
+            TickMath.MAX_SQRT_PRICE - 1,
+            TickMath.MIN_SQRT_PRICE + 1
+        );
+        vm.stopPrank();
+        assertGt(tokensOut, 0);
+
+        vm.roll(block.number + 1);
+        uint256 sellAmt = tokensOut / 3;
+        uint256 usdcBefore = usdc.balanceOf(trader);
+
+        vm.startPrank(trader);
+        LaunchTokenLike(token).approve(address(router), sellAmt);
+        uint256 usdcOut = router.swapExactInCompositeSell(
+            bridgeKey,
+            true,
+            sellAmt,
+            hookKey,
+            false,
+            Currency.wrap(address(0)),
+            1,
+            TickMath.MIN_SQRT_PRICE + 1,
+            TickMath.MAX_SQRT_PRICE - 1
+        );
+        vm.stopPrank();
+
+        assertGt(usdcOut, 0);
+        assertEq(usdc.balanceOf(trader), usdcBefore + usdcOut);
+    }
+
     function testForkCompositeRevertsIfBridgeHasHooks() public {
         PoolKey memory bridgeKey = _seedBridgePool();
         bridgeKey.hooks = IHooks(address(hook));

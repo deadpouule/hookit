@@ -149,7 +149,6 @@ export function useSwapToken(pool: TokenPool) {
           );
         }
 
-        const poolQuote = poolQuoteAddress(pool);
         const hookZeroForOne = hookSwapDirection(hookKey, token, "sell");
         const hookLimit = sqrtLimit(hookZeroForOne);
 
@@ -157,8 +156,6 @@ export function useSwapToken(pool: TokenPool) {
         if (!quotedQuote || quotedQuote <= BigInt(0)) {
           throw new Error("Could not quote pool leg for composite sell");
         }
-        const minQuoteOut =
-          (quotedQuote * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
 
         const bridge = await findBridgeRoute(
           publicClient,
@@ -177,43 +174,24 @@ export function useSwapToken(pool: TokenPool) {
         const hookitRouter = getHookitSwapRouterAddress()!;
         await ensureErc20Allowance(token, hookitRouter, amountIn);
 
-        const quoteBefore = (await publicClient.readContract({
-          address: poolQuote,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [address],
-        })) as bigint;
-
-        const hash1 = await writeContractAsync({
+        const hash = await writeContractAsync({
           address: hookitRouter,
           abi: hookitSwapRouterAbi,
-          functionName: "swapExactIn",
-          args: [hookKey, hookZeroForOne, amountIn, minQuoteOut, hookLimit],
+          functionName: "swapExactInCompositeSell",
+          args: [
+            bridge.key,
+            bridge.zeroForOne,
+            amountIn,
+            hookKey,
+            hookZeroForOne,
+            poolQuote,
+            minStableOut,
+            sqrtLimit(bridge.zeroForOne),
+            hookLimit,
+          ],
         });
-        await publicClient.waitForTransactionReceipt({ hash: hash1 });
-
-        const quoteAfter = (await publicClient.readContract({
-          address: poolQuote,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [address],
-        })) as bigint;
-        const quoteReceived = quoteAfter - quoteBefore;
-        if (quoteReceived <= BigInt(0)) {
-          throw new Error("Pool leg did not credit quote for composite sell");
-        }
-
-        const bridgeLimit = sqrtLimit(bridge.zeroForOne);
-        await ensureErc20Allowance(poolQuote, hookitRouter, quoteReceived);
-
-        const hash2 = await writeContractAsync({
-          address: hookitRouter,
-          abi: hookitSwapRouterAbi,
-          functionName: "swapExactIn",
-          args: [bridge.key, bridge.zeroForOne, quoteReceived, minStableOut, bridgeLimit],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: hash2 });
-        return hash2;
+        await publicClient.waitForTransactionReceipt({ hash });
+        return hash;
       }
 
       if (side === "buy" && !isDirectBuy(pool, payment)) {

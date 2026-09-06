@@ -61,7 +61,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const live = useLiveToken(pool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
-  const [interval, setInterval] = useState<ChartInterval>("5m");
+  const [interval, setInterval] = useState<ChartInterval>("1h");
   const contractAddress = pool.contractAddress ?? pool.address;
   const trending = live.change1h >= 0;
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
@@ -199,6 +199,11 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             interval={interval}
             onInterval={setInterval}
             marketCap={live.marketCap}
+            liquidity={live.liquidity}
+            volume24h={live.volume24h}
+            change5m={live.change5m}
+            change1h={live.change1h}
+            change6h={live.change6h}
             change24h={live.change24h}
           />
           <TokenTxTable

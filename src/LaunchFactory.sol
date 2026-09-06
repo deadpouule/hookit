@@ -244,9 +244,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
         return _mcapQuote(Currency.wrap(token));
     }
 
-    /// @notice USD price (1e18) used for quote sizing — live Quotrons sqrtPrice for wStocks when available.
+    /// @notice USD price (1e18) used for quote sizing — live feed / Quotrons sqrtPrice, not listing snapshots.
     function quoteUsdPriceX18(address token) public view returns (uint256) {
-        if (token == address(0)) return ethUsdPriceX18;
+        if (token == address(0)) return _ethUsdX18();
         QuoteConfig memory q = quoteConfigs[token];
         if (!q.allowed) revert InvalidQuote();
         return LaunchFactoryLib.quoteUsdX18(poolManager, token, _libQuote(q));
@@ -261,7 +261,15 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice Target launch FDV in quote wei (ETH for native launches).
     function launchMcapQuoteWei() public view returns (uint256) {
-        return FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, ethUsdPriceX18);
+        return FixedPointMath.mcapQuoteFromUsd(ProtocolConstants.TARGET_LAUNCH_MCAP_USD_X18, _ethUsdX18());
+    }
+
+    function _ethUsdX18() internal view returns (uint256) {
+        if (ethUsdFeed == address(0)) return ethUsdPriceX18;
+        try LaunchFactoryLib.usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) returns (uint256 live) {
+            if (live != 0) return live;
+        } catch {}
+        return ethUsdPriceX18;
     }
 
     function _mcapQuote(Currency quote) internal view returns (uint256) {
@@ -625,5 +633,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         launchQuote[launchId] = quote;
         launchTickSpacing[launchId] = spacing;
         launchFeeFlag[launchId] = fee;
+        poolLaunchId[plan.key.toId()] = launchId;
+        poolMarketIndex[plan.key.toId()] = 0;
     }
 }

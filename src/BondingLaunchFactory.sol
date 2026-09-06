@@ -22,6 +22,7 @@ import {TokenAddressMiner} from "./libraries/TokenAddressMiner.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {QuotronBridge} from "./libraries/QuotronBridge.sol";
+import {LaunchFactoryLib} from "./libraries/LaunchFactoryLib.sol";
 
 interface IAggregatorV3 {
     function decimals() external view returns (uint8);
@@ -178,9 +179,9 @@ contract BondingLaunchFactory is Owned {
         emit EthUsdPriceSet(ethUsdPriceX18, ethUsdFeed);
     }
 
-    /// @notice USD price (1e18) used for quote sizing — live Quotrons sqrtPrice for wStocks when available.
+    /// @notice USD price (1e18) used for quote sizing — live feed / Quotrons sqrtPrice, not listing snapshots.
     function quoteUsdPriceX18(address token) public view returns (uint256) {
-        if (token == address(0)) return ethUsdPriceX18;
+        if (token == address(0)) return _ethUsdX18();
         QuoteConfig memory q = quoteConfigs[token];
         if (!q.allowed) revert InvalidQuote();
         return _quoteUsdX18(token, q);
@@ -193,14 +194,21 @@ contract BondingLaunchFactory is Owned {
 
         QuoteConfig memory q = quoteConfigs[token];
         if (!q.allowed) revert InvalidQuote();
-        uint256 ethUsd =
-            ethUsdFeed != address(0) ? _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) : ethUsdPriceX18;
+        uint256 ethUsd = _ethUsdX18();
         uint256 quoteUsd = _quoteUsdX18(token, q);
         if (ethUsd == 0 || quoteUsd == 0) revert InvalidQuote();
 
         // graduationUsd = 4.2 * ethUsd ; then convert to quote native decimals.
         uint256 graduationUsdX18 = FullMath.mulDiv(ProtocolConstants.GRADUATION_ETH_WEI, ethUsd, 1 ether);
         return FixedPointMath.mcapQuoteWei(graduationUsdX18, quoteUsd, q.decimals);
+    }
+
+    function _ethUsdX18() internal view returns (uint256) {
+        if (ethUsdFeed == address(0)) return ethUsdPriceX18;
+        try LaunchFactoryLib.usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) returns (uint256 live) {
+            if (live != 0) return live;
+        } catch {}
+        return ethUsdPriceX18;
     }
 
     /// @dev Quotrons wStocks: live pool sqrtPrice (USDG≈$1). Else Chainlink feed, else stored snapshot.

@@ -239,6 +239,14 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         // Sell launch token for quote.
         bool zeroForOne = tokenIsCurrency0;
 
+        // Impact bound must use pre-swap spot — post-trade price understates fairQuote and loosens the guard.
+        (uint160 sqrtBefore,,,) = poolManager.getSlot0(key.toId());
+        uint256 fairQuote = FixedPointMath.quoteFromToken(tokenIn, sqrtBefore, tokenIsCurrency0);
+        uint256 minByImpact = fairQuote == 0
+            ? 0
+            : fairQuote * (ProtocolConstants.BPS_DENOMINATOR - BondingConstants.MAX_SWEEP_IMPACT_BPS)
+                / ProtocolConstants.BPS_DENOMINATOR;
+
         Currency tokenCur = tokenIsCurrency0 ? key.currency0 : key.currency1;
         tokenCur.settle(poolManager, address(this), tokenIn, false);
 
@@ -255,13 +263,6 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         int128 quoteDelta = tokenIsCurrency0 ? delta.amount1() : delta.amount0();
         // When selling token, we receive quote (positive take).
         uint256 quoteOut = quoteDelta > 0 ? uint256(uint128(quoteDelta)) : 0;
-
-        (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(key.toId());
-        uint256 fairQuote = FixedPointMath.quoteFromToken(tokenIn, sqrtPriceX96, tokenIsCurrency0);
-        uint256 minByImpact = fairQuote == 0
-            ? 0
-            : fairQuote * (ProtocolConstants.BPS_DENOMINATOR - BondingConstants.MAX_SWEEP_IMPACT_BPS)
-                / ProtocolConstants.BPS_DENOMINATOR;
         if (quoteOut < minQuoteOut || quoteOut < minByImpact) revert ImpactTooHigh();
 
         Currency quoteCur = tokenIsCurrency0 ? key.currency1 : key.currency0;

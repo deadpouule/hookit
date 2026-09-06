@@ -93,13 +93,20 @@ export async function resolveQuoteUsdPrice(
   client?: PublicClient,
 ): Promise<number> {
   const kind = resolveQuoteKind(quoteAddress, quoteAsset);
+  // ETH/USD is the live aggregator passed in — factory storage can sit at the $4k seed
+  // until a redeploy that reads the feed in `quoteUsdPriceX18`.
   if (kind === "eth") return ethUsd;
+
+  if (client) {
+    const fromFactory = await readFactoryQuoteUsd(client, quoteAddress, kind);
+    if (fromFactory && fromFactory > 0) return fromFactory;
+  }
+
   if (kind === "stable") return 1;
 
   const listing = quotronStockByAddress(quoteAddress);
   if (!listing) return fallbackStockUsd(quoteAddress) || 1;
 
-  // Prefer live Quotrons pool (same source as launch pricing) over xStocks API.
   if (client) {
     const live = await stockUsdFromQuotronPool(client, listing);
     if (live && live > 0) return live;
@@ -109,6 +116,28 @@ export async function resolveQuoteUsdPrice(
   if (api && api > 0) return api;
 
   return listing.fallbackUsd ?? 1;
+}
+
+async function readFactoryQuoteUsd(
+  client: PublicClient,
+  quoteAddress: Address | undefined,
+  kind: QuoteKind,
+): Promise<number | null> {
+  const factory = getLaunchFactoryAddress();
+  if (!factory) return null;
+  const token = kind === "eth" || !quoteAddress ? zeroAddress : quoteAddress;
+  try {
+    const x18 = (await client.readContract({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "quoteUsdPriceX18",
+      args: [token],
+    })) as bigint;
+    const n = Number(x18) / 1e18;
+    return n > 0 ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Build quote-address → USD map for a batch of pools (server-side enrichment). */

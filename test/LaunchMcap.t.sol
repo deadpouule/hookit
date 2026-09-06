@@ -32,6 +32,8 @@ contract LaunchMcapTest is LaunchpadTestBase {
         assertApproxEqRel(spotMcap, expectedMcapEth, 0.01e18, "spot FDV");
         assertGt(sqrtPriceX96, 0);
         assertLt(LaunchTokenLike(token).balanceOf(address(factory)), 1e15);
+        assertEq(factory.poolLaunchId(poolId), 1, "single launch must index poolLaunchId");
+        assertEq(factory.poolMarketIndex(poolId), 0);
     }
 
     function testLaunchMcapScalesWithEthUsdPrice() public {
