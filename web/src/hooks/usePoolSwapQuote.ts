@@ -16,6 +16,7 @@ export function usePoolSwapQuote(opts: {
   amount: string;
   payWith: PaymentAssetId;
   receiveAsset: SwapAsset;
+  payAsset?: SwapAsset;
   decimalsIn: number;
   decimalsOut: number;
   slippagePct: number;
@@ -51,6 +52,7 @@ export function usePoolSwapQuote(opts: {
             opts.payWith,
             opts.receiveAsset,
             address ?? zeroAddress,
+            opts.payAsset,
           );
 
           if (cancelled) return;
@@ -83,6 +85,7 @@ export function usePoolSwapQuote(opts: {
     opts.side,
     opts.payWith,
     opts.receiveAsset,
+    opts.payAsset,
     opts.decimalsIn,
     opts.decimalsOut,
     opts.slippagePct,

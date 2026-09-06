@@ -151,13 +151,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 </span>
               </HeaderTip>
             )}
-            {multi && (
-              <HeaderTip tip={`${markets.length} quote pools share this token’s supply. Pick a pool on the chart or swap to trade that leg.`}>
-                <span className="token-type-badge rounded-[6px] border border-white/15 bg-zinc-800 px-2.5 py-0.5 text-[12px] font-medium normal-case tracking-normal text-zinc-200">
-                  {markets.length} pools
-                </span>
-              </HeaderTip>
-            )}
             {pool.rail === "classic" && (
               <HeaderTip
                 tip={

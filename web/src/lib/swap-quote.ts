@@ -15,7 +15,12 @@ import {
   shouldAggregateMultiSell,
 } from "@/lib/multi-pool-route";
 import type { TokenPool } from "@/lib/types";
-import { needsCompositeSell, isDirectPoolReceive, type SwapAsset } from "@/lib/swap-assets";
+import {
+  isDirectPoolReceive,
+  isPoolQuoteAsset,
+  needsCompositeSell,
+  type SwapAsset,
+} from "@/lib/swap-assets";
 import {
   findBridgeAmountOut,
   hookRecipientData,
@@ -142,12 +147,24 @@ export async function quotePoolSwapWithMeta(
   paymentId: PaymentAssetId = "ETH",
   receiveAsset?: SwapAsset,
   recipient: Address = zeroAddress,
+  payAsset?: SwapAsset,
 ): Promise<PoolSwapQuoteMeta | null> {
   if (amountIn <= BigInt(0)) return null;
 
   let amountOut: bigint | null = null;
   let route = "—";
   let estimated = false;
+  const payment = paymentAssetById(paymentId);
+  const payDecimals =
+    side === "buy" && payAsset ? payAsset.decimals : payment.decimals;
+  const payLabel = payAsset?.symbol ?? payment.label;
+  const payAddress = payAsset
+    ? payAsset.isNative
+      ? zeroAddress
+      : (payAsset.address ?? payment.address)
+    : payment.address;
+  const directPay =
+    (payAsset && isPoolQuoteAsset(pool, payAsset)) || isDirectBuy(pool, payment);
 
   if (side === "sell") {
     const receiveCurrency = receiveAsset
@@ -194,9 +211,7 @@ export async function quotePoolSwapWithMeta(
       }
     }
   } else {
-    const payment = paymentAssetById(paymentId);
-
-    if (shouldAggregateMultiBuy(pool)) {
+    if (shouldAggregateMultiBuy(pool) && !directPay) {
       const plan = await quoteBestBuyPlan(client, pool, payment, amountIn, recipient);
       if (plan) {
         amountOut = plan.amountOut;
@@ -207,25 +222,25 @@ export async function quotePoolSwapWithMeta(
     if (amountOut == null) {
       const poolQuote = poolQuoteAddress(pool);
 
-      if (isDirectBuy(pool, payment)) {
-        route = `${payment.label} → ${pool.ticker}`;
-        amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient, payment.address);
+      if (directPay) {
+        route = `${payLabel} → ${pool.ticker}`;
+        amountOut = await quoteHookLeg(client, pool, "buy", amountIn, recipient, payAddress);
       } else {
-        const bridge = await findBridgeAmountOut(client, payment.address, poolQuote, amountIn);
+        const bridge = await findBridgeAmountOut(client, payAddress, poolQuote, amountIn);
         if (!bridge) {
-          amountOut = spotQuoteFallback(pool, side, amountIn, payment.decimals, 18);
+          amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, 18);
           if (!amountOut) return null;
-          route = `${payment.label} → ${pool.ticker} (est.)`;
+          route = `${payLabel} → ${pool.ticker} (est.)`;
           estimated = true;
         } else {
           route =
             bridge.routeLabel ??
-            `${payment.label} → ${poolQuoteLabel(pool)} → ${pool.ticker}`;
+            `${payLabel} → ${poolQuoteLabel(pool)} → ${pool.ticker}`;
           amountOut = await quoteHookLeg(client, pool, "buy", bridge.amountOut, recipient);
           if (!amountOut) {
-            amountOut = spotQuoteFallback(pool, side, amountIn, payment.decimals, 18);
+            amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, 18);
             if (!amountOut) return null;
-            route = `${payment.label} → ${pool.ticker} (est.)`;
+            route = `${payLabel} → ${pool.ticker} (est.)`;
             estimated = true;
           }
         }
@@ -234,20 +249,19 @@ export async function quotePoolSwapWithMeta(
   }
 
   if (!amountOut || amountOut <= BigInt(0)) {
-    const decimalsIn = side === "buy" ? paymentAssetById(paymentId).decimals : 18;
-    const decimalsOut = side === "buy" ? 18 : paymentAssetById(paymentId).decimals;
+    const decimalsIn = side === "buy" ? payDecimals : 18;
+    const decimalsOut = side === "buy" ? 18 : receiveAsset?.decimals ?? payment.decimals;
     amountOut = spotQuoteFallback(pool, side, amountIn, decimalsIn, decimalsOut);
     if (!amountOut) return null;
     estimated = true;
     route = side === "buy" ? `Spot est. · ${pool.ticker}` : `Spot est. · ${poolQuoteLabel(pool)}`;
   }
 
-  const decimalsIn =
-    side === "buy" ? paymentAssetById(paymentId).decimals : 18;
+  const decimalsIn = side === "buy" ? payDecimals : 18;
   const decimalsOut =
     side === "buy"
       ? 18
-      : receiveAsset?.decimals ?? paymentAssetById(paymentId).decimals;
+      : receiveAsset?.decimals ?? payment.decimals;
 
   const amountInHuman = Number(formatUnits(amountIn, decimalsIn));
   const amountOutHuman = Number(formatUnits(amountOut, decimalsOut));

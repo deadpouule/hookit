@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
+import { PairingMark } from "@/components/launch/PairingMark";
 import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
 import { useBondingQuote } from "@/hooks/useBondingQuote";
@@ -17,11 +18,13 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { formatTokenAmount, isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
+import { pairingBadgeFromQuoteAddress } from "@/lib/pairing-badge";
 import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
 import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
   isDirectPoolReceive,
+  isPoolQuoteAsset,
   isStableSwapAsset,
   isStockQuotedPool,
   needsCompositeSell,
@@ -51,9 +54,39 @@ function resolveEthUsd(pool: TokenPool, liveEthUsd?: number): number {
 
 function deriveSide(sell: SwapAsset, buy: SwapAsset, pool: TokenPool): Side {
   const tokenKey = poolToSwapAsset(pool).key;
-  if ((sell.isNative || isStableSwapAsset(sell)) && buy.key === tokenKey) return "buy";
-  if (sell.key === tokenKey && (buy.isNative || isStableSwapAsset(buy))) return "sell";
-  return sell.isNative || isStableSwapAsset(sell) ? "buy" : "sell";
+  if (buy.key === tokenKey) return "buy";
+  if (sell.key === tokenKey) return "sell";
+  if (sell.isNative || isStableSwapAsset(sell) || isPoolQuoteAsset(pool, sell)) return "buy";
+  return "sell";
+}
+
+function PoolLegLogo({ market }: { market: TokenPoolMarket }) {
+  const badge = pairingBadgeFromQuoteAddress(market.quoteAddress);
+  if (badge) {
+    return <PairingMark id={badge.pairingId} size="sm" />;
+  }
+
+  const asset = poolQuoteSwapAsset({
+    quoteAddress: market.quoteAddress,
+    quoteAsset: market.quoteAsset,
+  } as TokenPool);
+
+  if (asset.imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={asset.imageUrl}
+        alt=""
+        className="h-4 w-4 shrink-0 rounded-full object-contain"
+      />
+    );
+  }
+
+  return (
+    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-[8px] font-bold text-zinc-200">
+      {asset.symbol.slice(0, 1)}
+    </span>
+  );
 }
 
 function paymentIdFromAsset(asset: SwapAsset): PaymentAssetId {
@@ -106,9 +139,12 @@ export function TokenSwapCard({
   const publicClient = usePublicClient();
   const { writeContractAsync, isPending: writing } = useWriteContract();
   const swap = useSwapToken(pool);
+  const poolQuote = useMemo(() => poolQuoteSwapAsset(pool), [pool]);
   const fetchTokenBalance = useTokenBalance(pool.contractAddress as `0x${string}` | undefined);
   const fetchEthBalance = useTokenBalance(undefined);
   const fetchUsdgBalance = useTokenBalance(STABLE_QUOTE_ADDRESS);
+  const quoteErc20 = poolQuote.address && !isStableSwapAsset(poolQuote) ? poolQuote.address : undefined;
+  const fetchQuoteBalance = useTokenBalance(quoteErc20);
 
   const [side, setSide] = useState<Side>("buy");
   const [sellAsset, setSellAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, "buy").sell);
@@ -120,11 +156,11 @@ export function TokenSwapCard({
   const [tokenBal, setTokenBal] = useState<number>(0);
   const [ethBal, setEthBal] = useState<number>(0);
   const [usdgBal, setUsdgBal] = useState<number>(0);
+  const [quoteBal, setQuoteBal] = useState<number>(0);
 
   const liveEthUsd = useEthUsd();
   const ethUsd = resolveEthUsd(pool, liveEthUsd);
   const modules = useMemo(() => resolveTokenModules(pool), [pool]);
-  const poolQuote = useMemo(() => poolQuoteSwapAsset(pool), [pool]);
 
   const applySide = useCallback(
     (nextSide: Side) => {
@@ -169,39 +205,42 @@ export function TokenSwapCard({
       setTokenBal(0);
       setEthBal(0);
       setUsdgBal(0);
+      setQuoteBal(0);
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const [tokenRaw, ethRaw, usdgRaw] = await Promise.all([
+        const [tokenRaw, ethRaw, usdgRaw, quoteRaw] = await Promise.all([
           fetchTokenBalance(),
           fetchEthBalance(),
           fetchUsdgBalance(),
+          quoteErc20 ? fetchQuoteBalance() : Promise.resolve(BigInt(0)),
         ]);
         if (cancelled) return;
         setTokenBal(Number(formatUnits(tokenRaw, 18)));
         setEthBal(Number(formatUnits(ethRaw, 18)));
         setUsdgBal(Number(formatUnits(usdgRaw, 6)));
+        setQuoteBal(Number(formatUnits(quoteRaw, poolQuote.decimals)));
       } catch {
         if (!cancelled) {
           setTokenBal(0);
           setEthBal(0);
           setUsdgBal(0);
+          setQuoteBal(0);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, address]);
+  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, fetchQuoteBalance, quoteErc20, poolQuote.decimals, address]);
 
   const payAsset = payAssetForSide(side, sellAsset, buyAsset);
   const effectivePayWith = paymentIdFromAsset(payAsset);
   const onBonding = pool.rail === "classic" && pool.bondingPhase === 0;
   const bonding = getBondingFactoryAddress();
-  const payDecimals =
-    side === "buy" ? paymentAssetById(effectivePayWith).decimals : payAsset.decimals;
+  const payDecimals = side === "buy" ? payAsset.decimals : 18;
   const quoteDecimals =
     !pool.quoteAddress || pool.quoteAddress === zeroAddress
       ? 18
@@ -218,6 +257,7 @@ export function TokenSwapCard({
     amount,
     payWith: effectivePayWith,
     receiveAsset: buyAsset,
+    payAsset: side === "buy" ? sellAsset : undefined,
     decimalsIn: payDecimals,
     decimalsOut: receiveDecimals,
     slippagePct,
@@ -286,7 +326,9 @@ export function TokenSwapCard({
     ? ethBal
     : isStableSwapAsset(sellAsset)
       ? usdgBal
-      : tokenBal;
+      : isPoolQuoteAsset(pool, sellAsset)
+        ? quoteBal
+        : tokenBal;
 
   const handleInvert = () => {
     let nextSell = buyAsset;
@@ -379,7 +421,14 @@ export function TokenSwapCard({
       }
 
       setStatus(side === "buy" ? "Buying…" : "Selling…");
-      const hash = await swap.swapExactIn(side, amount, slippagePct, effectivePayWith, buyAsset);
+      const hash = await swap.swapExactIn(
+        side,
+        amount,
+        slippagePct,
+        effectivePayWith,
+        buyAsset,
+        side === "buy" ? sellAsset : undefined,
+      );
       toast.dismiss(loadingId);
       if (hash) {
         setStatus("Trade confirmed");
@@ -407,8 +456,9 @@ export function TokenSwapCard({
   const routeLabel = (() => {
     if (swapQuoteMeta?.route) return swapQuoteMeta.route;
     if (side === "buy") {
-      const payment = paymentAssetById(effectivePayWith);
-      if (isDirectBuy(pool, payment)) return `${poolQuote.symbol} → ${ticker}`;
+      if (isPoolQuoteAsset(pool, payAsset) || isDirectBuy(pool, paymentAssetById(effectivePayWith))) {
+        return `${payAsset.symbol} → ${ticker}`;
+      }
       return `${payAsset.symbol} → ${poolQuote.symbol} → ${ticker}`;
     }
     if (needsCompositeSell(pool, buyAsset) || !isDirectPoolReceive(pool, buyAsset)) {
@@ -436,14 +486,15 @@ export function TokenSwapCard({
                 aria-selected={marketIndex === i}
                 onClick={() => onMarketIndex(i)}
                 className={cn(
-                  "rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition",
+                  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition",
                   marketIndex === i
                     ? "border-[#9514d1] bg-[#9514d1]/15 text-foreground"
                     : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-foreground",
                 )}
               >
+                <PoolLegLogo market={m} />
                 {marketLegLabel(m)}
-                <span className="ml-1 opacity-60">{marketSharePct(m)} liq</span>
+                <span className="opacity-60">{marketSharePct(m)} liq</span>
               </button>
             ))}
           </div>

@@ -32,6 +32,7 @@ import {
 import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
 import type { TokenPool } from "@/lib/types";
 import {
+  isPoolQuoteAsset,
   needsCompositeSell,
   type SwapAsset,
 } from "@/lib/swap-assets";
@@ -73,6 +74,7 @@ export function useSwapToken(pool: TokenPool) {
       amountIn: bigint,
       paymentId: PaymentAssetId = "ETH",
       receiveAsset?: SwapAsset,
+      payAsset?: SwapAsset,
     ): Promise<bigint | null> => {
       if (!publicClient || amountIn <= BigInt(0)) return null;
       const result = await quotePoolSwapWithMeta(
@@ -84,6 +86,7 @@ export function useSwapToken(pool: TokenPool) {
         paymentId,
         receiveAsset,
         address ?? zeroAddress,
+        payAsset,
       );
       return result?.amountOut ?? null;
     },
@@ -118,14 +121,29 @@ export function useSwapToken(pool: TokenPool) {
       slippagePct: number,
       paymentId: PaymentAssetId = "ETH",
       receiveAsset?: SwapAsset,
+      payAsset?: SwapAsset,
     ) => {
       setError(null);
       if (!publicClient || !address) throw new Error("Connect wallet");
       const payment = paymentAssetById(paymentId);
+      const payingDirectQuote = !!(
+        payAsset && isPoolQuoteAsset(pool, payAsset)
+      );
+      const payAddress = payingDirectQuote
+        ? payAsset.isNative
+          ? zeroAddress
+          : (payAsset.address ?? payment.address)
+        : payment.address;
+      const hookKey =
+        side === "buy" && (payingDirectQuote || isDirectBuy(pool, payment))
+          ? (poolKeyForQuote(pool, payAddress) ?? poolKeyFromLaunch(pool))
+          : poolKeyFromLaunch(pool);
       const token = pool.contractAddress as Address | undefined;
       if (!token) throw new Error("Pool key unavailable for this launch");
 
-      const payDecimals = side === "buy" ? payment.decimals : 18;
+      const poolQuote = poolQuoteAddress(pool);
+      const payDecimals =
+        side === "buy" ? (payAsset?.decimals ?? payment.decimals) : 18;
       const amountIn = parseUnits(amountHuman, payDecimals);
       if (amountIn <= BigInt(0)) throw new Error("Enter an amount");
 
@@ -196,7 +214,7 @@ export function useSwapToken(pool: TokenPool) {
       }
 
       // Multi-pool buy aggregator (+ optional split across pools).
-      if (side === "buy" && shouldAggregateMultiBuy(pool)) {
+      if (side === "buy" && shouldAggregateMultiBuy(pool) && !payingDirectQuote) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
         if (!plan) {
           throw new Error("No viable buy route across multi-pool markets");
@@ -351,7 +369,7 @@ export function useSwapToken(pool: TokenPool) {
         return hash;
       }
 
-      if (side === "buy" && !isDirectBuy(pool, payment)) {
+      if (side === "buy" && !payingDirectQuote && !isDirectBuy(pool, payment)) {
         if (!supportsCompositeSwap()) {
           throw new Error(
             "Pay-with needs HookitSwapRouter deployed. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER in env.",
@@ -429,7 +447,7 @@ export function useSwapToken(pool: TokenPool) {
       const limit = sqrtLimit(zeroForOne);
       const hookData = hookRecipientData(address);
 
-      const quoted = await quoteExactIn(side, amountIn, paymentId, receiveAsset);
+      const quoted = await quoteExactIn(side, amountIn, paymentId, receiveAsset, payAsset);
       const minOut =
         quoted && quoted > BigInt(0)
           ? (quoted * BigInt(10_000 - bps)) / BigInt(10_000)
@@ -445,9 +463,11 @@ export function useSwapToken(pool: TokenPool) {
       if (side === "buy" && quoteToken !== zeroAddress) {
         // Direct buy with payment token (may be secondary market USDG, not primary quote).
         const spendToken =
-          isDirectBuy(pool, payment) && payment.address !== zeroAddress
-            ? payment.address
-            : quoteToken;
+          payingDirectQuote && payAddress !== zeroAddress
+            ? payAddress
+            : isDirectBuy(pool, payment) && payment.address !== zeroAddress
+              ? payment.address
+              : quoteToken;
         const allowance = (await publicClient.readContract({
           address: spendToken,
           abi: erc20Abi,
@@ -471,7 +491,9 @@ export function useSwapToken(pool: TokenPool) {
       }
 
       const value =
-        side === "buy" && isDirectBuy(pool, payment) && payment.address === zeroAddress
+        side === "buy" &&
+        ((payingDirectQuote && payAddress === zeroAddress) ||
+          (!payingDirectQuote && isDirectBuy(pool, payment) && payment.address === zeroAddress))
           ? amountIn
           : BigInt(0);
       let hash: `0x${string}`;

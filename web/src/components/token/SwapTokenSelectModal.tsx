@@ -26,7 +26,9 @@ import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import {
   NATIVE_ETH_ASSET,
+  isStableSwapAsset,
   isStockQuotedPool,
+  poolQuoteSwapAsset,
   poolToSwapAsset,
   STABLE_SWAP_ASSET,
   type SwapAsset,
@@ -282,6 +284,30 @@ export function SwapTokenSelectModal({
         });
       } catch {
         /* ignore */
+      }
+
+      const quoteAsset = poolQuoteSwapAsset(currentPool);
+      if (!quoteAsset.isNative && !isStableSwapAsset(quoteAsset) && quoteAsset.address) {
+        try {
+          const quoteBal = (await publicClient.readContract({
+            address: quoteAsset.address,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [address],
+          })) as bigint;
+          const quoteAmount = Number(formatUnits(quoteBal, quoteAsset.decimals));
+          rows.push({
+            ...quoteAsset,
+            balance: quoteAmount,
+            valueUsd: quoteAmount * (currentPool.quoteUsd ?? 0),
+          });
+        } catch {
+          rows.push({
+            ...quoteAsset,
+            balance: 0,
+            valueUsd: 0,
+          });
+        }
       }
 
       const candidates = Array.from(poolByAddress.values())

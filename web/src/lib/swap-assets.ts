@@ -80,6 +80,14 @@ export function poolQuoteSwapAsset(pool: TokenPool): SwapAsset {
   };
 }
 
+/** True when this asset is the selected pool’s quote (ETH, USDG, or wStock). */
+export function isPoolQuoteAsset(pool: TokenPool, asset: SwapAsset): boolean {
+  const quote = poolQuoteAddress(pool);
+  if (asset.isNative) return quote === zeroAddress;
+  if (!asset.address) return false;
+  return asset.address.toLowerCase() === quote.toLowerCase();
+}
+
 /** True when the receive leg matches the pool quote (single swap), including multi markets. */
 export function isDirectPoolReceive(pool: TokenPool, receive: SwapAsset): boolean {
   const quote = poolQuoteAddress(pool);
@@ -104,8 +112,9 @@ export function needsCompositeSell(pool: TokenPool, receive: SwapAsset): boolean
 }
 
 /**
- * Default swap pair for the desk.
- * Multi / stock-quoted memes default sell receive to USDG when that market exists.
+ * Default swap pair for the desk — trade the selected pool quote directly
+ * (ETH, USDG, or wStock such as wMCDx). USDG remains available in the picker
+ * for composite hops on stock-quoted legs.
  */
 export function defaultSwapPair(
   pool: TokenPool,
@@ -113,19 +122,6 @@ export function defaultSwapPair(
 ): { sell: SwapAsset; buy: SwapAsset } {
   const token = poolToSwapAsset(pool);
   const quote = poolQuoteSwapAsset(pool);
-  const hasStableMarket = poolHasQuoteMarket(pool, STABLE_QUOTE_ADDRESS);
-  if (side === "buy") {
-    if (isStockQuotedPool(pool) || (hasStableMarket && isMultiPoolLike(pool))) {
-      return { sell: STABLE_SWAP_ASSET, buy: token };
-    }
-    return { sell: quote, buy: token };
-  }
-  if (isStockQuotedPool(pool) || hasStableMarket) {
-    return { sell: token, buy: STABLE_SWAP_ASSET };
-  }
+  if (side === "buy") return { sell: quote, buy: token };
   return { sell: token, buy: quote };
-}
-
-function isMultiPoolLike(pool: TokenPool): boolean {
-  return (pool.marketCount ?? pool.markets?.length ?? 1) > 1;
 }
