@@ -54,6 +54,10 @@ export function TokenCandleChart({
   change1h,
   change6h,
   change24h,
+  marketLegs,
+  activeMarketIndex = 0,
+  onMarketIndex,
+  onBeFirstBuy,
   expanded = false,
   compact = false,
   className,
@@ -68,6 +72,12 @@ export function TokenCandleChart({
   change1h?: number;
   change6h?: number;
   change24h?: number;
+  /** Multi-pair legs shown as pool tabs above the plot. */
+  marketLegs?: { label: string; share: string }[];
+  activeMarketIndex?: number;
+  onMarketIndex?: (index: number) => void;
+  /** Empty-state CTA — jump user into the swap card. */
+  onBeFirstBuy?: () => void;
   compact?: boolean;
   expanded?: boolean;
   className?: string;
@@ -161,7 +171,29 @@ export function TokenCandleChart({
           <Stat label="24h volume" value={formatCompactUsd(volume24h ?? 0)} />
           <Stat label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
+            <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
+              {marketLegs.map((leg, i) => (
+                <button
+                  key={`${leg.label}-${i}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeMarketIndex === i}
+                  onClick={() => onMarketIndex(i)}
+                  className={cn(
+                    "min-h-9 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+                    activeMarketIndex === i
+                      ? "bg-[#9514d1] text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {leg.label}
+                  <span className="ml-1 opacity-70">{leg.share}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <label className="inline-flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground">
             <span
               className={cn(
@@ -226,9 +258,22 @@ export function TokenCandleChart({
         </div>
 
         {visible.length === 0 ? (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 px-6 text-center">
-            <p className="text-sm text-muted-foreground">No trades yet</p>
-            <p className="text-xs text-muted-foreground/80">Chart builds from the first on-chain swap</p>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center">
+            <div>
+              <p className="text-sm text-foreground">No trades yet</p>
+              <p className="mt-1 text-xs text-muted-foreground/80">
+                Be the first buy — the chart fills from on-chain swaps
+              </p>
+            </div>
+            {onBeFirstBuy ? (
+              <button
+                type="button"
+                onClick={onBeFirstBuy}
+                className="rounded-lg bg-[#9514d1] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#a82be0]"
+              >
+                Be first buy
+              </button>
+            ) : null}
           </div>
         ) : (
           <>

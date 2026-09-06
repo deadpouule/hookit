@@ -3106,6 +3106,8 @@
     border-radius: 12px;
     background: #1a1a1c;
     padding: 14px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .market-token-block--buy {
@@ -3169,6 +3171,8 @@
 
   .market-token-block__amount-stack {
     margin-top: 12px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .market-token-block__amount-row {
@@ -3199,9 +3203,13 @@
   .market-token-block__output {
     display: block;
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: left;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 28px;
+    font-size: clamp(1.125rem, 4vw, 1.75rem);
     font-weight: 500;
     line-height: 1.1;
     color: #fff;

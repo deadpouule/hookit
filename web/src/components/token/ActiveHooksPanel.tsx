@@ -320,7 +320,11 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
           <MasterHookGlyph className="token-type-badge-glyph shrink-0" />
           <span>{summary}</span>
         </p>
-      ) : null}
+      ) : (
+        <p className="px-3 pb-2 text-[12px] leading-snug text-zinc-400">
+          These modules run on every swap — hover a chip for the rule in plain language.
+        </p>
+      )}
 
       <ul className="token-hooks-list">
         {showFixedFee ? (

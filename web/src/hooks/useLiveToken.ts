@@ -150,8 +150,8 @@ export function useLiveToken(pool: TokenPool) {
       liquidity: pool.liquidity > 0 ? pool.liquidity : mcap,
       change24h: summary.change24h ?? pool.change24h ?? 0,
       change5m: summary.change5m ?? 0,
-      change1h: summary.change1h ?? (summary.change24h ?? 0) * 0.2,
-      change6h: summary.change6h ?? (summary.change24h ?? 0) * 0.55,
+      change1h: summary.change1h ?? 0,
+      change6h: summary.change6h ?? 0,
       holders: summary.holdersIndexed || 0,
       txns: summary.tradesIndexed || recentTrades.length,
       buyPct:

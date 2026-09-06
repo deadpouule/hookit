@@ -15,18 +15,22 @@ import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import { formatTokenAmount } from "@/lib/format";
-import { paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
+import { formatTokenAmount, isValidLaunchTimestamp } from "@/lib/format";
+import { resolveTokenModules } from "@/lib/launch-module-summary";
+import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
+import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
+  isDirectPoolReceive,
   isStableSwapAsset,
-  NATIVE_ETH_ASSET,
+  needsCompositeSell,
+  poolQuoteSwapAsset,
   poolToSwapAsset,
-  STABLE_SWAP_ASSET,
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
-import type { TokenPool } from "@/lib/types";
+import { TOTAL_SUPPLY } from "@/lib/token-live";
+import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Side = "buy" | "sell";
@@ -77,9 +81,23 @@ function SwapSideTabs({ side, onSide }: { side: Side; onSide: (side: Side) => vo
   );
 }
 
-export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
+export function TokenSwapCard({
+  pool,
+  markets,
+  marketIndex = 0,
+  onMarketIndex,
+  buyPrefill,
+  onBuyPrefillConsumed,
+}: {
+  pool: TokenPool;
+  ticker?: string;
+  markets?: TokenPoolMarket[];
+  marketIndex?: number;
+  onMarketIndex?: (index: number) => void;
+  buyPrefill?: string | null;
+  onBuyPrefillConsumed?: () => void;
+}) {
   const ticker = pool.ticker;
-  const poolAsset = useMemo(() => poolToSwapAsset(pool), [pool]);
   const searchParams = useSearchParams();
   const walletReady = useWalletReady();
   const { address } = useAccount();
@@ -91,12 +109,10 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
   const fetchUsdgBalance = useTokenBalance(STABLE_QUOTE_ADDRESS);
 
   const [side, setSide] = useState<Side>("buy");
-  const [sellAsset, setSellAsset] = useState<SwapAsset>(NATIVE_ETH_ASSET);
-  const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => poolToSwapAsset(pool));
+  const [sellAsset, setSellAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, "buy").sell);
+  const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, "buy").buy);
   const [amount, setAmount] = useState("");
-  const [payWith, setPayWith] = useState<PaymentAssetId>("ETH");
   const [slippagePct] = useState(5);
-  const [preset, setPreset] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tokenBal, setTokenBal] = useState<number>(0);
@@ -105,6 +121,8 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const liveEthUsd = useEthUsd();
   const ethUsd = resolveEthUsd(pool, liveEthUsd);
+  const modules = useMemo(() => resolveTokenModules(pool), [pool]);
+  const poolQuote = useMemo(() => poolQuoteSwapAsset(pool), [pool]);
 
   const applySide = useCallback(
     (nextSide: Side) => {
@@ -113,7 +131,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       setSellAsset(pair.sell);
       setBuyAsset(pair.buy);
       setAmount("");
-      setPreset(null);
     },
     [pool],
   );
@@ -134,10 +151,16 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     setSellAsset(pair.sell);
     setBuyAsset(pair.buy);
     setAmount("");
-    setPreset(null);
-    // Reset pair when navigating to a different token page only.
+    // Reset pair when navigating to a different token / market leg.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool.id, pool.contractAddress]);
+  }, [pool.id, pool.contractAddress, pool.quoteAddress, pool.poolId]);
+
+  useEffect(() => {
+    if (!buyPrefill) return;
+    applySide("buy");
+    setAmount(buyPrefill);
+    onBuyPrefillConsumed?.();
+  }, [buyPrefill, applySide, onBuyPrefillConsumed]);
 
   useEffect(() => {
     if (!walletReady) {
@@ -214,9 +237,47 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const hasAmount = !!amount && Number(amount) > 0;
 
+  const maxWalletWarn = useMemo(() => {
+    if (side !== "buy" || !modules?.modules.maxWallet || !quotedReceive) return null;
+    const bps = modules.modules.maxWalletBps ?? 0;
+    if (bps <= 0) return null;
+    const capTokens = (TOTAL_SUPPLY * bps) / 10_000;
+    const nextBal = tokenBal + Number(quotedReceive);
+    if (nextBal <= capTokens) return null;
+    const room = Math.max(0, capTokens - tokenBal);
+    return {
+      capPct: bps / 100,
+      room,
+      hint: room > 0
+        ? `Max wallet is ${bps / 100}% of supply (~${formatTokenAmount(room)} ${ticker} left for you).`
+        : `You already hold the max wallet (${bps / 100}% of supply).`,
+    };
+  }, [side, modules, quotedReceive, tokenBal, ticker]);
+
+  const maxTxWarn = useMemo(() => {
+    if (!modules?.modules.maxTx) return null;
+    const bps = modules.modules.maxTxBps ?? 0;
+    if (bps <= 0) return null;
+    return `Max ${(bps / 100).toFixed(1)}% of supply per swap is enforced on-chain.`;
+  }, [modules]);
+
+  const snipeWarn = useMemo(() => {
+    if (side !== "buy" || !modules?.modules.antiSnipe) return null;
+    const launched = pool.launchedAt;
+    if (!launched || !isValidLaunchTimestamp(launched)) return null;
+    const duration = modules.modules.antiSnipeDuration ?? 0;
+    const initialTax = modules.modules.antiSnipeInitialTax ?? 0;
+    if (duration <= 0 || initialTax <= 0) return null;
+    const elapsed = Math.max(0, Math.floor(Date.now() / 1000) - launched);
+    if (elapsed >= duration) return null;
+    const left = duration - elapsed;
+    const remainingTax = Math.max(0, Math.round(initialTax * (1 - elapsed / duration)));
+    return `Anti-snipe window: ~${remainingTax}% extra buy tax (${left}s left).`;
+  }, [side, modules, pool.launchedAt]);
+
   const canTrade = useMemo(
-    () => walletReady && !!pool.contractAddress && hasAmount,
-    [walletReady, pool.contractAddress, hasAmount],
+    () => walletReady && !!pool.contractAddress && hasAmount && !maxWalletWarn,
+    [walletReady, pool.contractAddress, hasAmount, maxWalletWarn],
   );
 
   const marketSellBalance = sellAsset.isNative
@@ -232,23 +293,18 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
     setBuyAsset(nextBuy);
     setSide(deriveSide(nextSell, nextBuy, pool));
     setAmount("");
-    setPreset(null);
   };
 
   const handleSellAsset = (asset: SwapAsset) => {
     setSellAsset(asset);
-    setPayWith(paymentIdFromAsset(asset));
     setSide(deriveSide(asset, buyAsset, pool));
     setAmount("");
-    setPreset(null);
   };
 
   const handleBuyAsset = (asset: SwapAsset) => {
     setBuyAsset(asset);
-    setPayWith(paymentIdFromAsset(asset));
     setSide(deriveSide(sellAsset, asset, pool));
     setAmount("");
-    setPreset(null);
   };
 
   const submit = async () => {
@@ -327,15 +383,58 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
 
   const ctaLabel = !hasAmount
     ? "Enter amount"
-    : writing || swap.isPending
-      ? "Confirm in wallet…"
-      : side === "buy"
-        ? `Buy ${ticker}`
-        : `Sell ${ticker}`;
+    : maxWalletWarn
+      ? "Exceeds max wallet"
+      : writing || swap.isPending
+        ? "Confirm in wallet…"
+        : side === "buy"
+          ? `Buy ${ticker}`
+          : `Sell ${ticker}`;
+
+  const routeLabel = (() => {
+    if (side === "buy") {
+      const payment = paymentAssetById(effectivePayWith);
+      if (isDirectBuy(pool, payment)) return `${poolQuote.symbol} → ${ticker}`;
+      return `${payAsset.symbol} → ${poolQuote.symbol} → ${ticker}`;
+    }
+    if (needsCompositeSell(pool, buyAsset) || !isDirectPoolReceive(pool, buyAsset)) {
+      return `${ticker} → ${poolQuote.symbol} → ${buyAsset.symbol}`;
+    }
+    return `${ticker} → ${buyAsset.symbol}`;
+  })();
 
   return (
     <div className="desk-card p-4">
-      <h2 className="swap-card-title">Swap</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="swap-card-title">Swap</h2>
+        <span className="font-mono text-[11px] text-zinc-500">{routeLabel}</span>
+      </div>
+
+      {markets && markets.length > 1 && onMarketIndex ? (
+        <div className="mt-3">
+          <p className="mb-1.5 text-[11px] text-zinc-500">Trade on pool</p>
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Quote pools">
+            {markets.map((m, i) => (
+              <button
+                key={`${m.quoteAddress}-${i}`}
+                type="button"
+                role="tab"
+                aria-selected={marketIndex === i}
+                onClick={() => onMarketIndex(i)}
+                className={cn(
+                  "rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition",
+                  marketIndex === i
+                    ? "border-[#9514d1] bg-[#9514d1]/15 text-foreground"
+                    : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-foreground",
+                )}
+              >
+                {marketLegLabel(m)}
+                <span className="ml-1 opacity-60">{marketSharePct(m)} liq</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {onBonding && (
         <p className="mt-3 rounded-lg border border-[#9514d1]/30 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
@@ -352,10 +451,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
         onSellAsset={handleSellAsset}
         onBuyAsset={handleBuyAsset}
         sellAmount={amount}
-        onSellAmount={(v) => {
-          setAmount(v);
-          setPreset(null);
-        }}
+        onSellAmount={setAmount}
         onInvert={handleInvert}
         receiveAmount={quotedReceive}
         slippagePct={slippagePct}
@@ -365,6 +461,20 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
         quoteUsd={pool.quoteUsd}
         quoteMeta={swapQuoteMeta}
       />
+
+      {maxWalletWarn && (
+        <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
+          {maxWalletWarn.hint}
+        </p>
+      )}
+      {snipeWarn && (
+        <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[12px] text-amber-100/90">
+          {snipeWarn}
+        </p>
+      )}
+      {!maxWalletWarn && maxTxWarn && (
+        <p className="mt-2 text-[11px] text-zinc-500">{maxTxWarn}</p>
+      )}
 
       {!walletReady ? (
         <div className="swap-cta-sticky">
@@ -376,7 +486,7 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
             type="button"
             disabled={!canTrade || writing || swap.isPending}
             onClick={() => void submit()}
-            className={cn("swap-cta", hasAmount ? "swap-cta--ready" : "swap-cta--idle")}
+            className={cn("swap-cta", hasAmount && !maxWalletWarn ? "swap-cta--ready" : "swap-cta--idle")}
           >
             {ctaLabel}
           </button>
@@ -387,23 +497,6 @@ export function TokenSwapCard({ pool }: { pool: TokenPool; ticker?: string }) {
       {(error || swap.error) && (
         <p className="mt-2 text-center text-[12px] text-red-400">{error ?? swap.error}</p>
       )}
-    </div>
-  );
-}
-
-function SwapDetailRow({
-  label,
-  value,
-  valueClass,
-}: {
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
-  return (
-    <div className="market-details__row">
-      <dt>{label}</dt>
-      <dd className={valueClass}>{value}</dd>
     </div>
   );
 }

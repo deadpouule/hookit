@@ -248,7 +248,11 @@ export function TokenProSwap({
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-zinc-500" />
         </button>
         <div className="market-token-block__amount-stack">
-          <span className="market-token-block__output">{receiveAmount || "—"}</span>
+          <span className="market-token-block__output">
+            {receiveAmount && Number(receiveAmount) > 0
+              ? formatTokenAmount(Number(receiveAmount))
+              : receiveAmount || "—"}
+          </span>
           <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
         </div>
       </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatEther } from "viem";
+import { formatEther, zeroAddress } from "viem";
 
 import { DevBuySection } from "@/components/launch/DevBuySection";
 import { LaunchSummary } from "@/components/launch/LaunchSummary";
@@ -14,13 +15,14 @@ import { Label } from "@/components/ui/label";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
 import { useLaunchToken } from "@/hooks/useLaunchToken";
 import { DEFAULT_CLASSIC_LAUNCH_STATE, LAUNCH_FEE_ETH } from "@/lib/constants";
-import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import type { HookId } from "@/lib/hook-marks";
+import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Classic bonding-curve launch — original single-page form (unchanged). */
 export function ClassicLaunchForm() {
+  const router = useRouter();
   const [form, setForm] = useState<LaunchFormState>(DEFAULT_CLASSIC_LAUNCH_STATE);
   const [socialsOpen, setSocialsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -34,11 +36,16 @@ export function ClassicLaunchForm() {
     error,
     setError,
     result,
-    resetResult,
   } = useLaunchToken("classic");
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
-  const network = getChainDeployment().networkLabel;
+
+  useEffect(() => {
+    if (!result?.token || result.token === zeroAddress) return;
+    const href = tokenHref(result.token);
+    rememberSwapHref(href);
+    router.replace(href);
+  }, [result, router]);
 
   const updateField = useCallback((field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -70,6 +77,15 @@ export function ClassicLaunchForm() {
     });
   };
 
+  if (result?.token && result.token !== zeroAddress) {
+    return (
+      <div className="launch-shell flex min-h-[40vh] flex-col items-center justify-center pt-10 text-center">
+        <p className="text-sm text-zinc-300">Opening your token…</p>
+        <p className="mt-2 font-mono text-xs text-zinc-500">{result.token}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="launch-shell pt-6 sm:pt-10">
       <Link
@@ -99,52 +115,6 @@ export function ClassicLaunchForm() {
             </code>{" "}
             in <code className="font-mono text-xs">web/.env.local</code>.
           </p>
-        </div>
-      )}
-
-      {result && (
-        <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
-          <p className="font-medium">Token launched on {network}</p>
-          <dl className="mt-3 space-y-2 font-mono text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="text-emerald-200/70">Token</dt>
-              <dd>{result.token}</dd>
-              <a
-                href={`${BLOCK_EXPLORER_URL}/address/${result.token}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-              >
-                Explorer <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="text-emerald-200/70">Tx</dt>
-              <dd className="truncate">{result.txHash}</dd>
-              <a
-                href={`${BLOCK_EXPLORER_URL}/tx/${result.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-              >
-                View <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div>
-              <span className="text-emerald-200/70">Launch ID </span>
-              {result.launchId.toString()}
-            </div>
-          </dl>
-          <button
-            type="button"
-            onClick={() => {
-              resetResult();
-              setForm(DEFAULT_CLASSIC_LAUNCH_STATE);
-            }}
-            className="mt-4 text-xs text-emerald-300 underline-offset-2 hover:underline"
-          >
-            Launch another token
-          </button>
         </div>
       )}
 

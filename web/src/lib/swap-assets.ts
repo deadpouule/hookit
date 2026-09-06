@@ -94,8 +94,15 @@ export function defaultSwapPair(
   side: "buy" | "sell",
 ): { sell: SwapAsset; buy: SwapAsset } {
   const token = poolToSwapAsset(pool);
+  const quote = poolQuoteSwapAsset(pool);
   if (side === "buy") {
-    return { sell: NATIVE_ETH_ASSET, buy: token };
+    // wStock quotes: prefer USDG (composite via Quotrons) — most wallets don't hold wrapped equity.
+    const isStockQuote =
+      !!quote.address &&
+      !quote.isNative &&
+      !isStableSwapAsset(quote);
+    return { sell: isStockQuote ? STABLE_SWAP_ASSET : quote, buy: token };
   }
-  return { sell: token, buy: poolQuoteSwapAsset(pool) };
+  // Sell: receive the pool quote (direct). USDG exit is opt-in via asset picker.
+  return { sell: token, buy: quote };
 }

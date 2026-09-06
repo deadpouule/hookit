@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { ChevronDown, ExternalLink, ImagePlus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, ImagePlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatEther } from "viem";
+import { formatEther, zeroAddress } from "viem";
 
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
 import { DevBuySection } from "@/components/launch/DevBuySection";
@@ -28,7 +28,6 @@ import {
   DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
   LAUNCH_FEE_ETH,
 } from "@/lib/constants";
-import { BLOCK_EXPLORER_URL, getChainDeployment } from "@/lib/contracts/config";
 import { clampDynamicFeeRange } from "@/lib/fee-range";
 import { estimateFloorPrice } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
@@ -44,6 +43,7 @@ import {
 } from "@/lib/launch-wizard";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
+import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import type { LaunchFormState, LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,7 @@ function validateTokenStep(form: LaunchFormState): string | null {
 }
 
 export function MasterLaunchWizard() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const reviewStep = 5;
 
@@ -86,7 +87,6 @@ export function MasterLaunchWizard() {
     error,
     setError,
     result,
-    resetResult,
   } = useLaunchToken("master");
 
   useEffect(() => {
@@ -102,8 +102,14 @@ export function MasterLaunchWizard() {
     setDraftLoaded(true);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!result?.token || result.token === zeroAddress) return;
+    const href = tokenHref(result.token);
+    rememberSwapHref(href);
+    router.replace(href);
+  }, [result, router]);
+
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
-  const network = getChainDeployment().networkLabel;
   const stepSubtitle = !result
     ? MASTER_WIZARD_STEP_SUBTITLES[step as keyof typeof MASTER_WIZARD_STEP_SUBTITLES]
     : null;
@@ -242,13 +248,16 @@ export function MasterLaunchWizard() {
     setStep((current) => Math.max(1, current - 1));
   };
 
-  const handleLaunchAnother = () => {
-    resetResult();
-    setStep(1);
-    setForm(DEFAULT_MASTER_WIZARD_STATE);
-  };
-
   const showWizardChrome = !result && step < reviewStep;
+
+  if (result?.token && result.token !== zeroAddress) {
+    return (
+      <div className="launch-shell flex min-h-[40vh] flex-col items-center justify-center pt-10 text-center">
+        <p className="text-sm text-zinc-300">Opening your token…</p>
+        <p className="mt-2 font-mono text-xs text-zinc-500">{result.token}</p>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("launch-shell launch-wizard-compact", !result && "pt-0 sm:pt-1")}>
@@ -286,63 +295,6 @@ export function MasterLaunchWizard() {
             </code>{" "}
             in <code className="font-mono text-xs">web/.env.local</code>.
           </p>
-        </div>
-      )}
-
-      {result && (
-        <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-50">
-          <p className="font-medium">Token launched on {network}</p>
-          <dl className="mt-3 space-y-2 font-mono text-xs">
-            {result.customHookAddress && (
-              <div className="flex flex-wrap items-center gap-2">
-                <dt className="text-emerald-200/70">Hook</dt>
-                <dd>{result.customHookAddress}</dd>
-                <a
-                  href={`${BLOCK_EXPLORER_URL}/address/${result.customHookAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-                >
-                  Explorer <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="text-emerald-200/70">Token</dt>
-              <dd>{result.token}</dd>
-              <a
-                href={`${BLOCK_EXPLORER_URL}/address/${result.token}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-              >
-                Explorer <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <dt className="text-emerald-200/70">Tx</dt>
-              <dd className="truncate">{result.txHash}</dd>
-              <a
-                href={`${BLOCK_EXPLORER_URL}/tx/${result.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-emerald-300 hover:underline"
-              >
-                View <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div>
-              <span className="text-emerald-200/70">Launch ID </span>
-              {result.launchId.toString()}
-            </div>
-          </dl>
-          <button
-            type="button"
-            onClick={handleLaunchAnother}
-            className="mt-4 text-xs text-emerald-300 underline-offset-2 hover:underline"
-          >
-            Launch another token
-          </button>
         </div>
       )}
 

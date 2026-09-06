@@ -168,8 +168,15 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   };
 
   return (
-    <div className="desk-card mt-3 space-y-3 p-4">
-      <p className="text-[11px] font-medium tracking-wide text-zinc-500 uppercase">Creator</p>
+    <div className="desk-card space-y-3 border border-[#9514d1]/25 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium tracking-wide text-[#d8b4fe] uppercase">Creator fees</p>
+        {claimWei > BigInt(0) ? (
+          <span className="rounded-full bg-[#9514d1]/20 px-2 py-0.5 text-[10px] font-medium text-[#d8b4fe]">
+            Claimable
+          </span>
+        ) : null}
+      </div>
 
       {needsSweep ? (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
@@ -195,8 +202,8 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-zinc-500">Creator fees</p>
-          <p className="font-mono text-sm text-zinc-100">
+          <p className="text-xs text-zinc-500">Available to claim</p>
+          <p className="font-mono text-lg text-foreground">
             {formatUnits(claimWei, decimals)} {quoteLabel}
           </p>
         </div>
@@ -205,7 +212,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
             type="button"
             disabled={!escrow || claimWei === BigInt(0) || isPending}
             onClick={() => void claim()}
-            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-200 transition hover:border-[#9514d1] disabled:opacity-40"
+            className="rounded-lg bg-[#9514d1] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#a82be0] disabled:opacity-40"
           >
             Claim
           </button>

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowLeft, Copy, ExternalLink, Flame, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
@@ -18,6 +18,13 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import { poolToMarketToken } from "@/lib/market-tokens";
+import {
+  isMultiPool,
+  marketLegLabel,
+  marketSharePct,
+  poolMarkets,
+  poolWithMarket,
+} from "@/lib/pool-active-market";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import { resolveMediaUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
@@ -58,10 +65,14 @@ interface TokenDetailViewProps {
 }
 
 export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailViewProps) {
-  const live = useLiveToken(pool);
+  const [marketIndex, setMarketIndex] = useState(0);
+  const activePool = useMemo(() => poolWithMarket(pool, marketIndex), [pool, marketIndex]);
+  const live = useLiveToken(activePool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
   const [interval, setInterval] = useState<ChartInterval>("1h");
+  const [buyPrefill, setBuyPrefill] = useState<string | null>(null);
+  const swapRef = useRef<HTMLDivElement>(null);
   const contractAddress = pool.contractAddress ?? pool.address;
   const trending = live.change1h >= 0;
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
@@ -70,16 +81,33 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
+  const multi = isMultiPool(pool);
+  const markets = useMemo(() => poolMarkets(pool), [pool]);
+  const marketLegs = useMemo(
+    () => markets.map((m) => ({ label: marketLegLabel(m), share: marketSharePct(m) })),
+    [markets],
+  );
+  const masterHookAddr = pool.hooksAddress;
 
   useEffect(() => {
     const id = pool.contractAddress ?? pool.id;
     if (id) rememberSwapHref(tokenHref(id));
   }, [pool.contractAddress, pool.id]);
 
+  useEffect(() => {
+    setMarketIndex(0);
+    setBuyPrefill(null);
+  }, [pool.id, pool.contractAddress]);
+
   const copyAddress = async () => {
     if (!(await copyToClipboard(contractAddress))) return;
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const beFirstBuy = () => {
+    setBuyPrefill("0.01");
+    swapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const heroCard = (
@@ -114,6 +142,21 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </span>
             )}
             <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
+            {pool.rail === "master" && !pool.hooks.customHook && (
+              <HeaderTip tip="Trades through Hookit’s MasterLaunchHook — LP is locked, fees are quote-only.">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#9514d1]/15 px-2.5 py-0.5 text-[12px] font-medium text-[#d8b4fe]">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Master hook
+                </span>
+              </HeaderTip>
+            )}
+            {multi && (
+              <HeaderTip tip={`${markets.length} quote pools share this token’s supply. Pick a pool on the chart or swap to trade that leg.`}>
+                <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-[12px] font-medium text-zinc-200">
+                  {markets.length} pools
+                </span>
+              </HeaderTip>
+            )}
             {pool.rail === "classic" && (
               <HeaderTip
                 tip={
@@ -152,25 +195,32 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground transition hover:text-[#03b1ed]"
-              aria-label="Explorer"
+              aria-label="Token on explorer"
+              title="Token contract"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
+            {masterHookAddr && (
+              <a
+                href={`${BLOCK_EXPLORER_URL}/address/${masterHookAddr}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-muted-foreground transition hover:text-[#d8b4fe]"
+              >
+                Hook
+              </a>
+            )}
             {ageSeconds != null && (
               <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
+            <span className="font-mono text-[12px] text-zinc-400">
+              {live.holders.toLocaleString()} holders
+            </span>
           </div>
         </div>
       </header>
-
-      <div className="token-hero-metrics grid grid-cols-2 gap-4 px-4 pb-4 sm:grid-cols-4 sm:px-5 sm:pb-5">
-        <Metric label="Market Cap" value={formatCompactUsd(live.marketCap)} />
-        <Metric label="Vol 24h" value={formatCompactUsd(live.volume24h)} />
-        <Metric label="Liquidity" value={formatCompactUsd(live.liquidity)} />
-        <Metric label="Holders" value={live.holders.toString()} />
-      </div>
     </div>
   );
 
@@ -194,6 +244,14 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         <div className="token-desk-main min-w-0 space-y-4">
           {heroCard}
 
+          {multi && (
+            <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
+              This token trades on <strong className="text-foreground">{markets.length} pools</strong>
+              {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them — pick a
+              pool tab on the chart or swap to trade that quote.
+            </p>
+          )}
+
           <TokenCandleChart
             candles={live.candles}
             interval={interval}
@@ -205,6 +263,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             change1h={live.change1h}
             change6h={live.change6h}
             change24h={live.change24h}
+            marketLegs={multi ? marketLegs : undefined}
+            activeMarketIndex={marketIndex}
+            onMarketIndex={multi ? setMarketIndex : undefined}
+            onBeFirstBuy={beFirstBuy}
           />
           <TokenTxTable
             tab={tab}
@@ -216,21 +278,21 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
 
         <aside className="token-desk-rail token-desk-rail--right space-y-3">
-          <TokenSwapCard pool={pool} />
+          <div ref={swapRef}>
+            <TokenSwapCard
+              pool={activePool}
+              marketIndex={marketIndex}
+              markets={multi ? markets : undefined}
+              onMarketIndex={multi ? setMarketIndex : undefined}
+              buyPrefill={buyPrefill}
+              onBuyPrefillConsumed={() => setBuyPrefill(null)}
+            />
+          </div>
           {isClassicDesk && <BondingProgress pool={pool} />}
-          <CreatorActions pool={pool} />
-          <TokenSidebarStats live={live} pool={pool} contractAddress={contractAddress} />
+          <CreatorActions pool={activePool} />
+          <TokenSidebarStats live={live} pool={activePool} contractAddress={contractAddress} />
         </aside>
       </div>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[12px] text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-lg text-foreground sm:text-xl">{value}</p>
     </div>
   );
 }
