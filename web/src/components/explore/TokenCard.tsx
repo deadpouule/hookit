@@ -134,11 +134,6 @@ export function TokenCard({
               <span className="inline-flex items-center gap-1">Master</span>
             </span>
           )}
-          {hookTaxBps > 0 && !pool.hooks.dynamicFees && (
-            <span className="rounded-md border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-100 backdrop-blur-sm">
-              Fixed {(100 + hookTaxBps) / 100}%
-            </span>
-          )}
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
           {media && !imageBroken ? (
@@ -186,11 +181,6 @@ export function TokenCard({
           )}
           {pool.hooks.dynamicFees && (
             <HookChip id="dynamicFees" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {hookTaxBps > 0 && !pool.hooks.dynamicFees && (
-            <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[10px] text-rose-200">
-              Fixed {(100 + hookTaxBps) / 100}%
-            </span>
           )}
           {pool.hooks.buybackVesting && (
             <HookChip id="buybackVesting" modules={modules} hookTaxBps={hookTaxBps} />
