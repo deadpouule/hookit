@@ -235,13 +235,16 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
       <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
         {!isClassicDesk && (
-          <aside className="token-desk-rail token-desk-rail--left space-y-3">
-            <ActiveHooksPanel pool={pool} />
-          </aside>
+          <>
+            <div className="token-desk-hero min-w-0">{heroCard}</div>
+            <aside className="token-desk-rail token-desk-rail--left space-y-3">
+              <ActiveHooksPanel pool={pool} />
+            </aside>
+          </>
         )}
 
         <div className="token-desk-main min-w-0 space-y-4">
-          {heroCard}
+          {isClassicDesk && heroCard}
 
           {multi && (
             <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">

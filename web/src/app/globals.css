@@ -2881,8 +2881,15 @@
   @media (min-width: 1100px) {
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      grid-template-areas: "left center right";
+      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas:
+        "hero hero right"
+        "left center right";
       align-items: stretch;
+    }
+
+    .token-desk--hooks .token-desk-hero {
+      grid-area: hero;
     }
 
     .token-desk--wide {
