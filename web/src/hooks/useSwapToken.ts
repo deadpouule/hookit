@@ -134,14 +134,9 @@ export function useSwapToken(pool: TokenPool) {
           ? zeroAddress
           : (payAsset.address ?? payment.address)
         : payment.address;
-      const hookKey =
-        side === "buy" && (payingDirectQuote || isDirectBuy(pool, payment))
-          ? (poolKeyForQuote(pool, payAddress) ?? poolKeyFromLaunch(pool))
-          : poolKeyFromLaunch(pool);
       const token = pool.contractAddress as Address | undefined;
       if (!token) throw new Error("Pool key unavailable for this launch");
 
-      const poolQuote = poolQuoteAddress(pool);
       const payDecimals =
         side === "buy" ? (payAsset?.decimals ?? payment.decimals) : 18;
       const amountIn = parseUnits(amountHuman, payDecimals);
@@ -292,8 +287,8 @@ export function useSwapToken(pool: TokenPool) {
             : receiveAsset.address
           : undefined;
       const hookKey =
-        side === "buy" && isDirectBuy(pool, payment)
-          ? (poolKeyForQuote(pool, payment.address) ?? poolKeyFromLaunch(pool))
+        side === "buy" && (payingDirectQuote || isDirectBuy(pool, payment))
+          ? (poolKeyForQuote(pool, payAddress) ?? poolKeyFromLaunch(pool))
           : side === "sell" &&
               receiveQuote !== undefined &&
               (receiveAsset?.isNative || !!receiveAsset?.address) &&
