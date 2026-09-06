@@ -97,6 +97,10 @@ export interface TokenPool {
   name: string;
   ticker: string;
   image: string;
+  /** Creator metadata (from LaunchToken.metadataURI). */
+  description?: string;
+  twitter?: string;
+  website?: string;
   banner: string;
   marketCap: number;
   floorValue: number;

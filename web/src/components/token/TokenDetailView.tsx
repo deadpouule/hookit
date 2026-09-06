@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Flame, Globe } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
@@ -26,7 +26,7 @@ import {
   poolWithMarket,
 } from "@/lib/pool-active-market";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
-import { resolveMediaUrl } from "@/lib/token-metadata";
+import { resolveMediaUrl, tokenTwitterUrl, tokenWebsiteUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +55,23 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
         {tip}
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className="text-zinc-500">{label}</span>
+      <span className="text-foreground">{value}</span>
+    </span>
+  );
+}
+
+function XGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.727-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+    </svg>
   );
 }
 
@@ -94,6 +111,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     [markets],
   );
   const masterHookAddr = pool.hooksAddress;
+  const description = pool.description?.trim() || undefined;
+  const twitterUrl = tokenTwitterUrl(pool.twitter);
+  const websiteUrl = tokenWebsiteUrl(pool.website);
 
   useEffect(() => {
     const id = pool.contractAddress ?? pool.id;
@@ -214,12 +234,57 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
-            <span className="font-mono text-[12px] text-zinc-400">
-              {live.holders.toLocaleString()} holders
-            </span>
           </div>
         </div>
       </header>
+
+      <div className="token-hero-about flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
+        <div className="min-w-0 flex-1 basis-[260px]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">About</p>
+          <p
+            className={cn(
+              "mt-1 max-w-[70ch] text-[13px] leading-snug",
+              description ? "text-zinc-300" : "text-zinc-500",
+            )}
+          >
+            {description ?? "No description yet."}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-muted-foreground sm:gap-x-6">
+          <HeroStat label="Market cap" value={formatCompactUsd(live.marketCap)} />
+          <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
+          <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
+          {(twitterUrl || websiteUrl) && (
+            <span className="flex items-center gap-1.5">
+              {twitterUrl && (
+                <a
+                  href={twitterUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="token-hero-link"
+                  aria-label="Token on X"
+                  title="X"
+                >
+                  <XGlyph className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {websiteUrl && (
+                <a
+                  href={websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="token-hero-link"
+                  aria-label="Token website"
+                  title="Website"
+                >
+                  <Globe className="h-4 w-4" strokeWidth={1.75} />
+                </a>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -259,8 +324,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             interval={interval}
             onInterval={setInterval}
             marketCap={live.marketCap}
-            liquidity={live.liquidity}
-            volume24h={live.volume24h}
             change5m={live.change5m}
             change1h={live.change1h}
             change6h={live.change6h}

@@ -3,7 +3,13 @@ const MAX_IMAGE_CHARS = 80_000;
 export type TokenMetadataFields = {
   image?: string;
   description?: string;
+  twitter?: string;
+  website?: string;
 };
+
+function str(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
 
 const DEFAULT_IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -55,10 +61,7 @@ export function parseTokenMetadata(uri: string): TokenMetadataFields {
       // Remote metadata needs resolveTokenMetadata (async fetch).
       return {};
     }
-    const parsed = JSON.parse(json) as { image?: unknown; description?: unknown };
-    const image = typeof parsed.image === "string" ? parsed.image : undefined;
-    const description = typeof parsed.description === "string" ? parsed.description : undefined;
-    return { image, description };
+    return fieldsFromUnknown(JSON.parse(json));
   } catch {
     return {};
   }
@@ -66,11 +69,31 @@ export function parseTokenMetadata(uri: string): TokenMetadataFields {
 
 function fieldsFromUnknown(parsed: unknown): TokenMetadataFields {
   if (!parsed || typeof parsed !== "object") return {};
-  const record = parsed as { image?: unknown; description?: unknown };
+  const record = parsed as Record<string, unknown>;
   return {
     image: typeof record.image === "string" ? record.image : undefined,
-    description: typeof record.description === "string" ? record.description : undefined,
+    description: str(record.description),
+    twitter: str(record.twitter),
+    website: str(record.website),
   };
+}
+
+/** Normalize a creator-entered X handle / URL into an absolute link. */
+export function tokenTwitterUrl(value: string | undefined | null): string | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const handle = raw.replace(/^@/, "").replace(/^(?:www\.)?(?:x|twitter)\.com\//i, "").replace(/\/+$/, "");
+  if (!handle) return undefined;
+  return `https://x.com/${handle}`;
+}
+
+/** Normalize a creator-entered website into an absolute link. */
+export function tokenWebsiteUrl(value: string | undefined | null): string | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw.replace(/^\/+/, "")}`;
 }
 
 /**

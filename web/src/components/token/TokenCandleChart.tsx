@@ -49,8 +49,6 @@ export function TokenCandleChart({
   interval,
   onInterval,
   marketCap,
-  liquidity,
-  volume24h,
   change5m,
   change1h,
   change6h,
@@ -67,8 +65,6 @@ export function TokenCandleChart({
   interval: ChartInterval;
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
-  liquidity?: number;
-  volume24h?: number;
   change5m?: number;
   change1h?: number;
   change6h?: number;
@@ -103,9 +99,6 @@ export function TokenCandleChart({
   const last = visible[visible.length - 1];
   const open = visible[0]?.o ?? last?.o ?? marketCap ?? 0;
   const close = last?.c ?? marketCap ?? 0;
-  const ath = candles.length
-    ? Math.max(...candles.map((c) => c.h), marketCap ?? 0)
-    : marketCap ?? 0;
   const pct = changeForInterval(
     interval,
     { change5m, change1h, change6h, change24h },
@@ -159,13 +152,7 @@ export function TokenCandleChart({
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground sm:gap-x-5">
-          <Stat label="Market cap" value={formatCompactUsd(marketCap ?? close)} />
-          <Stat label="Liquidity" value={formatCompactUsd(liquidity ?? 0)} />
-          <Stat label="24h volume" value={formatCompactUsd(volume24h ?? 0)} />
-          <Stat label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
         <div className="flex flex-wrap items-center gap-2">
           {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
             <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
@@ -334,11 +321,3 @@ export function TokenCandleChart({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </span>
-  );
-}

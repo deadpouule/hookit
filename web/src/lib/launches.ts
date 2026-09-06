@@ -49,6 +49,9 @@ export type OnChainLaunch = LaunchRow & {
   fee?: number;
   quote?: Address;
   image?: string;
+  description?: string;
+  twitter?: string;
+  website?: string;
   marketCount?: number;
   markets?: TokenPoolMarket[];
 };
@@ -89,6 +92,9 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
     name: launch.name,
     ticker: launch.symbol,
     image: launch.image ?? "",
+    description: launch.description,
+    twitter: launch.twitter,
+    website: launch.website,
     banner: "",
     marketCap: 0,
     floorValue: 0,
@@ -268,7 +274,7 @@ async function hydrateLaunches(
         (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
       const metadataURI =
         meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const { image } = await resolveTokenMetadata(metadataURI);
+      const { image, description, twitter, website } = await resolveTokenMetadata(metadataURI);
       let packed = bitmask ?? BigInt(0);
       if (packed === BigInt(0) && !row.customHook) {
         packed = bitmaskByIndex.get(i) ?? BigInt(0);
@@ -284,6 +290,9 @@ async function hydrateLaunches(
         fee,
         tickSpacing,
         image,
+        description,
+        twitter,
+        website,
       };
     }),
   );
@@ -549,7 +558,14 @@ export function bondingRowFromResult(result: unknown): BondingLaunchRow | null {
 export function bondingToTokenPool(
   launchId: bigint,
   row: BondingLaunchRow,
-  meta: { name: string; symbol: string; image?: string },
+  meta: {
+    name: string;
+    symbol: string;
+    image?: string;
+    description?: string;
+    twitter?: string;
+    website?: string;
+  },
   feeHook?: Address,
 ): TokenPool {
   const token = row.token.toLowerCase() as Address;
@@ -565,6 +581,9 @@ export function bondingToTokenPool(
     name: meta.name,
     ticker: meta.symbol,
     image: meta.image ?? "",
+    description: meta.description,
+    twitter: meta.twitter,
+    website: meta.website,
     banner: "",
     marketCap: 0,
     floorValue: 0,
@@ -666,8 +685,8 @@ export async function fetchAllBondingLaunches(
         "???";
       const metadataURI =
         meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const { image } = await resolveTokenMetadata(metadataURI);
-      return bondingToTokenPool(id, row, { name, symbol, image }, feeHook);
+      const fields = await resolveTokenMetadata(metadataURI);
+      return bondingToTokenPool(id, row, { name, symbol, ...fields }, feeHook);
     }),
   ).then((pools) => pools.reverse());
 }
@@ -703,14 +722,14 @@ export async function fetchBondingLaunchById(
       .readContract({ address: row.token, abi: erc20Abi, functionName: "metadataURI" })
       .catch(() => ""),
   ]);
-  const { image } = await resolveTokenMetadata(metadataURI as string);
+  const fields = await resolveTokenMetadata(metadataURI as string);
   return bondingToTokenPool(
     launchId,
     row,
     {
       name: name as string,
       symbol: symbol as string,
-      image,
+      ...fields,
     },
     feeHook,
   );
