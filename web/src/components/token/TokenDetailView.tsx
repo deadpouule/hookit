@@ -11,7 +11,6 @@ import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
-import { TokenSidebarStats } from "@/components/token/TokenSidebarStats";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLiveToken } from "@/hooks/useLiveToken";
@@ -290,7 +289,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </div>
           {isClassicDesk && <BondingProgress pool={pool} />}
           <CreatorActions pool={activePool} />
-          <TokenSidebarStats live={live} pool={activePool} contractAddress={contractAddress} />
         </aside>
       </div>
     </div>
