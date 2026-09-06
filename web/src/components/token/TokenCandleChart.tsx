@@ -18,7 +18,7 @@ const TF_LABEL: Record<ChartInterval, string> = {
   ALL: "ALL",
 };
 
-const LINE_UP = "#c8ff00";
+const LINE_UP = "#9514d1";
 const LINE_DOWN = "#ff4d6d";
 
 function changeForInterval(
@@ -166,7 +166,7 @@ export function TokenCandleChart({
             <span
               className={cn(
                 "relative h-5 w-9 rounded-full transition",
-                heatmap ? "bg-[#c8ff00]/30" : "bg-zinc-800",
+                heatmap ? "bg-[#9514d1]/30" : "bg-zinc-800",
               )}
             >
               <input
@@ -178,7 +178,7 @@ export function TokenCandleChart({
               />
               <span
                 className={cn(
-                  "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-zinc-400 transition peer-checked:translate-x-4 peer-checked:bg-[#c8ff00]",
+                  "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-zinc-400 transition peer-checked:translate-x-4 peer-checked:bg-[#9514d1]",
                 )}
               />
             </span>
@@ -239,7 +239,7 @@ export function TokenCandleChart({
               <p
                 className={cn(
                   "mt-0.5 font-mono text-[12px] sm:text-[13px]",
-                  up ? "text-[#c8ff00]" : "text-[#ff4d6d]",
+                  up ? "text-[#9514d1]" : "text-[#ff4d6d]",
                 )}
               >
                 {formatPercent(pct, true)} {TF_LABEL[interval].toLowerCase()}
@@ -314,7 +314,7 @@ export function TokenCandleChart({
             </svg>
 
             <div
-              className="pointer-events-none absolute right-2 z-10 -translate-y-1/2 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium text-black"
+              className="pointer-events-none absolute right-2 z-10 -translate-y-1/2 rounded px-1.5 py-0.5 font-mono text-[10px] font-medium text-white"
               style={{ top: `${lastY}%`, background: stroke }}
             >
               {formatCompactUsd(close)}
