@@ -16,7 +16,6 @@ import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
 import {
-  buildModulesSummarySentence,
   isModuleEnabled,
   moduleTooltipText,
   resolveTokenModules,
@@ -304,7 +303,6 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
   const moduleCount = enabledHooks.length + (showFixedFee ? 1 : 0);
-  const summary = buildModulesSummarySentence(enabledHooks.map((h) => h.id));
 
   return (
     <section className="token-hooks-panel desk-card">
@@ -314,17 +312,6 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
           {moduleCount} master module{moduleCount === 1 ? "" : "s"}
         </span>
       </header>
-
-      {summary ? (
-        <p className="token-type-badge token-type-badge--master token-hooks-summary-badge">
-          <MasterHookGlyph className="token-type-badge-glyph shrink-0" />
-          <span>{summary}</span>
-        </p>
-      ) : (
-        <p className="px-3 pb-2 text-[12px] leading-snug text-zinc-400">
-          These modules run on every swap — hover a chip for the rule in plain language.
-        </p>
-      )}
 
       <ul className="token-hooks-list">
         {showFixedFee ? (

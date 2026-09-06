@@ -55,15 +55,13 @@ export function PairingPicker({
   onMarketsChange: (markets: LaunchMarketInput[]) => void;
   onFloorQuoteIndexChange: (index: number) => void;
   compact?: boolean;
-  /** Classic rail is ETH-only — no multi-pair / USDG / stocks. */
+  /** Classic: single quote only (ETH / USDG / stocks) — no multi-pair. */
   variant?: "master" | "classic";
 }) {
   const classicOnly = variant === "classic";
   const isMulti = !classicOnly && markets.length > 1;
   const selectedIds = new Set(markets.map((m) => m.id));
-  const selectableTokens = classicOnly
-    ? PAIRING_TOKENS.filter((t) => t.id === "eth")
-    : PAIRING_TOKENS;
+  const selectableTokens = PAIRING_TOKENS;
 
   const setMode = (mode: "single" | "multi") => {
     if (classicOnly) return;
@@ -85,12 +83,9 @@ export function PairingPicker({
   };
 
   const toggle = (id: PairingTokenId) => {
-    if (classicOnly) {
-      onMarketsChange([{ id: "eth", bps: BPS_TOTAL }]);
-      return;
-    }
-    if (!isMulti) {
+    if (classicOnly || !isMulti) {
       onMarketsChange([{ id, bps: BPS_TOTAL }]);
+      onFloorQuoteIndexChange(0);
       return;
     }
     if (selectedIds.has(id)) {
@@ -124,7 +119,7 @@ export function PairingPicker({
         </div>
       ) : !compact ? (
         <p className="mb-4 text-xs text-zinc-600">
-          Classic Coin pairs only with native ETH — multi-pair is Master-only.
+          Classic Coin is one bonding pool — pick ETH, USDG, or a stock quote. Multi-pair is Master-only.
         </p>
       ) : null}
 
@@ -140,7 +135,7 @@ export function PairingPicker({
           <PickCard
             key={token.id}
             variant="pair"
-            selected={selectedIds.has(token.id) || (classicOnly && token.id === "eth")}
+            selected={selectedIds.has(token.id)}
             title={formatPairingTicker(token.id)}
             subtitle={
               selectedIds.has(token.id) && isMulti

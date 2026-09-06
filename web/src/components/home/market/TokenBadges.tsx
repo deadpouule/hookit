@@ -88,16 +88,19 @@ export function TokenTypeBadges({
   token,
   masterHookFilters,
   onMasterHookFiltersChange,
+  hideMaster = false,
 }: {
   token: MarketToken;
   masterHookFilters?: MasterHookId[];
   onMasterHookFiltersChange?: (hooks: MasterHookId[]) => void;
+  /** Detail page shows a separate Master hook pill instead. */
+  hideMaster?: boolean;
 }) {
   const badges: ReactNode[] = [];
   const isMaster =
     token.hookType === "Master" || (token.rail === "master" && token.hookType !== "Custom");
 
-  if (isMaster) {
+  if (isMaster && !hideMaster) {
     badges.push(
       <BadgeTip key="master" tip={BADGE_TIPS.master}>
         {onMasterHookFiltersChange ? (
@@ -114,7 +117,7 @@ export function TokenTypeBadges({
         )}
       </BadgeTip>,
     );
-  } else if (token.hookType === "Custom" || token.kind === "sushi") {
+  } else if (!isMaster && (token.hookType === "Custom" || token.kind === "sushi")) {
     badges.push(
       <BadgeTip key="custom" tip={BADGE_TIPS.customs}>
         <span className="token-type-badge token-type-badge--custom">

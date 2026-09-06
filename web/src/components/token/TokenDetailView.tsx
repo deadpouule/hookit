@@ -141,10 +141,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 OG
               </span>
             )}
-            <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} />
+            <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} hideMaster />
             {pool.rail === "master" && !pool.hooks.customHook && (
               <HeaderTip tip="Trades through Hookit’s MasterLaunchHook — LP is locked, fees are quote-only.">
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#9514d1]/15 px-2.5 py-0.5 text-[12px] font-medium text-[#d8b4fe]">
+                <span className="inline-flex items-center gap-1 rounded-md border border-[#9514d1]/40 bg-[#9514d1]/15 px-2.5 py-0.5 text-[12px] font-medium text-[#d8b4fe]">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Master hook
                 </span>
