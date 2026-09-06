@@ -14,7 +14,7 @@ import { FormDivider, FormPanel, SectionLabel } from "@/components/ui/form-primi
 import { Label } from "@/components/ui/label";
 import { useWalletReady } from "@/components/wallet/ConnectButton";
 import { useLaunchToken } from "@/hooks/useLaunchToken";
-import { DEFAULT_CLASSIC_LAUNCH_STATE, LAUNCH_FEE_ETH } from "@/lib/constants";
+import { DEFAULT_CLASSIC_LAUNCH_STATE, LAUNCH_FEE_ETH, SOCIAL_PLACEHOLDER } from "@/lib/constants";
 import type { HookId } from "@/lib/hook-marks";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import type { LaunchFormState } from "@/lib/types";
@@ -221,14 +221,12 @@ export function ClassicLaunchForm() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  {(["twitter", "telegram", "website"] as const).map((field) => (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {(["twitter", "telegram", "website", "github"] as const).map((field) => (
                     <input
                       key={field}
                       className="field-input"
-                      placeholder={
-                        field === "twitter" ? "@handle" : field === "telegram" ? "t.me/..." : "https://"
-                      }
+                      placeholder={SOCIAL_PLACEHOLDER[field]}
                       value={form[field]}
                       onChange={(e) => updateField(field, e.target.value)}
                     />

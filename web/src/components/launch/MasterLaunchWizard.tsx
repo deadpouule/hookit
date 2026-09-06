@@ -27,6 +27,7 @@ import {
   CUSTOM_SOLIDITY_HOOKS_ENABLED,
   DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
   LAUNCH_FEE_ETH,
+  SOCIAL_PLACEHOLDER,
 } from "@/lib/constants";
 import { clampDynamicFeeRange } from "@/lib/fee-range";
 import { estimateFloorPrice } from "@/lib/format";
@@ -439,18 +440,12 @@ export function MasterLaunchWizard() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                          {(["twitter", "telegram", "website"] as const).map((field) => (
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                          {(["twitter", "telegram", "website", "github"] as const).map((field) => (
                             <input
                               key={field}
                               className="field-input"
-                              placeholder={
-                                field === "twitter"
-                                  ? "@handle"
-                                  : field === "telegram"
-                                    ? "t.me/..."
-                                    : "https://"
-                              }
+                              placeholder={SOCIAL_PLACEHOLDER[field]}
                               value={form[field]}
                               onChange={(e) => updateField(field, e.target.value)}
                             />

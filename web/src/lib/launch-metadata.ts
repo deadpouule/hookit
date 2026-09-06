@@ -28,6 +28,7 @@ export function buildMetadataPayload(
     twitter: form.twitter.trim() || undefined,
     telegram: form.telegram.trim() || undefined,
     website: form.website.trim() || undefined,
+    github: form.github.trim() || undefined,
     app: "hookit",
     version: 1,
   };

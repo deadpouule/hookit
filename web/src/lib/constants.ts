@@ -37,6 +37,7 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
   twitter: "",
   telegram: "",
   website: "",
+  github: "",
   imagePreview: null,
   hookMode: "master",
   customHookSource: "",
@@ -115,6 +116,13 @@ export const DEFAULT_MASTER_WIZARD_STATE: LaunchFormState = {
     ...DEFAULT_CLASSIC_LAUNCH_STATE.modules,
   },
 };
+
+export const SOCIAL_PLACEHOLDER = {
+  twitter: "@handle",
+  telegram: "t.me/...",
+  website: "https://",
+  github: "github.com/...",
+} as const;
 
 export const GITHUB_REPO_URL = "https://github.com/deadpouule/hookit";
 export const TWITTER_URL = "https://x.com/hookitfun";

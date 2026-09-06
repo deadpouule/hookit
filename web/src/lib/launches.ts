@@ -52,6 +52,7 @@ export type OnChainLaunch = LaunchRow & {
   description?: string;
   twitter?: string;
   website?: string;
+  github?: string;
   marketCount?: number;
   markets?: TokenPoolMarket[];
 };
@@ -95,6 +96,7 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
     description: launch.description,
     twitter: launch.twitter,
     website: launch.website,
+    github: launch.github,
     banner: "",
     marketCap: 0,
     floorValue: 0,
@@ -274,7 +276,7 @@ async function hydrateLaunches(
         (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
       const metadataURI =
         meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const { image, description, twitter, website } = await resolveTokenMetadata(metadataURI);
+      const { image, description, twitter, website, github } = await resolveTokenMetadata(metadataURI);
       let packed = bitmask ?? BigInt(0);
       if (packed === BigInt(0) && !row.customHook) {
         packed = bitmaskByIndex.get(i) ?? BigInt(0);
@@ -293,6 +295,7 @@ async function hydrateLaunches(
         description,
         twitter,
         website,
+        github,
       };
     }),
   );
@@ -565,6 +568,7 @@ export function bondingToTokenPool(
     description?: string;
     twitter?: string;
     website?: string;
+    github?: string;
   },
   feeHook?: Address,
 ): TokenPool {
@@ -584,6 +588,7 @@ export function bondingToTokenPool(
     description: meta.description,
     twitter: meta.twitter,
     website: meta.website,
+    github: meta.github,
     banner: "",
     marketCap: 0,
     floorValue: 0,

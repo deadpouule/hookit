@@ -65,6 +65,7 @@ export interface LaunchFormState {
   twitter: string;
   telegram: string;
   website: string;
+  github: string;
   imagePreview: string | null;
   hookMode: "master" | "custom";
   /** Solidity source uploaded/pasted for custom hooks — deployed automatically at launch. */
@@ -101,6 +102,7 @@ export interface TokenPool {
   description?: string;
   twitter?: string;
   website?: string;
+  github?: string;
   banner: string;
   marketCap: number;
   floorValue: number;

@@ -2820,8 +2820,88 @@
   }
 
   .token-hero-about {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 14px 20px;
     border-top: 1px solid var(--border);
-    padding-top: 12px;
+    padding-top: 14px;
+  }
+
+  @media (min-width: 900px) {
+    .token-hero-about {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    }
+
+    .token-hero-links {
+      justify-self: end;
+    }
+  }
+
+  .token-hero-stats {
+    display: flex;
+    align-items: stretch;
+    justify-self: center;
+    margin: 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .token-hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 128px;
+    padding: 10px 18px;
+    border-left: 1px solid var(--border);
+  }
+
+  .token-hero-stat:first-child {
+    border-left: 0;
+  }
+
+  .token-hero-stat-label {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .token-hero-stat-value {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    white-space: nowrap;
+  }
+
+  .token-hero-stat-sub {
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+
+  .token-hero-links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .token-hero-link--off {
+    color: #52525b;
+    border-color: color-mix(in srgb, var(--border) 50%, transparent);
+    background: transparent;
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .token-hero-link--off:hover {
+    color: #52525b;
+    border-color: color-mix(in srgb, var(--border) 50%, transparent);
   }
 
   .token-hero-link {
@@ -2833,7 +2913,7 @@
     border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--surface);
-    color: var(--muted-foreground);
+    color: #e4e4e7;
     transition: color 0.15s ease, border-color 0.15s ease;
   }
 

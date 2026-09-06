@@ -26,7 +26,13 @@ import {
   poolWithMarket,
 } from "@/lib/pool-active-market";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
-import { resolveMediaUrl, tokenTwitterUrl, tokenWebsiteUrl } from "@/lib/token-metadata";
+import { TOTAL_SUPPLY } from "@/lib/token-live";
+import {
+  resolveMediaUrl,
+  tokenGithubUrl,
+  tokenTwitterUrl,
+  tokenWebsiteUrl,
+} from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -58,12 +64,66 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   );
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+function HeroStat({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value: string;
+  children?: ReactNode;
+}) {
   return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-foreground">{value}</span>
-    </span>
+    <div className="token-hero-stat">
+      <dt className="token-hero-stat-label">{label}</dt>
+      <dd className="token-hero-stat-value">
+        {value}
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+function HeroLink({
+  href,
+  label,
+  children,
+}: {
+  href?: string;
+  label: string;
+  children: ReactNode;
+}) {
+  if (!href) {
+    return (
+      <span
+        className="token-hero-link token-hero-link--off"
+        aria-label={`${label} not set`}
+        title={`${label} — not set`}
+        aria-disabled
+      >
+        {children}
+      </span>
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="token-hero-link"
+      aria-label={`Token ${label}`}
+      title={label}
+    >
+      {children}
+    </a>
+  );
+}
+
+function GithubGlyph({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
   );
 }
 
@@ -114,6 +174,17 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const description = pool.description?.trim() || undefined;
   const twitterUrl = tokenTwitterUrl(pool.twitter);
   const websiteUrl = tokenWebsiteUrl(pool.website);
+  const githubUrl = tokenGithubUrl(pool.github);
+  const ath = useMemo(
+    () => live.candles.reduce((m, c) => Math.max(m, c.h), live.marketCap),
+    [live.candles, live.marketCap],
+  );
+  const fullyDiluted = live.priceUsd * TOTAL_SUPPLY;
+  // Only show FDV when burns / excluded sinks make it differ from market cap.
+  const fdv =
+    fullyDiluted > 0 && Math.abs(fullyDiluted - live.marketCap) / fullyDiluted > 0.005
+      ? fullyDiluted
+      : null;
 
   useEffect(() => {
     const id = pool.contractAddress ?? pool.id;
@@ -238,12 +309,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
       </header>
 
-      <div className="token-hero-about flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 pb-4 sm:px-5 sm:pb-5">
-        <div className="min-w-0 flex-1 basis-[260px]">
+      <div className="token-hero-about px-4 pb-4 sm:px-5 sm:pb-5">
+        <div className="token-hero-about-desc min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">About</p>
           <p
             className={cn(
-              "mt-1 max-w-[70ch] text-[13px] leading-snug",
+              "mt-1 max-w-[52ch] text-[13px] leading-snug",
               description ? "text-zinc-300" : "text-zinc-500",
             )}
           >
@@ -251,38 +322,25 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] text-muted-foreground sm:gap-x-6">
-          <HeroStat label="Market cap" value={formatCompactUsd(live.marketCap)} />
+        <dl className="token-hero-stats">
+          <HeroStat label="Market cap" value={formatCompactUsd(live.marketCap)}>
+            {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
+          </HeroStat>
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
-          {(twitterUrl || websiteUrl) && (
-            <span className="flex items-center gap-1.5">
-              {twitterUrl && (
-                <a
-                  href={twitterUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="token-hero-link"
-                  aria-label="Token on X"
-                  title="X"
-                >
-                  <XGlyph className="h-3.5 w-3.5" />
-                </a>
-              )}
-              {websiteUrl && (
-                <a
-                  href={websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="token-hero-link"
-                  aria-label="Token website"
-                  title="Website"
-                >
-                  <Globe className="h-4 w-4" strokeWidth={1.75} />
-                </a>
-              )}
-            </span>
-          )}
+          <HeroStat label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
+        </dl>
+
+        <div className="token-hero-links">
+          <HeroLink href={twitterUrl} label="X">
+            <XGlyph className="h-3.5 w-3.5" />
+          </HeroLink>
+          <HeroLink href={websiteUrl} label="Website">
+            <Globe className="h-4 w-4" strokeWidth={1.75} />
+          </HeroLink>
+          <HeroLink href={githubUrl} label="GitHub">
+            <GithubGlyph className="h-4 w-4" />
+          </HeroLink>
         </div>
       </div>
     </div>

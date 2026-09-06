@@ -5,6 +5,7 @@ export type TokenMetadataFields = {
   description?: string;
   twitter?: string;
   website?: string;
+  github?: string;
 };
 
 function str(value: unknown): string | undefined {
@@ -75,7 +76,18 @@ function fieldsFromUnknown(parsed: unknown): TokenMetadataFields {
     description: str(record.description),
     twitter: str(record.twitter),
     website: str(record.website),
+    github: str(record.github),
   };
+}
+
+/** Normalize a creator-entered GitHub handle / repo path / URL into an absolute link. */
+export function tokenGithubUrl(value: string | undefined | null): string | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const path = raw.replace(/^@/, "").replace(/^(?:www\.)?github\.com\//i, "").replace(/\/+$/, "");
+  if (!path) return undefined;
+  return `https://github.com/${path}`;
 }
 
 /** Normalize a creator-entered X handle / URL into an absolute link. */
