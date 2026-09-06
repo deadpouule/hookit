@@ -159,11 +159,7 @@ export function useSwapToken(pool: TokenPool) {
           receiveAsset,
           address,
         );
-        if (!best) {
-          throw new Error("No viable sell route across multi-pool markets");
-        }
-
-        if (best.kind === "direct") {
+        if (best?.kind === "direct") {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
             (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
@@ -177,106 +173,107 @@ export function useSwapToken(pool: TokenPool) {
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
         }
-
-        if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
-          throw new Error(
-            "Best sell route needs HookitSwapRouter composite sell. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
-          );
+        if (best?.kind === "composite") {
+          if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
+            throw new Error(
+              "Best sell route needs HookitSwapRouter composite sell. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
+            );
+          }
+          const hookitRouter = getHookitSwapRouterAddress()!;
+          const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
+          const minOut =
+            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(token, hookitRouter, amountIn);
+          const hash = await writeContractAsync({
+            address: hookitRouter,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactInCompositeSell",
+            args: [
+              best.bridge.key,
+              best.bridge.zeroForOne,
+              amountIn,
+              best.hookKey,
+              hookZeroForOne,
+              best.marketQuote,
+              minOut,
+              sqrtLimit(best.bridge.zeroForOne),
+              sqrtLimit(hookZeroForOne),
+            ],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
         }
-        const hookitRouter = getHookitSwapRouterAddress()!;
-        const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
-        const minOut =
-          (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-        await ensureErc20Allowance(token, hookitRouter, amountIn);
-        const hash = await writeContractAsync({
-          address: hookitRouter,
-          abi: hookitSwapRouterAbi,
-          functionName: "swapExactInCompositeSell",
-          args: [
-            best.bridge.key,
-            best.bridge.zeroForOne,
-            amountIn,
-            best.hookKey,
-            hookZeroForOne,
-            best.marketQuote,
-            minOut,
-            sqrtLimit(best.bridge.zeroForOne),
-            sqrtLimit(hookZeroForOne),
-          ],
-        });
-        await publicClient.waitForTransactionReceipt({ hash });
-        return hash;
+        // Aggregator found nothing — fall through to single-market sell path.
       }
 
       // Multi-pool buy aggregator (+ optional split across pools).
       if (side === "buy" && shouldAggregateMultiBuy(pool) && !payingDirectQuote) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
-        if (!plan) {
-          throw new Error("No viable buy route across multi-pool markets");
-        }
+        if (plan) {
+          const executeBuyLeg = async (leg: BestBuyLeg): Promise<`0x${string}`> => {
+            const minOut =
+              (leg.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+            const hookZeroForOne = hookSwapDirection(leg.hookKey, token, "buy");
 
-        const executeBuyLeg = async (leg: BestBuyLeg): Promise<`0x${string}`> => {
-          const minOut =
-            (leg.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-          const hookZeroForOne = hookSwapDirection(leg.hookKey, token, "buy");
+            if (leg.kind === "direct") {
+              if (payment.address !== zeroAddress) {
+                await ensureErc20Allowance(payment.address, router, leg.amountIn);
+              }
+              const hash = await writeContractAsync({
+                address: router,
+                abi: hookitSwapRouterAbi,
+                functionName: "swapExactIn",
+                args: [
+                  leg.hookKey,
+                  hookZeroForOne,
+                  leg.amountIn,
+                  minOut,
+                  sqrtLimit(hookZeroForOne),
+                ],
+                value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
+              });
+              await publicClient.waitForTransactionReceipt({ hash });
+              return hash;
+            }
 
-          if (leg.kind === "direct") {
+            if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
+              throw new Error(
+                "Best buy route needs HookitSwapRouter. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
+              );
+            }
+            const hookitRouter = getHookitSwapRouterAddress()!;
             if (payment.address !== zeroAddress) {
-              await ensureErc20Allowance(payment.address, router, leg.amountIn);
+              await ensureErc20Allowance(payment.address, hookitRouter, leg.amountIn);
             }
             const hash = await writeContractAsync({
-              address: router,
+              address: hookitRouter,
               abi: hookitSwapRouterAbi,
-              functionName: "swapExactIn",
+              functionName: "swapExactInComposite",
               args: [
+                leg.bridge.key,
+                leg.bridge.zeroForOne,
+                leg.amountIn,
                 leg.hookKey,
                 hookZeroForOne,
-                leg.amountIn,
+                leg.marketQuote,
                 minOut,
+                sqrtLimit(leg.bridge.zeroForOne),
                 sqrtLimit(hookZeroForOne),
               ],
               value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
             });
             await publicClient.waitForTransactionReceipt({ hash });
             return hash;
-          }
+          };
 
-          if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
-            throw new Error(
-              "Best buy route needs HookitSwapRouter. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
-            );
+          let lastHash: `0x${string}` | undefined;
+          for (const leg of plan.legs) {
+            lastHash = await executeBuyLeg(leg);
           }
-          const hookitRouter = getHookitSwapRouterAddress()!;
-          if (payment.address !== zeroAddress) {
-            await ensureErc20Allowance(payment.address, hookitRouter, leg.amountIn);
-          }
-          const hash = await writeContractAsync({
-            address: hookitRouter,
-            abi: hookitSwapRouterAbi,
-            functionName: "swapExactInComposite",
-            args: [
-              leg.bridge.key,
-              leg.bridge.zeroForOne,
-              leg.amountIn,
-              leg.hookKey,
-              hookZeroForOne,
-              leg.marketQuote,
-              minOut,
-              sqrtLimit(leg.bridge.zeroForOne),
-              sqrtLimit(hookZeroForOne),
-            ],
-            value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
-          });
-          await publicClient.waitForTransactionReceipt({ hash });
-          return hash;
-        };
-
-        let lastHash: `0x${string}` | undefined;
-        for (const leg of plan.legs) {
-          lastHash = await executeBuyLeg(leg);
+          if (!lastHash) throw new Error("Buy aggregator produced no transactions");
+          return lastHash;
         }
-        if (!lastHash) throw new Error("Buy aggregator produced no transactions");
-        return lastHash;
+        // Aggregator found nothing — fall through to single-market buy path.
       }
 
       // Prefer the market matching payment (buy) or receive asset (sell) on multi launches.
