@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Copy, ExternalLink, Flame, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, Flame } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
