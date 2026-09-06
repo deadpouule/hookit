@@ -209,7 +209,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
   const heroCard = (
     <div className="desk-card token-hero-card">
-      <header className="flex flex-wrap items-start gap-3.5 p-4 sm:gap-4 sm:p-5">
+      <header className="flex flex-wrap items-start gap-3.5 px-4 pt-3.5 pb-2 sm:gap-4 sm:px-5 sm:pt-4 sm:pb-2">
         <div
           className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border sm:h-20 sm:w-20"
           style={{ background: pool.bannerGradient }}
@@ -309,7 +309,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
       </header>
 
-      <div className="token-hero-about px-4 pb-4 sm:px-5 sm:pb-5">
+      <div className="token-hero-about px-4 pb-3.5 sm:px-5 sm:pb-4">
         <div className="token-hero-about-desc min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">About</p>
           <p
@@ -333,13 +333,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
         <div className="token-hero-links">
           <HeroLink href={twitterUrl} label="X">
-            <XGlyph className="h-3.5 w-3.5" />
+            <XGlyph className="h-4 w-4" />
           </HeroLink>
           <HeroLink href={websiteUrl} label="Website">
-            <Globe className="h-4 w-4" strokeWidth={1.75} />
+            <Globe className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </HeroLink>
           <HeroLink href={githubUrl} label="GitHub">
-            <GithubGlyph className="h-4 w-4" />
+            <GithubGlyph className="h-[18px] w-[18px]" />
           </HeroLink>
         </div>
       </div>
