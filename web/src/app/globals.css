@@ -220,9 +220,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 3.15rem;
-    height: 3.15rem;
-    margin-top: -1.4rem;
+    width: 2.65rem;
+    height: 2.65rem;
     border-radius: 9999px;
     background: var(--color-magenta);
     color: #fff;
