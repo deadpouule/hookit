@@ -2927,14 +2927,6 @@
     overflow: hidden;
   }
 
-  .token-hero-stat--mobile {
-    display: flex;
-  }
-
-  .token-hero-stat--desk {
-    display: none;
-  }
-
   .token-hero-links--inline {
     display: flex;
     margin-left: auto;
@@ -2985,14 +2977,6 @@
       -webkit-line-clamp: unset;
       font-size: 13px;
       overflow: visible;
-    }
-
-    .token-hero-stat--mobile {
-      display: none;
-    }
-
-    .token-hero-stat--desk {
-      display: flex;
     }
 
     .token-hero-links--inline {
@@ -3054,6 +3038,14 @@
     color: var(--muted-foreground);
   }
 
+  .token-hero-stat--mobile {
+    display: flex;
+  }
+
+  .token-hero-stat--desk {
+    display: none;
+  }
+
   @media (min-width: 1100px) {
     .token-hero-stats {
       width: auto;
@@ -3066,6 +3058,14 @@
       gap: 3px;
       padding: 11px 20px;
       border-left: 1px solid var(--border);
+    }
+
+    .token-hero-stat--desk {
+      display: flex;
+    }
+
+    .token-hero-stat--mobile {
+      display: none;
     }
 
     .token-hero-stat--desk:first-child {
