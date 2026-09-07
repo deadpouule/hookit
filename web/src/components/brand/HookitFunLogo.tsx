@@ -13,7 +13,7 @@ export function HookitFunLogo({ className }: { className?: string }) {
         src="/brand/hookit-type.png"
         alt=""
         fill
-        sizes="(min-width: 640px) 184px, 145px"
+        sizes="(min-width: 640px) 213px, 165px"
         className="hookit-logo-layer hookit-logo-type"
         priority
         draggable={false}
@@ -23,7 +23,7 @@ export function HookitFunLogo({ className }: { className?: string }) {
           src="/brand/hookit-owl.png"
           alt=""
           fill
-          sizes="(min-width: 640px) 184px, 145px"
+          sizes="(min-width: 640px) 213px, 165px"
           className="hookit-logo-layer hookit-logo-owl"
           priority
           draggable={false}
@@ -35,7 +35,7 @@ export function HookitFunLogo({ className }: { className?: string }) {
         src="/brand/hookit-fun-suffix.png"
         alt=""
         fill
-        sizes="(min-width: 640px) 184px, 145px"
+        sizes="(min-width: 640px) 213px, 165px"
         className="hookit-logo-layer hookit-logo-fun"
         priority
         draggable={false}
