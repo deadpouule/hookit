@@ -441,8 +441,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           />
         </div>
 
-        <aside className="token-desk-hooks space-y-3">
-          {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+        <aside className="token-desk-side">
+          <div className="token-desk-hooks space-y-3">
+            {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+          </div>
+          <div className="token-desk-fees">
+            <CreatorActions pool={activePool} />
+          </div>
         </aside>
 
         <div className="token-desk-tx-col min-w-0">
@@ -455,10 +460,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             className="token-desk-tx"
           />
         </div>
-
-        <aside className="token-desk-fees">
-          <CreatorActions pool={activePool} />
-        </aside>
 
         <aside className="token-desk-swap space-y-3">
           <div ref={swapRef}>

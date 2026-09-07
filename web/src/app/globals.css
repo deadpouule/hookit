@@ -3318,6 +3318,10 @@
     order: 2;
   }
 
+  .token-desk-side {
+    display: contents;
+  }
+
   .token-desk-hooks {
     order: 3;
   }
@@ -3355,13 +3359,21 @@
       order: initial;
     }
 
+    .token-desk-side {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-self: start;
+      min-width: 0;
+    }
+
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto;
       grid-template-areas:
         "hero  hero  hero"
-        "hooks chart swap"
-        "fees  tx    swap";
+        "side  chart swap"
+        "side  tx    swap";
       align-items: stretch;
     }
 
@@ -3369,14 +3381,8 @@
       grid-area: hero;
     }
 
-    .token-desk--hooks .token-desk-hooks {
-      grid-area: hooks;
-      align-self: start;
-    }
-
-    .token-desk--hooks .token-desk-fees {
-      grid-area: fees;
-      align-self: start;
+    .token-desk--hooks .token-desk-side {
+      grid-area: side;
     }
 
     .token-desk--hooks .token-desk-chart {
@@ -3392,9 +3398,8 @@
       grid-template-areas:
         "hero  swap"
         "chart swap"
-        "hooks swap"
-        "tx    swap"
-        "fees  swap";
+        "side  swap"
+        "tx    swap";
       align-items: stretch;
     }
 
@@ -3406,16 +3411,12 @@
       grid-area: chart;
     }
 
-    .token-desk--wide .token-desk-hooks {
-      grid-area: hooks;
+    .token-desk--wide .token-desk-side {
+      grid-area: side;
     }
 
     .token-desk--wide .token-desk-tx-col {
       grid-area: tx;
-    }
-
-    .token-desk--wide .token-desk-fees {
-      grid-area: fees;
     }
 
     .token-desk-swap {
