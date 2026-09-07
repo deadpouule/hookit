@@ -249,20 +249,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     onBuyPrefillConsumed: () => setBuyPrefill(null),
   };
 
-  const heroLinks = (
-    <>
-      <HeroLink href={twitterUrl} label="X">
-        <XGlyph className="h-[16px] w-[16px]" />
-      </HeroLink>
-      <HeroLink href={websiteUrl} label="Website">
-        <Globe className="h-4 w-4" strokeWidth={1.75} />
-      </HeroLink>
-      <HeroLink href={githubUrl} label="GitHub">
-        <GithubGlyph className="h-4 w-4" />
-      </HeroLink>
-    </>
-  );
-
   const heroCard = (
     <div className="desk-card token-hero-card">
       <header className="token-hero-head">
@@ -359,7 +345,17 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
-            <div className="token-hero-links token-hero-links--inline">{heroLinks}</div>
+            <div className="token-hero-links">
+              <HeroLink href={twitterUrl} label="X">
+                <XGlyph className="h-[16px] w-[16px]" />
+              </HeroLink>
+              <HeroLink href={websiteUrl} label="Website">
+                <Globe className="h-4 w-4" strokeWidth={1.75} />
+              </HeroLink>
+              <HeroLink href={githubUrl} label="GitHub">
+                <GithubGlyph className="h-4 w-4" />
+              </HeroLink>
+            </div>
           </div>
         </div>
       </header>
@@ -403,8 +399,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             value={live.holders > 0 ? live.holders.toLocaleString() : "—"}
           />
         </dl>
-
-        <div className="token-hero-links token-hero-links--desk">{heroLinks}</div>
       </div>
     </div>
   );

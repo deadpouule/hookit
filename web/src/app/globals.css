@@ -3058,15 +3058,6 @@
     overflow: hidden;
   }
 
-  .token-hero-links--inline {
-    display: flex;
-    margin-left: auto;
-  }
-
-  .token-hero-links--desk {
-    display: none;
-  }
-
   @media (min-width: 1100px) {
     .token-hero-head {
       gap: 16px;
@@ -3095,7 +3086,7 @@
     }
 
     .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: 12px 20px;
       padding: 4px 20px 16px;
     }
@@ -3108,15 +3099,6 @@
       -webkit-line-clamp: unset;
       font-size: 13px;
       overflow: visible;
-    }
-
-    .token-hero-links--inline {
-      display: none;
-    }
-
-    .token-hero-links--desk {
-      display: flex;
-      justify-self: end;
     }
   }
 
@@ -3222,6 +3204,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-left: auto;
   }
 
   .token-hero-link--off {
