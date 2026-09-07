@@ -12,11 +12,18 @@ import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
-import { formatAge, formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
+import {
+  formatAge,
+  formatCompactUsd,
+  formatPercent,
+  isValidLaunchTimestamp,
+  shortenAddress,
+} from "@/lib/format";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import {
   isMultiPool,
@@ -64,17 +71,27 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   );
 }
 
+function formatPriceUsd(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (value >= 1) return formatCompactUsd(value);
+  if (value >= 0.01) return `$${value.toFixed(4)}`;
+  if (value >= 0.0001) return `$${value.toFixed(6)}`;
+  return `$${value.toPrecision(4)}`;
+}
+
 function HeroStat({
   label,
   value,
   children,
+  className,
 }: {
   label: string;
   value: string;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="token-hero-stat">
+    <div className={cn("token-hero-stat", className)}>
       <dt className="token-hero-stat-label">{label}</dt>
       <dd className="token-hero-stat-value">
         {value}
@@ -149,6 +166,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
   const [interval, setInterval] = useState<ChartInterval>("1h");
   const [buyPrefill, setBuyPrefill] = useState<string | null>(null);
+  const [swapSheetOpen, setSwapSheetOpen] = useState(false);
+  const [swapSheetSide, setSwapSheetSide] = useState<"buy" | "sell">("buy");
   const swapRef = useRef<HTMLDivElement>(null);
   const contractAddress = pool.contractAddress ?? pool.address;
   const trending = live.change1h >= 0;
@@ -194,6 +213,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   useEffect(() => {
     setMarketIndex(0);
     setBuyPrefill(null);
+    setSwapSheetOpen(false);
   }, [pool.id, pool.contractAddress]);
 
   const copyAddress = async () => {
@@ -202,32 +222,56 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const beFirstBuy = () => {
-    setBuyPrefill("0.01");
-    swapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const openSwap = (side: "buy" | "sell", prefill?: string) => {
+    if (prefill) setBuyPrefill(prefill);
+    setSwapSheetSide(side);
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 1100px)").matches) {
+      swapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setSwapSheetOpen(true);
   };
+
+  const beFirstBuy = () => openSwap("buy", "0.01");
+
+  const swapProps = {
+    pool: activePool,
+    marketIndex,
+    markets: multi ? markets : undefined,
+    onMarketIndex: multi ? setMarketIndex : undefined,
+    onBuyPrefillConsumed: () => setBuyPrefill(null),
+  };
+
+  const heroLinks = (
+    <>
+      <HeroLink href={twitterUrl} label="X">
+        <XGlyph className="h-[16px] w-[16px]" />
+      </HeroLink>
+      <HeroLink href={websiteUrl} label="Website">
+        <Globe className="h-4 w-4" strokeWidth={1.75} />
+      </HeroLink>
+      <HeroLink href={githubUrl} label="GitHub">
+        <GithubGlyph className="h-4 w-4" />
+      </HeroLink>
+    </>
+  );
 
   const heroCard = (
     <div className="desk-card token-hero-card">
-      <header className="flex flex-wrap items-start gap-3.5 px-4 pt-3.5 pb-2 sm:gap-4 sm:px-5 sm:pt-4 sm:pb-2">
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border sm:h-20 sm:w-20"
-          style={{ background: pool.bannerGradient }}
-        >
+      <header className="token-hero-head">
+        <div className="token-hero-logo" style={{ background: pool.bannerGradient }}>
           {media ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={media} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className="text-3xl font-bold text-white/90 sm:text-4xl">{pool.ticker[0]}</span>
+            <span className="token-hero-logo-letter">{pool.ticker[0]}</span>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              {pool.name}
-            </h1>
-            <span className="font-mono text-base text-muted-foreground sm:text-lg">${pool.ticker}</span>
+          <div className="token-hero-title-row">
+            <h1 className="token-hero-name">{pool.name}</h1>
+            <span className="token-hero-ticker">${pool.ticker}</span>
             {isCopycat && (
               <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
                 COPY
@@ -255,28 +299,31 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                     : "Bonding curve finished — now trading on a Uniswap v4 pool."
                 }
               >
-                <span className="rounded-full bg-[#9514d1]/20 px-2.5 py-0.5 text-[12px] font-medium text-[#d8b4fe]">
+                <span className="rounded-full bg-[#9514d1]/20 px-2 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
                   {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
                 </span>
               </HeaderTip>
             )}
             {trending && (
               <HeaderTip tip="Price is up over the last hour.">
-                <span className="inline-flex items-center gap-1 text-[13px] font-medium text-orange-400">
-                  <Flame className="h-3.5 w-3.5" />
+                <span className="inline-flex items-center gap-1 text-[12px] font-medium text-orange-400">
+                  <Flame className="h-3 w-3" />
                   Trend
                 </span>
               </HeaderTip>
             )}
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="token-hero-sub">
             <button
               type="button"
               onClick={copyAddress}
-              className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground transition hover:text-foreground"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:text-xs"
             >
-              {pool.address}
+              <span className="sm:hidden">
+                ${pool.ticker} {shortenAddress(pool.address)}
+              </span>
+              <span className="hidden sm:inline">{pool.address}</span>
               <Copy className="h-3 w-3" />
               {copied && <span className="text-[#10b981]">Copied</span>}
             </button>
@@ -301,47 +348,51 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </a>
             )}
             {ageSeconds != null && (
-              <span className="rounded-full bg-[#10b981]/15 px-2.5 py-0.5 text-[11px] font-medium text-[#10b981]">
+              <span className="rounded-full bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
+            <div className="token-hero-links token-hero-links--inline">{heroLinks}</div>
           </div>
         </div>
       </header>
 
-      <div className="token-hero-about px-4 pb-3.5 sm:px-5 sm:pb-4">
+      <div className="token-hero-mcap">
+        <p className="token-hero-mcap-value">{formatCompactUsd(live.marketCap)}</p>
+        <span
+          className={cn(
+            "token-hero-mcap-chg",
+            live.change24h >= 0 ? "token-hero-mcap-chg--up" : "token-hero-mcap-chg--down",
+          )}
+        >
+          {formatPercent(live.change24h, true)} 24h
+        </span>
+      </div>
+
+      <div className="token-hero-about">
         <div className="token-hero-about-desc min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">About</p>
-          <p
-            className={cn(
-              "mt-1 max-w-[52ch] text-[13px] leading-snug",
-              description ? "text-zinc-300" : "text-zinc-500",
-            )}
-          >
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500 sm:text-[11px]">About</p>
+          <p className={cn("token-hero-about-text", description ? "text-zinc-300" : "text-zinc-500")}>
             {description ?? "No description yet."}
           </p>
         </div>
 
         <dl className="token-hero-stats">
-          <HeroStat label="Market cap" value={formatCompactUsd(live.marketCap)}>
+          <HeroStat className="token-hero-stat--desk" label="Market cap" value={formatCompactUsd(live.marketCap)}>
             {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
           </HeroStat>
+          <HeroStat className="token-hero-stat--mobile" label="Price" value={formatPriceUsd(live.priceUsd)} />
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
-          <HeroStat label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
+          <HeroStat className="token-hero-stat--desk" label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
+          <HeroStat
+            className="token-hero-stat--mobile"
+            label="Holders"
+            value={live.holders > 0 ? live.holders.toLocaleString() : "—"}
+          />
         </dl>
 
-        <div className="token-hero-links">
-          <HeroLink href={twitterUrl} label="X">
-            <XGlyph className="h-[18px] w-[18px]" />
-          </HeroLink>
-          <HeroLink href={websiteUrl} label="Website">
-            <Globe className="h-5 w-5" strokeWidth={1.75} />
-          </HeroLink>
-          <HeroLink href={githubUrl} label="GitHub">
-            <GithubGlyph className="h-5 w-5" />
-          </HeroLink>
-        </div>
+        <div className="token-hero-links token-hero-links--desk">{heroLinks}</div>
       </div>
     </div>
   );
@@ -357,19 +408,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       </Link>
 
       <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
-        {!isClassicDesk && (
-          <>
-            <div className="token-desk-hero min-w-0">{heroCard}</div>
-            <aside className="token-desk-rail token-desk-rail--left space-y-3">
-              <ActiveHooksPanel pool={pool} />
-              <CreatorActions pool={activePool} />
-            </aside>
-          </>
-        )}
+        <div className="token-desk-hero min-w-0">{heroCard}</div>
 
-        <div className="token-desk-main min-w-0 space-y-4">
-          {isClassicDesk && heroCard}
-
+        <div className="token-desk-chart min-w-0 space-y-3">
           {multi && (
             <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
               This token trades on <strong className="text-foreground">{markets.length} pools</strong>
@@ -377,7 +418,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               pool tab on the chart or swap to trade that quote.
             </p>
           )}
-
           <TokenCandleChart
             candles={live.candles}
             swaps={live.swaps}
@@ -393,6 +433,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             onMarketIndex={multi ? setMarketIndex : undefined}
             onBeFirstBuy={beFirstBuy}
           />
+        </div>
+
+        <aside className="token-desk-hooks space-y-3">
+          {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+        </aside>
+
+        <div className="token-desk-tx-col min-w-0">
           <TokenTxTable
             tab={tab}
             onTab={setTab}
@@ -403,25 +450,48 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           />
         </div>
 
-        <aside className="token-desk-rail token-desk-rail--right space-y-3">
+        <aside className="token-desk-fees">
+          <CreatorActions pool={activePool} />
+        </aside>
+
+        <aside className="token-desk-swap space-y-3">
           <div ref={swapRef}>
-            <TokenSwapCard
-              pool={activePool}
-              marketIndex={marketIndex}
-              markets={multi ? markets : undefined}
-              onMarketIndex={multi ? setMarketIndex : undefined}
-              buyPrefill={buyPrefill}
-              onBuyPrefillConsumed={() => setBuyPrefill(null)}
-            />
+            <TokenSwapCard {...swapProps} buyPrefill={swapSheetOpen ? null : buyPrefill} />
           </div>
-          {isClassicDesk && (
-            <>
-              <BondingProgress pool={pool} />
-              <CreatorActions pool={activePool} />
-            </>
-          )}
         </aside>
       </div>
+
+      <div className={cn("token-trade-bar", swapSheetOpen && "is-hidden")}>
+        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--buy" onClick={() => openSwap("buy")}>
+          Buy {pool.ticker}
+        </button>
+        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--sell" onClick={() => openSwap("sell")}>
+          Sell {pool.ticker}
+        </button>
+      </div>
+
+      <Sheet open={swapSheetOpen} onOpenChange={setSwapSheetOpen}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          overlayClassName="bg-black/55 supports-backdrop-filter:backdrop-blur-sm z-[60]"
+          className="token-swap-sheet z-[60] gap-0"
+        >
+          <div className="token-swap-sheet-handle" aria-hidden />
+          <SheetTitle className="sr-only">
+            {swapSheetSide === "buy" ? `Buy ${pool.ticker}` : `Sell ${pool.ticker}`}
+          </SheetTitle>
+          {swapSheetOpen ? (
+            <TokenSwapCard
+              key={`${swapSheetSide}-${pool.id}`}
+              {...swapProps}
+              variant="sheet"
+              initialSide={swapSheetSide}
+              buyPrefill={buyPrefill}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -73,7 +73,37 @@ function payAssetForSide(side: Side, sell: SwapAsset, buy: SwapAsset): SwapAsset
   return side === "buy" ? sell : buy;
 }
 
-function SwapSideTabs({ side, onSide }: { side: Side; onSide: (side: Side) => void }) {
+function SwapSideTabs({
+  side,
+  onSide,
+  variant = "card",
+}: {
+  side: Side;
+  onSide: (side: Side) => void;
+  variant?: "card" | "sheet";
+}) {
+  if (variant === "sheet") {
+    return (
+      <div className="swap-sheet-tabs" role="tablist" aria-label="Buy or sell">
+        {(["buy", "sell"] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={side === id}
+            onClick={() => onSide(id)}
+            className={cn(
+              "swap-sheet-tab",
+              `swap-sheet-tab--${id}`,
+              side === id && "is-active",
+            )}
+          >
+            {id === "buy" ? "Buy" : "Sell"}
+          </button>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="swap-side-tabs">
       {(["buy", "sell"] as const).map((id) => (
@@ -97,6 +127,8 @@ export function TokenSwapCard({
   onMarketIndex,
   buyPrefill,
   onBuyPrefillConsumed,
+  initialSide = "buy",
+  variant = "card",
 }: {
   pool: TokenPool;
   ticker?: string;
@@ -105,6 +137,8 @@ export function TokenSwapCard({
   onMarketIndex?: (index: number) => void;
   buyPrefill?: string | null;
   onBuyPrefillConsumed?: () => void;
+  initialSide?: Side;
+  variant?: "card" | "sheet";
 }) {
   const ticker = pool.ticker;
   const searchParams = useSearchParams();
@@ -133,9 +167,9 @@ export function TokenSwapCard({
   const quoteErc20 = poolQuote.address && !isStableSwapAsset(poolQuote) ? poolQuote.address : undefined;
   const fetchQuoteBalance = useTokenBalance(quoteErc20);
 
-  const [side, setSide] = useState<Side>("buy");
-  const [sellAsset, setSellAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, "buy").sell);
-  const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, "buy").buy);
+  const [side, setSide] = useState<Side>(initialSide);
+  const [sellAsset, setSellAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, initialSide).sell);
+  const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, initialSide).buy);
   const [amount, setAmount] = useState("");
   const [slippagePct] = useState(5);
   const [status, setStatus] = useState<string | null>(null);
@@ -444,11 +478,18 @@ export function TokenSwapCard({
   })();
 
   return (
-    <div className="desk-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="swap-card-title">Swap</h2>
-        <span className="font-mono text-[11px] text-zinc-500">{routeLabel}</span>
-      </div>
+    <div className={cn(variant === "sheet" ? "token-swap-sheet-body" : "desk-card p-4")}>
+      {variant === "sheet" ? (
+        <>
+          <h2 className="sr-only">Swap {ticker}</h2>
+          <SwapSideTabs side={side} onSide={applySide} variant="sheet" />
+        </>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="swap-card-title">Swap</h2>
+          <span className="font-mono text-[11px] text-zinc-500">{routeLabel}</span>
+        </div>
+      )}
 
       {markets && markets.length > 1 && onMarketIndex ? (
         <div className="mt-3">
@@ -483,7 +524,7 @@ export function TokenSwapCard({
         </p>
       )}
 
-      <SwapSideTabs side={side} onSide={applySide} />
+      {variant === "card" ? <SwapSideTabs side={side} onSide={applySide} variant="card" /> : null}
 
       <TokenProSwap
         pool={pool}

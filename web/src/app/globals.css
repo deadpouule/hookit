@@ -2819,20 +2819,188 @@
     border-color: var(--border);
   }
 
+  .token-hero-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px 6px;
+  }
+
+  .token-hero-logo {
+    display: flex;
+    height: 44px;
+    width: 44px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+  }
+
+  .token-hero-logo-letter {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: rgb(255 255 255 / 0.9);
+  }
+
+  .token-hero-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+  }
+
+  .token-hero-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--foreground);
+  }
+
+  .token-hero-ticker {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--muted-foreground);
+  }
+
+  .token-hero-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    margin-top: 6px;
+  }
+
+  .token-hero-mcap {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 2px 12px 8px;
+  }
+
+  .token-hero-mcap-value {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--foreground);
+  }
+
+  .token-hero-mcap-chg {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .token-hero-mcap-chg--up {
+    color: #22c55e;
+  }
+
+  .token-hero-mcap-chg--down {
+    color: #f43f5e;
+  }
+
+  .token-hero-about-desc {
+    display: none;
+  }
+
   .token-hero-about {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: center;
-    gap: 12px 20px;
-    padding-top: 4px;
+    gap: 8px 20px;
+    padding: 0 12px 10px;
   }
 
-  @media (min-width: 900px) {
-    .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  .token-hero-about-text {
+    margin-top: 2px;
+    max-width: 52ch;
+    font-size: 12px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .token-hero-stat--mobile {
+    display: flex;
+  }
+
+  .token-hero-stat--desk {
+    display: none;
+  }
+
+  .token-hero-links--inline {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .token-hero-links--desk {
+    display: none;
+  }
+
+  @media (min-width: 1100px) {
+    .token-hero-head {
+      gap: 16px;
+      padding: 14px 20px 8px;
     }
 
-    .token-hero-links {
+    .token-hero-logo {
+      height: 80px;
+      width: 80px;
+    }
+
+    .token-hero-logo-letter {
+      font-size: 2.25rem;
+    }
+
+    .token-hero-name {
+      font-size: 2.25rem;
+    }
+
+    .token-hero-ticker {
+      font-size: 1.125rem;
+    }
+
+    .token-hero-mcap {
+      display: none;
+    }
+
+    .token-hero-about {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      gap: 12px 20px;
+      padding: 4px 20px 16px;
+    }
+
+    .token-hero-about-desc {
+      display: block;
+    }
+
+    .token-hero-about-text {
+      -webkit-line-clamp: unset;
+      font-size: 13px;
+      overflow: visible;
+    }
+
+    .token-hero-stat--mobile {
+      display: none;
+    }
+
+    .token-hero-stat--desk {
+      display: flex;
+    }
+
+    .token-hero-links--inline {
+      display: none;
+    }
+
+    .token-hero-links--desk {
+      display: flex;
       justify-self: end;
     }
   }
@@ -2840,7 +3008,8 @@
   .token-hero-stats {
     display: flex;
     align-items: stretch;
-    justify-self: center;
+    justify-self: stretch;
+    width: 100%;
     margin: 0;
     border-radius: 10px;
     border: 1px solid var(--border);
@@ -2850,19 +3019,20 @@
 
   .token-hero-stat {
     display: flex;
+    flex: 1 1 0;
     flex-direction: column;
-    gap: 3px;
-    min-width: 148px;
-    padding: 11px 20px;
-    border-left: 1px solid var(--border);
-  }
-
-  .token-hero-stat:first-child {
+    gap: 2px;
+    min-width: 0;
+    padding: 8px 10px;
     border-left: 0;
   }
 
+  .token-hero-stat--mobile ~ .token-hero-stat:not(.token-hero-stat--desk) {
+    border-left: 1px solid var(--border);
+  }
+
   .token-hero-stat-label {
-    font-size: 12px;
+    font-size: 10px;
     color: var(--muted-foreground);
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -2870,7 +3040,7 @@
 
   .token-hero-stat-value {
     margin: 0;
-    font-size: 18px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--foreground);
@@ -2882,6 +3052,33 @@
     font-size: 11px;
     font-weight: 500;
     color: var(--muted-foreground);
+  }
+
+  @media (min-width: 1100px) {
+    .token-hero-stats {
+      width: auto;
+      justify-self: center;
+    }
+
+    .token-hero-stat {
+      min-width: 148px;
+      flex: 0 0 auto;
+      gap: 3px;
+      padding: 11px 20px;
+      border-left: 1px solid var(--border);
+    }
+
+    .token-hero-stat--desk:first-child {
+      border-left: 0;
+    }
+
+    .token-hero-stat-label {
+      font-size: 12px;
+    }
+
+    .token-hero-stat-value {
+      font-size: 18px;
+    }
   }
 
   .token-hero-links {
@@ -2907,13 +3104,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
     border: 1px solid var(--border);
     background: var(--surface);
     color: #e4e4e7;
     transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  @media (min-width: 1100px) {
+    .token-hero-link {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
   }
 
   .token-hero-link:hover {
@@ -2929,15 +3134,24 @@
   /* Larger type badges on the trading terminal header only */
   .token-hero-card .token-type-badges {
     margin-top: 0;
-    gap: 7px;
+    gap: 5px;
   }
 
   .token-hero-card .token-type-badge {
-    gap: 6px;
+    gap: 4px;
     border-radius: 6px;
-    padding: 5px 11px;
-    font-size: 13px;
-    line-height: 1.3;
+    padding: 3px 7px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  @media (min-width: 1100px) {
+    .token-hero-card .token-type-badge {
+      gap: 6px;
+      padding: 5px 11px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
   }
 
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
@@ -2971,8 +3185,34 @@
   }
 
   .token-desk {
-    display: grid;
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .token-desk-hero {
+    order: 1;
+  }
+
+  .token-desk-chart {
+    order: 2;
+  }
+
+  .token-desk-hooks {
+    order: 3;
+  }
+
+  .token-desk-tx-col {
+    order: 4;
+    min-width: 0;
+  }
+
+  .token-desk-fees {
+    order: 5;
+  }
+
+  .token-desk-swap {
+    display: none;
   }
 
   .token-desk-rail,
@@ -2981,12 +3221,27 @@
   }
 
   @media (min-width: 1100px) {
+    .token-desk {
+      display: grid;
+      gap: 16px;
+    }
+
+    .token-desk-hero,
+    .token-desk-chart,
+    .token-desk-hooks,
+    .token-desk-tx-col,
+    .token-desk-fees,
+    .token-desk-swap {
+      order: initial;
+    }
+
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr);
       grid-template-areas:
-        "hero hero hero"
-        "left center right";
+        "hero  hero  hero"
+        "hooks chart swap"
+        "fees  tx    swap";
       align-items: stretch;
     }
 
@@ -2994,26 +3249,59 @@
       grid-area: hero;
     }
 
-    .token-desk--wide {
-      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
-      grid-template-areas: "center right";
-      align-items: stretch;
-    }
-
-    .token-desk--hooks .token-desk-rail--left {
-      grid-area: left;
+    .token-desk--hooks .token-desk-hooks {
+      grid-area: hooks;
       align-self: start;
     }
 
-    .token-desk-main {
-      grid-area: center;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
+    .token-desk--hooks .token-desk-fees {
+      grid-area: fees;
+      align-self: start;
     }
 
-    .token-desk-rail--right {
-      grid-area: right;
+    .token-desk--hooks .token-desk-chart {
+      grid-area: chart;
+    }
+
+    .token-desk--hooks .token-desk-tx-col {
+      grid-area: tx;
+    }
+
+    .token-desk--wide {
+      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+      grid-template-areas:
+        "hero  swap"
+        "chart swap"
+        "hooks swap"
+        "tx    swap"
+        "fees  swap";
+      align-items: stretch;
+    }
+
+    .token-desk--wide .token-desk-hero {
+      grid-area: hero;
+    }
+
+    .token-desk--wide .token-desk-chart {
+      grid-area: chart;
+    }
+
+    .token-desk--wide .token-desk-hooks {
+      grid-area: hooks;
+    }
+
+    .token-desk--wide .token-desk-tx-col {
+      grid-area: tx;
+    }
+
+    .token-desk--wide .token-desk-fees {
+      grid-area: fees;
+    }
+
+    .token-desk-swap {
+      display: block;
+      grid-area: swap;
+      align-self: start;
     }
 
     .token-desk-tx {
@@ -3026,6 +3314,127 @@
     .token-desk-tx .token-tx-body {
       flex: 1 1 auto;
     }
+  }
+
+  .token-detail-shell {
+    padding-bottom: 1rem;
+  }
+
+  @media (max-width: 1099px) {
+    .token-detail-shell {
+      padding-bottom: calc(4.85rem + 0.5rem);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .token-detail-shell {
+      padding-bottom: 4.85rem;
+    }
+  }
+
+  .token-trade-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px 12px;
+    background: linear-gradient(to top, rgb(10 10 12 / 0.98) 62%, rgb(10 10 12 / 0));
+  }
+
+  .token-trade-bar.is-hidden {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .token-trade-bar {
+      bottom: var(--mobile-chrome-pad);
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .token-trade-bar {
+      display: none;
+    }
+  }
+
+  .token-trade-bar__btn {
+    flex: 1 1 0;
+    min-height: 48px;
+    border-radius: 9999px;
+    border: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .token-trade-bar__btn--buy {
+    background: #22c55e;
+  }
+
+  .token-trade-bar__btn--sell {
+    background: #ef4444;
+  }
+
+  .token-swap-sheet {
+    max-height: min(92dvh, 840px);
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    border-color: rgb(255 255 255 / 0.1);
+    background: #0c1018;
+    padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .token-swap-sheet-handle {
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.22);
+  }
+
+  .token-swap-sheet-body {
+    min-width: 0;
+  }
+
+  .token-swap-sheet .swap-cta-sticky {
+    position: static;
+    margin-top: 16px;
+    padding-top: 0;
+    background: none;
+  }
+
+  .swap-sheet-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .swap-sheet-tab {
+    border: 0;
+    border-radius: 12px;
+    padding: 13px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #8b93a7;
+    background: #161b26;
+    cursor: pointer;
+  }
+
+  .swap-sheet-tab--buy.is-active {
+    background: #22c55e;
+    color: #fff;
+  }
+
+  .swap-sheet-tab--sell.is-active {
+    background: #ef4444;
+    color: #fff;
   }
 
   .swap-card-title {
