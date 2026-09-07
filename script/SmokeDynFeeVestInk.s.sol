@@ -64,7 +64,10 @@ contract SmokeDynFeeVestInkScript is Script {
         uint256 largeWei = vm.envOr("DYNFEE_LARGE_WEI", uint256(0.0008 ether));
 
         // Keep gas+buys under a thin wallet (~0.002 ETH).
-        require(user.balance > ProtocolConstants.LAUNCH_FEE_WEI + smallWei + largeWei + 0.0002 ether, "top up ETH for gas+buys");
+        require(
+            user.balance > ProtocolConstants.LAUNCH_FEE_WEI + smallWei + largeWei + 0.0002 ether,
+            "top up ETH for gas+buys"
+        );
 
         vm.startBroadcast(pk);
         // Owner snapshot — ignore if feed path is used elsewhere.
