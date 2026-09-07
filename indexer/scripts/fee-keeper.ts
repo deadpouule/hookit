@@ -13,6 +13,7 @@
  *   FEE_KEEPER_BUYBACK_MAX_WEI — cap ETH spent per run (TWAP slice; default 0.05 ether)
  *   FEE_KEEPER_BUYBACK_MIN_WEI — skip buyback below this (default 1e12 wei)
  *   FEE_KEEPER_MIN_USDG_OUT — stock→USDG slippage floor (default 0)
+ *   FEE_KEEPER_ORACLE_ONLY=true — sync launch-factory ETH/USD fallbacks, then exit
  *   FEE_KEEPER_DRY_RUN=true — log only
  */
 import {
@@ -38,6 +39,8 @@ const INK = {
 
 const DEFAULT_DISTRIBUTOR = "0x4149509d2293a61cb199E17227740eEBFADd30c6" as Address;
 const DEFAULT_BUYBACK = "0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB" as Address;
+const DEFAULT_LAUNCH_FACTORY = "0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626" as Address;
+const DEFAULT_BONDING_FACTORY = "0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C" as Address;
 
 /** Quotrons wStocks that may accrue protocol pending on multi / stock-quoted launches. */
 const QUOTRON_STOCKS: Address[] = [
@@ -69,10 +72,20 @@ const buybackAbi = parseAbi([
   "function configured() view returns (bool)",
 ]);
 
+const launchFactoryAbi = parseAbi([
+  "function ethUsdPriceX18() view returns (uint256)",
+  "function syncEthUsdPrice()",
+]);
+
 function envAddr(name: string, fallback: Address): Address {
   const v = process.env[name]?.trim();
   if (v && isAddress(v)) return v as Address;
   return fallback;
+}
+
+function envFirstAddr(name: string, fallback: Address): Address {
+  const first = process.env[name]?.split(",")[0]?.trim();
+  return first && isAddress(first) ? first as Address : fallback;
 }
 
 function envBool(name: string, fallback: boolean): boolean {
@@ -101,11 +114,14 @@ async function main() {
   const rpc = process.env.INK_RPC_URL ?? process.env.INK_RPC_URL_BACKUP ?? "https://rpc-gel.inkonchain.com";
   const distributor = envAddr("PROTOCOL_DISTRIBUTOR", envAddr("DISTRIBUTOR", DEFAULT_DISTRIBUTOR));
   const buyback = envAddr("HKIT_BUYBACK", DEFAULT_BUYBACK);
+  const launchFactory = envFirstAddr("LAUNCH_FACTORY", DEFAULT_LAUNCH_FACTORY);
+  const bondingFactory = envFirstAddr("BONDING_FACTORY", DEFAULT_BONDING_FACTORY);
   const minUsdgOut = envBig("FEE_KEEPER_MIN_USDG_OUT", 0n);
   const doBuyback = envBool("FEE_KEEPER_BUYBACK", true);
   const buybackMax = envBig("FEE_KEEPER_BUYBACK_MAX_WEI", 50_000_000_000_000_000n); // 0.05 ETH / day
   const buybackMin = envBig("FEE_KEEPER_BUYBACK_MIN_WEI", 1_000_000_000_000n); // 1e12 wei
   const dryRun = envBool("FEE_KEEPER_DRY_RUN", false);
+  const oracleOnly = envBool("FEE_KEEPER_ORACLE_ONLY", false);
 
   const hasKeeperKey = Boolean((process.env.FEE_KEEPER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim());
   const account = privateKeyToAccount(pk(!dryRun));
@@ -114,6 +130,54 @@ async function main() {
 
   const chainId = await publicClient.getChainId();
   if (chainId !== 57073) throw new Error(`Expected Ink 57073, got ${chainId}`);
+
+  async function waitOk(label: string, hash: Hash) {
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") throw new Error(`${label} reverted (${hash})`);
+    console.log(`[fee-keeper] ok ${hash}`);
+  }
+
+  async function syncEthUsd(label: string, factory: Address) {
+    const before = await publicClient.readContract({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "ethUsdPriceX18",
+    });
+    try {
+      await publicClient.simulateContract({
+        account,
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "syncEthUsdPrice",
+      });
+    } catch {
+      console.log(`[fee-keeper] ${label} ETH/USD feed stale; keeping ${before}`);
+      return;
+    }
+    if (dryRun) {
+      console.log(`[fee-keeper] ${label} ETH/USD sync available; stored ${before}`);
+      return;
+    }
+    const hash = await walletClient.writeContract({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "syncEthUsdPrice",
+    });
+    await waitOk(`syncEthUsdPrice ${label}`, hash);
+    const after = await publicClient.readContract({
+      address: factory,
+      abi: launchFactoryAbi,
+      functionName: "ethUsdPriceX18",
+    });
+    console.log(`[fee-keeper] ${label} ETH/USD ${before} -> ${after}`);
+  }
+
+  await syncEthUsd("Master", launchFactory);
+  await syncEthUsd("Classic", bondingFactory);
+  if (oracleOnly) {
+    console.log("[fee-keeper] ORACLE_SYNC_OK");
+    return;
+  }
 
   const ops = await publicClient.readContract({
     address: distributor,
@@ -143,12 +207,6 @@ async function main() {
       functionName: "pending",
       args: [currency],
     });
-  }
-
-  async function waitOk(label: string, hash: Hash) {
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status !== "success") throw new Error(`${label} reverted (${hash})`);
-    console.log(`[fee-keeper] ok ${hash}`);
   }
 
   // 1) ETH pending -> 20% ops / 80% buybackEth

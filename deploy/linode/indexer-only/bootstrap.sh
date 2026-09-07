@@ -59,6 +59,8 @@ echo "[hookit-indexer] systemd…"
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-indexer.service" /etc/systemd/system/hookit-indexer.service
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-fee-keeper.service" /etc/systemd/system/hookit-fee-keeper.service
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-fee-keeper.timer" /etc/systemd/system/hookit-fee-keeper.timer
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-oracle-keeper.service" /etc/systemd/system/hookit-oracle-keeper.service
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-oracle-keeper.timer" /etc/systemd/system/hookit-oracle-keeper.timer
 chmod +x "${HOOKIT_DIR}/deploy/linode/fee-keeper/run.sh"
 systemctl daemon-reload
 
@@ -76,7 +78,9 @@ Next:
   4. systemctl enable --now hookit-indexer
   5. systemctl enable --now hookit-fee-keeper.timer
      # daily 00:20 UTC: distribute pending fees + TWAP HTST buyback
-  6. nginx + certbot — see deploy/linode/indexer-only/README.md
+  6. systemctl enable --now hookit-oracle-keeper.timer
+     # every 15 min: refresh Master + Classic ETH/USD fallbacks when feed is fresh
+  7. nginx + certbot — see deploy/linode/indexer-only/README.md
      fee keeper — see deploy/linode/fee-keeper/README.md
 
 EOF

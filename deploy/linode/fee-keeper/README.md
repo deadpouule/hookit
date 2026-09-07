@@ -9,6 +9,10 @@ On the same Linode as the indexer. Permissionless on-chain calls; the keeper wal
 3. `distribute(USDG)` if native USDG pending
 4. Optional TWAP: spend up to `FEE_KEEPER_BUYBACK_MAX_WEI` from `buybackEth` via `HkitBuyback.execute` (buy + burn HTST)
 
+A separate 15-minute timer calls `syncEthUsdPrice()` on the active Master and Classic factories whenever the
+Redstone feed is fresh. This preserves a recent fallback price and prevents stale-feed launches from reverting
+to the deployment-time $4,000/ETH default.
+
 ## Setup
 
 ```bash
@@ -16,8 +20,11 @@ On the same Linode as the indexer. Permissionless on-chain calls; the keeper wal
 chmod +x /opt/hookit/deploy/linode/fee-keeper/run.sh
 install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.service /etc/systemd/system/
 install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.timer /etc/systemd/system/
+install -m 644 /opt/hookit/deploy/linode/systemd/hookit-oracle-keeper.service /etc/systemd/system/
+install -m 644 /opt/hookit/deploy/linode/systemd/hookit-oracle-keeper.timer /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now hookit-fee-keeper.timer
+systemctl enable --now hookit-oracle-keeper.timer
 ```
 
 Add to `/opt/hookit/.env` (chmod 600):
@@ -51,7 +58,8 @@ sudo -u hookit env FEE_KEEPER_DRY_RUN=true /opt/hookit/deploy/linode/fee-keeper/
 
 ```bash
 journalctl -u hookit-fee-keeper -n 100 --no-pager
-systemctl list-timers hookit-fee-keeper.timer
+journalctl -u hookit-oracle-keeper -n 100 --no-pager
+systemctl list-timers hookit-fee-keeper.timer hookit-oracle-keeper.timer
 ```
 
 ## Notes

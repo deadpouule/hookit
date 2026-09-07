@@ -1,0 +1,18 @@
+[Unit]
+Description=Hookit ETH/USD fallback oracle keeper (Ink)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=hookit
+Group=hookit
+WorkingDirectory=/opt/hookit/indexer
+EnvironmentFile=/opt/hookit/.env
+Environment=FEE_KEEPER_ORACLE_ONLY=true
+ExecStart=/opt/hookit/deploy/linode/fee-keeper/run.sh
+Nice=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hookit-oracle-keeper
+TimeoutStartSec=300
