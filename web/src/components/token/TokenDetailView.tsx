@@ -222,17 +222,21 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const openSwap = (side: "buy" | "sell", prefill?: string) => {
+  const openSwapSheet = (side: "buy" | "sell", prefill?: string) => {
     if (prefill) setBuyPrefill(prefill);
     setSwapSheetSide(side);
+    // Open after the opening pointer event so Radix does not treat it as an outside click.
+    window.setTimeout(() => setSwapSheetOpen(true), 0);
+  };
+
+  const beFirstBuy = () => {
     if (typeof window !== "undefined" && window.matchMedia("(min-width: 1100px)").matches) {
+      setBuyPrefill("0.01");
       swapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-    setSwapSheetOpen(true);
+    openSwapSheet("buy", "0.01");
   };
-
-  const beFirstBuy = () => openSwap("buy", "0.01");
 
   const swapProps = {
     pool: activePool,
@@ -462,10 +466,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       </div>
 
       <div className={cn("token-trade-bar", swapSheetOpen && "is-hidden")}>
-        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--buy" onClick={() => openSwap("buy")}>
+        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--buy" onClick={() => openSwapSheet("buy")}>
           Buy {pool.ticker}
         </button>
-        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--sell" onClick={() => openSwap("sell")}>
+        <button type="button" className="token-trade-bar__btn token-trade-bar__btn--sell" onClick={() => openSwapSheet("sell")}>
           Sell {pool.ticker}
         </button>
       </div>
@@ -476,6 +480,15 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           showCloseButton={false}
           overlayClassName="bg-black/55 supports-backdrop-filter:backdrop-blur-sm z-[60]"
           className="token-swap-sheet z-[60] gap-0"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onPointerDownOutside={(event) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest(".token-trade-bar")) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.closest(".token-trade-bar")) event.preventDefault();
+          }}
         >
           <div className="token-swap-sheet-handle" aria-hidden />
           <SheetTitle className="sr-only">
