@@ -7,8 +7,8 @@ export function HookitFunLogo({ className }: { className?: string }) {
     <Image
       src="/brand/hookit-fun-logo.png"
       alt="hookit.fun"
-      width={934}
-      height={176}
+      width={1502}
+      height={310}
       className={cn("hookit-fun-logo h-auto w-auto", className)}
       priority
       draggable={false}

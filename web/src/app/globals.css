@@ -2783,23 +2783,23 @@
 
   .hookit-fun-logo {
     display: block;
-    height: 28px;
+    height: 30px;
     width: auto;
-    max-width: min(42vw, 9.5rem);
+    max-width: min(48vw, 11rem);
     object-fit: contain;
     object-position: left center;
   }
 
   @media (max-width: 767px) {
     .hookit-fun-logo {
-      height: 28px;
-      max-width: min(52vw, 10rem);
+      height: 30px;
+      max-width: min(58vw, 11.5rem);
     }
   }
 
   @media (min-width: 640px) {
     .hookit-fun-logo {
-      height: 35px;
+      height: 38px;
       max-width: none;
     }
   }
