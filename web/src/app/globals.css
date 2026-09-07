@@ -3374,12 +3374,10 @@
     pointer-events: auto;
   }
 
-  .token-trade-bar__btn--buy {
-    background: #22c55e;
-  }
-
+  .token-trade-bar__btn--buy,
   .token-trade-bar__btn--sell {
-    background: #ef4444;
+    background: var(--color-magenta);
+    box-shadow: 0 8px 22px rgb(149 20 209 / 0.45);
   }
 
   .token-swap-sheet {
@@ -3429,13 +3427,9 @@
     cursor: pointer;
   }
 
-  .swap-sheet-tab--buy.is-active {
-    background: #22c55e;
-    color: #fff;
-  }
-
+  .swap-sheet-tab--buy.is-active,
   .swap-sheet-tab--sell.is-active {
-    background: #ef4444;
+    background: var(--color-magenta);
     color: #fff;
   }
 
