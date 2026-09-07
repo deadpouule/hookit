@@ -58,10 +58,10 @@ contract ReplaceAirdropFactoryInkScript is Script {
                 | Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
         );
         bytes memory masterArgs = abi.encode(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
+        bytes memory masterInit = abi.encodePacked(type(MasterLaunchHook).creationCode, masterArgs);
         (address masterPredicted, bytes32 masterSalt) =
             HookMiner.find(HookMiner.CREATE2_DEPLOYER, masterFlags, type(MasterLaunchHook).creationCode, masterArgs);
-        MasterLaunchHook hook =
-            new MasterLaunchHook{salt: masterSalt}(manager, vault, escrow, distributor, buybacks, airdrops, deployer);
+        MasterLaunchHook hook = MasterLaunchHook(payable(_create2(masterSalt, masterInit)));
         require(address(hook) == masterPredicted, "master hook mismatch");
 
         LaunchFactory factory = new LaunchFactory(manager, hook, deployer, ops);
@@ -85,5 +85,12 @@ contract ReplaceAirdropFactoryInkScript is Script {
         console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY", address(factory));
         console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY_QUERY", address(launchQuery));
         console.log("REDEPLOY_AIRDROP_OK");
+    }
+
+    /// Same CREATE2 factory Foundry uses on broadcast, so simulation matches live.
+    function _create2(bytes32 salt, bytes memory initCode) internal returns (address addr) {
+        addr = HookMiner.computeAddress(HookMiner.CREATE2_DEPLOYER, salt, keccak256(initCode));
+        (bool ok,) = HookMiner.CREATE2_DEPLOYER.call(abi.encodePacked(salt, initCode));
+        require(ok && addr.code.length > 0, "create2 failed");
     }
 }

@@ -9,10 +9,10 @@ import {
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import {
   getBondingFactoryAddress,
-  getLaunchFactoryAddress,
   POOL_MANAGER_ADDRESS,
 } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
+import { resolveMasterLaunch } from "@/lib/launches";
 import type { TokenPool } from "@/lib/types";
 
 export type DevBuyInfo = {
@@ -45,7 +45,6 @@ export async function fetchDevBuyOnChain(
   if (!creator) return { completed: false };
 
   const bonding = getBondingFactoryAddress();
-  const factory = getLaunchFactoryAddress();
 
   let launchId: bigint | null = null;
   let fromBlock = BigInt(0);
@@ -91,17 +90,11 @@ export async function fetchDevBuyOnChain(
     return { completed: false };
   }
 
-  if (factory) {
-    launchId = (await client.readContract({
-      address: factory,
-      abi: launchFactoryAbi,
-      functionName: "tokenLaunchId",
-      args: [token],
-    })) as bigint;
-    if (launchId <= BigInt(0)) return { completed: false };
-
+  const resolved = await resolveMasterLaunch(client, token);
+  if (resolved) {
+    launchId = resolved.launchId;
     const launch = await client.readContract({
-      address: factory,
+      address: resolved.factory,
       abi: launchFactoryAbi,
       functionName: "launches",
       args: [launchId],

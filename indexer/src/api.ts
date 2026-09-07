@@ -139,6 +139,7 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         cursor: store.data.cursor,
         startBlock: cfg.startBlock.toString(),
         launchFactory: cfg.launchFactory ?? null,
+        launchFactories: cfg.launchFactories,
         bondingFactory: cfg.bondingFactory ?? null,
         updatedAt: store.data.updatedAt,
         lastPollAt: store.data.lastPollAt ?? null,

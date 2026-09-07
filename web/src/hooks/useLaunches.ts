@@ -10,11 +10,12 @@ import {
 } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import {
   fetchBondingLaunchById,
   fetchLaunchById,
+  fetchLaunchByNumericId,
   launchToTokenPool,
+  resolveMasterLaunch,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
@@ -79,26 +80,19 @@ export function useLaunchPool(id: string, initialPool?: TokenPool | null) {
       const enrichOpts = { skipSwapIndex: true };
 
       if (isAddress(id)) {
-        if (factory) {
-          const launchId = (await publicClient.readContract({
-            address: factory,
-            abi: launchFactoryAbi,
-            functionName: "tokenLaunchId",
-            args: [id as Address],
-          })) as bigint;
-          if (launchId > BigInt(0)) {
-            const launch = await fetchLaunchById(publicClient, factory, launchId);
-            if (launch) {
-              const ethUsd = await readEthUsd(publicClient);
-              const launchEthUsd = await readLaunchEthUsd(publicClient);
-              const [enriched] = await enrichPoolsWithSpotPrices(
-                publicClient,
-                [launchToTokenPool(launch)],
-                ethUsd,
-                { ...enrichOpts, launchEthUsd },
-              );
-              pool = enriched ?? null;
-            }
+        const resolved = await resolveMasterLaunch(publicClient, id as Address);
+        if (resolved) {
+          const launch = await fetchLaunchById(publicClient, resolved.factory, resolved.launchId);
+          if (launch) {
+            const ethUsd = await readEthUsd(publicClient);
+            const launchEthUsd = await readLaunchEthUsd(publicClient);
+            const [enriched] = await enrichPoolsWithSpotPrices(
+              publicClient,
+              [launchToTokenPool(launch)],
+              ethUsd,
+              { ...enrichOpts, launchEthUsd },
+            );
+            pool = enriched ?? null;
           }
         }
         if (!pool && bonding) {
@@ -113,19 +107,17 @@ export function useLaunchPool(id: string, initialPool?: TokenPool | null) {
           }
         }
       } else if (/^\d+$/.test(id)) {
-        if (factory) {
-          const launch = await fetchLaunchById(publicClient, factory, BigInt(id));
-          if (launch) {
-            const ethUsd = await readEthUsd(publicClient);
-            const launchEthUsd = await readLaunchEthUsd(publicClient);
-            const [enriched] = await enrichPoolsWithSpotPrices(
-              publicClient,
-              [launchToTokenPool(launch)],
-              ethUsd,
-              { ...enrichOpts, launchEthUsd },
-            );
-            pool = enriched ?? null;
-          }
+        const launch = await fetchLaunchByNumericId(publicClient, BigInt(id));
+        if (launch) {
+          const ethUsd = await readEthUsd(publicClient);
+          const launchEthUsd = await readLaunchEthUsd(publicClient);
+          const [enriched] = await enrichPoolsWithSpotPrices(
+            publicClient,
+            [launchToTokenPool(launch)],
+            ethUsd,
+            { ...enrichOpts, launchEthUsd },
+          );
+          pool = enriched ?? null;
         }
         if (!pool && bonding) {
           pool = await fetchBondingLaunchById(publicClient, bonding, BigInt(id));

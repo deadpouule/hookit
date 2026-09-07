@@ -7,15 +7,16 @@ import {
   getLaunchFactoryAddress,
 } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { readEthUsd, readLaunchEthUsd } from "@/lib/eth-usd";
 import {
   fetchAllBondingLaunches,
-  fetchAllLaunches,
+  fetchAllMasterLaunches,
   fetchBondingLaunchById,
   fetchLaunchById,
+  fetchLaunchByNumericId,
   launchToTokenPool,
+  resolveMasterLaunch,
 } from "@/lib/launches";
 import { isIndexerConfigured } from "@/lib/live-data";
 import { enrichPoolsWithIndexerMarkets } from "@/lib/pool-markets";
@@ -74,7 +75,7 @@ async function loadLaunchesResponseImpl(): Promise<LaunchesResponse> {
 
   const [masterRaw, classicPools] = await withTimeout(
     Promise.all([
-      factory ? fetchAllLaunches(client, factory) : Promise.resolve([]),
+      factory ? fetchAllMasterLaunches(client) : Promise.resolve([]),
       bonding ? fetchAllBondingLaunches(client, bonding) : Promise.resolve([]),
     ]),
     API_TIMEOUT_MS,
@@ -143,24 +144,17 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
 
   if (isAddress(needle)) {
     const token = needle as Address;
-    if (factory) {
-      const launchId = (await client.readContract({
-        address: factory,
-        abi: launchFactoryAbi,
-        functionName: "tokenLaunchId",
-        args: [token],
-      })) as bigint;
-      if (launchId > BigInt(0)) {
-        const launch = await fetchLaunchById(client, factory, launchId);
-        if (launch) {
-          const [enriched] = await enrichPoolsWithSpotPrices(
-            client,
-            [launchToTokenPool(launch)],
-            ethUsd,
-            enrichOpts,
-          );
-          pool = enriched ?? null;
-        }
+    const resolved = await resolveMasterLaunch(client, token);
+    if (resolved) {
+      const launch = await fetchLaunchById(client, resolved.factory, resolved.launchId);
+      if (launch) {
+        const [enriched] = await enrichPoolsWithSpotPrices(
+          client,
+          [launchToTokenPool(launch)],
+          ethUsd,
+          enrichOpts,
+        );
+        pool = enriched ?? null;
       }
     }
     if (!pool && bonding) {
@@ -176,17 +170,15 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
     }
   } else if (/^\d+$/.test(needle)) {
     const launchId = BigInt(needle);
-    if (factory) {
-      const launch = await fetchLaunchById(client, factory, launchId);
-      if (launch) {
-        const [enriched] = await enrichPoolsWithSpotPrices(
-          client,
-          [launchToTokenPool(launch)],
-          ethUsd,
-          enrichOpts,
-        );
-        pool = enriched ?? null;
-      }
+    const launch = await fetchLaunchByNumericId(client, launchId);
+    if (launch) {
+      const [enriched] = await enrichPoolsWithSpotPrices(
+        client,
+        [launchToTokenPool(launch)],
+        ethUsd,
+        enrichOpts,
+      );
+      pool = enriched ?? null;
     }
     if (!pool && bonding) {
       pool = await fetchBondingLaunchById(client, bonding, launchId);

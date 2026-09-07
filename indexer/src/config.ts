@@ -43,6 +43,8 @@ export type IndexerConfig = {
   confirmations: bigint;
   dataDir: string;
   launchFactory?: Address;
+  /** All Master factories to watch (active + previous). */
+  launchFactories: Address[];
   bondingFactory?: Address;
   poolManager: Address;
   startBlock: bigint;
@@ -108,6 +110,24 @@ export function resolveRpcUrls(isInk: boolean): string[] {
   return uniqUrls(backup ? [primary, backup] : [primary]);
 }
 
+function uniqAddrs(addrs: Address[]): Address[] {
+  const seen = new Set<string>();
+  const out: Address[] = [];
+  for (const a of addrs) {
+    const k = a.toLowerCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(a);
+  }
+  return out;
+}
+
+/** Ink Master factories: patched vault first, then the previous live factory. */
+const INK_LAUNCH_FACTORIES = [
+  "0x10c4687B66fec64066C59A59cae1A9c326779f35",
+  "0xbadb0CBFfC80b107082babaB9e488Bc6bEf8f425",
+] as Address[];
+
 export function loadConfig(): IndexerConfig {
   const chainKey = (process.env.HOOKIT_CHAIN ?? process.env.NEXT_PUBLIC_HOOKIT_CHAIN ?? "ink").toLowerCase();
   const isInk = chainKey === "ink" || chainKey === "57073";
@@ -120,10 +140,11 @@ export function loadConfig(): IndexerConfig {
       ? "0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32"
       : "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408")) as Address;
 
-  const launchFactory = addr(
-    process.env.LAUNCH_FACTORY ??
-      process.env.NEXT_PUBLIC_LAUNCH_FACTORY,
-  );
+  const launchFactories = uniqAddrs([
+    ...(isInk ? INK_LAUNCH_FACTORIES : []),
+    ...addrList(process.env.LAUNCH_FACTORY ?? process.env.NEXT_PUBLIC_LAUNCH_FACTORY),
+  ]);
+  const launchFactory = launchFactories[0];
   const bondingFactory = addr(
     process.env.BONDING_FACTORY ??
       process.env.NEXT_PUBLIC_BONDING_FACTORY,
@@ -135,7 +156,7 @@ export function loadConfig(): IndexerConfig {
     poolManager.toLowerCase(),
     ...addrList(process.env.INDEXER_EXCLUDE).map((a) => a.toLowerCase()),
   ]);
-  if (launchFactory) exclude.add(launchFactory.toLowerCase());
+  for (const f of launchFactories) exclude.add(f.toLowerCase());
   if (bondingFactory) exclude.add(bondingFactory.toLowerCase());
 
   const defaultData = join(fileURLToPath(new URL("..", import.meta.url)), "data");
@@ -151,6 +172,7 @@ export function loadConfig(): IndexerConfig {
     confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? (isInk ? 3 : 12)),
     dataDir: process.env.INDEXER_DATA_DIR ?? defaultData,
     launchFactory,
+    launchFactories,
     bondingFactory,
     poolManager,
     startBlock: BigInt(process.env.INDEXER_START_BLOCK ?? "0"),
@@ -209,6 +231,8 @@ export type TokenRow = {
   creator: Address;
   launchedAt: number;
   launchId: number;
+  /** Emitting LaunchFactory (master) or BondingLaunchFactory (classic). */
+  factory?: Address;
   rail: "master" | "classic";
   metadataURI?: string;
   hookModules?: string;

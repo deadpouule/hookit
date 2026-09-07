@@ -5,7 +5,7 @@ import { getLaunchFactoryAddress } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
-import { fetchAllLaunches, launchToTokenPool } from "@/lib/launches";
+import { fetchAllMasterLaunches, launchToTokenPool } from "@/lib/launches";
 import { createServerPublicClient } from "@/lib/server-rpc";
 
 export const revalidate = 12;
@@ -29,7 +29,7 @@ export async function GET() {
       functionName: "floorVault",
     })) as Address;
 
-    const launches = await fetchAllLaunches(client, factory);
+    const launches = await fetchAllMasterLaunches(client);
     const floors = launches.map(launchToTokenPool).filter((p) => p.hooks.backedFloor && p.contractAddress);
 
     const reserves = floors.length

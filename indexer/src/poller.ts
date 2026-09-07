@@ -96,30 +96,43 @@ function getLogs(
   return rpcWithRetry(() => client.getLogs(params), "getLogs");
 }
 
+function masterFactories(cfg: IndexerConfig): Address[] {
+  if (cfg.launchFactories?.length) return cfg.launchFactories;
+  return cfg.launchFactory ? [cfg.launchFactory] : [];
+}
+
 /** One-shot RPC sanity check — compares full vs legacy TokenLaunched topic filters. */
 export async function probeLaunchLogs(client: PublicClient, cfg: IndexerConfig, block: bigint) {
-  if (!cfg.launchFactory) {
-    return { block: block.toString(), full: 0, legacy: 0, factory: null as Address | null };
+  const factories = masterFactories(cfg);
+  if (factories.length === 0) {
+    return { block: block.toString(), full: 0, legacy: 0, factory: null as Address | null, factories: [] as Address[] };
   }
-  const [full, legacy] = await Promise.all([
-    getLogs(client, {
-      address: cfg.launchFactory,
-      event: masterLaunchEvent,
-      fromBlock: block,
-      toBlock: block,
-    }),
-    getLogs(client, {
-      address: cfg.launchFactory,
-      event: shortMasterLaunchEvent,
-      fromBlock: block,
-      toBlock: block,
-    }),
-  ]);
+  let full = 0;
+  let legacy = 0;
+  for (const factory of factories) {
+    const [f, l] = await Promise.all([
+      getLogs(client, {
+        address: factory,
+        event: masterLaunchEvent,
+        fromBlock: block,
+        toBlock: block,
+      }),
+      getLogs(client, {
+        address: factory,
+        event: shortMasterLaunchEvent,
+        fromBlock: block,
+        toBlock: block,
+      }),
+    ]);
+    full += f.length;
+    legacy += l.length;
+  }
   return {
     block: block.toString(),
-    factory: cfg.launchFactory,
-    full: full.length,
-    legacy: legacy.length,
+    factory: factories[0] ?? null,
+    factories,
+    full,
+    legacy,
   };
 }
 
@@ -161,6 +174,7 @@ function baseTokenRow(
     rail: "master" | "classic";
     poolId: Hex;
     tokenIsCurrency0: boolean;
+    factory?: Address;
   },
   meta: { name: string; symbol: string; decimals: number; totalSupply: string },
   quoteDec: number,
@@ -179,6 +193,7 @@ function baseTokenRow(
     launchedAt: 0,
     launchId: args.launchId,
     rail: args.rail,
+    factory: args.factory,
     holders: {},
     trades: [],
     candles5m: [],
@@ -195,15 +210,15 @@ async function ensureMasterToken(
     creator: Address;
     poolId: Hex;
     blockNumber: bigint;
+    factory: Address;
   },
 ) {
   if (store.getToken(args.token)) return;
-  if (!cfg.launchFactory) return;
 
   const [quoteSettled, launchedAtSettled, meta] = await Promise.all([
     client
       .readContract({
-        address: cfg.launchFactory,
+        address: args.factory,
         abi: launchFactoryAbi,
         functionName: "launchQuote",
         args: [args.launchId],
@@ -211,7 +226,7 @@ async function ensureMasterToken(
       .catch(() => zeroAddress),
     client
       .readContract({
-        address: cfg.launchFactory,
+        address: args.factory,
         abi: launchFactoryAbi,
         functionName: "launchedAt",
         args: [args.launchId],
@@ -231,6 +246,7 @@ async function ensureMasterToken(
       rail: "master",
       poolId: args.poolId,
       tokenIsCurrency0: BigInt(args.token) < BigInt(q),
+      factory: args.factory,
     },
     meta,
     qd,
@@ -242,7 +258,7 @@ async function ensureMasterToken(
     if (ts) row.launchedAt = ts;
   }
   store.upsertToken(row);
-  store.seedSupplyHolder(args.token, cfg.launchFactory, BigInt(meta.totalSupply));
+  store.seedSupplyHolder(args.token, args.factory, BigInt(meta.totalSupply));
 }
 
 async function ensureClassicToken(
@@ -272,6 +288,7 @@ async function ensureClassicToken(
       rail: "classic",
       poolId: "0x0000000000000000000000000000000000000000000000000000000000000000",
       tokenIsCurrency0: BigInt(args.token) < BigInt(args.quote),
+      factory: cfg.bondingFactory,
     },
     meta,
     qDec,
@@ -374,6 +391,111 @@ export async function tick(client: PublicClient, store: Store, cfg: IndexerConfi
   return processed;
 }
 
+async function indexMasterFactory(
+  client: PublicClient,
+  store: Store,
+  cfg: IndexerConfig,
+  factory: Address,
+  fromBlock: bigint,
+  toBlock: bigint,
+) {
+  const logs = await getLogs(client, {
+    address: factory,
+    event: masterLaunchEvent,
+    fromBlock,
+    toBlock,
+  });
+  if (logs.length > 0) {
+    console.log(
+      `[indexer] TokenLaunched x${logs.length} blocks ${fromBlock}-${toBlock} factory=${factory}`,
+    );
+  }
+  for (const log of logs) {
+    const a = logArgs<{
+      launchId: bigint;
+      token: Address;
+      creator: Address;
+      poolId: Hex;
+    }>(log);
+    await ensureMasterToken(client, store, cfg, {
+      launchId: a.launchId,
+      token: a.token,
+      creator: a.creator,
+      poolId: a.poolId,
+      blockNumber: log.blockNumber ?? fromBlock,
+      factory,
+    });
+  }
+
+  const configured = await getLogs(client, {
+    address: factory,
+    event: parseAbiItem(
+      "event LaunchConfigured(uint256 indexed launchId, uint256 bitmask, address quote, int24 tickSpacing, uint24 fee)",
+    ),
+    fromBlock,
+    toBlock,
+  });
+  for (const log of configured) {
+    const a = logArgs<{ launchId: bigint; bitmask: bigint }>(log);
+    const row = store.tokenForLaunchId(a.launchId, factory);
+    if (row) row.hookModules = a.bitmask.toString();
+  }
+
+  const multiConfigured = await getLogs(client, {
+    address: factory,
+    event: parseAbiItem(
+      "event MultiLaunchConfigured(uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask)",
+    ),
+    fromBlock,
+    toBlock,
+  });
+  for (const log of multiConfigured) {
+    const a = logArgs<{ launchId: bigint; marketCount: number; bitmask: bigint }>(log);
+    const row = store.tokenForLaunchId(a.launchId, factory);
+    if (row) {
+      row.marketCount = Number(a.marketCount);
+      row.hookModules = a.bitmask.toString();
+    }
+  }
+
+  const marketLaunched = await getLogs(client, {
+    address: factory,
+    event: parseAbiItem(
+      "event MarketLaunched(uint256 indexed launchId, uint8 indexed marketIndex, bytes32 poolId, address quote, uint16 bps, int24 tickLower, int24 tickUpper, uint128 liquidity)",
+    ),
+    fromBlock,
+    toBlock,
+  });
+  for (const log of marketLaunched) {
+    const a = logArgs<{
+      launchId: bigint;
+      marketIndex: number;
+      poolId: Hex;
+      quote: Address;
+      bps: number;
+      tickLower: number;
+      tickUpper: number;
+      liquidity: bigint;
+    }>(log);
+    const row = store.tokenForLaunchId(a.launchId, factory);
+    if (!row) continue;
+    const tokenIsCurrency0 = BigInt(row.address) < BigInt(a.quote);
+    store.registerMarket(
+      row.address,
+      {
+        poolId: a.poolId,
+        quote: a.quote,
+        bps: Number(a.bps),
+        tokenIsCurrency0: tokenIsCurrency0,
+        tickLower: Number(a.tickLower),
+        tickUpper: Number(a.tickUpper),
+        liquidity: a.liquidity.toString(),
+      },
+      row.marketCount,
+    );
+  }
+}
+
 async function indexRange(
   client: PublicClient,
   store: Store,
@@ -381,101 +503,8 @@ async function indexRange(
   fromBlock: bigint,
   toBlock: bigint,
 ) {
-  if (cfg.launchFactory) {
-    const logs = await getLogs(client,{
-      address: cfg.launchFactory,
-      event: masterLaunchEvent,
-      fromBlock,
-      toBlock,
-    });
-    if (logs.length > 0) {
-      console.log(
-        `[indexer] TokenLaunched x${logs.length} blocks ${fromBlock}-${toBlock} factory=${cfg.launchFactory}`,
-      );
-    }
-    for (const log of logs) {
-      const a = logArgs<{
-        launchId: bigint;
-        token: Address;
-        creator: Address;
-        poolId: Hex;
-      }>(log);
-      await ensureMasterToken(client, store, cfg, {
-        launchId: a.launchId,
-        token: a.token,
-        creator: a.creator,
-        poolId: a.poolId,
-        blockNumber: log.blockNumber ?? fromBlock,
-      });
-    }
-
-    const configured = await getLogs(client,{
-      address: cfg.launchFactory,
-      event: parseAbiItem(
-        "event LaunchConfigured(uint256 indexed launchId, uint256 bitmask, address quote, int24 tickSpacing, uint24 fee)",
-      ),
-      fromBlock,
-      toBlock,
-    });
-    for (const log of configured) {
-      const a = logArgs<{ launchId: bigint; bitmask: bigint }>(log);
-      const row = store.tokenForLaunchId(a.launchId);
-      if (row) row.hookModules = a.bitmask.toString();
-    }
-
-    const multiConfigured = await getLogs(client,{
-      address: cfg.launchFactory,
-      event: parseAbiItem(
-        "event MultiLaunchConfigured(uint256 indexed launchId, uint8 marketCount, uint8 floorQuoteIndex, uint256 bitmask)",
-      ),
-      fromBlock,
-      toBlock,
-    });
-    for (const log of multiConfigured) {
-      const a = logArgs<{ launchId: bigint; marketCount: number; bitmask: bigint }>(log);
-      const row = store.tokenForLaunchId(a.launchId);
-      if (row) {
-        row.marketCount = Number(a.marketCount);
-        row.hookModules = a.bitmask.toString();
-      }
-    }
-
-    const marketLaunched = await getLogs(client,{
-      address: cfg.launchFactory,
-      event: parseAbiItem(
-        "event MarketLaunched(uint256 indexed launchId, uint8 indexed marketIndex, bytes32 poolId, address quote, uint16 bps, int24 tickLower, int24 tickUpper, uint128 liquidity)",
-      ),
-      fromBlock,
-      toBlock,
-    });
-    for (const log of marketLaunched) {
-      const a = logArgs<{
-        launchId: bigint;
-        marketIndex: number;
-        poolId: Hex;
-        quote: Address;
-        bps: number;
-        tickLower: number;
-        tickUpper: number;
-        liquidity: bigint;
-      }>(log);
-      const row = store.tokenForLaunchId(a.launchId);
-      if (!row) continue;
-      const tokenIsCurrency0 = BigInt(row.address) < BigInt(a.quote);
-      store.registerMarket(
-        row.address,
-        {
-          poolId: a.poolId,
-          quote: a.quote,
-          bps: Number(a.bps),
-          tokenIsCurrency0: tokenIsCurrency0,
-          tickLower: Number(a.tickLower),
-          tickUpper: Number(a.tickUpper),
-          liquidity: a.liquidity.toString(),
-        },
-        row.marketCount,
-      );
-    }
+  for (const factory of masterFactories(cfg)) {
+    await indexMasterFactory(client, store, cfg, factory, fromBlock, toBlock);
   }
 
   if (cfg.bondingFactory) {
@@ -515,7 +544,7 @@ async function indexRange(
     });
     for (const log of graduated) {
       const a = logArgs<{ launchId: bigint; poolId: Hex }>(log);
-      const row = store.tokenForLaunchId(a.launchId);
+      const row = store.tokenForLaunchId(a.launchId, cfg.bondingFactory);
       if (row) {
         row.poolId = a.poolId;
         row.bondingPhase = 2;
@@ -639,7 +668,7 @@ async function indexBondingTrades(
       quoteIn: bigint;
       tokensOut: bigint;
     }>(log);
-    const row = store.tokenForLaunchId(a.launchId);
+    const row = store.tokenForLaunchId(a.launchId, cfg.bondingFactory);
     const meta = tradeLogMeta(log);
     if (!row || !meta) continue;
     const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;
@@ -667,7 +696,7 @@ async function indexBondingTrades(
       tokensIn: bigint;
       quoteOut: bigint;
     }>(log);
-    const row = store.tokenForLaunchId(a.launchId);
+    const row = store.tokenForLaunchId(a.launchId, cfg.bondingFactory);
     const meta = tradeLogMeta(log);
     if (!row || !meta) continue;
     const ts = tsMap.get(meta.blockNumber.toString()) ?? 0;

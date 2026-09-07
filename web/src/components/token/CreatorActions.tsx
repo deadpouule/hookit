@@ -8,11 +8,9 @@ import { fetchCreatorClaimedTotal, invalidateCreatorClaimed } from "@/lib/creato
 
 import {
   getBondingFactoryAddress,
-  getLaunchFactoryAddress,
   STABLE_QUOTE_ADDRESS,
 } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { feeEscrowAbi, graduatedFeeHookAbi } from "@/lib/contracts/swap-abi";
 import { shortAddress } from "@/lib/master-hooks";
@@ -41,7 +39,6 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   const { writeContractAsync, isPending } = useWriteContract();
   const [message, setMessage] = useState<string | null>(null);
 
-  const factory = getLaunchFactoryAddress();
   const bonding = getBondingFactoryAddress();
   const isClassic = pool.rail === "classic";
   const isGraduatedClassic = isClassic && pool.bondingPhase !== 0;
@@ -51,13 +48,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   const quoteLabel = poolQuoteLabel(pool);
   const decimals = quoteDecimals(quote);
   const poolId = pool.poolId as `0x${string}` | undefined;
-
-  const { data: masterHook } = useReadContract({
-    address: factory,
-    abi: launchFactoryAbi,
-    functionName: "masterHook",
-    query: { enabled: !!factory && !isClassic },
-  });
+  const masterHook = !isClassic ? (pool.hooksAddress as Address | undefined) : undefined;
 
   const { data: classicFeeHook } = useReadContract({
     address: bonding,
