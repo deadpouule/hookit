@@ -9,6 +9,7 @@
     "poll": "tsx src/main.ts poll",
     "tick": "tsx src/main.ts tick",
     "probe": "tsx src/main.ts probe",
+    "fee-keeper": "tsx scripts/fee-keeper.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

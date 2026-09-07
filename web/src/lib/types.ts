@@ -82,7 +82,7 @@ export interface LaunchFormState {
   quoteAsset: PairingTokenId;
   /** 1–5 canonical quote markets for Master multi-pool launch. */
   markets: LaunchMarketInput[];
-  /** Creator-chosen floor leg index (multi); inactive until floor ships in multi. */
+  /** Creator-chosen floor leg index (multi). Other markets strip the floor bit. */
   floorQuoteIndex: number;
 }
 

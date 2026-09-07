@@ -65,7 +65,29 @@ curl -s http://127.0.0.1:8787/health | jq .
 # expect: ok: true, tokens >= 0, lagBlocks reasonable
 ```
 
-## 5. TLS + public URL
+## 5. Daily fee keeper (protocol 20/80 + TWAP HTST buyback)
+
+Fees accrue as `pending` until flushed. Enable the timer so they route every day:
+
+```bash
+# In /opt/hookit/.env — see env.example
+FEE_KEEPER_PRIVATE_KEY=0x...   # gas wallet
+PROTOCOL_DISTRIBUTOR=0x4149509d2293a61cb199E17227740eEBFADd30c6
+HKIT_BUYBACK=0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB
+
+chmod +x /opt/hookit/deploy/linode/fee-keeper/run.sh
+install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.service /etc/systemd/system/
+install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now hookit-fee-keeper.timer
+
+# smoke once:
+sudo -u hookit /opt/hookit/deploy/linode/fee-keeper/run.sh
+```
+
+Details: [`../fee-keeper/README.md`](../fee-keeper/README.md).
+
+## 6. TLS + public URL
 
 ```bash
 cp /opt/hookit/deploy/linode/indexer-only/nginx-indexer.conf /etc/nginx/sites-available/hookit-indexer.conf
@@ -81,7 +103,7 @@ Public check:
 curl -s https://indexer.yourdomain.com/health | jq .
 ```
 
-## 6. Wire Vercel
+## 7. Wire Vercel
 
 In **Vercel → Project → Settings → Environment Variables**:
 

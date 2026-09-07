@@ -23,7 +23,11 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     }
 
     mapping(address => bool) public operators;
+    /// Primary stream (first currency credited for this beneficiary/token).
     mapping(address => mapping(address => Stream)) public streams;
+    /// Extra streams when a multi-market launch credits a second quote.
+    mapping(address => mapping(address => mapping(uint256 => Stream))) private _extra;
+    mapping(address => mapping(address => address[])) private _extraCurrencies;
 
     event OperatorSet(address indexed operator, bool allowed);
     event Credited(address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount);
@@ -81,29 +85,23 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     }
 
     function claim(address launchToken) external {
-        uint256 vested = vestedOf(msg.sender, launchToken);
-        if (vested == 0) revert NothingVested();
-
-        Stream storage s = streams[msg.sender][launchToken];
-        s.claimed += uint128(vested);
-
-        uint256 claims =
-            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), s.currency.toId());
-        uint256 fromClaims = claims >= vested ? vested : claims;
-        if (fromClaims > 0) _redeemClaims(s.currency, msg.sender, fromClaims);
-        uint256 remainder = vested - fromClaims;
-        if (remainder > 0) s.currency.transfer(msg.sender, remainder);
-        emit Claimed(msg.sender, launchToken, s.currency, vested);
+        uint256 paid = _payoutStream(streams[msg.sender][launchToken], msg.sender, launchToken);
+        address[] storage extras = _extraCurrencies[msg.sender][launchToken];
+        for (uint256 i; i < extras.length; ++i) {
+            paid += _payoutStream(
+                _extra[msg.sender][launchToken][Currency.wrap(extras[i]).toId()], msg.sender, launchToken
+            );
+        }
+        if (paid == 0) revert NothingVested();
     }
 
     function vestedOf(address account, address launchToken) public view returns (uint256) {
-        Stream memory s = streams[account][launchToken];
-        if (s.amount == 0 || s.start == 0) return 0;
-        uint256 duration = s.durationSeconds == 0 ? ProtocolConstants.BUYBACK_VESTING_DURATION : s.durationSeconds;
-        uint256 elapsed = block.timestamp - uint256(s.start);
-        uint256 unlocked = elapsed >= duration ? uint256(s.amount) : (uint256(s.amount) * elapsed) / duration;
-        if (unlocked <= s.claimed) return 0;
-        return unlocked - s.claimed;
+        uint256 total = _vested(streams[account][launchToken]);
+        address[] storage extras = _extraCurrencies[account][launchToken];
+        for (uint256 i; i < extras.length; ++i) {
+            total += _vested(_extra[account][launchToken][Currency.wrap(extras[i]).toId()]);
+        }
+        return total;
     }
 
     function _credit(
@@ -119,10 +117,51 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
             s.currency = currency;
             s.durationSeconds =
                 durationSeconds == 0 ? uint64(ProtocolConstants.BUYBACK_VESTING_DURATION) : durationSeconds;
-        } else if (Currency.unwrap(s.currency) != Currency.unwrap(currency)) {
-            revert CurrencyMismatch();
+            s.amount += uint128(amount);
+            emit Credited(beneficiary, launchToken, currency, amount);
+            return;
         }
-        s.amount += uint128(amount);
+        if (Currency.unwrap(s.currency) == Currency.unwrap(currency)) {
+            s.amount += uint128(amount);
+            emit Credited(beneficiary, launchToken, currency, amount);
+            return;
+        }
+
+        Stream storage extra = _extra[beneficiary][launchToken][currency.toId()];
+        if (extra.start == 0) {
+            extra.start = uint64(block.timestamp);
+            extra.currency = currency;
+            extra.durationSeconds =
+                durationSeconds == 0 ? uint64(ProtocolConstants.BUYBACK_VESTING_DURATION) : durationSeconds;
+            _extraCurrencies[beneficiary][launchToken].push(Currency.unwrap(currency));
+        }
+        extra.amount += uint128(amount);
         emit Credited(beneficiary, launchToken, currency, amount);
+    }
+
+    function _vested(Stream storage s) private view returns (uint256) {
+        if (s.amount == 0 || s.start == 0) return 0;
+        uint256 duration = s.durationSeconds == 0 ? ProtocolConstants.BUYBACK_VESTING_DURATION : s.durationSeconds;
+        uint256 elapsed = block.timestamp - uint256(s.start);
+        uint256 unlocked = elapsed >= duration ? uint256(s.amount) : (uint256(s.amount) * elapsed) / duration;
+        if (unlocked <= s.claimed) return 0;
+        return unlocked - s.claimed;
+    }
+
+    function _payoutStream(Stream storage s, address beneficiary, address launchToken)
+        private
+        returns (uint256 vested)
+    {
+        vested = _vested(s);
+        if (vested == 0) return 0;
+        s.claimed += uint128(vested);
+
+        uint256 claims =
+            address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), s.currency.toId());
+        uint256 fromClaims = claims >= vested ? vested : claims;
+        if (fromClaims > 0) _redeemClaims(s.currency, beneficiary, fromClaims);
+        uint256 remainder = vested - fromClaims;
+        if (remainder > 0) s.currency.transfer(beneficiary, remainder);
+        emit Claimed(beneficiary, launchToken, s.currency, vested);
     }
 }

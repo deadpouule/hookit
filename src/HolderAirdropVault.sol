@@ -27,18 +27,21 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         uint256 totalBal;
         uint256 cursor;
         uint256 paid;
+        uint256 listed;
     }
 
     mapping(address => bool) public operators;
     mapping(address => uint256) public reserve;
+    mapping(address => mapping(uint256 => uint256)) public reserveByQuote;
     mapping(address => Currency) public quoteOf;
     mapping(address => uint64) public lastAirdropAt;
+    mapping(address => mapping(uint256 => uint64)) public lastAirdropAtQuote;
     mapping(address => uint32) public epochSeconds;
     mapping(address => mapping(address => bool)) public excluded;
     mapping(address => address[]) private _excludeList;
     mapping(address => address[]) private _holders;
     mapping(address => mapping(address => uint256)) private _holderIndex;
-    mapping(address => PendingAirdrop) private _pending;
+    mapping(address => mapping(uint256 => PendingAirdrop)) private _pending;
     uint256 private _locked = 1;
 
     event OperatorSet(address indexed operator, bool allowed);
@@ -158,8 +161,8 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     function depositInternal(address token, Currency quote, uint256 amount) external onlyOperator {
         if (amount == 0) revert ZeroAmount();
         _bindQuote(token, quote);
-        reserve[token] += amount;
-        emit Deposited(token, quote, amount, reserve[token]);
+        _addPot(token, quote, amount);
+        emit Deposited(token, quote, amount, _pot(token, quote));
     }
 
     function deposit(address token, Currency quote, uint256 amount) external payable onlyOperator {
@@ -173,15 +176,28 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
             _safeTransferFrom(Currency.unwrap(quote), msg.sender, address(this), amount);
         }
 
-        reserve[token] += amount;
-        emit Deposited(token, quote, amount, reserve[token]);
+        _addPot(token, quote, amount);
+        emit Deposited(token, quote, amount, _pot(token, quote));
+    }
+
+    function potOf(address token, Currency quote) public view returns (uint256) {
+        return _pot(token, quote);
     }
 
     function tryAutoAirdrop(address token) external nonReentrant returns (bool) {
-        uint256 pot = reserve[token];
-        if (pot == 0) return false;
+        return _tryAutoAirdrop(token, quoteOf[token]);
+    }
 
-        uint64 last = lastAirdropAt[token];
+    function tryAutoAirdrop(address token, Currency quote) external nonReentrant returns (bool) {
+        return _tryAutoAirdrop(token, quote);
+    }
+
+    /// @dev Claims-only. Never unlocks — safe to call from `_beforeSwap`.
+    function _tryAutoAirdrop(address token, Currency quote) private returns (bool) {
+        uint256 potNow = _pot(token, quote);
+        if (potNow == 0) return false;
+
+        uint64 last = _lastAt(token, quote);
         uint32 epoch = epochSeconds[token];
         if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
         if (last != 0 && block.timestamp < uint256(last) + epoch) return false;
@@ -189,82 +205,100 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         address[] storage holders = _holders[token];
         if (holders.length == 0) return false;
 
-        PendingAirdrop storage pending = _pending[token];
+        uint256 quoteId = quote.toId();
+        uint256 claimsBal = address(claimsManager) != address(0) ? claimsManager.balanceOf(address(this), quoteId) : 0;
+        if (claimsBal == 0) return false;
+
+        PendingAirdrop storage pending = _pending[token][quoteId];
         if (pending.pot == 0) {
-            pending.pot = pot;
+            pending.pot = potNow;
             pending.totalBal = _sumListedBalances(token, holders);
             if (pending.totalBal == 0) return false;
             pending.cursor = 0;
+            pending.listed = holders.length;
+            pending.paid = 0;
         }
 
-        Currency quote = quoteOf[token];
-        uint256 claimsBal =
-            address(claimsManager) != address(0) ? claimsManager.balanceOf(address(this), quote.toId()) : 0;
-        bool payClaims = claimsBal >= pending.pot;
+        uint256 listed = pending.listed;
+        if (listed > holders.length) listed = holders.length;
+
+        uint256 remainingPot = pending.pot - pending.paid;
+        if (remainingPot == 0) {
+            _finishEpoch(token, quote, pending, holders.length);
+            return true;
+        }
 
         uint256 batchStart = pending.cursor;
         uint256 batchEnd = batchStart + MAX_HOLDERS_PER_SWAP;
-        if (batchEnd > holders.length) batchEnd = holders.length;
+        if (batchEnd > listed) batchEnd = listed;
 
-        // Precompute shares and commit cursor/reserve before any external call (CEI).
-        address[] memory payees = new address[](batchEnd - batchStart);
-        uint256[] memory shares = new uint256[](batchEnd - batchStart);
+        address[] memory payees = new address[](batchEnd > batchStart ? batchEnd - batchStart : 0);
+        uint256[] memory shares = new uint256[](payees.length);
         uint256 payCount;
         uint256 batchPaid;
+        uint256 claimsLeft = claimsBal;
+        uint256 newCursor = batchStart;
+
         for (uint256 i = batchStart; i < batchEnd; ++i) {
+            newCursor = i + 1;
+            if (remainingPot == 0 || claimsLeft == 0) {
+                newCursor = i;
+                break;
+            }
             address account = holders[i];
             uint256 bal = IERC20Balance(token).balanceOf(account);
             if (bal == 0) continue;
             uint256 share = pending.pot * bal / pending.totalBal;
             if (share == 0) continue;
+            if (share > remainingPot) share = remainingPot;
+            if (share > claimsLeft) share = claimsLeft;
+            if (share == 0) {
+                newCursor = i;
+                break;
+            }
             payees[payCount] = account;
             shares[payCount] = share;
             batchPaid += share;
+            remainingPot -= share;
+            claimsLeft -= share;
             unchecked {
                 ++payCount;
             }
         }
 
-        pending.cursor = batchEnd;
-        pending.paid += batchPaid;
-        reserve[token] -= batchPaid;
+        if (batchPaid == 0 && claimsLeft == claimsBal) {
+            newCursor = batchEnd;
+        }
+        pending.cursor = newCursor;
 
         if (batchPaid > 0) {
-            if (payClaims) {
-                for (uint256 i; i < payCount; ++i) {
-                    claimsManager.transfer(payees[i], quote.toId(), shares[i]);
-                }
-            } else {
-                _materializeQuote(quote, batchPaid);
-                for (uint256 i; i < payCount; ++i) {
-                    quote.transfer(payees[i], shares[i]);
-                }
+            pending.paid += batchPaid;
+            _subPot(token, quote, batchPaid);
+            for (uint256 i; i < payCount; ++i) {
+                claimsManager.transfer(payees[i], quoteId, shares[i]);
             }
         }
 
-        if (pending.cursor < holders.length) {
-            return false;
-        }
+        if (pending.cursor < listed && remainingPot > 0) return false;
 
-        emit Airdropped(token, quote, pending.pot, pending.paid, holders.length, msg.sender);
         bool done = pending.paid > 0;
-        delete _pending[token];
-        lastAirdropAt[token] = uint64(block.timestamp);
+        _finishEpoch(token, quote, pending, holders.length);
         return done;
     }
 
     /// @notice Manual full-list airdrop (legacy / emergency). Prefer automatic `tryAutoAirdrop`.
+    /// @dev May redeem claims (unlock) — call outside of a swap.
     function airdrop(address token, address[] calldata holders) external nonReentrant returns (uint256 distributed) {
-        uint256 pot = reserve[token];
+        Currency quote = quoteOf[token];
+        uint256 pot = _pot(token, quote);
         if (pot == 0) revert ZeroAmount();
 
-        uint64 last = lastAirdropAt[token];
+        uint64 last = _lastAt(token, quote);
         uint32 epoch = epochSeconds[token];
         if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
         if (last != 0 && block.timestamp < uint256(last) + epoch) revert EpochNotElapsed();
         if (holders.length == 0) revert EmptyHolders();
 
-        Currency quote = quoteOf[token];
         uint256 circulating = _circulatingSupply(token);
         (uint256 totalBal, uint256[] memory bals) = _validateHolders(token, holders, circulating);
 
@@ -279,7 +313,9 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
             paid += share;
         }
 
-        reserve[token] = pot - paid;
+        _subPot(token, quote, paid);
+        delete _pending[token][quote.toId()];
+        lastAirdropAtQuote[token][quote.toId()] = uint64(block.timestamp);
         lastAirdropAt[token] = uint64(block.timestamp);
         distributed = paid;
 
@@ -300,13 +336,11 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     }
 
     function secondsUntilAirdrop(address token) external view returns (uint256) {
-        uint64 last = lastAirdropAt[token];
-        if (last == 0) return 0;
-        uint32 epoch = epochSeconds[token];
-        if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
-        uint256 next = uint256(last) + epoch;
-        if (block.timestamp >= next) return 0;
-        return next - block.timestamp;
+        return _secondsUntil(_lastAt(token, quoteOf[token]), epochSeconds[token]);
+    }
+
+    function secondsUntilAirdrop(address token, Currency quote) external view returns (uint256) {
+        return _secondsUntil(_lastAt(token, quote), epochSeconds[token]);
     }
 
     function _removeHolder(address token, address account) private {
@@ -365,9 +399,60 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         Currency stored = quoteOf[token];
         if (Currency.unwrap(stored) == address(0) && reserve[token] == 0 && lastAirdropAt[token] == 0) {
             quoteOf[token] = quote;
+        }
+    }
+
+    function _uninitialized(address token) private view returns (bool) {
+        return Currency.unwrap(quoteOf[token]) == address(0) && reserve[token] == 0 && lastAirdropAt[token] == 0;
+    }
+
+    function _pot(address token, Currency quote) private view returns (uint256) {
+        if (_uninitialized(token)) return 0;
+        if (Currency.unwrap(quoteOf[token]) == Currency.unwrap(quote)) return reserve[token];
+        return reserveByQuote[token][quote.toId()];
+    }
+
+    function _addPot(address token, Currency quote, uint256 amount) private {
+        if (_uninitialized(token) || Currency.unwrap(quoteOf[token]) == Currency.unwrap(quote)) {
+            if (Currency.unwrap(quoteOf[token]) == address(0) && Currency.unwrap(quote) != address(0)) {
+                quoteOf[token] = quote;
+            }
+            reserve[token] += amount;
             return;
         }
-        if (Currency.unwrap(stored) != Currency.unwrap(quote)) revert QuoteMismatch();
+        reserveByQuote[token][quote.toId()] += amount;
+    }
+
+    function _subPot(address token, Currency quote, uint256 amount) private {
+        if (Currency.unwrap(quoteOf[token]) == Currency.unwrap(quote)) {
+            reserve[token] -= amount;
+        } else {
+            reserveByQuote[token][quote.toId()] -= amount;
+        }
+    }
+
+    function _lastAt(address token, Currency quote) private view returns (uint64 last) {
+        last = lastAirdropAtQuote[token][quote.toId()];
+        if (last == 0 && Currency.unwrap(quote) == Currency.unwrap(quoteOf[token])) {
+            last = lastAirdropAt[token];
+        }
+    }
+
+    function _secondsUntil(uint64 last, uint32 epoch) private view returns (uint256) {
+        if (last == 0) return 0;
+        if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
+        uint256 next = uint256(last) + epoch;
+        if (block.timestamp >= next) return 0;
+        return next - block.timestamp;
+    }
+
+    function _finishEpoch(address token, Currency quote, PendingAirdrop storage pending, uint256 holdersLen) private {
+        emit Airdropped(token, quote, pending.pot, pending.paid, holdersLen, msg.sender);
+        delete _pending[token][quote.toId()];
+        lastAirdropAtQuote[token][quote.toId()] = uint64(block.timestamp);
+        if (Currency.unwrap(quoteOf[token]) == Currency.unwrap(quote)) {
+            lastAirdropAt[token] = uint64(block.timestamp);
+        }
     }
 
     function _materializeQuote(Currency quote, uint256 amount) private {

@@ -206,12 +206,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         const bitmask =
           form.hookMode === "custom"
             ? BigInt(0)
-            : packLaunchBitmask(
-                isMulti && form.modules.backedFloor
-                  ? { ...form.modules, backedFloor: false }
-                  : form.modules,
-                form.hookTaxBps,
-              );
+            : packLaunchBitmask(form.modules, form.hookTaxBps);
         const customHook = customHookAddress ?? zeroAddress;
 
         const masterLaunchFields = {

@@ -1,36 +1,43 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-09-06",
-  "deployBlock": 55204587,
-  "patchDeployedAt": "2026-09-07",
-  "patchDeployBlock": 55269273,
+  "deployedAt": "2026-09-07",
+  "deployBlock": 55311109,
   "deployer": "0x67b436693b7f8ebad6b1b1caf88c2e197d961614",
   "contracts": {
     "LaunchFactoryLib": "0x7dfec826a4fb3d3532e19e6f2bb90bf3400823a6",
     "LaunchDevBuyLib": "0x2de8b6093411b033a2e9935bed6a3230c2413117",
     "LaunchTokenDeployLib": "0xdb426240397507fe2666d3dc1dcf80b8f5a47831",
-    "FloorVault": "0x6becbba50416a8a0b747d2fb2d1cdc4b8213c8f9",
-    "FeeEscrow": "0x40699bce8fa85b0e551260c2bb45e6a4011c1aa4",
-    "ProtocolRevenueDistributor": "0x10d0350b143b40509c7c5461d66ba28c5ad4b24f",
-    "BuybackVault": "0x00c478d5a25eb496c34a3d82af266606206c8589",
-    "HolderAirdropVault": "0x952f07a3237742fbfab5142981477528a3e45f6f",
-    "MasterLaunchHook": "0xc4f1e66778de7d38c2a8fec33acd8f747e50eac8",
-    "LaunchFactory": "0x10c4687b66fec64066c59a59cae1a9c326779f35",
-    "LaunchFactoryQuery": "0x2b0f0c047e4520cefac3f8d8ff7073b7d15afa57",
-    "GraduatedFeeHook": "0xd0097dccaec103d5074170aad7b2cdbd021f6088",
-    "BondingLaunchFactory": "0x44dd5e6fbd3594f7c784b76f8362d6e68b16af98",
-    "HookitSwapRouter": "0x4c311c07085029be4973b5e7e1370ef70c244704",
-    "V4ClaimsRedeemer": "0x36a2845552014f0a0d9262847a349c89966f9eeb",
-    "FeeEthRail": "0x83c1e0a3e7a41266c8a84204c208fc9d427b7edf",
-    "HkitBuyback": "0xf5923fd54049e9896f6795b531e08df2f728e917",
+    "FloorVault": "0x0fd357c7e7ec5d1d1344d23d8c3156b956dee6f0",
+    "FeeEscrow": "0x9a7d0debbe35b6257abff8fe740831f544c7342c",
+    "ProtocolRevenueDistributor": "0x4149509d2293a61cb199e17227740eebfadd30c6",
+    "BuybackVault": "0x067f28dac32aa69362ef8c70fa3de76541f50bf6",
+    "HolderAirdropVault": "0x80c83d9761bca8693ad350f3347ab109103a104c",
+    "MasterLaunchHook": "0x2d936fcc92cbc7c33eebba0c9787f9256274eac8",
+    "LaunchFactory": "0x480bfb88985fb94f4345ed4bb2ec267db9ab9626",
+    "LaunchFactoryQuery": "0x2b335d8dbafd55e2c6f93816a8449fc810de1f90",
+    "GraduatedFeeHook": "0x9558f74e81377ee0be24fbad660377b100266088",
+    "BondingLaunchFactory": "0x13d6216a92b013daacd36e4f6d78ad9264af1a0c",
+    "HookitSwapRouter": "0x145a1e9960f309991de920dde8fc2e4902f33325",
+    "V4ClaimsRedeemer": "0xd4bebb50601eea8b611ea2d41ffd293611782815",
+    "FeeEthRail": "0xd9d24028a3a2dc0874b5d4f10c2770150a719acb",
+    "HkitBuyback": "0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb",
     "NativeToken": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
   },
   "previousContracts": {
-    "HolderAirdropVault": "0x51d6634084ba3e319aa175ff2e7f5ab4ec13f077",
-    "MasterLaunchHook": "0xa600b5e0d5ddf823a0c44106ec8d91ed39fd2ac8",
-    "LaunchFactory": "0xbadb0cbffc80b107082babab9e488bc6bef8f425",
-    "LaunchFactoryQuery": "0x0ef5b27151c2ce5ff4b6723ae2b24a6431659e96"
+    "LaunchFactories": [
+      "0x10c4687b66fec64066c59a59cae1a9c326779f35",
+      "0xbadb0cbffc80b107082babab9e488bc6bef8f425"
+    ],
+    "BondingLaunchFactories": [
+      "0x44dd5e6fbd3594f7c784b76f8362d6e68b16af98"
+    ],
+    "ProtocolRevenueDistributors": [
+      "0x10d0350b143b40509c7c5461d66ba28c5ad4b24f"
+    ],
+    "HkitBuybacks": [
+      "0xf5923fd54049e9896f6795b531e08df2f728e917"
+    ]
   },
   "nativeToken": {
     "name": "HOOKTEST",
@@ -42,9 +49,9 @@
     "url": "https://indexer.hookit.fun"
   },
   "notes": [
-    "2026-09-07 airdrop-vault patch: new HolderAirdropVault + MasterLaunchHook + LaunchFactory (script/ReplaceAirdropFactoryInk.s.sol). FloorVault / FeeEscrow / Distributor / BuybackVault reused.",
-    "Existing tokens stay on previous MasterLaunchHook / HolderAirdropVault. New launches use the patched vault (OOB + reentrancy guards).",
-    "Indexer watches both LaunchFactory addresses (comma-separated). Do not reset the store.",
+    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-07.",
+    "Existing native token carried forward; fair launch was skipped for this redeploy.",
+    "Indexer must retain its store and watch current plus previous Master factories; do not reset.",
     "customHookAllowlistEnabled expected true after harden."
   ]
 }

@@ -14,8 +14,9 @@ library HookitDeployLib {
         UniswapV4Deployments.Deployment memory d = UniswapV4Deployments.get(block.chainid);
         factory.setQuote(d.stableQuote, true, 6, 1e18, address(0));
         factory.setEthUsdFeed(d.ethUsdFeed);
-        // Warm storage from the live feed when available; `_ethUsdX18()` also reads the feed at launch.
-        try factory.syncEthUsdPrice() {} catch {}
+        // Do not broadcast an eager sync: Foundry records the external call as its own
+        // transaction, so a stale feed fails the deployment despite try/catch. Launches
+        // read the feed when fresh and otherwise use the stored default.
 
         if (block.chainid == QuotronStockQuotes.INK_MAINNET) {
             QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
@@ -30,7 +31,6 @@ library HookitDeployLib {
         UniswapV4Deployments.Deployment memory d = UniswapV4Deployments.get(block.chainid);
         bonding.setQuote(d.stableQuote, true, 6, 1e18, address(0));
         bonding.setEthUsdPrice(ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18, d.ethUsdFeed);
-        try bonding.syncEthUsdPrice() {} catch {}
 
         if (block.chainid == QuotronStockQuotes.INK_MAINNET) {
             QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();

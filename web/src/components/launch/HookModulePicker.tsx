@@ -46,7 +46,6 @@ import {
   feeRouteSliderMax,
   feeRouteTotalPct,
   listEnabledFeeRoutes,
-  rebalanceFeeRoutes,
   setFeeRouteShare,
   type FeeRouteKey,
 } from "@/lib/hook-fee-route";
@@ -297,10 +296,9 @@ export function HookModulePicker({
   configHeading?: string;
 }) {
   const panelRefs = useRef<Partial<Record<PickerFocusId, HTMLDivElement | null>>>({});
-  const visibleHooks = (hookIds
+  const visibleHooks = hookIds
     ? MASTER_HOOKS.filter((hook) => hookIds.includes(hook.id))
-    : MASTER_HOOKS
-  ).filter((hook) => !(multiMarket && hook.id === "backed-floor"));
+    : MASTER_HOOKS;
   const enabledHooks = visibleHooks.filter((h) => isModuleEnabled(modules, h.id));
   const fixedFeeEnabled = includeFixedFee && hookTaxBps > 0 && !modules.dynamicFees;
   const [focus, setFocus] = useState<PickerFocusId | null>(
@@ -495,6 +493,7 @@ export function HookModulePicker({
                 onHookTaxChange={onHookTaxChange}
                 floorEst={floorEst}
                 hookTaxBps={hookTaxBps}
+                multiMarket={multiMarket}
               />
             </div>
           );
@@ -565,6 +564,7 @@ function HookSettings({
   onHookTaxChange,
   floorEst,
   hookTaxBps = 0,
+  multiMarket = false,
 }: {
   hook: MasterHook;
   modules: LaunchModules;
@@ -572,6 +572,7 @@ function HookSettings({
   onHookTaxChange?: (hookTaxBps: number) => void;
   floorEst: number;
   hookTaxBps?: number;
+  multiMarket?: boolean;
 }) {
   const accent = hookAccentColor(hook.id);
   const theme = hook.theme;
@@ -642,6 +643,16 @@ function HookSettings({
             )}
           >
             Est. floor ≈ {floorEst.toFixed(6)} ETH / token
+          </span>
+        )}
+        {multiMarket && (
+          <span
+            className={cn(
+              "orb-hook-desc-badge pick-config-hint-badge mt-2",
+              `orb-hook-desc-badge--${theme}`,
+            )}
+          >
+            Floor backs one pair — pick it under pairing
           </span>
         )}
       </div>

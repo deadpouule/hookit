@@ -242,9 +242,14 @@ contract ProtocolRevenueDistributor is Owned, UnlockTaker, IProtocolRevenueDistr
 
         uint256 claims =
             address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), currency.toId());
-        if (claims >= amount) {
-            _redeemClaims(currency, address(this), amount);
-        }
+        uint256 fromClaims = claims < amount ? claims : amount;
+        if (fromClaims > 0) _redeemClaims(currency, address(this), fromClaims);
+
+        uint256 have = currency.isAddressZero()
+            ? address(this).balance
+            : IERC20Minimal(Currency.unwrap(currency)).balanceOf(address(this));
+        if (have < amount) amount = have;
+        if (amount == 0) revert ZeroAmount();
     }
 
     function _splitAndRoute(Currency currency, uint256 amount) private {

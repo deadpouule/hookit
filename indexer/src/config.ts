@@ -122,8 +122,9 @@ function uniqAddrs(addrs: Address[]): Address[] {
   return out;
 }
 
-/** Ink Master factories: patched vault first, then the previous live factory. */
+/** Ink Master factories: current cohabitation stack first, then legacy stacks with live tokens. */
 const INK_LAUNCH_FACTORIES = [
+  "0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626",
   "0x10c4687B66fec64066C59A59cae1A9c326779f35",
   "0xbadb0CBFfC80b107082babaB9e488Bc6bEf8f425",
 ] as Address[];

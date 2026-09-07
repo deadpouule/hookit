@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Hookit fee keeper (distribute protocol fees + TWAP buyback)
+
+[Timer]
+# Once per day — 00:20 UTC
+OnCalendar=*-*-* 00:20:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

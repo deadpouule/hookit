@@ -466,10 +466,6 @@ export function MasterLaunchWizard() {
                         ...p,
                         markets,
                         quoteAsset: markets[0]?.id ?? p.quoteAsset,
-                        modules:
-                          markets.length > 1 && p.modules.backedFloor
-                            ? { ...p.modules, backedFloor: false }
-                            : p.modules,
                       }))
                     }
                     onFloorQuoteIndexChange={(floorQuoteIndex) =>

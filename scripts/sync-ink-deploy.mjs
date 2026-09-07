@@ -154,18 +154,64 @@ function loadBroadcast(path) {
   const prevPath = join(ROOT, "deploy/ink/addresses.json");
   let prevNative = null;
   let prevNativeMeta = null;
+  let prevIndexerStartBlock = null;
+  let previousContracts = null;
   if (existsSync(prevPath)) {
     try {
       const prev = JSON.parse(readFileSync(prevPath, "utf8"));
       prevNative = prev.contracts?.NativeToken ?? prev.nativeToken?.address ?? null;
       prevNativeMeta = prev.nativeToken ?? null;
+      prevIndexerStartBlock = parseBlock(prev.indexer?.startBlock);
+      previousContracts = {
+        LaunchFactories: [
+          prev.contracts?.LaunchFactory,
+          ...(prev.previousContracts?.LaunchFactories ?? []),
+        ].filter(Boolean),
+        BondingLaunchFactories: [
+          prev.contracts?.BondingLaunchFactory,
+          ...(prev.previousContracts?.BondingLaunchFactories ?? []),
+        ].filter(Boolean),
+        ProtocolRevenueDistributors: [
+          prev.contracts?.ProtocolRevenueDistributor,
+          ...(prev.previousContracts?.ProtocolRevenueDistributors ?? []),
+        ].filter(Boolean),
+        HkitBuybacks: [
+          prev.contracts?.HkitBuyback,
+          ...(prev.previousContracts?.HkitBuybacks ?? []),
+        ].filter(Boolean),
+      };
     } catch {
       /* ignore */
     }
   }
   if (prevNative) creates.set("NativeToken", lower(prevNative));
+  if (previousContracts) {
+    const currentByGroup = {
+      LaunchFactories: creates.get("LaunchFactory"),
+      BondingLaunchFactories: creates.get("BondingLaunchFactory"),
+      ProtocolRevenueDistributors: creates.get("ProtocolRevenueDistributor"),
+      HkitBuybacks: creates.get("HkitBuyback"),
+    };
+    for (const [group, current] of Object.entries(currentByGroup)) {
+      previousContracts[group] = [
+        ...new Set(
+          previousContracts[group]
+            .map(lower)
+            .filter((address) => address && address !== current),
+        ),
+      ];
+    }
+  }
 
-  return { creates, factoryCreateBlock, deployer, prevNativeMeta, path };
+  return {
+    creates,
+    factoryCreateBlock,
+    deployer,
+    prevNativeMeta,
+    prevIndexerStartBlock,
+    previousContracts,
+    path,
+  };
 }
 
 /** Libs may be reused across redeploys (no CREATE in this broadcast) — carry from prior addresses.json. */
@@ -191,19 +237,27 @@ function requireContracts(creates) {
   }
 }
 
-function buildAddresses(creates, startBlock, deployer, prevNativeMeta) {
+function buildAddresses(
+  creates,
+  deployBlock,
+  indexerStartBlock,
+  deployer,
+  prevNativeMeta,
+  previousContracts,
+) {
   const native = creates.get("NativeToken");
   const today = new Date().toISOString().slice(0, 10);
   return {
     chainId: CHAIN_ID,
     network: "Ink mainnet",
     deployedAt: today,
-    deployBlock: startBlock,
+    deployBlock,
     deployer: deployer ?? "",
     contracts: Object.fromEntries([
       ...CONTRACT_KEYS.map((k) => [k, creates.get(k)]),
       ...(native ? [["NativeToken", native]] : []),
     ]),
+    previousContracts,
     nativeToken: native
       ? {
           name: prevNativeMeta?.name ?? "HOOKTEST",
@@ -212,11 +266,15 @@ function buildAddresses(creates, startBlock, deployer, prevNativeMeta) {
         }
       : undefined,
     indexer: {
-      startBlock,
+      startBlock: indexerStartBlock,
       url: "https://indexer.hookit.fun",
     },
     notes: [
       `Synced from forge broadcast by scripts/sync-ink-deploy.mjs on ${today}.`,
+      ...(prevNativeMeta
+        ? ["Existing native token carried forward; fair launch was skipped for this redeploy."]
+        : []),
+      "Indexer must retain its store and watch current plus previous Master factories; do not reset.",
       "customHookAllowlistEnabled expected true after harden.",
     ],
   };
@@ -265,15 +323,15 @@ function resolveValue(creates, startBlock, key) {
   return creates.get(key);
 }
 
-function buildEnvBundle(creates, startBlock) {
+function buildEnvBundle(creates, indexerStartBlock) {
   const server = {};
   for (const [envKey, contractKey] of Object.entries(ENV_MAP)) {
-    const v = resolveValue(creates, startBlock, contractKey);
+    const v = resolveValue(creates, indexerStartBlock, contractKey);
     if (v) server[envKey] = v;
   }
   const next = {};
   for (const [envKey, contractKey] of Object.entries(NEXT_PUBLIC_MAP)) {
-    const v = resolveValue(creates, startBlock, contractKey);
+    const v = resolveValue(creates, indexerStartBlock, contractKey);
     if (v) next[envKey] = v;
   }
   return { server, next };
@@ -281,15 +339,38 @@ function buildEnvBundle(creates, startBlock) {
 
 function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const { creates, factoryCreateBlock, deployer, prevNativeMeta, path } = loadBroadcast(opts.broadcast);
+  const {
+    creates,
+    factoryCreateBlock,
+    deployer,
+    prevNativeMeta,
+    prevIndexerStartBlock,
+    previousContracts,
+    path,
+  } = loadBroadcast(opts.broadcast);
   requireContracts(creates);
 
   if (factoryCreateBlock == null) {
     throw new Error("Could not resolve LaunchFactory CREATE block from receipts");
   }
 
-  const addresses = buildAddresses(creates, factoryCreateBlock, deployer, prevNativeMeta);
-  const { server, next } = buildEnvBundle(creates, factoryCreateBlock);
+  const indexerStartBlock =
+    prevIndexerStartBlock == null
+      ? factoryCreateBlock
+      : Math.min(prevIndexerStartBlock, factoryCreateBlock);
+  const addresses = buildAddresses(
+    creates,
+    factoryCreateBlock,
+    indexerStartBlock,
+    deployer,
+    prevNativeMeta,
+    previousContracts,
+  );
+  const { server, next } = buildEnvBundle(creates, indexerStartBlock);
+  const indexerFactoryList = [
+    server.LAUNCH_FACTORY,
+    ...(previousContracts?.LaunchFactories ?? []),
+  ].filter(Boolean).join(",");
 
   console.log(`broadcast: ${path}`);
   console.log(`LaunchFactory: ${creates.get("LaunchFactory")} @ block ${factoryCreateBlock}`);
@@ -323,12 +404,21 @@ function main() {
     writeText(
       p,
       upsertEnvLines(base, {
-        LAUNCH_FACTORY: server.LAUNCH_FACTORY,
+        LAUNCH_FACTORY: indexerFactoryList,
         BONDING_FACTORY: server.BONDING_FACTORY,
         INDEXER_START_BLOCK: server.INDEXER_START_BLOCK,
       }),
       opts.dryRun,
     );
+  }
+
+  // web/.env.example
+  {
+    const p = join(ROOT, "web/.env.example");
+    if (existsSync(p)) {
+      const base = readFileSync(p, "utf8");
+      writeText(p, upsertEnvLines(base, next), opts.dryRun);
+    }
   }
 
   // root .env.example — keep secrets commented
@@ -365,7 +455,14 @@ function main() {
       }
       const base = readFileSync(p, "utf8");
       const isWeb = p.includes(`${join("web", "")}`) || p.includes("web/");
-      const updates = isWeb ? { ...next, INDEXER_START_BLOCK: server.INDEXER_START_BLOCK } : { ...server, ...next };
+      const isIndexer = p.includes(`${join("indexer", "")}`) || p.includes("indexer/");
+      const updates = isWeb
+        ? { ...next, INDEXER_START_BLOCK: server.INDEXER_START_BLOCK }
+        : {
+            ...server,
+            ...next,
+            ...(isIndexer ? { LAUNCH_FACTORY: indexerFactoryList } : {}),
+          };
       writeText(p, upsertEnvLines(base, updates), opts.dryRun);
     }
   }

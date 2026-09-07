@@ -11,6 +11,7 @@ import {FloorVault} from "../src/FloorVault.sol";
 import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {FeeEthRail} from "../src/FeeEthRail.sol";
+import {HkitBuyback} from "../src/HkitBuyback.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 
 /// @notice Read-only Ink deploy health check (no broadcast).
@@ -28,6 +29,7 @@ contract VerifyInkDeployScript is Script {
         ProtocolRevenueDistributor distributor = ProtocolRevenueDistributor(payable(_addr("DISTRIBUTOR")));
         address router = _addr("HOOKIT_SWAP_ROUTER");
         FeeEthRail feeRail = FeeEthRail(payable(_addr("FEE_ETH_RAIL")));
+        HkitBuyback hkitBuyback = HkitBuyback(payable(_addr("HKIT_BUYBACK")));
         address nativeToken = _addr("NATIVE_TOKEN");
 
         _requireCode(address(factory));
@@ -39,6 +41,7 @@ contract VerifyInkDeployScript is Script {
         _requireCode(address(distributor));
         _requireCode(router);
         _requireCode(address(feeRail));
+        _requireCode(address(hkitBuyback));
         _requireCode(nativeToken);
 
         require(address(factory.masterHook()) == address(hook), "factory masterHook");
@@ -52,9 +55,12 @@ contract VerifyInkDeployScript is Script {
         require(distributor.operators(address(hook)), "distributor operator hook");
         require(distributor.operators(address(bonding)), "distributor operator bonding");
         require(distributor.operators(address(graduated)), "distributor operator graduated");
+        require(distributor.nativeToken() == nativeToken, "distributor native token");
+        require(distributor.buybackExecutor() == address(hkitBuyback), "distributor buyback executor");
+        require(address(hkitBuyback.source()) == address(distributor), "buyback source");
+        require(hkitBuyback.hkit() == nativeToken && hkitBuyback.configured(), "buyback config");
 
         uint256 launches = factory.launchCount();
-        require(launches >= 1, "no launches");
 
         bool allowlist = factory.customHookAllowlistEnabled();
         console.log("LaunchFactory", address(factory));

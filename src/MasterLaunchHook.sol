@@ -295,9 +295,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         _antiMev(id, packed, isBuy);
 
         if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED) && airdropDue[st.token]) {
-            if (airdropVault.tryAutoAirdrop(st.token)) {
-                airdropDue[st.token] = false;
-            }
+            try airdropVault.tryAutoAirdrop(st.token, st.quote) returns (bool done) {
+                if (done) airdropDue[st.token] = false;
+            } catch {}
         }
 
         uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
@@ -400,7 +400,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             }
         }
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
-            _markAirdropDue(st.token);
+            _markAirdropDue(st.token, st.quote);
         }
         return (this.afterSwap.selector, 0);
     }
@@ -435,15 +435,23 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         tokenCur.take(poolManager, address(this), tokenIn, false);
         IERC20Supply(st.token).approve(address(vault), tokenIn);
+        uint256 claimId = st.quote.toId();
+        uint256 claimsBefore = poolManager.balanceOf(address(this), claimId);
         uint256 quoteOut = vault.drawForFloor(st.token, st.quote, tokenIn, address(this));
+        uint256 claimsGot = poolManager.balanceOf(address(this), claimId) - claimsBefore;
 
         if (feeAmount > 0) {
-            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, false);
+            bool feeClaims = claimsGot >= feeAmount;
+            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, feeClaims);
+            if (feeClaims) claimsGot -= feeAmount;
         }
 
         uint256 userQuote = quoteOut - feeAmount;
         if (userQuote > 0) {
-            st.quote.settle(poolManager, address(this), userQuote, false);
+            uint256 burnAmt = claimsGot < userQuote ? claimsGot : userQuote;
+            if (burnAmt > 0) st.quote.settle(poolManager, address(this), burnAmt, true);
+            uint256 rawAmt = userQuote - burnAmt;
+            if (rawAmt > 0) st.quote.settle(poolManager, address(this), rawAmt, false);
         }
 
         emit FloorFill(key.toId(), tokenIn, userQuote);
@@ -557,8 +565,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         _fundQuote(st.quote, address(airdropVault), airdropCut, fromPoolClaims);
         if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
 
-        pendingAutoBurn[id] = autoBurnCut;
-        pendingLpDonate[id] = lpDonateCut;
+        pendingAutoBurn[id] += autoBurnCut;
+        pendingLpDonate[id] += lpDonateCut;
 
         emit FeesDistributed(
             id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut, airdropCut
@@ -695,10 +703,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
     }
 
-    function _markAirdropDue(address token) private {
-        if (airdropVault.reserve(token) == 0) return;
+    function _markAirdropDue(address token, Currency quote) private {
+        if (airdropVault.potOf(token, quote) == 0) return;
         if (airdropVault.registeredHolderCount(token) == 0) return;
-        if (airdropVault.secondsUntilAirdrop(token) > 0) return;
+        if (airdropVault.secondsUntilAirdrop(token, quote) > 0) return;
         airdropDue[token] = true;
     }
 

@@ -108,7 +108,8 @@ contract FloorVault is Owned, UnlockTaker, IFloorVault {
 
         reserve[token] -= quoteOut;
         _assertRatchet(token, priceBefore);
-        quote.transfer(recipient, quoteOut);
+        // Inside a swap the PoolManager is already unlocked — never redeem claims here.
+        _payQuote(quote, recipient, quoteOut);
         emit Drawn(token, tokenAmount, quoteOut, recipient);
     }
 
@@ -154,6 +155,20 @@ contract FloorVault is Owned, UnlockTaker, IFloorVault {
 
     function _assertRatchet(address token, uint256 priceBefore) private view {
         if (_priceX18(token) < priceBefore) revert FloorWouldDecrease();
+    }
+
+    /// @dev Pays ERC-6909 claims first, then raw quote. Never unlocks (safe inside a swap).
+    function _payQuote(Currency quote, address recipient, uint256 amount) private {
+        if (amount == 0) return;
+        uint256 claims = address(claimsManager) == address(0) ? 0 : claimsManager.balanceOf(address(this), quote.toId());
+        uint256 claimsPaid = claims < amount ? claims : amount;
+        if (claimsPaid > 0) {
+            claimsManager.transfer(recipient, quote.toId(), claimsPaid);
+        }
+        uint256 raw = amount - claimsPaid;
+        if (raw > 0) {
+            quote.transfer(recipient, raw);
+        }
     }
 
     function _materializeQuote(Currency quote, uint256 amount) private {

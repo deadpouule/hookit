@@ -57,6 +57,9 @@ ufw --force enable || true
 
 echo "[hookit-indexer] systemd…"
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-indexer.service" /etc/systemd/system/hookit-indexer.service
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-fee-keeper.service" /etc/systemd/system/hookit-fee-keeper.service
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-fee-keeper.timer" /etc/systemd/system/hookit-fee-keeper.timer
+chmod +x "${HOOKIT_DIR}/deploy/linode/fee-keeper/run.sh"
 systemctl daemon-reload
 
 cat <<EOF
@@ -68,8 +71,12 @@ Next:
   2. cp ${HOOKIT_DIR}/deploy/linode/indexer-only/env.example ${HOOKIT_DIR}/.env
      chmod 600 ${HOOKIT_DIR}/.env && chown ${HOOKIT_USER}:${HOOKIT_USER} ${HOOKIT_DIR}/.env
      nano ${HOOKIT_DIR}/.env
+     # set FEE_KEEPER_PRIVATE_KEY + fund that wallet with gas
   3. sudo -u ${HOOKIT_USER} ${HOOKIT_DIR}/deploy/linode/indexer-only/deploy.sh
   4. systemctl enable --now hookit-indexer
-  5. nginx + certbot — see deploy/linode/indexer-only/README.md
+  5. systemctl enable --now hookit-fee-keeper.timer
+     # daily 00:20 UTC: distribute pending fees + TWAP HTST buyback
+  6. nginx + certbot — see deploy/linode/indexer-only/README.md
+     fee keeper — see deploy/linode/fee-keeper/README.md
 
 EOF
