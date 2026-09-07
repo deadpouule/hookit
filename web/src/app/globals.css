@@ -2831,14 +2831,6 @@
     animation: hookit-fun-in 0.35s ease-out 0.38s both;
   }
 
-  .hookit-logo-motion--no-intro .hookit-logo-type,
-  .hookit-logo-motion--no-intro .hookit-logo-owl,
-  .hookit-logo-motion--no-intro .hookit-logo-fun {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-
   .hookit-logo-lid {
     position: absolute;
     border-radius: 50%;
@@ -2846,7 +2838,13 @@
     transform: scaleY(0);
     transform-origin: 50% 55%;
     pointer-events: none;
-    animation: hookit-blink 160ms ease-in-out both;
+    /* First blink at 5s, then every 5s. ~160ms pulse inside the cycle. */
+    animation: hookit-idle-blink 5s linear 5s infinite;
+  }
+
+  .home-nav-brand:hover .hookit-logo-lid,
+  .hookit-logo-motion:hover .hookit-logo-lid {
+    animation: hookit-blink 160ms ease-in-out;
   }
 
   /* Eye holes measured from the 1502×310 stacked owl layer. */
@@ -2910,6 +2908,17 @@
     }
     100% {
       transform: scaleY(0);
+    }
+  }
+
+  @keyframes hookit-idle-blink {
+    0%,
+    3.2%,
+    100% {
+      transform: scaleY(0);
+    }
+    1.6% {
+      transform: scaleY(1);
     }
   }
 
