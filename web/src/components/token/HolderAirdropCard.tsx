@@ -5,9 +5,8 @@ import { useReadContract } from "wagmi";
 
 import { HookChip } from "@/components/hooks/HookMark";
 import { V4ClaimsClaimAction } from "@/components/token/V4ClaimsClaimAction";
-import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import type { TokenPool } from "@/lib/types";
@@ -27,20 +26,13 @@ function formatCountdown(seconds: number): string {
 
 /** Status card for Master launches with the holder-airdrop module. */
 export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
-  const factory = getLaunchFactoryAddress();
+  const masterHook = pool.hooksAddress as Address | undefined;
   const isClassic = pool.rail === "classic";
   const enabled = !!pool.hooks.holderAirdrop && !isClassic && !pool.hooks.customHook;
   const token = pool.contractAddress as Address | undefined;
   const quote = (pool.quoteAddress ?? zeroAddress) as Address;
   const quoteLabel = poolQuoteLabel(pool);
   const decimals = quoteDecimals(quote);
-
-  const { data: masterHook } = useReadContract({
-    address: factory,
-    abi: launchFactoryAbi,
-    functionName: "masterHook",
-    query: { enabled: !!factory && enabled },
-  });
 
   const { data: vault } = useReadContract({
     address: masterHook,

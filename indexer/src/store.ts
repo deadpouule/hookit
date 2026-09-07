@@ -114,7 +114,14 @@ export class Store {
         this.data.poolToToken[m.poolId.toLowerCase()] = key;
       }
     }
-    this.data.launchIdToToken[String(row.launchId)] = key;
+    if (row.factory) {
+      this.data.launchIdToToken[`${row.factory.toLowerCase()}:${row.launchId}`] = key;
+      if (!this.data.launchIdToToken[String(row.launchId)]) {
+        this.data.launchIdToToken[String(row.launchId)] = key;
+      }
+    } else {
+      this.data.launchIdToToken[String(row.launchId)] = key;
+    }
   }
 
   registerMarket(token: Address, market: TokenMarket, marketCount?: number) {
@@ -130,7 +137,11 @@ export class Store {
     if (marketCount !== undefined) row.marketCount = marketCount;
   }
 
-  tokenForLaunchId(launchId: bigint | number): TokenRow | undefined {
+  tokenForLaunchId(launchId: bigint | number, factory?: Address): TokenRow | undefined {
+    if (factory) {
+      const namespaced = this.data.launchIdToToken[`${factory.toLowerCase()}:${launchId}`];
+      if (namespaced) return this.data.tokens[namespaced];
+    }
     const key = this.data.launchIdToToken[String(launchId)];
     return key ? this.data.tokens[key] : undefined;
   }

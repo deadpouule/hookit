@@ -27,7 +27,7 @@ import { readEthUsd } from "@/lib/eth-usd";
 import { formatAge } from "@/lib/format";
 import {
   fetchAllBondingLaunches,
-  fetchAllLaunches,
+  fetchAllMasterLaunches,
   launchToTokenPool,
 } from "@/lib/launches";
 import { buybackFromProtocolRevenueUsd, protocolRevenueFromVolumeUsd } from "@/lib/protocol-fees";
@@ -273,7 +273,7 @@ async function fallbackVolumeFromLaunches(ethUsd: number): Promise<LiveWindowSta
   try {
     const client = createServerPublicClient();
     const [masterRaw, classicPools] = await Promise.all([
-      factory ? fetchAllLaunches(client, factory) : Promise.resolve([]),
+      factory ? fetchAllMasterLaunches(client) : Promise.resolve([]),
       bonding ? fetchAllBondingLaunches(client, bonding) : Promise.resolve([]),
     ]);
     const masterPools = await enrichPoolsWithSpotPrices(

@@ -45,12 +45,12 @@ async function main() {
   const client = createClient(cfg);
 
   console.log(`[indexer] chain=${cfg.chainId} rpc=${cfg.rpcUrls.join(" → ")}`);
-  console.log(`[indexer] factory=${cfg.launchFactory ?? "(unset)"} bonding=${cfg.bondingFactory ?? "(unset)"}`);
+  console.log(`[indexer] factory=${cfg.launchFactories.join(",") || "(unset)"} bonding=${cfg.bondingFactory ?? "(unset)"}`);
   console.log(
     `[indexer] data=${store.path} cursor=${store.data.cursor} startBlock=${cfg.startBlock} confirmations=${cfg.confirmations}`,
   );
 
-  if (!cfg.launchFactory && !cfg.bondingFactory) {
+  if (cfg.launchFactories.length === 0 && !cfg.bondingFactory) {
     console.warn("[indexer] WARN: set LAUNCH_FACTORY and/or BONDING_FACTORY");
   }
 

@@ -2,7 +2,11 @@ import type { Address, PublicClient } from "viem";
 import { zeroAddress } from "viem";
 
 import { unpackLaunchBitmask } from "@/lib/bitmask";
-import { DEFAULT_TICK_SPACING, getLaunchFactoryQueryAddress } from "@/lib/contracts/config";
+import {
+  DEFAULT_TICK_SPACING,
+  getLaunchFactoryPairs,
+  getLaunchFactoryQueryAddress,
+} from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
@@ -305,6 +309,18 @@ function normalizeLaunchedAt(value: number | undefined): number | undefined {
   return value && value > 1_000_000_000 ? value : undefined;
 }
 
+/** Numeric launch ids are per-factory; try the active factory first. */
+export async function fetchLaunchByNumericId(
+  publicClient: PublicClient,
+  launchId: bigint,
+): Promise<OnChainLaunch | null> {
+  for (const { factory } of getLaunchFactoryPairs()) {
+    const launch = await fetchLaunchById(publicClient, factory, launchId);
+    if (launch) return launch;
+  }
+  return null;
+}
+
 export async function fetchLaunchById(
   publicClient: PublicClient,
   factory: Address,
@@ -442,9 +458,50 @@ async function attachQuotesAndTimestamps(
   });
 }
 
+/** Which Master factory registered this token (active first, then previous). */
+export async function resolveMasterLaunch(
+  publicClient: PublicClient,
+  token: Address,
+): Promise<{ factory: Address; launchId: bigint } | null> {
+  for (const { factory } of getLaunchFactoryPairs()) {
+    try {
+      const launchId = (await publicClient.readContract({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "tokenLaunchId",
+        args: [token],
+      })) as bigint;
+      if (launchId > BigInt(0)) return { factory, launchId };
+    } catch {
+      /* factory missing getter or RPC blip */
+    }
+  }
+  return null;
+}
+
+/** Catalog across the active factory and any previous Ink factory that still holds live tokens. */
+export async function fetchAllMasterLaunches(
+  publicClient: PublicClient,
+): Promise<OnChainLaunch[]> {
+  const seen = new Set<string>();
+  const out: OnChainLaunch[] = [];
+  for (const { factory, query } of getLaunchFactoryPairs()) {
+    const batch = await fetchAllLaunches(publicClient, factory, query);
+    for (const launch of batch) {
+      const key = launch.token.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(launch);
+    }
+  }
+  out.sort((a, b) => (b.launchedAt ?? 0) - (a.launchedAt ?? 0));
+  return out;
+}
+
 export async function fetchAllLaunches(
   publicClient: PublicClient,
   factory: Address,
+  queryAddress?: Address,
 ): Promise<OnChainLaunch[]> {
   const count = (await publicClient.readContract({
     address: factory,
@@ -456,7 +513,10 @@ export async function fetchAllLaunches(
   if (n === 0) return [];
 
   try {
-    const query = getLaunchFactoryQueryAddress() ?? factory;
+    const pair = getLaunchFactoryPairs().find(
+      (p) => p.factory.toLowerCase() === factory.toLowerCase(),
+    );
+    const query = queryAddress ?? pair?.query ?? getLaunchFactoryQueryAddress() ?? factory;
     const page = await publicClient.readContract({
       address: query,
       abi: launchFactoryAbi,

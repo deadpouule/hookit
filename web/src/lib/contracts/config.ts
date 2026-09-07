@@ -97,19 +97,62 @@ export const chainlinkAggregatorAbi = [
   },
 ] as const;
 
-/** Set via NEXT_PUBLIC_LAUNCH_FACTORY after deploy script. */
-export function getLaunchFactoryAddress(): Address | undefined {
-  return parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY);
+/**
+ * Canonical Ink protocol — `deploy/ink/addresses.json`.
+ * On Ink, these win over stale Vercel `NEXT_PUBLIC_LAUNCH_FACTORY` so new
+ * launches cannot silently hit the pre-patch HolderAirdropVault.
+ */
+export const INK_LAUNCH_FACTORY = "0x10c4687B66fec64066C59A59cae1A9c326779f35" as Address;
+export const INK_LAUNCH_FACTORY_QUERY = "0x2b0F0C047e4520CefAc3f8d8FF7073b7d15AFA57" as Address;
+/** Live tokens launched before the 2026-09-07 airdrop-vault patch. */
+export const INK_PREVIOUS_LAUNCH_FACTORY = "0xbadb0CBFfC80b107082babaB9e488Bc6bEf8f425" as Address;
+export const INK_PREVIOUS_LAUNCH_FACTORY_QUERY = "0x0EF5b27151c2CE5fF4B6723AE2B24a6431659e96" as Address;
+const INK_BONDING_FACTORY = "0x44dD5e6fBd3594F7C784B76f8362D6e68b16AF98" as Address;
+const INK_SWAP_ROUTER = "0x4C311C07085029be4973B5e7E1370eF70c244704" as Address;
+const INK_CLAIMS_REDEEMER = "0x36a2845552014F0a0D9262847a349c89966F9EeB" as Address;
+const INK_PROTOCOL_DISTRIBUTOR = "0x10d0350B143B40509C7c5461d66Ba28C5AD4b24F" as Address;
+const INK_HKIT_BUYBACK = "0xF5923Fd54049E9896f6795B531e08DF2f728E917" as Address;
+const INK_NATIVE_TOKEN = "0xD839eEEd6c1fC0d0A2a12641256ac14bBaE1D7d8" as Address;
+
+export type LaunchFactoryPair = {
+  factory: Address;
+  query?: Address;
+};
+
+/** Active factory first, then previous Ink factory that still owns live tokens. */
+export function getLaunchFactoryPairs(): LaunchFactoryPair[] {
+  if (resolveHookitChainKey() === "ink") {
+    return [
+      { factory: INK_LAUNCH_FACTORY, query: INK_LAUNCH_FACTORY_QUERY },
+      { factory: INK_PREVIOUS_LAUNCH_FACTORY, query: INK_PREVIOUS_LAUNCH_FACTORY_QUERY },
+    ];
+  }
+  const factory = parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY);
+  if (!factory) return [];
+  return [{ factory, query: parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY) }];
 }
 
-/** Paginated launch index — set NEXT_PUBLIC_LAUNCH_FACTORY_QUERY after deploy. */
+export function getAllLaunchFactoryAddresses(): Address[] {
+  return getLaunchFactoryPairs().map((p) => p.factory);
+}
+
+/** Active Master LaunchFactory (new launches). */
+export function getLaunchFactoryAddress(): Address | undefined {
+  return getLaunchFactoryPairs()[0]?.factory;
+}
+
+/** Paginated launch index for the active factory. */
 export function getLaunchFactoryQueryAddress(): Address | undefined {
-  return parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY);
+  const pair = getLaunchFactoryPairs()[0];
+  return pair?.query ?? pair?.factory;
 }
 
 /** Classic bonding rail. Set NEXT_PUBLIC_BONDING_FACTORY after deploy. */
 export function getBondingFactoryAddress(): Address | undefined {
-  return parseEnvAddress(process.env.NEXT_PUBLIC_BONDING_FACTORY);
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_BONDING_FACTORY) ??
+    (resolveHookitChainKey() === "ink" ? INK_BONDING_FACTORY : undefined)
+  );
 }
 
 export function isFactoryConfigured(): boolean {
@@ -120,7 +163,8 @@ export function isFactoryConfigured(): boolean {
 export function getHookitSwapRouterAddress(): Address | undefined {
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_HOOKIT_SWAP_ROUTER) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_SWAP_ROUTER)
+    parseEnvAddress(process.env.NEXT_PUBLIC_SWAP_ROUTER) ??
+    (resolveHookitChainKey() === "ink" ? INK_SWAP_ROUTER : undefined)
   );
 }
 
@@ -128,20 +172,25 @@ export function getHookitSwapRouterAddress(): Address | undefined {
 export function getProtocolDistributorAddress(): Address | undefined {
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR)
+    parseEnvAddress(process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR) ??
+    (resolveHookitChainKey() === "ink" ? INK_PROTOCOL_DISTRIBUTOR : undefined)
   );
 }
 
 /** V4ClaimsRedeemer — redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
 export function getClaimsRedeemerAddress(): Address | undefined {
-  return parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER);
+  return (
+    parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER) ??
+    (resolveHookitChainKey() === "ink" ? INK_CLAIMS_REDEEMER : undefined)
+  );
 }
 
 /** HkitBuyback keeper — set after DeployHookitCore. */
 export function getHkitBuybackAddress(): Address | undefined {
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_BUYBACK) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_HOOK_BUYBACK)
+    parseEnvAddress(process.env.NEXT_PUBLIC_HOOK_BUYBACK) ??
+    (resolveHookitChainKey() === "ink" ? INK_HKIT_BUYBACK : undefined)
   );
 }
 
@@ -149,7 +198,8 @@ export function getHkitBuybackAddress(): Address | undefined {
 export function getNativeTokenAddress(): Address | undefined {
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_NATIVE_TOKEN) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_TOKEN)
+    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_TOKEN) ??
+    (resolveHookitChainKey() === "ink" ? INK_NATIVE_TOKEN : undefined)
   );
 }
 

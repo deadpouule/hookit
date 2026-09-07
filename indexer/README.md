@@ -18,7 +18,7 @@ npm run serve          # polls chain + serves API on :8787
 
 | Var | Required | Notes |
 | --- | --- | --- |
-| `LAUNCH_FACTORY` | yes* | Master `LaunchFactory` |
+| `LAUNCH_FACTORY` | yes* | Master `LaunchFactory`. Comma-separated for Ink (active + previous). Ink also bakes both factories in code. |
 | `BONDING_FACTORY` | no | Classic rail when deployed |
 | `INK_RPC_URL` | no | Primary RPC — default `https://rpc-gel.inkonchain.com` |
 | `INK_RPC_URL_BACKUP` | no | Fallback RPC — default `https://rpc-qnd.inkonchain.com` |

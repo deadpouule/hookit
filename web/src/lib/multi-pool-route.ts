@@ -1,7 +1,8 @@
 import { type Address, type Hex, type PublicClient, zeroAddress } from "viem";
 
-import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
+import { resolveMasterLaunch } from "@/lib/launches";
 import { v4QuoterAbi } from "@/lib/contracts/swap-abi";
 import { poolQuoteLabel, type PaymentAsset } from "@/lib/payment-assets";
 import { isMultiPool, poolMarkets } from "@/lib/pool-active-market";
@@ -129,17 +130,18 @@ async function loadMarketLegs(
   const token = pool.contractAddress as Address | undefined;
   if (!token) return [];
 
-  const factory = getLaunchFactoryAddress();
-  const launchId = pool.launchId;
+  const resolved = await resolveMasterLaunch(client, token);
+  const launchId = resolved?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
+  const factory = resolved?.factory;
   const marketCount = pool.marketCount ?? pool.markets?.length ?? 1;
 
-  if (factory && launchId != null && marketCount > 0) {
+  if (factory && launchId != null && launchId > BigInt(0) && marketCount > 0) {
     const results = await client.multicall({
       contracts: Array.from({ length: marketCount }, (_, i) => ({
         address: factory,
         abi: launchFactoryAbi,
         functionName: "poolKeyOfMarket" as const,
-        args: [BigInt(launchId), BigInt(i)] as const,
+        args: [launchId, BigInt(i)] as const,
       })),
       allowFailure: true,
     });

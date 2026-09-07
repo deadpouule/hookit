@@ -5,13 +5,13 @@ import {
   getLaunchFactoryAddress,
 } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { readEthUsd } from "@/lib/eth-usd";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import {
   fetchBondingLaunchById,
   fetchLaunchById,
   launchToTokenPool,
+  resolveMasterLaunch,
 } from "@/lib/launches";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { fetchDevBuyOnChain } from "@/lib/token-dev-buy";
@@ -38,24 +38,17 @@ export async function GET(_req: Request, ctx: Ctx) {
     const client = createServerPublicClient();
     let pool = null;
 
-    if (factory) {
-      const launchId = (await client.readContract({
-        address: factory,
-        abi: launchFactoryAbi,
-        functionName: "tokenLaunchId",
-        args: [address],
-      })) as bigint;
-      if (launchId > BigInt(0)) {
-        const launch = await fetchLaunchById(client, factory, launchId);
-        if (launch) {
-          const ethUsd = await readEthUsd(client);
-          const [enriched] = await enrichPoolsWithSpotPrices(
-            client,
-            [launchToTokenPool(launch)],
-            ethUsd,
-          );
-          pool = enriched ?? launchToTokenPool(launch);
-        }
+    const resolved = await resolveMasterLaunch(client, address);
+    if (resolved) {
+      const launch = await fetchLaunchById(client, resolved.factory, resolved.launchId);
+      if (launch) {
+        const ethUsd = await readEthUsd(client);
+        const [enriched] = await enrichPoolsWithSpotPrices(
+          client,
+          [launchToTokenPool(launch)],
+          ethUsd,
+        );
+        pool = enriched ?? launchToTokenPool(launch);
       }
     }
 

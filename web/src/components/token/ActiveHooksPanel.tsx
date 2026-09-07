@@ -9,10 +9,9 @@ import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIco
 import { HookInlineAction } from "@/components/token/HookInlineActions";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
-import { getLaunchFactoryAddress, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
-import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
 import {
@@ -110,7 +109,7 @@ function HookModuleBadge({
 }
 
 export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
-  const factory = getLaunchFactoryAddress();
+  const masterHook = pool.hooksAddress as Address | undefined;
   const isMaster = pool.rail === "master" && pool.hookType === "Master" && !pool.hooks.customHook;
   const resolved = useMemo(() => (isMaster ? resolveModules(pool) : null), [isMaster, pool]);
 
@@ -121,12 +120,6 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const quoteLabel = poolQuoteLabel(pool);
   const decimals = quoteDecimals(quote);
 
-  const { data: masterHook } = useReadContract({
-    address: factory,
-    abi: launchFactoryAbi,
-    functionName: "masterHook",
-    query: { enabled: !!factory && isMaster },
-  });
 
   const modules = resolved?.modules;
   const needFloor = Boolean(modules?.backedFloor);
