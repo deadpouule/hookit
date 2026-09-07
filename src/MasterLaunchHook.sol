@@ -60,7 +60,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     FeeEscrow public immutable escrow;
     ProtocolRevenueDistributor public immutable distributor;
     BuybackVault public immutable buybacks;
-    HolderAirdropVault public immutable airdropVault;
+    /// Replaceable so a vault bugfix does not require a new hook/factory. Existing
+    /// LaunchTokens still point at the vault baked into their constructor.
+    HolderAirdropVault public airdropVault;
 
     mapping(PoolId => uint256) public override configs;
     mapping(PoolId => LaunchState) private _launchState;
@@ -72,6 +74,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     bytes32 private constant FEE_ACTION_SLOT = keccak256("hookit.feeAction");
 
     event FactorySet(address indexed factory);
+    event AirdropVaultSet(address indexed vault);
     event LaunchPrepared(PoolId indexed poolId, address indexed creator, address indexed token, uint256 bitmask);
     event FeesDistributed(
         PoolId indexed poolId,
@@ -97,6 +100,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     error HookDataRequired();
     error UnknownPool();
     error FloorFillInvalid();
+    error ZeroAddress();
 
     modifier onlyFactory() {
         if (msg.sender != factory) revert OnlyFactory();
@@ -124,6 +128,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     function setFactory(address factory_) external onlyOwner {
         factory = factory_;
         emit FactorySet(factory_);
+    }
+
+    /// @notice Point new launches at a patched HolderAirdropVault. Tokens already
+    ///         constructed still sync to their original `holderTracker`.
+    function setAirdropVault(HolderAirdropVault next) external onlyOwner {
+        if (address(next) == address(0)) revert ZeroAddress();
+        airdropVault = next;
+        emit AirdropVaultSet(address(next));
     }
 
     function floorVault() external view returns (address) {

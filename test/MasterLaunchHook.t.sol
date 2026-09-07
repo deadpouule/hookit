@@ -14,6 +14,8 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
+import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
+import {Owned} from "../src/base/Owned.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
 contract MasterLaunchHookTest is LaunchpadTestBase {
@@ -227,5 +229,16 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
         sellExactIn(key, token, bal / 2);
         vm.snapshotGasLastCall("swap_floor_fill_sell");
+    }
+
+    function testSetAirdropVault_OnlyOwner() public {
+        HolderAirdropVault next = new HolderAirdropVault(address(this), manager);
+        vm.prank(address(0xBEEF));
+        vm.expectRevert(Owned.Unauthorized.selector);
+        hook.setAirdropVault(next);
+
+        hook.setAirdropVault(next);
+        assertEq(address(hook.airdropVault()), address(next));
+        assertEq(hook.holderAirdropVault(), address(next));
     }
 }
