@@ -87,9 +87,13 @@ function envBig(name: string, fallback: bigint): bigint {
   return BigInt(v);
 }
 
-function pk(): Hex {
+function pk(required: boolean): Hex {
   const raw = (process.env.FEE_KEEPER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim();
-  if (!raw) throw new Error("Set FEE_KEEPER_PRIVATE_KEY (or PRIVATE_KEY) for the fee keeper wallet");
+  if (!raw) {
+    if (required) throw new Error("Set FEE_KEEPER_PRIVATE_KEY (or PRIVATE_KEY) for the fee keeper wallet");
+    // Read-only dry runs never sign or submit a transaction.
+    return `0x${"00".repeat(31)}01` as Hex;
+  }
   return (raw.startsWith("0x") ? raw : `0x${raw}`) as Hex;
 }
 
@@ -103,7 +107,8 @@ async function main() {
   const buybackMin = envBig("FEE_KEEPER_BUYBACK_MIN_WEI", 1_000_000_000_000n); // 1e12 wei
   const dryRun = envBool("FEE_KEEPER_DRY_RUN", false);
 
-  const account = privateKeyToAccount(pk());
+  const hasKeeperKey = Boolean((process.env.FEE_KEEPER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim());
+  const account = privateKeyToAccount(pk(!dryRun));
   const publicClient = createPublicClient({ chain: INK, transport: http(rpc) });
   const walletClient = createWalletClient({ account, chain: INK, transport: http(rpc) });
 
@@ -128,7 +133,7 @@ async function main() {
   console.log("[fee-keeper] distributor", distributor);
   console.log("[fee-keeper] opsTreasury", ops);
   console.log("[fee-keeper] buyback", buyback);
-  console.log("[fee-keeper] keeper", account.address);
+  console.log("[fee-keeper] keeper", hasKeeperKey ? account.address : "not configured (dry-run)");
   console.log("[fee-keeper] dryRun", dryRun);
 
   async function pendingOf(currency: Address): Promise<bigint> {
