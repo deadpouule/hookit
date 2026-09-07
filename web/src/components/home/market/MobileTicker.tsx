@@ -16,7 +16,7 @@ export function MobileTicker({ tokens }: { tokens: MarketToken[] }) {
   const loop = [...items, ...items];
 
   return (
-    <div className="stonk-ticker md:hidden" aria-hidden>
+    <div className="stonk-ticker phone:block hidden" aria-hidden>
       <div className="stonk-ticker-track">
         {loop.map((token, index) => {
           const up = token.change24h >= 0;

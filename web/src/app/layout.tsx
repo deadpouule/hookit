@@ -1,5 +1,6 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -8,6 +9,7 @@ import { Web3Provider } from "@/components/providers/Web3Provider";
 import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { isPhoneRequest } from "@/lib/device";
 
 import "./globals.css";
 
@@ -47,10 +49,13 @@ export const viewport: Viewport = {
   themeColor: "#000000",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const isPhone = isPhoneRequest(await headers());
+
   return (
     <html
       lang="en"
+      data-device={isPhone ? "phone" : "desktop"}
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark min-h-dvh antialiased`}
       suppressHydrationWarning

@@ -260,7 +260,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
       {liveLaunches && isLoading && !isFetched && (
         <>
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 phone:block hidden">
             <div className="h-8 animate-pulse rounded-lg bg-white/[0.06]" />
             <div className="h-48 animate-pulse rounded-2xl bg-white/[0.06]" />
             <div className="h-14 animate-pulse rounded-lg bg-white/[0.06]" />
@@ -274,7 +274,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
               </div>
             ))}
           </div>
-          <div className="hidden md:block">
+          <div className="hidden desk:block">
             <div className="token-grid">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="market-card overflow-hidden border border-white/10 p-3">
@@ -290,7 +290,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
-      <div className="space-y-3 md:contents">
+      <div className="space-y-3 desk:contents">
         <MobileTicker tokens={trending.length > 0 ? trending : sourceTokens} />
         <MobileLaunchHero />
         <MobileStatsRow />
@@ -303,8 +303,8 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         <TrendingStrip tokens={trending} rankings={rankings} />
       </section>
 
-      <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 md:pb-48">
-        <header className="stonk-tokens-head md:hidden">
+      <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 desk:pb-48">
+        <header className="stonk-tokens-head hidden phone:flex">
           <h2 className="stonk-tokens-title">Tokens</h2>
           <span className="stonk-tokens-count">{tokens.length} live</span>
         </header>
@@ -355,11 +355,11 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           </p>
         ) : (
           <>
-            <div className="md:hidden">
+            <div className="phone:block hidden">
               <MobileExploreVirtualList tokens={tokens} />
             </div>
             {effectiveLayout === "grid" ? (
-              <div className="hidden md:block">
+              <div className="hidden desk:block">
                 <div className="token-grid">
                   {tokens.map((token) => (
                     <MarketTokenCard
@@ -372,7 +372,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
                 </div>
               </div>
             ) : (
-              <div className="hidden md:block">
+              <div className="hidden desk:block">
                 <TokenTable
                   tokens={tokens}
                   selectedHooks={selectedHooks}
@@ -414,7 +414,7 @@ function TokenTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-      <table className="hidden w-full min-w-[640px] text-left text-sm md:table">
+      <table className="hidden w-full min-w-[640px] text-left text-sm desk:table">
         <thead className="text-[11px] tracking-wide text-muted-foreground uppercase">
           <tr className="border-b border-border">
             <th className="px-4 py-3 font-medium">Token</th>

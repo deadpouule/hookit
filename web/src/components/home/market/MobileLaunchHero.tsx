@@ -6,7 +6,7 @@ import { PairingLogoStack } from "./PairingLogoStack";
 
 export function MobileLaunchHero() {
   return (
-    <section className="stonk-hero md:hidden">
+    <section className="stonk-hero phone:block hidden">
       <p className="stonk-hero-live">
         <span className="stonk-hero-live-dot" aria-hidden />
         Live on Ink

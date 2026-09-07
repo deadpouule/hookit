@@ -12,7 +12,7 @@ const LeanHero = dynamic(
   {
     loading: () => (
       <div
-        className="lean-hero hidden min-h-[12rem] animate-pulse rounded-2xl bg-zinc-900/40 md:block"
+        className="lean-hero hidden min-h-[12rem] animate-pulse rounded-2xl bg-zinc-900/40 desk:block"
         aria-hidden
       />
     ),
@@ -21,10 +21,10 @@ const LeanHero = dynamic(
 
 export function LaunchpadHomeClient({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   return (
-    <div className="min-h-dvh bg-background pb-28 md:pb-40">
+    <div className="min-h-dvh bg-background pb-40 phone:pb-28">
       <SiteHeader />
-      <div className="market-shell space-y-4 pt-3 md:space-y-6 md:pt-4">
-        <div className="hidden md:block">
+      <div className="market-shell space-y-6 pt-4 phone:space-y-4 phone:pt-3">
+        <div className="hidden desk:block">
           <LeanHero />
         </div>
         <Marketplace initialPools={initialPools} />

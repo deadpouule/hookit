@@ -14,7 +14,7 @@ export function MobileStatsRow() {
   const day = data?.windows?.["24h"];
 
   return (
-    <dl className="stonk-stats md:hidden">
+    <dl className="stonk-stats phone:grid hidden">
       <div>
         <dt>Total volume</dt>
         <dd>{compact(all?.totalVolumeUsd)}</dd>

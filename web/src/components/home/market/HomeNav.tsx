@@ -70,19 +70,19 @@ export function HomeNav() {
         <div className="home-nav-right">
           <button
             type="button"
-            className="home-nav-icon-btn md:hidden"
+            className="home-nav-icon-btn phone:inline-flex hidden"
             aria-label="Search tokens"
             onClick={focusTokenSearch}
             {...TOOLBAR_BUTTON_PROPS}
           >
             <Search className="h-4 w-4" strokeWidth={2.2} />
           </button>
-          <div className="hidden md:block">
+          <div className="hidden desk:block">
             <ProductPills />
           </div>
           <Link
             href="/launch"
-            className="launch-coin-nav launch-coin-nav--full hidden md:inline-flex"
+            className="launch-coin-nav launch-coin-nav--full hidden desk:inline-flex"
             aria-label="Launch coin"
           >
             <LaunchRocketIcon />

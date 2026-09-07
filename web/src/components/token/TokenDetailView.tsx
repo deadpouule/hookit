@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { isPhoneDocument } from "@/lib/device";
 import {
   formatAge,
   formatCompactUsd,
@@ -233,7 +234,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   };
 
   const beFirstBuy = () => {
-    if (typeof window !== "undefined" && window.matchMedia("(min-width: 1100px)").matches) {
+    if (typeof window !== "undefined" && !isPhoneDocument()) {
       setBuyPrefill("0.01");
       swapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;

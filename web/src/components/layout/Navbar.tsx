@@ -88,7 +88,7 @@ export function Navbar() {
           <ConnectButton />
           <button
             type="button"
-            className="rounded-lg p-2 text-zinc-400 md:hidden"
+            className="rounded-lg p-2 text-zinc-400 hidden phone:block"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Menu"
           >
@@ -98,7 +98,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-white/[0.06] bg-black/95 px-4 py-3 md:hidden">
+        <div className="border-t border-white/[0.06] bg-black/95 px-4 py-3 hidden phone:block">
           <nav className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               if ("external" in link && link.external) {

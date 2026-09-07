@@ -1,20 +1,11 @@
 "use client";
 
 import { Toaster } from "sonner";
-import { useSyncExternalStore } from "react";
 
-function subscribeMq(cb: () => void) {
-  const mq = window.matchMedia("(max-width: 767px)");
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-
-function getMobile() {
-  return window.matchMedia("(max-width: 767px)").matches;
-}
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export function AppToaster() {
-  const mobile = useSyncExternalStore(subscribeMq, getMobile, () => false);
+  const mobile = useIsMobile();
 
   return (
     <Toaster

@@ -23,7 +23,7 @@ export function MobileBottomNav() {
   const tokensActive = pathname === "/" || pathname.startsWith("/explore");
 
   return (
-    <nav aria-label="Mobile" className="mobile-bottom-nav md:hidden">
+    <nav aria-label="Mobile" className="mobile-bottom-nav">
       <div className="mobile-bottom-nav__inner">
         <Link
           href="/"

@@ -2,17 +2,16 @@
 
 import { useSyncExternalStore } from "react";
 
-function subscribe(breakpointPx: number, cb: () => void) {
-  const mq = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
+import { isPhoneDocument } from "@/lib/device";
+
+function subscribe(cb: () => void) {
+  const el = document.documentElement;
+  const obs = new MutationObserver(cb);
+  obs.observe(el, { attributes: true, attributeFilter: ["data-device"] });
+  return () => obs.disconnect();
 }
 
-/** Matches Tailwind `md` (768px). SSR defaults to desktop to avoid layout flash. */
-export function useIsMobile(breakpointPx = 768) {
-  return useSyncExternalStore(
-    (cb) => subscribe(breakpointPx, cb),
-    () => window.matchMedia(`(max-width: ${breakpointPx - 1}px)`).matches,
-    () => false,
-  );
+/** Phone handsets only. Desktop windows stay desktop even when the tab is narrow. */
+export function useIsMobile() {
+  return useSyncExternalStore(subscribe, isPhoneDocument, () => false);
 }

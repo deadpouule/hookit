@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant phone (&:is(html[data-device="phone"] *));
+@custom-variant desk (&:is(html[data-device="desktop"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -138,20 +140,16 @@
     color: var(--foreground);
   }
 
-  @media (max-width: 767px) {
-    .status-bar {
-      display: none;
-    }
+  html[data-device="phone"] .status-bar {
+    display: none;
   }
 
   .app-main-pad {
     padding-bottom: 1.5rem;
   }
 
-  @media (max-width: 767px) {
-    .app-main-pad {
-      padding-bottom: calc(var(--mobile-chrome-pad) + 1.25rem);
-    }
+  html[data-device="phone"] .app-main-pad {
+    padding-bottom: calc(var(--mobile-chrome-pad) + 1.25rem);
   }
 
   .mobile-bottom-nav {
@@ -228,38 +226,34 @@
     box-shadow: 0 8px 22px rgb(149 20 209 / 0.45);
   }
 
-  @media (max-width: 767px) {
-    .mobile-bottom-nav {
-      display: block;
-      position: fixed;
-      inset-inline: 0;
-      bottom: 0;
-      z-index: 50;
-      border-top: 1px solid rgb(255 255 255 / 0.08);
-      background: rgb(10 10 12 / 0.96);
-      padding-bottom: var(--safe-bottom);
-      backdrop-filter: blur(16px);
-    }
+  html[data-device="phone"] .mobile-bottom-nav {
+    display: block;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 50;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    background: rgb(10 10 12 / 0.96);
+    padding-bottom: var(--safe-bottom);
+    backdrop-filter: blur(16px);
   }
 
   .swap-cta-sticky {
     margin-top: 16px;
   }
 
-  @media (max-width: 767px) {
-    .swap-cta-sticky {
-      position: sticky;
-      bottom: calc(var(--mobile-chrome-pad) + 0.5rem);
-      z-index: 30;
-      margin-top: 12px;
-      padding-top: 8px;
-      background: linear-gradient(to top, #111113 70%, transparent);
-    }
+  html[data-device="phone"] .swap-cta-sticky {
+    position: sticky;
+    bottom: calc(var(--mobile-chrome-pad) + 0.5rem);
+    z-index: 30;
+    margin-top: 12px;
+    padding-top: 8px;
+    background: linear-gradient(to top, #111113 70%, transparent);
+  }
 
-    .swap-cta-sticky .swap-cta,
-    .swap-cta-sticky .launch-coin {
-      min-height: 48px;
-    }
+  html[data-device="phone"] .swap-cta-sticky .swap-cta,
+  html[data-device="phone"] .swap-cta-sticky .launch-coin {
+    min-height: 48px;
   }
 }
 
@@ -2572,17 +2566,23 @@
     background: rgb(255 255 255 / 0.08);
   }
 
-  @media (min-width: 768px) {
-    .home-nav-icon-btn {
-      display: none;
-    }
+  html[data-device="desktop"] .home-nav-icon-btn {
+    display: none;
+  }
 
-    .stonk-ticker,
-    .stonk-hero,
-    .stonk-stats,
-    .stonk-tokens-head {
-      display: none;
-    }
+  html[data-device="desktop"] .lean-hero {
+    display: block;
+  }
+
+  html[data-device="phone"] .lean-hero {
+    display: none;
+  }
+
+  html[data-device="desktop"] .stonk-ticker,
+  html[data-device="desktop"] .stonk-hero,
+  html[data-device="desktop"] .stonk-stats,
+  html[data-device="desktop"] .stonk-tokens-head {
+    display: none;
   }
 
   .home-nav-right {
@@ -3058,7 +3058,7 @@
     overflow: hidden;
   }
 
-  @media (min-width: 1100px) {
+  html[data-device="desktop"] {
     .token-hero-head {
       gap: 16px;
       padding: 14px 20px 8px;
@@ -3165,7 +3165,7 @@
     display: none;
   }
 
-  @media (min-width: 1100px) {
+  html[data-device="desktop"] {
     .token-hero-stats {
       width: auto;
       justify-self: center;
@@ -3233,7 +3233,7 @@
     transition: color 0.15s ease, border-color 0.15s ease;
   }
 
-  @media (min-width: 1100px) {
+  html[data-device="desktop"] {
     .token-hero-link {
       width: 38px;
       height: 38px;
@@ -3265,7 +3265,7 @@
     line-height: 1.25;
   }
 
-  @media (min-width: 1100px) {
+  html[data-device="desktop"] {
     .token-hero-card .token-type-badge {
       gap: 6px;
       padding: 5px 11px;
@@ -3344,7 +3344,7 @@
     min-width: 0;
   }
 
-  @media (min-width: 1100px) {
+  html[data-device="desktop"] {
     .token-desk {
       display: grid;
       gap: 16px;
@@ -3441,25 +3441,17 @@
     padding-bottom: 1rem;
   }
 
-  @media (max-width: 1099px) {
-    .token-detail-shell {
-      padding-bottom: calc(4.85rem + 0.5rem);
-    }
-  }
-
-  @media (max-width: 767px) {
-    .token-detail-shell {
-      padding-bottom: 4.85rem;
-    }
+  html[data-device="phone"] .token-detail-shell {
+    padding-bottom: 4.85rem;
   }
 
   .token-trade-bar {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--mobile-chrome-pad);
     z-index: 55;
-    display: flex;
+    display: none;
     gap: 10px;
     padding: 10px 14px 12px;
     pointer-events: none;
@@ -3470,16 +3462,13 @@
     display: none;
   }
 
-  @media (max-width: 767px) {
-    .token-trade-bar {
-      bottom: var(--mobile-chrome-pad);
-    }
+  html[data-device="phone"] .token-trade-bar {
+    display: flex;
+    bottom: var(--mobile-chrome-pad);
   }
 
-  @media (min-width: 1100px) {
-    .token-trade-bar {
-      display: none;
-    }
+  html[data-device="desktop"] .token-trade-bar {
+    display: none;
   }
 
   .token-trade-bar__btn {
@@ -5244,23 +5233,19 @@
     color: rgb(255 255 255 / 0.4);
   }
 
-  @media (max-width: 767px) {
-    .stonk-stats {
-      display: grid;
-    }
-
-    .stonk-tokens-head {
-      display: flex;
-    }
+  html[data-device="phone"] .stonk-stats {
+    display: grid;
   }
 
-  @media (min-width: 768px) {
-    .stonk-ticker,
-    .stonk-hero,
-    .stonk-stats,
-    .stonk-tokens-head {
-      display: none;
-    }
+  html[data-device="phone"] .stonk-tokens-head {
+    display: flex;
+  }
+
+  html[data-device="desktop"] .stonk-ticker,
+  html[data-device="desktop"] .stonk-hero,
+  html[data-device="desktop"] .stonk-stats,
+  html[data-device="desktop"] .stonk-tokens-head {
+    display: none;
   }
 
   .stonk-pair-pill {
@@ -5275,34 +5260,32 @@
     color: rgb(255 255 255 / 0.7);
   }
 
-  @media (max-width: 767px) {
-    .market-toolbar-row--search:not(:focus-within) {
-      height: 0;
-      margin: 0;
-      overflow: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
+  html[data-device="phone"] .market-toolbar-row--search:not(:focus-within) {
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
 
-    .market-toolbar-row--search:focus-within {
-      margin-bottom: 0.5rem;
-    }
+  html[data-device="phone"] .market-toolbar-row--search:focus-within {
+    margin-bottom: 0.5rem;
+  }
 
-    .market-toolbar-row--controls {
-      gap: 0.5rem;
-    }
+  html[data-device="phone"] .market-toolbar-row--controls {
+    gap: 0.5rem;
+  }
 
-    .market-filter-pill {
-      min-height: 34px;
-      padding: 0.35rem 0.55rem;
-      font-size: 0.75rem;
-    }
+  html[data-device="phone"] .market-filter-pill {
+    min-height: 34px;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.75rem;
+  }
 
-    .market-trending,
-    .market-toolbar-view,
-    .market-toolbar-divider {
-      display: none;
-    }
+  html[data-device="phone"] .market-trending,
+  html[data-device="phone"] .market-toolbar-view,
+  html[data-device="phone"] .market-toolbar-divider {
+    display: none;
   }
 
   .market-toolbar-row--controls {
@@ -5772,22 +5755,20 @@
     color: #fff;
   }
 
-  @media (max-width: 767px) {
-    .market-toolbar-row--controls {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.65rem;
-    }
+  html[data-device="phone"] .market-toolbar-row--controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
 
-    .market-toolbar-actions {
-      width: 100%;
-      justify-content: flex-end;
-      margin-left: 0;
-    }
+  html[data-device="phone"] .market-toolbar-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
 
-    .market-toolbar-group--category {
-      width: 100%;
-    }
+  html[data-device="phone"] .market-toolbar-group--category {
+    width: 100%;
   }
 
   .trending-strip {
