@@ -2782,12 +2782,13 @@
   }
 
   .hookit-fun-logo {
+    position: relative;
     display: block;
     height: 30px;
     width: auto;
+    aspect-ratio: 1502 / 310;
     max-width: min(48vw, 11rem);
-    object-fit: contain;
-    object-position: left center;
+    overflow: visible;
   }
 
   @media (max-width: 767px) {
@@ -2801,6 +2802,128 @@
     .hookit-fun-logo {
       height: 38px;
       max-width: none;
+    }
+  }
+
+  .hookit-logo-layer {
+    object-fit: contain;
+    object-position: left center;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .hookit-logo-owl-wrap {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .hookit-logo-type {
+    animation: hookit-type-in 0.45s ease-out both;
+  }
+
+  .hookit-logo-owl {
+    transform-origin: 30.56% 50%;
+    animation: hookit-owl-snap 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) 0.12s both;
+  }
+
+  .hookit-logo-fun {
+    animation: hookit-fun-in 0.35s ease-out 0.38s both;
+  }
+
+  .hookit-logo-motion--no-intro .hookit-logo-type,
+  .hookit-logo-motion--no-intro .hookit-logo-owl,
+  .hookit-logo-motion--no-intro .hookit-logo-fun {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .hookit-logo-lid {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    transform: scaleY(0);
+    transform-origin: 50% 55%;
+    pointer-events: none;
+    animation: hookit-blink 160ms ease-in-out both;
+  }
+
+  /* Eye holes measured from the 1502×310 stacked owl layer. */
+  .hookit-logo-lid--l {
+    left: 21.22%;
+    top: 43.81%;
+    width: 6.19%;
+    height: 30%;
+  }
+
+  .hookit-logo-lid--r {
+    left: 33.24%;
+    top: 39.55%;
+    width: 6.26%;
+    height: 30.32%;
+  }
+
+  @keyframes hookit-type-in {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hookit-owl-snap {
+    0% {
+      opacity: 0.45;
+      transform: scaleX(0.35);
+    }
+    62% {
+      opacity: 1;
+      transform: scaleX(1.08);
+    }
+    100% {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  @keyframes hookit-fun-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes hookit-blink {
+    0% {
+      transform: scaleY(0);
+    }
+    45% {
+      transform: scaleY(1);
+    }
+    100% {
+      transform: scaleY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hookit-logo-type,
+    .hookit-logo-owl,
+    .hookit-logo-fun {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+
+    .hookit-logo-lid {
+      display: none;
     }
   }
 

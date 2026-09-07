@@ -1,4 +1,3 @@
-import { HookitFunLogo } from "@/components/brand/HookitFunLogo";
 import { SiteHeader } from "@/components/home/market/SiteHeader";
 
 function SkeletonCard() {
