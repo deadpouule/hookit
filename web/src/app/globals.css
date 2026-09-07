@@ -3007,7 +3007,8 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    padding: 8px 10px;
+    overflow: hidden;
+    padding: 8px 6px;
     border-left: 0;
   }
 
@@ -3024,9 +3025,14 @@
 
   .token-hero-stat-value {
     margin: 0;
-    font-size: 13px;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
     color: var(--foreground);
     white-space: nowrap;
   }

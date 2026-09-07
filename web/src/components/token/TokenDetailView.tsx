@@ -76,7 +76,8 @@ function formatPriceUsd(value: number): string {
   if (value >= 1) return formatCompactUsd(value);
   if (value >= 0.01) return `$${value.toFixed(4)}`;
   if (value >= 0.0001) return `$${value.toFixed(6)}`;
-  return `$${value.toPrecision(4)}`;
+  const exp = value.toExponential(2).replace("e+", "e").replace("e-0", "e-");
+  return `$${exp}`;
 }
 
 function HeroStat({
@@ -84,16 +85,18 @@ function HeroStat({
   value,
   children,
   className,
+  title,
 }: {
   label: string;
   value: string;
   children?: ReactNode;
   className?: string;
+  title?: string;
 }) {
   return (
     <div className={cn("token-hero-stat", className)}>
       <dt className="token-hero-stat-label">{label}</dt>
-      <dd className="token-hero-stat-value">
+      <dd className="token-hero-stat-value" title={title ?? value}>
         {value}
         {children}
       </dd>
@@ -385,7 +388,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <HeroStat className="token-hero-stat--desk" label="Market cap" value={formatCompactUsd(live.marketCap)}>
             {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
           </HeroStat>
-          <HeroStat className="token-hero-stat--mobile" label="Price" value={formatPriceUsd(live.priceUsd)} />
+          <HeroStat
+            className="token-hero-stat--mobile"
+            label="Price"
+            value={formatPriceUsd(live.priceUsd)}
+            title={live.priceUsd > 0 ? `$${live.priceUsd}` : undefined}
+          />
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
           <HeroStat className="token-hero-stat--desk" label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "—"} />
