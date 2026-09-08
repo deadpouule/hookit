@@ -2355,20 +2355,19 @@
     align-items: center;
     gap: 0.45rem;
     border: 1px solid #e8d48a;
-    border-radius: 0.7rem;
+    border-radius: 0;
     background: #16130e;
     padding: 0.32rem 0.7rem;
     line-height: 1;
     white-space: nowrap;
-    box-shadow: 0 0 14px rgb(232 212 138 / 0.28);
   }
 
   .powered-by-quotrons-badge--hero {
-    display: inline-flex;
     margin-inline: 0.15rem 0.25rem;
     gap: 0.75rem;
-    padding: 0.62rem 1.15rem;
+    padding: 0.58rem 1.15rem;
     vertical-align: middle;
+    box-shadow: 0 0 0 1px rgb(232 212 138 / 0.15);
   }
 
   .powered-by-quotrons-badge__logo {
@@ -2380,109 +2379,66 @@
   }
 
   .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
-    height: 64px;
-    width: 64px;
+    height: 56px;
+    width: 56px;
+  }
+
+  .hero-quotrons-badge.powered-by-quotrons-badge--hero {
+    padding: 0.62rem 1.2rem;
   }
 
   .powered-by-quotrons-badge__text {
-    position: relative;
-    display: flex;
-    flex: 1 1 auto;
-    min-width: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0.12rem;
     font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: #f6ecd0;
-    text-shadow: 0 0 12px rgb(232 212 138 / 0.55);
-  }
-
-  .powered-by-quotrons-badge__sizer {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.12rem;
-    visibility: hidden;
-  }
-
-  .powered-by-quotrons-badge__typed {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0.12rem;
-  }
-
-  .powered-by-quotrons-badge__by {
-    font-size: 0.72rem;
-    font-weight: 600;
-    opacity: 0.88;
-  }
-
-  .powered-by-quotrons-badge__name {
-    font-size: 0.95rem;
-  }
-
-  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
-    font-size: 1.05rem;
-  }
-
-  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
-    font-size: 1.7rem;
-    line-height: 0.95;
   }
 
   .powered-by-quotrons-badge--compact {
     flex-shrink: 0;
     gap: 0.4rem;
     padding: 0.42rem 0.7rem;
+    border-radius: 0.55rem;
+    border: 1px solid #e8d48a;
+    background: #16130e;
   }
 
-  .hero-usdg-quotrons {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: stretch;
-    vertical-align: top;
-    max-width: 100%;
+  .powered-by-quotrons-badge--compact .powered-by-quotrons-badge__logo {
+    height: 18px;
+    width: 18px;
   }
 
-  .hero-usdg-row {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: flex-end;
-    white-space: pre-wrap;
+  .powered-by-quotrons-badge--compact .powered-by-quotrons-badge__text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
-  .hero-quotrons-wrap {
-    display: block;
+  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__text {
+    font-size: 1.45rem;
+    font-weight: 700;
+    text-transform: none;
+    color: rgb(246 236 208 / 0.95);
+  }
+
+  .powered-by-quotrons-badge__text--typed {
     position: relative;
-    box-sizing: border-box;
-    width: 0;
-    min-width: 100%;
-    margin-top: 0.12rem;
-    overflow: visible;
+    display: inline-block;
   }
 
-  .hero-quotrons-scale {
-    display: inline-flex;
-    transform-origin: top left;
-    will-change: transform;
+  .powered-by-quotrons-badge__sizer {
+    visibility: hidden;
   }
 
-  .hero-usdg-quotrons .powered-by-quotrons-badge--hero,
-  .hero-quotrons-badge.powered-by-quotrons-badge--hero {
-    display: inline-flex;
-    width: max-content;
-    margin-inline: 0;
+  .powered-by-quotrons-badge__live {
+    position: absolute;
+    inset: 0;
+    white-space: nowrap;
   }
 
   .hero-quotrons-badge {
-    transform: none;
+    transform: translateY(-0.08rem);
   }
 
   .hero-cursor--in-badge {
@@ -6835,15 +6791,11 @@
     transform: none;
   }
 
-  .hero-typewriter--mobile .hero-quotrons-wrap {
-    margin-top: 0.35rem;
-  }
-
   .hero-typewriter--mobile .powered-by-quotrons-badge--hero {
     margin-inline: 0;
     gap: 0.4rem;
     padding: 0.28rem 0.55rem;
-    box-shadow: 0 0 10px rgb(232 212 138 / 0.22);
+    box-shadow: none;
   }
 
   .hero-typewriter--mobile .powered-by-quotrons-badge__logo {
@@ -6851,12 +6803,8 @@
     width: 20px;
   }
 
-  .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
-    font-size: 0.72rem;
-  }
-
-  .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
-    font-size: 1.05rem;
+  .hero-typewriter--mobile .powered-by-quotrons-badge__text {
+    font-size: 0.8rem;
   }
 
   .hero-typewriter--mobile .hero-quotrons-badge {
@@ -6885,7 +6833,8 @@
     color: #fff;
   }
 
-  .hero-typed .built-on-uniswap-badge {
+  .hero-typed .built-on-uniswap-badge,
+  .hero-typed .powered-by-quotrons-badge {
     margin-inline: 0.15rem 0.3rem;
   }
 

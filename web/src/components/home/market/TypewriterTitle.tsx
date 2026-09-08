@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BuiltOnUniswapBadge,
   UNISWAP_BADGE_LABEL,
@@ -115,50 +115,6 @@ function HeroBadge({
   );
 }
 
-/** Scale the whole Quotrons badge as one unit to the USDG row width. */
-function HeroQuotronsSlot({ typedChars }: { typedChars: number }) {
-  const wrapRef = useRef<HTMLSpanElement>(null);
-  const scaleRef = useRef<HTMLSpanElement>(null);
-  const [fit, setFit] = useState({ scale: 1, height: 0 });
-
-  useLayoutEffect(() => {
-    const wrap = wrapRef.current;
-    const inner = scaleRef.current;
-    if (!wrap || !inner) return;
-
-    const measure = () => {
-      const target = wrap.clientWidth;
-      const natural = inner.offsetWidth;
-      const naturalH = inner.offsetHeight;
-      if (target <= 0 || natural <= 0) return;
-      const scale = target / natural;
-      setFit({ scale, height: naturalH * scale });
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(wrap);
-    ro.observe(inner);
-    return () => ro.disconnect();
-  }, [typedChars]);
-
-  return (
-    <span
-      ref={wrapRef}
-      className="hero-quotrons-wrap"
-      style={fit.height > 0 ? { height: fit.height } : undefined}
-    >
-      <span
-        ref={scaleRef}
-        className="hero-quotrons-scale"
-        style={{ transform: `scale(${fit.scale})` }}
-      >
-        <HeroBadge id="quotrons" typedChars={typedChars} />
-      </span>
-    </span>
-  );
-}
-
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (STOCK_LOGO_IDS.has(id)) {
     return <PairingMark id={id as PairingTokenId} />;
@@ -188,37 +144,6 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
   for (let index = 0; index < line.segments.length; index += 1) {
     const segment = line.segments[index];
     if (remaining <= 0) break;
-
-    const next = line.segments[index + 1];
-    const after = line.segments[index + 2];
-    if (
-      segment.kind === "text" &&
-      next?.kind === "logo" &&
-      next.id === "usdg" &&
-      after?.kind === "logo" &&
-      after.id === "quotrons"
-    ) {
-      const dollar = segment.value;
-      const dollarTake = Math.min(remaining, dollar.length);
-      remaining -= dollarTake;
-      const usdgOn = remaining > 0;
-      if (usdgOn) remaining -= 1;
-      const quotronsTicks = 1 + QUOTRONS_BADGE_LABEL.length;
-      const quotronsTake = usdgOn ? Math.min(remaining, quotronsTicks) : 0;
-      remaining -= quotronsTake;
-
-      nodes.push(
-        <span key="usdg-quotrons" className="hero-usdg-quotrons">
-          <span className="hero-usdg-row">
-            {dollar.slice(0, dollarTake)}
-            {usdgOn ? <UsdgMark /> : null}
-          </span>
-          {quotronsTake > 0 ? <HeroQuotronsSlot typedChars={quotronsTake} /> : null}
-        </span>,
-      );
-      index += 2;
-      continue;
-    }
 
     if (segment.kind === "text") {
       const take = Math.min(remaining, segment.value.length);

@@ -2,12 +2,6 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export const QUOTRONS_BADGE_LABEL = "Powered by Quotrons";
-const BY = "Powered by";
-
-function splitTyped(typed: string): { by: string; name: string } {
-  if (typed.length <= BY.length) return { by: typed, name: "" };
-  return { by: BY, name: typed.slice(BY.length).trimStart() };
-}
 
 type PoweredByQuotronsBadgeProps = {
   className?: string;
@@ -24,17 +18,18 @@ export function PoweredByQuotronsBadge({
   showCaret = false,
 }: PoweredByQuotronsBadgeProps) {
   const isHero = variant === "hero";
-  const logoPx = isHero ? 64 : 20;
-  const visible = typedText ?? QUOTRONS_BADGE_LABEL;
-  const typed = splitTyped(visible);
-  const full = splitTyped(QUOTRONS_BADGE_LABEL);
+  const isCompact = variant === "compact";
+  const label = QUOTRONS_BADGE_LABEL;
+  const visible = typedText ?? label;
+  const logoPx = isHero ? 56 : 20;
+  const typewriter = typedText != null;
 
   return (
     <span
       className={cn(
         "powered-by-quotrons-badge",
         isHero && "powered-by-quotrons-badge--hero",
-        !isHero && "powered-by-quotrons-badge--compact",
+        isCompact && "powered-by-quotrons-badge--compact",
         className,
       )}
     >
@@ -46,30 +41,23 @@ export function PoweredByQuotronsBadge({
         className="powered-by-quotrons-badge__logo"
         draggable={false}
       />
-      <span className="powered-by-quotrons-badge__text">
-        <span className="powered-by-quotrons-badge__sizer" aria-hidden>
-          <span className="powered-by-quotrons-badge__by">{full.by}</span>
-          <span className="powered-by-quotrons-badge__name">{full.name}</span>
-        </span>
-        <span className="powered-by-quotrons-badge__typed">
-          <span className="powered-by-quotrons-badge__by">
-            {typed.by}
-            {showCaret && typed.name.length === 0 ? (
-              <span className="hero-cursor hero-cursor--in-badge" aria-hidden>
-                |
-              </span>
-            ) : null}
+      {typewriter ? (
+        <span className="powered-by-quotrons-badge__text powered-by-quotrons-badge__text--typed">
+          <span className="powered-by-quotrons-badge__sizer" aria-hidden>
+            {label}
           </span>
-          <span className="powered-by-quotrons-badge__name">
-            {typed.name}
-            {showCaret && typed.name.length > 0 ? (
+          <span className="powered-by-quotrons-badge__live">
+            {visible}
+            {showCaret ? (
               <span className="hero-cursor hero-cursor--in-badge" aria-hidden>
                 |
               </span>
             ) : null}
           </span>
         </span>
-      </span>
+      ) : (
+        <span className="powered-by-quotrons-badge__text">{visible}</span>
+      )}
     </span>
   );
 }
