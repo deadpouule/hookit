@@ -1431,6 +1431,8 @@
     font-size: 0.68rem;
     font-weight: 500;
     opacity: 0.92;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .token-hooks-chip--expanded {
@@ -1725,6 +1727,8 @@
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 11px;
     color: var(--foreground);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .token-hooks-vault-ready {
@@ -3333,6 +3337,8 @@
 
   .token-desk-fees {
     order: 5;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   .token-desk-swap {
@@ -3365,6 +3371,7 @@
       gap: 10px;
       align-self: start;
       min-width: 0;
+      overflow-x: hidden;
     }
 
     .token-desk--hooks {
@@ -3698,9 +3705,12 @@
 
   .swap-amount-ticker {
     display: inline-flex;
-    flex-shrink: 0;
+    min-width: 0;
+    max-width: 42%;
+    flex-shrink: 1;
     align-items: center;
     gap: 4px;
+    overflow: hidden;
     font-size: 13px;
     font-weight: 500;
     color: #e4e4e7;
@@ -3862,6 +3872,10 @@
   }
 
   .market-token-picker__symbol {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 13px;
     font-weight: 500;
     color: #fff;
@@ -4024,15 +4038,23 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
     padding: 7px 0;
     font-size: 13px;
   }
 
   .market-details__label {
+    flex-shrink: 0;
     color: #71717a;
   }
 
   .market-details__value {
+    min-width: 0;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     color: #d4d4d8;
   }
@@ -4142,6 +4164,10 @@
   }
 
   .token-stats-meta__row dd {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     color: #fff;
   }

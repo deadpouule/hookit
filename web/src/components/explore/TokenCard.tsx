@@ -13,6 +13,7 @@ import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants"
 import { formatUsd } from "@/lib/format";
 import { marketplaceHrefForHooks } from "@/lib/market-hook-filter";
 import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
+import { compactQuoteLabel } from "@/lib/payment-assets";
 import { marketCapUsdForPool } from "@/lib/quote-usd";
 import { tokenHref } from "@/lib/routes";
 import { resolveMediaUrl } from "@/lib/token-metadata";
@@ -214,7 +215,9 @@ export function TokenCard({
             <Copy className="h-3 w-3 opacity-60" />
           )}
         </button>
-        <span className="pointer-events-none text-[10px] text-zinc-600">{pool.quoteAsset ?? "ETH"}</span>
+        <span className="pointer-events-none truncate text-[10px] text-zinc-600">
+          {compactQuoteLabel(pool.quoteAsset ?? "ETH")}
+        </span>
       </div>
       {!marketplaceHookFilter && (
         <Link

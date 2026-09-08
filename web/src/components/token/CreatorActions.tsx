@@ -15,7 +15,8 @@ import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { feeEscrowAbi, graduatedFeeHookAbi } from "@/lib/contracts/swap-abi";
 import { shortAddress } from "@/lib/master-hooks";
-import { poolQuoteLabel } from "@/lib/payment-assets";
+import { compactQuoteLabel, poolQuoteLabel } from "@/lib/payment-assets";
+import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -29,9 +30,7 @@ function quoteDecimals(quote: Address): number {
 /** Compact fee amount: full precision stays in the title attribute. */
 function formatFeeAmount(wei: bigint, decimals: number): string {
   if (wei === BigInt(0)) return "0";
-  const value = Number(formatUnits(wei, decimals));
-  if (value >= 1) return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
-  return Number(value.toPrecision(6)).toString();
+  return formatCompactQuoteAmount(Number(formatUnits(wei, decimals)));
 }
 
 function FeeQuoteAmount({
@@ -45,16 +44,21 @@ function FeeQuoteAmount({
   quoteLabel: string;
   className?: string;
 }) {
+  const ticker = compactQuoteLabel(quoteLabel);
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+    <span
+      className={cn("flex w-full min-w-0 items-center gap-1.5 overflow-hidden", className)}
+      title={`${amount} ${quoteLabel}`}
+    >
       <span className="inline-flex shrink-0" aria-hidden>
         <PoolQuoteMark
           quoteAddress={pool.quoteAddress ?? zeroAddress}
           quoteAsset={pool.quoteAsset ?? quoteLabel}
         />
       </span>
-      <span className="truncate">
-        {amount} {quoteLabel}
+      <span className="min-w-0 truncate">
+        {amount}{" "}
+        <span className="text-[0.92em] tracking-tight">{ticker}</span>
       </span>
     </span>
   );
@@ -199,7 +203,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
 
   return (
-    <div className="desk-card space-y-3 border border-[#9514d1]/25 p-4">
+    <div className="desk-card min-w-0 space-y-3 overflow-hidden border border-[#9514d1]/25 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wide text-[#d8b4fe] uppercase">Creator fees</p>
         {isCreator ? (
@@ -227,10 +231,10 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       ) : null}
 
       {needsSweep ? (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-          <div>
+        <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <div className="min-w-0 flex-1 overflow-hidden">
             <p className="text-xs text-amber-200/90">Unsynced fees</p>
-            <p className="font-mono text-sm text-zinc-100">
+            <p className="min-w-0 font-mono text-sm text-zinc-100">
               <FeeQuoteAmount
                 amount={formatFeeAmount(pendingWei, decimals)}
                 pool={pool}
@@ -254,11 +258,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <p className="text-xs text-zinc-500">{isCreator ? "Available to claim" : "Unclaimed"}</p>
           <p
-            className="font-mono text-lg text-foreground"
+            className="min-w-0 font-mono text-base text-foreground"
             title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}
           >
             <FeeQuoteAmount
@@ -280,16 +284,17 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] pt-2.5">
-        <p className="text-xs text-zinc-500">Claimed so far</p>
+      <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border-t border-white/[0.06] pt-2.5">
+        <p className="shrink-0 text-xs text-zinc-500">Claimed so far</p>
         <p
-          className="font-mono text-sm text-zinc-200"
+          className="min-w-0 flex-1 overflow-hidden font-mono text-sm text-zinc-200"
           title={claimedTotal != null ? `${formatUnits(claimedTotal, decimals)} ${quoteLabel}` : undefined}
         >
           <FeeQuoteAmount
             amount={claimedTotal == null ? "…" : formatFeeAmount(claimedTotal, decimals)}
             pool={pool}
             quoteLabel={quoteLabel}
+            className="justify-end"
           />
         </p>
       </div>

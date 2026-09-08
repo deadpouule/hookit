@@ -10,6 +10,8 @@ import {
 import { poolManagerClaimsAbi } from "@/lib/contracts/pool-manager-claims-abi";
 import { v4ClaimsRedeemerAbi } from "@/lib/contracts/v4-claims-redeemer-abi";
 import { quoteToCurrencyId } from "@/lib/currency-id";
+import { compactQuoteLabel } from "@/lib/payment-assets";
+import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +52,8 @@ export function V4ClaimsClaimAction({
   });
 
   const claimWei = (claimBalance as bigint | undefined) ?? BigInt(0);
-  const claimHuman = formatUnits(claimWei, decimals);
+  const ticker = compactQuoteLabel(quoteLabel);
+  const claimHuman = formatCompactQuoteAmount(Number(formatUnits(claimWei, decimals)));
 
   const claim = async () => {
     if (!redeemer || !address || claimWei <= BigInt(0)) return;
@@ -86,7 +89,7 @@ export function V4ClaimsClaimAction({
     return (
       <div className={cn("token-hooks-chip-actions token-hooks-chip-actions--airdrop", className)}>
         <span className="token-hooks-vault-copy text-[11px] text-zinc-400">
-          {claimHuman} {quoteLabel} to claim
+          {claimHuman} {ticker} to claim
         </span>
         <button
           type="button"
@@ -105,8 +108,8 @@ export function V4ClaimsClaimAction({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] text-zinc-600">Your airdrop</p>
-          <p className="font-mono text-sm text-zinc-100">
-            {claimHuman} {quoteLabel}
+          <p className="min-w-0 truncate font-mono text-sm text-zinc-100" title={`${claimHuman} ${quoteLabel}`}>
+            {claimHuman} {ticker}
           </p>
         </div>
         <button

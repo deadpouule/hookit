@@ -2,6 +2,7 @@
 
 import { formatEther } from "viem";
 
+import { compactQuoteLabel } from "@/lib/payment-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,7 @@ export function BondingProgress({ pool }: { pool: TokenPool }) {
   const goalFmt = goal > BigInt(0) ? Number(formatEther(goal)).toFixed(2) : "—";
 
   return (
-    <div className="desk-card space-y-2 p-4">
+    <div className="desk-card min-w-0 space-y-2 overflow-hidden p-4">
       <div className="flex items-center justify-between text-[12px]">
         <span className="text-zinc-500">{graduated ? "Graduated" : "Bonding progress"}</span>
         <span className={cn("font-mono", graduated ? "text-[#10b981]" : "text-zinc-200")}>
@@ -35,8 +36,8 @@ export function BondingProgress({ pool }: { pool: TokenPool }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="font-mono text-[11px] text-zinc-500">
-        {realFmt} / {goalFmt} {quoteLabel}
+      <p className="truncate font-mono text-[11px] text-zinc-500" title={`${realFmt} / ${goalFmt} ${quoteLabel}`}>
+        {realFmt} / {goalFmt} {compactQuoteLabel(quoteLabel)}
         {!graduated && " · graduates at 4.2 ETH-equiv"}
       </p>
     </div>

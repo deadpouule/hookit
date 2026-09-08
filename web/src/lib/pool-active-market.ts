@@ -1,6 +1,6 @@
 import { zeroAddress, type Address } from "viem";
 
-import { poolQuoteLabel } from "@/lib/payment-assets";
+import { compactQuoteLabel, poolQuoteLabel } from "@/lib/payment-assets";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 
 /** True when this launch has more than one quote pool. */
@@ -44,10 +44,10 @@ export function poolWithMarket(pool: TokenPool, marketIndex: number): TokenPool 
 }
 
 export function marketLegLabel(market: TokenPoolMarket): string {
-  return (
+  const label =
     market.quoteAsset ??
-    poolQuoteLabel({ quoteAddress: market.quoteAddress } as TokenPool)
-  );
+    poolQuoteLabel({ quoteAddress: market.quoteAddress } as TokenPool);
+  return compactQuoteLabel(label);
 }
 
 export function marketSharePct(market: TokenPoolMarket): string {

@@ -29,6 +29,17 @@ export function formatTokenAmount(value: number): string {
   return value.toPrecision(3);
 }
 
+/** Tight quote amounts for narrow side cards (creator fees, hook stats). */
+export function formatCompactQuoteAmount(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return "0";
+  const abs = Math.abs(value);
+  if (abs >= 1) return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  if (abs >= 0.0001) {
+    return value.toLocaleString(undefined, { maximumFractionDigits: 6, maximumSignificantDigits: 4 });
+  }
+  return Number(value.toPrecision(3)).toString();
+}
+
 export function formatAge(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;

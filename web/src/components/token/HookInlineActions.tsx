@@ -9,6 +9,8 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
+import { compactQuoteLabel } from "@/lib/payment-assets";
+import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
@@ -91,9 +93,10 @@ export function FloorVaultInline({
     }
   };
 
+  const ticker = compactQuoteLabel(quoteLabel);
   const priceLabel =
     floorPriceHuman != null
-      ? `${floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${quoteLabel}`
+      ? `${formatCompactQuoteAmount(floorPriceHuman)} ${ticker}`
       : "—";
 
   if (embedded) {
@@ -131,7 +134,7 @@ export function FloorVaultInline({
     <div className="token-hooks-vault">
       <div className="token-hooks-vault-meta">
         <span>
-          Vault {formatUnits(reserveWei, decimals)} {quoteLabel}
+          Vault {formatCompactQuoteAmount(Number(formatUnits(reserveWei, decimals)))} {ticker}
         </span>
         <span>Floor {priceLabel}</span>
       </div>
@@ -185,7 +188,8 @@ export function BuybackVestingInline({
   const isCreator =
     !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
 
-  const claimLabel = `${formatUnits(claimableWei, decimals)} ${quoteLabel}`;
+  const ticker = compactQuoteLabel(quoteLabel);
+  const claimLabel = `${formatCompactQuoteAmount(Number(formatUnits(claimableWei, decimals)))} ${ticker}`;
 
   const claim = async () => {
     if (!buybackVault || !token || !address) return;
@@ -275,7 +279,8 @@ export function HolderAirdropInline({
     query: { enabled: !!airdropVault && !!token, refetchInterval: 15_000 },
   });
 
-  const potLabel = `${formatUnits(reserveWei, decimals)} ${quoteLabel}`;
+  const ticker = compactQuoteLabel(quoteLabel);
+  const potLabel = `${formatCompactQuoteAmount(Number(formatUnits(reserveWei, decimals)))} ${ticker}`;
   const ready = reserveWei > BigInt(0) && secondsLeft != null && secondsLeft <= 0;
   const status = ready
     ? "Next swap pays holders automatically"

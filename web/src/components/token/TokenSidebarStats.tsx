@@ -64,7 +64,7 @@ export function TokenSidebarStats({
   const sellVolPct = 100 - buyVolPct;
 
   return (
-    <div className="desk-card token-stats-card p-4">
+    <div className="desk-card token-stats-card min-w-0 overflow-hidden p-4">
       <h3 className="token-stats-card__title">Stats</h3>
 
       <div className="token-stats-changes">
@@ -192,7 +192,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="token-stats-meta__row">
       <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dd className="min-w-0 truncate">{value}</dd>
     </div>
   );
 }

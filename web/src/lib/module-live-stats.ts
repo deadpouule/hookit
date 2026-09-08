@@ -1,6 +1,8 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
+import { formatCompactQuoteAmount } from "@/lib/format";
+import { compactQuoteLabel } from "@/lib/payment-assets";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -18,9 +20,10 @@ export type ModuleLiveStats = {
   quoteLabel: string;
 };
 
-function formatAmount(value: number | null, quoteLabel: string, digits = 4): string {
+function formatAmount(value: number | null, quoteLabel: string): string {
   if (value == null) return "—";
-  return `${value.toLocaleString(undefined, { maximumFractionDigits: digits })} ${quoteLabel}`;
+  const ticker = compactQuoteLabel(quoteLabel);
+  return `${formatCompactQuoteAmount(value)} ${ticker}`;
 }
 
 function formatDuration(seconds: number): string {
@@ -58,8 +61,8 @@ export function moduleLiveStatLine(
       const vault = formatAmount(live.floorReserveHuman, live.quoteLabel);
       const floor =
         live.floorPriceHuman != null
-          ? `${live.floorPriceHuman.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${live.quoteLabel}`
-          : `0 ${live.quoteLabel}`;
+          ? `${formatCompactQuoteAmount(live.floorPriceHuman)} ${compactQuoteLabel(live.quoteLabel)}`
+          : `0 ${compactQuoteLabel(live.quoteLabel)}`;
       return `${modules.floorAllocation}% · Vault ${vault} · Floor ${floor}`;
     }
     case "anti-mev":

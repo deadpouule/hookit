@@ -1,7 +1,12 @@
 import { type Address, zeroAddress } from "viem";
 
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import { poolQuoteAddress, poolQuoteLabel, stableQuoteLabel } from "@/lib/payment-assets";
+import {
+  compactQuoteLabel,
+  poolQuoteAddress,
+  poolQuoteLabel,
+  stableQuoteLabel,
+} from "@/lib/payment-assets";
 import { poolHasQuoteMarket } from "@/lib/pool-key";
 import { shortAddress } from "@/lib/master-hooks";
 import { isRwaQuote } from "@/lib/token-identity";
@@ -72,7 +77,7 @@ export function poolQuoteSwapAsset(pool: TokenPool): SwapAsset {
   const stock = INK_QUOTRON_STOCKS.find((s) => s.address.toLowerCase() === quote.toLowerCase());
   return {
     key: `quote-${quote.toLowerCase()}`,
-    symbol: poolQuoteLabel(pool),
+    symbol: compactQuoteLabel(poolQuoteLabel(pool)),
     name: stock?.name ?? poolQuoteLabel(pool),
     address: quote as Address,
     imageUrl: stock ? quotronStockLogoUrl(stock) : undefined,

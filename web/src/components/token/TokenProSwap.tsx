@@ -65,7 +65,9 @@ function PickerLabel({ asset }: { asset: SwapAsset }) {
 
   return (
     <span className="market-token-picker__text">
-      <span className="market-token-picker__symbol">{asset.symbol}</span>
+      <span className="market-token-picker__symbol" title={asset.symbol}>
+        {asset.symbol}
+      </span>
       {asset.address && (
         <span className="market-token-picker__ca">{shortAddress(asset.address)}</span>
       )}
@@ -234,7 +236,7 @@ export function TokenProSwap({
           <p className="market-token-block__usd">≈ {formatCompactUsd(sellUsd)}</p>
           <div className="market-token-block__balance-row">
             <span className="text-zinc-500">Balance</span>
-            <span className="font-mono text-zinc-400">
+            <span className="min-w-0 truncate font-mono text-zinc-400" title={`${sellBalance} ${sellAsset.symbol}`}>
               {sellBalance < 1 ? sellBalance.toFixed(6) : formatTokenAmount(sellBalance)}{" "}
               {sellAsset.symbol}
             </span>
@@ -397,7 +399,9 @@ function Detail({
   return (
     <div className="market-details__row">
       <dt className="market-details__label">{label}</dt>
-      <dd className={cn("market-details__value", valueClass)}>{value}</dd>
+      <dd className={cn("market-details__value", valueClass)} title={value}>
+        {value}
+      </dd>
     </div>
   );
 }

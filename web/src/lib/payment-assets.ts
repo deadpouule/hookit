@@ -36,6 +36,14 @@ export function poolQuoteLabel(pool: TokenPool): string {
   return stock?.symbol ?? `${quote.slice(0, 6)}…${quote.slice(-4)}`;
 }
 
+/** Sidebar/chip ticker — wNVDAx → NVDA so long Quotrons symbols fit. */
+export function compactQuoteLabel(label: string): string {
+  const trimmed = label.trim();
+  const wrapped = /^w([A-Za-z0-9]+)x$/i.exec(trimmed);
+  if (wrapped?.[1]) return wrapped[1].toUpperCase();
+  return trimmed;
+}
+
 export function paymentAssetById(id: PaymentAssetId): PaymentAsset {
   const asset = PAYMENT_ASSETS.find((a) => a.id === id);
   if (!asset) throw new Error(`Unknown payment asset: ${id}`);

@@ -8,7 +8,8 @@ import { V4ClaimsClaimAction } from "@/components/token/V4ClaimsClaimAction";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
-import { poolQuoteLabel } from "@/lib/payment-assets";
+import { compactQuoteLabel, poolQuoteLabel } from "@/lib/payment-assets";
+import { formatCompactQuoteAmount } from "@/lib/format";
 import type { TokenPool } from "@/lib/types";
 
 function quoteDecimals(quote: Address): number {
@@ -64,7 +65,7 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
   const wait = secondsLeft !== undefined ? Number(secondsLeft) : null;
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-4">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wider text-zinc-500 uppercase">
           Holder Airdrop
@@ -74,10 +75,15 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
       <dl className="mt-3 grid grid-cols-2 gap-3">
         <div>
           <dt className="text-[11px] text-zinc-600">Pending pot</dt>
-          <dd className="mt-0.5 font-mono text-sm text-zinc-100">
+          <dd
+            className="mt-0.5 min-w-0 truncate font-mono text-sm text-zinc-100"
+            title={
+              pending === null ? undefined : `${pending} ${quoteLabel}`
+            }
+          >
             {pending === null
               ? "—"
-              : `${pending.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${quoteLabel}`}
+              : `${formatCompactQuoteAmount(pending)} ${compactQuoteLabel(quoteLabel)}`}
           </dd>
         </div>
         <div>
