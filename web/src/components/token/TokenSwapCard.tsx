@@ -177,6 +177,39 @@ export function TokenSwapCard({
   const [rawBalances, setRawBalances] = useState<RawBalances>(ZERO_BALANCES);
   const tokenBal = Number(formatUnits(rawBalances.token, 18));
 
+  const refreshBalances = useCallback(async () => {
+    if (!walletReady) {
+      setRawBalances(ZERO_BALANCES);
+      return;
+    }
+    try {
+      const [token, eth, usdg, quote] = await Promise.all([
+        fetchTokenBalance(),
+        fetchEthBalance(),
+        fetchUsdgBalance(),
+        quoteErc20 ? fetchQuoteBalance() : Promise.resolve(BigInt(0)),
+      ]);
+      setRawBalances({ token, eth, usdg, quote });
+    } catch {
+      // Keep the last known balances when one RPC read temporarily fails.
+    }
+  }, [
+    walletReady,
+    fetchTokenBalance,
+    fetchEthBalance,
+    fetchUsdgBalance,
+    fetchQuoteBalance,
+    quoteErc20,
+  ]);
+
+  const refreshAfterTrade = useCallback(() => {
+    void refreshBalances();
+    refreshLiveData();
+    // Public RPCs and the indexer can lag slightly behind the receipt.
+    window.setTimeout(() => void refreshBalances(), 2_000);
+    window.setTimeout(() => void refreshBalances(), 6_000);
+  }, [refreshBalances, refreshLiveData]);
+
   const liveEthUsd = useEthUsd();
   const ethUsd = resolveEthUsd(pool, liveEthUsd);
   const modules = useMemo(() => resolveTokenModules(pool), [pool]);
@@ -224,25 +257,8 @@ export function TokenSwapCard({
       setRawBalances(ZERO_BALANCES);
       return;
     }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [token, eth, usdg, quote] = await Promise.all([
-          fetchTokenBalance(),
-          fetchEthBalance(),
-          fetchUsdgBalance(),
-          quoteErc20 ? fetchQuoteBalance() : Promise.resolve(BigInt(0)),
-        ]);
-        if (cancelled) return;
-        setRawBalances({ token, eth, usdg, quote });
-      } catch {
-        if (!cancelled) setRawBalances(ZERO_BALANCES);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [walletReady, fetchTokenBalance, fetchEthBalance, fetchUsdgBalance, fetchQuoteBalance, quoteErc20, address]);
+    void refreshBalances();
+  }, [walletReady, refreshBalances, address]);
 
   const payAsset = payAssetForSide(side, sellAsset, buyAsset);
   const effectivePayWith = paymentIdFromAsset(payAsset);
@@ -406,6 +422,7 @@ export function TokenSwapCard({
           setStatus("Buy confirmed");
           toast.dismiss(loadingId);
           toast.success("Buy confirmed", hash.slice(0, 10) + "…");
+          refreshAfterTrade();
         } else {
           const tokensIn = parseUnits(amount, 18);
           await writeContractAsync({
@@ -425,6 +442,7 @@ export function TokenSwapCard({
           setStatus("Sell confirmed");
           toast.dismiss(loadingId);
           toast.success("Sell confirmed", hash.slice(0, 10) + "…");
+          refreshAfterTrade();
         }
         return;
       }
@@ -442,7 +460,7 @@ export function TokenSwapCard({
       if (hash) {
         setStatus("Trade confirmed");
         toast.success("Trade confirmed", hash.slice(0, 10) + "…");
-        refreshLiveData();
+        refreshAfterTrade();
       }
     } catch (err) {
       toast.dismiss(loadingId);

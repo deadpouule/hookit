@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:unit": "tsx --test src/lib/*.test.ts",
     "smoke:onchain": "node --env-file=.env.local scripts/smoke-onchain.mjs",
     "smoke:ui": "playwright test",
     "smoke:ui:headed": "playwright test --headed --project=desktop",
@@ -45,6 +46,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

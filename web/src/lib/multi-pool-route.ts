@@ -346,6 +346,10 @@ export async function quoteBestBuyPlan(
     routeLabel: bestSingle.routeLabel,
   };
 
+  // Split legs execute as separate transactions. Each quote sees the same
+  // pre-trade wallet balance, so a combined split can violate maxWallet only
+  // after its first leg has already succeeded.
+  if (pool.hooks.maxWallet) return bestPlan;
   if (singles.length < 2) return bestPlan;
 
   const a = singles[0]!;

@@ -37,23 +37,23 @@ contract ForkInkLiveAuditTest is Test {
     using CurrencyLibrary for Currency;
     using BitmaskConfig for uint256;
 
-    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0xeb05916aC2356956224c7d9B75C0c8c01503d24C));
-    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0xfe09ECAb802E3567DF96B94D2A4ec294b6272AC8));
+    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626));
+    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0x2D936FCC92Cbc7c33EEBbA0C9787f9256274eAc8));
     BondingLaunchFactory internal constant BONDING =
-        BondingLaunchFactory(payable(0x0E6504F6E6Aa5e3009Ec3E5aFA52fCa1306f8dBe));
+        BondingLaunchFactory(payable(0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C));
     GraduatedFeeHook internal constant GRADUATED =
-        GraduatedFeeHook(payable(0xFe9be77c9b3349ba1095A150BD29a48fc9a9E088));
-    FloorVault internal constant VAULT = FloorVault(payable(0xff1EF27c6bD62583F00f62C53AccC0bDcd0Cd9B6));
-    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0x0a060F5E97b7b344f5444CaaAAd9F5FE4428B05f));
+        GraduatedFeeHook(payable(0x9558F74E81377EE0bE24fBAD660377b100266088));
+    FloorVault internal constant VAULT = FloorVault(payable(0x0fd357c7E7Ec5D1D1344D23d8C3156B956dEe6F0));
+    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0x9a7D0DebBe35b6257abFf8Fe740831f544C7342C));
     ProtocolRevenueDistributor internal constant DIST =
-        ProtocolRevenueDistributor(payable(0x302E52f0252360325796b7Eb6A03409de40266AC));
-    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0x7c2cCE72Da7fd791E7e4bd1e3b8dda4ee4BA53b1));
+        ProtocolRevenueDistributor(payable(0x4149509d2293a61cb199E17227740eEBFADd30c6));
+    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0x067f28DAc32AA69362eF8c70fa3De76541f50bF6));
     HolderAirdropVault internal constant AIRDROPS =
-        HolderAirdropVault(payable(0x869C3fF9F449F1F1470f8B257D73BCBaf52fFE77));
-    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x23Dcdc9570ccFE93807da99B395db6A24A79A239));
-    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0xAF8fac4edfDdc7446E8Eb6282EB04163645b6fd9));
-    address internal constant NATIVE = 0x9403CC96dbc7a63Bbd5aF65123653Acd6938f688;
-    address internal constant FEE_RAIL = 0xF1fDB0F7DBEBFdC4FF7158f2BC2922722e27FE71;
+        HolderAirdropVault(payable(0x80c83D9761bCa8693aD350f3347ab109103A104C));
+    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x145a1e9960F309991DE920dDE8fC2e4902F33325));
+    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB));
+    address internal constant NATIVE = 0xD839eEEd6c1fC0d0A2a12641256ac14bBaE1D7d8;
+    address internal constant FEE_RAIL = 0xd9d24028a3A2dc0874b5D4F10C2770150A719acb;
     address internal constant USDG_WHALE = 0x3e17f00A166C278F357A9aaB4e2148b9c3CFd8E4;
 
     IPoolManager internal manager;
@@ -84,9 +84,10 @@ contract ForkInkLiveAuditTest is Test {
         vm.prank(USDG_WHALE);
         IERC20(Currency.unwrap(usdg)).transfer(trader, 200_000e6);
 
-        deal(QuotronStockQuotes.wAMZNx, trader, 10e18);
-        deal(QuotronStockQuotes.wMSTRx, trader, 10e18);
-        deal(QuotronStockQuotes.wSPYx, trader, 10e18);
+        QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
+        for (uint256 i; i < stocks.length; ++i) {
+            deal(stocks[i].token, trader, 10e18);
+        }
     }
 
     function testFork_LiveWiringAndHookFlags() public onlyFork {
@@ -159,9 +160,9 @@ contract ForkInkLiveAuditTest is Test {
 
         assertTrue(_bytecodeHasSelector(address(ROUTER), ROUTER.swapExactIn.selector), "swapExactIn");
         assertTrue(_bytecodeHasSelector(address(ROUTER), ROUTER.swapExactInComposite.selector), "composite buy");
-        assertFalse(
+        assertTrue(
             _bytecodeHasSelector(address(ROUTER), ROUTER.swapExactInCompositeSell.selector),
-            "live router lacks composite sell until redeploy"
+            "live router composite sell"
         );
     }
 

@@ -6,6 +6,13 @@ const MULTICALL3 = {
   blockCreated: 0,
 };
 
+// Public chain metadata may be shared with wallets during network setup.
+// Paid provider credentials must never be included here.
+const INK_BROWSER_RPC_URLS = [
+  "https://rpc-gel.inkonchain.com",
+  "https://rpc-qnd.inkonchain.com",
+];
+
 /** Production mainnet — Uniswap v4 + Universal Router. */
 export const ink = defineChain({
   id: 57_073,
@@ -13,10 +20,7 @@ export const ink = defineChain({
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: {
     default: {
-      http: [
-        process.env.NEXT_PUBLIC_INK_RPC_URL ?? "https://rpc-gel.inkonchain.com",
-        process.env.NEXT_PUBLIC_INK_RPC_URL_BACKUP ?? "https://rpc-qnd.inkonchain.com",
-      ],
+      http: INK_BROWSER_RPC_URLS,
     },
   },
   blockExplorers: {

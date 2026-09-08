@@ -28,6 +28,7 @@ import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
 import {EthUsdgBridgeLib} from "../src/libraries/EthUsdgBridgeLib.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
+import {IFloorVault} from "../src/interfaces/IFloorVault.sol";
 
 /// @notice Full Ink redeploy of Hookit core (module fixes + V4ClaimsRedeemer).
 /// @dev Run when ready — does NOT touch existing live addresses until broadcast.
@@ -121,6 +122,20 @@ contract RedeployHookitInkScript is Script {
             console.log("NativeToken launchId", launchId);
             console.logBytes32(PoolId.unwrap(poolId));
             console.log("NativeToken pool fee", key.fee);
+        } else {
+            nativeToken = vm.envOr("NATIVE_TOKEN", address(0));
+            address nativeFactory =
+                vm.envOr("NATIVE_TOKEN_FACTORY", address(0xbadb0CBFfC80b107082babaB9e488Bc6bEf8f425));
+            uint256 nativeLaunchId = vm.envOr("NATIVE_TOKEN_LAUNCH_ID", uint256(1));
+            require(nativeToken != address(0) && nativeToken.code.length > 0, "existing native token missing");
+            require(nativeFactory.code.length > 0, "native token factory missing");
+
+            PoolKey memory nativeKey = LaunchFactory(payable(nativeFactory)).poolKeyOf(nativeLaunchId);
+            distributor.setNativeToken(nativeToken, IFloorVault(address(0)));
+            distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn);
+            hkitBuyback.configure(nativeToken, nativeKey);
+            distributor.setBuybackExecutor(address(hkitBuyback));
+            console.log("Existing NativeToken launchId", nativeLaunchId);
         }
 
         vm.stopBroadcast();

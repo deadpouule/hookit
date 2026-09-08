@@ -12,11 +12,19 @@ const primary = resolveHookitChainKey() === "ink" ? ink : baseSepolia;
 const secondary = resolveHookitChainKey() === "ink" ? baseSepolia : ink;
 
 function inkTransport() {
+  if (typeof window !== "undefined") {
+    // Paid provider credentials stay server-side behind the constrained proxy.
+    return http("/api/rpc/ink", { timeout: 12_000, retryCount: 1 });
+  }
+
   const primaryUrl =
-    process.env.NEXT_PUBLIC_INK_RPC_URL?.trim() || "https://rpc-gel.inkonchain.com";
+    process.env.INK_RPC_URL?.trim() || "https://rpc-gel.inkonchain.com";
   const backupUrl =
-    process.env.NEXT_PUBLIC_INK_RPC_URL_BACKUP?.trim() || "https://rpc-qnd.inkonchain.com";
-  const urls = [primaryUrl, backupUrl].filter(
+    process.env.INK_RPC_URL_BACKUP?.trim() || "https://rpc-qnd.inkonchain.com";
+  const tertiaryUrl = process.env.INK_RPC_URL_TERTIARY?.trim();
+  const urls = [primaryUrl, backupUrl, tertiaryUrl].filter(
+    (url): url is string => !!url,
+  ).filter(
     (u, i, arr) => u && arr.indexOf(u) === i,
   );
   const transports = urls.map((url) => http(url, { timeout: 10_000, retryCount: 0 }));

@@ -25,28 +25,27 @@ const rpc =
   process.env.INK_RPC_URL_BACKUP ||
   "https://rpc-gel.inkonchain.com";
 
-const V2_FACTORY = getAddress("0xeb05916aC2356956224c7d9B75C0c8c01503d24C");
+const CURRENT_FACTORY = getAddress("0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626");
 const ENV_FACTORY = process.env.NEXT_PUBLIC_LAUNCH_FACTORY
   ? getAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY)
   : null;
-// Prefer Ink v2 deploy factory — local .env may still point at an older factory.
 const FACTORY =
   process.env.SMOKE_FACTORY
     ? getAddress(process.env.SMOKE_FACTORY)
-    : process.env.SMOKE_USE_ENV_FACTORY === "1" && ENV_FACTORY
-      ? ENV_FACTORY
-      : V2_FACTORY;
-const DIST = getAddress("0x302e52f0252360325796b7eb6a03409de40266ac");
+    : ENV_FACTORY || CURRENT_FACTORY;
+const FACTORY_QUERY = getAddress(
+  process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY ||
+    "0x2b335D8dBafD55e2c6f93816A8449Fc810De1F90",
+);
+const DIST = getAddress(
+  process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR ||
+    "0x4149509d2293a61cb199E17227740eEBFADd30c6",
+);
 const QUOTER = getAddress("0x3972C00f7ed4885e145823eb7C655375d275A1C5");
 const STATE_VIEW = getAddress("0x76Fd297e2D437cd7f76d50F01AfE6160f86e9990");
 const ETH_USD_FEED = getAddress("0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF");
 const DYNAMIC_FEE_FLAG = 0x800000;
 const FLAG_DYNAMIC_FEES = 1n << 5n;
-
-const DYNAMIC_TOKENS = [
-  getAddress("0x86512f63b1E0Ca717C65325DB8100233FD185088"),
-  getAddress("0xA4214e583d5778Bab289C3202BEF336f59E84DF8"),
-];
 
 const ink = {
   id: 57073,
@@ -172,6 +171,25 @@ async function main() {
   if (count > 0n) pass("LaunchFactory has launches", `count=${count}`);
   else fail("LaunchFactory has launches", "count=0");
 
+  let dynamicTokens = [];
+  if (count > 0n) {
+    const page = await client.readContract({
+      address: FACTORY_QUERY,
+      abi: factoryAbi,
+      functionName: "getLaunchPage",
+      args: [1n, count],
+    });
+    const infos = page[0];
+    const bitmasks = page[1];
+    dynamicTokens = infos
+      .map((info, index) => ({
+        token: getAddress(info.token ?? info[0]),
+        bitmask: bitmasks[index],
+      }))
+      .filter(({ bitmask }) => (bitmask & FLAG_DYNAMIC_FEES) !== 0n)
+      .map(({ token }) => token);
+  }
+
   // Live ETH/USD feed
   const rd = await client.readContract({
     address: ETH_USD_FEED,
@@ -242,7 +260,10 @@ async function main() {
   }
 
   // Dynamic-fee tokens: fee flag + quoter
-  for (const token of DYNAMIC_TOKENS) {
+  if (dynamicTokens.length === 0) {
+    console.log("  · No dynamic-fee launch on the current factory to quote");
+  }
+  for (const token of dynamicTokens) {
     const id = await client.readContract({
       address: FACTORY,
       abi: factoryAbi,

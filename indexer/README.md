@@ -22,6 +22,7 @@ npm run serve          # polls chain + serves API on :8787
 | `BONDING_FACTORY` | no | Classic rail when deployed |
 | `INK_RPC_URL` | no | Primary RPC — default `https://rpc-gel.inkonchain.com` |
 | `INK_RPC_URL_BACKUP` | no | Fallback RPC — default `https://rpc-qnd.inkonchain.com` |
+| `INK_RPC_URL_TERTIARY` | no | Optional third fallback |
 | `INDEXER_RPC_URLS` | no | Comma-separated list (overrides primary/backup) |
 | `HOOKIT_CHAIN` | no | `ink` (default) or `baseSepolia` |
 | `POOL_MANAGER` | no | Ink v4 PoolManager default baked in |
@@ -34,6 +35,11 @@ npm run serve          # polls chain + serves API on :8787
 | `INDEXER_EXCLUDE` | no | comma-separated addresses excluded from holder rankings |
 
 \* At least one factory address.
+
+For a paid provider, keep its key server-side and put it first:
+`INDEXER_RPC_URLS=<paid>,https://rpc-gel.inkonchain.com,https://rpc-qnd.inkonchain.com`.
+The indexer uses ordered failover and only moves to the next URL when the
+current transport errors or stalls.
 
 ## Store v2
 

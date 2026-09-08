@@ -242,6 +242,10 @@ contract HookitSwapRouter is IUnlockCallback {
                 bridgeIn.settleWithBuffer(poolManager, call.payer, owe);
             }
         }
+        int256 bridgeInLeft = poolManager.currencyDelta(address(this), bridgeIn);
+        if (bridgeInLeft > 0) {
+            bridgeIn.take(poolManager, call.payer, uint256(bridgeInLeft), false);
+        }
 
         uint256 quoteIn = uint256(poolManager.currencyDelta(address(this), call.quoteCurrency));
         if (quoteIn == 0) revert InsufficientOutput();

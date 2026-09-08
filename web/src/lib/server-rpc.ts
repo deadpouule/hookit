@@ -9,13 +9,14 @@ export function createServerPublicClient() {
   if (chain.id === 57_073) {
     const primary =
       process.env.INK_RPC_URL?.trim() ??
-      process.env.NEXT_PUBLIC_INK_RPC_URL?.trim() ??
       "https://rpc-gel.inkonchain.com";
     const backup =
       process.env.INK_RPC_URL_BACKUP?.trim() ??
-      process.env.NEXT_PUBLIC_INK_RPC_URL_BACKUP?.trim() ??
       "https://rpc-qnd.inkonchain.com";
-    const urls = [primary, backup].filter((u, i, arr) => u && arr.indexOf(u) === i);
+    const tertiary = process.env.INK_RPC_URL_TERTIARY?.trim();
+    const urls = [primary, backup, tertiary]
+      .filter((url): url is string => !!url)
+      .filter((url, index, all) => all.indexOf(url) === index);
     const transports = urls.map((url) => http(url, { timeout: 12_000, retryCount: 0 }));
     return createPublicClient({
       chain,

@@ -22,20 +22,21 @@ if (!rpc) {
 
 const client = createPublicClient({ transport: http(rpc) });
 
-const V2_FACTORY = getAddress("0xeb05916aC2356956224c7d9B75C0c8c01503d24C");
+const CURRENT_FACTORY = getAddress("0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626");
 const ENV_FACTORY = process.env.NEXT_PUBLIC_LAUNCH_FACTORY
   ? getAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY)
   : null;
-const DIST = getAddress("0x302e52f0252360325796b7eb6a03409de40266ac");
-const MASTER_HOOK = getAddress("0xfe09ecab802e3567df96b94d2a4ec294b6272ac8");
-const GRAD_HOOK = getAddress("0xfe9be77c9b3349ba1095a150bd29a48fc9a9e088");
-const BONDING = getAddress("0x0E6504F6E6Aa5e3009Ec3E5aFA52fCa1306f8dBe");
+const DIST = getAddress("0x4149509d2293a61cb199E17227740eEBFADd30c6");
+const MASTER_HOOK = getAddress("0x2D936FCC92Cbc7c33EEBbA0C9787f9256274eAc8");
+const GRAD_HOOK = getAddress("0x9558F74E81377EE0bE24fBAD660377b100266088");
+const BONDING = getAddress("0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C");
 const DYNAMIC_FEE_FLAG = 0x800000;
 const FLAG_DYNAMIC_FEES = 1n << 5n;
 
 const tokens = [
-  getAddress("0x86512f63b1E0Ca717C65325DB8100233FD185088"),
-  getAddress("0xA4214e583d5778Bab289C3202BEF336f59E84DF8"),
+  getAddress("0x157AebA8935D9f4c21d00DA795158C944E11E948"),
+  getAddress("0x06Ae5b66826C6e1C92c33Ddb606aa4709eFD3298"),
+  getAddress("0xe508468d9FcBA090a168bB2Df8055055fe9af548"),
 ];
 
 const factoryAbi = parseAbi([
@@ -56,7 +57,7 @@ const queryAbi = parseAbi([
 ]);
 
 // LaunchFactoryQuery address from deploy
-const V2_QUERY = getAddress("0x9abeefb6addacdccaf85003bc6d0e4c636ddaeab");
+const CURRENT_QUERY = getAddress("0x2b335D8dBafD55e2c6f93816A8449Fc810De1F90");
 
 const distAbi = parseAbi([
   "function pending(address token) view returns (uint256)",
@@ -211,7 +212,7 @@ async function probeToken(token, factory) {
   let dynamicFees = null;
   try {
     const page = await client.readContract({
-      address: V2_QUERY,
+      address: CURRENT_QUERY,
       abi: queryAbi,
       functionName: "getLaunchPage",
       args: [id, 1n],
@@ -375,13 +376,13 @@ const out = {
   gradHook: null,
 };
 
-out.factories.push(await probeFactory("v2-deploy", V2_FACTORY));
-if (ENV_FACTORY && ENV_FACTORY.toLowerCase() !== V2_FACTORY.toLowerCase()) {
+out.factories.push(await probeFactory("current-deploy", CURRENT_FACTORY));
+if (ENV_FACTORY && ENV_FACTORY.toLowerCase() !== CURRENT_FACTORY.toLowerCase()) {
   out.factories.push(await probeFactory("env-local", ENV_FACTORY));
 }
 
 for (const t of tokens) {
-  let result = await probeToken(t, V2_FACTORY);
+  let result = await probeToken(t, CURRENT_FACTORY);
   if (!result.found && ENV_FACTORY) {
     result = await probeToken(t, ENV_FACTORY);
   }

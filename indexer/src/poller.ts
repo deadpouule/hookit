@@ -618,8 +618,9 @@ async function indexRange(
         const tokenAmt = tokenIsCurrency0 ? absBig(args.amount0) : absBig(args.amount1);
         const quoteAmt = tokenIsCurrency0 ? absBig(args.amount1) : absBig(args.amount0);
         const quoteDelta = tokenIsCurrency0 ? args.amount1 : args.amount0;
-        // Quote inflow to the pool means a buy of the launch token.
-        const side = quoteDelta > 0n ? "buy" : "sell";
+        // PoolManager Swap deltas use the caller's perspective: a negative quote
+        // delta is quote paid into the pool, therefore a buy of the launch token.
+        const side = quoteDelta < 0n ? "buy" : "sell";
         const price = quotePerToken(args.sqrtPriceX96, tokenIsCurrency0);
 
         const trade: IndexedTrade = {

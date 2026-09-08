@@ -36,6 +36,31 @@ contract EthUsdOracleTest is LaunchpadTestBase {
         assertEq(factory.ethUsdPriceX18(), 3_500e18);
     }
 
+    function test_freshFeedDrivesLaunchFdvBeforeKeeperSync() public {
+        deployProtocol();
+        factory.setEthUsdPrice(4_000e18);
+        MockEthUsdFeed feed = new MockEthUsdFeed(2_500e8, block.timestamp);
+        factory.setEthUsdFeed(address(feed));
+
+        assertEq(factory.quoteUsdPriceX18(address(0)), 2_500e18);
+        assertEq(factory.launchMcapQuoteWei(), 2 ether, "$5k / $2.5k ETH");
+        assertEq(factory.ethUsdPriceX18(), 4_000e18, "stored fallback unchanged before sync");
+    }
+
+    function test_staleFeedFallsBackToLastSyncedPriceAndSyncReverts() public {
+        deployProtocol();
+        vm.warp(ProtocolConstants.ORACLE_MAX_AGE + 100);
+        factory.setEthUsdPrice(2_500e18);
+        MockEthUsdFeed feed = new MockEthUsdFeed(4_000e8, block.timestamp - ProtocolConstants.ORACLE_MAX_AGE - 1);
+        factory.setEthUsdFeed(address(feed));
+
+        assertEq(factory.quoteUsdPriceX18(address(0)), 2_500e18);
+        assertEq(factory.launchMcapQuoteWei(), 2 ether, "stale feed must use stored fallback");
+        vm.expectRevert();
+        factory.syncEthUsdPrice();
+        assertEq(factory.ethUsdPriceX18(), 2_500e18);
+    }
+
     function test_unknownQuoteReverts() public {
         deployProtocol();
         vm.expectRevert(LaunchFactory.InvalidQuote.selector);

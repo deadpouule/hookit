@@ -78,7 +78,7 @@ function uniqUrls(urls: string[]): string[] {
 /**
  * Resolve RPC URL list.
  * - Comma-separated `INDEXER_RPC_URLS` / `INK_RPC_URLS` wins when set.
- * - Else primary (`INK_RPC_URL` / …) + backup (`INK_RPC_URL_BACKUP` / `INDEXER_RPC_URL_BACKUP`).
+ * - Else primary + backup + optional tertiary RPC.
  * - Ink defaults: gel → qnd when nothing set.
  */
 export function resolveRpcUrls(isInk: boolean): string[] {
@@ -98,7 +98,11 @@ export function resolveRpcUrls(isInk: boolean): string[] {
       process.env.INK_RPC_URL_BACKUP?.trim() ||
       process.env.INDEXER_RPC_URL_BACKUP?.trim() ||
       INK_RPC_DEFAULTS[1];
-    return uniqUrls([primary, backup]);
+    const tertiary =
+      process.env.INK_RPC_URL_TERTIARY?.trim() ||
+      process.env.INDEXER_RPC_URL_TERTIARY?.trim() ||
+      "";
+    return uniqUrls([primary, backup, tertiary]);
   }
 
   const primary =

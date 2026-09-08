@@ -8,7 +8,7 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 | Check | Status |
 | --- | --- |
 | Ink public RPC (`INK_RPC_URL`) | `https://rpc-gel.inkonchain.com` |
-| `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `54712334` |
+| `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `55311109` |
 | `VerifyInkDeploy.s.sol` | Run after syncing `.env` from `deploy/ink/env.ink.example` |
 | Custom hook allowlist on factory | Run **`HardenInkSoftLaunch.s.sol`** once if `customHookAllowlistEnabled` is false |
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
@@ -20,21 +20,22 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 
 | Contract | Address |
 | --- | --- |
-| **LaunchFactory** | `0xeb05916ac2356956224c7d9b75c0c8c01503d24c` |
-| **BondingLaunchFactory** | `0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe` |
-| **HookitSwapRouter** | `0x23dcdc9570ccfe93807da99b395db6a24a79a239` |
-| **MasterLaunchHook** | `0xfe09ecab802e3567df96b94d2a4ec294b6272ac8` |
-| **GraduatedFeeHook** | `0xfe9be77c9b3349ba1095a150bd29a48fc9a9e088` |
-| **Native token (HOOKTEST / HTST)** | `0x9403cc96dbc7a63bbd5af65123653acd6938f688` |
-| **ProtocolRevenueDistributor** | `0x302e52f0252360325796b7eb6a03409de40266ac` |
-| **HkitBuyback** | `0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9` |
-| **BuybackVault** (hook immutable) | `0x7c2cce72da7fd791e7e4bd1e3b8dda4ee4ba53b1` |
-| **HolderAirdropVault** (hook immutable) | `0x869c3ff9f449f1f1470f8b257d73bcbaf52ffe77` |
-| **FeeEthRail** (distributor.feeRail) | `0xf1fdb0f7dbebfdc4ff7158f2bc2922722e27fe71` |
+| **LaunchFactory** | `0x480bfb88985fb94f4345ed4bb2ec267db9ab9626` |
+| **BondingLaunchFactory** | `0x13d6216a92b013daacd36e4f6d78ad9264af1a0c` |
+| **HookitSwapRouter** | `0x145a1e9960f309991de920dde8fc2e4902f33325` |
+| **MasterLaunchHook** | `0x2d936fcc92cbc7c33eebba0c9787f9256274eac8` |
+| **GraduatedFeeHook** | `0x9558f74e81377ee0be24fbad660377b100266088` |
+| **Native token (HOOKTEST / HTST)** | `0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8` |
+| **ProtocolRevenueDistributor** | `0x4149509d2293a61cb199e17227740eebfadd30c6` |
+| **HkitBuyback** | `0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb` |
+| **BuybackVault** (hook immutable) | `0x067f28dac32aa69362ef8c70fa3de76541f50bf6` |
+| **HolderAirdropVault** (hook immutable) | `0x80c83d9761bca8693ad350f3347ab109103a104c` |
+| **FeeEthRail** (distributor.feeRail) | `0xd9d24028a3a2dc0874b5d4f10c2770150a719acb` |
 
-`INDEXER_START_BLOCK=54888359`
+`INDEXER_START_BLOCK=55204587`
 
-Prior factory `0xa2366b74…` (11 launches, start block `54547596`) is retired — indexer + www.hookit.fun use the addresses above.
+Previous factory generations remain indexed for historical tokens. The complete list is in
+`deploy/ink/addresses.json`; the UI uses the current addresses above for new launches.
 
 ## Post-deploy checklist
 
@@ -49,7 +50,7 @@ forge script script/VerifyInkDeploy.s.sol --rpc-url $INK_RPC_URL -vv
 forge script script/HardenInkSoftLaunch.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 4) Optional: wire FeeEthRail when USDG/ETH pool exists
-FEE_ETH_RAIL=0xf1fdb0f7dbebfdc4ff7158f2bc2922722e27fe71 \
+FEE_ETH_RAIL=0xd9d24028a3a2dc0874b5d4f10c2770150a719acb \
   forge script script/WireFeeEthRailInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # 5) Dry-run latest bytecode on Ink fork
@@ -63,12 +64,12 @@ forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
 NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
-NEXT_PUBLIC_LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c
-NEXT_PUBLIC_BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe
-NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x23dcdc9570ccfe93807da99b395db6a24a79a239
-NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x302e52f0252360325796b7eb6a03409de40266ac
-NEXT_PUBLIC_HKIT_BUYBACK=0xaf8fac4edfddc7446e8eb6282eb04163645b6fd9
-NEXT_PUBLIC_NATIVE_TOKEN=0x9403cc96dbc7a63bbd5af65123653acd6938f688
+NEXT_PUBLIC_LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626
+NEXT_PUBLIC_BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c
+NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x145a1e9960f309991de920dde8fc2e4902f33325
+NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x4149509d2293a61cb199e17227740eebfadd30c6
+NEXT_PUBLIC_HKIT_BUYBACK=0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb
+NEXT_PUBLIC_NATIVE_TOKEN=0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
 INDEXER_URL=https://indexer.hookit.fun
 ```
@@ -76,25 +77,26 @@ INDEXER_URL=https://indexer.hookit.fun
 **Linode `/opt/hookit/.env`:**
 
 ```
-LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c
-BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe
-INDEXER_START_BLOCK=54888359
+LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626
+BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c
+INDEXER_START_BLOCK=55204587
 INK_RPC_URL=https://rpc-gel.inkonchain.com
 INDEXER_DATA_DIR=/var/lib/hookit-indexer
 ```
 
-After changing factory or start block: delete `hookit-57073.json` store and restart `hookit-indexer`.
+After changing factory addresses, retain the existing `hookit-57073.json` store and restart
+`hookit-indexer`; deleting it would discard historical generations.
 
 ## Smoke (private)
 
 ```bash
 # Classic bonding
-BONDING_FACTORY=0x0e6504f6e6aa5e3009ec3e5afa52fca1306f8dbe \
+BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c \
   forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # Master + modules matrix
-LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c \
-  HOOKIT_SWAP_ROUTER=0x23dcdc9570ccfe93807da99b395db6a24a79a239 \
+LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626 \
+  HOOKIT_SWAP_ROUTER=0x145a1e9960f309991de920dde8fc2e4902f33325 \
   forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 ```
 
@@ -109,21 +111,23 @@ LAUNCH_FACTORY=0xeb05916ac2356956224c7d9b75c0c8c01503d24c \
 | --- | --- |
 | Small circle / no big announce | Public marketing |
 | Deployer or multisig as owner | Timelock handoff |
-| Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after redeploy with hardened factory |
+| Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after audit |
 | Unaudited disclaimer in UI | External audit |
-| Buyback keeper manual | Automated `HkitBuyback.execute` |
+| Daily fee keeper on Linode (`hookit-fee-keeper.timer`) | Same; tune TWAP / Gelato later |
 
 ### Bytecode note
 
-Live stack is `RedeployHookitInk` (block `54712334`): custom-hook allowlist on, custom hooks off. Source now includes (need a **new** factory / hook / router / graduated hook — existing tokens stay on old bytecode):
+Live stack is `RedeployHookitInk` (block `55311109`): custom-hook allowlist on, custom hooks off. It includes:
 
 - `MasterLaunchHook` uses `getLiquidity()` (not `getSlot0` protocolFee) for depth / dynamic fees / floor.
-- `LaunchFactory.launch()` writes `poolLaunchId` / `poolMarketIndex` (live singles have `poolLaunchId = 0`).
-- `HookitSwapRouter.swapExactInCompositeSell` (live router has composite **buy** only).
+- `LaunchFactory.launch()` writes `poolLaunchId` / `poolMarketIndex`.
+- `HookitSwapRouter.swapExactInCompositeSell`.
 - Live ETH/USD for FDV (`_ethUsdX18` + deploy `syncEthUsdPrice`).
 - `GraduatedFeeHook` sweep impact guard uses **pre-swap** spot.
 
-Until that redeploy: UI blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENABLED=false`). `HardenInkSoftLaunch.s.sol` already ran on this factory. `FeeEthRail.ethBridgeSet` stays false until a public USDG↔ETH/WETH v4 pool exists (`WireFeeEthRailInk`).
+The UI still blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENABLED=false`) for the soft launch.
+`HardenInkSoftLaunch.s.sol` already ran on this factory. `FeeEthRail.ethBridgeSet` stays false until a
+public USDG↔ETH/WETH v4 pool exists (`WireFeeEthRailInk`).
 
 ## Do not
 
@@ -132,14 +136,14 @@ Until that redeploy: UI blocks custom Solidity hooks (`CUSTOM_SOLIDITY_HOOKS_ENA
 - Commit `PRIVATE_KEY` or RPC secrets.
 - Mix Base Sepolia and Ink env in one store.
 
-## Redeploy (v2 hardened bytecode)
+## Future redeploy
 
 When ready to replace the live stack:
 
 ```bash
-forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
+SKIP_FAIR_LAUNCH=true forge script script/RedeployHookitInk.s.sol:RedeployHookitInkScript \
   --rpc-url $INK_RPC_URL --broadcast --verify \
   --etherscan-api-key $INK_EXPLORER_API_KEY
 ```
 
-Update `deploy/ink/addresses.json`, all env files, indexer start block, and reset the indexer store.
+Run `scripts/sync-ink-deploy.mjs`, update Vercel/Linode env, retain the historical indexer store, and restart services.
