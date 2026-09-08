@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatUnits, zeroAddress, type Address } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 
+import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { fetchCreatorClaimedTotal, invalidateCreatorClaimed } from "@/lib/creator-fees-claimed";
 
 import {
@@ -17,6 +18,7 @@ import { shortAddress } from "@/lib/master-hooks";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 function quoteDecimals(quote: Address): number {
   if (quote === zeroAddress) return 18;
@@ -30,6 +32,32 @@ function formatFeeAmount(wei: bigint, decimals: number): string {
   const value = Number(formatUnits(wei, decimals));
   if (value >= 1) return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
   return Number(value.toPrecision(6)).toString();
+}
+
+function FeeQuoteAmount({
+  amount,
+  pool,
+  quoteLabel,
+  className,
+}: {
+  amount: string;
+  pool: TokenPool;
+  quoteLabel: string;
+  className?: string;
+}) {
+  return (
+    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+      <span className="inline-flex shrink-0" aria-hidden>
+        <PoolQuoteMark
+          quoteAddress={pool.quoteAddress ?? zeroAddress}
+          quoteAsset={pool.quoteAsset ?? quoteLabel}
+        />
+      </span>
+      <span className="truncate">
+        {amount} {quoteLabel}
+      </span>
+    </span>
+  );
 }
 
 /** Creator fee claim — floor redeem lives inside ActiveHooksPanel / Backed floor. */
@@ -203,7 +231,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
           <div>
             <p className="text-xs text-amber-200/90">Unsynced fees</p>
             <p className="font-mono text-sm text-zinc-100">
-              {formatFeeAmount(pendingWei, decimals)} {quoteLabel}
+              <FeeQuoteAmount
+                amount={formatFeeAmount(pendingWei, decimals)}
+                pool={pool}
+                quoteLabel={quoteLabel}
+              />
             </p>
             <p className="mt-1 text-[11px] text-zinc-500">
               Classic pools accrue on the fee hook until synced to escrow.
@@ -225,8 +257,15 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-zinc-500">{isCreator ? "Available to claim" : "Unclaimed"}</p>
-          <p className="truncate font-mono text-lg text-foreground" title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}>
-            {formatFeeAmount(claimWei, decimals)} {quoteLabel}
+          <p
+            className="font-mono text-lg text-foreground"
+            title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}
+          >
+            <FeeQuoteAmount
+              amount={formatFeeAmount(claimWei, decimals)}
+              pool={pool}
+              quoteLabel={quoteLabel}
+            />
           </p>
         </div>
         {isCreator ? (
@@ -244,10 +283,18 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] pt-2.5">
         <p className="text-xs text-zinc-500">Claimed so far</p>
         <p
-          className="truncate font-mono text-sm text-zinc-200"
+          className="font-mono text-sm text-zinc-200"
           title={claimedTotal != null ? `${formatUnits(claimedTotal, decimals)} ${quoteLabel}` : undefined}
         >
-          {claimedTotal == null ? "…" : `${formatFeeAmount(claimedTotal, decimals)} ${quoteLabel}`}
+          {claimedTotal == null ? (
+            "…"
+          ) : (
+            <FeeQuoteAmount
+              amount={formatFeeAmount(claimedTotal, decimals)}
+              pool={pool}
+              quoteLabel={quoteLabel}
+            />
+          )}
         </p>
       </div>
       {message && isCreator && <p className="text-xs text-zinc-400">{message}</p>}
