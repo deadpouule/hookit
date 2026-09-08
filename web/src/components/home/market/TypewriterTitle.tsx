@@ -2,8 +2,14 @@
 
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
-import { BuiltOnUniswapBadge } from "@/components/brand/BuiltOnUniswapBadge";
-import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
+import {
+  BuiltOnUniswapBadge,
+  UNISWAP_BADGE_LABEL,
+} from "@/components/brand/BuiltOnUniswapBadge";
+import {
+  PoweredByQuotronsBadge,
+  QUOTRONS_BADGE_LABEL,
+} from "@/components/brand/PoweredByQuotronsBadge";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 
 import { PairingLogoStack, STOCK_PAIRING_IDS } from "./PairingLogoStack";
@@ -44,26 +50,72 @@ const TYPE_MS = 70;
 const DELETE_MS = 40;
 const HOLD_MS_BY_LINE = [5500, 5500];
 
+function badgeLabel(id: LogoSegment["id"]): string | null {
+  if (id === "uniswap") return UNISWAP_BADGE_LABEL;
+  if (id === "quotrons") return QUOTRONS_BADGE_LABEL;
+  return null;
+}
+
+function segmentLength(segment: LineSegment): number {
+  if (segment.kind === "text") return segment.value.length;
+  const label = badgeLabel(segment.id);
+  return label ? 1 + label.length : 1;
+}
+
 function lineLength(line: TypewriterLine): number {
-  return line.segments.reduce(
-    (sum, segment) => sum + (segment.kind === "text" ? segment.value.length : 1),
-    0,
+  return line.segments.reduce((sum, segment) => sum + segmentLength(segment), 0);
+}
+
+function UsdgMark() {
+  return (
+    <span className="hero-typewriter-mark hero-typewriter-mark--usdg" aria-hidden>
+      <Image
+        src="/pairing/usdg.png"
+        alt=""
+        width={46}
+        height={46}
+        className="hero-typewriter-mark__photo h-auto w-auto"
+        draggable={false}
+      />
+    </span>
+  );
+}
+
+function HeroBadge({
+  id,
+  typedChars,
+}: {
+  id: "uniswap" | "quotrons";
+  typedChars: number;
+}) {
+  const label = badgeLabel(id) ?? "";
+  const logoShown = typedChars > 0;
+  if (!logoShown) return null;
+  const typedText = label.slice(0, Math.max(0, typedChars - 1));
+  const showCaret = typedChars > 0 && typedChars < 1 + label.length;
+
+  if (id === "uniswap") {
+    return (
+      <BuiltOnUniswapBadge
+        variant="hero"
+        className="hero-uniswap-badge"
+        typedText={typedText}
+        showCaret={showCaret}
+      />
+    );
+  }
+
+  return (
+    <PoweredByQuotronsBadge
+      variant="hero"
+      className="hero-quotrons-badge"
+      typedText={typedText}
+      showCaret={showCaret}
+    />
   );
 }
 
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
-  if (id === "uniswap") {
-    return <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />;
-  }
-
-  if (id === "quotrons") {
-    return (
-      <span className="hero-quotrons-wrap">
-        <PoweredByQuotronsBadge variant="hero" className="hero-quotrons-badge" />
-      </span>
-    );
-  }
-
   if (STOCK_LOGO_IDS.has(id)) {
     return <PairingMark id={id as PairingTokenId} />;
   }
@@ -82,18 +134,7 @@ function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
     );
   }
 
-  return (
-    <span className="hero-typewriter-mark hero-typewriter-mark--usdg" aria-hidden>
-      <Image
-        src="/pairing/usdg.png"
-        alt=""
-        width={46}
-        height={46}
-        className="hero-typewriter-mark__photo h-auto w-auto"
-        draggable={false}
-      />
-    </span>
-  );
+  return <UsdgMark />;
 }
 
 function renderTypedLine(line: TypewriterLine, typedCount: number) {
@@ -104,11 +145,57 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
     const segment = line.segments[index];
     if (remaining <= 0) break;
 
+    const next = line.segments[index + 1];
+    const after = line.segments[index + 2];
+    if (
+      segment.kind === "text" &&
+      next?.kind === "logo" &&
+      next.id === "usdg" &&
+      after?.kind === "logo" &&
+      after.id === "quotrons"
+    ) {
+      const dollar = segment.value;
+      const dollarTake = Math.min(remaining, dollar.length);
+      remaining -= dollarTake;
+      const usdgOn = remaining > 0;
+      if (usdgOn) remaining -= 1;
+      const quotronsTicks = 1 + QUOTRONS_BADGE_LABEL.length;
+      const quotronsTake = usdgOn ? Math.min(remaining, quotronsTicks) : 0;
+      remaining -= quotronsTake;
+
+      nodes.push(
+        <span key="usdg-quotrons" className="hero-usdg-quotrons">
+          <span className="hero-usdg-row">
+            {dollar.slice(0, dollarTake)}
+            {usdgOn ? <UsdgMark /> : null}
+          </span>
+          {quotronsTake > 0 ? (
+            <span className="hero-quotrons-wrap">
+              <HeroBadge id="quotrons" typedChars={quotronsTake} />
+            </span>
+          ) : null}
+        </span>,
+      );
+      index += 2;
+      continue;
+    }
+
     if (segment.kind === "text") {
       const take = Math.min(remaining, segment.value.length);
       if (take > 0) {
         nodes.push(segment.value.slice(0, take));
       }
+      remaining -= take;
+      continue;
+    }
+
+    const label = badgeLabel(segment.id);
+    if (label && (segment.id === "uniswap" || segment.id === "quotrons")) {
+      const ticks = 1 + label.length;
+      const take = Math.min(remaining, ticks);
+      nodes.push(
+        <HeroBadge key={`${segment.id}-${nodes.length}`} id={segment.id} typedChars={take} />,
+      );
       remaining -= take;
       continue;
     }
@@ -143,6 +230,18 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
   }
 
   return nodes;
+}
+
+function hideOuterCursor(line: TypewriterLine, typedCount: number): boolean {
+  let remaining = typedCount;
+  for (const segment of line.segments) {
+    const len = segmentLength(segment);
+    if (remaining <= 0) return false;
+    const label = segment.kind === "logo" ? badgeLabel(segment.id) : null;
+    if (label && remaining > 0 && remaining < len) return true;
+    remaining -= Math.min(remaining, len);
+  }
+  return false;
 }
 
 export function TypewriterTitle() {
@@ -195,13 +294,17 @@ export function TypewriterTitle() {
     return () => window.clearTimeout(timeout);
   }, [index, phase, typedCount, desktopAnim]);
 
+  const hideCursor = hideOuterCursor(LINES[index], typedCount);
+
   return (
     <h1 className="hero-typewriter" aria-live="polite">
       <span className="hero-prompt">~$</span>
       <span className="hero-typed">{renderTypedLine(LINES[index], typedCount)}</span>
-      <span className="hero-cursor" aria-hidden>
-        |
-      </span>
+      {hideCursor ? null : (
+        <span className="hero-cursor" aria-hidden>
+          |
+        </span>
+      )}
     </h1>
   );
 }

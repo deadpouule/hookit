@@ -2331,6 +2331,21 @@
     color: rgb(255 255 255 / 0.95);
   }
 
+  .built-on-uniswap-badge__text--typed {
+    position: relative;
+    display: inline-block;
+  }
+
+  .built-on-uniswap-badge__sizer {
+    visibility: hidden;
+  }
+
+  .built-on-uniswap-badge__live {
+    position: absolute;
+    inset: 0;
+    white-space: nowrap;
+  }
+
   .hero-uniswap-badge {
     transform: translateY(-0.08rem);
   }
@@ -2350,8 +2365,8 @@
 
   .powered-by-quotrons-badge--hero {
     margin-inline: 0.15rem 0.25rem;
-    gap: 0.75rem;
-    padding: 0.62rem 1.2rem;
+    gap: 0.9rem;
+    padding: 0.72rem 1.35rem;
     vertical-align: middle;
   }
 
@@ -2364,20 +2379,42 @@
   }
 
   .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
-    height: 56px;
-    width: 56px;
+    height: 72px;
+    width: 72px;
   }
 
   .powered-by-quotrons-badge__text {
+    position: relative;
     display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.08rem;
+    justify-content: center;
+    gap: 0.12rem;
     font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: #f6ecd0;
     text-shadow: 0 0 12px rgb(232 212 138 / 0.55);
+  }
+
+  .powered-by-quotrons-badge__sizer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    visibility: hidden;
+  }
+
+  .powered-by-quotrons-badge__typed {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.12rem;
   }
 
   .powered-by-quotrons-badge__by {
@@ -2391,11 +2428,11 @@
   }
 
   .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
-    font-size: 0.82rem;
+    font-size: 1.2rem;
   }
 
   .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
-    font-size: 1.45rem;
+    font-size: 2.15rem;
     line-height: 1;
   }
 
@@ -2405,14 +2442,40 @@
     padding: 0.42rem 0.7rem;
   }
 
+  .hero-usdg-quotrons {
+    display: block;
+    width: 100%;
+    margin-top: 0.2rem;
+  }
+
+  .hero-usdg-row {
+    display: inline-flex;
+    align-items: center;
+    white-space: pre-wrap;
+  }
+
   .hero-quotrons-wrap {
     display: block;
     width: 100%;
-    margin-top: 0.55rem;
+    margin-top: 0.5rem;
+  }
+
+  .hero-usdg-quotrons .powered-by-quotrons-badge--hero,
+  .hero-quotrons-badge.powered-by-quotrons-badge--hero {
+    width: 100%;
+    box-sizing: border-box;
+    margin-inline: 0;
+    justify-content: flex-start;
   }
 
   .hero-quotrons-badge {
-    transform: translateY(-0.08rem);
+    transform: none;
+  }
+
+  .hero-cursor--in-badge {
+    margin-left: 0.08rem;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-weight: 600;
   }
 
   .hero-typewriter-mark {
@@ -6704,6 +6767,7 @@
   .hero-copy h1,
   .hero-typewriter {
     margin: 0;
+    width: 100%;
     max-width: 100%;
     text-align: left;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -6775,11 +6839,11 @@
   }
 
   .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
-    font-size: 0.58rem;
+    font-size: 0.72rem;
   }
 
   .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
-    font-size: 0.8rem;
+    font-size: 1.05rem;
   }
 
   .hero-typewriter--mobile .hero-quotrons-badge {
