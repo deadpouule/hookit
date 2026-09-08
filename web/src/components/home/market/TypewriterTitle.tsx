@@ -48,7 +48,7 @@ const LINES: TypewriterLine[] = [
 
 const TYPE_MS = 70;
 const DELETE_MS = 40;
-const HOLD_MS_BY_LINE = [5500, 5500];
+const HOLD_MS_BY_LINE = [5500, 7000];
 
 function badgeLabel(id: LogoSegment["id"]): string | null {
   if (id === "uniswap") return UNISWAP_BADGE_LABEL;

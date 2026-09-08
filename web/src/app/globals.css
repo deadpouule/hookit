@@ -2285,7 +2285,14 @@
     height: 20px;
     width: 20px;
     flex-shrink: 0;
+    background-color: var(--uniswap-pink);
     object-fit: contain;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
   }
 
   .built-on-uniswap-badge--hero .built-on-uniswap-badge__logo {

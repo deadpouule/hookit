@@ -27,6 +27,7 @@ export function BuiltOnUniswapBadge({
   const logoSrc = isHero || isCompact ? "/brand/uniswap-mark.png" : "/brand/uniswap-logo.png";
   const logoPx = isHero ? 56 : 20;
   const typewriter = typedText != null;
+  const tintLogo = isHero || isCompact;
 
   return (
     <span
@@ -37,14 +38,25 @@ export function BuiltOnUniswapBadge({
         className,
       )}
     >
-      <Image
-        src={logoSrc}
-        alt=""
-        width={logoPx}
-        height={logoPx}
-        className="built-on-uniswap-badge__logo h-auto w-auto"
-        draggable={false}
-      />
+      {tintLogo ? (
+        <span
+          className="built-on-uniswap-badge__logo"
+          aria-hidden
+          style={{
+            WebkitMaskImage: `url(${logoSrc})`,
+            maskImage: `url(${logoSrc})`,
+          }}
+        />
+      ) : (
+        <Image
+          src={logoSrc}
+          alt=""
+          width={logoPx}
+          height={logoPx}
+          className="built-on-uniswap-badge__logo h-auto w-auto"
+          draggable={false}
+        />
+      )}
       {typewriter ? (
         <span className="built-on-uniswap-badge__text built-on-uniswap-badge__text--typed">
           <span className="built-on-uniswap-badge__sizer" aria-hidden>
