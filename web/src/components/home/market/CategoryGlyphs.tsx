@@ -1,4 +1,4 @@
-import { Code2, Landmark, Layers } from "lucide-react";
+import { Code2, Layers } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,17 @@ export function CustomsGlyph({ className }: { className?: string }) {
 }
 
 export function RwaGlyph({ className }: { className?: string }) {
-  return <Landmark className={cn("category-rwa-icon", className)} aria-hidden />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/quotrons-mark.png"
+      alt=""
+      width={14}
+      height={14}
+      className={cn("category-quotrons-logo", className)}
+      draggable={false}
+    />
+  );
 }
 
 export function MultiPairGlyph({ className }: { className?: string }) {

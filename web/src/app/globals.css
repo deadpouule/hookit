@@ -3405,6 +3405,7 @@
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
   .token-hero-card .token-type-badge-glyph.category-rwa-icon,
+  .token-hero-card .token-type-badge-glyph.category-quotrons-logo,
   .token-hero-card .token-type-badge-glyph.category-multi-pair-icon {
     width: 0.95rem;
     height: 0.95rem;
@@ -5806,10 +5807,16 @@
   }
 
   .category-rwa-icon,
-  .filter-rwa-icon {
+  .filter-rwa-icon,
+  .category-quotrons-logo {
     width: 0.875rem;
     height: 0.875rem;
     flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  .category-rwa-icon,
+  .filter-rwa-icon {
     color: #fde047;
     filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
   }
@@ -5830,6 +5837,7 @@
 
   .token-type-badge-glyph.category-customs-icon,
   .token-type-badge-glyph.category-rwa-icon,
+  .token-type-badge-glyph.category-quotrons-logo,
   .token-type-badge-glyph.category-multi-pair-icon {
     width: 0.625rem;
     height: 0.625rem;

@@ -21,7 +21,7 @@ import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 const BADGE_TIPS = {
   master: "Uniswap v4 token with our programmable hooks.",
   customs: "Custom unaudited hook code — treat as higher risk.",
-  rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.).",
+  rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.). Powered by Quotrons",
   multiPair: "Trades across multiple quote pools at once.",
   pairing: (name: string) => `Pool liquidity is paired against ${name}.`,
 } as const;
@@ -83,7 +83,7 @@ function PairingBadgeRow({
   );
 }
 
-/** Type badges row — Master, Customs, RWA pools, multi-pair, pairing legs. */
+/** Type badges row — Master, Customs, Quotrons pools, multi-pair, pairing legs. */
 export function TokenTypeBadges({
   token,
   masterHookFilters,
@@ -134,7 +134,7 @@ export function TokenTypeBadges({
       <BadgeTip key="rwa" tip={BADGE_TIPS.rwa}>
         <span className="token-type-badge token-type-badge--rwa">
           <RwaGlyph className="token-type-badge-glyph" />
-          RWA pools
+          Quotrons pools
         </span>
       </BadgeTip>,
     );
