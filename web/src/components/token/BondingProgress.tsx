@@ -2,7 +2,6 @@
 
 import { formatEther } from "viem";
 
-import { compactQuoteLabel } from "@/lib/payment-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +36,7 @@ export function BondingProgress({ pool }: { pool: TokenPool }) {
         />
       </div>
       <p className="truncate font-mono text-[11px] text-zinc-500" title={`${realFmt} / ${goalFmt} ${quoteLabel}`}>
-        {realFmt} / {goalFmt} {compactQuoteLabel(quoteLabel)}
+        {realFmt} / {goalFmt} {quoteLabel}
         {!graduated && " · graduates at 4.2 ETH-equiv"}
       </p>
     </div>

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { formatPercent, formatUsd } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
-import { compactQuoteLabel } from "@/lib/payment-assets";
 import { tokenHref } from "@/lib/routes";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
   const href = tokenHref(token.id);
   const spot = token.marketCap > 0 ? token.marketCap / TOTAL_SUPPLY : 0;
   const up = token.change24h >= 0;
-  const pair = token.pairings?.[0]?.name ?? compactQuoteLabel(token.quoteAsset ?? "ETH");
+  const pair = token.pairings?.[0]?.name ?? token.quoteAsset ?? "ETH";
 
   return (
     <article

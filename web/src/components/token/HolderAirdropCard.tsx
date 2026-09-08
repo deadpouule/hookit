@@ -8,7 +8,7 @@ import { V4ClaimsClaimAction } from "@/components/token/V4ClaimsClaimAction";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
-import { compactQuoteLabel, poolQuoteLabel } from "@/lib/payment-assets";
+import { poolQuoteLabel } from "@/lib/payment-assets";
 import { formatCompactQuoteAmount } from "@/lib/format";
 import type { TokenPool } from "@/lib/types";
 
@@ -83,7 +83,7 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
           >
             {pending === null
               ? "—"
-              : `${formatCompactQuoteAmount(pending)} ${compactQuoteLabel(quoteLabel)}`}
+              : `${formatCompactQuoteAmount(pending)} ${quoteLabel}`}
           </dd>
         </div>
         <div>

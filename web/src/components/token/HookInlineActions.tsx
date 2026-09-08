@@ -9,7 +9,6 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
-import { compactQuoteLabel } from "@/lib/payment-assets";
 import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
@@ -93,7 +92,7 @@ export function FloorVaultInline({
     }
   };
 
-  const ticker = compactQuoteLabel(quoteLabel);
+  const ticker = quoteLabel;
   const priceLabel =
     floorPriceHuman != null
       ? `${formatCompactQuoteAmount(floorPriceHuman)} ${ticker}`
@@ -188,7 +187,7 @@ export function BuybackVestingInline({
   const isCreator =
     !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
 
-  const ticker = compactQuoteLabel(quoteLabel);
+  const ticker = quoteLabel;
   const claimLabel = `${formatCompactQuoteAmount(Number(formatUnits(claimableWei, decimals)))} ${ticker}`;
 
   const claim = async () => {
@@ -279,7 +278,7 @@ export function HolderAirdropInline({
     query: { enabled: !!airdropVault && !!token, refetchInterval: 15_000 },
   });
 
-  const ticker = compactQuoteLabel(quoteLabel);
+  const ticker = quoteLabel;
   const potLabel = `${formatCompactQuoteAmount(Number(formatUnits(reserveWei, decimals)))} ${ticker}`;
   const ready = reserveWei > BigInt(0) && secondsLeft != null && secondsLeft <= 0;
   const status = ready

@@ -7,7 +7,6 @@ import {
 } from "viem";
 
 import { formatCompactQuoteAmount } from "@/lib/format";
-import { compactQuoteLabel } from "@/lib/payment-assets";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import {
   getBondingFactoryAddress,
@@ -153,7 +152,7 @@ export async function fetchDevBuyOnChain(
 
 export function formatDevBuyQuote(raw: string, quoteDecimals: number, quoteLabel: string) {
   const n = Number(formatUnits(BigInt(raw), quoteDecimals));
-  const ticker = compactQuoteLabel(quoteLabel);
+  const ticker = quoteLabel.trim();
   if (ticker === "ETH") {
     return `${n < 1 ? n.toFixed(4) : n.toFixed(3)} ETH`;
   }

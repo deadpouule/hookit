@@ -15,7 +15,7 @@ import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { feeEscrowAbi, graduatedFeeHookAbi } from "@/lib/contracts/swap-abi";
 import { shortAddress } from "@/lib/master-hooks";
-import { compactQuoteLabel, poolQuoteLabel } from "@/lib/payment-assets";
+import { poolQuoteLabel } from "@/lib/payment-assets";
 import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
@@ -44,7 +44,6 @@ function FeeQuoteAmount({
   quoteLabel: string;
   className?: string;
 }) {
-  const ticker = compactQuoteLabel(quoteLabel);
   return (
     <span
       className={cn("flex w-full min-w-0 items-center gap-1.5 overflow-hidden", className)}
@@ -56,9 +55,9 @@ function FeeQuoteAmount({
           quoteAsset={pool.quoteAsset ?? quoteLabel}
         />
       </span>
-      <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1 overflow-hidden">
         <span className="min-w-0 truncate tabular-nums">{amount}</span>
-        <span className="shrink-0 text-[0.92em] tracking-tight">{ticker}</span>
+        <span className="shrink-0 whitespace-nowrap text-[0.82em] tracking-tight">{quoteLabel}</span>
       </span>
     </span>
   );

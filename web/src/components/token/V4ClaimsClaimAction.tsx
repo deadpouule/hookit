@@ -10,7 +10,6 @@ import {
 import { poolManagerClaimsAbi } from "@/lib/contracts/pool-manager-claims-abi";
 import { v4ClaimsRedeemerAbi } from "@/lib/contracts/v4-claims-redeemer-abi";
 import { quoteToCurrencyId } from "@/lib/currency-id";
-import { compactQuoteLabel } from "@/lib/payment-assets";
 import { formatCompactQuoteAmount } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -52,7 +51,7 @@ export function V4ClaimsClaimAction({
   });
 
   const claimWei = (claimBalance as bigint | undefined) ?? BigInt(0);
-  const ticker = compactQuoteLabel(quoteLabel);
+  const ticker = quoteLabel;
   const claimHuman = formatCompactQuoteAmount(Number(formatUnits(claimWei, decimals)));
 
   const claim = async () => {
