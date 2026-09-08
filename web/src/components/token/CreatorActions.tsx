@@ -291,7 +291,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
           title={claimedTotal != null ? `${formatUnits(claimedTotal, decimals)} ${quoteLabel}` : undefined}
         >
           <FeeQuoteAmount
-            amount={claimedTotal == null ? "…" : formatFeeAmount(claimedTotal, decimals)}
+            amount={claimedTotal == null ? "—" : formatFeeAmount(claimedTotal, decimals)}
             pool={pool}
             quoteLabel={quoteLabel}
           />
