@@ -56,7 +56,7 @@ function FeeQuoteAmount({
           quoteAsset={pool.quoteAsset ?? quoteLabel}
         />
       </span>
-      <span className="flex min-w-0 items-baseline gap-1 overflow-hidden">
+      <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
         <span className="min-w-0 truncate tabular-nums">{amount}</span>
         <span className="shrink-0 text-[0.92em] tracking-tight">{ticker}</span>
       </span>

@@ -35,9 +35,12 @@ export function formatCompactQuoteAmount(value: number): string {
   const abs = Math.abs(value);
   if (abs >= 1) return value.toLocaleString(undefined, { maximumFractionDigits: 4 });
   if (abs >= 0.0001) {
-    return value.toLocaleString(undefined, { maximumFractionDigits: 6, maximumSignificantDigits: 4 });
+    return value.toLocaleString(undefined, { maximumFractionDigits: 5, maximumSignificantDigits: 4 });
   }
-  return Number(value.toPrecision(3)).toString();
+  if (abs >= 0.000001) {
+    return value.toLocaleString(undefined, { maximumFractionDigits: 8, maximumSignificantDigits: 3 });
+  }
+  return Number(value.toPrecision(2)).toString();
 }
 
 export function formatAge(seconds: number): string {
