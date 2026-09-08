@@ -3369,12 +3369,14 @@
 
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      grid-template-rows: auto minmax(0, 1fr) auto;
+      /* Chart sizes to the plot; leftover height (tall swap column) goes to the tx table. */
+      grid-template-rows: auto auto minmax(12rem, 1fr);
       grid-template-areas:
         "hero  hero  hero"
         "side  chart swap"
         "side  tx    swap";
       align-items: stretch;
+      align-content: start;
     }
 
     .token-desk--hooks .token-desk-hero {
@@ -3387,20 +3389,26 @@
 
     .token-desk--hooks .token-desk-chart {
       grid-area: chart;
+      align-self: start;
     }
 
     .token-desk--hooks .token-desk-tx-col {
       grid-area: tx;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .token-desk--wide {
       grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+      grid-template-rows: auto auto auto minmax(12rem, 1fr);
       grid-template-areas:
         "hero  swap"
         "chart swap"
         "side  swap"
         "tx    swap";
       align-items: stretch;
+      align-content: start;
     }
 
     .token-desk--wide .token-desk-hero {
@@ -3409,6 +3417,7 @@
 
     .token-desk--wide .token-desk-chart {
       grid-area: chart;
+      align-self: start;
     }
 
     .token-desk--wide .token-desk-side {
@@ -3417,6 +3426,9 @@
 
     .token-desk--wide .token-desk-tx-col {
       grid-area: tx;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .token-desk-swap {
