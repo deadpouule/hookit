@@ -22,6 +22,7 @@ import { isIndexerConfigured } from "@/lib/live-data";
 import { enrichPoolsWithIndexerMarkets } from "@/lib/pool-markets";
 import { getDetailPool } from "@/lib/pools";
 import { createServerPublicClient } from "@/lib/server-rpc";
+import { isPlaceholderLaunchIdentity } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 
 export const LAUNCHES_REVALIDATE_SEC = 12;
@@ -101,9 +102,10 @@ async function loadLaunchesResponseImpl(): Promise<LaunchesResponse> {
   );
 
   const withMarkets = isIndexerConfigured() ? await enrichPoolsWithIndexerMarkets(pools) : pools;
+  const resolved = withMarkets.filter((pool) => !isPlaceholderLaunchIdentity(pool));
 
   return {
-    pools: withMarkets,
+    pools: resolved,
     factoryConfigured: true,
     ethUsd,
     rails: {

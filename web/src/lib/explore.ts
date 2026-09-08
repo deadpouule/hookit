@@ -22,6 +22,14 @@ import { poolTvlUsd } from "@/lib/pool-tvl";
 import { loadSwapsForPools, statsFromSwaps } from "@/lib/swap-index";
 import type { TokenPool } from "@/lib/types";
 
+/** Drop slot0 blowups (inverted tick / bad decimals) that render as $115e12M cards. */
+const MAX_SANE_MARKET_CAP_USD = 50_000_000_000;
+
+function saneMarketCap(value: number, fallback = 0): number {
+  if (!Number.isFinite(value) || value < 0 || value > MAX_SANE_MARKET_CAP_USD) return fallback;
+  return value;
+}
+
 export async function enrichPoolsWithSpotPrices(
   publicClient: PublicClient,
   pools: TokenPool[],
@@ -119,7 +127,7 @@ export async function enrichPoolsWithSpotPrices(
     const stats = swapStats.get(pool.poolId.toLowerCase());
     const quoteUsd = quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
     const launchMcapQuoteHuman = launchMcapQuoteFromMap(pool, launchMcapQuoteMap);
-    const marketCap =
+    const marketCap = saneMarketCap(
       priceEth > 0
         ? marketCapUsdForPool(
             priceEth,
@@ -128,7 +136,9 @@ export async function enrichPoolsWithSpotPrices(
             quoteUsd,
             launchMcapQuoteHuman,
           )
-        : pool.marketCap;
+        : pool.marketCap,
+      0,
+    );
     const volume24h = stats
       ? quoteVolumeUsdForPool(stats.volumeQuoteWei, pool, ethUsd, quoteUsd)
       : 0;

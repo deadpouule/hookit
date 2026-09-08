@@ -25,7 +25,7 @@ import type { SortKey } from "@/lib/market-rankings";
 import { poolsMatchingAnyMasterHooks, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { isMultiPairPool } from "@/lib/pairing-badge";
 import { tokenHref } from "@/lib/routes";
-import { annotateCopyFlags } from "@/lib/token-identity";
+import { annotateCopyFlags, isPlaceholderLaunchIdentity } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -152,13 +152,15 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   const sourcePools = useMemo((): TokenPool[] => {
     if (!liveLaunches) return [];
     // Prefer cached / previous query data — never wipe the catalog during refetch.
-    return onChainPools ?? [];
+    return (onChainPools ?? []).filter((pool) => !isPlaceholderLaunchIdentity(pool));
   }, [liveLaunches, onChainPools]);
 
   const sourceTokens = useMemo(() => {
     if (liveLaunches) {
       if (onChainPools && onChainPools.length > 0) {
-        return annotateCopyFlags(onChainPools.map(poolToMarketToken));
+        return annotateCopyFlags(
+          onChainPools.filter((pool) => !isPlaceholderLaunchIdentity(pool)).map(poolToMarketToken),
+        );
       }
       return [];
     }
