@@ -286,15 +286,11 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
           className="font-mono text-sm text-zinc-200"
           title={claimedTotal != null ? `${formatUnits(claimedTotal, decimals)} ${quoteLabel}` : undefined}
         >
-          {claimedTotal == null ? (
-            "…"
-          ) : (
-            <FeeQuoteAmount
-              amount={formatFeeAmount(claimedTotal, decimals)}
-              pool={pool}
-              quoteLabel={quoteLabel}
-            />
-          )}
+          <FeeQuoteAmount
+            amount={claimedTotal == null ? "…" : formatFeeAmount(claimedTotal, decimals)}
+            pool={pool}
+            quoteLabel={quoteLabel}
+          />
         </p>
       </div>
       {message && isCreator && <p className="text-xs text-zinc-400">{message}</p>}
