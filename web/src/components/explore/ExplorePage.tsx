@@ -28,7 +28,7 @@ function ExplorePageContent() {
 
   const pools = useMemo((): TokenPool[] => {
     if (shouldFetchLiveLaunches()) {
-      return onChainPools ?? [];
+      return (onChainPools ?? []).filter((pool) => pool.name && pool.ticker);
     }
     return [];
   }, [onChainPools]);

@@ -13,6 +13,7 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { resolveTokenMetadata } from "@/lib/token-metadata";
+import { isPlaceholderLaunchName, isPlaceholderLaunchTicker } from "@/lib/token-identity";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 
 const GRADIENTS = [
@@ -219,6 +220,57 @@ async function attachLaunchMarkets(
   }
 }
 
+function metaString(entry: { status: string; result?: unknown } | undefined): string {
+  if (entry?.status !== "success" || typeof entry.result !== "string") return "";
+  return entry.result.trim();
+}
+
+async function readLaunchTokenMeta(
+  publicClient: PublicClient,
+  tokens: Address[],
+): Promise<{ name: string; symbol: string; metadataURI: string }[]> {
+  if (tokens.length === 0) return [];
+
+  const readPage = (addrs: Address[]) =>
+    publicClient.multicall({
+      contracts: addrs.flatMap((address) => [
+        { address, abi: erc20Abi, functionName: "name" as const },
+        { address, abi: erc20Abi, functionName: "symbol" as const },
+        { address, abi: erc20Abi, functionName: "metadataURI" as const },
+      ]),
+      allowFailure: true,
+    });
+
+  const meta = await readPage(tokens);
+  const out = tokens.map((_, i) => {
+    const name = metaString(meta[i * 3]);
+    const symbol = metaString(meta[i * 3 + 1]);
+    return {
+      name: isPlaceholderLaunchName(name) ? "" : name,
+      symbol: isPlaceholderLaunchTicker(symbol) ? "" : symbol,
+      metadataURI: metaString(meta[i * 3 + 2]),
+    };
+  });
+
+  const retryIdx = out
+    .map((row, i) => (row.name && row.symbol ? -1 : i))
+    .filter((i) => i >= 0);
+  if (retryIdx.length === 0) return out;
+
+  const retryMeta = await readPage(retryIdx.map((i) => tokens[i]!));
+  retryIdx.forEach((rowIndex, j) => {
+    const name = metaString(retryMeta[j * 3]);
+    const symbol = metaString(retryMeta[j * 3 + 1]);
+    const uri = metaString(retryMeta[j * 3 + 2]);
+    const row = out[rowIndex]!;
+    if (!row.name && name && !isPlaceholderLaunchName(name)) row.name = name;
+    if (!row.symbol && symbol && !isPlaceholderLaunchTicker(symbol)) row.symbol = symbol;
+    if (!row.metadataURI && uri) row.metadataURI = uri;
+  });
+
+  return out;
+}
+
 async function hydrateLaunches(
   publicClient: PublicClient,
   rows: {
@@ -233,14 +285,10 @@ async function hydrateLaunches(
 ): Promise<OnChainLaunch[]> {
   if (rows.length === 0) return [];
 
-  const meta = await publicClient.multicall({
-    contracts: rows.flatMap(({ row }) => [
-      { address: row.token, abi: erc20Abi, functionName: "name" as const },
-      { address: row.token, abi: erc20Abi, functionName: "symbol" as const },
-      { address: row.token, abi: erc20Abi, functionName: "metadataURI" as const },
-    ]),
-    allowFailure: true,
-  });
+  const identities = await readLaunchTokenMeta(
+    publicClient,
+    rows.map(({ row }) => row.token),
+  );
 
   const configJobs = rows
     .map(({ row }, index) =>
@@ -275,12 +323,10 @@ async function hydrateLaunches(
 
   return Promise.all(
     rows.map(async ({ id, row, bitmask, launchedAt, quote, fee, tickSpacing }, i) => {
-      const name = (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
-      const symbol =
-        (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ?? "???";
-      const metadataURI =
-        meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const { image, description, twitter, website, github } = await resolveTokenMetadata(metadataURI);
+      const identity = identities[i] ?? { name: "", symbol: "", metadataURI: "" };
+      const { image, description, twitter, website, github } = await resolveTokenMetadata(
+        identity.metadataURI,
+      );
       let packed = bitmask ?? BigInt(0);
       if (packed === BigInt(0) && !row.customHook) {
         packed = bitmaskByIndex.get(i) ?? BigInt(0);
@@ -288,8 +334,8 @@ async function hydrateLaunches(
       return {
         ...row,
         launchId: id,
-        name,
-        symbol,
+        name: identity.name,
+        symbol: identity.symbol,
         bitmask: packed,
         launchedAt,
         quote: quote ?? zeroAddress,
@@ -732,26 +778,21 @@ export async function fetchAllBondingLaunches(
 
   if (rows.length === 0) return [];
 
-  const meta = await publicClient.multicall({
-    contracts: rows.flatMap(({ row }) => [
-      { address: row.token, abi: erc20Abi, functionName: "name" as const },
-      { address: row.token, abi: erc20Abi, functionName: "symbol" as const },
-      { address: row.token, abi: erc20Abi, functionName: "metadataURI" as const },
-    ]),
-    allowFailure: true,
-  });
+  const identities = await readLaunchTokenMeta(
+    publicClient,
+    rows.map(({ row }) => row.token),
+  );
 
   return Promise.all(
     rows.map(async ({ id, row }, i) => {
-      const name =
-        (meta[i * 3]?.status === "success" ? (meta[i * 3].result as string) : undefined) ?? "Unknown";
-      const symbol =
-        (meta[i * 3 + 1]?.status === "success" ? (meta[i * 3 + 1].result as string) : undefined) ??
-        "???";
-      const metadataURI =
-        meta[i * 3 + 2]?.status === "success" ? (meta[i * 3 + 2].result as string) : "";
-      const fields = await resolveTokenMetadata(metadataURI);
-      return bondingToTokenPool(id, row, { name, symbol, ...fields }, feeHook);
+      const identity = identities[i] ?? { name: "", symbol: "", metadataURI: "" };
+      const fields = await resolveTokenMetadata(identity.metadataURI);
+      return bondingToTokenPool(
+        id,
+        row,
+        { name: identity.name, symbol: identity.symbol, ...fields },
+        feeHook,
+      );
     }),
   ).then((pools) => pools.reverse());
 }

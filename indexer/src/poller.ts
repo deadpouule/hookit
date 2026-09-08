@@ -136,18 +136,28 @@ export async function probeLaunchLogs(client: PublicClient, cfg: IndexerConfig, 
   };
 }
 
+function isPlaceholderMeta(name: string, symbol: string): boolean {
+  const n = name.trim().toLowerCase();
+  const s = symbol.trim().toLowerCase();
+  return !n || n === "unknown" || !s || s === "???" || s === "?" || s === "unknown";
+}
+
 async function metaForToken(client: PublicClient, token: Address) {
-  const [name, symbol, decimals, totalSupply] = await Promise.all([
-    client.readContract({ address: token, abi: erc20Abi, functionName: "name" }).catch(() => "Unknown"),
-    client.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }).catch(() => "???"),
-    client.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }).catch(() => 18),
-    client.readContract({ address: token, abi: erc20Abi, functionName: "totalSupply" }).catch(() => 0n),
+  const [nameR, symbolR, decimalsR, supplyR] = await Promise.allSettled([
+    client.readContract({ address: token, abi: erc20Abi, functionName: "name" }),
+    client.readContract({ address: token, abi: erc20Abi, functionName: "symbol" }),
+    client.readContract({ address: token, abi: erc20Abi, functionName: "decimals" }),
+    client.readContract({ address: token, abi: erc20Abi, functionName: "totalSupply" }),
   ]);
+  const name = nameR.status === "fulfilled" ? String(nameR.value) : "";
+  const symbol = symbolR.status === "fulfilled" ? String(symbolR.value) : "";
+  const decimals = decimalsR.status === "fulfilled" ? Number(decimalsR.value) : 18;
+  const totalSupply = supplyR.status === "fulfilled" ? (supplyR.value as bigint) : 0n;
   return {
-    name: name as string,
-    symbol: symbol as string,
-    decimals: Number(decimals),
-    totalSupply: (totalSupply as bigint).toString(),
+    name,
+    symbol,
+    decimals,
+    totalSupply: totalSupply.toString(),
   };
 }
 
@@ -388,7 +398,23 @@ export async function tick(client: PublicClient, store: Store, cfg: IndexerConfi
     from = to + 1n;
     if (from <= safeHead) await sleep(250);
   }
+  await refreshPlaceholderNames(client, store);
   return processed;
+}
+
+async function refreshPlaceholderNames(client: PublicClient, store: Store) {
+  const pending = Object.values(store.data.tokens).filter((row) =>
+    isPlaceholderMeta(row.name, row.symbol),
+  );
+  if (pending.length === 0) return;
+  for (const row of pending) {
+    const meta = await metaForToken(client, row.address);
+    if (isPlaceholderMeta(meta.name, meta.symbol)) continue;
+    row.name = meta.name;
+    row.symbol = meta.symbol;
+    if (meta.decimals) row.decimals = meta.decimals;
+    if (meta.totalSupply && meta.totalSupply !== "0") row.totalSupply = meta.totalSupply;
+  }
 }
 
 async function indexMasterFactory(

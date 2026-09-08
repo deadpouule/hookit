@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { type Address, isAddress } from "viem";
 import { usePublicClient } from "wagmi";
 
@@ -23,15 +23,18 @@ import {
   LAUNCHES_REFETCH_MS,
   LAUNCHES_STALE_MS,
 } from "@/lib/query-cache";
+import { mergeLaunchCatalog } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 
 export function useLaunches(initialPools?: TokenPool[]) {
   const live = shouldFetchLiveLaunches();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["launches"],
     enabled: live,
     initialData: initialPools?.length ? initialPools : undefined,
+    placeholderData: keepPreviousData,
     queryFn: async (): Promise<TokenPool[]> => {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 20_000);
@@ -39,7 +42,11 @@ export function useLaunches(initialPools?: TokenPool[]) {
         const res = await fetch("/api/launches", { signal: controller.signal });
         if (!res.ok) throw new Error("Failed to fetch launches");
         const body = (await res.json()) as { pools?: TokenPool[]; factoryConfigured?: boolean };
-        return body.pools ?? [];
+        const next = body.pools ?? [];
+        const prev =
+          queryClient.getQueryData<TokenPool[]>(["launches"]) ??
+          (initialPools?.length ? initialPools : undefined);
+        return mergeLaunchCatalog(prev, next);
       } finally {
         window.clearTimeout(timer);
       }

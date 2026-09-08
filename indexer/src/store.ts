@@ -105,6 +105,24 @@ export class Store {
 
   upsertToken(row: TokenRow) {
     const key = row.address.toLowerCase();
+    const existing = this.data.tokens[key];
+    if (existing) {
+      const incomingPlaceholder =
+        !row.name?.trim() ||
+        row.name.trim().toLowerCase() === "unknown" ||
+        !row.symbol?.trim() ||
+        row.symbol.trim() === "???" ||
+        row.symbol.trim() === "?";
+      const existingOk =
+        existing.name?.trim() &&
+        existing.name.trim().toLowerCase() !== "unknown" &&
+        existing.symbol?.trim() &&
+        existing.symbol.trim() !== "???" &&
+        existing.symbol.trim() !== "?";
+      if (incomingPlaceholder && existingOk) {
+        row = { ...row, name: existing.name, symbol: existing.symbol };
+      }
+    }
     this.data.tokens[key] = row;
     if (row.poolId !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
       this.data.poolToToken[row.poolId.toLowerCase()] = key;
