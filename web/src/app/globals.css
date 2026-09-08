@@ -1431,8 +1431,7 @@
     font-size: 0.68rem;
     font-weight: 500;
     opacity: 0.92;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .token-hooks-chip--expanded {
@@ -1728,7 +1727,7 @@
     font-size: 11px;
     color: var(--foreground);
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 
   .token-hooks-vault-ready {

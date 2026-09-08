@@ -56,9 +56,9 @@ function FeeQuoteAmount({
           quoteAsset={pool.quoteAsset ?? quoteLabel}
         />
       </span>
-      <span className="min-w-0 truncate">
-        {amount}{" "}
-        <span className="text-[0.92em] tracking-tight">{ticker}</span>
+      <span className="flex min-w-0 items-baseline gap-1 overflow-hidden">
+        <span className="min-w-0 truncate tabular-nums">{amount}</span>
+        <span className="shrink-0 text-[0.92em] tracking-tight">{ticker}</span>
       </span>
     </span>
   );
@@ -284,17 +284,16 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
         ) : null}
       </div>
 
-      <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border-t border-white/[0.06] pt-2.5">
-        <p className="shrink-0 text-xs text-zinc-500">Claimed so far</p>
+      <div className="min-w-0 overflow-hidden border-t border-white/[0.06] pt-2.5">
+        <p className="text-xs text-zinc-500">Claimed so far</p>
         <p
-          className="min-w-0 flex-1 overflow-hidden font-mono text-sm text-zinc-200"
+          className="min-w-0 overflow-hidden font-mono text-sm text-zinc-200"
           title={claimedTotal != null ? `${formatUnits(claimedTotal, decimals)} ${quoteLabel}` : undefined}
         >
           <FeeQuoteAmount
             amount={claimedTotal == null ? "…" : formatFeeAmount(claimedTotal, decimals)}
             pool={pool}
             quoteLabel={quoteLabel}
-            className="justify-end"
           />
         </p>
       </div>
