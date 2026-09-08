@@ -21,7 +21,7 @@ export function RwaFilterMenu({
     ? INK_QUOTRON_STOCKS.find((stock) => stock.symbol.toLowerCase() === selectedQuote.toLowerCase())
     : null;
 
-  const label = selectedStock ? selectedStock.symbol : "Quotrons pools";
+  const label = selectedStock ? selectedStock.symbol : "Quotrons Lps";
 
   const items = INK_QUOTRON_STOCKS.map((stock) => ({
     id: stock.symbol,
@@ -34,8 +34,8 @@ export function RwaFilterMenu({
     <CategorySplitFilter
       active={active}
       label={label}
-      allLabel="All Quotrons pools"
-      searchPlaceholder="Search Quotrons pools"
+      allLabel="All Quotrons Lps"
+      searchPlaceholder="Search Quotrons Lps"
       glyph={<RwaGlyph />}
       items={items}
       selectedIds={selectedQuote ? [selectedQuote] : []}

@@ -3405,10 +3405,14 @@
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
   .token-hero-card .token-type-badge-glyph.category-rwa-icon,
-  .token-hero-card .token-type-badge-glyph.category-quotrons-logo,
   .token-hero-card .token-type-badge-glyph.category-multi-pair-icon {
-    width: 0.95rem;
-    height: 0.95rem;
+    width: 1.08rem;
+    height: 1.08rem;
+  }
+
+  .token-hero-card .token-type-badge-glyph.category-quotrons-logo {
+    width: 1.2rem;
+    height: 1.2rem;
   }
 
   .token-hero-card .token-custom-warn {
@@ -5807,18 +5811,19 @@
   }
 
   .category-rwa-icon,
-  .filter-rwa-icon,
-  .category-quotrons-logo {
+  .filter-rwa-icon {
     width: 0.875rem;
     height: 0.875rem;
     flex-shrink: 0;
-    object-fit: contain;
-  }
-
-  .category-rwa-icon,
-  .filter-rwa-icon {
     color: #fde047;
     filter: drop-shadow(0 0 4px rgb(250 204 21 / 0.45));
+  }
+
+  .category-quotrons-logo {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    object-fit: contain;
   }
 
   .category-multi-pair-icon,
@@ -5837,10 +5842,14 @@
 
   .token-type-badge-glyph.category-customs-icon,
   .token-type-badge-glyph.category-rwa-icon,
-  .token-type-badge-glyph.category-quotrons-logo,
   .token-type-badge-glyph.category-multi-pair-icon {
-    width: 0.625rem;
-    height: 0.625rem;
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .token-type-badge-glyph.category-quotrons-logo {
+    width: 0.85rem;
+    height: 0.85rem;
   }
 
   .filter-bond-glyph {
@@ -6572,10 +6581,20 @@
   }
 
   .token-type-badge--rwa {
-    border-color: rgb(250 204 21 / 0.45);
-    background: rgb(250 204 21 / 0.12);
-    color: #fde047;
-    text-transform: capitalize;
+    border-color: rgb(232 212 138 / 0.55);
+    background: #16130e;
+    color: #f6ecd0;
+    text-transform: none;
+    font-weight: 700;
+  }
+
+  .category-split-pill:has(.category-quotrons-logo) .category-split-pill__label {
+    color: #f6ecd0;
+  }
+
+  .category-split-pill--active:has(.category-quotrons-logo) .category-split-pill__label,
+  .category-split-filter:hover .category-split-pill:has(.category-quotrons-logo) .category-split-pill__label {
+    color: #f6ecd0;
   }
 
   .token-type-badge--multi-pair {

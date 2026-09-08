@@ -31,8 +31,8 @@ export function RwaGlyph({ className }: { className?: string }) {
     <img
       src="/brand/quotrons-mark.png"
       alt=""
-      width={14}
-      height={14}
+      width={18}
+      height={18}
       className={cn("category-quotrons-logo", className)}
       draggable={false}
     />

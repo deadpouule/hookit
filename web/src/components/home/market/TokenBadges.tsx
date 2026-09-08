@@ -83,7 +83,7 @@ function PairingBadgeRow({
   );
 }
 
-/** Type badges row — Master, Customs, Quotrons pools, multi-pair, pairing legs. */
+/** Type badges row — Master, Customs, Quotrons Lps, multi-pair, pairing legs. */
 export function TokenTypeBadges({
   token,
   masterHookFilters,
@@ -134,7 +134,7 @@ export function TokenTypeBadges({
       <BadgeTip key="rwa" tip={BADGE_TIPS.rwa}>
         <span className="token-type-badge token-type-badge--rwa">
           <RwaGlyph className="token-type-badge-glyph" />
-          Quotrons pools
+          Quotrons Lps
         </span>
       </BadgeTip>,
     );
