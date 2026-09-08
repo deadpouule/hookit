@@ -21,7 +21,7 @@ export function PoweredByQuotronsBadge({
   const isCompact = variant === "compact";
   const label = QUOTRONS_BADGE_LABEL;
   const visible = typedText ?? label;
-  const logoPx = isHero ? 56 : 20;
+  const logoPx = isHero ? 64 : 20;
   const typewriter = typedText != null;
 
   return (
