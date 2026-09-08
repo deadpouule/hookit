@@ -3,13 +3,14 @@
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
 import { BuiltOnUniswapBadge } from "@/components/brand/BuiltOnUniswapBadge";
+import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
 
 import { PairingLogoStack, STOCK_PAIRING_IDS } from "./PairingLogoStack";
 import { PairingMark } from "@/components/launch/PairingMark";
 
 type TextSegment = { kind: "text"; value: string };
-type LogoSegment = { kind: "logo"; id: "uniswap" | PairingTokenId };
+type LogoSegment = { kind: "logo"; id: "uniswap" | "quotrons" | PairingTokenId };
 type LineSegment = TextSegment | LogoSegment;
 
 type TypewriterLine = {
@@ -34,7 +35,7 @@ const LINES: TypewriterLine[] = [
       { kind: "logo", id: "eth" },
       { kind: "text", value: " and Dollar " },
       { kind: "logo", id: "usdg" },
-      { kind: "text", value: " curves hooks." },
+      { kind: "logo", id: "quotrons" },
     ],
   },
 ];
@@ -53,6 +54,14 @@ function lineLength(line: TypewriterLine): number {
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (id === "uniswap") {
     return <BuiltOnUniswapBadge variant="hero" className="hero-uniswap-badge" />;
+  }
+
+  if (id === "quotrons") {
+    return (
+      <span className="hero-quotrons-wrap">
+        <PoweredByQuotronsBadge variant="hero" className="hero-quotrons-badge" />
+      </span>
+    );
   }
 
   if (STOCK_LOGO_IDS.has(id)) {

@@ -2335,6 +2335,86 @@
     transform: translateY(-0.08rem);
   }
 
+  .powered-by-quotrons-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid #e8d48a;
+    border-radius: 0.7rem;
+    background: #16130e;
+    padding: 0.32rem 0.7rem;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 0 14px rgb(232 212 138 / 0.28);
+  }
+
+  .powered-by-quotrons-badge--hero {
+    margin-inline: 0.15rem 0.25rem;
+    gap: 0.75rem;
+    padding: 0.62rem 1.2rem;
+    vertical-align: middle;
+  }
+
+  .powered-by-quotrons-badge__logo {
+    display: block;
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
+  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
+    height: 56px;
+    width: 56px;
+  }
+
+  .powered-by-quotrons-badge__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.08rem;
+    font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #f6ecd0;
+    text-shadow: 0 0 12px rgb(232 212 138 / 0.55);
+  }
+
+  .powered-by-quotrons-badge__by {
+    font-size: 0.72rem;
+    font-weight: 600;
+    opacity: 0.88;
+  }
+
+  .powered-by-quotrons-badge__name {
+    font-size: 0.95rem;
+  }
+
+  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
+    font-size: 0.82rem;
+  }
+
+  .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
+    font-size: 1.45rem;
+    line-height: 1;
+  }
+
+  .powered-by-quotrons-badge--compact {
+    flex-shrink: 0;
+    gap: 0.4rem;
+    padding: 0.42rem 0.7rem;
+  }
+
+  .hero-quotrons-wrap {
+    display: block;
+    width: 100%;
+    margin-top: 0.55rem;
+  }
+
+  .hero-quotrons-badge {
+    transform: translateY(-0.08rem);
+  }
+
   .hero-typewriter-mark {
     display: inline-flex;
     align-items: center;
@@ -6675,6 +6755,34 @@
   }
 
   .hero-typewriter--mobile .hero-uniswap-badge {
+    transform: none;
+  }
+
+  .hero-typewriter--mobile .hero-quotrons-wrap {
+    margin-top: 0.35rem;
+  }
+
+  .hero-typewriter--mobile .powered-by-quotrons-badge--hero {
+    margin-inline: 0;
+    gap: 0.4rem;
+    padding: 0.28rem 0.55rem;
+    box-shadow: 0 0 10px rgb(232 212 138 / 0.22);
+  }
+
+  .hero-typewriter--mobile .powered-by-quotrons-badge__logo {
+    height: 20px;
+    width: 20px;
+  }
+
+  .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__by {
+    font-size: 0.58rem;
+  }
+
+  .hero-typewriter--mobile .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__name {
+    font-size: 0.8rem;
+  }
+
+  .hero-typewriter--mobile .hero-quotrons-badge {
     transform: none;
   }
 
