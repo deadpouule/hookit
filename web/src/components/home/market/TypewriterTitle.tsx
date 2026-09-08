@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   BuiltOnUniswapBadge,
   UNISWAP_BADGE_LABEL,
@@ -115,6 +115,50 @@ function HeroBadge({
   );
 }
 
+/** Scale the whole Quotrons badge as one unit to the USDG row width. */
+function HeroQuotronsSlot({ typedChars }: { typedChars: number }) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const scaleRef = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState({ scale: 1, height: 0 });
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const inner = scaleRef.current;
+    if (!wrap || !inner) return;
+
+    const measure = () => {
+      const target = wrap.clientWidth;
+      const natural = inner.offsetWidth;
+      const naturalH = inner.offsetHeight;
+      if (target <= 0 || natural <= 0) return;
+      const scale = target / natural;
+      setFit({ scale, height: naturalH * scale });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrap);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [typedChars]);
+
+  return (
+    <span
+      ref={wrapRef}
+      className="hero-quotrons-wrap"
+      style={fit.height > 0 ? { height: fit.height } : undefined}
+    >
+      <span
+        ref={scaleRef}
+        className="hero-quotrons-scale"
+        style={{ transform: `scale(${fit.scale})` }}
+      >
+        <HeroBadge id="quotrons" typedChars={typedChars} />
+      </span>
+    </span>
+  );
+}
+
 function HeroInlineMark({ id }: { id: LogoSegment["id"] }) {
   if (STOCK_LOGO_IDS.has(id)) {
     return <PairingMark id={id as PairingTokenId} />;
@@ -169,11 +213,7 @@ function renderTypedLine(line: TypewriterLine, typedCount: number) {
             {dollar.slice(0, dollarTake)}
             {usdgOn ? <UsdgMark /> : null}
           </span>
-          {quotronsTake > 0 ? (
-            <span className="hero-quotrons-wrap">
-              <HeroBadge id="quotrons" typedChars={quotronsTake} />
-            </span>
-          ) : null}
+          {quotronsTake > 0 ? <HeroQuotronsSlot typedChars={quotronsTake} /> : null}
         </span>,
       );
       index += 2;

@@ -43,7 +43,7 @@ export function PoweredByQuotronsBadge({
         alt=""
         width={logoPx}
         height={logoPx}
-        className="powered-by-quotrons-badge__logo h-auto w-auto"
+        className="powered-by-quotrons-badge__logo"
         draggable={false}
       />
       <span className="powered-by-quotrons-badge__text">
