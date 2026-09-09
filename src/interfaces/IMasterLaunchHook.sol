@@ -38,4 +38,7 @@ interface IMasterLaunchHook is IHooks {
     function feeEscrow() external view returns (address);
     function revenueDistributor() external view returns (address);
     function buybackVault() external view returns (address);
+    /// @dev Dedicated PoolManager.swap sender allowed to skip hook tax when `arbActive`.
+    function arbExecutor() external view returns (address);
+    function arbActive() external view returns (bool);
 }

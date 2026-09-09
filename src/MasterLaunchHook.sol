@@ -42,6 +42,8 @@ import {BuybackVault} from "./BuybackVault.sol";
 /// @title MasterLaunchHook
 /// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV,
 ///         backed floor, auto-burn (buyback + burn), LP donate, and holder quote airdrops.
+/// @dev Optional multi-pair arb: when `arbActive` and `sender == arbExecutor`, swaps pay the 1%
+///      base fee to protocol only (no hook tax / snipe / auto-burn). Both flags default off.
 contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -71,10 +73,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     mapping(PoolId => uint256) public pendingLpDonate;
     mapping(address => bool) public airdropDue;
 
+    /// @notice Contract allowed to PoolManager.swap without hook tax. Default unset.
+    address public override arbExecutor;
+    /// @notice Master switch for the arb fee path. Default false — do not enable until funded.
+    bool public override arbActive;
+
     bytes32 private constant FEE_ACTION_SLOT = keccak256("hookit.feeAction");
 
     event FactorySet(address indexed factory);
     event AirdropVaultSet(address indexed vault);
+    event ArbExecutorSet(address indexed executor);
+    event ArbActiveSet(bool active);
     event LaunchPrepared(PoolId indexed poolId, address indexed creator, address indexed token, uint256 bitmask);
     event FeesDistributed(
         PoolId indexed poolId,
@@ -136,6 +145,18 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (address(next) == address(0)) revert ZeroAddress();
         airdropVault = next;
         emit AirdropVaultSet(address(next));
+    }
+
+    /// @notice Whitelist the dedicated arb executor (not the public router). `address(0)` unsets.
+    function setArbExecutor(address executor) external onlyOwner {
+        arbExecutor = executor;
+        emit ArbExecutorSet(executor);
+    }
+
+    /// @notice Flip the arb fee path. Leave false until the executor is funded and unpaused.
+    function setArbActive(bool active) external onlyOwner {
+        arbActive = active;
+        emit ArbActiveSet(active);
     }
 
     function floorVault() external view returns (address) {
@@ -275,7 +296,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return this.beforeRemoveLiquidity.selector;
     }
 
-    function _beforeSwap(address, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
         internal
         override
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -291,15 +312,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         bool tokenIs0 = st.tokenIsCurrency0;
         bool isBuy = tokenIs0 ? !params.zeroForOne : params.zeroForOne;
         bool exactInput = params.amountSpecified < 0;
+        bool arbSwap = _isArbSwap(sender);
 
-        _antiMev(id, packed, isBuy);
-
-        // Always attempt payout for this pool's quote. `airdropDue` is a legacy hint only —
-        // multi-market launches accrue separate pots per quote and must not block each other.
-        if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
-            try airdropVault.tryAutoAirdrop(st.token, st.quote) returns (bool done) {
-                if (done) airdropDue[st.token] = false;
-            } catch {}
+        if (!arbSwap) {
+            _antiMev(id, packed, isBuy);
+            // Always attempt payout for this pool's quote. `airdropDue` is a legacy hint only —
+            // multi-market launches accrue separate pots per quote and must not block each other.
+            if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
+                try airdropVault.tryAutoAirdrop(st.token, st.quote) returns (bool done) {
+                    if (done) airdropDue[st.token] = false;
+                } catch {}
+            }
         }
 
         uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
@@ -310,12 +333,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 quoteNotional =
             _quoteNotional(st, params, exactInput, specifiedAbs, isBuy, quoteIsSpecified, sqrtPriceX96);
         bool quoteIsCurrency0 = !tokenIs0;
-        uint16 effectiveHookTax = DynamicFeeMath.effectiveHookTaxBps(
-            packed, quoteNotional, sqrtPriceX96, liquidity, st.tickLower, st.tickUpper, quoteIsCurrency0, isBuy
-        );
+        uint16 effectiveHookTax = arbSwap
+            ? 0
+            : DynamicFeeMath.effectiveHookTaxBps(
+                packed, quoteNotional, sqrtPriceX96, liquidity, st.tickLower, st.tickUpper, quoteIsCurrency0, isBuy
+            );
 
         uint16 snipeBps;
-        if (isBuy && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
+        if (!arbSwap && isBuy && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
             snipeBps = FixedPointMath.snipeTaxBps(
                 packed.initialSnipeTaxBps(), st.launchTimestamp, packed.antiSnipeDurationSeconds(), block.timestamp
             );
@@ -327,16 +352,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             totalFeeBps = ProtocolConstants.BPS_DENOMINATOR;
         }
 
-        if (packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
+        if (!arbSwap && packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
             _checkMaxTx(st, packed.maxTxBps(), specifiedAbs, isBuy, exactInput, sqrtPriceX96, totalFeeBps);
         }
 
-        if (isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
+        if (!arbSwap && isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
             _checkMaxWalletBeforeBuy(st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps);
         }
 
         // Floor intercept: sell that is already at/below floor OR would cross the floor in this swap.
-        if (!isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
+        if (!arbSwap && !isBuy && packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)) {
             uint256 tokenAmt =
                 exactInput ? specifiedAbs : FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, tokenIs0);
             if (FixedPointMath.sellWouldBreachFloor(
@@ -361,7 +386,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         st.quote.take(poolManager, address(this), feeAmount, true);
-        _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, true);
+        _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, true, arbSwap);
 
         int128 specifiedDelta;
         int128 unspecifiedDelta;
@@ -377,12 +402,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return (this.beforeSwap.selector, toBeforeSwapDelta(specifiedDelta, unspecifiedDelta), lpFeeOverride);
     }
 
-    function _afterSwap(address, PoolKey calldata key, SwapParams calldata, BalanceDelta, bytes calldata)
+    function _afterSwap(address sender, PoolKey calldata key, SwapParams calldata, BalanceDelta, bytes calldata)
         internal
         override
         returns (bytes4, int128)
     {
         if (_inFeeAction()) return (this.afterSwap.selector, 0);
+        // Nested auto-burn / airdrop on an arb swap would fight the two-leg clip.
+        if (_isArbSwap(sender)) return (this.afterSwap.selector, 0);
 
         PoolId id = key.toId();
         LaunchState storage st = _launchState[id];
@@ -444,7 +471,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         if (feeAmount > 0) {
             bool feeClaims = claimsGot >= feeAmount;
-            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, feeClaims);
+            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, feeClaims, false);
             if (feeClaims) claimsGot -= feeAmount;
         }
 
@@ -490,8 +517,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 feeAmount,
         uint16 snipeBps,
         uint16 effectiveHookTaxBps,
-        bool fromPoolClaims
+        bool fromPoolClaims,
+        bool protocolTakesAll
     ) private {
+        if (protocolTakesAll) {
+            _fundQuote(st.quote, address(distributor), feeAmount, fromPoolClaims);
+            if (feeAmount > 0) distributor.notifyInternal(st.quote, feeAmount);
+            emit FeesDistributed(id, 0, feeAmount, 0, 0, 0, 0, 0);
+            return;
+        }
+
         uint16 hookTaxBps_ = effectiveHookTaxBps;
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
         if (totalBps == 0) return;
@@ -582,6 +617,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         } else {
             quote.transfer(to, amount);
         }
+    }
+
+    function _isArbSwap(address sender) private view returns (bool) {
+        return arbActive && sender == arbExecutor;
     }
 
     function _antiMev(PoolId id, uint256 packed, bool isBuy) private {
