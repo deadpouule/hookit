@@ -8,8 +8,28 @@ export const holderAirdropVaultAbi = [
   },
   {
     type: "function",
+    name: "potOf",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "quote", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "secondsUntilAirdrop",
     inputs: [{ name: "token", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "secondsUntilAirdrop",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "quote", type: "address" },
+    ],
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },

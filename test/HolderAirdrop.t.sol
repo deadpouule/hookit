@@ -54,9 +54,9 @@ contract HolderAirdropTest is LaunchpadTestBase {
         vm.warp(block.timestamp + 120);
         uint64 lastBefore = airdrops.lastAirdropAt(token);
         _buyAs(bob, key, 0.05 ether);
-        assertTrue(hook.airdropDue(token));
-        _buyAs(alice, key, 0.05 ether);
         assertGt(airdrops.lastAirdropAt(token), lastBefore);
+        _buyAs(alice, key, 0.05 ether);
+        assertGt(airdrops.reserve(token), 0);
     }
 
     function testHookTriggersAutoAirdropAfterEpoch() public {
@@ -78,9 +78,9 @@ contract HolderAirdropTest is LaunchpadTestBase {
 
         uint64 lastBefore = airdrops.lastAirdropAt(token);
         _buyAs(bob, key, 0.05 ether);
-        assertTrue(hook.airdropDue(token));
-        _buyAs(alice, key, 0.05 ether);
         assertGt(airdrops.lastAirdropAt(token), lastBefore);
+        _buyAs(alice, key, 0.05 ether);
+        assertGt(airdrops.reserve(token), 0);
     }
 
     function testTryAutoAirdropCallableByHook() public {
@@ -102,12 +102,14 @@ contract HolderAirdropTest is LaunchpadTestBase {
         m.hookTaxBps = 200;
         m.holderAirdrop = true;
         m.holderAirdropBps = 10_000;
+        m.holderAirdropEpochSeconds = 3600;
 
         (, address token,, PoolKey memory key) = launchToken(m, int24(0), ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         _buyAs(alice, key, 1 ether);
         _buyAs(bob, key, 1 ether);
         assertGt(airdrops.reserve(token), 0);
 
+        vm.warp(block.timestamp + 3601);
         address[] memory onlyAlice = new address[](1);
         onlyAlice[0] = alice;
         vm.expectRevert(HolderAirdropVault.IncompleteHolderSet.selector);

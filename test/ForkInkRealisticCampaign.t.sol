@@ -295,7 +295,6 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
         }
 
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.backedFloor = true;
         m.autoBurn = true;
         m.lpDonate = true;
         m.holderAirdrop = true;
@@ -309,10 +308,9 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             ProtocolConstants.BASE_FEE_BPS + m.hookTaxBps - ProtocolConstants.MIN_DYNAMIC_FEE_TOTAL_GAP_BPS;
         m.dynamicFeeRampUp = true;
         m.dynamicFeeDepthSaturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
-        m.floorAllocationBps = 2_500;
-        m.autoBurnBps = 2_500;
-        m.lpDonateBps = 2_500;
-        m.holderAirdropBps = 2_500;
+        m.autoBurnBps = 3_334;
+        m.lpDonateBps = 3_333;
+        m.holderAirdropBps = 3_333;
         m.holderAirdropEpochSeconds = 60;
 
         vm.prank(creator);
@@ -343,7 +341,6 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             vm.roll(block.number + 1);
         }
 
-        assertGt(vault.reserve(token), 0, "multi floor reserve");
         assertLt(IERC20(token).totalSupply(), supplyBefore, "multi auto burn");
         (, uint128 streamed,,,) = buybacks.streams(creator, token);
         assertGt(streamed, 0, "multi vesting");

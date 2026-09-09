@@ -86,10 +86,6 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
 
         vm.warp(block.timestamp + 61);
         vm.roll(block.number + 1);
-        _buyAs(trader, key, 0.01 ether);
-        assertTrue(hook.airdropDue(token));
-
-        vm.roll(block.number + 1);
         uint256 claimsBefore = manager.balanceOf(trader, 0);
         _buyAs(trader, key, 0.01 ether);
         assertGt(manager.balanceOf(trader, 0), claimsBefore);
@@ -182,29 +178,6 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         vm.roll(block.number + 1);
         _buyQuote(trader, key1, token, 1e18);
         assertGt(airdrops.lastAirdropAtQuote(token, erc.toId()), 0);
-    }
-
-    function testMultiFloor_OnlySelectedMarketIntercepts() public {
-        BitmaskConfig.Modules memory m = defaultModules();
-        m.backedFloor = true;
-        m.floorAllocationBps = 10_000;
-        m.hookTaxBps = 200;
-
-        (uint256 launchId, address token,) = _launchMulti(m, 0);
-        PoolKey memory key0 = factory.poolKeyOfMarket(launchId, 0);
-        PoolKey memory key1 = factory.poolKeyOfMarket(launchId, 1);
-
-        assertTrue(BitmaskConfig.unpack(hook.configs(key0.toId())).backedFloor);
-        assertFalse(BitmaskConfig.unpack(hook.configs(key1.toId())).backedFloor);
-
-        _buyAs(trader, key0, 0.5 ether);
-        vm.roll(block.number + 1);
-        vault.deposit{value: 3 ether}(token, Currency.wrap(address(0)), 3 ether);
-
-        uint256 bal = LaunchTokenLike(token).balanceOf(trader);
-        uint256 before = trader.balance;
-        _sellAs(trader, key0, token, bal / 2);
-        assertGt(trader.balance, before);
     }
 
     function _launchFloor() internal returns (address token, PoolKey memory key) {

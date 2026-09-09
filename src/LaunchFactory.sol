@@ -77,7 +77,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 tickSpacing;
         uint256 bitmask;
         IHooks customHook;
-        /// @dev Market that backs the floor when `BACKED_FLOOR` is on. Other markets strip that bit.
+        /// @dev Reserved for ABI compatibility; `BACKED_FLOOR` is rejected in `launchMulti`.
         uint8 floorQuoteIndex;
         uint256 devBuyQuoteIn;
         uint256 minDevBuyTokensOut;
@@ -177,6 +177,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error InvalidMarketBps();
     error DuplicateQuote();
     error InvalidFloorQuoteIndex();
+    error BackedFloorNotAllowedInMulti();
 
     constructor(IPoolManager _poolManager, MasterLaunchHook _masterHook, address owner_, address treasury_)
         Owned(owner_)
@@ -371,7 +372,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     /// @notice Deploy one token and 1–5 permanently locked v4 markets atomically (PAIR-style multi-pair).
-    /// @dev Floor bit is kept only on `floorQuoteIndex`; vesting/airdrop run on every market.
+    /// @dev Backed floor is single-pair only; vesting/airdrop run on every market.
     function launchMulti(LaunchMultiParams calldata params)
         external
         payable
@@ -394,6 +395,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         (IHooks hooks, bool useCustom, uint256 packed, uint24 fee) =
             _resolveLaunchConfig(params.customHook, params.bitmask);
+        if (!useCustom && (packed & BitmaskConfig.BACKED_FLOOR_ENABLED) != 0) {
+            revert BackedFloorNotAllowedInMulti();
+        }
 
         LaunchFactoryLib.collectLaunchFee(treasury, launchFee, hasNative, params.devBuyQuoteIn, msg.value, msg.sender);
 
@@ -422,11 +426,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         if (!useCustom) {
             for (uint256 i; i < marketLen; ++i) {
-                uint256 marketPacked = packed;
-                if ((packed & BitmaskConfig.BACKED_FLOOR_ENABLED) != 0 && i != params.floorQuoteIndex) {
-                    marketPacked = packed & ~BitmaskConfig.BACKED_FLOOR_ENABLED;
-                }
-                _prepareMasterLaunch(plans[i], marketPacked, msg.sender, token);
+                _prepareMasterLaunch(plans[i], packed, msg.sender, token);
             }
         }
 

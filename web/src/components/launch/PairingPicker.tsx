@@ -173,25 +173,6 @@ export function PairingPicker({
                 />
               </div>
           ))}
-          <div>
-            <p className="mb-2 text-xs text-zinc-500">Backed floor (if on) uses this pair</p>
-            <div className="flex flex-wrap gap-2">
-              {markets.map((market, index) => (
-                <button
-                  key={`floor-${market.id}`}
-                  type="button"
-                  onClick={() => onFloorQuoteIndexChange(index)}
-                  className={
-                    index === floorQuoteIndex
-                      ? "rounded-full border border-violet-500/70 bg-violet-500/15 px-3 py-1 text-xs text-violet-200"
-                      : "rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400"
-                  }
-                >
-                  {formatPairingTicker(market.id)}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
     </div>

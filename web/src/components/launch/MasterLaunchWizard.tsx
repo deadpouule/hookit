@@ -116,7 +116,17 @@ export function MasterLaunchWizard() {
     setForm((prev) => ({ ...prev, modules: { ...prev.modules, ...patch } }));
   };
 
+  useEffect(() => {
+    if (form.markets.length <= 1 || !form.modules.backedFloor) return;
+    const nextModules = { ...form.modules, backedFloor: false };
+    setForm((prev) => ({
+      ...prev,
+      modules: { ...nextModules, ...rebalanceFeeRoutes(nextModules) },
+    }));
+  }, [form.markets.length, form.modules.backedFloor]);
+
   const toggleModule = (id: (typeof MASTER_HOOKS)[number]["id"], next: boolean) => {
+    if (id === "backed-floor" && next && form.markets.length > 1) return;
     if (id === "creator-share-to-hook" && next) {
       updateModules({ creatorShareToHook: true, buybackVesting: false });
       return;

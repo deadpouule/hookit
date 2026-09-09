@@ -176,17 +176,17 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const { data: airdropReserve } = useReadContract({
     address: airdropVault as Address | undefined,
     abi: holderAirdropVaultAbi,
-    functionName: "reserve",
-    args: token ? [token] : undefined,
-    query: { enabled: !!airdropVault && !!token && needAirdrop, refetchInterval: 12_000 },
+    functionName: "potOf",
+    args: token && quote ? [token, quote] : undefined,
+    query: { enabled: !!airdropVault && !!token && !!quote && needAirdrop, refetchInterval: 12_000 },
   });
 
   const { data: airdropSeconds } = useReadContract({
     address: airdropVault as Address | undefined,
     abi: holderAirdropVaultAbi,
     functionName: "secondsUntilAirdrop",
-    args: token ? [token] : undefined,
-    query: { enabled: !!airdropVault && !!token && needAirdrop, refetchInterval: 5_000 },
+    args: token && quote ? [token, quote] : undefined,
+    query: { enabled: !!airdropVault && !!token && !!quote && needAirdrop, refetchInterval: 5_000 },
   });
 
   const { data: airdropLastAt } = useReadContract({

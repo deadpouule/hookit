@@ -294,7 +294,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         _antiMev(id, packed, isBuy);
 
-        if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED) && airdropDue[st.token]) {
+        // Always attempt payout for this pool's quote. `airdropDue` is a legacy hint only —
+        // multi-market launches accrue separate pots per quote and must not block each other.
+        if (packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
             try airdropVault.tryAutoAirdrop(st.token, st.quote) returns (bool done) {
                 if (done) airdropDue[st.token] = false;
             } catch {}

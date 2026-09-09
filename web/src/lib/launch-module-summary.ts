@@ -179,7 +179,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "anti-snipe":
     "Adds a decaying tax on early buys during your launch window. Snipers pay the highest rate at open; the tax steps down over the duration you choose until it matches your base swap fee.",
   "backed-floor":
-    "Skims a share of hook fees into a FloorVault backed by the quote asset. The floor price ratchets up with each deposit and never decreases — holders can redeem tokens against the vault.",
+    "Skims a share of hook fees into a FloorVault backed by the quote asset. The floor price ratchets up with each deposit and never decreases — holders can redeem tokens against the vault. Single-pair launches only.",
   "anti-mev":
     "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
   "max-tx":

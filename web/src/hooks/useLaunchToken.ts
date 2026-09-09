@@ -116,6 +116,9 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         throw new Error("Market weights must total 100%");
       }
       const isMulti = form.markets.length > 1;
+      if (isMulti && form.modules.backedFloor) {
+        throw new Error("Backed floor is single-pair only — disable it or switch to one market.");
+      }
       const devBuyConfigured = hasDevBuyConfigured(form);
       const devBuyQuoteWei = devBuyConfigured
         ? resolveDevBuyQuoteWei(form, {

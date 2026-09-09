@@ -172,7 +172,7 @@ contract LaunchMultiTest is LaunchpadTestBase {
         );
     }
 
-    function testLaunchMulti_FloorOnlyOnSelectedMarket() public {
+    function testLaunchMulti_RevertsWhenBackedFloor() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
         markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
         markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
@@ -182,7 +182,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
         mods.hookTaxBps = 200;
         mods.floorAllocationBps = 10_000;
 
-        (uint256 launchId,,) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+        vm.expectRevert(LaunchFactory.BackedFloorNotAllowedInMulti.selector);
+        factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchMultiParams({
                 name: "Floor",
                 symbol: "FLR",
@@ -197,12 +198,6 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 minDevBuyTokensOut: 0
             })
         );
-
-        PoolKey memory key0 = factory.poolKeyOfMarket(launchId, 0);
-        PoolKey memory key1 = factory.poolKeyOfMarket(launchId, 1);
-        assertTrue(BitmaskConfig.unpack(hook.configs(key0.toId())).backedFloor);
-        assertFalse(BitmaskConfig.unpack(hook.configs(key1.toId())).backedFloor);
-        assertEq(factory.launchFloorQuoteIndex(launchId), 0);
     }
 
     function testLaunchMulti_ThreeMarketsSupplySplit() public {

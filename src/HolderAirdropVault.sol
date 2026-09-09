@@ -281,9 +281,13 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
 
         if (pending.cursor < listed && remainingPot > 0) return false;
 
-        bool done = pending.paid > 0;
+        if (pending.paid == 0) {
+            delete _pending[token][quote.toId()];
+            return false;
+        }
+
         _finishEpoch(token, quote, pending, holders.length);
-        return done;
+        return true;
     }
 
     /// @notice Manual full-list airdrop (legacy / emergency). Prefer automatic `tryAutoAirdrop`.

@@ -201,16 +201,24 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
 function HookPickCard({
   hook,
   selected,
+  disabled = false,
   onClick,
 }: {
   hook: MasterHook;
   selected: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      className={cn("pick-card pick-card--hook", `pick-card--${hook.theme}`, selected && "is-on")}
+      disabled={disabled}
+      className={cn(
+        "pick-card pick-card--hook",
+        `pick-card--${hook.theme}`,
+        selected && "is-on",
+        disabled && "cursor-not-allowed opacity-45",
+      )}
       onClick={onClick}
     >
       <HookPickTooltip hook={hook} />
@@ -368,12 +376,15 @@ export function HookModulePicker({
   const renderPickCards = () =>
     visibleHooks.flatMap((hook) => {
       const selected = isModuleEnabled(modules, hook.id);
+      const disabled = multiMarket && hook.id === "backed-floor";
       const cards = [
         <HookPickCard
           key={hook.id}
           hook={hook}
           selected={selected}
+          disabled={disabled}
           onClick={() => {
+            if (disabled) return;
             if (selected) {
               onToggle(hook.id, false);
               const next = enabledHooks.find((item) => item.id !== hook.id);
@@ -652,7 +663,7 @@ function HookSettings({
               `orb-hook-desc-badge--${theme}`,
             )}
           >
-            Floor backs one pair — pick it under pairing
+            Backed floor is single-pair only — switch to one market to enable
           </span>
         )}
       </div>
