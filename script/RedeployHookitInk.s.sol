@@ -9,6 +9,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 import {HookMiner} from "../src/libraries/HookMiner.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
+import {MultiPairArbExecutor} from "../src/MultiPairArbExecutor.sol";
 import {GraduatedFeeHook} from "../src/GraduatedFeeHook.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
@@ -99,8 +100,10 @@ contract RedeployHookitInkScript is Script {
         LaunchFactoryQuery launchQuery = new LaunchFactoryQuery(factory);
         FeeEthRail feeRail = new FeeEthRail(deployer, manager, v4.stableQuote);
         HkitBuyback hkitBuyback = new HkitBuyback(deployer, manager, distributor);
+        MultiPairArbExecutor arbExecutor = new MultiPairArbExecutor(manager, factory, hook, deployer);
 
         hook.setFactory(address(factory));
+        hook.setArbExecutor(address(arbExecutor));
         vault.setOperator(address(hook), true);
         vault.setOperator(address(distributor), true);
         escrow.setOperator(address(hook), true);
@@ -157,6 +160,8 @@ contract RedeployHookitInkScript is Script {
         console.log("FeeEthRail", address(feeRail));
         console.log("FeeEthRail bridge set", feeRail.ethBridgeSet());
         console.log("HkitBuyback", address(hkitBuyback));
+        console.log("MultiPairArbExecutor", address(arbExecutor));
+        console.log("ENV_MULTI_PAIR_ARB_EXECUTOR", address(arbExecutor));
         if (nativeToken != address(0)) {
             console.log("NativeToken", nativeToken);
             console.log("NativeToken name", nativeName);

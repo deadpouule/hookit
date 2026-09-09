@@ -54,6 +54,7 @@ const CONTRACT_KEYS = [
   "V4ClaimsRedeemer",
   "FeeEthRail",
   "HkitBuyback",
+  "MultiPairArbExecutor",
 ];
 
 const ENV_MAP = {
@@ -72,6 +73,7 @@ const ENV_MAP = {
   HOLDER_AIRDROP_VAULT: "HolderAirdropVault",
   FEE_ETH_RAIL: "FeeEthRail",
   HKIT_BUYBACK: "HkitBuyback",
+  MULTI_PAIR_ARB_EXECUTOR: "MultiPairArbExecutor",
   NATIVE_TOKEN: "NativeToken",
   INDEXER_START_BLOCK: "_startBlock",
 };

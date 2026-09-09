@@ -128,7 +128,7 @@ function uniqAddrs(addrs: Address[]): Address[] {
 
 /** Active Ink Master factory. Add legacy factories explicitly in LAUNCH_FACTORY when desired. */
 const INK_LAUNCH_FACTORIES = [
-  "0x4ac6815a8628576078474025407b6D0317C919A7",
+  "0xc4ba4E6c5233dED0FDEBA344508688D796C2cde7",
 ] as Address[];
 
 export function loadConfig(): IndexerConfig {
