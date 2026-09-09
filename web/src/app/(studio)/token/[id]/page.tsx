@@ -3,9 +3,10 @@ import { Suspense } from "react";
 import { TokenDetailPageClient } from "@/components/explore/TokenDetailPageClient";
 import { getAllPoolIds, getDetailPool } from "@/lib/pools";
 import { loadLaunchPoolById } from "@/lib/server-launches";
-import { socialMetadata } from "@/lib/site-metadata";
+import { tokenShareMetadata } from "@/lib/token-share-metadata";
 
 export const dynamicParams = true;
+export const revalidate = 60;
 
 export function generateStaticParams() {
   return getAllPoolIds().map((id) => ({ id }));
@@ -13,22 +14,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  let pool = getDetailPool(id);
-  if (!pool) {
-    try {
-      pool = (await loadLaunchPoolById(id)) ?? undefined;
-    } catch {
-      /* fall through */
-    }
-  }
-  if (!pool) {
-    const title = "Token | hook it";
-    const description = "Trade on Uniswap v4 via hook it.";
-    return { title, description, ...socialMetadata(title, description) };
-  }
-  const title = `${pool.name} ($${pool.ticker}) | hook it`;
-  const description = `Trade $${pool.ticker} on Uniswap v4 via hook it.`;
-  return { title, description, ...socialMetadata(title, description) };
+  return tokenShareMetadata(id, "token");
 }
 
 export default async function TokenDetailPage({ params }: { params: Promise<{ id: string }> }) {
