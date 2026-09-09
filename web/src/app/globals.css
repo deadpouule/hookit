@@ -1216,9 +1216,9 @@
     max-width: 100%;
     margin-top: 0.4rem;
     align-items: center;
-    font-size: 10px;
+    font-size: 12.5px;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.4;
   }
 
   .pick-config-control {
@@ -1254,7 +1254,16 @@
   }
 
   .pick-config-control-track {
-    padding: 0 0.1rem;
+    padding: 0.15rem 0.1rem 0.2rem;
+  }
+
+  .pick-config-control-track [data-slot="slider-track"] {
+    height: 6px !important;
+  }
+
+  .pick-config-control-track [data-slot="slider-thumb"] {
+    width: 14px !important;
+    height: 14px !important;
   }
 
   .pick-config-ascii {

@@ -675,7 +675,7 @@ function HookSettings({
       <div>
         <PickConfigControl
           theme={theme}
-          label="Cap"
+          label="Per wallet"
           value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
         >
           <AccentSlider
@@ -704,7 +704,7 @@ function HookSettings({
       <div>
         <PickConfigControl
           theme={theme}
-          label="Cap"
+          label="Per swap"
           value={`${formatSupplyCap(modules.maxTxBps)} of supply`}
         >
           <AccentSlider

@@ -204,7 +204,7 @@ export function BuilderTuner({
         {selected === "maxWallet" ? (
           <div>
             <SliderRow
-              label="Cap"
+              label="Per wallet"
               valueLabel={`${formatSupplyCap(modules.maxWalletBps)} supply`}
               color={def.accent.color}
               value={bpsToSupplyPct(modules.maxWalletBps)}
@@ -222,7 +222,7 @@ export function BuilderTuner({
         {selected === "maxTx" ? (
           <div>
             <SliderRow
-              label="Cap"
+              label="Per swap"
               valueLabel={`${formatSupplyCap(modules.maxTxBps)} supply`}
               color={def.accent.color}
               value={bpsToSupplyPct(modules.maxTxBps)}
