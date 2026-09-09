@@ -1216,9 +1216,9 @@
     max-width: 100%;
     margin-top: 0.4rem;
     align-items: center;
-    font-size: 12.5px;
+    font-size: 10px;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.35;
   }
 
   .pick-config-control {
@@ -1242,10 +1242,10 @@
   .pick-config-control-value.orb-hook-desc-badge {
     width: auto;
     align-items: center;
-    padding: 0.32rem 0.62rem;
-    font-size: 12.5px;
+    padding: 0.28rem 0.55rem;
+    font-size: 11px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
   .pick-config-control-value.orb-hook-desc-badge {
@@ -1253,34 +1253,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .pick-config-control-value--edit {
-    appearance: none;
-    cursor: pointer;
-    min-width: 4.4rem;
-    justify-content: center;
-    color: inherit;
-    font: inherit;
-    border-style: solid;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-  }
-
-  .pick-config-control-value--edit:hover,
-  .pick-config-control-value--edit:focus-visible {
-    border-color: rgb(255 255 255 / 0.28);
-    background: rgb(255 255 255 / 0.06);
-  }
-
   .pick-config-control-track {
-    padding: 0.15rem 0.1rem 0.2rem;
-  }
-
-  .pick-config-control-track [data-slot="slider-track"] {
-    height: 6px !important;
-  }
-
-  .pick-config-control-track [data-slot="slider-thumb"] {
-    width: 14px !important;
-    height: 14px !important;
+    padding: 0 0.1rem;
   }
 
   .pick-config-ascii {

@@ -3,11 +3,11 @@
  * Launchers pick values in these ranges; config is fixed in the bitmask at launch.
  */
 
-/** Max tx / max wallet: 0.1%–100% of total supply (10–10_000 bps). */
+/** Max tx / max wallet: 0.1%–2.5% of total supply (10–250 bps). */
 export const MIN_SUPPLY_CAP_BPS = 10;
-export const MAX_SUPPLY_CAP_BPS = 10_000;
+export const MAX_SUPPLY_CAP_BPS = 250;
 export const MIN_SUPPLY_CAP_SLIDER_PCT = 0.1;
-export const MAX_SUPPLY_CAP_SLIDER_PCT = 100;
+export const MAX_SUPPLY_CAP_SLIDER_PCT = 2.5;
 
 export const MAX_SNIPE_TAX_BPS = 9_900;
 export const MAX_DEV_BUY_BPS = 250;

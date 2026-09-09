@@ -141,8 +141,8 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "anti-snipe": "Blocks snipers at launch",
   "backed-floor": "Quote-backed price floor",
   "anti-mev": "Blocks same-block bot trades",
-  "max-tx": "Limits swap size vs supply",
-  "max-wallet": "Limits wallet holdings",
+  "max-tx": "Caps swap size vs supply",
+  "max-wallet": "Caps wallet holdings",
   "dynamic-fees": "Fees scale with LP depth used",
   "buyback-vesting": "Creator fees vest over time",
   "auto-burn": "Burns tokens on swaps",
@@ -160,8 +160,8 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "anti-snipe": "Launch sniper tax",
   "backed-floor": "Quote price floor",
   "anti-mev": "Block bot trades",
-  "max-tx": "Max swap size",
-  "max-wallet": "Max wallet size",
+  "max-tx": "Cap swap size",
+  "max-wallet": "Cap wallet size",
   "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
@@ -185,7 +185,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "max-tx":
     "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert — useful against whale dumps or bot-sized trades.",
   "max-wallet":
-    "Sets how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
+    "Caps how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":

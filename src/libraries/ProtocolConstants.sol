@@ -30,11 +30,11 @@ library ProtocolConstants {
 
     /// @dev Max Chainlink age for launch FDV / bonding graduation pricing.
     uint256 internal constant ORACLE_MAX_AGE = 1 hours;
-    /// @dev Max tx / max wallet (% of total supply). Launcher picks from 0.1% up to 100% at launch.
+    /// @dev Max tx / max wallet (% of total supply). Launcher picks between min and max at launch.
     uint16 internal constant MIN_TX_BPS = 10;
-    uint16 internal constant MAX_TX_BPS = 10_000;
+    uint16 internal constant MAX_TX_BPS = 250;
     uint16 internal constant MIN_WALLET_BPS = 10;
-    uint16 internal constant MAX_WALLET_BPS = 10_000;
+    uint16 internal constant MAX_WALLET_BPS = 250;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
     uint16 internal constant MAX_AUTO_BURN_BPS = 10_000;
     uint16 internal constant MAX_LP_DONATE_BPS = 10_000;

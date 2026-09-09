@@ -507,7 +507,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Floor + auto-burn + LP donate + holder airdrop shares of the hook-tax pot must total exactly 100% — nothing left unallocated.",
             "One module alone gets 100%; with two or more, split however you like (e.g. 50/50, 75/25, 80/10/10).",
-            "Max tx and max wallet: launcher picks a % of supply (from 0.1% up to 100%, fixed in the bitmask at launch).",
+            "Max tx and max wallet: launcher picks between 0.1% and 2.5% of supply (fixed in the bitmask at launch).",
             "Any fee sink requires hook tax > 0.",
             "Base fee (1%) + hook tax cannot exceed 10%.",
             "Anti-snipe only affects opening buys and fades out — it is not a permanent tax.",
@@ -536,7 +536,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Max trade limits how large a single swap can be as a % of total supply. Max wallet limits how many tokens one address can hold after a buy. Both are optional and set at launch.",
+          text: "Max trade caps how large a single swap can be as a % of total supply (0.1%–2.5%). Max wallet caps how many tokens one address can hold after a buy (same range). Both are optional and set at launch.",
         },
         {
           type: "h3",
