@@ -15,6 +15,7 @@
  *   FEE_KEEPER_BUYBACK_MIN_WEI — skip buyback below this (default 1e12 wei)
  *   FEE_KEEPER_STOCK_SLIPPAGE_BPS — stock→USDG maximum slippage from a fresh simulation (default 300)
  *   FEE_KEEPER_ORACLE_ONLY=true — sync launch-factory ETH/USD fallbacks, then exit
+ *   FEE_KEEPER_SYNC_ORACLE=true|false — optional pre-sync before fee routing (default: only when ORACLE_ONLY)
  *   FEE_KEEPER_DRY_RUN=true — log only
  */
 import {
@@ -127,6 +128,7 @@ async function main() {
   const buybackMin = envBig("FEE_KEEPER_BUYBACK_MIN_WEI", 1_000_000_000_000n); // 1e12 wei
   const dryRun = envBool("FEE_KEEPER_DRY_RUN", false);
   const oracleOnly = envBool("FEE_KEEPER_ORACLE_ONLY", false);
+  const syncOracle = envBool("FEE_KEEPER_SYNC_ORACLE", oracleOnly);
 
   const hasKeeperKey = Boolean((process.env.FEE_KEEPER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim());
   const account = privateKeyToAccount(pk(!dryRun));
@@ -142,7 +144,7 @@ async function main() {
     console.log(`[fee-keeper] ok ${hash}`);
   }
 
-  async function syncEthUsd(label: string, factory: Address) {
+  async function syncEthUsd(label: string, factory: Address): Promise<boolean> {
     const before = await publicClient.readContract({
       address: factory,
       abi: launchFactoryAbi,
@@ -156,32 +158,45 @@ async function main() {
         functionName: "syncEthUsdPrice",
       });
     } catch {
-      console.log(`[fee-keeper] ${label} ETH/USD feed stale; keeping ${before}`);
-      return;
+      console.log(`[fee-keeper] ${label} ETH/USD feed unavailable; keeping ${before}`);
+      return false;
     }
     if (dryRun) {
       console.log(`[fee-keeper] ${label} ETH/USD sync available; stored ${before}`);
-      return;
+      return true;
     }
-    const hash = await walletClient.writeContract({
-      address: factory,
-      abi: launchFactoryAbi,
-      functionName: "syncEthUsdPrice",
-    });
-    await waitOk(`syncEthUsdPrice ${label}`, hash);
-    const after = await publicClient.readContract({
-      address: factory,
-      abi: launchFactoryAbi,
-      functionName: "ethUsdPriceX18",
-    });
-    console.log(`[fee-keeper] ${label} ETH/USD ${before} -> ${after}`);
+    try {
+      const hash = await walletClient.writeContract({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "syncEthUsdPrice",
+      });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        console.warn(`[fee-keeper] ${label} ETH/USD sync reverted on-chain (${hash}); keeping ${before}`);
+        return false;
+      }
+      console.log(`[fee-keeper] ok ${hash}`);
+      const after = await publicClient.readContract({
+        address: factory,
+        abi: launchFactoryAbi,
+        functionName: "ethUsdPriceX18",
+      });
+      console.log(`[fee-keeper] ${label} ETH/USD ${before} -> ${after}`);
+      return true;
+    } catch (error) {
+      console.warn(`[fee-keeper] ${label} ETH/USD sync failed; keeping ${before}`, error);
+      return false;
+    }
   }
 
-  await syncEthUsd("Master", launchFactory);
-  await syncEthUsd("Classic", bondingFactory);
-  if (oracleOnly) {
-    console.log("[fee-keeper] ORACLE_SYNC_OK");
-    return;
+  if (syncOracle) {
+    const masterOk = await syncEthUsd("Master", launchFactory);
+    const classicOk = await syncEthUsd("Classic", bondingFactory);
+    if (oracleOnly) {
+      console.log(masterOk || classicOk ? "[fee-keeper] ORACLE_SYNC_OK" : "[fee-keeper] ORACLE_SYNC_SKIPPED");
+      return;
+    }
   }
 
   const ops = await publicClient.readContract({

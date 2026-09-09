@@ -14,6 +14,8 @@ factories use the guarded 30-minute WETH/USDt0 Uniswap v3 TWAP feed at
 `0x4b286359a4e5739D414aD00D6A320F93fF2b6092` (pool
 `0x356667DA30C89cC36c65D394500424d5Eba8731c`). The feed rejects insufficient pool depth, observations older
 than one hour, and spot/TWAP divergence above roughly 3%. The last successful sync remains the factory fallback.
+If a sync reverts between simulation and execution, the keeper logs a warning and keeps the stored fallback.
+The daily fee keeper does **not** sync the oracle by default (`FEE_KEEPER_SYNC_ORACLE=false`).
 
 ## Setup
 
