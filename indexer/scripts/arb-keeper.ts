@@ -135,13 +135,44 @@ async function main() {
   console.log("[arb-keeper] dryRun", dryRun, "keeper", hasKeeperKey ? account.address : "not configured (dry-run)");
 
   for (const launchId of launchIds) {
-    const preview = await publicClient.readContract({
+    const raw = await publicClient.readContract({
       address: executor,
       abi: executorAbi,
       functionName: "preview",
       args: [launchId],
     });
-    const [marketCount, cheapIndex, richIndex, cheapUsd, richUsd, deviationBps, clipQuoteWei, executable] = preview;
+    const preview =
+      Array.isArray(raw)
+        ? {
+            marketCount: raw[0],
+            cheapIndex: raw[1],
+            richIndex: raw[2],
+            cheapUsdX18: raw[3],
+            richUsdX18: raw[4],
+            deviationBps: raw[5],
+            clipQuoteWei: raw[6],
+            executable: raw[7],
+          }
+        : (raw as {
+            marketCount: number;
+            cheapIndex: number;
+            richIndex: number;
+            cheapUsdX18: bigint;
+            richUsdX18: bigint;
+            deviationBps: number;
+            clipQuoteWei: bigint;
+            executable: boolean;
+          });
+    const {
+      marketCount,
+      cheapIndex,
+      richIndex,
+      cheapUsdX18: cheapUsd,
+      richUsdX18: richUsd,
+      deviationBps,
+      clipQuoteWei,
+      executable,
+    } = preview;
     console.log(
       `[arb-keeper] launch ${launchId} markets=${marketCount} cheap=${cheapIndex} rich=${richIndex}` +
         ` cheapUsd=${cheapUsd} richUsd=${richUsd} devBps=${deviationBps} clip=${clipQuoteWei} executable=${executable}`,
