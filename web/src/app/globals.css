@@ -2573,12 +2573,39 @@
   .stonk-hero-stack {
     --pairing-stack-ring: #101012;
     display: flex;
+    margin: 0;
+  }
+
+  .stonk-hero-pairings {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: max-content;
+    max-width: 100%;
     margin: 0.9rem 0 0;
+    gap: 0.55rem;
   }
 
   .stonk-hero-quotrons {
     display: inline-flex;
-    margin: 0.75rem 0 0;
+    align-self: flex-end;
+    margin: 0;
+    width: max-content;
+    max-width: 100%;
+    gap: 0.55rem;
+    padding: 0.55rem 0.95rem;
+    box-shadow: none;
+    transform: none;
+    vertical-align: middle;
+  }
+
+  .stonk-hero-quotrons .powered-by-quotrons-badge__logo {
+    height: 42px;
+    width: 42px;
+  }
+
+  .stonk-hero-quotrons .powered-by-quotrons-badge__text {
+    font-size: 1.12rem;
   }
 
   .live-on-ink-ticker__logo--ink {
