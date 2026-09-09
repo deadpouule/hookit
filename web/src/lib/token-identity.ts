@@ -35,6 +35,7 @@ export function mergeLaunchCatalog(prev: TokenPool[] | undefined, next: TokenPoo
 
   for (const pool of next) {
     const id = catalogId(pool);
+    if (seen.has(id)) continue;
     const prior = prevById.get(id);
     const resolved =
       isPlaceholderLaunchIdentity(pool) && prior && !isPlaceholderLaunchIdentity(prior)
@@ -48,13 +49,6 @@ export function mergeLaunchCatalog(prev: TokenPool[] | undefined, next: TokenPoo
     if (isPlaceholderLaunchIdentity(resolved)) continue;
     seen.add(id);
     merged.push(resolved);
-  }
-
-  for (const prior of prev ?? []) {
-    const id = catalogId(prior);
-    if (seen.has(id) || isPlaceholderLaunchIdentity(prior)) continue;
-    seen.add(id);
-    merged.push(prior);
   }
 
   return merged;
