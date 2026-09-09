@@ -23,7 +23,7 @@ export async function tokenShareMetadata(
   const pool = await loadPool(id);
   const path = `/${pathPrefix}/${id}`;
   const ogImage = {
-    url: `${path}/opengraph-image`,
+    url: `/api/og/token/${id}`,
     width: TOKEN_OG_SIZE.width,
     height: TOKEN_OG_SIZE.height,
     alt: pool ? `${pool.name} ($${pool.ticker})` : "Hookit token",
