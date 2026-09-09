@@ -10,6 +10,7 @@ import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPhoneRequest } from "@/lib/device";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, socialMetadata } from "@/lib/site-metadata";
 
 import "./globals.css";
 
@@ -30,16 +31,17 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Hookit",
+    default: SITE_NAME,
     template: "%s | Hookit",
   },
-  description:
-    "Permissionless modular launchpad on Ink. Dual-rail Master + Classic bonding, Quotrons wStocks, locked LP, quote-only fees.",
+  description: SITE_DESCRIPTION,
   icons: {
     icon: "/brand/hookit-mark.png",
     apple: "/brand/hookit-mark.png",
   },
+  ...socialMetadata(SITE_NAME, SITE_DESCRIPTION),
 };
 
 export const viewport: Viewport = {
