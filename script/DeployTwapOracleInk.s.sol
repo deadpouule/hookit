@@ -5,10 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 
 import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
-import {
-    IUniswapV3OraclePool,
-    UniswapV3EthUsdTwapFeed
-} from "../src/UniswapV3EthUsdTwapFeed.sol";
+import {IUniswapV3OraclePool, UniswapV3EthUsdTwapFeed} from "../src/UniswapV3EthUsdTwapFeed.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 
 /// @notice Deploy and activate the guarded WETH/USDt0 TWAP feed on Ink.

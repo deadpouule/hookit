@@ -23,7 +23,12 @@ interface IUniswapV3OraclePool {
     function observations(uint256 index)
         external
         view
-        returns (uint32 blockTimestamp, int56 tickCumulative, uint160 secondsPerLiquidityCumulativeX128, bool initialized);
+        returns (
+            uint32 blockTimestamp,
+            int56 tickCumulative,
+            uint160 secondsPerLiquidityCumulativeX128,
+            bool initialized
+        );
     function observe(uint32[] calldata secondsAgos)
         external
         view
@@ -114,11 +119,7 @@ contract UniswapV3EthUsdTwapFeed {
         answeredInRound = roundId;
     }
 
-    function getRoundData(uint80)
-        external
-        pure
-        returns (uint80, int256, uint256, uint256, uint80)
-    {
+    function getRoundData(uint80) external pure returns (uint80, int256, uint256, uint256, uint80) {
         revert RoundUnavailable();
     }
 

@@ -3,11 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 
-import {
-    IERC20Balance,
-    IUniswapV3OraclePool,
-    UniswapV3EthUsdTwapFeed
-} from "../src/UniswapV3EthUsdTwapFeed.sol";
+import {IERC20Balance, IUniswapV3OraclePool, UniswapV3EthUsdTwapFeed} from "../src/UniswapV3EthUsdTwapFeed.sol";
 
 contract MockBalanceToken is IERC20Balance {
     mapping(address => uint256) public balanceOf;
@@ -81,15 +77,7 @@ contract UniswapV3EthUsdTwapFeedTest is Test {
         pool.setState(8e16, 198_128, 198_128, uint32(block.timestamp - 60), true);
 
         feed = new UniswapV3EthUsdTwapFeed(
-            pool,
-            address(weth),
-            address(stable),
-            30 minutes,
-            1 hours,
-            300,
-            1e16,
-            100 ether,
-            250_000e6
+            pool, address(weth), address(stable), 30 minutes, 1 hours, 300, 1e16, 100 ether, 250_000e6
         );
     }
 
