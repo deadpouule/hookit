@@ -8,6 +8,7 @@ import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { AccentSlider } from "@/components/launch/AccentSlider";
+import { PickValueDialog } from "@/components/launch/PickValueDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
 import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
@@ -147,7 +148,20 @@ function FixedFeeConfigPanel({
           <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
         </div>
       </div>
-      <PickConfigControl theme={FIXED_FEE_THEME} label="Hook fee" value={formatBps(hookTaxBps)}>
+      <PickConfigControl
+        theme={FIXED_FEE_THEME}
+        label="Hook fee"
+        value={formatBps(hookTaxBps)}
+        edit={{
+          title: "Hook fee",
+          numericValue: hookTaxBps / 100,
+          min: 0,
+          max: MAX_HOOK_TAX_BPS / 100,
+          step: 0.1,
+          suffix: "%",
+          onCommit: (pct) => onHookTaxBpsChange(Math.round(pct * 100)),
+        }}
+      >
         <AccentSlider
           accentColor={accent}
           value={[hookTaxBps]}
@@ -236,12 +250,29 @@ function PickConfigControl({
   label,
   value,
   children,
+  edit,
 }: {
   theme: HookTheme;
   label?: string;
   value: string;
   children: ReactNode;
+  edit?: {
+    title?: string;
+    numericValue: number;
+    min: number;
+    max: number;
+    step?: number;
+    suffix?: string;
+    onCommit: (next: number) => void;
+  };
 }) {
+  const [open, setOpen] = useState(false);
+  const valueClass = cn(
+    "pick-config-control-value orb-hook-desc-badge",
+    edit && "pick-config-control-value--edit",
+    `orb-hook-desc-badge--${theme}`,
+  );
+
   return (
     <div className="pick-config-control">
       <div
@@ -260,16 +291,33 @@ function PickConfigControl({
             {label}
           </span>
         ) : null}
-        <span
-          className={cn(
-            "pick-config-control-value orb-hook-desc-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
-          {value}
-        </span>
+        {edit ? (
+          <button
+            type="button"
+            className={valueClass}
+            onClick={() => setOpen(true)}
+            aria-label={`Edit ${edit.title ?? label ?? "value"}`}
+          >
+            {value}
+          </button>
+        ) : (
+          <span className={valueClass}>{value}</span>
+        )}
       </div>
       <div className="pick-config-control-track">{children}</div>
+      {edit ? (
+        <PickValueDialog
+          open={open}
+          onOpenChange={setOpen}
+          title={edit.title ?? label ?? "Value"}
+          value={edit.numericValue}
+          min={edit.min}
+          max={edit.max}
+          step={edit.step}
+          suffix={edit.suffix}
+          onCommit={edit.onCommit}
+        />
+      ) : null}
     </div>
   );
 }
@@ -599,6 +647,15 @@ function HookSettings({
           theme={theme}
           label="Duration"
           value={`${modules.antiSnipeDuration}s`}
+          edit={{
+            title: "Anti-snipe duration",
+            numericValue: modules.antiSnipeDuration,
+            min: MIN_ANTI_SNIPE_DURATION_SEC,
+            max: MAX_ANTI_SNIPE_DURATION_SEC,
+            step: 1,
+            suffix: "s",
+            onCommit: (next) => onUpdate({ antiSnipeDuration: next }),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -613,6 +670,15 @@ function HookSettings({
           theme={theme}
           label="Initial tax"
           value={`${modules.antiSnipeInitialTax}%`}
+          edit={{
+            title: "Anti-snipe tax",
+            numericValue: modules.antiSnipeInitialTax,
+            min: MIN_ANTI_SNIPE_TAX_PCT,
+            max: MAX_ANTI_SNIPE_TAX_PCT,
+            step: 1,
+            suffix: "%",
+            onCommit: (next) => onUpdate({ antiSnipeInitialTax: next }),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -629,7 +695,7 @@ function HookSettings({
             `orb-hook-desc-badge--${theme}`,
           )}
         >
-          Snipe tax and window are fixed at launch (up to {MAX_ANTI_SNIPE_TAX_PCT}% · {MAX_ANTI_SNIPE_DURATION_SEC}s max)
+          Snipe tax fades over the window you set
         </span>
       </div>
     );
@@ -675,8 +741,17 @@ function HookSettings({
       <div>
         <PickConfigControl
           theme={theme}
-          label="Cap"
-          value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
+          label="Per wallet"
+          value={formatSupplyCap(modules.maxWalletBps)}
+          edit={{
+            title: "Max wallet",
+            numericValue: bpsToSupplyPct(modules.maxWalletBps),
+            min: MIN_SUPPLY_CAP_SLIDER_PCT,
+            max: MAX_SUPPLY_CAP_SLIDER_PCT,
+            step: 0.1,
+            suffix: "%",
+            onCommit: (pct) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(pct)) }),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -693,7 +768,7 @@ function HookSettings({
             `orb-hook-desc-badge--${theme}`,
           )}
         >
-          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
+          How much of supply one wallet can hold
         </span>
       </div>
     );
@@ -704,8 +779,17 @@ function HookSettings({
       <div>
         <PickConfigControl
           theme={theme}
-          label="Cap"
-          value={`${formatSupplyCap(modules.maxTxBps)} of supply`}
+          label="Per swap"
+          value={formatSupplyCap(modules.maxTxBps)}
+          edit={{
+            title: "Max tx",
+            numericValue: bpsToSupplyPct(modules.maxTxBps),
+            min: MIN_SUPPLY_CAP_SLIDER_PCT,
+            max: MAX_SUPPLY_CAP_SLIDER_PCT,
+            step: 0.1,
+            suffix: "%",
+            onCommit: (pct) => onUpdate({ maxTxBps: clampSupplyCapBps(supplyPctToBps(pct)) }),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -722,7 +806,7 @@ function HookSettings({
             `orb-hook-desc-badge--${theme}`,
           )}
         >
-          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
+          How large one swap can be vs supply
         </span>
       </div>
     );
@@ -747,6 +831,15 @@ function HookSettings({
           theme={theme}
           label="Min total fee"
           value={formatTotalFeePercent(minBps)}
+          edit={{
+            title: "Min total fee",
+            numericValue: minBps / 100,
+            min: BASE_FEE_BPS / 100,
+            max: (MAX_TOTAL_FEE_BPS - 10) / 100,
+            step: 0.1,
+            suffix: "%",
+            onCommit: (pct) => applyRange(Math.round(pct * 100), maxBps),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -761,6 +854,15 @@ function HookSettings({
           theme={theme}
           label="Max total fee"
           value={formatTotalFeePercent(maxBps)}
+          edit={{
+            title: "Max total fee",
+            numericValue: maxBps / 100,
+            min: (BASE_FEE_BPS + 10) / 100,
+            max: MAX_TOTAL_FEE_BPS / 100,
+            step: 0.1,
+            suffix: "%",
+            onCommit: (pct) => applyRange(minBps, Math.round(pct * 100)),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -775,6 +877,17 @@ function HookSettings({
           theme={theme}
           label="Depth % for max fee"
           value={`${Math.round((modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100)}%`}
+          edit={{
+            title: "Depth for max fee",
+            numericValue: Math.round(
+              (modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100,
+            ),
+            min: DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT,
+            max: DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT,
+            step: 5,
+            suffix: "%",
+            onCommit: (pct) => onUpdate({ dynamicFeeDepthSaturationBps: Math.round(pct * 100) }),
+          }}
         >
           <AccentSlider
             accentColor={accent}
@@ -808,6 +921,15 @@ function HookSettings({
         theme={theme}
         label="Vest duration"
         value={days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
+        edit={{
+          title: "Vest duration",
+          numericValue: days,
+          min: 7,
+          max: 365 * 5,
+          step: 7,
+          suffix: "d",
+          onCommit: (next) => onUpdate({ buybackVestingDurationDays: next }),
+        }}
       >
         <AccentSlider
           accentColor={accent}
@@ -861,7 +983,20 @@ function HookSettings({
           accent={accent}
           onUpdate={onUpdate}
         />
-        <PickConfigControl theme={theme} label="Epoch" value={`${epochMinutes}m`}>
+        <PickConfigControl
+          theme={theme}
+          label="Epoch"
+          value={`${epochMinutes}m`}
+          edit={{
+            title: "Airdrop epoch",
+            numericValue: epochMinutes,
+            min: HOLDER_AIRDROP_EPOCH_MINUTES,
+            max: HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
+            step: 1,
+            suffix: "m",
+            onCommit: (next) => onUpdate({ holderAirdropEpochSeconds: next * 60 }),
+          }}
+        >
           <AccentSlider
             accentColor={accent}
             value={[epochMinutes]}
@@ -941,7 +1076,20 @@ function FeeRouteShareControl({
 
   return (
     <div>
-      <PickConfigControl theme={theme} label="Share of hook tax" value={`${value}%`}>
+      <PickConfigControl
+        theme={theme}
+        label="Share of hook tax"
+        value={`${value}%`}
+        edit={{
+          title: "Share of hook tax",
+          numericValue: value,
+          min: 1,
+          max: feeRouteSliderMax(modules, routeKey),
+          step: 1,
+          suffix: "%",
+          onCommit: (next) => onUpdate(setFeeRouteShare(modules, routeKey, next)),
+        }}
+      >
         <AccentSlider
           accentColor={accent}
           value={[value]}

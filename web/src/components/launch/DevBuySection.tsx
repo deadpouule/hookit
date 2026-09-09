@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { zeroAddress } from "viem";
 
 import { AccentSlider } from "@/components/launch/AccentSlider";
+import { PickValueDialog } from "@/components/launch/PickValueDialog";
 import { Label } from "@/components/ui/label";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import {
@@ -38,6 +39,7 @@ export function DevBuySection({ form, variant, onChange }: Props) {
   const quote = resolveQuoteAddress(quoteId);
   const payLabel = quoteId === "eth" ? "ETH" : formatPairingTicker(quoteId);
   const rail = variant === "classic" ? "classic" : "master";
+  const [pctOpen, setPctOpen] = useState(false);
 
   const graduation = fallbackGraduationQuoteWei(quote);
   const mcap = fallbackMcapQuoteWei(quote);
@@ -108,9 +110,14 @@ export function DevBuySection({ form, variant, onChange }: Props) {
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
             <span>0%</span>
-            <span className="font-mono text-zinc-300">
+            <button
+              type="button"
+              className="font-mono text-zinc-300 underline-offset-2 hover:underline"
+              onClick={() => setPctOpen(true)}
+              aria-label="Edit dev buy percent"
+            >
               {form.devBuySupplyPct > 0 ? `${form.devBuySupplyPct.toFixed(2)}%` : "Off"}
-            </span>
+            </button>
             <span>{MAX_DEV_BUY_SUPPLY_PCT}%</span>
           </div>
           <AccentSlider
@@ -120,6 +127,17 @@ export function DevBuySection({ form, variant, onChange }: Props) {
             min={0}
             max={MAX_DEV_BUY_SUPPLY_PCT}
             step={0.05}
+          />
+          <PickValueDialog
+            open={pctOpen}
+            onOpenChange={setPctOpen}
+            title="Dev buy"
+            value={form.devBuySupplyPct}
+            min={0}
+            max={MAX_DEV_BUY_SUPPLY_PCT}
+            step={0.05}
+            suffix="%"
+            onCommit={(next) => onChange({ devBuySupplyPct: next })}
           />
           {form.devBuySupplyPct > 0 && supplyQuoteWei && supplyQuoteWei > 0n && (
             <p className="mt-2 text-xs text-zinc-500">

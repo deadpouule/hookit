@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { AccentSlider } from "@/components/launch/AccentSlider";
+import { PickValueDialog } from "@/components/launch/PickValueDialog";
 import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
 import { estimateFloorPrice, formatBps } from "@/lib/format";
 import {
@@ -117,6 +118,7 @@ export function BuilderTuner({
               min={MIN_ANTI_SNIPE_DURATION_SEC}
               max={MAX_ANTI_SNIPE_DURATION_SEC}
               step={1}
+              suffix="s"
               onChange={(v) => onModulesChange({ antiSnipeDuration: v })}
             />
             <SliderRow
@@ -127,10 +129,11 @@ export function BuilderTuner({
               min={MIN_ANTI_SNIPE_TAX_PCT}
               max={MAX_ANTI_SNIPE_TAX_PCT}
               step={1}
+              suffix="%"
               onChange={(v) => onModulesChange({ antiSnipeInitialTax: v })}
             />
             <p className="text-xs leading-relaxed text-zinc-600">
-              Snipe tax and window fixed at launch (up to {MAX_ANTI_SNIPE_TAX_PCT}% · {MAX_ANTI_SNIPE_DURATION_SEC}s max).
+              Snipe tax fades over the window you set.
             </p>
           </div>
         ) : null}
@@ -204,17 +207,18 @@ export function BuilderTuner({
         {selected === "maxWallet" ? (
           <div>
             <SliderRow
-              label="Cap"
-              valueLabel={`${formatSupplyCap(modules.maxWalletBps)} supply`}
+              label="Per wallet"
+              valueLabel={formatSupplyCap(modules.maxWalletBps)}
               color={def.accent.color}
               value={bpsToSupplyPct(modules.maxWalletBps)}
               min={MIN_SUPPLY_CAP_SLIDER_PCT}
               max={MAX_SUPPLY_CAP_SLIDER_PCT}
               step={0.1}
+              suffix="%"
               onChange={(v) => onModulesChange({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply.
+              How much of supply one wallet can hold.
             </p>
           </div>
         ) : null}
@@ -222,17 +226,18 @@ export function BuilderTuner({
         {selected === "maxTx" ? (
           <div>
             <SliderRow
-              label="Cap"
-              valueLabel={`${formatSupplyCap(modules.maxTxBps)} supply`}
+              label="Per swap"
+              valueLabel={formatSupplyCap(modules.maxTxBps)}
               color={def.accent.color}
               value={bpsToSupplyPct(modules.maxTxBps)}
               min={MIN_SUPPLY_CAP_SLIDER_PCT}
               max={MAX_SUPPLY_CAP_SLIDER_PCT}
               step={0.1}
+              suffix="%"
               onChange={(v) => onModulesChange({ maxTxBps: clampSupplyCapBps(supplyPctToBps(v)) })}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply.
+              How large one swap can be vs supply.
             </p>
           </div>
         ) : null}
@@ -242,11 +247,12 @@ export function BuilderTuner({
             label="Hook tax"
             valueLabel={formatBps(hookTaxBps)}
             color={def.accent.color}
-            value={hookTaxBps}
-            min={10}
-            max={MAX_HOOK_TAX_BPS}
-            step={10}
-            onChange={onCreatorTaxChange}
+            value={hookTaxBps / 100}
+            min={0.1}
+            max={MAX_HOOK_TAX_BPS / 100}
+            step={0.1}
+            suffix="%"
+            onChange={(pct) => onCreatorTaxChange(Math.round(pct * 100))}
           />
         ) : null}
 
@@ -308,6 +314,7 @@ function FeeRouteSlider({
       min={1}
       max={feeRouteSliderMax(modules, routeKey)}
       step={1}
+      suffix="%"
       onChange={(v) => onModulesChange(setFeeRouteShare(modules, routeKey, v))}
     />
   );
@@ -332,6 +339,7 @@ function SliderRow({
   min,
   max,
   step,
+  suffix,
   onChange,
 }: {
   label: string;
@@ -341,15 +349,24 @@ function SliderRow({
   min: number;
   max: number;
   step: number;
+  suffix?: string;
   onChange: (value: number) => void;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div>
       <div className="mb-2 flex justify-between text-xs text-zinc-500">
         <span>{label}</span>
-        <span className="font-mono" style={{ color }}>
+        <button
+          type="button"
+          className="font-mono underline-offset-2 hover:underline"
+          style={{ color }}
+          onClick={() => setOpen(true)}
+          aria-label={`Edit ${label}`}
+        >
           {valueLabel}
-        </span>
+        </button>
       </div>
       <AccentSlider
         accentColor={color}
@@ -358,6 +375,17 @@ function SliderRow({
         min={min}
         max={max}
         step={step}
+      />
+      <PickValueDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={label}
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        suffix={suffix}
+        onCommit={onChange}
       />
     </div>
   );
