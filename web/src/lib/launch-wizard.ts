@@ -13,7 +13,7 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
   string | null
 > = {
   1: null,
-  2: "Shield your launch — block bots, limit trade size, and limit wallet holdings.",
+  2: "Shield your launch — block bots, cap trade size, and limit wallet holdings.",
   3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax, plus optional creator share routing.",
   4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops.",
   5: "Review your token and launch when ready.",
