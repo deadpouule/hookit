@@ -71,7 +71,7 @@ export function ProtocolStatsPage() {
     <div className="market-shell stats-page">
       <header className="stats-head">
         <div className="stats-title-halo" aria-hidden />
-        <h1 className="terminal-title">Stats</h1>
+        <h1 className="terminal-title">Analytics</h1>
         <p className="stats-lede">
           Stock-denominated protocol fees consolidate into USDG. Buyback activates with the official protocol token.
         </p>

@@ -1,7 +1,7 @@
 import { ProtocolStatsPage } from "@/components/stats/ProtocolStatsPage";
 
 export const metadata = {
-  title: "Stats | hook it",
+  title: "Analytics | hook it",
   description: "HOOK buyback and burn, launch volume, and master hooks.",
 };
 

@@ -1253,6 +1253,35 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .pick-config-control-value--edit {
+    cursor: text;
+    gap: 0.12rem;
+    min-width: 4.6rem;
+    justify-content: flex-end;
+  }
+
+  .pick-config-value-input {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: right;
+    outline: none;
+    appearance: textfield;
+  }
+
+  .pick-config-value-input::-webkit-outer-spin-button,
+  .pick-config-value-input::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  .pick-config-value-suffix {
+    flex-shrink: 0;
+  }
+
   .pick-config-control-track {
     padding: 0.15rem 0.1rem 0.2rem;
   }

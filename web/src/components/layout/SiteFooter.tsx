@@ -41,7 +41,7 @@ export function SiteFooter() {
               Create
             </Link>
             <Link href="/stats" className="text-zinc-400 transition hover:text-zinc-200">
-              Stats
+              Analytics
             </Link>
             <Link href="/docs" className="text-zinc-400 transition hover:text-zinc-200">
               Docs
