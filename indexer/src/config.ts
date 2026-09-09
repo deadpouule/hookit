@@ -264,6 +264,19 @@ export type StoreFileV1 = {
   poolToToken: Record<string, string>;
 };
 
+export type StoreFileV2 = {
+  version: 2;
+  chainId: number;
+  cursor: string;
+  updatedAt: number;
+  lastPollError?: string;
+  lastPollAt?: number;
+  tokens: Record<string, TokenRow>;
+  poolToToken: Record<string, string>;
+  launchIdToToken: Record<string, string>;
+  seenTrades: Record<string, true>;
+};
+
 export type StoreFile = {
   version: 3;
   chainId: number;

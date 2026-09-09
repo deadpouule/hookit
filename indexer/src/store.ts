@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import type { Address, Hex } from "viem";
 
-import type { Candle, IndexedTrade, StoreFile, StoreFileV1, TokenMarket, TokenRow } from "./config.js";
+import type { Candle, IndexedTrade, StoreFile, StoreFileV1, StoreFileV2, TokenMarket, TokenRow } from "./config.js";
 import { compareDec, maxDec, minDec, quotePerTokenFromAmounts } from "./math.js";
 
 const INK_USDG = "0xe343167631d89b6ffc58b88d6b7fb0228795491d";
@@ -74,7 +74,7 @@ function rebuildCandles(trades: IndexedTrade[]): Candle[] {
   return series;
 }
 
-function repairTradePrices(data: StoreFile): StoreFile {
+function repairTradePrices(data: StoreFileV2 | StoreFile): StoreFile {
   for (const row of Object.values(data.tokens)) {
     for (const trade of row.trades) {
       if (!trade.quoteAmount || !trade.tokenAmount) continue;
@@ -100,7 +100,7 @@ function repairTradePrices(data: StoreFile): StoreFile {
       }
     }
   }
-  return data;
+  return data.version === 3 ? data : { ...data, version: 3 };
 }
 
 export function emptyStore(chainId: number): StoreFile {
@@ -139,7 +139,7 @@ export class Store {
     this.path = join(dataDir, `hookit-${chainId}.json`);
     this.exclude = excludeAddresses ?? new Set();
     if (existsSync(this.path)) {
-      const raw = JSON.parse(readFileSync(this.path, "utf8")) as StoreFile | StoreFileV1;
+      const raw = JSON.parse(readFileSync(this.path, "utf8")) as StoreFile | StoreFileV2 | StoreFileV1;
       if (raw.version === 2 || raw.version === 3) {
         if (raw.chainId !== chainId) {
           throw new Error(`store chainId ${raw.chainId} != config ${chainId}`);
