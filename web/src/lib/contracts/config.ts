@@ -143,10 +143,8 @@ export function getLaunchFactoryQueryAddress(): Address | undefined {
 
 /** Classic bonding rail. Set NEXT_PUBLIC_BONDING_FACTORY after deploy. */
 export function getBondingFactoryAddress(): Address | undefined {
-  return (
-    parseEnvAddress(process.env.NEXT_PUBLIC_BONDING_FACTORY) ??
-    (resolveHookitChainKey() === "ink" ? INK_BONDING_FACTORY : undefined)
-  );
+  if (resolveHookitChainKey() === "ink") return INK_BONDING_FACTORY;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_BONDING_FACTORY);
 }
 
 export function isFactoryConfigured(): boolean {
@@ -155,45 +153,43 @@ export function isFactoryConfigured(): boolean {
 
 /** Hookit router for hooked pools. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER after deploy. */
 export function getHookitSwapRouterAddress(): Address | undefined {
+  if (resolveHookitChainKey() === "ink") return INK_SWAP_ROUTER;
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_HOOKIT_SWAP_ROUTER) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_SWAP_ROUTER) ??
-    (resolveHookitChainKey() === "ink" ? INK_SWAP_ROUTER : undefined)
+    parseEnvAddress(process.env.NEXT_PUBLIC_SWAP_ROUTER)
   );
 }
 
 /** ProtocolRevenueDistributor — set after DeployHookitCore. */
 export function getProtocolDistributorAddress(): Address | undefined {
+  if (resolveHookitChainKey() === "ink") return INK_PROTOCOL_DISTRIBUTOR;
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR) ??
-    (resolveHookitChainKey() === "ink" ? INK_PROTOCOL_DISTRIBUTOR : undefined)
+    parseEnvAddress(process.env.NEXT_PUBLIC_REVENUE_DISTRIBUTOR)
   );
 }
 
 /** V4ClaimsRedeemer — redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
 export function getClaimsRedeemerAddress(): Address | undefined {
-  return (
-    parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER) ??
-    (resolveHookitChainKey() === "ink" ? INK_CLAIMS_REDEEMER : undefined)
-  );
+  if (resolveHookitChainKey() === "ink") return INK_CLAIMS_REDEEMER;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER);
 }
 
 /** HkitBuyback keeper — set after DeployHookitCore. */
 export function getHkitBuybackAddress(): Address | undefined {
+  if (resolveHookitChainKey() === "ink") return INK_HKIT_BUYBACK;
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_BUYBACK) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_HOOK_BUYBACK) ??
-    (resolveHookitChainKey() === "ink" ? INK_HKIT_BUYBACK : undefined)
+    parseEnvAddress(process.env.NEXT_PUBLIC_HOOK_BUYBACK)
   );
 }
 
 /** Fair-launched native token (HKIT / HOOKTEST). */
 export function getNativeTokenAddress(): Address | undefined {
+  if (resolveHookitChainKey() === "ink") return INK_NATIVE_TOKEN;
   return (
     parseEnvAddress(process.env.NEXT_PUBLIC_NATIVE_TOKEN) ??
-    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_TOKEN) ??
-    (resolveHookitChainKey() === "ink" ? INK_NATIVE_TOKEN : undefined)
+    parseEnvAddress(process.env.NEXT_PUBLIC_HKIT_TOKEN)
   );
 }
 

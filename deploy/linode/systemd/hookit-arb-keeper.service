@@ -1,0 +1,17 @@
+[Unit]
+Description=Hookit multi-pair arb keeper (Ink)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=hookit
+Group=hookit
+WorkingDirectory=/opt/hookit/indexer
+EnvironmentFile=/opt/hookit/.env
+ExecStart=/usr/bin/npm run arb-keeper
+Nice=10
+SyslogIdentifier=hookit-arb-keeper
+
+[Install]
+WantedBy=multi-user.target
