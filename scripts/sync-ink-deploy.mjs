@@ -154,14 +154,14 @@ function loadBroadcast(path) {
   const prevPath = join(ROOT, "deploy/ink/addresses.json");
   let prevNative = null;
   let prevNativeMeta = null;
-  let prevIndexerStartBlock = null;
   let previousContracts = null;
+  let prevOracle = null;
   if (existsSync(prevPath)) {
     try {
       const prev = JSON.parse(readFileSync(prevPath, "utf8"));
       prevNative = prev.contracts?.NativeToken ?? prev.nativeToken?.address ?? null;
       prevNativeMeta = prev.nativeToken ?? null;
-      prevIndexerStartBlock = parseBlock(prev.indexer?.startBlock);
+      prevOracle = prev.oracle ?? null;
       previousContracts = {
         LaunchFactories: [
           prev.contracts?.LaunchFactory,
@@ -185,6 +185,7 @@ function loadBroadcast(path) {
     }
   }
   if (prevNative) creates.set("NativeToken", lower(prevNative));
+  if (prevOracle?.feed) creates.set("UniswapV3EthUsdTwapFeed", lower(prevOracle.feed));
   if (previousContracts) {
     const currentByGroup = {
       LaunchFactories: creates.get("LaunchFactory"),
@@ -208,8 +209,8 @@ function loadBroadcast(path) {
     factoryCreateBlock,
     deployer,
     prevNativeMeta,
-    prevIndexerStartBlock,
     previousContracts,
+    prevOracle,
     path,
   };
 }
@@ -244,6 +245,7 @@ function buildAddresses(
   deployer,
   prevNativeMeta,
   previousContracts,
+  prevOracle,
 ) {
   const native = creates.get("NativeToken");
   const today = new Date().toISOString().slice(0, 10);
@@ -255,6 +257,9 @@ function buildAddresses(
     deployer: deployer ?? "",
     contracts: Object.fromEntries([
       ...CONTRACT_KEYS.map((k) => [k, creates.get(k)]),
+      ...(creates.get("UniswapV3EthUsdTwapFeed")
+        ? [["UniswapV3EthUsdTwapFeed", creates.get("UniswapV3EthUsdTwapFeed")]]
+        : []),
       ...(native ? [["NativeToken", native]] : []),
     ]),
     previousContracts,
@@ -269,13 +274,17 @@ function buildAddresses(
       startBlock: indexerStartBlock,
       url: "https://indexer.hookit.fun",
     },
+    oracle: prevOracle ?? undefined,
     notes: [
       `Synced from forge broadcast by scripts/sync-ink-deploy.mjs on ${today}.`,
       ...(prevNativeMeta
         ? ["Existing native token carried forward; fair launch was skipped for this redeploy."]
         : []),
-      "Indexer must retain its store and watch current plus previous Master factories; do not reset.",
+      "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
       "customHookAllowlistEnabled expected true after harden.",
+      ...(prevOracle
+        ? ["ETH/USD uses the guarded WETH/USDt0 Uniswap v3 30-minute TWAP."]
+        : []),
     ],
   };
 }
@@ -344,8 +353,8 @@ function main() {
     factoryCreateBlock,
     deployer,
     prevNativeMeta,
-    prevIndexerStartBlock,
     previousContracts,
+    prevOracle,
     path,
   } = loadBroadcast(opts.broadcast);
   requireContracts(creates);
@@ -354,10 +363,9 @@ function main() {
     throw new Error("Could not resolve LaunchFactory CREATE block from receipts");
   }
 
-  const indexerStartBlock =
-    prevIndexerStartBlock == null
-      ? factoryCreateBlock
-      : Math.min(prevIndexerStartBlock, factoryCreateBlock);
+  // A core redeploy starts a new public catalogue. Historical factory addresses
+  // remain in addresses.json for auditability but are not indexed by default.
+  const indexerStartBlock = factoryCreateBlock;
   const addresses = buildAddresses(
     creates,
     factoryCreateBlock,
@@ -365,12 +373,10 @@ function main() {
     deployer,
     prevNativeMeta,
     previousContracts,
+    prevOracle,
   );
   const { server, next } = buildEnvBundle(creates, indexerStartBlock);
-  const indexerFactoryList = [
-    server.LAUNCH_FACTORY,
-    ...(previousContracts?.LaunchFactories ?? []),
-  ].filter(Boolean).join(",");
+  const indexerFactoryList = server.LAUNCH_FACTORY;
 
   console.log(`broadcast: ${path}`);
   console.log(`LaunchFactory: ${creates.get("LaunchFactory")} @ block ${factoryCreateBlock}`);

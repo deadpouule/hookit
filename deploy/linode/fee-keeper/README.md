@@ -9,9 +9,11 @@ On the same Linode as the indexer. Permissionless on-chain calls; the keeper wal
 3. `distribute(USDG)` if native USDG pending
 4. Optional TWAP: spend up to `FEE_KEEPER_BUYBACK_MAX_WEI` from `buybackEth` via `HkitBuyback.execute` (buy + burn HTST)
 
-A separate 15-minute timer calls `syncEthUsdPrice()` on the active Master and Classic factories whenever the
-Redstone feed is fresh. This preserves a recent fallback price and prevents stale-feed launches from reverting
-to the deployment-time $4,000/ETH default.
+A separate 15-minute timer calls `syncEthUsdPrice()` on the active Master and Classic factories. On Ink, both
+factories use the guarded 30-minute WETH/USDt0 Uniswap v3 TWAP feed at
+`0x4b286359a4e5739D414aD00D6A320F93fF2b6092` (pool
+`0x356667DA30C89cC36c65D394500424d5Eba8731c`). The feed rejects insufficient pool depth, observations older
+than one hour, and spot/TWAP divergence above roughly 3%. The last successful sync remains the factory fallback.
 
 ## Setup
 
@@ -33,8 +35,8 @@ Add to `/opt/hookit/.env` (chmod 600):
 # Dedicated wallet recommended (gas only). Falls back to PRIVATE_KEY.
 FEE_KEEPER_PRIVATE_KEY=0x...
 
-PROTOCOL_DISTRIBUTOR=0x4149509d2293a61cb199E17227740eEBFADd30c6
-HKIT_BUYBACK=0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB
+PROTOCOL_DISTRIBUTOR=0xc724b1dadb0215a601c143fdec53152d8e61867f
+HKIT_BUYBACK=0x64ce593c8678512097cd0d53f737c3621fb66e5d
 
 # TWAP buyback slice (default 0.05 ETH/day). Set false to only route fees.
 FEE_KEEPER_BUYBACK=true

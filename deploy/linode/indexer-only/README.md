@@ -65,6 +65,29 @@ curl -s http://127.0.0.1:8787/health | jq .
 # expect: ok: true, tokens >= 0, lagBlocks reasonable
 ```
 
+### Clean-slate catalogue after a core redeploy
+
+Changing factory addresses does not delete tokens already persisted by the indexer. To intentionally restart
+the public catalogue from the current Ink deployment:
+
+```bash
+systemctl stop hookit-indexer
+cp /var/lib/hookit-indexer/hookit-57073.json \
+  /root/hookit-57073.before-55412348.json
+
+# Keep only these current factories in /opt/hookit/.env:
+# LAUNCH_FACTORY=0x4ac6815a8628576078474025407b6d0317c919a7
+# BONDING_FACTORY=0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42
+# INDEXER_START_BLOCK=55412348
+
+rm -f /var/lib/hookit-indexer/hookit-57073.json \
+  /var/lib/hookit-indexer/hookit-57073.json.tmp
+systemctl start hookit-indexer
+curl -s http://127.0.0.1:8787/health | jq .
+```
+
+The backup preserves historical data for audit purposes without exposing legacy launches on the site.
+
 ## 5. Daily fee keeper (protocol 20/80 + TWAP HTST buyback)
 
 Fees accrue as `pending` until flushed. Enable the timer so they route every day:
@@ -72,8 +95,8 @@ Fees accrue as `pending` until flushed. Enable the timer so they route every day
 ```bash
 # In /opt/hookit/.env — see env.example
 FEE_KEEPER_PRIVATE_KEY=0x...   # gas wallet
-PROTOCOL_DISTRIBUTOR=0x4149509d2293a61cb199E17227740eEBFADd30c6
-HKIT_BUYBACK=0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB
+PROTOCOL_DISTRIBUTOR=0xc724b1dadb0215a601c143fdec53152d8e61867f
+HKIT_BUYBACK=0x64ce593c8678512097cd0d53f737c3621fb66e5d
 
 chmod +x /opt/hookit/deploy/linode/fee-keeper/run.sh
 install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.service /etc/systemd/system/

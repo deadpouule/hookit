@@ -1,7 +1,7 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-09-08",
+  "deployedAt": "2026-09-09",
   "deployBlock": 55412348,
   "deployer": "0x67b436693b7f8ebad6b1b1caf88c2e197d961614",
   "contracts": {
@@ -22,6 +22,7 @@
     "V4ClaimsRedeemer": "0x34bc32e0a032cb633ee80af3ec50e9c471b0010d",
     "FeeEthRail": "0xdd10834d4b58df975a1d312ab5ddd1255e064c54",
     "HkitBuyback": "0x64ce593c8678512097cd0d53f737c3621fb66e5d",
+    "UniswapV3EthUsdTwapFeed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",
     "NativeToken": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
   },
   "previousContracts": {
@@ -49,13 +50,26 @@
     "address": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
   },
   "indexer": {
-    "startBlock": 55204587,
+    "startBlock": 55412348,
     "url": "https://indexer.hookit.fun"
   },
+  "oracle": {
+    "type": "Uniswap v3 TWAP",
+    "feed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",
+    "pool": "0x356667da30c89cc36c65d394500424d5eba8731c",
+    "pair": "WETH/USDt0",
+    "fee": 3000,
+    "twapWindowSeconds": 1800,
+    "maxObservationAgeSeconds": 3600,
+    "maxTickDeviation": 300,
+    "minimumWethReserveWei": "100000000000000000000",
+    "minimumStableReserve": "250000000000"
+  },
   "notes": [
-    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-08.",
+    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-09.",
     "Existing native token carried forward; fair launch was skipped for this redeploy.",
-    "Indexer must retain its store and watch current plus previous Master factories; do not reset.",
-    "customHookAllowlistEnabled expected true after harden."
+    "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
+    "customHookAllowlistEnabled expected true after harden.",
+    "ETH/USD uses the guarded WETH/USDt0 Uniswap v3 30-minute TWAP."
   ]
 }

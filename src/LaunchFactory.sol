@@ -39,7 +39,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice ETH/USD price with 18 decimals — used to convert the fixed $5k FDV into ETH at launch.
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
-    /// @notice On-chain ETH/USD feed (Redstone push on Ink); anyone may `syncEthUsdPrice`.
+    /// @notice Chainlink-compatible on-chain ETH/USD feed; anyone may `syncEthUsdPrice`.
     address public ethUsdFeed;
 
     struct QuoteConfig {
