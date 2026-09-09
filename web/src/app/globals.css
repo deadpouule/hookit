@@ -2576,6 +2576,11 @@
     margin: 0.9rem 0 0;
   }
 
+  .stonk-hero-quotrons {
+    display: inline-flex;
+    margin: 0.75rem 0 0;
+  }
+
   .live-on-ink-ticker__logo--ink {
     border-radius: 999px;
     object-fit: cover;
@@ -5276,8 +5281,8 @@
   }
 
   .stonk-hero-title {
-    margin: 0.55rem 0 0;
-    max-width: 16rem;
+    margin: 0;
+    max-width: 22rem;
     font-size: 1.55rem;
     font-weight: 700;
     letter-spacing: -0.04em;

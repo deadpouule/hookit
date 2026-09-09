@@ -34,7 +34,6 @@ import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
 import { MobileLaunchHero } from "./MobileLaunchHero";
 import { MobileStatsRow } from "./MobileStatsRow";
-import { MobileTicker } from "./MobileTicker";
 import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
@@ -54,11 +53,15 @@ function tokenIsRwa(token: MarketToken): boolean {
   if (token.markets?.some((market) => Boolean(market.quoteAsset?.toLowerCase().match(/^w.+x$/)))) {
     return true;
   }
+  if (
+    token.pairings?.some((pairing) => {
+      const id = pairing.pairingId.toLowerCase();
+      return id !== "eth" && id !== "usdg";
+    })
+  ) {
+    return true;
+  }
   return false;
-}
-
-function tokenIsSingleRwa(token: MarketToken): boolean {
-  return tokenIsRwa(token) && !isMultiPairPool(token);
 }
 
 function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote: string | null): MarketToken[] {
@@ -69,10 +72,10 @@ function filterByCategory(tokens: MarketToken[], category: CategoryKey, rwaQuote
     return tokens.filter((t) => t.hookType === "Custom" || t.kind === "sushi");
   }
   if (category === "rwa") {
-    const singleRwa = tokens.filter(tokenIsSingleRwa);
-    if (!rwaQuote) return singleRwa;
+    const quotrons = tokens.filter(tokenIsRwa);
+    if (!rwaQuote) return quotrons;
     const quoteKey = rwaQuote.toLowerCase();
-    return singleRwa.filter((t) => tokenHasRwaQuote(t, quoteKey));
+    return quotrons.filter((t) => tokenHasRwaQuote(t, quoteKey));
   }
   if (category === "multi") {
     return tokens.filter((t) => isMultiPairPool(t));
@@ -293,7 +296,6 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
       <div className="space-y-3 desk:contents">
-        <MobileTicker tokens={trending.length > 0 ? trending : sourceTokens} />
         <MobileLaunchHero />
         <MobileStatsRow />
       </div>
@@ -343,7 +345,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
         {category === "rwa" && selectedRwaQuote && (
           <p className="text-xs text-zinc-500">
-            Showing single pools paired with <span className="text-zinc-300">{selectedRwaQuote}</span>.
+            Showing pools paired with <span className="text-zinc-300">{selectedRwaQuote}</span>.
           </p>
         )}
 
