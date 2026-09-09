@@ -51,7 +51,7 @@ const INK_MAINNET: ChainDeployment = {
   universalRouter: "0x112908daC86e20e7241B0927479Ea3Bf935d1fa0",
   poolSwapTest: zeroAddress,
   stableQuote: USDG_INK_ADDRESS,
-  ethUsdFeed: "0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF", // RedStone ETH/USD (Ink)
+  ethUsdFeed: "0x4b286359a4e5739D414aD00D6A320F93fF2b6092", // WETH/USDt0 v3 TWAP
   explorer: "https://explorer.inkonchain.com",
   networkLabel: "Ink",
 };
@@ -102,18 +102,13 @@ export const chainlinkAggregatorAbi = [
  * On Ink, these win over stale Vercel `NEXT_PUBLIC_LAUNCH_FACTORY` so new
  * launches cannot silently hit the pre-patch HolderAirdropVault.
  */
-export const INK_LAUNCH_FACTORY = "0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626" as Address;
-export const INK_LAUNCH_FACTORY_QUERY = "0x2b335D8DBAFD55E2c6F93816a8449fc810dE1f90" as Address;
-/** Live tokens launched before the 2026-09-07 airdrop-vault patch. */
-export const INK_PREVIOUS_LAUNCH_FACTORY = "0x10c4687B66fec64066C59A59cae1A9c326779f35" as Address;
-export const INK_PREVIOUS_LAUNCH_FACTORY_QUERY = "0x2b0F0C047e4520CefAc3f8d8FF7073b7d15AFA57" as Address;
-const INK_LEGACY_LAUNCH_FACTORY = "0xbadb0CBFfC80b107082babaB9e488Bc6bEf8f425" as Address;
-const INK_LEGACY_LAUNCH_FACTORY_QUERY = "0x0EF5b27151c2CE5fF4B6723AE2B24a6431659e96" as Address;
-const INK_BONDING_FACTORY = "0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C" as Address;
-const INK_SWAP_ROUTER = "0x145a1e9960F309991DE920dDE8fC2e4902F33325" as Address;
-const INK_CLAIMS_REDEEMER = "0xD4bEBB50601eeA8B611EA2D41ffD293611782815" as Address;
-const INK_PROTOCOL_DISTRIBUTOR = "0x4149509d2293a61cb199E17227740eEBFADd30c6" as Address;
-const INK_HKIT_BUYBACK = "0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB" as Address;
+export const INK_LAUNCH_FACTORY = "0x4ac6815a8628576078474025407b6D0317C919A7" as Address;
+export const INK_LAUNCH_FACTORY_QUERY = "0xcac34c92c985319f5e110162f2a2eb6d7499c09a" as Address;
+const INK_BONDING_FACTORY = "0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42" as Address;
+const INK_SWAP_ROUTER = "0xd95634238c39cc5aa17b1be70be3b041ece0038c" as Address;
+const INK_CLAIMS_REDEEMER = "0x34bc32e0a032cb633ee80af3ec50e9c471b0010d" as Address;
+const INK_PROTOCOL_DISTRIBUTOR = "0xc724b1dadb0215a601c143fdec53152d8e61867f" as Address;
+const INK_HKIT_BUYBACK = "0x64ce593c8678512097cd0d53f737c3621fb66e5d" as Address;
 const INK_NATIVE_TOKEN = "0xD839eEEd6c1fC0d0A2a12641256ac14bBaE1D7d8" as Address;
 
 export type LaunchFactoryPair = {
@@ -121,14 +116,10 @@ export type LaunchFactoryPair = {
   query?: Address;
 };
 
-/** Active factory first, then previous Ink factory that still owns live tokens. */
+/** Public catalogue for Ink. Historical deployments remain on-chain but are intentionally hidden. */
 export function getLaunchFactoryPairs(): LaunchFactoryPair[] {
   if (resolveHookitChainKey() === "ink") {
-    return [
-      { factory: INK_LAUNCH_FACTORY, query: INK_LAUNCH_FACTORY_QUERY },
-      { factory: INK_PREVIOUS_LAUNCH_FACTORY, query: INK_PREVIOUS_LAUNCH_FACTORY_QUERY },
-      { factory: INK_LEGACY_LAUNCH_FACTORY, query: INK_LEGACY_LAUNCH_FACTORY_QUERY },
-    ];
+    return [{ factory: INK_LAUNCH_FACTORY, query: INK_LAUNCH_FACTORY_QUERY }];
   }
   const factory = parseEnvAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY);
   if (!factory) return [];
