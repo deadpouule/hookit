@@ -4,10 +4,10 @@ On the same Linode as the indexer. Permissionless on-chain calls; the keeper wal
 
 ## What it does (every day)
 
-1. `distribute(ETH)` → **20% opsTreasury** / **80% buybackEth**
-2. `distributeToBuyback(wStock)` for each Quotrons stock with pending → USDG → same 20/80
-3. `distribute(USDG)` if native USDG pending
-4. Optional TWAP: spend up to `FEE_KEEPER_BUYBACK_MAX_WEI` from `buybackEth` via `HkitBuyback.execute` (buy + burn HTST)
+1. Convert every pending Quotrons wStock claim to USDG with a simulation-derived slippage floor.
+2. Hold consolidated USDG and ETH in the distributor while `FEE_KEEPER_DISTRIBUTE_REVENUE=false`.
+3. Once the official protocol token and buyback sink are ready, route **20% opsTreasury** / **80% buyback**.
+4. Optionally execute capped buyback-and-burn slices after that activation.
 
 A separate 15-minute timer calls `syncEthUsdPrice()` on the active Master and Classic factories. On Ink, both
 factories use the guarded 30-minute WETH/USDt0 Uniswap v3 TWAP feed at
@@ -38,8 +38,12 @@ FEE_KEEPER_PRIVATE_KEY=0x...
 PROTOCOL_DISTRIBUTOR=0xc724b1dadb0215a601c143fdec53152d8e61867f
 HKIT_BUYBACK=0x64ce593c8678512097cd0d53f737c3621fb66e5d
 
-# TWAP buyback slice (default 0.05 ETH/day). Set false to only route fees.
-FEE_KEEPER_BUYBACK=true
+# Keep routing/buyback disabled until the official protocol token is live.
+FEE_KEEPER_DISTRIBUTE_REVENUE=false
+FEE_KEEPER_BUYBACK=false
+FEE_KEEPER_STOCK_SLIPPAGE_BPS=300
+
+# Future buyback slice (default cap: 0.05 ETH/day).
 FEE_KEEPER_BUYBACK_MAX_WEI=50000000000000000
 FEE_KEEPER_BUYBACK_MIN_WEI=1000000000000
 ```

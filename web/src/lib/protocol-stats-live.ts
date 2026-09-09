@@ -38,6 +38,7 @@ export type LiveProtocolStatsPayload = {
   ethUsd: number;
   tokensIndexed: number;
   tradesIndexed: number;
+  pendingProtocolUsd: number;
   pendingBuybackEth: number;
   nativeToken: string | null;
   burnedTokens: number;

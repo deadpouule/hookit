@@ -1,6 +1,13 @@
 export const protocolRevenueDistributorAbi = [
   {
     type: "function",
+    name: "pending",
+    inputs: [{ name: "currency", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "buybackEth",
     inputs: [],
     outputs: [{ name: "", type: "uint256" }],

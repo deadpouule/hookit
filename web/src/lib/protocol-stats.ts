@@ -147,23 +147,23 @@ export function metricValue(point: SeriesPoint, metric: ChartMetric): number {
 }
 
 export function metricLabel(metric: ChartMetric): string {
-  if (metric === "buybacks") return "Cumulative buybacks";
-  if (metric === "revenue") return "Cumulative revenue";
-  if (metric === "burns") return "Cumulative burns";
-  return "$HOOK FDV";
+  if (metric === "buybacks") return "Projected buyback allocation";
+  if (metric === "revenue") return "Estimated protocol revenue";
+  if (metric === "burns") return "Projected burn allocation";
+  return "Protocol token FDV";
 }
 
 export function metricSubtitle(metric: ChartMetric): string {
   if (metric === "buybacks") {
-    return "Total USD deployed buying $HOOK on the open market, since launch.";
+    return "80% of estimated protocol revenue; executed fills are reported separately.";
   }
   if (metric === "revenue") {
-    return "Trading fees paid to the protocol, valued at claim time.";
+    return "Indexed quote volume multiplied by the on-chain protocol fee schedule.";
   }
   if (metric === "burns") {
-    return "USD value of $HOOK destroyed through buyback burns.";
+    return "Illustrative allocation only; actual burns come from BuybackBurned events.";
   }
-  return "Fully diluted valuation of $HOOK over the selected window.";
+  return "Available after the official protocol token launches.";
 }
 
 export function dailyBars(window: ChartWindow): SeriesPoint[] {

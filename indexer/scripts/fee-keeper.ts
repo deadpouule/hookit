@@ -1,6 +1,6 @@
 /**
  * Daily protocol fee keeper (Ink).
- * Routes pending fees: 20% opsTreasury / 80% flywheel, then optional TWAP HTST buyback+burn.
+ * Consolidates pending wStock fees into USDG, routes enabled assets, then optionally executes buyback+burn.
  *
  * Run (from indexer dir):
  *   npm run fee-keeper
@@ -9,10 +9,11 @@
  * Env (from /opt/hookit/.env):
  *   INK_RPC_URL, FEE_KEEPER_PRIVATE_KEY (or PRIVATE_KEY)
  *   PROTOCOL_DISTRIBUTOR, HKIT_BUYBACK (defaults = live RedeployHookitInk)
+ *   FEE_KEEPER_DISTRIBUTE_REVENUE=true|false — enable 20/80 routing only when the official sink is ready
  *   FEE_KEEPER_BUYBACK=true|false
  *   FEE_KEEPER_BUYBACK_MAX_WEI — cap ETH spent per run (TWAP slice; default 0.05 ether)
  *   FEE_KEEPER_BUYBACK_MIN_WEI — skip buyback below this (default 1e12 wei)
- *   FEE_KEEPER_MIN_USDG_OUT — stock→USDG slippage floor (default 0)
+ *   FEE_KEEPER_STOCK_SLIPPAGE_BPS — stock→USDG maximum slippage from a fresh simulation (default 300)
  *   FEE_KEEPER_ORACLE_ONLY=true — sync launch-factory ETH/USD fallbacks, then exit
  *   FEE_KEEPER_DRY_RUN=true — log only
  */
@@ -37,10 +38,10 @@ const INK = {
   rpcUrls: { default: { http: [process.env.INK_RPC_URL ?? "https://rpc-gel.inkonchain.com"] } },
 } as const;
 
-const DEFAULT_DISTRIBUTOR = "0x4149509d2293a61cb199E17227740eEBFADd30c6" as Address;
-const DEFAULT_BUYBACK = "0x3D68Cc2C71f3b146295c8D9C1A82B3591f24fcCB" as Address;
-const DEFAULT_LAUNCH_FACTORY = "0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626" as Address;
-const DEFAULT_BONDING_FACTORY = "0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C" as Address;
+const DEFAULT_DISTRIBUTOR = "0xc724b1dadb0215a601c143fdec53152d8e61867f" as Address;
+const DEFAULT_BUYBACK = "0x64ce593c8678512097cd0d53f737c3621fb66e5d" as Address;
+const DEFAULT_LAUNCH_FACTORY = "0x4ac6815a8628576078474025407b6D0317C919A7" as Address;
+const DEFAULT_BONDING_FACTORY = "0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42" as Address;
 
 /** Quotrons wStocks that may accrue protocol pending on multi / stock-quoted launches. */
 const QUOTRON_STOCKS: Address[] = [
@@ -61,7 +62,7 @@ const distributorAbi = parseAbi([
   "function feeRail() view returns (address)",
   "function opsTreasury() view returns (address)",
   "function distribute(address currency)",
-  "function distributeToBuyback(address currency, uint256 minUsdgOut)",
+  "function railStockToUsdg(address stock, uint256 minUsdgOut) returns (uint256 usdgOut)",
   "function flushBuybackEth() returns (uint256)",
 ]);
 
@@ -116,8 +117,12 @@ async function main() {
   const buyback = envAddr("HKIT_BUYBACK", DEFAULT_BUYBACK);
   const launchFactory = envFirstAddr("LAUNCH_FACTORY", DEFAULT_LAUNCH_FACTORY);
   const bondingFactory = envFirstAddr("BONDING_FACTORY", DEFAULT_BONDING_FACTORY);
-  const minUsdgOut = envBig("FEE_KEEPER_MIN_USDG_OUT", 0n);
-  const doBuyback = envBool("FEE_KEEPER_BUYBACK", true);
+  const stockSlippageBps = envBig("FEE_KEEPER_STOCK_SLIPPAGE_BPS", 300n);
+  if (stockSlippageBps < 0n || stockSlippageBps >= 10_000n) {
+    throw new Error("FEE_KEEPER_STOCK_SLIPPAGE_BPS must be between 0 and 9999");
+  }
+  const distributeRevenue = envBool("FEE_KEEPER_DISTRIBUTE_REVENUE", false);
+  const doBuyback = envBool("FEE_KEEPER_BUYBACK", false);
   const buybackMax = envBig("FEE_KEEPER_BUYBACK_MAX_WEI", 50_000_000_000_000_000n); // 0.05 ETH / day
   const buybackMin = envBig("FEE_KEEPER_BUYBACK_MIN_WEI", 1_000_000_000_000n); // 1e12 wei
   const dryRun = envBool("FEE_KEEPER_DRY_RUN", false);
@@ -213,7 +218,9 @@ async function main() {
   const ethPending = await pendingOf(zeroAddress);
   if (ethPending > 0n) {
     console.log(`[fee-keeper] pending ETH ${formatEther(ethPending)}`);
-    if (!dryRun) {
+    if (!distributeRevenue) {
+      console.log("[fee-keeper] ETH held in distributor (FEE_KEEPER_DISTRIBUTE_REVENUE=false)");
+    } else if (!dryRun) {
       const hash = await walletClient.writeContract({
         address: distributor,
         abi: distributorAbi,
@@ -226,31 +233,43 @@ async function main() {
     console.log("[fee-keeper] pending ETH 0");
   }
 
-  // 2) Quotrons wStocks -> USDG rail -> 20/80
+  // 2) Consolidate every Quotrons wStock balance into distributor-held USDG.
   for (const stock of QUOTRON_STOCKS) {
     const amt = await pendingOf(stock);
     if (amt === 0n) continue;
     console.log(`[fee-keeper] pending stock ${stock} ${amt}`);
-    if (dryRun) continue;
     try {
+      const { result: quotedUsdg } = await publicClient.simulateContract({
+        account,
+        address: distributor,
+        abi: distributorAbi,
+        functionName: "railStockToUsdg",
+        args: [stock, 0n],
+      });
+      if (quotedUsdg === 0n) throw new Error("stock rail quote returned zero USDG");
+      const minOut = (quotedUsdg * (10_000n - stockSlippageBps)) / 10_000n;
+      console.log(`[fee-keeper] stock rail quote ${quotedUsdg} USDG raw; min ${minOut}`);
+      if (dryRun) continue;
       const hash = await walletClient.writeContract({
         address: distributor,
         abi: distributorAbi,
-        functionName: "distributeToBuyback",
-        args: [stock, minUsdgOut],
+        functionName: "railStockToUsdg",
+        args: [stock, minOut],
       });
-      await waitOk(`distributeToBuyback ${stock}`, hash);
+      await waitOk(`railStockToUsdg ${stock}`, hash);
     } catch (e) {
-      console.error(`[fee-keeper] stock flush failed ${stock}`, e);
+      console.error(`[fee-keeper] stock rail failed ${stock}`, e);
     }
   }
 
-  // 3) Native USDG pending
+  // 3) Keep consolidated USDG pending until the official buyback sink is ready.
   if (usdg) {
     const u = await pendingOf(usdg);
     if (u > 0n) {
       console.log(`[fee-keeper] pending USDG ${u}`);
-      if (!dryRun) {
+      if (!distributeRevenue) {
+        console.log("[fee-keeper] USDG held in distributor (FEE_KEEPER_DISTRIBUTE_REVENUE=false)");
+      } else if (!dryRun) {
         const hash = await walletClient.writeContract({
           address: distributor,
           abi: distributorAbi,
@@ -263,7 +282,7 @@ async function main() {
   }
 
   // 4) TWAP slice of buybackEth -> buy+burn HTST
-  if (doBuyback) {
+  if (doBuyback && distributeRevenue) {
     if (!dryRun) {
       const flushHash = await walletClient.writeContract({
         address: distributor,
@@ -300,7 +319,7 @@ async function main() {
       }
     }
   } else {
-    console.log("[fee-keeper] FEE_KEEPER_BUYBACK=false - skip HTST buyback");
+    console.log("[fee-keeper] buyback disabled until revenue routing and the official token are enabled");
   }
 
   console.log("[fee-keeper] FEE_KEEPER_OK");

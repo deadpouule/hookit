@@ -3,6 +3,7 @@ import {
   formatEther,
   formatUnits,
   parseAbiItem,
+  zeroAddress,
 } from "viem";
 
 import {
@@ -25,6 +26,7 @@ import { protocolRevenueDistributorAbi } from "@/lib/contracts/protocol-abi";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { readEthUsd } from "@/lib/eth-usd";
 import { formatAge } from "@/lib/format";
+import { resolveQuoteUsdPrice } from "@/lib/quote-usd";
 import {
   fetchAllBondingLaunches,
   fetchAllMasterLaunches,
@@ -40,6 +42,7 @@ import type {
   LiveWindowStats,
 } from "@/lib/protocol-stats-live";
 import { createServerPublicClient } from "@/lib/server-rpc";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 export type {
   LiveBurnFeed,
@@ -70,7 +73,11 @@ const buybackBurnedEvent = parseAbiItem(
   "event BuybackBurned(uint256 ethIn, uint256 tokensBurned, address indexed caller)",
 );
 
-function quoteVolumeToUsd(quotes: LiveQuoteVolume[], ethUsd: number): {
+export function quoteVolumeToUsd(
+  quotes: LiveQuoteVolume[],
+  ethUsd: number,
+  quoteUsd: Map<string, number>,
+): {
   total: number;
   buy: number;
   sell: number;
@@ -78,25 +85,17 @@ function quoteVolumeToUsd(quotes: LiveQuoteVolume[], ethUsd: number): {
   let total = 0;
   let buy = 0;
   let sell = 0;
-  const stable = STABLE_QUOTE_ADDRESS.toLowerCase();
-
   for (const row of quotes) {
     const amount = Number(formatUnits(BigInt(row.volumeQuote || "0"), row.quoteDecimals));
     const buyAmt = Number(formatUnits(BigInt(row.buyVolumeQuote || "0"), row.quoteDecimals));
     const sellAmt = Number(formatUnits(BigInt(row.sellVolumeQuote || "0"), row.quoteDecimals));
-    const isStable =
-      row.quote.toLowerCase() === stable ||
-      (row.quoteDecimals === 6 && row.quote.toLowerCase() !== "0x0000000000000000000000000000000000000000");
-
-    if (isStable) {
-      total += amount;
-      buy += buyAmt;
-      sell += sellAmt;
-    } else {
-      total += amount * ethUsd;
-      buy += buyAmt * ethUsd;
-      sell += sellAmt * ethUsd;
-    }
+    const address = row.quote.toLowerCase();
+    const unitUsd =
+      quoteUsd.get(address) ??
+      (address === zeroAddress ? ethUsd : address === STABLE_QUOTE_ADDRESS.toLowerCase() ? 1 : 0);
+    total += amount * unitUsd;
+    buy += buyAmt * unitUsd;
+    sell += sellAmt * unitUsd;
   }
 
   return { total, buy, sell };
@@ -105,8 +104,9 @@ function quoteVolumeToUsd(quotes: LiveQuoteVolume[], ethUsd: number): {
 function windowFromRollup(
   rollup: { trades: number; quotes: LiveQuoteVolume[] },
   ethUsd: number,
+  quoteUsd: Map<string, number>,
 ): LiveWindowStats {
-  const { total, buy, sell } = quoteVolumeToUsd(rollup.quotes, ethUsd);
+  const { total, buy, sell } = quoteVolumeToUsd(rollup.quotes, ethUsd, quoteUsd);
   const revenueUsd = protocolRevenueFromVolumeUsd(total);
   const buybackUsd = buybackFromProtocolRevenueUsd(revenueUsd);
   return {
@@ -122,8 +122,9 @@ function windowFromRollup(
 function bucketToSeriesPoint(
   bucket: { label: string; quotes: LiveQuoteVolume[] },
   ethUsd: number,
+  quoteUsd: Map<string, number>,
 ): SeriesPoint {
-  const { total } = quoteVolumeToUsd(bucket.quotes, ethUsd);
+  const { total } = quoteVolumeToUsd(bucket.quotes, ethUsd, quoteUsd);
   const buybackUsd = buybackFromProtocolRevenueUsd(protocolRevenueFromVolumeUsd(total));
   const burnUsd = buybackUsd * 0.92;
   const revenueUsd = protocolRevenueFromVolumeUsd(total);
@@ -152,6 +153,31 @@ async function fetchIndexerProtocolStats(): Promise<IndexerProtocolStats | null>
   }
 }
 
+async function buildProtocolQuoteUsdMap(
+  indexer: IndexerProtocolStats,
+  ethUsd: number,
+): Promise<Map<string, number>> {
+  const client = createServerPublicClient();
+  const quotes = new Set<string>([
+    zeroAddress,
+    STABLE_QUOTE_ADDRESS.toLowerCase(),
+  ]);
+  for (const row of indexer.windows.all.quotes) quotes.add(row.quote.toLowerCase());
+
+  const prices = new Map<string, number>([
+    [zeroAddress, ethUsd],
+    [STABLE_QUOTE_ADDRESS.toLowerCase(), 1],
+  ]);
+  await Promise.all(
+    [...quotes].map(async (quote) => {
+      if (prices.has(quote)) return;
+      const usd = await resolveQuoteUsdPrice(quote as Address, undefined, ethUsd, client);
+      if (usd > 0) prices.set(quote, usd);
+    }),
+  );
+  return prices;
+}
+
 async function fetchOnChainBuybacks(ethUsd: number, nativeDecimals = 18) {
   const buybackAddr = getHkitBuybackAddress();
   const client = createServerPublicClient();
@@ -162,7 +188,8 @@ async function fetchOnChainBuybacks(ethUsd: number, nativeDecimals = 18) {
   let pendingBuybackEth = 0;
   let nativeToken: string | null = null;
   let burnedTokens = 0;
-  let burnedUsd = 0;
+  const burnedUsd = 0;
+  let pendingProtocolUsd = 0;
 
   const distributor = getProtocolDistributorAddress();
   if (distributor) {
@@ -181,6 +208,26 @@ async function fetchOnChainBuybacks(ethUsd: number, nativeDecimals = 18) {
       ]);
       pendingBuybackEth = Number(formatEther(pending as bigint));
       nativeToken = token as string;
+
+      const pendingAssets = [
+        { address: zeroAddress, decimals: 18 },
+        { address: STABLE_QUOTE_ADDRESS, decimals: 6 },
+        ...INK_QUOTRON_STOCKS.map((stock) => ({ address: stock.address, decimals: 18 })),
+      ];
+      const balances = await Promise.all(
+        pendingAssets.map(async (asset) => {
+          const amount = (await client.readContract({
+            address: distributor,
+            abi: protocolRevenueDistributorAbi,
+            functionName: "pending",
+            args: [asset.address],
+          })) as bigint;
+          if (amount === 0n) return 0;
+          const usd = await resolveQuoteUsdPrice(asset.address, undefined, ethUsd, client);
+          return Number(formatUnits(amount, asset.decimals)) * usd;
+        }),
+      );
+      pendingProtocolUsd = balances.reduce((sum, value) => sum + value, 0);
     } catch {
       /* not deployed */
     }
@@ -262,6 +309,7 @@ async function fetchOnChainBuybacks(ethUsd: number, nativeDecimals = 18) {
     nativeToken,
     burnedTokens,
     burnedUsd,
+    pendingProtocolUsd,
   };
 }
 
@@ -337,14 +385,15 @@ export async function loadLiveProtocolStats(): Promise<LiveProtocolStatsPayload>
     source = "live";
     tokensIndexed = indexer.tokensIndexed;
     tradesIndexed = indexer.tradesIndexed;
+    const quoteUsd = await buildProtocolQuoteUsdMap(indexer, ethUsd);
     for (const key of ["24h", "7d", "30d", "all"] as const) {
-      windows[key] = windowFromRollup(indexer.windows[key], ethUsd);
+      windows[key] = windowFromRollup(indexer.windows[key], ethUsd, quoteUsd);
     }
     for (const bucket of indexer.daily) {
-      daily.push(bucketToSeriesPoint(bucket, ethUsd));
+      daily.push(bucketToSeriesPoint(bucket, ethUsd, quoteUsd));
     }
     for (const bucket of indexer.hourly) {
-      hourly.push(bucketToSeriesPoint(bucket, ethUsd));
+      hourly.push(bucketToSeriesPoint(bucket, ethUsd, quoteUsd));
     }
   } else {
     const fallback = await fallbackVolumeFromLaunches(ethUsd);
@@ -378,10 +427,11 @@ export async function loadLiveProtocolStats(): Promise<LiveProtocolStatsPayload>
     tokensIndexed,
     tradesIndexed,
     pendingBuybackEth: onChain.pendingBuybackEth,
+    pendingProtocolUsd: onChain.pendingProtocolUsd,
     nativeToken: onChain.nativeToken,
     burnedTokens: onChain.burnedTokens,
     burnedUsd: onChain.burnedUsd,
-    totalBuybacksUsd: Math.max(windows.all.buybackUsd, onChain.totalBuybacksUsd),
+    totalBuybacksUsd: onChain.totalBuybacksUsd,
     totalBuybacksCount: onChain.totalBuybacksCount,
     totalHookBought: onChain.totalHookBought,
     windows,

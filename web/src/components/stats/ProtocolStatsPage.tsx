@@ -23,12 +23,11 @@ import { useProtocolStats } from "@/hooks/useProtocolStats";
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 const CHART_METRICS = ["buybacks", "revenue", "burns", "fdv"] as const;
 const METRIC_LABELS: Record<ChartMetric, string> = {
-  buybacks: "Buybacks",
-  revenue: "Revenue",
-  burns: "Burns",
-  fdv: "$HKR FDV",
+  buybacks: "Projected buybacks",
+  revenue: "Estimated revenue",
+  burns: "Projected burns",
+  fdv: "Protocol token FDV",
 };
-const NATIVE_SYMBOL = "HKR";
 
 export function ProtocolStatsPage() {
   const { data: stats, dataUpdatedAt } = useProtocolStats();
@@ -41,6 +40,8 @@ export function ProtocolStatsPage() {
 
   const volume = stats?.windows[volumeWindow];
   const overview = stats?.windows.all;
+  const nativeSymbol =
+    stats?.nativeToken && stats.nativeToken !== "HTST" ? stats.nativeToken : "protocol token";
 
   const barSeries = useMemo(() => {
     if (!stats) return [];
@@ -72,7 +73,7 @@ export function ProtocolStatsPage() {
         <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Stats</h1>
         <p className="stats-lede">
-          80% of protocol revenue buys HKT on the market and burn it.
+          Stock-denominated protocol fees consolidate into USDG. Buyback activates with the official protocol token.
         </p>
       </header>
 
@@ -97,26 +98,22 @@ export function ProtocolStatsPage() {
             }
           />
           <Kpi
-            label="Total revenue"
+            label="Estimated revenue"
             value={formatFullUsd(volume?.revenueUsd ?? overview?.revenueUsd ?? 0)}
-            hint="1% swap fee × 30% protocol share"
+            hint="Indexed volume × on-chain protocol fee schedule"
           />
           <Kpi
-            label="Total buybacks"
-            value={formatFullUsd(stats?.totalBuybacksUsd ?? volume?.buybackUsd ?? 0)}
+            label="Pending protocol fees"
+            value={formatFullUsd(stats?.pendingProtocolUsd ?? 0)}
+            hint="Live distributor claims, valued by quote asset"
+          />
+          <Kpi
+            label="Executed buybacks"
+            value={formatFullUsd(stats?.totalBuybacksUsd ?? 0)}
             hint={
               stats?.totalHookBought
-                ? `${formatTokenAmount(stats.totalHookBought)} ${NATIVE_SYMBOL} · ${stats.totalBuybacksCount} fills`
-                : "80% flywheel share of protocol revenue"
-            }
-          />
-          <Kpi
-            label={`$${NATIVE_SYMBOL} burned`}
-            value={formatFullUsd(stats?.burnedUsd ?? 0)}
-            hint={
-              stats?.burnedTokens
-                ? `${formatTokenAmount(stats.burnedTokens)} ${NATIVE_SYMBOL} destroyed (supply delta)`
-                : "From native token totalSupply vs launch supply"
+                ? `${formatTokenAmount(stats.totalHookBought)} ${nativeSymbol} · ${stats.totalBuybacksCount} fills`
+                : "On-chain BuybackBurned events only"
             }
           />
         </div>
@@ -259,7 +256,7 @@ export function ProtocolStatsPage() {
                 >
                   <div>
                     <p>
-                      {tx.spentEth.toFixed(4)} ETH → {formatTokenAmount(tx.hookOut)} {NATIVE_SYMBOL}
+                      {tx.spentEth.toFixed(4)} ETH → {formatTokenAmount(tx.hookOut)} {nativeSymbol}
                     </p>
                     <p>
                       {tx.ago} · swap tx ↗
@@ -298,7 +295,7 @@ export function ProtocolStatsPage() {
                 >
                   <div>
                     <p>
-                      {formatTokenAmount(tx.amount)} {NATIVE_SYMBOL}
+                      {formatTokenAmount(tx.amount)} {nativeSymbol}
                     </p>
                     <p>
                       {tx.agoLabel} · burn tx ↗
