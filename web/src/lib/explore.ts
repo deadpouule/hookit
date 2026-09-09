@@ -4,7 +4,7 @@ import { zeroAddress } from "viem";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import { getChainDeployment } from "@/lib/contracts/config";
 import {
-  ethPerTokenFromSqrtPrice,
+  quotePerTokenFromSqrtPrice,
   stateViewAbi,
 } from "@/lib/pool-price";
 import {
@@ -86,7 +86,13 @@ export async function enrichPoolsWithSpotPrices(
     const [sqrtPriceX96] = slot.result as readonly [bigint, number, number, number];
     const liveL =
       liq?.status === "success" ? (liq.result as bigint) : BigInt(pool.liquidityRaw ?? "0");
-    const price = ethPerTokenFromSqrtPrice(sqrtPriceX96, pool.tokenIsCurrency0 ?? false);
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    const price = quotePerTokenFromSqrtPrice(
+      sqrtPriceX96,
+      pool.tokenIsCurrency0 ?? false,
+      18,
+      quoteDecimalsForKind(quoteKind),
+    );
     metaByPoolId.set(pool.poolId!, {
       sqrtPriceX96,
       liquidity: liveL,
@@ -103,7 +109,15 @@ export async function enrichPoolsWithSpotPrices(
       );
       for (const pool of withPool) {
         const id = pool.poolId!.toLowerCase();
-        swapStats.set(id, statsFromSwaps(swaps.get(id) ?? [], pool.tokenIsCurrency0 ?? false));
+        const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+        swapStats.set(
+          id,
+          statsFromSwaps(
+            swaps.get(id) ?? [],
+            pool.tokenIsCurrency0 ?? false,
+            quoteDecimalsForKind(quoteKind),
+          ),
+        );
       }
     } catch {
       swapStats = new Map();

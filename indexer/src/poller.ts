@@ -12,7 +12,7 @@ import {
 import { bondingFactoryAbi, erc20Abi, launchFactoryAbi } from "./abis.js";
 import type { IndexerConfig, IndexedTrade, TokenRow } from "./config.js";
 import { baseSepolia, ink } from "./config.js";
-import { absBig, quotePerToken, quotePerTokenFromAmounts } from "./math.js";
+import { absBig, quotePerTokenFromAmounts } from "./math.js";
 import { type Store, tradeId } from "./store.js";
 
 /** getLogs + parseAbiItem — runtime has args; viem 2.55+ types omit them on Log. */
@@ -161,16 +161,24 @@ async function metaForToken(client: PublicClient, token: Address) {
   };
 }
 
+const quoteDecimalsCache = new Map<string, number>();
+
 async function quoteDecimals(client: PublicClient, quote: Address): Promise<number> {
   if (quote === zeroAddress) return 18;
+  const key = quote.toLowerCase();
+  const hit = quoteDecimalsCache.get(key);
+  if (hit !== undefined) return hit;
   try {
     const d = await client.readContract({
       address: quote,
       abi: erc20Abi,
       functionName: "decimals",
     });
-    return Number(d);
+    const n = Number(d);
+    quoteDecimalsCache.set(key, n);
+    return n;
   } catch {
+    quoteDecimalsCache.set(key, 18);
     return 18;
   }
 }
@@ -506,6 +514,7 @@ async function indexMasterFactory(
     const row = store.tokenForLaunchId(a.launchId, factory);
     if (!row) continue;
     const tokenIsCurrency0 = BigInt(row.address) < BigInt(a.quote);
+    const marketQuoteDecimals = await quoteDecimals(client, a.quote);
     store.registerMarket(
       row.address,
       {
@@ -516,6 +525,7 @@ async function indexMasterFactory(
         tickLower: Number(a.tickLower),
         tickUpper: Number(a.tickUpper),
         liquidity: a.liquidity.toString(),
+        quoteDecimals: marketQuoteDecimals,
       },
       row.marketCount,
     );
@@ -621,7 +631,15 @@ async function indexRange(
         // PoolManager Swap deltas use the caller's perspective: a negative quote
         // delta is quote paid into the pool, therefore a buy of the launch token.
         const side = quoteDelta < 0n ? "buy" : "sell";
-        const price = quotePerToken(args.sqrtPriceX96, tokenIsCurrency0);
+        const tradeQuoteDecimals =
+          market?.quoteDecimals ??
+          (market?.quote ? await quoteDecimals(client, market.quote) : row.quoteDecimals);
+        const price = quotePerTokenFromAmounts(
+          quoteAmt,
+          tokenAmt,
+          row.decimals,
+          tradeQuoteDecimals,
+        );
 
         const trade: IndexedTrade = {
           id: tradeId(meta.transactionHash, meta.logIndex),

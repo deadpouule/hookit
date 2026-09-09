@@ -60,7 +60,10 @@ function summarize(store: Store, address: Address, poolId?: string | null) {
     name: row.name,
     symbol: row.symbol,
     decimals: row.decimals,
-    quoteDecimals: row.quoteDecimals,
+    quoteDecimals: poolKey
+      ? (row.markets?.find((m) => m.poolId.toLowerCase() === poolKey)?.quoteDecimals ??
+        row.quoteDecimals)
+      : row.quoteDecimals,
     totalSupply: row.totalSupply,
     creator: row.creator,
     launchedAt: row.launchedAt,

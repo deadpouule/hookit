@@ -1,12 +1,18 @@
-/** Spot quote per 1 whole token (18 decimals) from Uniswap v4 sqrtPriceX96. */
-export function quotePerToken(sqrtPriceX96: bigint, tokenIsCurrency0: boolean): string {
+/** Spot quote per 1 whole token from Uniswap v4 sqrtPriceX96 (human quote units). */
+export function quotePerToken(
+  sqrtPriceX96: bigint,
+  tokenIsCurrency0: boolean,
+  tokenDecimals = 18,
+  quoteDecimals = 18,
+): string {
   if (sqrtPriceX96 === 0n) return "0";
   const Q96 = 2n ** 96n;
   const priceX192 = sqrtPriceX96 * sqrtPriceX96;
   const ratio = Number(priceX192) / Number(Q96 * Q96);
   if (ratio <= 0) return "0";
-  const spot = tokenIsCurrency0 ? ratio : 1 / ratio;
-  return spot.toString();
+  const rawSpot = tokenIsCurrency0 ? ratio : 1 / ratio;
+  const scale = 10 ** (tokenDecimals - quoteDecimals);
+  return (rawSpot * scale).toString();
 }
 
 /** Quote per whole token from raw wei amounts (bonding curve trades). */

@@ -7,7 +7,7 @@ import {
 import type { PublicClient } from "viem";
 
 import { POOL_MANAGER_ADDRESS } from "@/lib/contracts/config";
-import { ethPerTokenFromSqrtPrice } from "@/lib/pool-price";
+import { quotePerTokenFromSqrtPrice } from "@/lib/pool-price";
 
 const swapEvent = parseAbiItem(
   "event Swap(bytes32 indexed id, address indexed sender, int128 amount0, int128 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick, uint24 fee)",
@@ -113,6 +113,7 @@ export async function loadSwapsForPools(
 export function statsFromSwaps(
   swaps: IndexedSwap[],
   tokenIsCurrency0: boolean,
+  quoteDecimals = 18,
 ): PoolSwapStats {
   if (swaps.length === 0) {
     return { volumeQuoteWei: BigInt(0), change24h: 0, series: [], trades: 0 };
@@ -123,7 +124,7 @@ export function statsFromSwaps(
   for (const swap of swaps) {
     const quoteDelta = tokenIsCurrency0 ? swap.amount1 : swap.amount0;
     volumeQuoteWei += abs(quoteDelta);
-    const price = ethPerTokenFromSqrtPrice(swap.sqrtPriceX96, tokenIsCurrency0);
+    const price = quotePerTokenFromSqrtPrice(swap.sqrtPriceX96, tokenIsCurrency0, 18, quoteDecimals);
     if (price > 0) series.push(price);
   }
 

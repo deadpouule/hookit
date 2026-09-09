@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import type { Address, Hex } from "viem";
 
 import type { Candle, IndexedTrade, StoreFile, StoreFileV1, TokenMarket, TokenRow } from "./config.js";
-import { compareDec, maxDec, minDec } from "./math.js";
+import { compareDec, maxDec, minDec, quotePerTokenFromAmounts } from "./math.js";
+
+const INK_USDG = "0xe343167631d89b6ffc58b88d6b7fb0228795491d";
 
 export const MAX_TRADES = 2_000;
 export const MAX_CANDLES = 5_000;
@@ -36,9 +38,74 @@ export function defaultDataDir(): string {
   return join(fileURLToPath(new URL("..", import.meta.url)), "data");
 }
 
+function quoteDecimalsForTrade(row: TokenRow, poolId?: string): number {
+  if (poolId && row.markets?.length) {
+    const market = row.markets.find((m) => m.poolId.toLowerCase() === poolId.toLowerCase());
+    if (market?.quoteDecimals) return market.quoteDecimals;
+    if (market?.quote.toLowerCase() === INK_USDG) return 6;
+  }
+  return row.quoteDecimals || 18;
+}
+
+function rebuildCandles(trades: IndexedTrade[]): Candle[] {
+  const series: Candle[] = [];
+  const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp);
+  for (const trade of sorted) {
+    const bucket = Math.floor(trade.timestamp / CANDLE_SEC) * CANDLE_SEC;
+    const last = series[series.length - 1];
+    if (!last || last.t !== bucket) {
+      series.push({
+        t: bucket,
+        o: trade.price,
+        h: trade.price,
+        l: trade.price,
+        c: trade.price,
+        vQuote: trade.quoteAmount,
+        trades: 1,
+      });
+    } else {
+      last.h = maxDec(last.h, trade.price);
+      last.l = minDec(last.l, trade.price);
+      last.c = trade.price;
+      last.vQuote = (BigInt(last.vQuote) + BigInt(trade.quoteAmount)).toString();
+      last.trades += 1;
+    }
+  }
+  return series;
+}
+
+function repairTradePrices(data: StoreFile): StoreFile {
+  for (const row of Object.values(data.tokens)) {
+    for (const trade of row.trades) {
+      if (!trade.quoteAmount || !trade.tokenAmount) continue;
+      trade.price = quotePerTokenFromAmounts(
+        BigInt(trade.quoteAmount),
+        BigInt(trade.tokenAmount),
+        row.decimals,
+        quoteDecimalsForTrade(row, trade.poolId),
+      );
+    }
+    row.candles5m = rebuildCandles(
+      row.trades.filter(
+        (t) => !t.poolId || t.poolId.toLowerCase() === row.poolId.toLowerCase(),
+      ),
+    );
+    if (row.markets?.length) {
+      row.candles5mByPool = {};
+      for (const market of row.markets) {
+        const poolId = market.poolId.toLowerCase();
+        row.candles5mByPool[poolId] = rebuildCandles(
+          row.trades.filter((t) => t.poolId?.toLowerCase() === poolId),
+        );
+      }
+    }
+  }
+  return data;
+}
+
 export function emptyStore(chainId: number): StoreFile {
   return {
-    version: 2,
+    version: 3,
     chainId,
     cursor: "0",
     updatedAt: 0,
@@ -73,13 +140,20 @@ export class Store {
     this.exclude = excludeAddresses ?? new Set();
     if (existsSync(this.path)) {
       const raw = JSON.parse(readFileSync(this.path, "utf8")) as StoreFile | StoreFileV1;
-      if (raw.version === 2) {
+      if (raw.version === 2 || raw.version === 3) {
         if (raw.chainId !== chainId) {
           throw new Error(`store chainId ${raw.chainId} != config ${chainId}`);
         }
-        this.data = raw;
+        this.data = raw.version === 3 ? raw : repairTradePrices(raw);
+        if (raw.version === 2) {
+          this.data.version = 3;
+          this.save();
+        }
       } else {
         this.data = migrateV1(raw);
+        this.data = repairTradePrices(this.data);
+        this.data.version = 3;
+        this.save();
       }
     } else {
       this.data = emptyStore(chainId);

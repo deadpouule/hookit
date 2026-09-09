@@ -219,6 +219,7 @@ export type TokenMarket = {
   tickLower: number;
   tickUpper: number;
   liquidity: string;
+  quoteDecimals?: number;
 };
 
 export type TokenRow = {
@@ -264,7 +265,7 @@ export type StoreFileV1 = {
 };
 
 export type StoreFile = {
-  version: 2;
+  version: 3;
   chainId: number;
   cursor: string;
   updatedAt: number;

@@ -135,7 +135,7 @@ export function poolTvlUsd(input: TvlInput): number {
   const quoteWei = tokenIsCurrency0 ? amount1 : amount0;
 
   // Spot: quote units per 1 whole token (avoid Number(2^192) overflow).
-  const ethPerToken = quotePerTokenFromSqrt(sqrtPriceX96, tokenIsCurrency0);
+  const ethPerToken = quotePerTokenFromSqrt(sqrtPriceX96, tokenIsCurrency0, 18, decimals);
 
   const tokens = Number(tokenWei) / 1e18;
   const quoteHuman = Number(quoteWei) / 10 ** decimals;
@@ -148,12 +148,19 @@ export function poolTvlUsd(input: TvlInput): number {
 }
 
 /** Quote-per-token from sqrtPriceX96 without materializing 2^192 as Number. */
-function quotePerTokenFromSqrt(sqrtPriceX96: bigint, tokenIsCurrency0: boolean): number {
+function quotePerTokenFromSqrt(
+  sqrtPriceX96: bigint,
+  tokenIsCurrency0: boolean,
+  tokenDecimals = 18,
+  quoteDecimals = 18,
+): number {
   if (sqrtPriceX96 === 0n) return 0;
-  // price1per0 = (sqrtP / 2^96)^2
   const sqrt = Number(sqrtPriceX96) / Number(Q96);
   if (!Number.isFinite(sqrt) || sqrt <= 0) return 0;
   const token1PerToken0 = sqrt * sqrt;
   if (!Number.isFinite(token1PerToken0) || token1PerToken0 <= 0) return 0;
-  return tokenIsCurrency0 ? token1PerToken0 : 1 / token1PerToken0;
+  const rawSpot = tokenIsCurrency0 ? token1PerToken0 : 1 / token1PerToken0;
+  const scale = 10 ** (tokenDecimals - quoteDecimals);
+  const spot = rawSpot * scale;
+  return Number.isFinite(spot) && spot > 0 ? spot : 0;
 }

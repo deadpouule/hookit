@@ -7,7 +7,7 @@ import {
 import type { PublicClient } from "viem";
 
 import { POOL_MANAGER_ADDRESS, getChainDeployment } from "@/lib/contracts/config";
-import { ethPerTokenFromSqrtPrice, stateViewAbi } from "@/lib/pool-price";
+import { quotePerTokenFromSqrtPrice, stateViewAbi } from "@/lib/pool-price";
 import { poolTvlUsd } from "@/lib/pool-tvl";
 import {
   marketCapUsdForPool,
@@ -147,7 +147,12 @@ export async function fetchOnChainLive(
   if (slot0) {
     const [sqrt] = slot0 as readonly [bigint, number, number, number];
     sqrtPriceX96 = sqrt;
-    spotEth = ethPerTokenFromSqrtPrice(sqrt, tokenIs0);
+    spotEth = quotePerTokenFromSqrtPrice(
+      sqrt,
+      tokenIs0,
+      18,
+      quoteDecimalsForKind(quoteKind),
+    );
   }
 
   const marketCap =
@@ -233,7 +238,12 @@ export async function fetchOnChainLive(
     const quoteDelta = tokenIs0 ? args.amount1 : args.amount0;
     const tokenDelta = tokenIs0 ? args.amount0 : args.amount1;
     volumeQuoteWei += abs(quoteDelta);
-    const price = ethPerTokenFromSqrtPrice(args.sqrtPriceX96, tokenIs0);
+    const price = quotePerTokenFromSqrtPrice(
+      args.sqrtPriceX96,
+      tokenIs0,
+      18,
+      quoteDecimalsForKind(quoteKind),
+    );
     const mcap =
       price > 0
         ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)

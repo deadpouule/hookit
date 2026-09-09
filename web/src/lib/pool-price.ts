@@ -30,6 +30,28 @@ export const stateViewAbi = [
 const Q96 = BigInt(2) ** BigInt(96);
 
 /**
+ * Spot quote per 1 whole token from sqrtPriceX96 (human quote units).
+ * Adjusts for token/quote decimal mismatch (e.g. 18-dec token vs 6-dec USDG).
+ */
+export function quotePerTokenFromSqrtPrice(
+  sqrtPriceX96: bigint,
+  tokenIsCurrency0 = false,
+  tokenDecimals = 18,
+  quoteDecimals = 18,
+): number {
+  if (sqrtPriceX96 === BigInt(0)) return 0;
+
+  const priceX192 = sqrtPriceX96 * sqrtPriceX96;
+  const rawRatio = Number(priceX192) / Number(Q96 * Q96);
+  if (!Number.isFinite(rawRatio) || rawRatio <= 0) return 0;
+
+  const rawSpot = tokenIsCurrency0 ? rawRatio : 1 / rawRatio;
+  const scale = 10 ** (tokenDecimals - quoteDecimals);
+  const spot = rawSpot * scale;
+  return Number.isFinite(spot) && spot > 0 ? spot : 0;
+}
+
+/**
  * Spot price in ETH per 1 whole token (18 decimals).
  * Hookit ETH launches use ETH as currency0 and token as currency1.
  */
@@ -37,15 +59,7 @@ export function ethPerTokenFromSqrtPrice(
   sqrtPriceX96: bigint,
   tokenIsCurrency0 = false,
 ): number {
-  if (sqrtPriceX96 === BigInt(0)) return 0;
-
-  const priceX192 = sqrtPriceX96 * sqrtPriceX96;
-  const tokenPerEth = Number(priceX192) / Number(Q96 * Q96);
-
-  if (tokenIsCurrency0) {
-    return tokenPerEth > 0 ? tokenPerEth : 0;
-  }
-  return tokenPerEth > 0 ? 1 / tokenPerEth : 0;
+  return quotePerTokenFromSqrtPrice(sqrtPriceX96, tokenIsCurrency0, 18, 18);
 }
 
 export function marketCapEth(priceEth: number, totalSupply = 1_000_000_000): number {
