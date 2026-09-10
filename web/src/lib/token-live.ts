@@ -32,6 +32,8 @@ export interface LiveCandle {
   c: number;
   /** Unix seconds — present when sourced from indexer OHLC. */
   t?: number;
+  /** Quote volume in USD for the bucket (indexer). */
+  v?: number;
 }
 
 export interface LiveTokenState {

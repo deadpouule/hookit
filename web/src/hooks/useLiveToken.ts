@@ -103,7 +103,7 @@ export function useLiveToken(pool: TokenPool) {
     ethUsd,
   ]);
 
-  const indexerQuery = useTokenIndexerData(address, { poolId: pool.poolId });
+  const indexerQuery = useTokenIndexerData(address, { poolId: pool.poolId, candlesLimit: 2_000 });
 
   const onchainQuery = useQuery({
     queryKey: ["onchain-live", address, pool.poolId],
@@ -154,13 +154,22 @@ export function useLiveToken(pool: TokenPool) {
     const candleScale = candleFdvScale(pool, eth, quoteUsd, pool.launchMcapQuoteHuman);
     let mappedCandles: LiveCandle[] =
       candles.length > 0
-        ? candles.map((c) => ({
-            o: Number(c.o) * candleScale,
-            h: Number(c.h) * candleScale,
-            l: Number(c.l) * candleScale,
-            c: Number(c.c) * candleScale,
-            t: typeof c.t === "number" ? c.t : undefined,
-          }))
+        ? candles.map((c) => {
+            let volumeUsd = 0;
+            try {
+              volumeUsd = quoteVolumeUsd(BigInt(c.vQuote || "0"), pool, eth, quoteUsd);
+            } catch {
+              volumeUsd = 0;
+            }
+            return {
+              o: Number(c.o) * candleScale,
+              h: Number(c.h) * candleScale,
+              l: Number(c.l) * candleScale,
+              c: Number(c.c) * candleScale,
+              t: typeof c.t === "number" ? c.t : undefined,
+              v: volumeUsd,
+            };
+          })
         : mcap > 0
           ? [{ o: mcap, h: mcap, l: mcap, c: mcap }]
           : [];
