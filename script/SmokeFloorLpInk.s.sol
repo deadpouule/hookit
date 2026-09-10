@@ -17,6 +17,10 @@ import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ModuleMatrix} from "../test/utils/ModuleMatrix.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
+import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 
 /// @notice Ink smoke: Master launch with Backed Floor + LP Donate, then a quote buy.
 /// @dev ETH pair by default (donate in ETH). `FLOOR_QUOTE=aapl` uses wAAPLx.
@@ -26,6 +30,71 @@ contract SmokeFloorLpInkScript is Script {
 
     function run() public {
         require(block.chainid == QuotronStockQuotes.INK_MAINNET, "Ink only");
+        string memory phase = vm.envOr("FLOOR_PHASE", string("launch"));
+        if (keccak256(bytes(phase)) == keccak256("lp")) {
+            _lpCollect();
+            return;
+        }
+        _launchAndBuy();
+    }
+
+    function _lpCollect() internal {
+        uint256 pk = vm.envUint("PRIVATE_KEY");
+        address user = vm.addr(pk);
+        LaunchFactory factory = LaunchFactory(payable(vm.envAddress("LAUNCH_FACTORY")));
+        HookitSwapRouter router = HookitSwapRouter(payable(vm.envAddress("HOOKIT_SWAP_ROUTER")));
+        uint256 launchId = vm.envUint("FLOOR_LAUNCH_ID");
+        address aapl = QuotronStockQuotes.wAAPLx;
+        PoolKey memory key = factory.poolKeyOf(launchId);
+        address token = Currency.unwrap(key.currency0);
+        IPoolManager manager = IPoolManager(UniswapV4Deployments.get(block.chainid).poolManager);
+
+        uint256 tokenBefore = IERC20(token).balanceOf(user);
+        uint256 aaplBefore = IERC20(aapl).balanceOf(user);
+        console.log("tokenBefore", tokenBefore);
+        console.log("aaplBefore", aaplBefore);
+
+        // Narrow in-range band (not the locked seed range) so we can later remove and collect donate.
+        int24 tickLower = -179760;
+        int24 tickUpper = -179700;
+        int256 liq = int256(uint256(1e18));
+
+        vm.startBroadcast(pk);
+        PoolModifyLiquidityTest liqRouter = new PoolModifyLiquidityTest(manager);
+        IERC20(token).approve(address(liqRouter), type(uint256).max);
+        IERC20(aapl).approve(address(liqRouter), type(uint256).max);
+
+        liqRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: liq, salt: bytes32(0)}),
+            ""
+        );
+
+        uint256 aaplAfterMint = IERC20(aapl).balanceOf(user);
+        uint256 buyAapl = vm.envOr("FLOOR_BUY_AAPL", uint256(0.002 ether));
+        if (IERC20(aapl).balanceOf(user) >= buyAapl) {
+            IERC20(aapl).approve(address(router), buyAapl);
+            bool zeroForOne = _buyZeroForOne(key, token);
+            uint160 buyLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
+            router.swapExactIn(key, zeroForOne, buyAapl, 1, buyLimit);
+        }
+
+        liqRouter.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: -liq, salt: bytes32(0)}),
+            ""
+        );
+        vm.stopBroadcast();
+
+        uint256 tokenAfter = IERC20(token).balanceOf(user);
+        uint256 aaplAfter = IERC20(aapl).balanceOf(user);
+        console.log("aaplAfterMint", aaplAfterMint);
+        console.log("tokenAfter", tokenAfter);
+        console.log("aaplAfter", aaplAfter);
+        console.log("FLOOR_LP_COLLECT_OK");
+    }
+
+    function _launchAndBuy() internal {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address user = vm.addr(pk);
         LaunchFactory factory = LaunchFactory(payable(vm.envAddress("LAUNCH_FACTORY")));
