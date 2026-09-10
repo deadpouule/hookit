@@ -78,6 +78,43 @@ test("floorPremiumPct is (spot - floor) / floor — 1M vs 100k mcap is +900%", (
   assert.ok(tiny != null && Math.abs(tiny - 900) < 1e-6);
 });
 
+test("floorPremiumPct hides dust-vault junk vs launch FDV", () => {
+  // FLPD: ~$5k spot vs ~$0.01 vault → 31M% would be wrong to show.
+  assert.equal(floorPremiumPct(1.6e-8, 3e-14), null);
+  assert.equal(floorPremiumPct(5e-6, 1.6e-11), null);
+  assert.equal(floorPremiumPct(1, 0.009), null);
+});
+
+test("backed-floor chip omits junk premium on a dust vault", () => {
+  const modules = { floorAllocation: 50 } as LaunchModules;
+  const line = moduleLiveStatLine(
+    "backed-floor",
+    modules,
+    {
+      floorPriceHuman: 3e-14,
+      spotPriceHuman: 1.6e-8,
+      floorReserveHuman: 0.00003,
+      airdropPendingHuman: null,
+      airdropSecondsLeft: null,
+      airdropLastAtSec: null,
+      airdropEpochSec: null,
+      burnedPct: null,
+      deepenLpsPendingHuman: null,
+      buybackTotalHuman: null,
+      buybackClaimableHuman: null,
+      buybackClaimedHuman: null,
+      buybackVestSecondsLeft: null,
+      quoteLabel: "AAPLx",
+    },
+    {},
+  );
+  assert.equal(
+    line,
+    `50% · Vault ${formatCompactQuoteAmount(0.00003)} AAPLx · Floor ${formatCompactQuoteAmount(3e-14)} AAPLx`,
+  );
+  assert.ok(line && !line.includes("prem"));
+});
+
 test("formatFloorPremiumPct", () => {
   assert.equal(formatFloorPremiumPct(900), "+900% prem");
   assert.equal(formatFloorPremiumPct(12.4), "+12% prem");
@@ -100,7 +137,7 @@ test("backed-floor chip includes premium vs DEX spot", () => {
       airdropLastAtSec: null,
       airdropEpochSec: null,
       burnedPct: null,
-      lpDonatePendingHuman: null,
+      deepenLpsPendingHuman: null,
       buybackTotalHuman: null,
       buybackClaimableHuman: null,
       buybackClaimedHuman: null,
@@ -110,4 +147,32 @@ test("backed-floor chip includes premium vs DEX spot", () => {
     {},
   );
   assert.equal(line, `40% · Vault 0.1 ETH · Floor ${formatCompactQuoteAmount(1e-9)} ETH · +900% prem`);
+});
+
+test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
+  const modules = { buybackVestingMcapUsd: 10_000_000 } as LaunchModules;
+  const empty = {
+    floorPriceHuman: null,
+    spotPriceHuman: null,
+    floorReserveHuman: null,
+    airdropPendingHuman: null,
+    airdropSecondsLeft: null,
+    airdropLastAtSec: null,
+    airdropEpochSec: null,
+    burnedPct: null,
+    deepenLpsPendingHuman: null,
+    buybackTotalHuman: 0,
+    buybackClaimableHuman: 0,
+    buybackClaimedHuman: 0,
+    buybackVestSecondsLeft: 365 * 5 * 86_400,
+    quoteLabel: "ETH",
+  };
+  assert.equal(
+    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 5_000_000 }),
+    "0 ETH · $5.00M / $10.00M FDV",
+  );
+  assert.equal(
+    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 12_000_000 }),
+    "0 ETH · hit $10.00M FDV",
+  );
 });

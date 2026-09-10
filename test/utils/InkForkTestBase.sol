@@ -191,7 +191,7 @@ abstract contract InkForkTestBase is Test {
             dynamicFees: false,
             buybackVesting: false,
             autoBurn: false,
-            lpDonate: false,
+            deepenLps: false,
             holderAirdrop: false,
             creatorShareToHook: false,
             hookTaxBps: 0,
@@ -201,7 +201,7 @@ abstract contract InkForkTestBase is Test {
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
-            lpDonateBps: 0,
+            deepenLpsBps: 0,
             holderAirdropBps: 0,
             buybackVestingDurationSeconds: 0,
             dynamicFeeMinTotalBps: 0,
@@ -242,7 +242,8 @@ abstract contract InkForkTestBase is Test {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         r.key = factory.poolKeyOf(r.launchId);
@@ -268,7 +269,8 @@ abstract contract InkForkTestBase is Test {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         r.key = factory.poolKeyOf(r.launchId);
@@ -354,7 +356,7 @@ abstract contract InkForkTestBase is Test {
 
     /// @dev Buy size that respects max-tx / max-wallet while exercising fee-route modules on fork.
     function _smokeBuyAmountForQuote(BitmaskConfig.Modules memory m, Currency quote) internal view returns (uint256) {
-        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        bool needsVolume = m.backedFloor || m.autoBurn || m.deepenLps || m.buybackVesting || m.holderAirdrop;
         if (quote.isAddressZero()) {
             if (m.maxWallet) return 0.008 ether;
             if (m.maxTx) return needsVolume ? 0.002 ether : 0.001 ether;
@@ -391,9 +393,8 @@ abstract contract InkForkTestBase is Test {
         LaunchResult memory l,
         BitmaskConfig.Modules memory m,
         uint256 supplyBefore,
-        uint256 g0Before,
-        uint256 g1Before
-    ) internal {
+        uint128 seedLiq
+    ) internal view {
         // Max-wallet / anti-MEV caps swap patterns — skip volume-heavy module checks.
         if (m.maxWallet || m.antiMev) return;
 
@@ -408,11 +409,8 @@ abstract contract InkForkTestBase is Test {
                 supplyAfter < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "autoBurn should burn or queue"
             );
         }
-        if (m.lpDonate) {
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(
-                g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0, "lpDonate fee growth"
-            );
+        if (m.deepenLps) {
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingDeepenLps(l.poolId) > 0, "lp deepen");
         }
     }
 
@@ -422,9 +420,9 @@ abstract contract InkForkTestBase is Test {
         LaunchResult memory l = _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, name, symbol);
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+        uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
-        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        bool needsVolume = m.backedFloor || m.autoBurn || m.deepenLps || m.buybackVesting || m.holderAirdrop;
         uint256 buyIn = _smokeBuyAmountForQuote(m, quote);
         _routerBuy(trader, l.key, l.token, buyIn);
         assertGt(_tokenBalance(l.token, trader), 0);
@@ -437,7 +435,7 @@ abstract contract InkForkTestBase is Test {
         }
 
         _safeSell(trader, l.key, l.token, m, 1, 10);
-        _assertModuleSmokeEffects(l, m, supplyBefore, g0Before, g1Before);
+        _assertModuleSmokeEffects(l, m, supplyBefore, seedLiq);
     }
 
     function _claimCreatorFees(address user, Currency quote) internal {

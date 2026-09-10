@@ -146,7 +146,8 @@ contract ForkCompositeSwapTest is Test {
                 bitmask: BitmaskConfig.pack(m),
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 
@@ -198,7 +199,8 @@ contract ForkCompositeSwapTest is Test {
                 bitmask: BitmaskConfig.pack(m),
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

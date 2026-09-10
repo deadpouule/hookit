@@ -187,7 +187,8 @@ contract MultiPairArbTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         key0 = factory.poolKeyOfMarket(launchId, 0);

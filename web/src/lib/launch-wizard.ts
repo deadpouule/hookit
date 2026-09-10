@@ -27,7 +27,7 @@ export const MASTER_WIZARD_STEP_INTRO =
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
   2: ["anti-mev", "anti-snipe", "max-tx", "max-wallet"],
   3: ["dynamic-fees", "creator-share-to-hook"],
-  4: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "lp-donate"],
+  4: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps"],
 };
 
 export function masterHookWizardStep(hookId: MasterHookId | "fixed-fee"): 2 | 3 | 4 {

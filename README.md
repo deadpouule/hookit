@@ -2,7 +2,7 @@
 
 Permissionless Uniswap v4 launchpad on **Ink mainnet (57073)** with two rails:
 
-1. **Master (Hookit)** — atomic launch into a v4 pool with `MasterLaunchHook` modules (anti-snipe, floor, anti-MEV, LP donate, auto-burn, …).
+1. **Master (Hookit)** — atomic launch into a v4 pool with `MasterLaunchHook` modules (anti-snipe, floor, anti-MEV, Deepen LPs, auto-burn, …).
 2. **Classic (bonding)** — constant-product curve → graduate at **4.2 ETH** (or USDG/wStock equivalent) into a fee=0 v4 pool + `GraduatedFeeHook` + permanent `LiquidityLocker`.
 
 There is no Hookit-seeded ETH/USDG LP. Protocol fees keep **ETH as ETH** for the buyback pot; **wStock** fees convert to **USDG** on Quotrons and are sent to the buyback wallet (`distributeToBuyback`). See `QuotronsInk.sol` / `FeeEthRail.stockToUsdg`.

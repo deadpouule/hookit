@@ -61,6 +61,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         IHooks customHook;
         uint256 devBuyQuoteIn;
         uint256 minDevBuyTokensOut;
+        /// Packed buyback + airdrop mcap vest (see `McapVest`). 0 = time / epoch only.
+        uint256 vestPacked;
     }
 
     struct MarketInput {
@@ -81,6 +83,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
         uint8 floorQuoteIndex;
         uint256 devBuyQuoteIn;
         uint256 minDevBuyTokensOut;
+        /// Packed buyback + airdrop mcap vest (see `McapVest`). 0 = time / epoch only.
+        uint256 vestPacked;
     }
 
     struct LaunchInfo {
@@ -106,6 +110,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     mapping(uint256 => LaunchInfo) public launches;
     mapping(address => uint256) public tokenLaunchId;
     mapping(uint256 => uint256) public launchBitmasks;
+    mapping(uint256 => uint256) public launchVestPacked;
     mapping(uint256 => uint64) public launchedAt;
     mapping(uint256 => Currency) public launchQuote;
     mapping(uint256 => int24) public launchTickSpacing;
@@ -351,7 +356,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         );
 
         if (!useCustom) {
-            _prepareMasterLaunch(plan, packed, msg.sender, token);
+            _prepareMasterLaunch(plan, packed, params.vestPacked, msg.sender, token);
         }
 
         IERC20Minimal(token).approve(address(poolManager), params.totalSupply);
@@ -359,7 +364,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         launchId = ++launchCount;
         poolId = plan.key.toId();
-        _recordSingleLaunch(launchId, token, msg.sender, hooks, useCustom, plan, packed, spacing, fee, params.quote);
+        _recordSingleLaunch(
+            launchId, token, msg.sender, hooks, useCustom, plan, packed, params.vestPacked, spacing, fee, params.quote
+        );
 
         emit LaunchConfigured(launchId, packed, params.quote, spacing, fee);
         emit TokenLaunched(
@@ -426,7 +433,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
         if (!useCustom) {
             for (uint256 i; i < marketLen; ++i) {
-                _prepareMasterLaunch(plans[i], packed, msg.sender, token);
+                _prepareMasterLaunch(plans[i], packed, params.vestPacked, msg.sender, token);
             }
         }
 
@@ -448,6 +455,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         });
         tokenLaunchId[token] = launchId;
         launchBitmasks[launchId] = packed;
+        launchVestPacked[launchId] = params.vestPacked;
         launchedAt[launchId] = uint64(block.timestamp);
         launchQuote[launchId] = params.markets[0].quote;
         launchTickSpacing[launchId] = spacing;
@@ -578,13 +586,18 @@ contract LaunchFactory is Owned, IUnlockCallback {
         }
     }
 
-    function _prepareMasterLaunch(LaunchFactoryLib.PoolPlan memory plan, uint256 packed, address creator, address token)
-        internal
-    {
+    function _prepareMasterLaunch(
+        LaunchFactoryLib.PoolPlan memory plan,
+        uint256 packed,
+        uint256 vest,
+        address creator,
+        address token
+    ) internal {
         masterHook.prepareLaunch(
             IMasterLaunchHook.PrepareParams({
                 key: plan.key,
                 bitmask: packed,
+                vestPacked: vest,
                 creator: creator,
                 token: token,
                 tickLower: plan.tickLower,
@@ -615,6 +628,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         bool useCustom,
         LaunchFactoryLib.PoolPlan memory plan,
         uint256 packed,
+        uint256 vest,
         int24 spacing,
         uint24 fee,
         Currency quote
@@ -631,6 +645,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         });
         tokenLaunchId[token] = launchId;
         launchBitmasks[launchId] = packed;
+        launchVestPacked[launchId] = vest;
         launchedAt[launchId] = uint64(block.timestamp);
         launchQuote[launchId] = quote;
         launchTickSpacing[launchId] = spacing;

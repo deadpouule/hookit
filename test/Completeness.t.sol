@@ -197,7 +197,8 @@ contract CompletenessTest is LaunchpadTestBase {
                 bitmask: 0,
                 customHook: IHooks(address(customHook)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 
@@ -235,7 +236,8 @@ contract CompletenessTest is LaunchpadTestBase {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

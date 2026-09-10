@@ -218,7 +218,8 @@ contract DryRunInkScript is Script {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         vm.stopBroadcast();

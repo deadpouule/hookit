@@ -208,7 +208,7 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
   hooks: [
     {
       type: "p",
-      text: "MasterLaunchHook packs modules into a uint256 bitmask (anti-snipe, backed floor, anti-MEV, max tx/wallet, auto-burn, LP donate, hook tax). Custom hooks must satisfy Uniswap v4 flag bits mined into the CREATE2 address.",
+      text: "MasterLaunchHook packs modules into a uint256 bitmask (anti-snipe, backed floor, anti-MEV, max tx/wallet, auto-burn, Deepen LPs, hook tax). Custom hooks must satisfy Uniswap v4 flag bits mined into the CREATE2 address.",
     },
   ],
   network: [

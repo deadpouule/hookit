@@ -85,7 +85,7 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             dynamicFees: false,
             buybackVesting: false,
             autoBurn: false,
-            lpDonate: false,
+            deepenLps: false,
             holderAirdrop: false,
             creatorShareToHook: false,
             hookTaxBps: 0,
@@ -95,7 +95,7 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
-            lpDonateBps: 0,
+            deepenLpsBps: 0,
             holderAirdropBps: 0,
             buybackVestingDurationSeconds: 0,
             dynamicFeeMinTotalBps: 0,
@@ -122,7 +122,8 @@ abstract contract LaunchpadTestBase is Test, Deployers {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         key = factory.poolKeyOf(launchId);
