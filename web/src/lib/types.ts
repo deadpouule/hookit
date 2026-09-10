@@ -38,16 +38,32 @@ export interface LaunchModules {
   buybackVesting?: boolean;
   /** Linear vest duration when buyback vesting is on (days). */
   buybackVestingDurationDays?: number;
+  /**
+   * Optional USD fully-diluted mcap that unlocks creator vest.
+   * 0 / omitted = time vest only.
+   */
+  buybackVestingMcapUsd?: number;
+  /** `all` = full unlock at `buybackVestingMcapUsd`. `steps` = % per mcap rung. */
+  buybackVestingUnlockMode?: "all" | "steps";
+  /** Percents for the 6 buyback mcap rungs (must sum to 100 when mode is steps). */
+  buybackVestingStepPct?: number[];
   autoBurn: boolean;
   autoBurnPct: number;
-  lpDonate: boolean;
-  lpDonatePct: number;
+  deepenLps: boolean;
+  deepenLpsPct: number;
   /** Quote-fee share accrued for periodic holder airdrops (Master). */
   holderAirdrop: boolean;
   /** Percent of hook pot routed to HolderAirdropVault (share of 100% with other sinks). */
   holderAirdropPct: number;
   /** Airdrop epoch duration in seconds (launcher picks at launch). */
   holderAirdropEpochSeconds?: number;
+  /**
+   * Optional USD FDV that starts unlocking holder airdrops.
+   * 0 / omitted = epoch payout of the full pot.
+   */
+  holderAirdropMcapUsd?: number;
+  holderAirdropUnlockMode?: "all" | "steps";
+  holderAirdropStepPct?: number[];
   /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
 }
@@ -117,7 +133,7 @@ export interface TokenPool {
     dynamicFees?: boolean;
     buybackVesting?: boolean;
     autoBurn?: boolean;
-    lpDonate?: boolean;
+    deepenLps?: boolean;
     holderAirdrop?: boolean;
     creatorShareToHook?: boolean;
     customHook: boolean;

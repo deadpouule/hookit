@@ -232,12 +232,12 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "03",
               title: "Route the fee pool",
-              text: "Hook tax (if any) funds Master modules (floor, auto-burn, LP donate, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol — modules never touch that split.",
+              text: "Hook tax (if any) funds Master modules (floor, auto-burn, Deepen LPs, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol — modules never touch that split.",
             },
             {
               num: "04",
               title: "After swap",
-              text: "Runs pending auto-burn (buy + burn launch token) and LP donate if those modules left a balance to process.",
+              text: "Runs pending auto-burn (buy + burn launch token) and Deepen LPs if those modules left a balance to process.",
             },
           ],
         },
@@ -410,7 +410,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Hook tax (optional, Master)",
-              text: `Extra permanent fee (0–${MAX_HOOK_TAX_BPS / 100}% so base + tax ≤ 10%). Replaces the old creator tax: this cut funds Master modules (floor / burn / donate / airdrop). Unallocated → protocol.`,
+              text: `Extra permanent fee (0–${MAX_HOOK_TAX_BPS / 100}% so base + tax ≤ 10%). Replaces the old creator tax: this cut funds Master modules (floor / burn / deepen / airdrop). Unallocated → protocol.`,
             },
             {
               term: "Anti-Snipe (optional, Master)",
@@ -438,7 +438,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "03",
               title: "Module cuts",
-              text: "Of the hook pot (hook tax ± creator share), optional % go to floor, auto-burn, LP donate, and/or holder airdrop. Together they must equal exactly 100% when any sink is on.",
+              text: "Of the hook pot (hook tax ± creator share), optional % go to floor, auto-burn, Deepen LPs, and/or holder airdrop. Together they must equal exactly 100% when any sink is on.",
             },
             {
               num: "04",
@@ -505,7 +505,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Important limits",
           items: [
-            "Floor + auto-burn + LP donate + holder airdrop shares of the hook-tax pot must total exactly 100% — nothing left unallocated.",
+            "Floor + auto-burn + Deepen LPs + holder airdrop shares of the hook-tax pot must total exactly 100% — nothing left unallocated.",
             "One module alone gets 100%; with two or more, split however you like (e.g. 50/50, 75/25, 80/10/10).",
             "Max tx and max wallet: launcher picks between 0.1% and 2.5% of supply (fixed in the bitmask at launch).",
             "Any fee sink requires hook tax > 0.",
@@ -544,7 +544,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Permanent extra quote fee on every swap. That slice funds Master modules (floor, auto-burn, LP donate, holder airdrop). Unallocated hook tax goes to the protocol. The creator’s take stays the 70% of the separate 1% base fee.",
+          text: "Permanent extra quote fee on every swap. That slice funds Master modules (floor, auto-burn, Deepen LPs, holder airdrop). Unallocated hook tax goes to the protocol. The creator’s take stays the 70% of the separate 1% base fee.",
         },
         {
           type: "h3",
@@ -564,11 +564,11 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "LP Donate",
+          text: "Deepen LPs",
         },
         {
           type: "p",
-          text: "Routes a % of the hook-tax pot as a Uniswap v4 donate into the pool (extra quote for in-range LPs). If the pool has no in-range liquidity yet, or donate fails, the cut falls back to the floor vault.",
+          text: "Routes a % of the hook-tax pot into the launch liquidity range as extra Uniswap v4 liquidity (not a donate). Quote fees are split into token + quote at the current price when the range is active, then minted on the same ticks as the locked launch position. That thickens the book for large traders. If the mint fails, the cut stays queued for the next swap.",
         },
         {
           type: "h3",
@@ -576,7 +576,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every 15 minutes, once the window is open, a swap on the token can push the pot pro-rata to holders.",
+          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every epoch (launcher picks the minutes), a swap can push the unlocked slice pro-rata to holders.",
         },
         {
           type: "ul",
@@ -584,6 +584,7 @@ export function buildDocsSections(): DocsSection[] {
             "Pro-rata uses each holder’s balance of the launched token.",
             "System addresses (pool, hook, vaults) are excluded automatically.",
             "The holder list must cover all circulating balances or the call reverts (keeps the airdrop fair).",
+            "Optional until-mcap: keep drops locked until FDV hits a preset from $5M to $10B. Unlock all at that cliff, or by % at each rung (percents must add to 100).",
             "Token page shows pending pot and countdown when the module is on.",
             "No dedicated keeper bot — the Hookit swap path supplies the holder set from the indexer when the epoch is ready.",
           ],
@@ -594,7 +595,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault and vests linearly over the duration you pick (7 days to 5 years). Claim unlocks gradually on the token page.",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B — all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.",
         },
         {
           type: "h3",
@@ -643,10 +644,11 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "The floor is not pegged to the DEX price. Spot (and mcap) can sit far above the vault — e.g. 1M mcap vs a 100k floor is a +900% premium.",
+            "Premium % is hidden while the vault is still dust vs spot (a $5k launch FDV vs a few cents of collateral is not a +30,000,000% premium).",
             "Spot cannot sustainably trade below the floor: redeem / floor-fill is a quote bid at P_floor.",
             "Low volume → slow floor growth.",
             "Empty vault → redeem is useless until fees refill it.",
-            "Failed auto-burn / LP donate cuts can also land in the floor vault as fallback.",
+            "Failed auto-burn / Deepen LPs cuts stay queued for the next swap.",
             "Classic launches do not include backed floor unless you use a custom setup after graduation.",
           ],
         },

@@ -97,8 +97,8 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
       {routeInvalid ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
           Floor ({modules.backedFloor ? `${modules.floorAllocation}%` : "off"}) + Auto Burn (
-          {modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + LP Donate (
-          {modules.lpDonate ? `${modules.lpDonatePct}%` : "off"}) + Airdrop (
+          {modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + Deepen LPs (
+          {modules.deepenLps ? `${modules.deepenLpsPct}%` : "off"}) + Airdrop (
           {modules.holderAirdrop ? `${modules.holderAirdropPct}%` : "off"}) = {routed}%. Adjust
           sliders so the total is exactly 100% before launch.
         </p>
@@ -148,7 +148,7 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
         <ul className="mt-3 list-disc space-y-2 pl-4 text-xs leading-relaxed text-zinc-500">
           <li>
             Block order in the circuit is cosmetic. The hook always runs anti-MEV → max tx →
-            snipe tax → quote fee split (floor / auto-burn / LP donate) → max wallet.
+            snipe tax → quote fee split (floor / auto-burn / Deepen LPs) → max wallet.
           </li>
           <li>
             Anti-MEV is per-origin TSTORE in the same block, not private-mempool protection.
@@ -159,7 +159,7 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
           </li>
           <li>
             Floor fill does not catch a single-tick cross of P_floor. Allocation is a split of
-            fees, not extra buy overhead. Auto Burn and LP Donate also take a split of that
+            fees, not extra buy overhead. Auto Burn and Deepen LPs also take a split of that
             quote-fee pool (combined with floor, max 100%).
           </li>
           <li>

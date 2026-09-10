@@ -105,7 +105,7 @@ export function summarizePreviousStep(
 const NEXT_STEP_HINTS: Record<number, string> = {
   2: "Anti-MEV, anti-snipe, max tx and max wallet caps.",
   3: "Dynamic Fees, fixed hook tax, and creator share routing.",
-  4: "Burn, floor, vesting, LP donate, and holder airdrops.",
+  4: "Burn, floor, vesting, Deepen LPs, and holder airdrops.",
   5: "Final review, optional dev buy, and launch.",
 };
 

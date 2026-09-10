@@ -58,7 +58,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 
@@ -120,7 +121,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         assertTrue(TokenAddressMiner.hasBrandSuffix(token));
@@ -144,7 +146,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
     }
@@ -167,7 +170,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
     }
@@ -195,7 +199,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
     }
@@ -219,7 +224,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 1,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

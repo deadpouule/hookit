@@ -130,27 +130,14 @@ function Glyph({ id }: { id: HookId }) {
           />
         </svg>
       );
-    case "lpDonate":
+    case "deepenLps":
       return (
         <svg viewBox="0 0 24 24" className="h-[72%] w-[72%]" fill="none">
+          <path d="M2.2 5.1h4v2.15H2.2zM2.2 7.25h6.2v2.15H2.2zM2.2 9.4h8.2v2.15H2.2zM2.2 11.55h9.5v2.25H2.2zM2.2 13.8h10.3v5.1H2.2z" fill={stroke} />
           <path
-            d="M12 2.7c-1.55-1.7-4.4-.35-4.2 2.1 0 2.25 4.2 4.7 4.2 4.7s4.2-2.45 4.2-4.7C16.4 2.35 13.55 1 12 2.7Z"
-            stroke={stroke}
-            strokeWidth="1.85"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M5.15 14.15c.2-1.85 1.7-3.05 3.4-2.7 1.05.2 1.75 1.15 1.85 2.2"
-            stroke={stroke}
-            strokeWidth="1.85"
-            strokeLinecap="round"
-          />
-          <path
-            d="M5.15 14.25v3.55c0 1.9 1.5 3.4 3.45 3.4h6.15c3.2 0 5.6-2.2 5.6-5.15 0-2.1-1.5-3.55-3.5-3.55-.9 0-1.7.3-2.3.9"
-            stroke={stroke}
-            strokeWidth="1.85"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            d="M17.8 5.1h4v2.15h-4zM15.6 7.25h6.2v2.15h-6.2zM13.6 9.4h8.2v2.15h-8.2zM12.3 11.55h9.5v2.25h-9.5zM11.5 13.8h10.3v5.1H11.5z"
+            fill={stroke}
+            fillOpacity="0.42"
           />
         </svg>
       );

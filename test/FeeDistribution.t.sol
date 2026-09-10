@@ -51,7 +51,7 @@ contract FeeDistributionTest is Test {
             dynamicFees: true,
             buybackVesting: true,
             autoBurn: true,
-            lpDonate: true,
+            deepenLps: true,
             holderAirdrop: true,
             creatorShareToHook: false,
             hookTaxBps: 250,
@@ -61,7 +61,7 @@ contract FeeDistributionTest is Test {
             floorAllocationBps: 2_500,
             initialSnipeTaxBps: 4_000,
             autoBurnBps: 2_500,
-            lpDonateBps: 2_500,
+            deepenLpsBps: 2_500,
             holderAirdropBps: 2_500,
             buybackVestingDurationSeconds: uint32(180 days),
             dynamicFeeMinTotalBps: 150,
@@ -74,7 +74,7 @@ contract FeeDistributionTest is Test {
         assertTrue(out.antiSnipe);
         assertTrue(out.backedFloor);
         assertTrue(out.autoBurn);
-        assertTrue(out.lpDonate);
+        assertTrue(out.deepenLps);
         assertTrue(out.holderAirdrop);
         assertEq(out.hookTaxBps, 250);
         assertEq(out.antiSnipeDurationSeconds, 3600);
@@ -83,7 +83,7 @@ contract FeeDistributionTest is Test {
         assertEq(out.floorAllocationBps, 2_500);
         assertEq(out.initialSnipeTaxBps, 4_000);
         assertEq(out.autoBurnBps, 2_500);
-        assertEq(out.lpDonateBps, 2_500);
+        assertEq(out.deepenLpsBps, 2_500);
         assertEq(out.holderAirdropBps, 2_500);
         assertEq(out.buybackVestingDurationSeconds, 180 days);
     }
@@ -115,10 +115,10 @@ contract FeeDistributionTest is Test {
         m.hookTaxBps = 200;
         m.backedFloor = true;
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.floorAllocationBps = 5_000;
         m.autoBurnBps = 4_000;
-        m.lpDonateBps = 2_000;
+        m.deepenLpsBps = 2_000;
         vm.expectRevert(BitmaskConfig.FeeRouteTooHigh.selector);
         this.packModules(m);
     }

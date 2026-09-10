@@ -9,7 +9,7 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 
-contract AutoBurnLpDonateTest is LaunchpadTestBase {
+contract AutoBurnDeepenLpsTest is LaunchpadTestBase {
     using StateLibrary for IPoolManager;
 
     function setUp() public {
@@ -32,27 +32,28 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         assertEq(hook.pendingAutoBurn(poolId), 0);
     }
 
-    function testLpDonateAccruesFeeGrowth() public {
+    function testLpDeepenIncreasesInRangeLiquidity() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 500;
-        m.lpDonate = true;
-        m.lpDonateBps = 10_000;
+        m.deepenLps = true;
+        m.deepenLpsBps = 10_000;
         (,, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
+        uint128 seed = hook.launchState(poolId).seedLiquidity;
         buyExactIn(key, 5 ether);
-        (uint256 growth0, uint256 growth1) = manager.getFeeGrowthGlobals(poolId);
-        assertTrue(growth0 > 0 || growth1 > 0);
-        assertEq(hook.pendingLpDonate(poolId), 0);
+        uint128 inRange = manager.getLiquidity(poolId);
+        assertEq(hook.pendingDeepenLps(poolId), 0);
+        assertGt(inRange, seed);
         key;
     }
 
-    function testAutoBurnAndLpDonateTogether() public {
+    function testAutoBurnAndDeepenLpsTogether() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 400;
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.autoBurnBps = 5_000;
-        m.lpDonateBps = 5_000;
+        m.deepenLpsBps = 5_000;
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 supplyBefore = LaunchTokenLike(token).totalSupply();

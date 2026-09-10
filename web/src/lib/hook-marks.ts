@@ -10,7 +10,7 @@ export type HookId =
   | "dynamicFees"
   | "buybackVesting"
   | "autoBurn"
-  | "lpDonate"
+  | "deepenLps"
   | "creatorShareToHook"
   | "custom"
   | "quoteFee";
@@ -97,11 +97,11 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     color: "#dc2626",
     glow: "rgba(220,38,38,0.45)",
   },
-  lpDonate: {
-    id: "lpDonate",
-    label: "LP Donate",
-    short: "LP",
-    hint: "Share of fees to in-range LPs",
+  deepenLps: {
+    id: "deepenLps",
+    label: "Deepen LPs",
+    short: "Deepen",
+    hint: "Hook fees mint extra LP depth",
     color: "#10b981",
     glow: "rgba(16,185,129,0.4)",
   },
@@ -141,7 +141,7 @@ export const MASTER_HOOK_IDS: HookId[] = [
   "dynamicFees",
   "buybackVesting",
   "autoBurn",
-  "lpDonate",
+  "deepenLps",
 ];
 
 export const SHOWCASE_HOOK_IDS: HookId[] = [
@@ -164,7 +164,7 @@ export const HOOK_MARK_TO_MASTER: Partial<Record<HookId, MasterHookId>> = {
   dynamicFees: "dynamic-fees",
   buybackVesting: "buyback-vesting",
   autoBurn: "auto-burn",
-  lpDonate: "lp-donate",
+  deepenLps: "deepen-lps",
   creatorShareToHook: "creator-share-to-hook",
   quoteFee: "dynamic-fees",
 };
@@ -180,7 +180,7 @@ export const MASTER_TO_HOOK_MARK: Record<MasterHookId, HookId> = {
   "dynamic-fees": "dynamicFees",
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
-  "lp-donate": "lpDonate",
+  "deepen-lps": "deepenLps",
   "creator-share-to-hook": "creatorShareToHook",
 };
 

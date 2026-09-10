@@ -22,9 +22,9 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bits 71-94   floorAllocationBps (uint24) — % of hook tax pot
 ///      bits 95-110  initialSnipeTaxBps (uint16)
 ///      bit 111      AUTO_BURN_ENABLED
-///      bit 112      LP_DONATE_ENABLED
+///      bit 112      DEEPEN_LPS_ENABLED — Deepen LPs (fees mint extra range liquidity)
 ///      bits 113-128 autoBurnBps (uint16) — % of hook tax pot
-///      bits 129-144 lpDonateBps (uint16) — % of hook tax pot
+///      bits 129-144 deepenLpsBps (uint16) — % of hook tax pot
 ///      bit 145      HOLDER_AIRDROP_ENABLED
 ///      bits 146-161 holderAirdropBps (uint16) — % of hook pot
 ///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 70% of base into the hook pot
@@ -42,7 +42,7 @@ library BitmaskConfig {
     uint256 internal constant DYNAMIC_FEES_ENABLED = 1 << 5;
     uint256 internal constant BUYBACK_VESTING_ENABLED = 1 << 6;
     uint256 internal constant AUTO_BURN_ENABLED = 1 << 111;
-    uint256 internal constant LP_DONATE_ENABLED = 1 << 112;
+    uint256 internal constant DEEPEN_LPS_ENABLED = 1 << 112;
     uint256 internal constant HOLDER_AIRDROP_ENABLED = 1 << 145;
     uint256 internal constant CREATOR_SHARE_TO_HOOK_ENABLED = 1 << 162;
 
@@ -53,7 +53,7 @@ library BitmaskConfig {
     uint256 internal constant FLOOR_ALLOC_SHIFT = 71;
     uint256 internal constant INITIAL_SNIPE_TAX_SHIFT = 95;
     uint256 internal constant AUTO_BURN_BPS_SHIFT = 113;
-    uint256 internal constant LP_DONATE_BPS_SHIFT = 129;
+    uint256 internal constant DEEPEN_LPS_BPS_SHIFT = 129;
     uint256 internal constant HOLDER_AIRDROP_BPS_SHIFT = 146;
     uint256 internal constant BUYBACK_VESTING_DURATION_SHIFT = 163;
     uint256 internal constant DYNAMIC_FEE_MIN_TOTAL_SHIFT = 195;
@@ -74,7 +74,7 @@ library BitmaskConfig {
         bool dynamicFees;
         bool buybackVesting;
         bool autoBurn;
-        bool lpDonate;
+        bool deepenLps;
         bool holderAirdrop;
         bool creatorShareToHook;
         uint16 hookTaxBps;
@@ -84,7 +84,7 @@ library BitmaskConfig {
         uint24 floorAllocationBps;
         uint16 initialSnipeTaxBps;
         uint16 autoBurnBps;
-        uint16 lpDonateBps;
+        uint16 deepenLpsBps;
         uint16 holderAirdropBps;
         uint32 buybackVestingDurationSeconds;
         uint16 dynamicFeeMinTotalBps;
@@ -99,12 +99,12 @@ library BitmaskConfig {
             | (m.antiMev ? ANTI_MEV_COOLDOWN_ENABLED : 0) | (m.maxTx ? MAX_TX_ENABLED : 0)
             | (m.maxWallet ? MAX_WALLET_ENABLED : 0) | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0)
             | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0) | (m.autoBurn ? AUTO_BURN_ENABLED : 0)
-            | (m.lpDonate ? LP_DONATE_ENABLED : 0) | (m.holderAirdrop ? HOLDER_AIRDROP_ENABLED : 0)
+            | (m.deepenLps ? DEEPEN_LPS_ENABLED : 0) | (m.holderAirdrop ? HOLDER_AIRDROP_ENABLED : 0)
             | (m.creatorShareToHook ? CREATOR_SHARE_TO_HOOK_ENABLED : 0) | (uint256(m.hookTaxBps) << HOOK_TAX_SHIFT)
             | (uint256(m.antiSnipeDurationSeconds) << SNIPE_DURATION_SHIFT) | (uint256(m.maxTxBps) << MAX_TX_SHIFT)
             | (uint256(m.maxWalletBps) << MAX_WALLET_SHIFT) | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
             | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
-            | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT) | (uint256(m.lpDonateBps) << LP_DONATE_BPS_SHIFT)
+            | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT) | (uint256(m.deepenLpsBps) << DEEPEN_LPS_BPS_SHIFT)
             | (uint256(m.holderAirdropBps) << HOLDER_AIRDROP_BPS_SHIFT)
             | (uint256(m.buybackVestingDurationSeconds) << BUYBACK_VESTING_DURATION_SHIFT)
             | (uint256(m.dynamicFeeMinTotalBps) << DYNAMIC_FEE_MIN_TOTAL_SHIFT)
@@ -122,7 +122,7 @@ library BitmaskConfig {
         m.dynamicFees = packed & DYNAMIC_FEES_ENABLED != 0;
         m.buybackVesting = packed & BUYBACK_VESTING_ENABLED != 0;
         m.autoBurn = packed & AUTO_BURN_ENABLED != 0;
-        m.lpDonate = packed & LP_DONATE_ENABLED != 0;
+        m.deepenLps = packed & DEEPEN_LPS_ENABLED != 0;
         m.holderAirdrop = packed & HOLDER_AIRDROP_ENABLED != 0;
         m.creatorShareToHook = packed & CREATOR_SHARE_TO_HOOK_ENABLED != 0;
         m.hookTaxBps = uint16((packed >> HOOK_TAX_SHIFT) & UINT16_MASK);
@@ -132,7 +132,7 @@ library BitmaskConfig {
         m.floorAllocationBps = uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
         m.initialSnipeTaxBps = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         m.autoBurnBps = uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
-        m.lpDonateBps = uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
+        m.deepenLpsBps = uint16((packed >> DEEPEN_LPS_BPS_SHIFT) & UINT16_MASK);
         m.holderAirdropBps = uint16((packed >> HOLDER_AIRDROP_BPS_SHIFT) & UINT16_MASK);
         m.buybackVestingDurationSeconds = uint32((packed >> BUYBACK_VESTING_DURATION_SHIFT) & UINT32_MASK);
         m.dynamicFeeMinTotalBps = uint16((packed >> DYNAMIC_FEE_MIN_TOTAL_SHIFT) & UINT16_MASK);
@@ -169,8 +169,8 @@ library BitmaskConfig {
         return uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
     }
 
-    function lpDonateBps(uint256 packed) internal pure returns (uint16) {
-        return uint16((packed >> LP_DONATE_BPS_SHIFT) & UINT16_MASK);
+    function deepenLpsBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> DEEPEN_LPS_BPS_SHIFT) & UINT16_MASK);
     }
 
     function holderAirdropBps(uint256 packed) internal pure returns (uint16) {
@@ -226,7 +226,7 @@ library BitmaskConfig {
         if (m.maxWallet && m.maxWalletBps < ProtocolConstants.MIN_WALLET_BPS) revert MaxWalletTooLow();
         if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
-        if (m.lpDonateBps > ProtocolConstants.MAX_LP_DONATE_BPS) revert LpDonateTooHigh();
+        if (m.deepenLpsBps > ProtocolConstants.MAX_DEEPEN_LPS_BPS) revert DeepenLpsTooHigh();
         if (m.holderAirdropBps > ProtocolConstants.MAX_HOLDER_AIRDROP_BPS) revert HolderAirdropTooHigh();
         if (m.holderAirdrop) {
             uint32 epoch = m.holderAirdropEpochSeconds;
@@ -241,7 +241,7 @@ library BitmaskConfig {
         uint256 routed;
         if (m.backedFloor) routed += m.floorAllocationBps;
         if (m.autoBurn) routed += m.autoBurnBps;
-        if (m.lpDonate) routed += m.lpDonateBps;
+        if (m.deepenLps) routed += m.deepenLpsBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
         if (routed > ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteTooHigh();
         if (routed > 0 && routed != ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteIncomplete();
@@ -279,7 +279,7 @@ library BitmaskConfig {
     error MaxWalletTooLow();
     error FloorAllocTooHigh();
     error AutoBurnTooHigh();
-    error LpDonateTooHigh();
+    error DeepenLpsTooHigh();
     error HolderAirdropTooHigh();
     error HolderAirdropEpochTooShort();
     error HolderAirdropEpochTooLong();

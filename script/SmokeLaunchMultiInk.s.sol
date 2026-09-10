@@ -62,7 +62,8 @@ contract SmokeLaunchMultiInkScript is Script {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

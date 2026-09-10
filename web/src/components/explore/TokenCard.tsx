@@ -188,8 +188,8 @@ export function TokenCard({
           {pool.hooks.autoBurn && (
             <HookChip id="autoBurn" modules={modules} hookTaxBps={hookTaxBps} />
           )}
-          {pool.hooks.lpDonate && (
-            <HookChip id="lpDonate" modules={modules} hookTaxBps={hookTaxBps} />
+          {pool.hooks.deepenLps && (
+            <HookChip id="deepenLps" modules={modules} hookTaxBps={hookTaxBps} />
           )}
           {pool.hooks.holderAirdrop && (
             <HookChip id="holderAirdrop" modules={modules} hookTaxBps={hookTaxBps} />

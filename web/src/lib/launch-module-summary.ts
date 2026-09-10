@@ -1,4 +1,5 @@
 import { CREATOR_SHARE_BPS } from "@/lib/constants";
+import { formatCompactUsd } from "@/lib/format";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
@@ -51,6 +52,13 @@ export function moduleDetailLine(
     case "dynamic-fees":
       return formatDynamicFeeRange(modules, hookTaxBps);
     case "buyback-vesting": {
+      const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
+      if (mcapUsd > 0) {
+        if (modules.buybackVestingUnlockMode === "steps") {
+          return `Unlocks by % as FDV climbs (last rung ${formatCompactUsd(mcapUsd)})`;
+        }
+        return `Unlocks in full at ${formatCompactUsd(mcapUsd)} FDV`;
+      }
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
         ? `Creator fees unlock over ${Math.round(days / 365)} years`
@@ -58,10 +66,18 @@ export function moduleDetailLine(
     }
     case "auto-burn":
       return `${modules.autoBurnPct}% of hook fees burned`;
-    case "lp-donate":
-      return `${modules.lpDonatePct}% of hook fees → LPs`;
-    case "holder-airdrop":
+    case "deepen-lps":
+      return `${modules.deepenLpsPct}% of hook fees → extra LP depth`;
+    case "holder-airdrop": {
+      const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
+      if (mcapUsd > 0) {
+        if (modules.holderAirdropUnlockMode === "steps") {
+          return `${modules.holderAirdropPct}% of hook fees → holders, by % to ${formatCompactUsd(mcapUsd)}`;
+        }
+        return `${modules.holderAirdropPct}% of hook fees → holders until ${formatCompactUsd(mcapUsd)} FDV`;
+      }
       return `${modules.holderAirdropPct}% of hook fees → holder drops`;
+    }
     case "creator-share-to-hook": {
       const share = CREATOR_SHARE_BPS / 100;
       if (hookTaxBps > 0) {
@@ -144,9 +160,9 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "max-tx": "Caps swap size vs supply",
   "max-wallet": "Caps wallet holdings",
   "dynamic-fees": "Fees scale with LP depth used",
-  "buyback-vesting": "Creator fees vest over time",
+  "buyback-vesting": "Creator fees vest over time or until a mcap target",
   "auto-burn": "Burns tokens on swaps",
-  "lp-donate": "Rewards in-range LPs",
+  "deepen-lps": "Deepens the LP book",
   "holder-airdrop": "Drops quote to holders",
   "creator-share-to-hook": "Creator fees → hook pot",
 };
@@ -165,7 +181,7 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
-  "lp-donate": "Reward LPs",
+  "deepen-lps": "Deepen LPs",
   "holder-airdrop": "Holder airdrops",
   "creator-share-to-hook": "Fees → hook pot",
 };
@@ -189,15 +205,15 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
-    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page. Can't combine with Creator → Hook — both spend that same 70% cut.",
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook — both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
-  "lp-donate":
-    "Donates a share of hook fees to liquidity providers who are in-range at swap time. Rewards active LPs and keeps depth where it matters.",
+  "deepen-lps":
+    "Routes a share of hook fees into the launch liquidity range — swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
-    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each 15-minute epoch. Permissionless — anyone can trigger the push.",
+    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless — anyone can trigger the push.",
   "creator-share-to-hook":
-    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
+    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
   "fixed-fee":
     "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules — leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
 };
@@ -217,9 +233,9 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "max-tx": "limits trade size",
   "max-wallet": "limits wallet size",
   "dynamic-fees": "fee vs in-range LP depth",
-  "buyback-vesting": "locks creator fees over time",
+  "buyback-vesting": "locks creator fees until time or mcap",
   "auto-burn": "burns tokens on swaps",
-  "lp-donate": "rewards liquidity providers",
+  "deepen-lps": "deepens the LP book",
   "holder-airdrop": "airdrops to holders",
   "creator-share-to-hook": "feeds creator fees into hooks",
 };

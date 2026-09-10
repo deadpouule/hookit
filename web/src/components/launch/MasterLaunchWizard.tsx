@@ -162,7 +162,7 @@ export function MasterLaunchWizard() {
     if (
       (id === "backed-floor" ||
         id === "auto-burn" ||
-        id === "lp-donate" ||
+        id === "deepen-lps" ||
         id === "holder-airdrop") &&
       next
     ) {
@@ -176,7 +176,7 @@ export function MasterLaunchWizard() {
     if (
       (id === "backed-floor" ||
         id === "auto-burn" ||
-        id === "lp-donate" ||
+        id === "deepen-lps" ||
         id === "holder-airdrop") &&
       !next
     ) {

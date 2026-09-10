@@ -7,6 +7,7 @@ import {Owned} from "./base/Owned.sol";
 import {UnlockTaker} from "./base/UnlockTaker.sol";
 import {IBuybackVault} from "./interfaces/IBuybackVault.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
+import {McapVest} from "./libraries/McapVest.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 /// @title BuybackVault
@@ -28,8 +29,14 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     /// Extra streams when a multi-market launch credits a second quote.
     mapping(address => mapping(address => mapping(uint256 => Stream))) private _extra;
     mapping(address => mapping(address => address[])) private _extraCurrencies;
+    /// Packed `McapVest.Plan` for this launch token. 0 = linear time vest.
+    mapping(address => uint128) public vestSlice;
+    /// Highest observed fully-diluted USD (whole dollars) for mcap unlocks.
+    mapping(address => uint256) public highWaterFdvUsd;
 
     event OperatorSet(address indexed operator, bool allowed);
+    event VestPlanSet(address indexed launchToken, uint128 slice);
+    event FdvObserved(address indexed launchToken, uint256 fdvUsd);
     event Credited(address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount);
     event Claimed(address indexed beneficiary, address indexed launchToken, Currency indexed currency, uint256 amount);
 
@@ -53,6 +60,22 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     function setOperator(address operator, bool allowed) external onlyOwner {
         operators[operator] = allowed;
         emit OperatorSet(operator, allowed);
+    }
+
+    /// @notice Set the mcap cliff / step plan. No-op when `slice == 0` (time vest).
+    function configurePlan(address launchToken, uint128 slice) external onlyOperator {
+        if (launchToken == address(0)) revert ZeroAddress();
+        if (slice == 0) return;
+        McapVest.Plan memory p = McapVest.unpack(slice);
+        McapVest.validate(p, true);
+        vestSlice[launchToken] = slice;
+        emit VestPlanSet(launchToken, slice);
+    }
+
+    function observeFdv(address launchToken, uint256 fdvUsd) external onlyOperator {
+        if (fdvUsd <= highWaterFdvUsd[launchToken]) return;
+        highWaterFdvUsd[launchToken] = fdvUsd;
+        emit FdvObserved(launchToken, fdvUsd);
     }
 
     function credit(address beneficiary, address launchToken, Currency currency, uint256 amount, uint64 durationSeconds)
@@ -96,10 +119,10 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
     }
 
     function vestedOf(address account, address launchToken) public view returns (uint256) {
-        uint256 total = _vested(streams[account][launchToken]);
+        uint256 total = _vested(streams[account][launchToken], launchToken);
         address[] storage extras = _extraCurrencies[account][launchToken];
         for (uint256 i; i < extras.length; ++i) {
-            total += _vested(_extra[account][launchToken][Currency.wrap(extras[i]).toId()]);
+            total += _vested(_extra[account][launchToken][Currency.wrap(extras[i]).toId()], launchToken);
         }
         return total;
     }
@@ -139,20 +162,30 @@ contract BuybackVault is Owned, UnlockTaker, IBuybackVault {
         emit Credited(beneficiary, launchToken, currency, amount);
     }
 
-    function _vested(Stream storage s) private view returns (uint256) {
+    function _vested(Stream storage s, address launchToken) private view returns (uint256) {
         if (s.amount == 0 || s.start == 0) return 0;
+        uint128 slice = vestSlice[launchToken];
+        if (slice != 0) {
+            McapVest.Plan memory p = McapVest.unpack(slice);
+            if (p.kind == McapVest.KIND_CLIFF || p.kind == McapVest.KIND_STEPS) {
+                uint16 bps = McapVest.unlockedBps(p, highWaterFdvUsd[launchToken]);
+                uint256 unlocked = uint256(s.amount) * uint256(bps) / ProtocolConstants.BPS_DENOMINATOR;
+                if (unlocked <= s.claimed) return 0;
+                return unlocked - s.claimed;
+            }
+        }
         uint256 duration = s.durationSeconds == 0 ? ProtocolConstants.BUYBACK_VESTING_DURATION : s.durationSeconds;
         uint256 elapsed = block.timestamp - uint256(s.start);
-        uint256 unlocked = elapsed >= duration ? uint256(s.amount) : (uint256(s.amount) * elapsed) / duration;
-        if (unlocked <= s.claimed) return 0;
-        return unlocked - s.claimed;
+        uint256 unlockedTime = elapsed >= duration ? uint256(s.amount) : (uint256(s.amount) * elapsed) / duration;
+        if (unlockedTime <= s.claimed) return 0;
+        return unlockedTime - s.claimed;
     }
 
     function _payoutStream(Stream storage s, address beneficiary, address launchToken)
         private
         returns (uint256 vested)
     {
-        vested = _vested(s);
+        vested = _vested(s, launchToken);
         if (vested == 0) return 0;
         s.claimed += uint128(vested);
 

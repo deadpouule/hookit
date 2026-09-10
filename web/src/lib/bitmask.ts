@@ -15,7 +15,7 @@ const FLAG_MAX_WALLET = BigInt(1) << BigInt(4);
 const FLAG_DYNAMIC_FEES = BigInt(1) << BigInt(5);
 const FLAG_BUYBACK_VESTING = BigInt(1) << BigInt(6);
 const FLAG_AUTO_BURN = BigInt(1) << BigInt(111);
-const FLAG_LP_DONATE = BigInt(1) << BigInt(112);
+const FLAG_DEEPEN_LPS = BigInt(1) << BigInt(112);
 const FLAG_HOLDER_AIRDROP = BigInt(1) << BigInt(145);
 const FLAG_CREATOR_SHARE_TO_HOOK = BigInt(1) << BigInt(162);
 
@@ -26,7 +26,7 @@ const SHIFT_MAX_WALLET = BigInt(55);
 const SHIFT_FLOOR_ALLOC = BigInt(71);
 const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
-const SHIFT_LP_DONATE_BPS = BigInt(129);
+const SHIFT_DEEPEN_LPS_BPS = BigInt(129);
 const SHIFT_HOLDER_AIRDROP_BPS = BigInt(146);
 const SHIFT_BUYBACK_VESTING_DURATION = BigInt(163);
 const SHIFT_DYNAMIC_FEE_MIN_TOTAL = BigInt(195);
@@ -90,28 +90,28 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
 
   const floorAllocationBps = BigInt(modules.floorAllocation * 100);
   const autoBurnBps = BigInt(modules.autoBurnPct * 100);
-  const lpDonateBps = BigInt(modules.lpDonatePct * 100);
+  const deepenLpsBps = BigInt(modules.deepenLpsPct * 100);
   const holderAirdropBps = BigInt(modules.holderAirdropPct * 100);
 
   let routed = 0;
   if (modules.backedFloor) routed += modules.floorAllocation;
   if (modules.autoBurn) routed += modules.autoBurnPct;
-  if (modules.lpDonate) routed += modules.lpDonatePct;
+  if (modules.deepenLps) routed += modules.deepenLpsPct;
   if (modules.holderAirdrop) routed += modules.holderAirdropPct;
   if (routed > 100) {
-    throw new Error("Floor + Auto Burn + LP Donate + Holder Airdrop cannot exceed 100% of hook tax");
+    throw new Error("Floor + Auto Burn + Deepen LPs + Holder Airdrop cannot exceed 100% of hook tax");
   }
   const feeRouteCount =
     (modules.backedFloor ? 1 : 0) +
     (modules.autoBurn ? 1 : 0) +
-    (modules.lpDonate ? 1 : 0) +
+    (modules.deepenLps ? 1 : 0) +
     (modules.holderAirdrop ? 1 : 0);
   if (feeRouteCount > 0 && routed !== 100) {
     throw new Error("Fee routes must total exactly 100% of the hook tax — nothing left unallocated");
   }
   if (routed > 0 && effectiveHookTax === 0 && !modules.creatorShareToHook) {
     throw new Error(
-      "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / donate / airdrop",
+      "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / deepen LPs / airdrop",
     );
   }
 
@@ -131,7 +131,7 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.dynamicFees) packed |= FLAG_DYNAMIC_FEES;
   if (modules.buybackVesting) packed |= FLAG_BUYBACK_VESTING;
   if (modules.autoBurn) packed |= FLAG_AUTO_BURN;
-  if (modules.lpDonate) packed |= FLAG_LP_DONATE;
+  if (modules.deepenLps) packed |= FLAG_DEEPEN_LPS;
   if (modules.holderAirdrop) packed |= FLAG_HOLDER_AIRDROP;
   if (modules.creatorShareToHook) packed |= FLAG_CREATOR_SHARE_TO_HOOK;
 
@@ -142,7 +142,7 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   packed |= floorAllocationBps << SHIFT_FLOOR_ALLOC;
   packed |= initialSnipeTaxBps << SHIFT_INITIAL_SNIPE_TAX;
   packed |= autoBurnBps << SHIFT_AUTO_BURN_BPS;
-  packed |= lpDonateBps << SHIFT_LP_DONATE_BPS;
+  packed |= deepenLpsBps << SHIFT_DEEPEN_LPS_BPS;
   packed |= holderAirdropBps << SHIFT_HOLDER_AIRDROP_BPS;
   if (modules.buybackVesting) {
     const days = modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
@@ -183,7 +183,7 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const dynamicFees = (packed & FLAG_DYNAMIC_FEES) !== BigInt(0);
   const buybackVesting = (packed & FLAG_BUYBACK_VESTING) !== BigInt(0);
   const autoBurn = (packed & FLAG_AUTO_BURN) !== BigInt(0);
-  const lpDonate = (packed & FLAG_LP_DONATE) !== BigInt(0);
+  const deepenLps = (packed & FLAG_DEEPEN_LPS) !== BigInt(0);
   const holderAirdrop = (packed & FLAG_HOLDER_AIRDROP) !== BigInt(0);
   const creatorShareToHook = (packed & FLAG_CREATOR_SHARE_TO_HOOK) !== BigInt(0);
 
@@ -195,7 +195,7 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   let initialSnipeTaxBps = Number((packed >> SHIFT_INITIAL_SNIPE_TAX) & UINT16_MASK);
   if (initialSnipeTaxBps === 0 && antiSnipe) initialSnipeTaxBps = 5000;
   const autoBurnBps = Number((packed >> SHIFT_AUTO_BURN_BPS) & UINT16_MASK);
-  const lpDonateBps = Number((packed >> SHIFT_LP_DONATE_BPS) & UINT16_MASK);
+  const deepenLpsBps = Number((packed >> SHIFT_DEEPEN_LPS_BPS) & UINT16_MASK);
   const holderAirdropBps = Number((packed >> SHIFT_HOLDER_AIRDROP_BPS) & UINT16_MASK);
   const buybackVestingDurationSeconds = Number((packed >> SHIFT_BUYBACK_VESTING_DURATION) & UINT32_MASK);
   const dynamicFeeMinTotalBps = Number((packed >> SHIFT_DYNAMIC_FEE_MIN_TOTAL) & UINT16_MASK);
@@ -233,10 +233,11 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
             : undefined,
       buybackVesting,
       buybackVestingDurationDays,
+      buybackVestingMcapUsd: 0,
       autoBurn,
       autoBurnPct: autoBurnBps === 0 ? 20 : Math.max(1, Math.round(autoBurnBps / 100)),
-      lpDonate,
-      lpDonatePct: lpDonateBps === 0 ? 20 : Math.max(1, Math.round(lpDonateBps / 100)),
+      deepenLps,
+      deepenLpsPct: deepenLpsBps === 0 ? 20 : Math.max(1, Math.round(deepenLpsBps / 100)),
       holderAirdrop,
       holderAirdropPct:
         holderAirdropBps === 0 ? 50 : Math.max(1, Math.round(holderAirdropBps / 100)),
@@ -246,6 +247,7 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
           : holderAirdrop
             ? 15 * 60
             : undefined,
+      holderAirdropMcapUsd: 0,
       creatorShareToHook,
     },
   };

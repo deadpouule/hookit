@@ -209,7 +209,8 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: floorQuoteIndex,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
     }

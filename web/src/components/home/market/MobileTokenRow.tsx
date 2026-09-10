@@ -65,11 +65,9 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
         </p>
       </div>
 
-      <div className="shrink-0 text-right">
-        <p className="font-mono text-sm font-medium text-white">
-          {formatSpotUsd(spot)}
-        </p>
-        <p className={cn("mt-0.5 text-[12px] font-medium", up ? "text-emerald-400" : "text-rose-400")}>
+      <div className="mobile-token-row-quote shrink-0 text-right">
+        <p className="mobile-token-row-price">{formatSpotUsd(spot)}</p>
+        <p className={cn("mobile-token-row-chg", up ? "is-up" : "is-down")}>
           {up ? "▲" : "▼"} {formatPercent(Math.abs(token.change24h))}
         </p>
       </div>

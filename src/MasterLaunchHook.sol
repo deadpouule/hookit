@@ -27,10 +27,13 @@ interface IERC20Supply {
 }
 
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
+import {ILaunchQuotes} from "./interfaces/ILaunchQuotes.sol";
 import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {DynamicFeeMath} from "./libraries/DynamicFeeMath.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
+import {McapVest} from "./libraries/McapVest.sol";
+import {LpDeepenLib} from "./libraries/LpDeepenLib.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
@@ -41,7 +44,7 @@ import {BuybackVault} from "./BuybackVault.sol";
 
 /// @title MasterLaunchHook
 /// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV,
-///         backed floor, auto-burn (buyback + burn), LP donate, and holder quote airdrops.
+///         backed floor, auto-burn (buyback + burn), Deepen LPs, and holder quote airdrops.
 /// @dev Optional multi-pair arb: when `arbActive` and `sender == arbExecutor`, swaps pay the 1%
 ///      base fee to protocol only (no hook tax / snipe / auto-burn). Both flags default off.
 contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
@@ -67,10 +70,11 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     HolderAirdropVault public airdropVault;
 
     mapping(PoolId => uint256) public override configs;
+    mapping(PoolId => uint256) public vestPacked;
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
-    mapping(PoolId => uint256) public pendingLpDonate;
+    mapping(PoolId => uint256) public pendingDeepenLps;
     mapping(address => bool) public airdropDue;
 
     /// @notice Contract allowed to PoolManager.swap without hook tax. Default unset.
@@ -92,12 +96,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 floorAmount,
         uint256 buybackAmount,
         uint256 autoBurnAmount,
-        uint256 lpDonateAmount,
+        uint256 deepenLpsAmount,
         uint256 holderAirdropAmount
     );
     event FloorFill(PoolId indexed poolId, uint256 tokenIn, uint256 quoteOut);
     event AutoBurn(PoolId indexed poolId, uint256 quoteIn, uint256 tokenBurned);
-    event LpDonated(PoolId indexed poolId, uint256 quoteAmount);
+    event LpDeepened(PoolId indexed poolId, uint256 quoteAmount);
 
     error OnlyFactory();
     error AlreadyPrepared();
@@ -228,6 +232,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (_launchState[id].creator != address(0)) revert AlreadyPrepared();
 
         configs[id] = params.bitmask;
+        vestPacked[id] = params.vestPacked;
         _launchState[id] = LaunchState({
             creator: params.creator,
             token: params.token,
@@ -239,6 +244,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             tokenIsCurrency0: params.tokenIsCurrency0,
             initialized: false
         });
+        if (params.vestPacked != 0) {
+            uint128 buyback = McapVest.buybackSlice(params.vestPacked);
+            uint128 airdrop = McapVest.airdropSlice(params.vestPacked);
+            if (buyback != 0) buybacks.configurePlan(params.token, buyback);
+            if (airdrop != 0) airdropVault.configurePlan(params.token, airdrop);
+        }
         emit LaunchPrepared(id, params.creator, params.token, params.bitmask);
     }
 
@@ -415,23 +426,42 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         LaunchState storage st = _launchState[id];
 
         uint256 burnCut = pendingAutoBurn[id];
-        uint256 donateCut = pendingLpDonate[id];
+        uint256 deepenCut = pendingDeepenLps[id];
         if (burnCut > 0) {
             pendingAutoBurn[id] = 0;
             if (!_autoBurn(key, st, burnCut)) {
                 pendingAutoBurn[id] = burnCut;
             }
         }
-        if (donateCut > 0) {
-            pendingLpDonate[id] = 0;
-            if (!_lpDonate(key, st, donateCut)) {
-                pendingLpDonate[id] = donateCut;
+        if (deepenCut > 0) {
+            pendingDeepenLps[id] = 0;
+            if (!_deepenLp(key, st, deepenCut)) {
+                pendingDeepenLps[id] = deepenCut;
             }
         }
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
             _markAirdropDue(st.token, st.quote);
         }
+        _observeFdv(id, st);
         return (this.afterSwap.selector, 0);
+    }
+
+    function _observeFdv(PoolId id, LaunchState storage st) private {
+        if (vestPacked[id] == 0) return;
+        (uint160 sqrtPriceX96,) = _priceAndLiquidity(id, st.seedLiquidity);
+        uint256 supply = IERC20Supply(st.token).totalSupply();
+        uint256 quoteFdv = FixedPointMath.quoteFromToken(supply, sqrtPriceX96, st.tokenIsCurrency0);
+        address quote = Currency.unwrap(st.quote);
+        uint256 usdX18 = ILaunchQuotes(factory).quoteUsdPriceX18(quote);
+        uint8 dec = 18;
+        if (quote != address(0)) {
+            (, dec,,) = ILaunchQuotes(factory).quoteConfigs(quote);
+            if (dec == 0) dec = 18;
+        }
+        uint256 fdvUsd = McapVest.fdvUsdWhole(quoteFdv, usdX18, dec);
+        if (fdvUsd == 0) return;
+        buybacks.observeFdv(st.token, fdvUsd);
+        airdropVault.observeFdv(st.token, fdvUsd);
     }
 
     function _floorFill(
@@ -571,18 +601,18 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
             ? FixedPointMath.applyBps(hookPot, packed.autoBurnBps())
             : 0;
-        uint256 lpDonateCut = packed.enabled(BitmaskConfig.LP_DONATE_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.lpDonateBps())
+        uint256 deepenLpsCut = packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.deepenLpsBps())
             : 0;
         uint256 airdropCut = packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)
             ? FixedPointMath.applyBps(hookPot, packed.holderAirdropBps())
             : 0;
-        uint256 routed = floorCut + autoBurnCut + lpDonateCut + airdropCut;
+        uint256 routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut;
         if (routed > hookPot) {
             airdropCut = 0;
-            routed = floorCut + autoBurnCut + lpDonateCut;
+            routed = floorCut + autoBurnCut + deepenLpsCut;
             if (routed > hookPot) {
-                lpDonateCut = 0;
+                deepenLpsCut = 0;
                 routed = floorCut + autoBurnCut;
                 if (routed > hookPot) {
                     autoBurnCut = 0;
@@ -603,10 +633,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
 
         pendingAutoBurn[id] += autoBurnCut;
-        pendingLpDonate[id] += lpDonateCut;
+        pendingDeepenLps[id] += deepenLpsCut;
 
         emit FeesDistributed(
-            id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut, airdropCut
+            id,
+            creatorEscrowAmt + buybackAmt,
+            protocolShare,
+            floorCut,
+            buybackAmt,
+            autoBurnCut,
+            deepenLpsCut,
+            airdropCut
         );
     }
 
@@ -729,17 +766,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return tokenOut > 0;
     }
 
-    function _lpDonate(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
-        if (poolManager.getLiquidity(key.toId()) == 0) {
-            return false;
-        }
-        uint256 amount0 = st.tokenIsCurrency0 ? 0 : quoteAmount;
-        uint256 amount1 = st.tokenIsCurrency0 ? quoteAmount : 0;
-        try poolManager.donate(key, amount0, amount1, "") {
-            st.quote.settle(poolManager, address(this), quoteAmount, true);
-            emit LpDonated(key.toId(), quoteAmount);
+    function _deepenLp(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
+        _setFeeAction(true);
+        try LpDeepenLib.deepen(
+            poolManager, key, st.quote, st.tokenIsCurrency0, st.tickLower, st.tickUpper, quoteAmount
+        ) {
+            _setFeeAction(false);
+            emit LpDeepened(key.toId(), quoteAmount);
             return true;
         } catch {
+            _setFeeAction(false);
             return false;
         }
     }

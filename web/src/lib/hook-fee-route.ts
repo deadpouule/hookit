@@ -1,12 +1,12 @@
 import type { LaunchModules } from "@/lib/types";
 
 /** Percent fields that split the hook-tax pot (must sum to 100 when multiple are on). */
-export type FeeRouteKey = "floorAllocation" | "autoBurnPct" | "lpDonatePct" | "holderAirdropPct";
+export type FeeRouteKey = "floorAllocation" | "autoBurnPct" | "deepenLpsPct" | "holderAirdropPct";
 
 const FEE_ROUTE_KEYS: FeeRouteKey[] = [
   "floorAllocation",
   "autoBurnPct",
-  "lpDonatePct",
+  "deepenLpsPct",
   "holderAirdropPct",
 ];
 
@@ -20,8 +20,8 @@ export function feeRouteEnabled(modules: LaunchModules, key: FeeRouteKey): boole
       return modules.backedFloor;
     case "autoBurnPct":
       return modules.autoBurn;
-    case "lpDonatePct":
-      return modules.lpDonate;
+    case "deepenLpsPct":
+      return modules.deepenLps;
     case "holderAirdropPct":
       return modules.holderAirdrop;
   }

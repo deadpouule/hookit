@@ -98,7 +98,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             LaunchResult memory l =
                 _launch(creator, quotes[i], m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "AllHooks", "AHK");
             uint256 supplyBefore = IERC20(l.token).totalSupply();
-            (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+            uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
             _routerBuy(trader, l.key, l.token, _quoteForUsd(quotes[i], 150e18));
 
@@ -107,8 +107,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             assertTrue(
                 IERC20(l.token).totalSupply() < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "burn effect"
             );
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0, "LP donation");
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingDeepenLps(l.poolId) > 0, "LP deepen");
 
             vm.roll(block.number + 1);
             _routerSell(trader, l.key, l.token, _tokenBalance(l.token, trader) / 10);
@@ -199,7 +198,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
     }
 
     /// @notice Three 3–5 market tokens cover every quote in multi-market mode.
-    ///         Floor, burn, donate, airdrop, vesting and dynamic fees coexist.
+    ///         Floor, burn, Deepen LPs, airdrop, vesting and dynamic fees coexist.
     function testFork_MultiMarket_AllQuotesAndCohabitation() public onlyFork {
         Currency[] memory quotes = _allQuotes();
         _runMultiGroup(quotes, 0, 5, 2);
@@ -225,7 +224,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                     bitmask: BitmaskConfig.pack(_defaultModules()),
                     customHook: IHooks(address(0)),
                     devBuyQuoteIn: sizes[i],
-                    minDevBuyTokensOut: 1
+                    minDevBuyTokensOut: 1,
+                    vestPacked: 0
                 })
             );
             assertGt(launchId, 0);
@@ -246,7 +246,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                 bitmask: BitmaskConfig.pack(_defaultModules()),
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: maxDevBuy + 1,
-                minDevBuyTokensOut: 1
+                minDevBuyTokensOut: 1,
+                vestPacked: 0
             })
         );
     }
@@ -296,7 +297,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
 
         BitmaskConfig.Modules memory m = _defaultModules();
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.holderAirdrop = true;
         m.buybackVesting = true;
         m.buybackVestingDurationSeconds = uint32(30 days);
@@ -309,7 +310,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
         m.dynamicFeeRampUp = true;
         m.dynamicFeeDepthSaturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
         m.autoBurnBps = 3_334;
-        m.lpDonateBps = 3_333;
+        m.deepenLpsBps = 3_333;
         m.holderAirdropBps = 3_333;
         m.holderAirdropEpochSeconds = 60;
 
@@ -326,7 +327,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: floorIndex,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

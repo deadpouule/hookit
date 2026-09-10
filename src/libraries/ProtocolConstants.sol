@@ -37,7 +37,7 @@ library ProtocolConstants {
     uint16 internal constant MAX_WALLET_BPS = 250;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
     uint16 internal constant MAX_AUTO_BURN_BPS = 10_000;
-    uint16 internal constant MAX_LP_DONATE_BPS = 10_000;
+    uint16 internal constant MAX_DEEPEN_LPS_BPS = 10_000;
     /// @dev Max share of the quote-fee pool routed to holder airdrops (100% — combined routes capped at 100%).
     uint16 internal constant MAX_HOLDER_AIRDROP_BPS = 10_000;
     /// @dev Default holder airdrop epoch when launcher leaves field at 0.
@@ -78,7 +78,7 @@ library ProtocolConstants {
 
     /// @dev Default anti-snipe window for HKIT fair launch.
     uint16 internal constant HKIT_ANTI_SNIPE_DURATION_SECONDS = 3600;
-    /// @dev LP donate share of the quote-fee pool for HKIT.
-    uint16 internal constant HKIT_LP_DONATE_BPS = 1_000; // 10%
+    /// @dev Deepen LPs share of the quote-fee pool for HKIT.
+    uint16 internal constant HKIT_DEEPEN_LPS_BPS = 1_000; // 10%
 }
 

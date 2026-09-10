@@ -81,7 +81,7 @@ const PRESET_LINES: Record<MasterHookId, string[]> = {
   ],
   "buyback-vesting": [
     "CREATOR PROCEEDS → BUYBACKVAULT",
-    "LINEAR VEST 5 YEARS ON-CHAIN",
+    "TIME VEST OR UNTIL MCAP TARGET",
     "CLAIM AFTER UNLOCK",
   ],
   "auto-burn": [
@@ -89,9 +89,9 @@ const PRESET_LINES: Record<MasterHookId, string[]> = {
     "BURN EXECUTED AFTER EACH SWAP",
     "MAX 100% OF HOOK POT (SHARED WITH OTHER MODULES)",
   ],
-  "lp-donate": [
-    `DEFAULT ${LAUNCH.lpDonatePct}% OF HOOK TAX POT TO IN-RANGE LPS`,
-    "UNISWAP V4 DONATE TO IN-RANGE LIQUIDITY",
+  "deepen-lps": [
+    `DEFAULT ${LAUNCH.deepenLpsPct}% OF HOOK TAX POT MINTED AS EXTRA LP`,
+    "SWAPS QUOTE FOR TOKEN WHEN THE RANGE NEEDS BOTH SIDES",
     "MAX 100% OF HOOK POT (SHARED WITH OTHER MODULES)",
   ],
   "holder-airdrop": [

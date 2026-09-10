@@ -23,6 +23,7 @@ interface IMasterLaunchHook is IHooks {
     struct PrepareParams {
         PoolKey key;
         uint256 bitmask;
+        uint256 vestPacked;
         address creator;
         address token;
         int24 tickLower;
