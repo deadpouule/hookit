@@ -37,20 +37,21 @@ type ChartHandle = {
 };
 
 /**
- * Stonk autoscales to the wick. Only pad a flat print so the last-price
- * line still runs through the body instead of floating in an 8% empty pane.
+ * Stonk autoscales to the wick. A flat doji gets a tight centered pad so the
+ * last-price line runs through the body (8% of mid left the print in empty air).
  */
 const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
   if (!res?.priceRange) return res;
   const { minValue, maxValue } = res.priceRange;
+  const mid = (minValue + maxValue) / 2;
   const span = Math.max(maxValue - minValue, 0);
-  if (span > 0) {
+  const minSpan = Math.max(Math.abs(mid) * 0.005, mid > 1 ? 0.01 : 1e-18);
+  if (span >= minSpan) {
     const pad = span * 0.06;
     return { ...res, priceRange: { minValue: minValue - pad, maxValue: maxValue + pad } };
   }
-  const mid = (minValue + maxValue) / 2;
-  const pad = Math.max(Math.abs(mid) * 0.003, mid > 1 ? 0.01 : 1e-18);
+  const pad = minSpan / 2;
   return { ...res, priceRange: { minValue: mid - pad, maxValue: mid + pad } };
 };
 
