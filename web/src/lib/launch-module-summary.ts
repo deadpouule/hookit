@@ -54,7 +54,10 @@ export function moduleDetailLine(
     case "buyback-vesting": {
       const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
       if (mcapUsd > 0) {
-        return `Unlocks when mcap hits ${formatCompactUsd(mcapUsd)}`;
+        if (modules.buybackVestingUnlockMode === "steps") {
+          return `Unlocks by % as FDV climbs (last rung ${formatCompactUsd(mcapUsd)})`;
+        }
+        return `Unlocks in full at ${formatCompactUsd(mcapUsd)} FDV`;
       }
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
@@ -65,8 +68,16 @@ export function moduleDetailLine(
       return `${modules.autoBurnPct}% of hook fees burned`;
     case "lp-donate":
       return `${modules.lpDonatePct}% of hook fees → LPs`;
-    case "holder-airdrop":
+    case "holder-airdrop": {
+      const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
+      if (mcapUsd > 0) {
+        if (modules.holderAirdropUnlockMode === "steps") {
+          return `${modules.holderAirdropPct}% of hook fees → holders, by % to ${formatCompactUsd(mcapUsd)}`;
+        }
+        return `${modules.holderAirdropPct}% of hook fees → holders until ${formatCompactUsd(mcapUsd)} FDV`;
+      }
       return `${modules.holderAirdropPct}% of hook fees → holder drops`;
+    }
     case "creator-share-to-hook": {
       const share = CREATOR_SHARE_BPS / 100;
       if (hookTaxBps > 0) {
@@ -194,13 +205,13 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
-    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until the token hits a USD market-cap target. Can't combine with Creator → Hook — both spend that same 70% cut.",
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook — both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "lp-donate":
     "Donates a share of hook fees to liquidity providers who are in-range at swap time. Rewards active LPs and keeps depth where it matters.",
   "holder-airdrop":
-    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each 15-minute epoch. Permissionless — anyone can trigger the push.",
+    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless — anyone can trigger the push.",
   "creator-share-to-hook":
     "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
   "fixed-fee":

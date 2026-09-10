@@ -31,7 +31,8 @@ contract TestCustomLaunchScript is Script {
                 bitmask: 0,
                 customHook: IHooks(customHookAddr),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         vm.stopBroadcast();

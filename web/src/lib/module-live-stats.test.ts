@@ -150,7 +150,7 @@ test("backed-floor chip includes premium vs DEX spot", () => {
 });
 
 test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
-  const modules = { buybackVestingMcapUsd: 100_000 } as LaunchModules;
+  const modules = { buybackVestingMcapUsd: 10_000_000 } as LaunchModules;
   const empty = {
     floorPriceHuman: null,
     spotPriceHuman: null,
@@ -168,11 +168,11 @@ test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
     quoteLabel: "ETH",
   };
   assert.equal(
-    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 5_000 }),
-    "0 ETH · $5.00K / $100.00K FDV",
+    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 5_000_000 }),
+    "0 ETH · $5.00M / $10.00M FDV",
   );
   assert.equal(
-    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 150_000 }),
-    "0 ETH · hit $100.00K FDV",
+    moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 12_000_000 }),
+    "0 ETH · hit $10.00M FDV",
   );
 });

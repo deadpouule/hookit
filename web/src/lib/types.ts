@@ -39,10 +39,14 @@ export interface LaunchModules {
   /** Linear vest duration when buyback vesting is on (days). */
   buybackVestingDurationDays?: number;
   /**
-   * Optional USD fully-diluted mcap that fully unlocks creator vest.
+   * Optional USD fully-diluted mcap that unlocks creator vest.
    * 0 / omitted = time vest only.
    */
   buybackVestingMcapUsd?: number;
+  /** `all` = full unlock at `buybackVestingMcapUsd`. `steps` = % per mcap rung. */
+  buybackVestingUnlockMode?: "all" | "steps";
+  /** Percents for the 6 buyback mcap rungs (must sum to 100 when mode is steps). */
+  buybackVestingStepPct?: number[];
   autoBurn: boolean;
   autoBurnPct: number;
   lpDonate: boolean;
@@ -53,6 +57,13 @@ export interface LaunchModules {
   holderAirdropPct: number;
   /** Airdrop epoch duration in seconds (launcher picks at launch). */
   holderAirdropEpochSeconds?: number;
+  /**
+   * Optional USD FDV that starts unlocking holder airdrops.
+   * 0 / omitted = epoch payout of the full pot.
+   */
+  holderAirdropMcapUsd?: number;
+  holderAirdropUnlockMode?: "all" | "steps";
+  holderAirdropStepPct?: number[];
   /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
 }

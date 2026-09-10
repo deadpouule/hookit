@@ -2,6 +2,12 @@ import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { formatCompactQuoteAmount, formatCompactUsd, formatLiveQuoteWei } from "@/lib/format";
+import {
+  AIRDROP_STEP_PRESET_USD,
+  BUYBACK_STEP_PRESET_USD,
+  DEFAULT_MCAP_STEP_PCT,
+  unlockedPctAtFdv,
+} from "@/lib/mcap-vest";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -149,8 +155,27 @@ export function moduleLiveStatLine(
           ? `0 ${live.quoteLabel}`
           : claimable;
       if (mcapUsd > 0) {
-        const goal = formatCompactUsd(mcapUsd);
+        const mode = modules.buybackVestingUnlockMode === "steps" ? "steps" : "all";
+        const stepPct = modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
         const liveMcap = pool.marketCap;
+        const unlocked =
+          liveMcap != null && liveMcap > 0
+            ? unlockedPctAtFdv({
+                untilMcap: true,
+                mode,
+                cliffUsd: mcapUsd,
+                stepUsd: BUYBACK_STEP_PRESET_USD,
+                stepPct,
+                fdvUsd: liveMcap,
+              })
+            : 0;
+        if (mode === "steps") {
+          if (liveMcap != null && liveMcap > 0) {
+            return `${amountPart} · ${unlocked}% unlocked · ${formatCompactUsd(liveMcap)} FDV`;
+          }
+          return `${amountPart} · by % to ${formatCompactUsd(mcapUsd)} FDV`;
+        }
+        const goal = formatCompactUsd(mcapUsd);
         if (liveMcap != null && liveMcap > 0) {
           if (liveMcap >= mcapUsd) return `${amountPart} · hit ${goal} FDV`;
           return `${amountPart} · ${formatCompactUsd(liveMcap)} / ${goal} FDV`;
@@ -167,13 +192,39 @@ export function moduleLiveStatLine(
     }
     case "holder-airdrop": {
       const potHuman = live.airdropPendingHuman;
+      const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
+      const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
+      const mcapPart = (() => {
+        if (mcapUsd <= 0) return "";
+        const liveMcap = pool.marketCap;
+        if (mode === "steps") {
+          const unlocked =
+            liveMcap != null && liveMcap > 0
+              ? unlockedPctAtFdv({
+                  untilMcap: true,
+                  mode,
+                  cliffUsd: mcapUsd,
+                  stepUsd: AIRDROP_STEP_PRESET_USD,
+                  stepPct: modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+                  fdvUsd: liveMcap,
+                })
+              : 0;
+          if (liveMcap != null && liveMcap > 0) return ` · ${unlocked}% unlocked`;
+          return ` · by % to ${formatCompactUsd(mcapUsd)}`;
+        }
+        if (liveMcap != null && liveMcap > 0) {
+          if (liveMcap >= mcapUsd) return ` · hit ${formatCompactUsd(mcapUsd)} FDV`;
+          return ` · ${formatCompactUsd(liveMcap)} / ${formatCompactUsd(mcapUsd)} FDV`;
+        }
+        return ` · until ${formatCompactUsd(mcapUsd)} FDV`;
+      })();
       if (potHuman == null || potHuman <= 0) {
-        return `${modules.holderAirdropPct}% of fees → holders`;
+        return `${modules.holderAirdropPct}% of fees → holders${mcapPart}`;
       }
       const pot = formatAmount(potHuman, live.quoteLabel);
-      if (live.airdropSecondsLeft == null) return `Pot ${pot}`;
-      if (live.airdropSecondsLeft <= 0) return `Pot ${pot} · ready`;
-      return `Pot ${pot} · in ${formatCountdown(live.airdropSecondsLeft)}`;
+      if (live.airdropSecondsLeft == null) return `Pot ${pot}${mcapPart}`;
+      if (live.airdropSecondsLeft <= 0) return `Pot ${pot} · ready${mcapPart}`;
+      return `Pot ${pot} · in ${formatCountdown(live.airdropSecondsLeft)}${mcapPart}`;
     }
     case "creator-share-to-hook":
       return null;
@@ -200,6 +251,17 @@ export function moduleMeterPct(
     case "buyback-vesting": {
       const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
       if (mcapUsd > 0 && pool.marketCap != null && pool.marketCap > 0) {
+        const mode = modules.buybackVestingUnlockMode === "steps" ? "steps" : "all";
+        if (mode === "steps") {
+          return unlockedPctAtFdv({
+            untilMcap: true,
+            mode,
+            cliffUsd: mcapUsd,
+            stepUsd: BUYBACK_STEP_PRESET_USD,
+            stepPct: modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+            fdvUsd: pool.marketCap,
+          });
+        }
         return Math.max(0, Math.min(100, (pool.marketCap / mcapUsd) * 100));
       }
       if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) return null;
@@ -209,6 +271,21 @@ export function moduleMeterPct(
       return Math.max(0, Math.min(100, ((duration - live.buybackVestSecondsLeft) / duration) * 100));
     }
     case "holder-airdrop": {
+      const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
+      if (mcapUsd > 0 && pool.marketCap != null && pool.marketCap > 0) {
+        const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
+        if (mode === "steps") {
+          return unlockedPctAtFdv({
+            untilMcap: true,
+            mode,
+            cliffUsd: mcapUsd,
+            stepUsd: AIRDROP_STEP_PRESET_USD,
+            stepPct: modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+            fdvUsd: pool.marketCap,
+          });
+        }
+        return Math.max(0, Math.min(100, (pool.marketCap / mcapUsd) * 100));
+      }
       if (live.airdropSecondsLeft == null) return null;
       const epoch = live.airdropEpochSec ?? 15 * 60;
       if (epoch <= 0) return null;

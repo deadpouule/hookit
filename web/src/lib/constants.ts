@@ -1,4 +1,5 @@
 import type { LaunchFormState, ProtocolMetrics, TokenPool } from "./types";
+import { DEFAULT_MCAP_STEP_PCT as MCAP_STEP_PCT_DEFAULT } from "./mcap-vest";
 
 export const LAUNCH_FEE_ETH = 0.0005;
 export const TARGET_LAUNCH_MCAP_USD = 5_000;
@@ -22,16 +23,28 @@ export const DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT = 100;
 export const BUYBACK_VESTING_DEFAULT_DAYS = 365 * 5;
 export const BUYBACK_VESTING_MIN_DAYS = 7;
 export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
-export const BUYBACK_VESTING_MCAP_DEFAULT_USD = 100_000;
-export const BUYBACK_VESTING_MCAP_MIN_USD = 10_000;
-export const BUYBACK_VESTING_MCAP_MAX_USD = 10_000_000;
+export const BUYBACK_VESTING_MCAP_DEFAULT_USD = 10_000_000;
+export const BUYBACK_VESTING_MCAP_MIN_USD = 10_000_000;
+export const BUYBACK_VESTING_MCAP_MAX_USD = 10_000_000_000;
+export const HOLDER_AIRDROP_MCAP_DEFAULT_USD = 5_000_000;
+export const HOLDER_AIRDROP_MCAP_MIN_USD = 5_000_000;
+export const HOLDER_AIRDROP_MCAP_MAX_USD = 10_000_000_000;
+export const DEFAULT_MCAP_STEP_PCT = [...MCAP_STEP_PCT_DEFAULT];
 
-/** 0 = time vest. Otherwise clamp into the launch slider range. */
+/** 0 = time vest. Otherwise snap onto the 10M–10B preset ladder. */
 export function clampBuybackVestingMcapUsd(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 0;
   return Math.min(
     BUYBACK_VESTING_MCAP_MAX_USD,
     Math.max(BUYBACK_VESTING_MCAP_MIN_USD, Math.round(value)),
+  );
+}
+
+export function clampHolderAirdropMcapUsd(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.min(
+    HOLDER_AIRDROP_MCAP_MAX_USD,
+    Math.max(HOLDER_AIRDROP_MCAP_MIN_USD, Math.round(value)),
   );
 }
 export const SECONDS_PER_DAY = 86_400;
@@ -72,9 +85,14 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     holderAirdrop: false,
     holderAirdropPct: 50,
     holderAirdropEpochSeconds: 15 * 60,
+    holderAirdropMcapUsd: 0,
+    holderAirdropUnlockMode: "all",
+    holderAirdropStepPct: [...DEFAULT_MCAP_STEP_PCT],
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     buybackVestingMcapUsd: 0,
+    buybackVestingUnlockMode: "all",
+    buybackVestingStepPct: [...DEFAULT_MCAP_STEP_PCT],
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
@@ -111,9 +129,14 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     holderAirdrop: false,
     holderAirdropPct: 50,
     holderAirdropEpochSeconds: 15 * 60,
+    holderAirdropMcapUsd: 0,
+    holderAirdropUnlockMode: "all",
+    holderAirdropStepPct: [...DEFAULT_MCAP_STEP_PCT],
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     buybackVestingMcapUsd: 0,
+    buybackVestingUnlockMode: "all",
+    buybackVestingStepPct: [...DEFAULT_MCAP_STEP_PCT],
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,

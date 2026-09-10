@@ -48,7 +48,8 @@ library HkitLaunchLib {
                 bitmask: BitmaskConfig.pack(defaultModules()),
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         key = factory.poolKeyOf(launchId);

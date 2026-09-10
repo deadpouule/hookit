@@ -225,7 +225,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                     bitmask: BitmaskConfig.pack(_defaultModules()),
                     customHook: IHooks(address(0)),
                     devBuyQuoteIn: sizes[i],
-                    minDevBuyTokensOut: 1
+                    minDevBuyTokensOut: 1,
+                    vestPacked: 0
                 })
             );
             assertGt(launchId, 0);
@@ -246,7 +247,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                 bitmask: BitmaskConfig.pack(_defaultModules()),
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: maxDevBuy + 1,
-                minDevBuyTokensOut: 1
+                minDevBuyTokensOut: 1,
+                vestPacked: 0
             })
         );
     }
@@ -326,7 +328,8 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: floorIndex,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

@@ -12,6 +12,7 @@ import { poolQuoteLabel } from "@/lib/payment-assets";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
+import { applyVestPackedToModules, type McapUnlockMode } from "@/lib/mcap-vest";
 import { resolveTokenMetadata } from "@/lib/token-metadata";
 import { isPlaceholderLaunchName, isPlaceholderLaunchTicker } from "@/lib/token-identity";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
@@ -59,6 +60,12 @@ export type OnChainLaunch = LaunchRow & {
   website?: string;
   github?: string;
   buybackVestingMcapUsd?: number;
+  buybackVestingUnlockMode?: McapUnlockMode;
+  buybackVestingStepPct?: number[];
+  holderAirdropMcapUsd?: number;
+  holderAirdropUnlockMode?: McapUnlockMode;
+  holderAirdropStepPct?: number[];
+  vestPacked?: bigint;
   marketCount?: number;
   markets?: TokenPoolMarket[];
 };
@@ -87,9 +94,29 @@ function rowFromResult(result: unknown): LaunchRow | null {
 
 export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
   const { modules, hookTaxBps } = unpackLaunchBitmask(launch.bitmask);
-  if (modules.buybackVesting && launch.buybackVestingMcapUsd && launch.buybackVestingMcapUsd > 0) {
-    modules.buybackVestingMcapUsd = launch.buybackVestingMcapUsd;
+  if (modules.buybackVesting) {
+    if (launch.buybackVestingMcapUsd && launch.buybackVestingMcapUsd > 0) {
+      modules.buybackVestingMcapUsd = launch.buybackVestingMcapUsd;
+    }
+    if (launch.buybackVestingUnlockMode) {
+      modules.buybackVestingUnlockMode = launch.buybackVestingUnlockMode;
+    }
+    if (launch.buybackVestingStepPct) {
+      modules.buybackVestingStepPct = launch.buybackVestingStepPct;
+    }
   }
+  if (modules.holderAirdrop) {
+    if (launch.holderAirdropMcapUsd && launch.holderAirdropMcapUsd > 0) {
+      modules.holderAirdropMcapUsd = launch.holderAirdropMcapUsd;
+    }
+    if (launch.holderAirdropUnlockMode) {
+      modules.holderAirdropUnlockMode = launch.holderAirdropUnlockMode;
+    }
+    if (launch.holderAirdropStepPct) {
+      modules.holderAirdropStepPct = launch.holderAirdropStepPct;
+    }
+  }
+  const withVest = applyVestPackedToModules(modules, launch.vestPacked ?? 0n);
   const token = launch.token.toLowerCase() as Address;
   const quote = (launch.quote ?? zeroAddress).toLowerCase() as Address;
   const tokenIsCurrency0 = BigInt(launch.token) < BigInt(quote);
@@ -125,7 +152,7 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       creatorShareToHook: modules.creatorShareToHook,
       customHook: launch.customHook,
     },
-    modules: launch.customHook ? undefined : modules,
+    modules: launch.customHook ? undefined : withVest,
     hookTaxBps: launch.customHook ? undefined : hookTaxBps,
     bitmask: launch.customHook ? undefined : launch.bitmask.toString(),
     address: shortenAddress(token),
@@ -310,10 +337,34 @@ async function hydrateLaunches(
     )
     .filter((j): j is { index: number; contract: NonNullable<typeof j>["contract"] } => j !== null);
 
+  const vestJobs = rows
+    .map(({ row }, index) =>
+      row.customHook
+        ? null
+        : {
+            index,
+            contract: {
+              address: row.hooks,
+              abi: masterLaunchHookAbi,
+              functionName: "vestPacked" as const,
+              args: [row.poolId] as const,
+            },
+          },
+    )
+    .filter((j): j is { index: number; contract: NonNullable<typeof j>["contract"] } => j !== null);
+
   const configs =
     configJobs.length > 0
       ? await publicClient.multicall({
           contracts: configJobs.map((j) => j.contract),
+          allowFailure: true,
+        })
+      : [];
+
+  const vestReads =
+    vestJobs.length > 0
+      ? await publicClient.multicall({
+          contracts: vestJobs.map((j) => j.contract),
           allowFailure: true,
         })
       : [];
@@ -325,11 +376,17 @@ async function hydrateLaunches(
     }
   });
 
+  const vestByIndex = new Map<number, bigint>();
+  vestJobs.forEach((job, j) => {
+    if (vestReads[j]?.status === "success") {
+      vestByIndex.set(job.index, vestReads[j].result as bigint);
+    }
+  });
+
   return Promise.all(
     rows.map(async ({ id, row, bitmask, launchedAt, quote, fee, tickSpacing }, i) => {
       const identity = identities[i] ?? { name: "", symbol: "", metadataURI: "" };
-      const { image, description, twitter, website, github, buybackVestingMcapUsd } =
-        await resolveTokenMetadata(identity.metadataURI);
+      const fields = await resolveTokenMetadata(identity.metadataURI);
       let packed = bitmask ?? BigInt(0);
       if (packed === BigInt(0) && !row.customHook) {
         packed = bitmaskByIndex.get(i) ?? BigInt(0);
@@ -344,12 +401,18 @@ async function hydrateLaunches(
         quote: quote ?? zeroAddress,
         fee,
         tickSpacing,
-        image,
-        description,
-        twitter,
-        website,
-        github,
-        buybackVestingMcapUsd,
+        image: fields.image,
+        description: fields.description,
+        twitter: fields.twitter,
+        website: fields.website,
+        github: fields.github,
+        buybackVestingMcapUsd: fields.buybackVestingMcapUsd,
+        buybackVestingUnlockMode: fields.buybackVestingUnlockMode,
+        buybackVestingStepPct: fields.buybackVestingStepPct,
+        holderAirdropMcapUsd: fields.holderAirdropMcapUsd,
+        holderAirdropUnlockMode: fields.holderAirdropUnlockMode,
+        holderAirdropStepPct: fields.holderAirdropStepPct,
+        vestPacked: vestByIndex.get(i) ?? 0n,
       };
     }),
   );

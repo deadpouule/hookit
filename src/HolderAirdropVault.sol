@@ -7,6 +7,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Owned} from "./base/Owned.sol";
 import {UnlockTaker} from "./base/UnlockTaker.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
+import {McapVest} from "./libraries/McapVest.sol";
 import {IHolderAirdropSync} from "./interfaces/IHolderAirdropSync.sol";
 
 interface IERC20Balance {
@@ -42,9 +43,15 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     mapping(address => address[]) private _holders;
     mapping(address => mapping(address => uint256)) private _holderIndex;
     mapping(address => mapping(uint256 => PendingAirdrop)) private _pending;
+    mapping(address => uint128) public vestSlice;
+    mapping(address => uint256) public highWaterFdvUsd;
+    mapping(address => mapping(uint256 => uint256)) public accrued;
+    mapping(address => mapping(uint256 => uint256)) public released;
     uint256 private _locked = 1;
 
     event OperatorSet(address indexed operator, bool allowed);
+    event VestPlanSet(address indexed token, uint128 slice);
+    event FdvObserved(address indexed token, uint256 fdvUsd);
     event ExcludedSet(address indexed token, address indexed account, bool excluded);
     event EpochConfigured(address indexed token, uint32 epochSeconds);
     event HolderSynced(address indexed token, address indexed account, bool listed);
@@ -158,6 +165,25 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         emit EpochConfigured(token, seconds_);
     }
 
+    function configurePlan(address token, uint128 slice) external onlyOperator {
+        if (token == address(0)) revert ZeroAmount();
+        if (slice == 0) return;
+        McapVest.Plan memory p = McapVest.unpack(slice);
+        McapVest.validate(p, false);
+        vestSlice[token] = slice;
+        emit VestPlanSet(token, slice);
+    }
+
+    function observeFdv(address token, uint256 fdvUsd) external onlyOperator {
+        if (fdvUsd <= highWaterFdvUsd[token]) return;
+        highWaterFdvUsd[token] = fdvUsd;
+        emit FdvObserved(token, fdvUsd);
+    }
+
+    function eligibleOf(address token, Currency quote) external view returns (uint256) {
+        return _eligible(token, quote, _pot(token, quote));
+    }
+
     function depositInternal(address token, Currency quote, uint256 amount) external onlyOperator {
         if (amount == 0) revert ZeroAmount();
         _bindQuote(token, quote);
@@ -194,7 +220,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
 
     /// @dev Claims-only. Never unlocks — safe to call from `_beforeSwap`.
     function _tryAutoAirdrop(address token, Currency quote) private returns (bool) {
-        uint256 potNow = _pot(token, quote);
+        uint256 potNow = _eligible(token, quote, _pot(token, quote));
         if (potNow == 0) return false;
 
         uint64 last = _lastAt(token, quote);
@@ -294,7 +320,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     /// @dev May redeem claims (unlock) — call outside of a swap.
     function airdrop(address token, address[] calldata holders) external nonReentrant returns (uint256 distributed) {
         Currency quote = quoteOf[token];
-        uint256 pot = _pot(token, quote);
+        uint256 pot = _eligible(token, quote, _pot(token, quote));
         if (pot == 0) revert ZeroAmount();
 
         uint64 last = _lastAt(token, quote);
@@ -422,9 +448,10 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
                 quoteOf[token] = quote;
             }
             reserve[token] += amount;
-            return;
+        } else {
+            reserveByQuote[token][quote.toId()] += amount;
         }
-        reserveByQuote[token][quote.toId()] += amount;
+        accrued[token][quote.toId()] += amount;
     }
 
     function _subPot(address token, Currency quote, uint256 amount) private {
@@ -433,6 +460,23 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         } else {
             reserveByQuote[token][quote.toId()] -= amount;
         }
+        released[token][quote.toId()] += amount;
+    }
+
+    function _eligible(address token, Currency quote, uint256 potNow) private view returns (uint256) {
+        if (potNow == 0) return 0;
+        uint128 slice = vestSlice[token];
+        if (slice == 0) return potNow;
+        McapVest.Plan memory p = McapVest.unpack(slice);
+        if (p.kind == McapVest.KIND_TIME) return potNow;
+        uint16 bps = McapVest.unlockedBps(p, highWaterFdvUsd[token]);
+        if (bps == 0) return 0;
+        uint256 quoteId = quote.toId();
+        uint256 cap = accrued[token][quoteId] * uint256(bps) / ProtocolConstants.BPS_DENOMINATOR;
+        uint256 rel = released[token][quoteId];
+        if (cap <= rel) return 0;
+        uint256 left = cap - rel;
+        return left < potNow ? left : potNow;
     }
 
     function _lastAt(address token, Currency quote) private view returns (uint64 last) {

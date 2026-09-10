@@ -576,7 +576,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every 15 minutes, once the window is open, a swap on the token can push the pot pro-rata to holders.",
+          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every epoch (launcher picks the minutes), a swap can push the unlocked slice pro-rata to holders.",
         },
         {
           type: "ul",
@@ -584,6 +584,7 @@ export function buildDocsSections(): DocsSection[] {
             "Pro-rata uses each holder’s balance of the launched token.",
             "System addresses (pool, hook, vaults) are excluded automatically.",
             "The holder list must cover all circulating balances or the call reverts (keeps the airdrop fair).",
+            "Optional until-mcap: keep drops locked until FDV hits a preset from $5M to $10B. Unlock all at that cliff, or by % at each rung (percents must add to 100).",
             "Token page shows pending pot and countdown when the module is on.",
             "No dedicated keeper bot — the Hookit swap path supplies the holder set from the indexer when the epoch is ready.",
           ],
@@ -594,7 +595,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target you set at launch. The mcap target is stored in token metadata. The live vault still vests linearly (5 years when you pick until-mcap) until a vault upgrade can release at the target. Claim the unlocked slice on the token page.",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B — all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.",
         },
         {
           type: "h3",

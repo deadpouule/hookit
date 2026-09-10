@@ -242,7 +242,8 @@ abstract contract InkForkTestBase is Test {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         r.key = factory.poolKeyOf(r.launchId);
@@ -268,7 +269,8 @@ abstract contract InkForkTestBase is Test {
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         r.key = factory.poolKeyOf(r.launchId);

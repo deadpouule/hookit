@@ -54,6 +54,11 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   buybackVesting: false,
   buybackVestingDurationDays: 365 * 5,
   buybackVestingMcapUsd: 0,
+  buybackVestingUnlockMode: "all",
+  buybackVestingStepPct: [5, 5, 15, 20, 25, 30],
+  holderAirdropMcapUsd: 0,
+  holderAirdropUnlockMode: "all",
+  holderAirdropStepPct: [5, 5, 15, 20, 25, 30],
   creatorShareToHook: false,
 };
 

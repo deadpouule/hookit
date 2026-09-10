@@ -8,6 +8,7 @@ import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { AccentSlider } from "@/components/launch/AccentSlider";
+import { McapUnlockPicker } from "@/components/launch/McapUnlockPicker";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
 import { creatorCutLock } from "@/lib/launch-wizard";
@@ -16,15 +17,20 @@ import {
   BUYBACK_VESTING_DEFAULT_DAYS,
   BUYBACK_VESTING_MAX_DAYS,
   BUYBACK_VESTING_MCAP_DEFAULT_USD,
-  BUYBACK_VESTING_MCAP_MAX_USD,
-  BUYBACK_VESTING_MCAP_MIN_USD,
   BUYBACK_VESTING_MIN_DAYS,
-  clampBuybackVestingMcapUsd,
+  HOLDER_AIRDROP_MCAP_DEFAULT_USD,
   DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
   MAX_HOOK_TAX_BPS,
   MAX_TOTAL_FEE_BPS,
 } from "@/lib/constants";
-import { formatBps, formatCompactUsd } from "@/lib/format";
+import { formatBps } from "@/lib/format";
+import {
+  AIRDROP_MCAP_PRESET_USD,
+  AIRDROP_STEP_PRESET_USD,
+  BUYBACK_MCAP_PRESET_USD,
+  BUYBACK_STEP_PRESET_USD,
+  DEFAULT_MCAP_STEP_PCT,
+} from "@/lib/mcap-vest";
 import {
   clampDynamicFeeRange,
   formatTotalFeePercent,
@@ -987,70 +993,35 @@ function HookSettings({
     const days = modules.buybackVestingDurationDays ?? BUYBACK_VESTING_DEFAULT_DAYS;
     const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
     const untilMcap = mcapUsd > 0;
+    const mode = modules.buybackVestingUnlockMode === "steps" ? "steps" : "all";
+    const stepPct = modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
-        <div
-          className="launch-mode-toggle launch-mode-toggle--compact"
-          role="tablist"
-          aria-label="Buyback vesting unlock"
-        >
-          {(
-            [
-              { value: "time" as const, label: "Time" },
-              { value: "mcap" as const, label: "Until mcap" },
-            ] as const
-          ).map((opt) => {
-            const active = opt.value === "mcap" ? untilMcap : !untilMcap;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() =>
-                  onUpdate({
-                    buybackVestingMcapUsd:
-                      opt.value === "mcap"
-                        ? mcapUsd > 0
-                          ? mcapUsd
-                          : BUYBACK_VESTING_MCAP_DEFAULT_USD
-                        : 0,
-                  })
-                }
-                className={cn(
-                  "launch-mode-toggle__btn launch-mode-toggle__btn--single",
-                  active && "is-active",
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-        {untilMcap ? (
-          <PickConfigControl
-            theme={theme}
-            label="Unlock mcap"
-            value={formatCompactUsd(mcapUsd)}
-            edit={{
-              numericValue: mcapUsd,
-              min: BUYBACK_VESTING_MCAP_MIN_USD,
-              max: BUYBACK_VESTING_MCAP_MAX_USD,
-              step: 5_000,
-              suffix: "",
-              onCommit: (next) => onUpdate({ buybackVestingMcapUsd: clampBuybackVestingMcapUsd(next) }),
-            }}
-          >
-            <AccentSlider
-              accentColor={accent}
-              value={[mcapUsd]}
-              onValueChange={([v]) => onUpdate({ buybackVestingMcapUsd: clampBuybackVestingMcapUsd(v) })}
-              min={BUYBACK_VESTING_MCAP_MIN_USD}
-              max={BUYBACK_VESTING_MCAP_MAX_USD}
-              step={5_000}
-            />
-          </PickConfigControl>
-        ) : (
+        <McapUnlockPicker
+          theme={theme}
+          untilMcap={untilMcap}
+          mode={mode}
+          cliffUsd={untilMcap ? mcapUsd : BUYBACK_VESTING_MCAP_DEFAULT_USD}
+          presets={BUYBACK_MCAP_PRESET_USD}
+          stepUsd={BUYBACK_STEP_PRESET_USD}
+          stepPct={stepPct}
+          onUntilMcap={(next) =>
+            onUpdate({
+              buybackVestingMcapUsd: next ? BUYBACK_VESTING_MCAP_DEFAULT_USD : 0,
+              buybackVestingUnlockMode: next ? mode : "all",
+            })
+          }
+          onMode={(next) =>
+            onUpdate({
+              buybackVestingUnlockMode: next,
+              buybackVestingStepPct: next === "steps" ? stepPct : stepPct,
+              buybackVestingMcapUsd: mcapUsd > 0 ? mcapUsd : BUYBACK_VESTING_MCAP_DEFAULT_USD,
+            })
+          }
+          onCliff={(usd) => onUpdate({ buybackVestingMcapUsd: usd, buybackVestingUnlockMode: "all" })}
+          onStepPct={(pct) => onUpdate({ buybackVestingStepPct: pct, buybackVestingUnlockMode: "steps" })}
+        />
+        {untilMcap ? null : (
           <PickConfigControl
             theme={theme}
             label="Vest duration"
@@ -1081,7 +1052,9 @@ function HookSettings({
           )}
         >
           {untilMcap
-            ? "Lock until this FDV (saved on the token). Live vault still vests over 5 years until a vault upgrade can release at mcap"
+            ? mode === "steps"
+              ? "Creator fees unlock by % as FDV hits each rung — packed on-chain at launch"
+              : "Creator fees unlock in full when FDV hits this target — packed on-chain at launch"
             : "Creator fees unlock linearly over this duration — claim the unlocked slice anytime"}
         </span>
       </div>
@@ -1119,6 +1092,10 @@ function HookSettings({
     const epochMinutes = Math.round(
       (modules.holderAirdropEpochSeconds ?? HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES * 60) / 60,
     );
+    const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
+    const untilMcap = mcapUsd > 0;
+    const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
+    const stepPct = modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <FeeRouteShareControl
@@ -1150,13 +1127,41 @@ function HookSettings({
             step={1}
           />
         </PickConfigControl>
+        <div className="sm:col-span-2">
+          <McapUnlockPicker
+            theme={theme}
+            untilMcap={untilMcap}
+            mode={mode}
+            cliffUsd={untilMcap ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD}
+            presets={AIRDROP_MCAP_PRESET_USD}
+            stepUsd={AIRDROP_STEP_PRESET_USD}
+            stepPct={stepPct}
+            untilLabel="Until mcap"
+            onUntilMcap={(next) =>
+              onUpdate({
+                holderAirdropMcapUsd: next ? HOLDER_AIRDROP_MCAP_DEFAULT_USD : 0,
+                holderAirdropUnlockMode: next ? mode : "all",
+              })
+            }
+            onMode={(next) =>
+              onUpdate({
+                holderAirdropUnlockMode: next,
+                holderAirdropMcapUsd: mcapUsd > 0 ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD,
+              })
+            }
+            onCliff={(usd) => onUpdate({ holderAirdropMcapUsd: usd, holderAirdropUnlockMode: "all" })}
+            onStepPct={(pct) => onUpdate({ holderAirdropStepPct: pct, holderAirdropUnlockMode: "steps" })}
+          />
+        </div>
         <span
           className={cn(
             "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
             `orb-hook-desc-badge--${theme}`,
           )}
         >
-          Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically
+          {untilMcap
+            ? "Epoch still batches payouts, but only the unlocked FDV slice is paid — packed on-chain at launch"
+            : "Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically"}
         </span>
       </div>
     );

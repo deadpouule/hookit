@@ -137,7 +137,8 @@ contract ForkInkCompletenessTest is InkForkTestBase {
                 bitmask: 0,
                 customHook: IHooks(address(customHook)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
 

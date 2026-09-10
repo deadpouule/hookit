@@ -17,6 +17,7 @@ import {
 
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
 import { packLaunchBitmask } from "@/lib/bitmask";
+import { packVestPackedFromModules } from "@/lib/mcap-vest";
 import { CUSTOM_SOLIDITY_HOOKS_ENABLED } from "@/lib/constants";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
@@ -222,6 +223,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
           customHook,
           devBuyQuoteIn: devBuyQuoteWei ?? 0n,
           minDevBuyTokensOut: devBuyQuoteWei && devBuyQuoteWei > 0n ? 1n : 0n,
+          vestPacked: packVestPackedFromModules(form.modules),
         };
 
         const marketCount = form.markets.length;
@@ -446,6 +448,7 @@ async function estimateLaunchGas(
     customHook: Address;
     devBuyQuoteIn: bigint;
     minDevBuyTokensOut: bigint;
+    vestPacked: bigint;
   },
   marketQuotes: { quote: Address; bps: number }[],
   quote: Address,

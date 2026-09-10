@@ -1,5 +1,5 @@
 import { clipImageForMetadata } from "@/lib/token-metadata";
-import { clampBuybackVestingMcapUsd } from "@/lib/constants";
+import { clampBuybackVestingMcapUsd, clampHolderAirdropMcapUsd } from "@/lib/constants";
 import type { LaunchFormState } from "@/lib/types";
 
 /** EIP-3860 init-code budget for LaunchToken CREATE2 (creation code + ctor args). */
@@ -16,9 +16,20 @@ export type BuildMetadataOptions = {
 export type MetadataPayload = Record<string, unknown>;
 
 function attachBuybackVestingMcap(payload: MetadataPayload, form: LaunchFormState): void {
-  if (!form.modules.buybackVesting) return;
-  const mcapUsd = clampBuybackVestingMcapUsd(form.modules.buybackVestingMcapUsd ?? 0);
-  if (mcapUsd > 0) payload.buybackVestingMcapUsd = mcapUsd;
+  if (form.modules.buybackVesting && (form.modules.buybackVestingMcapUsd ?? 0) > 0) {
+    payload.buybackVestingMcapUsd = clampBuybackVestingMcapUsd(form.modules.buybackVestingMcapUsd ?? 0);
+    payload.buybackVestingUnlockMode = form.modules.buybackVestingUnlockMode ?? "all";
+    if (form.modules.buybackVestingUnlockMode === "steps") {
+      payload.buybackVestingStepPct = form.modules.buybackVestingStepPct;
+    }
+  }
+  if (form.modules.holderAirdrop && (form.modules.holderAirdropMcapUsd ?? 0) > 0) {
+    payload.holderAirdropMcapUsd = clampHolderAirdropMcapUsd(form.modules.holderAirdropMcapUsd ?? 0);
+    payload.holderAirdropUnlockMode = form.modules.holderAirdropUnlockMode ?? "all";
+    if (form.modules.holderAirdropUnlockMode === "steps") {
+      payload.holderAirdropStepPct = form.modules.holderAirdropStepPct;
+    }
+  }
 }
 
 /** JSON payload for IPFS / display — hook source is never embedded (too large for chain). */

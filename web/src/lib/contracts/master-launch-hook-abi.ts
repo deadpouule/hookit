@@ -8,6 +8,13 @@ export const masterLaunchHookAbi = [
   },
   {
     type: "function",
+    name: "vestPacked",
+    inputs: [{ name: "poolId", type: "bytes32" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "feeEscrow",
     inputs: [],
     outputs: [{ name: "", type: "address" }],

@@ -27,10 +27,12 @@ interface IERC20Supply {
 }
 
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
+import {ILaunchQuotes} from "./interfaces/ILaunchQuotes.sol";
 import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {DynamicFeeMath} from "./libraries/DynamicFeeMath.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
+import {McapVest} from "./libraries/McapVest.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
@@ -67,6 +69,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     HolderAirdropVault public airdropVault;
 
     mapping(PoolId => uint256) public override configs;
+    mapping(PoolId => uint256) public vestPacked;
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
@@ -228,6 +231,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (_launchState[id].creator != address(0)) revert AlreadyPrepared();
 
         configs[id] = params.bitmask;
+        vestPacked[id] = params.vestPacked;
         _launchState[id] = LaunchState({
             creator: params.creator,
             token: params.token,
@@ -239,6 +243,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             tokenIsCurrency0: params.tokenIsCurrency0,
             initialized: false
         });
+        if (params.vestPacked != 0) {
+            uint128 buyback = McapVest.buybackSlice(params.vestPacked);
+            uint128 airdrop = McapVest.airdropSlice(params.vestPacked);
+            if (buyback != 0) buybacks.configurePlan(params.token, buyback);
+            if (airdrop != 0) airdropVault.configurePlan(params.token, airdrop);
+        }
         emit LaunchPrepared(id, params.creator, params.token, params.bitmask);
     }
 
@@ -431,7 +441,26 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
             _markAirdropDue(st.token, st.quote);
         }
+        _observeFdv(id, st);
         return (this.afterSwap.selector, 0);
+    }
+
+    function _observeFdv(PoolId id, LaunchState storage st) private {
+        if (vestPacked[id] == 0) return;
+        (uint160 sqrtPriceX96,) = _priceAndLiquidity(id, st.seedLiquidity);
+        uint256 supply = IERC20Supply(st.token).totalSupply();
+        uint256 quoteFdv = FixedPointMath.quoteFromToken(supply, sqrtPriceX96, st.tokenIsCurrency0);
+        address quote = Currency.unwrap(st.quote);
+        uint256 usdX18 = ILaunchQuotes(factory).quoteUsdPriceX18(quote);
+        uint8 dec = 18;
+        if (quote != address(0)) {
+            (, dec,,) = ILaunchQuotes(factory).quoteConfigs(quote);
+            if (dec == 0) dec = 18;
+        }
+        uint256 fdvUsd = McapVest.fdvUsdWhole(quoteFdv, usdX18, dec);
+        if (fdvUsd == 0) return;
+        buybacks.observeFdv(st.token, fdvUsd);
+        airdropVault.observeFdv(st.token, fdvUsd);
     }
 
     function _floorFill(

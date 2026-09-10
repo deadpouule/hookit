@@ -1,4 +1,5 @@
-import { clampBuybackVestingMcapUsd } from "@/lib/constants";
+import { clampBuybackVestingMcapUsd, clampHolderAirdropMcapUsd } from "@/lib/constants";
+import type { McapUnlockMode } from "@/lib/mcap-vest";
 
 const MAX_IMAGE_CHARS = 80_000;
 
@@ -10,6 +11,11 @@ export type TokenMetadataFields = {
   github?: string;
   /** USD FDV that unlocks buyback vesting when the launcher picked until-mcap. */
   buybackVestingMcapUsd?: number;
+  buybackVestingUnlockMode?: McapUnlockMode;
+  buybackVestingStepPct?: number[];
+  holderAirdropMcapUsd?: number;
+  holderAirdropUnlockMode?: McapUnlockMode;
+  holderAirdropStepPct?: number[];
 };
 
 function str(value: unknown): string | undefined {
@@ -122,24 +128,46 @@ export function parseTokenMetadata(uri: string): TokenMetadataFields {
   }
 }
 
+function parseUsd(raw: unknown, clamp: (n: number) => number): number | undefined {
+  const num = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  const clamped = clamp(num);
+  return clamped > 0 ? clamped : undefined;
+}
+
+function parseUnlockMode(raw: unknown): McapUnlockMode | undefined {
+  return raw === "steps" || raw === "all" ? raw : undefined;
+}
+
+function parseStepPct(raw: unknown): number[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  return raw.map((n) => {
+    const num = typeof n === "number" ? n : Number(n);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(100, Math.round(num)));
+  });
+}
+
 function fieldsFromUnknown(parsed: unknown): TokenMetadataFields {
   if (!parsed || typeof parsed !== "object") return {};
   const record = parsed as Record<string, unknown>;
-  const mcapRaw = record.buybackVestingMcapUsd;
-  const mcapNum =
-    typeof mcapRaw === "number"
-      ? mcapRaw
-      : typeof mcapRaw === "string"
-        ? Number(mcapRaw)
-        : NaN;
-  const buybackVestingMcapUsd = clampBuybackVestingMcapUsd(mcapNum);
+  const buybackVestingMcapUsd = parseUsd(record.buybackVestingMcapUsd, clampBuybackVestingMcapUsd);
+  const holderAirdropMcapUsd = parseUsd(record.holderAirdropMcapUsd, clampHolderAirdropMcapUsd);
+  const buybackVestingUnlockMode = parseUnlockMode(record.buybackVestingUnlockMode);
+  const holderAirdropUnlockMode = parseUnlockMode(record.holderAirdropUnlockMode);
+  const buybackVestingStepPct = parseStepPct(record.buybackVestingStepPct);
+  const holderAirdropStepPct = parseStepPct(record.holderAirdropStepPct);
   return {
     image: typeof record.image === "string" ? record.image : undefined,
     description: str(record.description),
     twitter: str(record.twitter),
     website: str(record.website),
     github: str(record.github),
-    buybackVestingMcapUsd: buybackVestingMcapUsd > 0 ? buybackVestingMcapUsd : undefined,
+    buybackVestingMcapUsd,
+    buybackVestingUnlockMode,
+    buybackVestingStepPct,
+    holderAirdropMcapUsd,
+    holderAirdropUnlockMode,
+    holderAirdropStepPct,
   };
 }
 

@@ -122,7 +122,8 @@ abstract contract LaunchpadTestBase is Test, Deployers {
                 bitmask: bitmask,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         key = factory.poolKeyOf(launchId);

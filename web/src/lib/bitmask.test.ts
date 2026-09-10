@@ -30,11 +30,14 @@ function modules(over: Partial<LaunchModules> = {}): LaunchModules {
   };
 }
 
-test("buyback until-mcap packs a 5y duration (live vault is time-linear)", () => {
-  const packed = packLaunchBitmask(modules({ buybackVestingMcapUsd: 100_000 }), 0);
+test("buyback until-mcap leaves bitmask duration unchanged (mcap lives in vestPacked)", () => {
+  const packed = packLaunchBitmask(
+    modules({ buybackVestingMcapUsd: 10_000_000, buybackVestingDurationDays: 14 }),
+    0,
+  );
   const unpacked = unpackLaunchBitmask(packed);
   assert.equal(unpacked.modules.buybackVesting, true);
-  assert.equal(unpacked.modules.buybackVestingDurationDays, 365 * 5);
+  assert.equal(unpacked.modules.buybackVestingDurationDays, 14);
   assert.equal(unpacked.modules.buybackVestingMcapUsd, 0);
 });
 
