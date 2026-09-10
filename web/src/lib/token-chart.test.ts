@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { aggregateBars, barsForInterval, liveCandlesToBars } from "./token-chart";
+import {
+  aggregateBars,
+  barsForInterval,
+  formatChartUsd,
+  liveCandlesToBars,
+  pickChartBars,
+  priceBarsToMcap,
+  scaleBars,
+} from "./token-chart";
+import { TOTAL_SUPPLY } from "./token-live";
 import type { LiveCandle } from "./token-live";
 
 test("liveCandlesToBars fills missing timestamps backwards from now", () => {
@@ -49,4 +58,57 @@ test("barsForInterval ALL keeps 5m buckets", () => {
   ];
   assert.equal(barsForInterval(bars, "ALL").length, 2);
   assert.equal(barsForInterval(bars, "1h").length, 1);
+});
+
+test("barsForInterval rolls 5m into 15m and 4h", () => {
+  const bars = [0, 300, 600, 900, 1_200].map((time, i) => ({
+    time,
+    open: i,
+    high: i + 1,
+    low: i,
+    close: i + 0.5,
+    volume: 1,
+  }));
+  const fifteen = barsForInterval(bars, "15m");
+  assert.equal(fifteen.length, 2);
+  assert.equal(fifteen[0]!.time, 0);
+  assert.equal(fifteen[0]!.volume, 3);
+  assert.equal(fifteen[1]!.time, 900);
+  assert.equal(barsForInterval(bars, "4h").length, 1);
+});
+
+test("scaleBars converts market cap to per-token price", () => {
+  const bars = [{ time: 1, open: TOTAL_SUPPLY, high: TOTAL_SUPPLY, low: TOTAL_SUPPLY, close: TOTAL_SUPPLY, volume: 9 }];
+  const priced = scaleBars(bars, "price");
+  assert.equal(priced[0]!.close, 1);
+  assert.equal(priced[0]!.volume, 9);
+  assert.equal(scaleBars(bars, "mcap")[0]!.close, TOTAL_SUPPLY);
+});
+
+test("priceBarsToMcap converts GeckoTerminal USD price into FDV", () => {
+  const bars = [{ time: 1, open: 0.002, high: 0.003, low: 0.001, close: 0.002, volume: 50 }];
+  const mcap = priceBarsToMcap(bars);
+  assert.equal(mcap[0]!.close, 0.002 * TOTAL_SUPPLY);
+  assert.equal(mcap[0]!.volume, 50);
+});
+
+test("pickChartBars prefers GeckoTerminal except ALL and thin history", () => {
+  const indexer = [{ time: 1, open: 1, high: 1, low: 1, close: 1, volume: 0 }];
+  const gecko = Array.from({ length: 8 }, (_, i) => ({
+    time: i,
+    open: 2,
+    high: 2,
+    low: 2,
+    close: 2,
+    volume: 1,
+  }));
+  assert.equal(pickChartBars(indexer, gecko, "5m")[0]!.close, 2);
+  assert.equal(pickChartBars(indexer, gecko, "ALL")[0]!.close, 1);
+  assert.equal(pickChartBars(indexer, gecko.slice(0, 2), "5m")[0]!.close, 1);
+  assert.equal(pickChartBars(indexer, gecko.slice(0, 1), "1m")[0]!.close, 2);
+});
+
+test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {
+  assert.equal(formatChartUsd(12_500, "mcap"), "$12.50K");
+  assert.equal(formatChartUsd(0.0001234, "price"), "$0.000123");
 });

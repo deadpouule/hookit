@@ -14,6 +14,7 @@ import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCa
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
@@ -168,7 +169,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const live = useLiveToken(activePool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
-  const [interval, setInterval] = useState<ChartInterval>("1h");
+  const isMobile = useIsMobile();
+  const [interval, setInterval] = useState<ChartInterval | null>(null);
+  const chartInterval = interval ?? (isMobile ? "5m" : "15m");
   const [buyPrefill, setBuyPrefill] = useState<string | null>(null);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapSheetSide, setSwapSheetSide] = useState<"buy" | "sell">("buy");
@@ -428,9 +431,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <TokenCandleChart
             candles={live.candles}
             swaps={live.swaps}
-            interval={interval}
+            interval={chartInterval}
             onInterval={setInterval}
             marketCap={live.marketCap}
+            tokenAddress={contractAddress}
             change5m={live.change5m}
             change1h={live.change1h}
             change6h={live.change6h}

@@ -1,24 +1,62 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { RotateCcw } from "lucide-react";
 
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
-import { formatCompactUsd, formatPercent } from "@/lib/format";
-import { barsForInterval, liveCandlesToBars, type ChartBar } from "@/lib/token-chart";
+import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
+import { formatPercent } from "@/lib/format";
+import {
+  CHART_TIMEFRAMES,
+  barsForInterval,
+  formatChartUsd,
+  liveCandlesToBars,
+  pickChartBars,
+  pinLiveMcap,
+  priceBarsToMcap,
+  scaleBars,
+  type ChartBar,
+  type ChartInterval,
+  type ChartScale,
+  type ChartStyle,
+} from "@/lib/token-chart";
 import type { LiveCandle, LiveSwap } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
 
-const TIMEFRAMES = ["5m", "1h", "6h", "1D", "ALL"] as const;
-export type ChartInterval = (typeof TIMEFRAMES)[number];
+export type { ChartInterval };
 
 const TF_LABEL: Record<ChartInterval, string> = {
+  "1m": "1M",
   "5m": "5M",
+  "15m": "15M",
   "1h": "1H",
-  "6h": "6H",
+  "4h": "4H",
   "1D": "1D",
   ALL: "ALL",
 };
+
+const STYLE_KEY = "hookit_chart_style";
+const SCALE_KEY = "hookit_chart_scale";
+
+function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const value = window.localStorage.getItem(key);
+    if (value && (allowed as readonly string[]).includes(value)) return value as T;
+  } catch {
+    /* private mode */
+  }
+  return fallback;
+}
+
+function writeStored(key: string, value: string) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    /* private mode */
+  }
+}
 
 function changeForInterval(
   interval: ChartInterval,
@@ -26,9 +64,11 @@ function changeForInterval(
   open: number,
   close: number,
 ): number {
-  if (interval === "5m" && changes.change5m != null) return changes.change5m;
+  if ((interval === "1m" || interval === "5m" || interval === "15m") && changes.change5m != null) {
+    return changes.change5m;
+  }
   if (interval === "1h" && changes.change1h != null) return changes.change1h;
-  if (interval === "6h" && changes.change6h != null) return changes.change6h;
+  if (interval === "4h" && changes.change6h != null) return changes.change6h;
   if ((interval === "1D" || interval === "ALL") && changes.change24h != null) return changes.change24h;
   return open > 0 ? ((close - open) / open) * 100 : 0;
 }
@@ -60,12 +100,44 @@ function applySwapTicks(bars: ChartBar[], swaps: LiveSwap[]): ChartBar[] {
   return next;
 }
 
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  value: T;
+  onChange: (next: T) => void;
+  options: { id: T; label: string }[];
+  ariaLabel: string;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="group" aria-label={ariaLabel}>
+      {options.map((opt) => (
+        <button
+          key={opt.id}
+          type="button"
+          aria-pressed={value === opt.id}
+          onClick={() => onChange(opt.id)}
+          className={cn(
+            "min-h-9 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+            value === opt.id ? "bg-zinc-700 text-foreground" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function TokenCandleChart({
   candles,
   swaps = [],
   interval,
   onInterval,
   marketCap,
+  tokenAddress,
   change5m,
   change1h,
   change6h,
@@ -83,6 +155,7 @@ export function TokenCandleChart({
   interval: ChartInterval;
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
+  tokenAddress?: string;
   change5m?: number;
   change1h?: number;
   change6h?: number;
@@ -96,30 +169,50 @@ export function TokenCandleChart({
   className?: string;
 }) {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
+  const [scale, setScale] = useState<ChartScale>("mcap");
+  const [style, setStyle] = useState<ChartStyle>("candles");
+  const [fitNonce, setFitNonce] = useState(0);
+  const [hover, setHover] = useState<ChartBar | null>(null);
+  const gecko = useGeckoTerminalBars(tokenAddress, interval);
+
+  useEffect(() => {
+    setScale(readStored(SCALE_KEY, ["mcap", "price"] as const, "mcap"));
+    setStyle(readStored(STYLE_KEY, ["candles", "line"] as const, "candles"));
+  }, []);
+
   useEffect(() => {
     const id = window.setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 10_000);
     return () => window.clearInterval(id);
   }, []);
 
   const bars = useMemo(() => {
-    const native = liveCandlesToBars(candles, nowSec, marketCap);
-    const withTicks = applySwapTicks(native, swaps);
-    return barsForInterval(withTicks, interval);
-  }, [candles, swaps, nowSec, marketCap, interval]);
+    const indexer = liveCandlesToBars(candles, nowSec, marketCap);
+    const geckoMcap = pinLiveMcap(priceBarsToMcap(gecko.data?.bars ?? []), marketCap);
+    const source = pickChartBars(indexer, geckoMcap, interval);
+    const withTicks = applySwapTicks(source, swaps);
+    return scaleBars(barsForInterval(withTicks, interval), scale);
+  }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars]);
 
   const hasData = bars.length > 0;
-  const open = bars[0]?.open ?? marketCap ?? 0;
-  const close = bars.length ? bars[bars.length - 1]!.close : (marketCap ?? 0);
+  const open = bars[0]?.open ?? 0;
+  const close = bars.length ? bars[bars.length - 1]!.close : 0;
   const pct = changeForInterval(interval, { change5m, change1h, change6h, change24h }, open, close);
   const up = pct >= 0;
-
-  const [hover, setHover] = useState<ChartBar | null>(null);
   const headerValue = hover ? hover.close : close;
+
+  const setChartScale = (next: ChartScale) => {
+    setScale(next);
+    writeStored(SCALE_KEY, next);
+  };
+  const setChartStyle = (next: ChartStyle) => {
+    setStyle(next);
+    writeStored(STYLE_KEY, next);
+  };
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
-      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
             <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
               {marketLegs.map((leg, i) => (
@@ -143,14 +236,32 @@ export function TokenCandleChart({
               ))}
             </div>
           ) : null}
+          <Segmented
+            value={scale}
+            onChange={setChartScale}
+            ariaLabel="Chart scale"
+            options={[
+              { id: "price", label: "Price" },
+              { id: "mcap", label: "MCap" },
+            ]}
+          />
+          <Segmented
+            value={style}
+            onChange={setChartStyle}
+            ariaLabel="Chart type"
+            options={[
+              { id: "candles", label: "Candles" },
+              { id: "line", label: "Line" },
+            ]}
+          />
           <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5">
-            {TIMEFRAMES.map((tf) => (
+            {CHART_TIMEFRAMES.map((tf) => (
               <button
                 key={tf}
                 type="button"
                 onClick={() => onInterval(tf)}
                 className={cn(
-                  "min-h-9 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+                  "min-h-9 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0",
                   interval === tf
                     ? "bg-zinc-700 text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -160,6 +271,15 @@ export function TokenCandleChart({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setFitNonce((n) => n + 1)}
+            className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:min-h-0"
+            title="Reset view"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Reset
+          </button>
         </div>
       </div>
 
@@ -194,14 +314,16 @@ export function TokenCandleChart({
         ) : (
           <>
             <div className="pointer-events-none absolute top-3 left-3 z-20 sm:top-4 sm:left-4">
-              <p className="text-[10px] uppercase tracking-wide text-zinc-500">Market cap</p>
+              <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+                {scale === "mcap" ? "Market cap" : "Price"}
+              </p>
               <p className="font-mono text-2xl tracking-tight text-foreground sm:text-3xl">
-                {formatCompactUsd(headerValue)}
+                {formatChartUsd(headerValue, scale)}
               </p>
               <p
                 className={cn(
                   "mt-0.5 font-mono text-[12px] sm:text-[13px]",
-                  hover ? "text-zinc-400" : up ? "text-[#26a69a]" : "text-[#ef5350]",
+                  hover ? "text-zinc-400" : up ? "text-[#10b981]" : "text-[#ef4444]",
                 )}
               >
                 {hover
@@ -209,7 +331,14 @@ export function TokenCandleChart({
                   : `${formatPercent(pct, true)} ${TF_LABEL[interval].toLowerCase()}`}
               </p>
             </div>
-            <TokenLightweightPlot bars={bars} onHover={setHover} />
+            <TokenLightweightPlot
+              bars={bars}
+              style={style}
+              scale={scale}
+              lineColor={up ? "#10b981" : "#ef4444"}
+              fitNonce={fitNonce}
+              onHover={setHover}
+            />
           </>
         )}
       </div>

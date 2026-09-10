@@ -2,59 +2,152 @@
 
 import { useEffect, useRef } from "react";
 
-import { formatCompactUsd } from "@/lib/format";
-import { hasChartVolume, type ChartBar } from "@/lib/token-chart";
-import type { AutoscaleInfoProvider } from "lightweight-charts";
+import {
+  chartRangeSignature,
+  formatChartUsd,
+  hasChartVolume,
+  type ChartBar,
+  type ChartScale,
+  type ChartStyle,
+} from "@/lib/token-chart";
+import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 
-const UP = "#26a69a";
-const DOWN = "#ef5350";
+const UP = "#10b981";
+const DOWN = "#ef4444";
 const SURFACE = "#0a0a0a";
 const GRID = "rgba(255,255,255,0.06)";
 const AXIS = "#71717a";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
+  style: ChartStyle;
+  scale: ChartScale;
+  lineColor?: string;
+  fitNonce?: number;
   onHover: (bar: ChartBar | null) => void;
 };
 
+type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
+
 type ChartHandle = {
-  chart: import("lightweight-charts").IChartApi;
-  candles: import("lightweight-charts").ISeriesApi<"Candlestick">;
-  volume: import("lightweight-charts").ISeriesApi<"Histogram">;
+  chart: IChartApi;
+  price: PriceSeries;
+  volume: ISeriesApi<"Histogram">;
+  style: ChartStyle;
 };
 
-function applyBars(handle: ChartHandle, next: ChartBar[]) {
-  const candleData = next.map((b) => ({
-    time: b.time as import("lightweight-charts").UTCTimestamp,
-    open: b.open,
-    high: b.high,
-    low: b.low,
-    close: b.close,
-  }));
-  handle.candles.setData(candleData);
+const padFlatRange: AutoscaleInfoProvider = (original) => {
+  const res = original();
+  if (!res?.priceRange) return res;
+  const { minValue, maxValue } = res.priceRange;
+  if (maxValue <= minValue) {
+    const pad = Math.max(Math.abs(minValue) * 0.02, minValue > 1 ? 1 : minValue * 0.02 || 1e-12);
+    return { ...res, priceRange: { minValue: minValue - pad, maxValue: minValue + pad } };
+  }
+  return res;
+};
+
+function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (bars[i]!.time === time) return bars[i];
+  }
+  return undefined;
+}
+
+async function attachPriceSeries(
+  chart: IChartApi,
+  tv: typeof import("lightweight-charts"),
+  style: ChartStyle,
+  scale: ChartScale,
+  lineColor: string,
+): Promise<PriceSeries> {
+  const priceFormat =
+    scale === "mcap"
+      ? { type: "price" as const, precision: 2, minMove: 0.01 }
+      : { type: "price" as const, precision: 12, minMove: 1e-12 };
+
+  if (style === "line") {
+    return chart.addSeries(tv.LineSeries, {
+      color: lineColor,
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      priceFormat,
+      autoscaleInfoProvider: padFlatRange,
+    });
+  }
+
+  return chart.addSeries(tv.CandlestickSeries, {
+    upColor: UP,
+    downColor: DOWN,
+    wickUpColor: UP,
+    wickDownColor: DOWN,
+    borderVisible: false,
+    priceFormat,
+    autoscaleInfoProvider: padFlatRange,
+  });
+}
+
+function applyBars(handle: ChartHandle, next: ChartBar[], fit: boolean, lineColor: string) {
+  if (handle.style === "line") {
+    const line = handle.price as ISeriesApi<"Line">;
+    line.applyOptions({ color: lineColor });
+    line.setData(
+      next.map((b) => ({
+        time: b.time as UTCTimestamp,
+        value: b.close,
+      })),
+    );
+  } else {
+    (handle.price as ISeriesApi<"Candlestick">).setData(
+      next.map((b) => ({
+        time: b.time as UTCTimestamp,
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+      })),
+    );
+  }
+
   const showVolume = hasChartVolume(next);
-  handle.candles.priceScale().applyOptions({
+  handle.price.priceScale().applyOptions({
     scaleMargins: { top: 0.08, bottom: showVolume ? 0.28 : 0.08 },
   });
   handle.volume.setData(
     showVolume
       ? next.map((b) => ({
-          time: b.time as import("lightweight-charts").UTCTimestamp,
+          time: b.time as UTCTimestamp,
           value: b.volume,
-          color: b.close >= b.open ? "rgba(38,166,154,0.45)" : "rgba(239,83,80,0.45)",
+          color: b.close >= b.open ? "rgba(16,185,129,0.45)" : "rgba(239,68,68,0.45)",
         }))
       : [],
   );
-  handle.chart.timeScale().fitContent();
+  if (fit) handle.chart.timeScale().fitContent();
 }
 
-export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProps) {
+export function TokenLightweightPlot({
+  bars,
+  style,
+  scale,
+  lineColor = UP,
+  fitNonce = 0,
+  onHover,
+}: TokenLightweightPlotProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const onHoverRef = useRef(onHover);
   onHoverRef.current = onHover;
   const handleRef = useRef<ChartHandle | null>(null);
   const pendingBarsRef = useRef(bars);
   pendingBarsRef.current = bars;
+  const styleRef = useRef(style);
+  styleRef.current = style;
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  const lineColorRef = useRef(lineColor);
+  lineColorRef.current = lineColor;
+  const rangeSigRef = useRef("");
+  const tvRef = useRef<typeof import("lightweight-charts") | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -64,6 +157,7 @@ export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProp
     void (async () => {
       const tv = await import("lightweight-charts");
       if (disposed || !hostRef.current) return;
+      tvRef.current = tv;
 
       const chart = tv.createChart(hostRef.current, {
         autoSize: true,
@@ -84,28 +178,12 @@ export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProp
           rightOffset: 4,
         },
         localization: {
-          priceFormatter: (price: number) => formatCompactUsd(price),
+          priceFormatter: (price: number) => formatChartUsd(price, scaleRef.current),
         },
         crosshair: { mode: tv.CrosshairMode.Normal },
       });
 
-      const candles = chart.addSeries(tv.CandlestickSeries, {
-        upColor: UP,
-        downColor: DOWN,
-        wickUpColor: UP,
-        wickDownColor: DOWN,
-        borderVisible: false,
-        autoscaleInfoProvider: ((original) => {
-          const res = original();
-          if (!res?.priceRange) return res;
-          const { minValue, maxValue } = res.priceRange;
-          if (maxValue <= minValue) {
-            const pad = Math.max(Math.abs(minValue) * 0.02, 1);
-            return { ...res, priceRange: { minValue: minValue - pad, maxValue: minValue + pad } };
-          }
-          return res;
-        }) satisfies AutoscaleInfoProvider,
-      });
+      const price = await attachPriceSeries(chart, tv, styleRef.current, scaleRef.current, lineColorRef.current);
       const volume = chart.addSeries(tv.HistogramSeries, {
         priceScaleId: "volume",
         priceLineVisible: false,
@@ -115,31 +193,24 @@ export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProp
         scaleMargins: { top: 0.78, bottom: 0 },
       });
 
-      const handle = { chart, candles, volume };
+      const handle: ChartHandle = { chart, price, volume, style: styleRef.current };
       handleRef.current = handle;
-      applyBars(handle, pendingBarsRef.current);
+      const next = pendingBarsRef.current;
+      rangeSigRef.current = chartRangeSignature(next);
+      applyBars(handle, next, true, lineColorRef.current);
 
       chart.subscribeCrosshairMove((param) => {
         if (!param.time || !param.seriesData.size) {
           onHoverRef.current(null);
           return;
         }
-        const point = param.seriesData.get(candles) as
-          | { open: number; high: number; low: number; close: number }
-          | undefined;
-        if (!point) {
-          onHoverRef.current(null);
+        const time = Number(param.time);
+        const fromBars = lookupBar(pendingBarsRef.current, time);
+        if (fromBars) {
+          onHoverRef.current(fromBars);
           return;
         }
-        const volPoint = param.seriesData.get(volume) as { value: number } | undefined;
-        onHoverRef.current({
-          time: Number(param.time),
-          open: point.open,
-          high: point.high,
-          low: point.low,
-          close: point.close,
-          volume: volPoint?.value ?? 0,
-        });
+        onHoverRef.current(null);
       });
     })();
 
@@ -153,8 +224,47 @@ export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProp
 
   useEffect(() => {
     const handle = handleRef.current;
-    if (handle) applyBars(handle, bars);
-  }, [bars]);
+    const tv = tvRef.current;
+    if (!handle || !tv) return;
+    if (handle.style === style) return;
+    handle.chart.removeSeries(handle.price);
+    void attachPriceSeries(handle.chart, tv, style, scale, lineColor).then((price) => {
+      if (handleRef.current !== handle) return;
+      handle.price = price;
+      handle.style = style;
+      applyBars(handle, pendingBarsRef.current, true, lineColor);
+    });
+  }, [style, scale, lineColor]);
+
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!handle) return;
+    handle.chart.applyOptions({
+      localization: {
+        priceFormatter: (price: number) => formatChartUsd(price, scale),
+      },
+    });
+    handle.price.applyOptions({
+      priceFormat:
+        scale === "mcap"
+          ? { type: "price", precision: 2, minMove: 0.01 }
+          : { type: "price", precision: 12, minMove: 1e-12 },
+    });
+  }, [scale]);
+
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!handle) return;
+    const signature = chartRangeSignature(bars);
+    const fit = signature !== rangeSigRef.current;
+    rangeSigRef.current = signature;
+    applyBars(handle, bars, fit, lineColor);
+  }, [bars, lineColor]);
+
+  useEffect(() => {
+    if (fitNonce === 0) return;
+    handleRef.current?.chart.timeScale().fitContent();
+  }, [fitNonce]);
 
   return <div ref={hostRef} className="absolute inset-0 z-[2]" />;
 }
