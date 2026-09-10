@@ -99,9 +99,7 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: true,
-    borderUpColor: UP,
-    borderDownColor: DOWN,
+    borderVisible: false,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -113,10 +111,10 @@ async function attachPriceSeries(
 
 function pinLastBarRight(chart: IChartApi, barCount: number) {
   if (barCount <= 0) return;
-  const rightPad = 2;
-  const minVisible = 28;
+  const rightPad = 3;
+  const minVisible = 52;
   const last = barCount - 1;
-  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 72));
+  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 90));
   chart.timeScale().setVisibleLogicalRange({
     from: last + rightPad - visible + 1,
     to: last + rightPad,
@@ -216,10 +214,10 @@ export function TokenLightweightPlot({
           borderColor: GRID,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 2,
-          barSpacing: 16,
-          minBarSpacing: 8,
-          maxBarSpacing: 22,
+          rightOffset: 3,
+          barSpacing: 6,
+          minBarSpacing: 3,
+          maxBarSpacing: 8,
           fixRightEdge: true,
           lockVisibleTimeRangeOnResize: true,
           shiftVisibleRangeOnNewBar: true,
