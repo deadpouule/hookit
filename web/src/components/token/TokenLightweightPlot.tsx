@@ -88,12 +88,21 @@ async function attachPriceSeries(
   });
 }
 
+function withLineSpan(bars: ChartBar[]): ChartBar[] {
+  if (bars.length !== 1) return bars;
+  const b = bars[0]!;
+  const prev = Math.max(0, b.time - 300);
+  if (prev === b.time) return bars;
+  return [{ ...b, time: prev, volume: 0 }, b];
+}
+
 function applyBars(handle: ChartHandle, next: ChartBar[], fit: boolean, lineColor: string) {
+  const plotted = handle.style === "line" ? withLineSpan(next) : next;
   if (handle.style === "line") {
     const line = handle.price as ISeriesApi<"Line">;
     line.applyOptions({ color: lineColor });
     line.setData(
-      next.map((b) => ({
+      plotted.map((b) => ({
         time: b.time as UTCTimestamp,
         value: b.close,
       })),
