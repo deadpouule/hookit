@@ -1,4 +1,5 @@
 import type { MasterHookId } from "@/lib/master-hooks";
+import type { LaunchModules } from "@/lib/types";
 
 export const MASTER_LAUNCH_STEPS = [
   { id: 1, label: "Token & pair" },
@@ -14,8 +15,8 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
 > = {
   1: null,
   2: "Shield your launch — block bots, limit trade size, and limit wallet holdings.",
-  3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax, plus optional creator share routing.",
-  4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops.",
+  3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the 70% creator cut.",
+  4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
   5: "Review your token and launch when ready.",
 };
 
@@ -34,4 +35,29 @@ export function masterHookWizardStep(hookId: MasterHookId | "fixed-fee"): 2 | 3 
   if (LAUNCH_WIZARD_HOOK_IDS[2].includes(hookId)) return 2;
   if (LAUNCH_WIZARD_HOOK_IDS[3].includes(hookId)) return 3;
   return 4;
+}
+
+/**
+ * Buyback Vesting and Creator → Hook both spend the creator's 70% of the 1%
+ * base fee. Return a lock reason when the other one is already on.
+ */
+export function creatorCutLock(
+  id: MasterHookId,
+  modules: Pick<LaunchModules, "buybackVesting" | "creatorShareToHook">,
+): { card: string; detail: string } | null {
+  if (id === "buyback-vesting" && modules.creatorShareToHook) {
+    return {
+      card: "Can't combine with Creator → Hook",
+      detail:
+        "Both take the same 70% creator cut. Turn off Creator → Hook in Trading fees first.",
+    };
+  }
+  if (id === "creator-share-to-hook" && modules.buybackVesting) {
+    return {
+      card: "Can't combine with Buyback Vesting",
+      detail:
+        "Both take the same 70% creator cut. Turn off Buyback Vesting in Tokenomics first.",
+    };
+  }
+  return null;
 }

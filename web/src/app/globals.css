@@ -1165,6 +1165,12 @@
     color: rgb(161 161 170 / 0.85);
   }
 
+  .pick-card--hook[aria-disabled="true"] .pick-card-sub {
+    white-space: normal;
+    text-overflow: unset;
+    overflow: visible;
+  }
+
   .pick-config {
     margin-top: 1rem;
     border-radius: 14px;
