@@ -41,7 +41,7 @@ const INK = {
 
 const DEFAULT_DISTRIBUTOR = "0xeC00cf313cD2DACB7159d827C13463A214050dB0" as Address;
 const DEFAULT_BUYBACK = "0x5bDB903a24eCfb65092496D89CF2805eAdcE54B8" as Address;
-const DEFAULT_LAUNCH_FACTORY = "0xc4ba4E6c5233dED0FDEBA344508688D796C2cde7" as Address;
+const DEFAULT_LAUNCH_FACTORY = "0xa0a7747976f96cac86d72194e59c82fed56aab75" as Address;
 const DEFAULT_BONDING_FACTORY = "0x376A629742aD7a76Df57eda1Df7CD000363c1529" as Address;
 
 /** Quotrons wStocks that may accrue protocol pending on multi / stock-quoted launches. */
