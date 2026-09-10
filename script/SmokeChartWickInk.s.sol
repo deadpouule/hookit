@@ -116,9 +116,10 @@ contract SmokeChartWickInkScript is Script {
     }
 
     function _tokenOf(PoolKey memory key) internal pure returns (address) {
-        return Currency.unwrap(key.currency0) == address(0)
-            ? Currency.unwrap(key.currency1)
-            : Currency.unwrap(key.currency0);
+        return
+            Currency.unwrap(key.currency0) == address(0)
+                ? Currency.unwrap(key.currency1)
+                : Currency.unwrap(key.currency0);
     }
 
     function _buyZeroForOne(PoolKey memory key, address token) internal pure returns (bool) {
