@@ -55,7 +55,8 @@ contract SmokeChartAppleInkScript is Script {
                 bitmask: 0,
                 customHook: IHooks(address(0)),
                 devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
             })
         );
         vm.stopBroadcast();
