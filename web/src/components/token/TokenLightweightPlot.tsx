@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { formatCompactUsd } from "@/lib/format";
 import { hasChartVolume, type ChartBar } from "@/lib/token-chart";
+import type { AutoscaleInfoProvider } from "lightweight-charts";
 
 const UP = "#26a69a";
 const DOWN = "#ef5350";
@@ -94,6 +95,16 @@ export function TokenLightweightPlot({ bars, onHover }: TokenLightweightPlotProp
         wickUpColor: UP,
         wickDownColor: DOWN,
         borderVisible: false,
+        autoscaleInfoProvider: ((original) => {
+          const res = original();
+          if (!res?.priceRange) return res;
+          const { minValue, maxValue } = res.priceRange;
+          if (maxValue <= minValue) {
+            const pad = Math.max(Math.abs(minValue) * 0.02, 1);
+            return { ...res, priceRange: { minValue: minValue - pad, maxValue: minValue + pad } };
+          }
+          return res;
+        }) satisfies AutoscaleInfoProvider,
       });
       const volume = chart.addSeries(tv.HistogramSeries, {
         priceScaleId: "volume",
