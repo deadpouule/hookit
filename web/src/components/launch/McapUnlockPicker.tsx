@@ -139,7 +139,7 @@ export function McapUnlockPicker({
                   </span>
                   <span
                     className={cn(
-                      "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge",
+                      "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge is-picked",
                       `orb-hook-desc-badge--${theme}`,
                     )}
                   >
