@@ -117,6 +117,12 @@ export function TokenTypeBadges({
         )}
       </BadgeTip>,
     );
+  } else if (token.hookType === "Classic" || token.rail === "classic") {
+    badges.push(
+      <BadgeTip key="classic" tip="Bonding-curve launch — graduates into a Uniswap pool.">
+        <span className="token-type-badge token-type-badge--curve">Classic</span>
+      </BadgeTip>,
+    );
   } else if (!isMaster && (token.hookType === "Custom" || token.kind === "sushi")) {
     badges.push(
       <BadgeTip key="custom" tip={BADGE_TIPS.customs}>

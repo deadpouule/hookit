@@ -43,6 +43,32 @@ export function formatCompactQuoteAmount(value: number): string {
   return Number(value.toPrecision(2)).toString();
 }
 
+/**
+ * Vesting / streaming quote amounts. Keeps enough digits that a 1-second
+ * linear unlock is visible instead of collapsing to `9.4e-10`.
+ */
+export function formatLiveQuoteWei(wei: bigint, tokenDecimals: number): string {
+  if (wei <= 0n) return "0";
+  const decimals = Math.max(0, tokenDecimals);
+  const padded = wei.toString().padStart(decimals + 1, "0");
+  const split = padded.length - decimals;
+  const whole = padded.slice(0, split).replace(/^0+(?=\d)/, "") || "0";
+  const frac = padded.slice(split);
+  if (whole !== "0") {
+    const n = Number(`${whole}.${frac.slice(0, 8)}`);
+    return Number.isFinite(n) ? formatCompactQuoteAmount(n) : `${whole}.${frac.slice(0, 4)}`;
+  }
+  const first = frac.search(/[1-9]/);
+  if (first === -1) return "0";
+  if (first <= 3) {
+    const keep = Math.min(frac.length, Math.max(first + 6, 8));
+    return `0.${frac.slice(0, keep).replace(/0+$/, "")}`;
+  }
+  const digits = (frac.slice(first) + "000000").slice(0, 6);
+  const mantissa = `${digits[0]}.${digits.slice(1)}`.replace(/0+$/, "").replace(/\.$/, "");
+  return `${mantissa}e-${first + 1}`;
+}
+
 export function formatAge(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;

@@ -10,7 +10,7 @@ import { TOTAL_SUPPLY } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
 
 import { TokenArt } from "./TokenArt";
-import { TokenCopyBadge } from "./TokenBadges";
+import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 function formatSpotUsd(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return "—";
@@ -55,6 +55,9 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
           <span className="mx-1.5 text-zinc-700">·</span>
           <span className="stonk-pair-pill">{pair}</span>
         </p>
+        <div className="mobile-token-row-badges">
+          <TokenTypeBadges token={token} />
+        </div>
         <p className="mt-1 text-[11px] text-zinc-500">
           MC <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
           <span className="mx-1.5 text-zinc-700">·</span>

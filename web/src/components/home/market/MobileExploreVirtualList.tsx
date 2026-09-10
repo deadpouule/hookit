@@ -7,7 +7,7 @@ import type { MarketToken } from "@/lib/market-tokens";
 
 import { MobileTokenRow } from "./MobileTokenRow";
 
-const ROW_ESTIMATE = 96;
+const ROW_ESTIMATE = 118;
 
 /** Window-virtualized mobile explore list — keeps DOM light on long catalogs. */
 export function MobileExploreVirtualList({ tokens }: { tokens: MarketToken[] }) {

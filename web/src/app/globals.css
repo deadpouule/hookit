@@ -1817,8 +1817,50 @@
     border-color: #9514d1;
   }
 
+  .token-hooks-chip-stat--live {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .token-hooks-chip-actions--buyback {
+    padding-left: 0;
+    width: 100%;
+  }
+
+  .token-hooks-chip-actions--buyback .token-hooks-vault-btn,
+  .token-hooks-claim-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 100%;
+    min-height: 2.35rem;
+    padding: 0.35rem 0.55rem;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  .token-hooks-claim-label {
+    line-height: 1.1;
+  }
+
+  .token-hooks-claim-sub {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.88;
+  }
+
+  .token-hooks-vault-btn--idle,
   .token-hooks-vault-btn:disabled {
-    opacity: 0.4;
+    opacity: 1;
+    color: rgb(161 161 170);
+    background: rgb(24 24 27);
+    border-color: rgb(63 63 70);
   }
 
   .token-hooks-burn-track {
@@ -6323,6 +6365,29 @@
     font-size: 8px;
   }
 
+  .mobile-token-row-badges {
+    position: relative;
+    z-index: 1;
+    margin-top: 5px;
+    pointer-events: none;
+  }
+
+  .mobile-token-row-badges .token-type-badges {
+    margin-top: 0;
+    gap: 4px;
+  }
+
+  .mobile-token-row-badges .token-type-badge {
+    padding: 1px 6px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .mobile-token-row-badges .token-type-badge-glyph.category-hook-glyph {
+    width: 0.85rem;
+    font-size: 0.26rem;
+  }
+
   @media (min-width: 640px) {
     .token-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -6692,6 +6757,7 @@
     border-color: rgb(56 189 248 / 0.45);
     background: rgb(56 189 248 / 0.15);
     color: #7dd3fc;
+    text-transform: capitalize;
   }
 
   .token-type-badge--pair-eth {

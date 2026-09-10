@@ -9,7 +9,8 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
-import { formatCompactQuoteAmount } from "@/lib/format";
+import { formatCompactQuoteAmount, formatLiveQuoteWei } from "@/lib/format";
+import { formatVestRemaining } from "@/lib/module-live-stats";
 import { toast } from "@/lib/toast";
 import type { TokenPool } from "@/lib/types";
 import type { HookTheme, MasterHookId } from "@/lib/master-hooks";
@@ -169,16 +170,20 @@ export function BuybackVestingInline({
   pool,
   buybackVault,
   claimableWei,
+  vestSecondsLeft,
   quoteLabel,
   decimals,
   embedded = false,
+  onClaimed,
 }: {
   pool: TokenPool;
   buybackVault: Address | undefined;
   claimableWei: bigint;
+  vestSecondsLeft?: number | null;
   quoteLabel: string;
   decimals: number;
   embedded?: boolean;
+  onClaimed?: () => void;
 }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -188,10 +193,14 @@ export function BuybackVestingInline({
     !!address && !!pool.creator && address.toLowerCase() === pool.creator.toLowerCase();
 
   const ticker = quoteLabel;
-  const claimLabel = `${formatCompactQuoteAmount(Number(formatUnits(claimableWei, decimals)))} ${ticker}`;
+  const claimLabel = `${formatLiveQuoteWei(claimableWei, decimals)} ${ticker}`;
+  const remainLabel =
+    vestSecondsLeft != null && vestSecondsLeft > 0 ? formatVestRemaining(vestSecondsLeft) : null;
+  const canClaim =
+    !!buybackVault && !!token && !!address && isCreator && claimableWei > BigInt(0) && !isPending;
 
   const claim = async () => {
-    if (!buybackVault || !token || !address) return;
+    if (!canClaim || !buybackVault || !token) return;
     try {
       const hash = await writeContractAsync({
         address: buybackVault,
@@ -200,6 +209,7 @@ export function BuybackVestingInline({
         args: [token],
       });
       await publicClient?.waitForTransactionReceipt({ hash });
+      onClaimed?.();
       toast.success("Vested fees claimed");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Claim failed";
@@ -207,27 +217,29 @@ export function BuybackVestingInline({
     }
   };
 
-  if (!isCreator) {
-    return embedded ? null : (
-      <p className="token-hooks-vault-copy text-[11px] text-zinc-500">
-        Creator fees vest linearly — only the launcher can claim.
-      </p>
-    );
-  }
+  const button = (
+    <button
+      type="button"
+      disabled={!canClaim}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void claim();
+      }}
+      className={cn(
+        "token-hooks-vault-btn token-hooks-claim-btn",
+        !canClaim && "token-hooks-vault-btn--idle",
+      )}
+    >
+      <span className="token-hooks-claim-label">{isPending ? "Claiming…" : "Claim"}</span>
+      {remainLabel ? <span className="token-hooks-claim-sub">{remainLabel}</span> : null}
+    </button>
+  );
 
   if (embedded) {
-    if (claimableWei <= BigInt(0)) return null;
     return (
       <div className="token-hooks-chip-actions token-hooks-chip-actions--buyback">
-        <span className="token-hooks-vault-copy text-[11px] text-zinc-400">{claimLabel} vested</span>
-        <button
-          type="button"
-          disabled={!buybackVault || claimableWei <= BigInt(0) || isPending || !address}
-          onClick={() => void claim()}
-          className="token-hooks-vault-btn"
-        >
-          Claim
-        </button>
+        {button}
       </div>
     );
   }
@@ -236,16 +248,9 @@ export function BuybackVestingInline({
     <div className="token-hooks-vault">
       <div className="token-hooks-vault-meta">
         <span>Claimable</span>
-        <span>{claimLabel}</span>
+        <span className="token-hooks-chip-stat--live">{claimLabel}</span>
       </div>
-      <button
-        type="button"
-        disabled={!buybackVault || claimableWei <= BigInt(0) || isPending || !address}
-        onClick={() => void claim()}
-        className="token-hooks-vault-btn"
-      >
-        Claim vested fees
-      </button>
+      {button}
     </div>
   );
 }
@@ -326,11 +331,13 @@ export function HookInlineAction({
   airdropSecondsLeft,
   buybackVault,
   buybackClaimableWei,
+  buybackVestSecondsLeft,
   decimals,
   floorPriceHuman,
   quoteLabel,
   embedded = false,
   theme,
+  onBuybackClaimed,
 }: {
   id: MasterHookId;
   pool: TokenPool;
@@ -341,11 +348,13 @@ export function HookInlineAction({
   airdropSecondsLeft?: number | null;
   buybackVault?: Address | undefined;
   buybackClaimableWei?: bigint;
+  buybackVestSecondsLeft?: number | null;
   decimals: number;
   floorPriceHuman: number | null;
   quoteLabel: string;
   embedded?: boolean;
   theme?: HookTheme;
+  onBuybackClaimed?: () => void;
 }) {
   if (id === "backed-floor") {
     return (
@@ -382,9 +391,11 @@ export function HookInlineAction({
         pool={pool}
         buybackVault={buybackVault}
         claimableWei={buybackClaimableWei ?? BigInt(0)}
+        vestSecondsLeft={buybackVestSecondsLeft}
         quoteLabel={quoteLabel}
         decimals={decimals}
         embedded={embedded}
+        onClaimed={onBuybackClaimed}
       />
     );
   }

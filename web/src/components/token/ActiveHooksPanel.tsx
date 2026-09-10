@@ -4,6 +4,8 @@ import { useMemo, type ReactNode } from "react";
 import { formatUnits, zeroAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
 
+import { useNowSeconds } from "@/hooks/useNowSeconds";
+
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
@@ -20,7 +22,7 @@ import {
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
-import { moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
+import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { hookTaxSummary, totalFeePlain } from "@/lib/launch-module-summary";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
@@ -33,7 +35,7 @@ function ModuleTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="block min-w-0 cursor-help">{children}</span>
+        <div className="w-full min-w-0 cursor-help">{children}</div>
       </TooltipTrigger>
       <TooltipContent
         side="top"
@@ -60,7 +62,6 @@ function resolveModules(pool: TokenPool): { modules: LaunchModules; hookTaxBps: 
 const EXPANDED_HOOK_IDS = new Set<MasterHookId>([
   "backed-floor",
   "holder-airdrop",
-  "buyback-vesting",
 ]);
 
 function HookModuleBadge({
@@ -74,17 +75,17 @@ function HookModuleBadge({
   tip: string;
   children?: ReactNode;
 }) {
-  const expanded = EXPANDED_HOOK_IDS.has(hook.id as MasterHookId);
+  const stacked = Boolean(children);
 
   return (
-    <ModuleTip tip={tip}>
-      <div
-        className={cn(
-          "token-hooks-chip orb-hook-desc-badge",
-          `orb-hook-desc-badge--${hook.theme}`,
-          expanded && "token-hooks-chip--expanded",
-        )}
-      >
+    <div
+      className={cn(
+        "token-hooks-chip orb-hook-desc-badge",
+        `orb-hook-desc-badge--${hook.theme}`,
+        stacked && "token-hooks-chip--expanded",
+      )}
+    >
+      <ModuleTip tip={tip}>
         <div className="token-hooks-chip-top">
           <MasterHookAsciiIcon
             hookId={hook.id === "fixed-fee" ? "dynamic-fees" : (hook.id as MasterHookId)}
@@ -97,14 +98,14 @@ function HookModuleBadge({
                 <span className="token-hooks-chip-sep" aria-hidden>
                   ·
                 </span>
-                <span className="token-hooks-chip-stat">{stat}</span>
+                <span className="token-hooks-chip-stat token-hooks-chip-stat--live">{stat}</span>
               </>
             ) : null}
           </span>
         </div>
-        {children}
-      </div>
-    </ModuleTip>
+      </ModuleTip>
+      {children}
+    </div>
   );
 }
 
@@ -205,20 +206,14 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!airdropVault && !!token && needAirdrop },
   });
 
-  const { data: buybackStream } = useReadContract({
+  const vestNowSec = useNowSeconds(needBuyback);
+
+  const { data: buybackStream, refetch: refetchBuybackStream } = useReadContract({
     address: buybackVaultAddr as Address | undefined,
     abi: buybackVaultAbi,
     functionName: "streams",
     args: creator && token ? [creator, token] : undefined,
-    query: { enabled: !!buybackVaultAddr && !!creator && !!token && needBuyback, refetchInterval: 20_000 },
-  });
-
-  const { data: buybackClaimableWei } = useReadContract({
-    address: buybackVaultAddr as Address | undefined,
-    abi: buybackVaultAbi,
-    functionName: "vestedOf",
-    args: creator && token ? [creator, token] : undefined,
-    query: { enabled: !!buybackVaultAddr && !!creator && !!token && needBuyback, refetchInterval: 20_000 },
+    query: { enabled: !!buybackVaultAddr && !!creator && !!token && needBuyback, refetchInterval: 15_000 },
   });
 
   const { data: totalSupply } = useReadContract({
@@ -251,23 +246,31 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   let buybackClaimedHuman: number | null = null;
   let buybackClaimableHuman: number | null = null;
   let buybackVestSecondsLeft: number | null = null;
+  let liveBuybackClaimableWei = 0n;
+  const fallbackDuration =
+    (resolvedModules.buybackVestingDurationDays ?? 365 * 5) * 86_400;
 
   if (buybackStream) {
     const amount = buybackStream[1] as bigint;
     const start = Number(buybackStream[2]);
     const claimed = buybackStream[3] as bigint;
-    const durationSec =
-      Number(buybackStream[4]) ||
-      (resolvedModules.buybackVestingDurationDays ?? 365 * 5) * 86_400;
+    const durationSec = Number(buybackStream[4]) || fallbackDuration;
+    liveBuybackClaimableWei = computeBuybackClaimableWei({
+      amount,
+      startSec: start,
+      claimed,
+      durationSec,
+      nowSec: vestNowSec,
+    });
     buybackTotalHuman = Number(formatUnits(amount, decimals));
     buybackClaimedHuman = Number(formatUnits(claimed, decimals));
-    buybackClaimableHuman =
-      buybackClaimableWei !== undefined
-        ? Number(formatUnits(buybackClaimableWei as bigint, decimals))
-        : null;
+    buybackClaimableHuman = Number(formatUnits(liveBuybackClaimableWei, decimals));
     if (start > 0) {
-      buybackVestSecondsLeft = Math.max(0, start + durationSec - Math.floor(Date.now() / 1000));
+      buybackVestSecondsLeft = Math.max(0, start + durationSec - vestNowSec);
     }
+  } else if (needBuyback) {
+    buybackVestSecondsLeft = fallbackDuration;
+    buybackClaimableHuman = 0;
   }
 
   const live: ModuleLiveStats = {
@@ -290,6 +293,8 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     buybackTotalHuman,
     buybackClaimableHuman,
     buybackClaimedHuman,
+    buybackClaimableWei: liveBuybackClaimableWei,
+    buybackQuoteDecimals: decimals,
     buybackVestSecondsLeft,
     quoteLabel,
   };
@@ -324,7 +329,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
               <HookModuleBadge hook={hook} stat={stat} tip={tip}>
-                {expanded ? (
+                {expanded && hook.id !== "buyback-vesting" ? (
                   <HookInlineAction
                     id={hook.id}
                     pool={pool}
@@ -334,10 +339,33 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                     airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
                     airdropSecondsLeft={live.airdropSecondsLeft}
                     buybackVault={buybackVaultAddr as Address | undefined}
-                    buybackClaimableWei={(buybackClaimableWei as bigint | undefined) ?? BigInt(0)}
+                    buybackClaimableWei={liveBuybackClaimableWei}
+                    buybackVestSecondsLeft={live.buybackVestSecondsLeft}
                     decimals={decimals}
                     floorPriceHuman={live.floorPriceHuman}
                     quoteLabel={live.quoteLabel}
+                    embedded
+                    theme={hook.theme}
+                  />
+                ) : null}
+                {hook.id === "buyback-vesting" ? (
+                  <HookInlineAction
+                    id={hook.id}
+                    pool={pool}
+                    floorVault={floorVault as Address | undefined}
+                    floorReserveWei={floorReserveWei}
+                    airdropVault={airdropVault as Address | undefined}
+                    airdropReserveWei={(airdropReserve as bigint | undefined) ?? BigInt(0)}
+                    airdropSecondsLeft={live.airdropSecondsLeft}
+                    buybackVault={buybackVaultAddr as Address | undefined}
+                    buybackClaimableWei={liveBuybackClaimableWei}
+                    buybackVestSecondsLeft={live.buybackVestSecondsLeft}
+                    decimals={decimals}
+                    floorPriceHuman={live.floorPriceHuman}
+                    quoteLabel={live.quoteLabel}
+                    onBuybackClaimed={() => {
+                      void refetchBuybackStream();
+                    }}
                     embedded
                     theme={hook.theme}
                   />

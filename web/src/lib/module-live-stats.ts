@@ -1,7 +1,7 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
-import { formatCompactQuoteAmount } from "@/lib/format";
+import { formatCompactQuoteAmount, formatLiveQuoteWei } from "@/lib/format";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -15,6 +15,8 @@ export type ModuleLiveStats = {
   buybackTotalHuman: number | null;
   buybackClaimableHuman: number | null;
   buybackClaimedHuman: number | null;
+  buybackClaimableWei?: bigint | null;
+  buybackQuoteDecimals?: number;
   buybackVestSecondsLeft: number | null;
   quoteLabel: string;
 };
@@ -24,14 +26,37 @@ function formatAmount(value: number | null, quoteLabel: string): string {
   return `${formatCompactQuoteAmount(value)} ${quoteLabel}`;
 }
 
-function formatDuration(seconds: number): string {
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+/** Remaining vest time, including seconds so the hook can tick live. */
+export function formatVestRemaining(seconds: number): string {
   if (seconds <= 0) return "unlocked";
   const days = Math.floor(seconds / 86_400);
   const hours = Math.floor((seconds % 86_400) / 3600);
-  if (days > 0) return `${days}d ${hours}h left`;
   const mins = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${mins}m left`;
-  return `${mins}m left`;
+  const secs = seconds % 60;
+  if (days > 0) return `${days}d ${hours}h ${mins}m ${pad2(secs)}s`;
+  if (hours > 0) return `${hours}h ${mins}m ${pad2(secs)}s`;
+  if (mins > 0) return `${mins}m ${pad2(secs)}s`;
+  return `${secs}s`;
+}
+
+/** Linear BuybackVault unlock minus already claimed. */
+export function buybackClaimableWei(args: {
+  amount: bigint;
+  startSec: number;
+  claimed: bigint;
+  durationSec: number;
+  nowSec: number;
+}): bigint {
+  const { amount, startSec, claimed, durationSec, nowSec } = args;
+  if (amount <= 0n || startSec <= 0 || durationSec <= 0) return 0n;
+  const elapsed = BigInt(Math.max(0, nowSec - startSec));
+  const duration = BigInt(durationSec);
+  const unlocked = elapsed >= duration ? amount : (amount * elapsed) / duration;
+  return unlocked > claimed ? unlocked - claimed : 0n;
 }
 
 function formatCountdown(seconds: number): string {
@@ -73,20 +98,20 @@ export function moduleLiveStatLine(
       return formatDynamicFeeRange(modules, _hookTaxBps);
     case "buyback-vesting": {
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
+      const remain =
+        live.buybackVestSecondsLeft != null
+          ? formatVestRemaining(live.buybackVestSecondsLeft)
+          : days >= 365
+            ? `${Math.round(days / 365)}y left`
+            : `${days}d left`;
+      const claimable =
+        live.buybackClaimableWei != null && live.buybackQuoteDecimals != null
+          ? `${formatLiveQuoteWei(live.buybackClaimableWei, live.buybackQuoteDecimals)} ${live.quoteLabel}`
+          : formatAmount(live.buybackClaimableHuman ?? 0, live.quoteLabel);
       if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) {
-        return days >= 365
-          ? `Unlocks over ${Math.round(days / 365)} years`
-          : `Unlocks over ${days} days`;
+        return `0 ${live.quoteLabel} · ${remain}`;
       }
-      const claimable = live.buybackClaimableHuman ?? 0;
-      if (claimable > 0) {
-        return `${formatAmount(claimable, live.quoteLabel)} ready to claim`;
-      }
-      const vest =
-        live.buybackVestSecondsLeft != null ? formatDuration(live.buybackVestSecondsLeft) : null;
-      return vest
-        ? `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} locked · ${vest}`
-        : `${formatAmount(live.buybackTotalHuman, live.quoteLabel)} locked`;
+      return `${claimable} · ${remain}`;
     }
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
