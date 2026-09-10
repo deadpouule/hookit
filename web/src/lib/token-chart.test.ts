@@ -134,26 +134,28 @@ test("ticksToBars buckets swaps into 1m OHLC", () => {
   assert.equal(bars[1]!.time, 1_080);
 });
 
-test("fillEmptyBars forward-fills like Sentry empty minutes", () => {
+test("fillEmptyBars only fills gaps between trades, not out to now", () => {
   const filled = fillEmptyBars(
-    [{ time: 1_000, open: 10, high: 11, low: 9, close: 12, volume: 4 }],
+    [
+      { time: 960, open: 10, high: 11, low: 9, close: 12, volume: 4 },
+      { time: 1_140, open: 12, high: 13, low: 11, close: 12.5, volume: 2 },
+    ],
     60,
-    1_180,
+    1_800,
   );
   assert.equal(filled.length, 4);
   assert.equal(filled[0]!.time, 960);
-  assert.equal(filled[0]!.close, 12);
   assert.equal(filled[1]!.volume, 0);
   assert.equal(filled[1]!.close, 12);
   assert.equal(filled[3]!.time, 1_140);
+  assert.equal(filled[3]!.close, 12.5);
 });
 
-test("seedLaunchBars plus fill spans launch to now", () => {
+test("a single print stays one bar so it sits on the right", () => {
   const seed = seedLaunchBars(1_700_000_000, 5_000);
   const filled = fillEmptyBars(seed, 900, 1_700_003_600);
-  assert.ok(filled.length >= 4);
+  assert.equal(filled.length, 1);
   assert.equal(filled[0]!.close, 5_000);
-  assert.equal(filled[filled.length - 1]!.close, 5_000);
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

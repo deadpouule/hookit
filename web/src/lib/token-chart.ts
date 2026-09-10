@@ -190,13 +190,13 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
 }
 
 /**
- * Forward-fill empty buckets to `now`, like Codex/Sentry (`removeEmptyBars: false`).
- * Flat minutes after the first print are real chart history, not a synthetic sparkline.
+ * Fill gaps between the first and last trade only.
+ * Do not extend to `now` — that slides real candles to the left (Stonk keeps the last print on the right).
  */
 export function fillEmptyBars(
   bars: ChartBar[],
   bucketSec: number,
-  nowSec: number,
+  nowSec?: number,
   maxBars = 2_000,
 ): ChartBar[] {
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
@@ -206,8 +206,8 @@ export function fillEmptyBars(
       .sort((a, b) => a.time - b.time),
   );
   const start = merged[0]!.time;
-  const end = Math.max(merged[merged.length - 1]!.time, Math.floor(nowSec / bucketSec) * bucketSec);
-  if (end < start) return merged;
+  const end = merged[merged.length - 1]!.time;
+  if (end <= start) return merged;
   const slots = Math.floor((end - start) / bucketSec) + 1;
   const stepSlots = slots > maxBars ? Math.ceil(slots / maxBars) : 1;
   const step = stepSlots * bucketSec;
@@ -244,6 +244,7 @@ export function fillEmptyBars(
       });
     }
   }
+  void nowSec;
   return out;
 }
 

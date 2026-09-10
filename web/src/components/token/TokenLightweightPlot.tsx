@@ -36,15 +36,16 @@ type ChartHandle = {
   style: ChartStyle;
 };
 
-const padFlatRange: AutoscaleInfoProvider = (original) => {
+const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
   if (!res?.priceRange) return res;
   const { minValue, maxValue } = res.priceRange;
-  if (maxValue <= minValue) {
-    const pad = Math.max(Math.abs(minValue) * 0.02, minValue > 1 ? 1 : minValue * 0.02 || 1e-12);
-    return { ...res, priceRange: { minValue: minValue - pad, maxValue: minValue + pad } };
-  }
-  return res;
+  const mid = (minValue + maxValue) / 2;
+  const span = Math.max(maxValue - minValue, 0);
+  const minSpan = Math.max(Math.abs(mid) * 0.08, mid > 1 ? mid * 0.004 : 1e-12);
+  if (span >= minSpan) return res;
+  const pad = minSpan / 2;
+  return { ...res, priceRange: { minValue: mid - pad, maxValue: mid + pad } };
 };
 
 function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
@@ -70,10 +71,10 @@ async function attachPriceSeries(
     return chart.addSeries(tv.LineSeries, {
       color: lineColor,
       lineWidth: 2,
-      priceLineVisible: false,
-      lastValueVisible: false,
+      priceLineVisible: true,
+      lastValueVisible: true,
       priceFormat,
-      autoscaleInfoProvider: padFlatRange,
+      autoscaleInfoProvider: padPriceRange,
     });
   }
 
@@ -83,26 +84,19 @@ async function attachPriceSeries(
     wickUpColor: UP,
     wickDownColor: DOWN,
     borderVisible: false,
+    priceLineVisible: true,
+    lastValueVisible: true,
     priceFormat,
-    autoscaleInfoProvider: padFlatRange,
+    autoscaleInfoProvider: padPriceRange,
   });
 }
 
-function withLineSpan(bars: ChartBar[]): ChartBar[] {
-  if (bars.length !== 1) return bars;
-  const b = bars[0]!;
-  const prev = Math.max(0, b.time - 300);
-  if (prev === b.time) return bars;
-  return [{ ...b, time: prev, volume: 0 }, b];
-}
-
 function applyBars(handle: ChartHandle, next: ChartBar[], fit: boolean, lineColor: string) {
-  const plotted = handle.style === "line" ? withLineSpan(next) : next;
   if (handle.style === "line") {
     const line = handle.price as ISeriesApi<"Line">;
     line.applyOptions({ color: lineColor });
     line.setData(
-      plotted.map((b) => ({
+      next.map((b) => ({
         time: b.time as UTCTimestamp,
         value: b.close,
       })),
@@ -184,7 +178,9 @@ export function TokenLightweightPlot({
           borderColor: GRID,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 4,
+          rightOffset: 12,
+          barSpacing: 12,
+          minBarSpacing: 6,
         },
         localization: {
           priceFormatter: (price: number) => formatChartUsd(price, scaleRef.current),
