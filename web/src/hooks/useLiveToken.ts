@@ -103,7 +103,11 @@ export function useLiveToken(pool: TokenPool) {
     ethUsd,
   ]);
 
-  const indexerQuery = useTokenIndexerData(address, { poolId: pool.poolId, candlesLimit: 2_000 });
+  const indexerQuery = useTokenIndexerData(address, {
+    poolId: pool.poolId,
+    candlesLimit: 2_000,
+    tradesLimit: 500,
+  });
 
   const onchainQuery = useQuery({
     queryKey: ["onchain-live", address, pool.poolId],
@@ -152,27 +156,51 @@ export function useLiveToken(pool: TokenPool) {
       : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
 
     const candleScale = candleFdvScale(pool, eth, quoteUsd, pool.launchMcapQuoteHuman);
-    let mappedCandles: LiveCandle[] =
+    const volumeUsdForTrade = (vQuote: string) => {
+      try {
+        return quoteVolumeUsd(BigInt(vQuote || "0"), pool, eth, quoteUsd);
+      } catch {
+        return 0;
+      }
+    };
+    const candles5m: LiveCandle[] =
       candles.length > 0
-        ? candles.map((c) => {
-            let volumeUsd = 0;
-            try {
-              volumeUsd = quoteVolumeUsd(BigInt(c.vQuote || "0"), pool, eth, quoteUsd);
-            } catch {
-              volumeUsd = 0;
-            }
-            return {
+        ? candles
+            .filter((c) => typeof c.t === "number" && c.t > 0)
+            .map((c) => ({
               o: Number(c.o) * candleScale,
               h: Number(c.h) * candleScale,
               l: Number(c.l) * candleScale,
               c: Number(c.c) * candleScale,
-              t: typeof c.t === "number" ? c.t : undefined,
-              v: volumeUsd,
-            };
-          })
-        : mcap > 0
-          ? [{ o: mcap, h: mcap, l: mcap, c: mcap }]
-          : [];
+              t: c.t,
+              v: volumeUsdForTrade(c.vQuote || "0"),
+            }))
+        : [];
+    const fromTrades: LiveCandle[] = [...trades]
+      .filter((t) => t.timestamp > 0 && Number(t.price) > 0)
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .reduce<LiveCandle[]>((series, t) => {
+        const bucket = Math.floor(t.timestamp / 60) * 60;
+        const px = Number(t.price) * candleScale;
+        const vol = volumeUsdForTrade(t.quoteAmount);
+        const last = series[series.length - 1];
+        if (!last || last.t !== bucket) {
+          series.push({ t: bucket, o: px, h: px, l: px, c: px, v: vol });
+        } else {
+          last.h = Math.max(last.h, px);
+          last.l = Math.min(last.l, px);
+          last.c = px;
+          last.v = (last.v ?? 0) + vol;
+        }
+        return series;
+      }, []);
+    let mappedCandles: LiveCandle[] = fromTrades;
+    if (fromTrades.length && candles5m.length) {
+      const firstTrade = fromTrades[0]!.t!;
+      mappedCandles = [...candles5m.filter((c) => (c.t ?? 0) + 300 < firstTrade), ...fromTrades];
+    } else if (!fromTrades.length) {
+      mappedCandles = candles5m;
+    }
 
     if (candlesLookBroken(mappedCandles, mcap) && onchainQuery.data?.candles?.length) {
       mappedCandles = onchainQuery.data.candles;
@@ -195,7 +223,7 @@ export function useLiveToken(pool: TokenPool) {
     }
 
     if (candlesLookBroken(mappedCandles, mcap) && mcap > 0) {
-      mappedCandles = [{ o: mcap, h: mcap, l: mcap, c: mcap }];
+      mappedCandles = [];
     }
 
     const recentTrades = trades.slice(0, 40);

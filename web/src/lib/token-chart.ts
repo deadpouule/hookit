@@ -2,12 +2,14 @@ import { formatCompactUsd } from "@/lib/format";
 import type { LiveCandle } from "@/lib/token-live";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 
-export const NATIVE_CANDLE_SEC = 300;
+/** Native resolution is 1m — same as Sentry's subgraph resample. */
+export const NATIVE_CANDLE_SEC = 60;
 
 export const CHART_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D", "ALL"] as const;
 export type ChartInterval = (typeof CHART_TIMEFRAMES)[number];
 export type ChartScale = "mcap" | "price";
 export type ChartStyle = "candles" | "line";
+export type ChartTick = { t: number; price: number; volume?: number };
 
 export type ChartBar = {
   time: number;
@@ -25,20 +27,16 @@ const INTERVAL_BUCKET_SEC: Record<ChartInterval, number> = {
   "1h": 3_600,
   "4h": 14_400,
   "1D": 86_400,
-  ALL: 300,
+  ALL: 60,
 };
 
 function finitePos(n: number): boolean {
   return Number.isFinite(n) && n > 0;
 }
 
-/** Fill missing unix timestamps so synthetic / on-chain fallbacks still plot. */
-export function withCandleTimes(candles: LiveCandle[], nowSec: number): LiveCandle[] {
-  const lastIdx = candles.length - 1;
-  return candles.map((c, i) => {
-    if (c.t != null && c.t > 0) return c;
-    return { ...c, t: nowSec - (lastIdx - i) * NATIVE_CANDLE_SEC };
-  });
+/** Keep only candles that came from real swaps (drop the fake spot placeholder). */
+export function withCandleTimes(candles: LiveCandle[], _nowSec?: number): LiveCandle[] {
+  return candles.filter((c) => c.t != null && c.t > 0);
 }
 
 function mergeBars(bars: ChartBar[]): ChartBar[] {
@@ -57,8 +55,8 @@ function mergeBars(bars: ChartBar[]): ChartBar[] {
   return deduped;
 }
 
-export function liveCandlesToBars(candles: LiveCandle[], nowSec: number, liveMcap?: number): ChartBar[] {
-  const timed = withCandleTimes(candles, nowSec)
+export function liveCandlesToBars(candles: LiveCandle[], _nowSec?: number, liveMcap?: number): ChartBar[] {
+  const timed = withCandleTimes(candles)
     .filter((c) => finitePos(c.c) || finitePos(c.o))
     .map((c) => {
       const open = finitePos(c.o) ? c.o : c.c;
@@ -157,11 +155,105 @@ export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   return next;
 }
 
-export function pickChartBars(indexer: ChartBar[], geckoMcap: ChartBar[], interval: ChartInterval): ChartBar[] {
-  if (interval === "ALL") return indexer.length ? indexer : geckoMcap;
-  if (interval === "1m") return geckoMcap.length ? geckoMcap : indexer;
-  if (geckoMcap.length >= 8) return geckoMcap;
-  return indexer.length ? indexer : geckoMcap;
+export function intervalBucketSec(interval: ChartInterval): number {
+  return INTERVAL_BUCKET_SEC[interval];
+}
+
+/** Bucket every swap into OHLC — this is Sentry's subgraph path, not a spot placeholder. */
+export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): ChartBar[] {
+  if (!(bucketSec > 0) || ticks.length === 0) return [];
+  const sorted = ticks
+    .filter((tick) => tick.t > 0 && Number.isFinite(tick.price) && tick.price > 0)
+    .sort((a, b) => a.t - b.t);
+  const out: ChartBar[] = [];
+  for (const tick of sorted) {
+    const time = Math.floor(tick.t / bucketSec) * bucketSec;
+    const volume = tick.volume != null && Number.isFinite(tick.volume) && tick.volume > 0 ? tick.volume : 0;
+    const last = out[out.length - 1];
+    if (!last || last.time !== time) {
+      out.push({
+        time,
+        open: tick.price,
+        high: tick.price,
+        low: tick.price,
+        close: tick.price,
+        volume,
+      });
+    } else {
+      last.high = Math.max(last.high, tick.price);
+      last.low = Math.min(last.low, tick.price);
+      last.close = tick.price;
+      last.volume += volume;
+    }
+  }
+  return out;
+}
+
+/**
+ * Forward-fill empty buckets to `now`, like Codex/Sentry (`removeEmptyBars: false`).
+ * Flat minutes after the first print are real chart history, not a synthetic sparkline.
+ */
+export function fillEmptyBars(
+  bars: ChartBar[],
+  bucketSec: number,
+  nowSec: number,
+  maxBars = 2_000,
+): ChartBar[] {
+  if (bars.length === 0 || !(bucketSec > 0)) return bars;
+  const merged = mergeBars(
+    [...bars]
+      .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec }))
+      .sort((a, b) => a.time - b.time),
+  );
+  const start = merged[0]!.time;
+  const end = Math.max(merged[merged.length - 1]!.time, Math.floor(nowSec / bucketSec) * bucketSec);
+  if (end < start) return merged;
+  const slots = Math.floor((end - start) / bucketSec) + 1;
+  const stepSlots = slots > maxBars ? Math.ceil(slots / maxBars) : 1;
+  const step = stepSlots * bucketSec;
+  const byTime = new Map(merged.map((b) => [b.time, b]));
+  const out: ChartBar[] = [];
+  let prev = merged[0]!;
+  for (let time = start; time <= end; time += step) {
+    let hit = byTime.get(time);
+    if (!hit && step > bucketSec) {
+      for (let inner = time; inner < time + step; inner += bucketSec) {
+        const row = byTime.get(inner);
+        if (!row) continue;
+        if (!hit) {
+          hit = { ...row, time };
+        } else {
+          hit.high = Math.max(hit.high, row.high);
+          hit.low = Math.min(hit.low, row.low);
+          hit.close = row.close;
+          hit.volume += row.volume;
+        }
+      }
+    }
+    if (hit) {
+      prev = hit;
+      out.push({ ...hit, time });
+    } else {
+      out.push({
+        time,
+        open: prev.close,
+        high: prev.close,
+        low: prev.close,
+        close: prev.close,
+        volume: 0,
+      });
+    }
+  }
+  return out;
+}
+
+export function mergeChartSeries(left: ChartBar[], right: ChartBar[]): ChartBar[] {
+  return mergeBars([...left, ...right].sort((a, b) => a.time - b.time));
+}
+
+export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
+  if (house.length > 0) return house;
+  return geckoMcap;
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {

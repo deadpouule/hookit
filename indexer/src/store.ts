@@ -47,11 +47,11 @@ function quoteDecimalsForTrade(row: TokenRow, poolId?: string): number {
   return row.quoteDecimals || 18;
 }
 
-function rebuildCandles(trades: IndexedTrade[]): Candle[] {
+function rebuildCandles(trades: IndexedTrade[], bucketSec = CANDLE_SEC): Candle[] {
   const series: Candle[] = [];
   const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp);
   for (const trade of sorted) {
-    const bucket = Math.floor(trade.timestamp / CANDLE_SEC) * CANDLE_SEC;
+    const bucket = Math.floor(trade.timestamp / bucketSec) * bucketSec;
     const last = series[series.length - 1];
     if (!last || last.t !== bucket) {
       series.push({
@@ -482,14 +482,22 @@ export class Store {
       .slice(0, limit);
   }
 
-  candles(token: Address, limit: number, poolId?: string): Candle[] {
+  candles(token: Address, limit: number, poolId?: string, bucketSec = CANDLE_SEC): Candle[] {
     const row = this.getToken(token);
     if (!row) return [];
+    if (bucketSec !== CANDLE_SEC) {
+      const key = poolId?.toLowerCase();
+      const trades = row.trades.filter((t) => {
+        const tradePool = (t.poolId ?? row.poolId).toLowerCase();
+        if (key) return tradePool === key;
+        return tradePool === row.poolId.toLowerCase();
+      });
+      return rebuildCandles(trades, bucketSec).slice(-limit);
+    }
     if (poolId) {
       const key = poolId.toLowerCase();
       const series = row.candles5mByPool?.[key];
       if (series?.length) return series.slice(-limit);
-      // Rebuild from trades when older data lacked candles5mByPool.
       return this._candlesFromTrades(row, limit, key);
     }
     return row.candles5m.slice(-limit);

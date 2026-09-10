@@ -10,12 +10,16 @@ import { formatPercent } from "@/lib/format";
 import {
   CHART_TIMEFRAMES,
   barsForInterval,
+  fillEmptyBars,
   formatChartUsd,
+  intervalBucketSec,
   liveCandlesToBars,
+  mergeChartSeries,
   pickChartBars,
   pinLiveMcap,
   priceBarsToMcap,
   scaleBars,
+  ticksToBars,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -186,11 +190,19 @@ export function TokenCandleChart({
   }, []);
 
   const bars = useMemo(() => {
-    const indexer = liveCandlesToBars(candles, nowSec, marketCap);
+    const fromCandles = liveCandlesToBars(candles, nowSec, marketCap);
+    const fromSwaps = ticksToBars(
+      swaps
+        .filter((s) => s.t != null && s.t > 0 && s.marketCap > 0)
+        .map((s) => ({ t: s.t!, price: s.marketCap, volume: s.totalUsd })),
+    );
+    const house = mergeChartSeries(fromCandles, fromSwaps);
     const geckoMcap = pinLiveMcap(priceBarsToMcap(gecko.data?.bars ?? []), marketCap);
-    const source = pickChartBars(indexer, geckoMcap, interval);
+    const source = pickChartBars(house, geckoMcap);
     const withTicks = applySwapTicks(source, swaps);
-    return scaleBars(barsForInterval(withTicks, interval), scale);
+    const bucket = intervalBucketSec(interval);
+    const display = barsForInterval(withTicks, interval);
+    return scaleBars(fillEmptyBars(display, bucket, nowSec), scale);
   }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars]);
 
   const hasData = bars.length > 0;

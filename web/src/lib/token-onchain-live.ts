@@ -64,10 +64,6 @@ export function buildSparseLive(pool: TokenPool, ethUsd: number): LiveTokenState
         ? marketCapUsdForPool(priceEth, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
         : 0;
   const priceUsd = marketCap > 0 ? marketCap / TOTAL_SUPPLY : 0;
-  const spotCandle =
-    marketCap > 0
-      ? [{ o: marketCap, h: marketCap, l: marketCap, c: marketCap }]
-      : [];
 
   return {
     priceUsd,
@@ -81,7 +77,7 @@ export function buildSparseLive(pool: TokenPool, ethUsd: number): LiveTokenState
     change6h: 0,
     change24h: pool.change24h ?? 0,
     buyPct: 50,
-    candles: spotCandle,
+    candles: [],
     swaps: [],
     holderRows: [],
   };

@@ -4,24 +4,33 @@ import test from "node:test";
 import {
   aggregateBars,
   barsForInterval,
+  fillEmptyBars,
   formatChartUsd,
   liveCandlesToBars,
   pickChartBars,
   priceBarsToMcap,
   scaleBars,
+  ticksToBars,
 } from "./token-chart";
 import { TOTAL_SUPPLY } from "./token-live";
 import type { LiveCandle } from "./token-live";
 
-test("liveCandlesToBars fills missing timestamps backwards from now", () => {
+test("liveCandlesToBars drops untimed placeholder candles", () => {
   const candles: LiveCandle[] = [
     { o: 100, h: 110, l: 90, c: 105 },
     { o: 105, h: 120, l: 100, c: 118 },
   ];
+  assert.equal(liveCandlesToBars(candles, 1_700_000_600).length, 0);
+});
+
+test("liveCandlesToBars keeps timed indexer candles", () => {
+  const candles: LiveCandle[] = [
+    { t: 1_700_000_300, o: 100, h: 110, l: 90, c: 105 },
+    { t: 1_700_000_600, o: 105, h: 120, l: 100, c: 118 },
+  ];
   const bars = liveCandlesToBars(candles, 1_700_000_600);
   assert.equal(bars.length, 2);
   assert.equal(bars[0]!.time, 1_700_000_300);
-  assert.equal(bars[1]!.time, 1_700_000_600);
   assert.equal(bars[1]!.close, 118);
 });
 
@@ -51,7 +60,7 @@ test("aggregateBars rolls 5m into 1h OHLC + volume", () => {
   assert.equal(hourly[1]!.volume, 4);
 });
 
-test("barsForInterval ALL keeps 5m buckets", () => {
+test("barsForInterval ALL keeps native buckets", () => {
   const bars = [
     { time: 0, open: 1, high: 1, low: 1, close: 1, volume: 0 },
     { time: 300, open: 1, high: 2, low: 1, close: 2, volume: 0 },
@@ -92,7 +101,7 @@ test("priceBarsToMcap converts GeckoTerminal USD price into FDV", () => {
   assert.equal(mcap[0]!.volume, 50);
 });
 
-test("pickChartBars prefers GeckoTerminal except ALL and thin history", () => {
+test("pickChartBars prefers house swap series over GeckoTerminal", () => {
   const indexer = [{ time: 1, open: 1, high: 1, low: 1, close: 1, volume: 0 }];
   const gecko = Array.from({ length: 8 }, (_, i) => ({
     time: i,
@@ -102,10 +111,40 @@ test("pickChartBars prefers GeckoTerminal except ALL and thin history", () => {
     close: 2,
     volume: 1,
   }));
-  assert.equal(pickChartBars(indexer, gecko, "5m")[0]!.close, 2);
-  assert.equal(pickChartBars(indexer, gecko, "ALL")[0]!.close, 1);
-  assert.equal(pickChartBars(indexer, gecko.slice(0, 2), "5m")[0]!.close, 1);
-  assert.equal(pickChartBars(indexer, gecko.slice(0, 1), "1m")[0]!.close, 2);
+  assert.equal(pickChartBars(indexer, gecko, "5m")[0]!.close, 1);
+  assert.equal(pickChartBars([], gecko, "ALL")[0]!.close, 2);
+});
+
+test("ticksToBars buckets swaps into 1m OHLC", () => {
+  const bars = ticksToBars(
+    [
+      { t: 1_000, price: 10, volume: 1 },
+      { t: 1_010, price: 14, volume: 2 },
+      { t: 1_080, price: 12, volume: 1 },
+    ],
+    60,
+  );
+  assert.equal(bars.length, 2);
+  assert.equal(bars[0]!.time, 960);
+  assert.equal(bars[0]!.open, 10);
+  assert.equal(bars[0]!.high, 14);
+  assert.equal(bars[0]!.close, 14);
+  assert.equal(bars[0]!.volume, 3);
+  assert.equal(bars[1]!.time, 1_080);
+});
+
+test("fillEmptyBars forward-fills like Sentry empty minutes", () => {
+  const filled = fillEmptyBars(
+    [{ time: 1_000, open: 10, high: 11, low: 9, close: 12, volume: 4 }],
+    60,
+    1_180,
+  );
+  assert.equal(filled.length, 4);
+  assert.equal(filled[0]!.time, 960);
+  assert.equal(filled[0]!.close, 12);
+  assert.equal(filled[1]!.volume, 0);
+  assert.equal(filled[1]!.close, 12);
+  assert.equal(filled[3]!.time, 1_140);
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

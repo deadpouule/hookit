@@ -178,7 +178,7 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         return;
       }
 
-      const limit = Math.min(Math.max(Number(u.searchParams.get("limit") ?? 50), 1), 500);
+      const limit = Math.min(Math.max(Number(u.searchParams.get("limit") ?? 50), 1), 2_000);
       const offset = Math.max(Number(u.searchParams.get("offset") ?? 0), 0);
       const poolId = u.searchParams.get("poolId") ?? undefined;
 
@@ -201,11 +201,12 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
       }
       if (parts[3] === "candles") {
         const interval = u.searchParams.get("interval") ?? "5m";
+        const bucketSec = interval === "1m" ? 60 : 300;
         json(res, 200, {
           token: token.toLowerCase(),
           poolId: poolId ?? null,
-          interval: interval === "5m" ? "5m" : "5m",
-          candles: store.candles(token, limit, poolId),
+          interval: bucketSec === 60 ? "1m" : "5m",
+          candles: store.candles(token, limit, poolId, bucketSec),
         });
         return;
       }
