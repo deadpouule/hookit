@@ -40,6 +40,7 @@ import {
   MASTER_LAUNCH_STEPS,
   MASTER_WIZARD_STEP_INTRO,
   MASTER_WIZARD_STEP_SUBTITLES,
+  creatorCutLock,
 } from "@/lib/launch-wizard";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
@@ -128,10 +129,12 @@ export function MasterLaunchWizard() {
   const toggleModule = (id: (typeof MASTER_HOOKS)[number]["id"], next: boolean) => {
     if (id === "backed-floor" && next && form.markets.length > 1) return;
     if (id === "creator-share-to-hook" && next) {
+      if (creatorCutLock(id, form.modules)) return;
       updateModules({ creatorShareToHook: true, buybackVesting: false });
       return;
     }
     if (id === "buyback-vesting" && next) {
+      if (creatorCutLock(id, form.modules)) return;
       updateModules({ buybackVesting: true, creatorShareToHook: false });
       return;
     }

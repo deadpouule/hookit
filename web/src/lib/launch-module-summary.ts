@@ -189,7 +189,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
-    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page.",
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page. Can't combine with Creator → Hook — both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "lp-donate":
@@ -197,7 +197,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "holder-airdrop":
     "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each 15-minute epoch. Permissionless — anyone can trigger the push.",
   "creator-share-to-hook":
-    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled.",
+    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
   "fixed-fee":
     "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules — leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
 };

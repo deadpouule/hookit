@@ -10,6 +10,7 @@ import { HookLogo } from "@/components/home/market/HookLogo";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
+import { creatorCutLock } from "@/lib/launch-wizard";
 import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
 import { formatBps } from "@/lib/format";
 import {
@@ -214,31 +215,41 @@ function HookPickCard({
   hook,
   selected,
   disabled = false,
+  disabledHint,
+  disabledDetail,
   onClick,
 }: {
   hook: MasterHook;
   selected: boolean;
   disabled?: boolean;
+  disabledHint?: string;
+  disabledDetail?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
-      disabled={disabled}
+      aria-disabled={disabled}
+      title={disabled ? disabledDetail ?? disabledHint : undefined}
       className={cn(
         "pick-card pick-card--hook",
         `pick-card--${hook.theme}`,
         selected && "is-on",
         disabled && "cursor-not-allowed opacity-45",
       )}
-      onClick={onClick}
+      onClick={() => {
+        if (disabled) return;
+        onClick();
+      }}
     >
       <HookPickTooltip hook={hook} />
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
       <p className="pick-card-title">{hook.title}</p>
-      <p className="pick-card-sub pick-card-sub--hook">{hookPickTagline(hook.id)}</p>
+      <p className="pick-card-sub pick-card-sub--hook">
+        {disabled && disabledHint ? disabledHint : hookPickTagline(hook.id)}
+      </p>
     </button>
   );
 }
@@ -477,13 +488,20 @@ export function HookModulePicker({
   const renderPickCards = () =>
     visibleHooks.flatMap((hook) => {
       const selected = isModuleEnabled(modules, hook.id);
-      const disabled = multiMarket && hook.id === "backed-floor";
+      const cutLock = creatorCutLock(hook.id, modules);
+      const disabled = (multiMarket && hook.id === "backed-floor") || Boolean(cutLock);
+      const disabledHint =
+        multiMarket && hook.id === "backed-floor"
+          ? "Unavailable on multi-pair"
+          : cutLock?.card;
       const cards = [
         <HookPickCard
           key={hook.id}
           hook={hook}
           selected={selected}
           disabled={disabled}
+          disabledHint={disabledHint}
+          disabledDetail={cutLock?.detail}
           onClick={() => {
             if (disabled) return;
             if (selected) {
@@ -1080,7 +1098,6 @@ function HookSettings({
         {hasFeeSink
           ? "70% creator share → hook pot with your modules"
           : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
-        {modules.buybackVesting && " · disabled while buyback vesting is on"}
       </span>
     );
   }
