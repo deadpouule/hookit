@@ -36,14 +36,21 @@ type ChartHandle = {
   style: ChartStyle;
 };
 
+/**
+ * Stonk autoscales to the wick. A flat doji gets a tight centered pad so the
+ * last-price line runs through the body (8% of mid left the print in empty air).
+ */
 const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
   if (!res?.priceRange) return res;
   const { minValue, maxValue } = res.priceRange;
   const mid = (minValue + maxValue) / 2;
   const span = Math.max(maxValue - minValue, 0);
-  const minSpan = Math.max(Math.abs(mid) * 0.08, mid > 1 ? mid * 0.004 : 1e-12);
-  if (span >= minSpan) return res;
+  const minSpan = Math.max(Math.abs(mid) * 0.005, mid > 1 ? 0.01 : 1e-18);
+  if (span >= minSpan) {
+    const pad = span * 0.06;
+    return { ...res, priceRange: { minValue: minValue - pad, maxValue: maxValue + pad } };
+  }
   const pad = minSpan / 2;
   return { ...res, priceRange: { minValue: mid - pad, maxValue: mid + pad } };
 };
@@ -53,6 +60,12 @@ function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
     if (bars[i]!.time === time) return bars[i];
   }
   return undefined;
+}
+
+function lastBarUp(bars: ChartBar[]): boolean {
+  const last = bars[bars.length - 1];
+  if (!last) return true;
+  return last.close >= last.open;
 }
 
 async function attachPriceSeries(
@@ -73,6 +86,9 @@ async function attachPriceSeries(
       lineWidth: 2,
       priceLineVisible: true,
       lastValueVisible: true,
+      priceLineColor: lineColor,
+      priceLineWidth: 1,
+      priceLineStyle: tv.LineStyle.Dashed,
       priceFormat,
       autoscaleInfoProvider: padPriceRange,
     });
@@ -86,6 +102,8 @@ async function attachPriceSeries(
     borderVisible: false,
     priceLineVisible: true,
     lastValueVisible: true,
+    priceLineWidth: 1,
+    priceLineStyle: tv.LineStyle.Dashed,
     priceFormat,
     autoscaleInfoProvider: padPriceRange,
   });
@@ -93,27 +111,33 @@ async function attachPriceSeries(
 
 function pinLastBarRight(chart: IChartApi, barCount: number) {
   if (barCount <= 0) return;
-  const rightPad = 2;
-  const minVisible = 16;
+  const rightPad = 3;
+  const minVisible = 52;
   const last = barCount - 1;
-  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 48));
+  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 90));
   chart.timeScale().setVisibleLogicalRange({
     from: last + rightPad - visible + 1,
     to: last + rightPad,
   });
 }
 
-function applyBars(handle: ChartHandle, next: ChartBar[], _fit: boolean, lineColor: string) {
+function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string) {
+  const up = lastBarUp(next);
+  const line = up ? UP : DOWN;
+
   if (handle.style === "line") {
-    const line = handle.price as ISeriesApi<"Line">;
-    line.applyOptions({ color: lineColor });
-    line.setData(
+    const series = handle.price as ISeriesApi<"Line">;
+    series.applyOptions({ color: lineColor, priceLineColor: lineColor });
+    series.setData(
       next.map((b) => ({
         time: b.time as UTCTimestamp,
         value: b.close,
       })),
     );
   } else {
+    (handle.price as ISeriesApi<"Candlestick">).applyOptions({
+      priceLineColor: line,
+    });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => ({
         time: b.time as UTCTimestamp,
@@ -127,14 +151,14 @@ function applyBars(handle: ChartHandle, next: ChartBar[], _fit: boolean, lineCol
 
   const showVolume = hasChartVolume(next);
   handle.price.priceScale().applyOptions({
-    scaleMargins: { top: 0.08, bottom: showVolume ? 0.28 : 0.08 },
+    scaleMargins: { top: 0.06, bottom: showVolume ? 0.14 : 0.06 },
   });
   handle.volume.setData(
     showVolume
       ? next.map((b) => ({
           time: b.time as UTCTimestamp,
           value: b.volume,
-          color: b.close >= b.open ? "rgba(16,185,129,0.45)" : "rgba(239,68,68,0.45)",
+          color: b.close >= b.open ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)",
         }))
       : [],
   );
@@ -190,9 +214,13 @@ export function TokenLightweightPlot({
           borderColor: GRID,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 12,
-          barSpacing: 12,
-          minBarSpacing: 6,
+          rightOffset: 3,
+          barSpacing: 6,
+          minBarSpacing: 3,
+          maxBarSpacing: 8,
+          fixRightEdge: true,
+          lockVisibleTimeRangeOnResize: true,
+          shiftVisibleRangeOnNewBar: true,
         },
         localization: {
           priceFormatter: (price: number) => formatChartUsd(price, scaleRef.current),
@@ -206,15 +234,16 @@ export function TokenLightweightPlot({
         priceLineVisible: false,
         lastValueVisible: false,
       });
+      // Thin volume strip — fat histogram bars were being read as candles.
       chart.priceScale("volume").applyOptions({
-        scaleMargins: { top: 0.78, bottom: 0 },
+        scaleMargins: { top: 0.88, bottom: 0 },
       });
 
       const handle: ChartHandle = { chart, price, volume, style: styleRef.current };
       handleRef.current = handle;
       const next = pendingBarsRef.current;
       rangeSigRef.current = chartRangeSignature(next);
-      applyBars(handle, next, true, lineColorRef.current);
+      applyBars(handle, next, lineColorRef.current);
 
       chart.subscribeCrosshairMove((param) => {
         if (!param.time || !param.seriesData.size) {
@@ -249,7 +278,7 @@ export function TokenLightweightPlot({
       if (handleRef.current !== handle) return;
       handle.price = price;
       handle.style = style;
-      applyBars(handle, pendingBarsRef.current, true, lineColor);
+      applyBars(handle, pendingBarsRef.current, lineColor);
     });
   }, [style, scale, lineColor]);
 
@@ -273,9 +302,8 @@ export function TokenLightweightPlot({
     const handle = handleRef.current;
     if (!handle) return;
     const signature = chartRangeSignature(bars);
-    const fit = signature !== rangeSigRef.current;
     rangeSigRef.current = signature;
-    applyBars(handle, bars, fit, lineColor);
+    applyBars(handle, bars, lineColor);
   }, [bars, lineColor]);
 
   useEffect(() => {

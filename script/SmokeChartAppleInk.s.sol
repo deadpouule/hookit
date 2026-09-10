@@ -12,11 +12,13 @@ import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {HookitSwapRouter} from "../src/HookitSwapRouter.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
+import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 
-/// @notice Live Ink probe: vanilla Master launch + buys + dump so the TV chart has real wicks.
+/// @notice Live Ink probe: vanilla Master launch quoted in wAAPLx, then spaced buys/dumps.
 /// @dev `CHART_PHASE=launch|buy|sell` — split txs so candles land in different minutes.
-contract SmokeChartWickInkScript is Script {
+contract SmokeChartAppleInkScript is Script {
     function run() public {
+        require(block.chainid == QuotronStockQuotes.INK_MAINNET, "Ink only");
         string memory phase = vm.envOr("CHART_PHASE", string("launch"));
         if (keccak256(bytes(phase)) == keccak256("buy")) {
             _buyMore();
@@ -26,26 +28,28 @@ contract SmokeChartWickInkScript is Script {
             _dump();
             return;
         }
-        _launchAndBuy();
+        _launch();
     }
 
-    function _launchAndBuy() internal {
+    function _launch() internal {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address user = vm.addr(pk);
+        address aapl = QuotronStockQuotes.wAAPLx;
         LaunchFactory factory = LaunchFactory(payable(vm.envAddress("LAUNCH_FACTORY")));
-        HookitSwapRouter router = HookitSwapRouter(payable(vm.envAddress("HOOKIT_SWAP_ROUTER")));
 
         console.log("user", user);
         console.log("ethBefore", user.balance);
+        console.log("aaplBefore", IERC20(aapl).balanceOf(user));
+        require(user.balance > ProtocolConstants.LAUNCH_FEE_WEI + 0.00005 ether, "top up ETH for launch+gas");
 
         vm.startBroadcast(pk);
         (uint256 launchId, address token, PoolId poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({
-                name: "Chart Probe",
-                symbol: "CHPR",
-                metadataURI: "ipfs://hookit-chart-probe",
+                name: "Apple Chart",
+                symbol: "APCH",
+                metadataURI: "ipfs://hookit-apple-chart",
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
-                quote: Currency.wrap(address(0)),
+                quote: Currency.wrap(aapl),
                 tickSpacing: ProtocolConstants.DEFAULT_TICK_SPACING,
                 startingTick: 0,
                 bitmask: 0,
@@ -55,40 +59,38 @@ contract SmokeChartWickInkScript is Script {
                 vestPacked: 0
             })
         );
-
-        PoolKey memory key = factory.poolKeyOf(launchId);
-        uint256 buyWei = vm.envOr("CHART_BUY_WEI", uint256(0.002 ether));
-        bool zeroForOne = _buyZeroForOne(key, token);
-        uint160 buyLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
-        router.swapExactIn{value: buyWei}(key, zeroForOne, buyWei, 1, buyLimit);
         vm.stopBroadcast();
 
         console.log("launchId", launchId);
         console.log("token", token);
         console.logBytes32(PoolId.unwrap(poolId));
-        console.log("tokenBal", IERC20(token).balanceOf(user));
         console.log("ethAfter", user.balance);
-        console.log("CHART_LAUNCH_OK");
+        console.log("CHART_APPLE_LAUNCH_OK");
     }
 
     function _buyMore() internal {
         uint256 pk = vm.envUint("PRIVATE_KEY");
+        address user = vm.addr(pk);
+        address aapl = QuotronStockQuotes.wAAPLx;
         LaunchFactory factory = LaunchFactory(payable(vm.envAddress("LAUNCH_FACTORY")));
         HookitSwapRouter router = HookitSwapRouter(payable(vm.envAddress("HOOKIT_SWAP_ROUTER")));
         uint256 launchId = vm.envUint("CHART_LAUNCH_ID");
         PoolKey memory key = factory.poolKeyOf(launchId);
         address token = _tokenOf(key);
-        uint256 buyWei = vm.envOr("CHART_BUY_WEI", uint256(0.003 ether));
+        uint256 buyAapl = vm.envOr("CHART_BUY_AAPL", uint256(0.008 ether));
+        require(IERC20(aapl).balanceOf(user) >= buyAapl, "need wAAPLx");
 
         vm.startBroadcast(pk);
+        IERC20(aapl).approve(address(router), buyAapl);
         bool zeroForOne = _buyZeroForOne(key, token);
         uint160 buyLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
-        router.swapExactIn{value: buyWei}(key, zeroForOne, buyWei, 1, buyLimit);
+        router.swapExactIn(key, zeroForOne, buyAapl, 1, buyLimit);
         vm.stopBroadcast();
 
         console.log("token", token);
-        console.log("tokenBal", IERC20(token).balanceOf(vm.addr(pk)));
-        console.log("CHART_BUY_OK");
+        console.log("tokenBal", IERC20(token).balanceOf(user));
+        console.log("aaplAfter", IERC20(aapl).balanceOf(user));
+        console.log("CHART_APPLE_BUY_OK");
     }
 
     function _dump() internal {
@@ -101,7 +103,9 @@ contract SmokeChartWickInkScript is Script {
         address token = _tokenOf(key);
         uint256 tokenBal = IERC20(token).balanceOf(user);
         require(tokenBal > 0, "no tokens");
-        uint256 sellAmt = (tokenBal * 7) / 10;
+        uint256 sellBps = vm.envOr("CHART_SELL_BPS", uint256(4_000));
+        uint256 sellAmt = (tokenBal * sellBps) / 10_000;
+        require(sellAmt > 0, "sell amt 0");
 
         vm.startBroadcast(pk);
         IERC20(token).approve(address(router), sellAmt);
@@ -113,14 +117,13 @@ contract SmokeChartWickInkScript is Script {
         console.log("token", token);
         console.log("sold", sellAmt);
         console.log("tokenAfter", IERC20(token).balanceOf(user));
-        console.log("CHART_SELL_OK");
+        console.log("CHART_APPLE_SELL_OK");
     }
 
     function _tokenOf(PoolKey memory key) internal pure returns (address) {
-        return
-            Currency.unwrap(key.currency0) == address(0)
-                ? Currency.unwrap(key.currency1)
-                : Currency.unwrap(key.currency0);
+        return Currency.unwrap(key.currency0) == QuotronStockQuotes.wAAPLx
+            ? Currency.unwrap(key.currency1)
+            : Currency.unwrap(key.currency0);
     }
 
     function _buyZeroForOne(PoolKey memory key, address token) internal pure returns (bool) {

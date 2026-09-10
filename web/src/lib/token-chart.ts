@@ -277,8 +277,15 @@ export function formatChartUsd(value: number, scale: ChartScale): string {
   if (value >= 1) return formatCompactUsd(value);
   if (value >= 0.01) return `$${value.toFixed(4)}`;
   if (value >= 0.0001) return `$${value.toFixed(6)}`;
-  if (value >= 1e-8) return `$${value.toFixed(8)}`;
-  return `$${value.toExponential(2).replace("e+", "e")}`;
+  const digits = value >= 1e-8 ? 10 : 12;
+  const trimmed = value.toFixed(digits).replace(/0+$/, "").replace(/\.$/, "");
+  return `$${trimmed}`;
+}
+
+/** Signed % from a single bar's open → close — Stonk OHLC legend. */
+export function barChangePct(bar: ChartBar): number {
+  if (!(bar.open > 0) || !Number.isFinite(bar.close)) return 0;
+  return ((bar.close - bar.open) / bar.open) * 100;
 }
 
 export function chartRangeSignature(bars: ChartBar[]): string {

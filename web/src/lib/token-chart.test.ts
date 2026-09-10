@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   aggregateBars,
+  barChangePct,
   barsForInterval,
   fillEmptyBars,
   formatChartUsd,
@@ -161,4 +162,12 @@ test("a single print stays one bar so it sits on the right", () => {
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {
   assert.equal(formatChartUsd(12_500, "mcap"), "$12.50K");
   assert.equal(formatChartUsd(0.0001234, "price"), "$0.000123");
+  assert.equal(formatChartUsd(0.000003001, "price"), "$0.000003001");
+});
+
+test("barChangePct is the candle open-to-close move", () => {
+  assert.equal(
+    barChangePct({ time: 1, open: 100, high: 110, low: 90, close: 103.49, volume: 1 }).toFixed(2),
+    "3.49",
+  );
 });
