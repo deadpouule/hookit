@@ -130,7 +130,7 @@ function Glyph({ id }: { id: HookId }) {
           />
         </svg>
       );
-    case "lpDonate":
+    case "deepenLps":
       return (
         <svg viewBox="0 0 24 24" className="h-[72%] w-[72%]" fill="none">
           <path d="M2.2 5.1h4v2.15H2.2zM2.2 7.25h6.2v2.15H2.2zM2.2 9.4h8.2v2.15H2.2zM2.2 11.55h9.5v2.25H2.2zM2.2 13.8h10.3v5.1H2.2z" fill={stroke} />

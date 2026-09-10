@@ -74,7 +74,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     mapping(PoolId => LaunchState) private _launchState;
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
-    mapping(PoolId => uint256) public pendingLpDonate;
+    mapping(PoolId => uint256) public pendingDeepenLps;
     mapping(address => bool) public airdropDue;
 
     /// @notice Contract allowed to PoolManager.swap without hook tax. Default unset.
@@ -96,7 +96,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 floorAmount,
         uint256 buybackAmount,
         uint256 autoBurnAmount,
-        uint256 lpDonateAmount,
+        uint256 deepenLpsAmount,
         uint256 holderAirdropAmount
     );
     event FloorFill(PoolId indexed poolId, uint256 tokenIn, uint256 quoteOut);
@@ -426,17 +426,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         LaunchState storage st = _launchState[id];
 
         uint256 burnCut = pendingAutoBurn[id];
-        uint256 donateCut = pendingLpDonate[id];
+        uint256 deepenCut = pendingDeepenLps[id];
         if (burnCut > 0) {
             pendingAutoBurn[id] = 0;
             if (!_autoBurn(key, st, burnCut)) {
                 pendingAutoBurn[id] = burnCut;
             }
         }
-        if (donateCut > 0) {
-            pendingLpDonate[id] = 0;
-            if (!_deepenLp(key, st, donateCut)) {
-                pendingLpDonate[id] = donateCut;
+        if (deepenCut > 0) {
+            pendingDeepenLps[id] = 0;
+            if (!_deepenLp(key, st, deepenCut)) {
+                pendingDeepenLps[id] = deepenCut;
             }
         }
         if (configs[id].enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)) {
@@ -601,18 +601,18 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
             ? FixedPointMath.applyBps(hookPot, packed.autoBurnBps())
             : 0;
-        uint256 lpDonateCut = packed.enabled(BitmaskConfig.LP_DONATE_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.lpDonateBps())
+        uint256 deepenLpsCut = packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.deepenLpsBps())
             : 0;
         uint256 airdropCut = packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)
             ? FixedPointMath.applyBps(hookPot, packed.holderAirdropBps())
             : 0;
-        uint256 routed = floorCut + autoBurnCut + lpDonateCut + airdropCut;
+        uint256 routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut;
         if (routed > hookPot) {
             airdropCut = 0;
-            routed = floorCut + autoBurnCut + lpDonateCut;
+            routed = floorCut + autoBurnCut + deepenLpsCut;
             if (routed > hookPot) {
-                lpDonateCut = 0;
+                deepenLpsCut = 0;
                 routed = floorCut + autoBurnCut;
                 if (routed > hookPot) {
                     autoBurnCut = 0;
@@ -633,10 +633,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
 
         pendingAutoBurn[id] += autoBurnCut;
-        pendingLpDonate[id] += lpDonateCut;
+        pendingDeepenLps[id] += deepenLpsCut;
 
         emit FeesDistributed(
-            id, creatorEscrowAmt + buybackAmt, protocolShare, floorCut, buybackAmt, autoBurnCut, lpDonateCut, airdropCut
+            id,
+            creatorEscrowAmt + buybackAmt,
+            protocolShare,
+            floorCut,
+            buybackAmt,
+            autoBurnCut,
+            deepenLpsCut,
+            airdropCut
         );
     }
 

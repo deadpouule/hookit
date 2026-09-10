@@ -167,10 +167,10 @@ export function BuilderTuner({
           </div>
         ) : null}
 
-        {selected === "lpDonate" ? (
+        {selected === "deepenLps" ? (
           <div>
             <FeeRouteSlider
-              routeKey="lpDonatePct"
+              routeKey="deepenLpsPct"
               label="Share of hook tax"
               modules={modules}
               color={def.accent.color}

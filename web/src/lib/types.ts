@@ -49,8 +49,8 @@ export interface LaunchModules {
   buybackVestingStepPct?: number[];
   autoBurn: boolean;
   autoBurnPct: number;
-  lpDonate: boolean;
-  lpDonatePct: number;
+  deepenLps: boolean;
+  deepenLpsPct: number;
   /** Quote-fee share accrued for periodic holder airdrops (Master). */
   holderAirdrop: boolean;
   /** Percent of hook pot routed to HolderAirdropVault (share of 100% with other sinks). */
@@ -133,7 +133,7 @@ export interface TokenPool {
     dynamicFees?: boolean;
     buybackVesting?: boolean;
     autoBurn?: boolean;
-    lpDonate?: boolean;
+    deepenLps?: boolean;
     holderAirdrop?: boolean;
     creatorShareToHook?: boolean;
     customHook: boolean;

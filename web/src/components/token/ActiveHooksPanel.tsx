@@ -128,7 +128,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const needAirdrop = Boolean(modules?.holderAirdrop);
   const needBurn = Boolean(modules?.autoBurn);
   const needBuyback = Boolean(modules?.buybackVesting);
-  const needLpDonate = Boolean(modules?.lpDonate);
+  const needDeepenLps = Boolean(modules?.deepenLps);
 
   const { data: buybackVaultAddr } = useReadContract({
     address: masterHook,
@@ -151,12 +151,12 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!masterHook && needAirdrop },
   });
 
-  const { data: pendingLpDonateWei } = useReadContract({
+  const { data: pendingDeepenLpsWei } = useReadContract({
     address: masterHook,
     abi: masterLaunchHookAbi,
-    functionName: "pendingLpDonate",
+    functionName: "pendingDeepenLps",
     args: poolId ? [poolId] : undefined,
-    query: { enabled: !!masterHook && !!poolId && needLpDonate, refetchInterval: 15_000 },
+    query: { enabled: !!masterHook && !!poolId && needDeepenLps, refetchInterval: 15_000 },
   });
 
   const { data: floorPriceX18 } = useReadContract({
@@ -308,9 +308,9 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     airdropLastAtSec: airdropLastAt !== undefined ? Number(airdropLastAt) : null,
     airdropEpochSec: airdropEpochSec !== undefined ? Number(airdropEpochSec) : null,
     burnedPct,
-    lpDonatePendingHuman:
-      pendingLpDonateWei !== undefined
-        ? Number(formatUnits(pendingLpDonateWei as bigint, decimals))
+    deepenLpsPendingHuman:
+      pendingDeepenLpsWei !== undefined
+        ? Number(formatUnits(pendingDeepenLpsWei as bigint, decimals))
         : null,
     buybackTotalHuman,
     buybackClaimableHuman,

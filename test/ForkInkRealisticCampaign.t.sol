@@ -107,7 +107,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             assertTrue(
                 IERC20(l.token).totalSupply() < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "burn effect"
             );
-            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0, "LP deepen");
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingDeepenLps(l.poolId) > 0, "LP deepen");
 
             vm.roll(block.number + 1);
             _routerSell(trader, l.key, l.token, _tokenBalance(l.token, trader) / 10);
@@ -198,7 +198,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
     }
 
     /// @notice Three 3–5 market tokens cover every quote in multi-market mode.
-    ///         Floor, burn, donate, airdrop, vesting and dynamic fees coexist.
+    ///         Floor, burn, Deepen LPs, airdrop, vesting and dynamic fees coexist.
     function testFork_MultiMarket_AllQuotesAndCohabitation() public onlyFork {
         Currency[] memory quotes = _allQuotes();
         _runMultiGroup(quotes, 0, 5, 2);
@@ -297,7 +297,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
 
         BitmaskConfig.Modules memory m = _defaultModules();
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.holderAirdrop = true;
         m.buybackVesting = true;
         m.buybackVestingDurationSeconds = uint32(30 days);
@@ -310,7 +310,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
         m.dynamicFeeRampUp = true;
         m.dynamicFeeDepthSaturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
         m.autoBurnBps = 3_334;
-        m.lpDonateBps = 3_333;
+        m.deepenLpsBps = 3_333;
         m.holderAirdropBps = 3_333;
         m.holderAirdropEpochSeconds = 60;
 

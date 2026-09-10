@@ -1074,8 +1074,8 @@ function HookSettings({
     );
   }
 
-  if (hook.id === "lp-donate") {
-    const routeKey: FeeRouteKey = "lpDonatePct";
+  if (hook.id === "deepen-lps") {
+    const routeKey: FeeRouteKey = "deepenLpsPct";
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
         <FeeRouteShareControl
@@ -1181,7 +1181,7 @@ function HookSettings({
     const hasFeeSink =
       modules.backedFloor ||
       modules.autoBurn ||
-      modules.lpDonate ||
+      modules.deepenLps ||
       modules.holderAirdrop ||
       hookTaxBps > 0;
 

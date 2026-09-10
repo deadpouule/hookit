@@ -19,7 +19,7 @@ export type LiveBlockId =
   | "hookTax"
   | "backedFloor"
   | "autoBurn"
-  | "lpDonate"
+  | "deepenLps"
   | "holderAirdrop"
   | "creatorShareToHook"
   | "maxWallet";
@@ -46,8 +46,8 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   maxTxBps: 100,
   autoBurn: false,
   autoBurnPct: 20,
-  lpDonate: false,
-  lpDonatePct: 20,
+  deepenLps: false,
+  deepenLpsPct: 20,
   holderAirdrop: false,
   holderAirdropPct: 50,
   holderAirdropEpochSeconds: 15 * 60,
@@ -75,7 +75,7 @@ export const EXECUTION_ORDER: LiveBlockId[] = [
   "hookTax",
   "backedFloor",
   "autoBurn",
-  "lpDonate",
+  "deepenLps",
   "holderAirdrop",
   "creatorShareToHook",
   "maxWallet",
@@ -128,12 +128,12 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     accent: HOOK_MODULE_ACCENTS.autoBurn,
   },
   {
-    id: "lpDonate",
+    id: "deepenLps",
     live: true,
     label: "Deepen LPs",
     short: "thickens the book",
     description: "A cut of quote fees is minted into the launch LP range — extra depth for whales and traders.",
-    accent: HOOK_MODULE_ACCENTS.lpDonate,
+    accent: HOOK_MODULE_ACCENTS.deepenLps,
   },
   {
     id: "holderAirdrop",
@@ -182,7 +182,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     live: true,
     label: "Hook Tax",
     short: "extra quote cut",
-    description: "Extra quote fee for Master modules (floor, burn, donate, airdrop) — not paid to the creator.",
+    description: "Extra quote fee for Master modules (floor, burn, deepen LPs, airdrop) — not paid to the creator.",
     accent: HOOK_MODULE_ACCENTS.hookTax,
   },
 ];
@@ -240,8 +240,8 @@ export function isBlockEnabled(
       return modules.backedFloor;
     case "autoBurn":
       return modules.autoBurn;
-    case "lpDonate":
-      return modules.lpDonate;
+    case "deepenLps":
+      return modules.deepenLps;
     case "holderAirdrop":
       return modules.holderAirdrop;
     case "creatorShareToHook":
@@ -251,12 +251,12 @@ export function isBlockEnabled(
   }
 }
 
-/** Share of the quote-fee pool routed to floor + auto-burn + LP donate + holder airdrop (max 100). */
+/** Share of the quote-fee pool routed to floor + auto-burn + Deepen LPs + holder airdrop (max 100). */
 export function feeRoutePct(modules: LaunchModules): number {
   let routed = 0;
   if (modules.backedFloor) routed += modules.floorAllocation;
   if (modules.autoBurn) routed += modules.autoBurnPct;
-  if (modules.lpDonate) routed += modules.lpDonatePct;
+  if (modules.deepenLps) routed += modules.deepenLpsPct;
   if (modules.holderAirdrop) routed += modules.holderAirdropPct;
   return routed;
 }
@@ -333,7 +333,7 @@ export function applyBlockToggle(
   const nextModules = { ...draft.modules, [id]: enabled };
   let { hookTaxBps } = draft;
   const feeSink =
-    id === "backedFloor" || id === "autoBurn" || id === "lpDonate" || id === "holderAirdrop";
+    id === "backedFloor" || id === "autoBurn" || id === "deepenLps" || id === "holderAirdrop";
   if (enabled && feeSink && hookTaxBps === 0 && !nextModules.creatorShareToHook) hookTaxBps = 50;
   if (feeSink) {
     const routePatch = rebalanceFeeRoutes(enabled ? nextModules : { ...nextModules, [id]: false });

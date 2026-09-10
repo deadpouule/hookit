@@ -58,8 +58,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN);
     }
 
-    function testFork_Single_LpDonate() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_LP_DONATE);
+    function testFork_Single_DeepenLps() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
     // ─── Meaningful pairs users might combine ─────────────────────────────────
@@ -72,12 +72,12 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_AUTO_BURN);
     }
 
-    function testFork_Pair_FloorAndDonate() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_LP_DONATE);
+    function testFork_Pair_FloorAndDeepen() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
-    function testFork_Pair_BurnAndDonate() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_LP_DONATE);
+    function testFork_Pair_BurnAndDeepen() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
     function testFork_Pair_MaxTxMaxWallet() public onlyFork {
@@ -88,8 +88,8 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_BUYBACK_VESTING | ModuleMatrix.BIT_ANTI_SNIPE);
     }
 
-    function testFork_Triple_FloorBurnDonate() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_LP_DONATE);
+    function testFork_Triple_FloorBurnDeepen() public onlyFork {
+        _smokeLaunchAndSwap(ModuleMatrix.BIT_BACKED_FLOOR | ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
     // ─── Fuzz sample on fork (32 masks) ───────────────────────────────────────

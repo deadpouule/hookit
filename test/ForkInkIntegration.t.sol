@@ -284,7 +284,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         assertGt(vault.reserve(l.token), reserveBefore);
     }
 
-    // ─── Modules: anti-snipe, auto-burn, LP donate, anti-MEV ─────────────────
+    // ─── Modules: anti-snipe, auto-burn, Deepen LPs, anti-MEV ─────────────────
 
     function testFork_AntiSnipe_HigherFeesAtLaunch() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
@@ -324,25 +324,25 @@ contract ForkInkIntegrationTest is InkForkTestBase {
     function testFork_LpDeepen_IncreasesLiquidity() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 300;
-        m.lpDonate = true;
-        m.lpDonateBps = 10_000;
+        m.deepenLps = true;
+        m.deepenLpsBps = 10_000;
         InkForkTestBase.LaunchResult memory l = _launch(
             creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Deepen", "DPN"
         );
 
         uint128 seed = hook.launchState(l.poolId).seedLiquidity;
         _routerBuy(trader, l.key, l.token, 1 ether);
-        assertTrue(manager.getLiquidity(l.poolId) > seed || hook.pendingLpDonate(l.poolId) > 0);
-        assertEq(hook.pendingLpDonate(l.poolId), 0);
+        assertTrue(manager.getLiquidity(l.poolId) > seed || hook.pendingDeepenLps(l.poolId) > 0);
+        assertEq(hook.pendingDeepenLps(l.poolId), 0);
     }
 
-    function testFork_AutoBurnAndLpDonate_Combined() public onlyFork {
+    function testFork_AutoBurnAndDeepenLps_Combined() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 300;
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.autoBurnBps = 5_000;
-        m.lpDonateBps = 5_000;
+        m.deepenLpsBps = 5_000;
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Combo", "CMB");
 

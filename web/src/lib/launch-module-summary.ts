@@ -66,8 +66,8 @@ export function moduleDetailLine(
     }
     case "auto-burn":
       return `${modules.autoBurnPct}% of hook fees burned`;
-    case "lp-donate":
-      return `${modules.lpDonatePct}% of hook fees → extra LP depth`;
+    case "deepen-lps":
+      return `${modules.deepenLpsPct}% of hook fees → extra LP depth`;
     case "holder-airdrop": {
       const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
       if (mcapUsd > 0) {
@@ -162,7 +162,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "dynamic-fees": "Fees scale with LP depth used",
   "buyback-vesting": "Creator fees vest over time or until a mcap target",
   "auto-burn": "Burns tokens on swaps",
-  "lp-donate": "Deepens the LP book",
+  "deepen-lps": "Deepens the LP book",
   "holder-airdrop": "Drops quote to holders",
   "creator-share-to-hook": "Creator fees → hook pot",
 };
@@ -181,7 +181,7 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
-  "lp-donate": "Deepen LPs",
+  "deepen-lps": "Deepen LPs",
   "holder-airdrop": "Holder airdrops",
   "creator-share-to-hook": "Fees → hook pot",
 };
@@ -208,7 +208,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
     "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook — both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
-  "lp-donate":
+  "deepen-lps":
     "Routes a share of hook fees into the launch liquidity range — swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
     "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless — anyone can trigger the push.",
@@ -235,7 +235,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "dynamic-fees": "fee vs in-range LP depth",
   "buyback-vesting": "locks creator fees until time or mcap",
   "auto-burn": "burns tokens on swaps",
-  "lp-donate": "deepens the LP book",
+  "deepen-lps": "deepens the LP book",
   "holder-airdrop": "airdrops to holders",
   "creator-share-to-hook": "feeds creator fees into hooks",
 };

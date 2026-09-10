@@ -24,7 +24,7 @@ export type MasterHookId =
   | "dynamic-fees"
   | "buyback-vesting"
   | "auto-burn"
-  | "lp-donate"
+  | "deepen-lps"
   | "holder-airdrop"
   | "creator-share-to-hook";
 
@@ -219,7 +219,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     settings: ["+ % OF HOOK TAX POT", "+ BUYBACK AFTER SWAP", "+ TOKENS SENT TO DEAD ADDRESS"],
   },
   {
-    id: "lp-donate",
+    id: "deepen-lps",
     number: 9,
     title: "Deepen LPs",
     description: "share of hook tax minted into the pool as extra liquidity — deeper book for whales and traders",
@@ -329,7 +329,7 @@ export function countHookUsage(
       dynamicFees?: boolean;
       buybackVesting?: boolean;
       autoBurn?: boolean;
-      lpDonate?: boolean;
+      deepenLps?: boolean;
       holderAirdrop?: boolean;
       creatorShareToHook?: boolean;
       customHook?: boolean;
@@ -346,7 +346,7 @@ export function countHookUsage(
     "dynamic-fees": 0,
     "buyback-vesting": 0,
     "auto-burn": 0,
-    "lp-donate": 0,
+    "deepen-lps": 0,
     "holder-airdrop": 0,
     "creator-share-to-hook": 0,
   };
@@ -360,7 +360,7 @@ export function countHookUsage(
     if (pool.hooks.dynamicFees) counts["dynamic-fees"] += 1;
     if (pool.hooks.buybackVesting) counts["buyback-vesting"] += 1;
     if (pool.hooks.autoBurn) counts["auto-burn"] += 1;
-    if (pool.hooks.lpDonate) counts["lp-donate"] += 1;
+    if (pool.hooks.deepenLps) counts["deepen-lps"] += 1;
     if (pool.hooks.holderAirdrop) counts["holder-airdrop"] += 1;
     if (pool.hooks.creatorShareToHook) counts["creator-share-to-hook"] += 1;
   }
@@ -378,7 +378,7 @@ const POOL_HOOK_BY_MASTER_ID: Partial<
   "dynamic-fees": "dynamicFees",
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
-  "lp-donate": "lpDonate",
+  "deepen-lps": "deepenLps",
   "holder-airdrop": "holderAirdrop",
   "creator-share-to-hook": "creatorShareToHook",
 };
@@ -439,7 +439,7 @@ export const HOOK_MODULE_FIELD: Record<
   "dynamic-fees": "dynamicFees",
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
-  "lp-donate": "lpDonate",
+  "deepen-lps": "deepenLps",
   "holder-airdrop": "holderAirdrop",
   "creator-share-to-hook": "creatorShareToHook",
 };

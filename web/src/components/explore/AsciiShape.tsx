@@ -101,7 +101,7 @@ const SHAPES: Record<AsciiShapeId, string[]> = {
     "          #####           ",
     "           ###            ",
   ],
-  "lp-donate": [
+  "deepen-lps": [
     "##                    ##  ",
     "####                ####  ",
     "######            ######  ",

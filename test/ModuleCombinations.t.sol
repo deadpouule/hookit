@@ -132,7 +132,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
             assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
         }
         if (m.autoBurn && !m.dynamicFees) assertEq(hook.pendingAutoBurn(poolId), 0);
-        if (m.lpDonate && !m.dynamicFees) assertEq(hook.pendingLpDonate(poolId), 0);
+        if (m.deepenLps && !m.dynamicFees) assertEq(hook.pendingDeepenLps(poolId), 0);
     }
 
     // ─── Kitchen sink & singles ───────────────────────────────────────────────
@@ -173,8 +173,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _launchBuySellSmoke(ModuleMatrix.BIT_AUTO_BURN);
     }
 
-    function testSingleModule_LpDonate() public {
-        _launchBuySellSmoke(ModuleMatrix.BIT_LP_DONATE);
+    function testSingleModule_DeepenLps() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
     // ─── Behavioral edge cases ────────────────────────────────────────────────
@@ -261,15 +261,15 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
     }
 
-    function testFeeRoutingTriple_FloorBurnDonate() public {
+    function testFeeRoutingTriple_FloorBurnDeepen() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 300;
         m.backedFloor = true;
         m.autoBurn = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         m.floorAllocationBps = 3_334;
         m.autoBurnBps = 3_333;
-        m.lpDonateBps = 3_333;
+        m.deepenLpsBps = 3_333;
         (uint256 launchId, address token, PoolId poolId,) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
         PoolKey memory key = factory.poolKeyOf(launchId);
 
@@ -280,7 +280,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
         assertGt(vault.reserve(token), 0);
         assertLt(LaunchTokenLike(token).totalSupply(), supplyBefore);
-        assertTrue(manager.getLiquidity(poolId) > seedLiq || hook.pendingLpDonate(poolId) > 0);
+        assertTrue(manager.getLiquidity(poolId) > seedLiq || hook.pendingDeepenLps(poolId) > 0);
     }
 
     function testAntiMevPlusAntiSnipe_BuyOnlySameBlock() public {
@@ -316,6 +316,6 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         assertLe(ModuleMatrix.maxOpenFeeBps(m), ProtocolConstants.BPS_DENOMINATOR);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(BitmaskConfig.pack(m));
         assertEq(out.antiSnipe, m.antiSnipe);
-        assertEq(out.lpDonate, m.lpDonate);
+        assertEq(out.deepenLps, m.deepenLps);
     }
 }

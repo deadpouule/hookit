@@ -356,7 +356,7 @@ contract ForkInkLiveAuditTest is Test {
         if (m.dynamicFees) console.log("  dynamicFees");
         if (m.buybackVesting) console.log("  buybackVesting");
         if (m.autoBurn) console.log("  autoBurn");
-        if (m.lpDonate) console.log("  lpDonate");
+        if (m.deepenLps) console.log("  deepenLps");
         if (m.holderAirdrop) console.log("  holderAirdrop");
         if (m.creatorShareToHook) console.log("  creatorShareToHook");
         console.log("  hookTaxBps", uint256(m.hookTaxBps));

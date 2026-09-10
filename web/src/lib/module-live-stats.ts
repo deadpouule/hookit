@@ -19,7 +19,7 @@ export type ModuleLiveStats = {
   airdropLastAtSec: number | null;
   airdropEpochSec: number | null;
   burnedPct: number | null;
-  lpDonatePendingHuman: number | null;
+  deepenLpsPendingHuman: number | null;
   buybackTotalHuman: number | null;
   buybackClaimableHuman: number | null;
   buybackClaimedHuman: number | null;
@@ -186,9 +186,9 @@ export function moduleLiveStatLine(
     }
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
-    case "lp-donate": {
-      const pending = formatAmount(live.lpDonatePendingHuman, live.quoteLabel);
-      return `${modules.lpDonatePct}% of hook fees · ${pending} queued to deepen LP`;
+    case "deepen-lps": {
+      const pending = formatAmount(live.deepenLpsPendingHuman, live.quoteLabel);
+      return `${modules.deepenLpsPct}% of hook fees · ${pending} queued to deepen LP`;
     }
     case "holder-airdrop": {
       const potHuman = live.airdropPendingHuman;

@@ -191,7 +191,7 @@ abstract contract InkForkTestBase is Test {
             dynamicFees: false,
             buybackVesting: false,
             autoBurn: false,
-            lpDonate: false,
+            deepenLps: false,
             holderAirdrop: false,
             creatorShareToHook: false,
             hookTaxBps: 0,
@@ -201,7 +201,7 @@ abstract contract InkForkTestBase is Test {
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
-            lpDonateBps: 0,
+            deepenLpsBps: 0,
             holderAirdropBps: 0,
             buybackVestingDurationSeconds: 0,
             dynamicFeeMinTotalBps: 0,
@@ -356,7 +356,7 @@ abstract contract InkForkTestBase is Test {
 
     /// @dev Buy size that respects max-tx / max-wallet while exercising fee-route modules on fork.
     function _smokeBuyAmountForQuote(BitmaskConfig.Modules memory m, Currency quote) internal view returns (uint256) {
-        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        bool needsVolume = m.backedFloor || m.autoBurn || m.deepenLps || m.buybackVesting || m.holderAirdrop;
         if (quote.isAddressZero()) {
             if (m.maxWallet) return 0.008 ether;
             if (m.maxTx) return needsVolume ? 0.002 ether : 0.001 ether;
@@ -409,8 +409,8 @@ abstract contract InkForkTestBase is Test {
                 supplyAfter < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "autoBurn should burn or queue"
             );
         }
-        if (m.lpDonate) {
-            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0, "lp deepen");
+        if (m.deepenLps) {
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingDeepenLps(l.poolId) > 0, "lp deepen");
         }
     }
 
@@ -422,7 +422,7 @@ abstract contract InkForkTestBase is Test {
         uint256 supplyBefore = IERC20(l.token).totalSupply();
         uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
-        bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
+        bool needsVolume = m.backedFloor || m.autoBurn || m.deepenLps || m.buybackVesting || m.holderAirdrop;
         uint256 buyIn = _smokeBuyAmountForQuote(m, quote);
         _routerBuy(trader, l.key, l.token, buyIn);
         assertGt(_tokenBalance(l.token, trader), 0);

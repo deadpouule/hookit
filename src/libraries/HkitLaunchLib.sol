@@ -19,12 +19,12 @@ library HkitLaunchLib {
     function defaultModules() internal pure returns (BitmaskConfig.Modules memory m) {
         m.antiSnipe = true;
         m.antiMev = true;
-        m.lpDonate = true;
+        m.deepenLps = true;
         // 1% hook tax → max Deepen LPs slice (50% of hook pot; remainder → protocol).
         m.hookTaxBps = 100;
         m.antiSnipeDurationSeconds = ProtocolConstants.HKIT_ANTI_SNIPE_DURATION_SECONDS;
         m.initialSnipeTaxBps = ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;
-        m.lpDonateBps = ProtocolConstants.MAX_LP_DONATE_BPS;
+        m.deepenLpsBps = ProtocolConstants.MAX_DEEPEN_LPS_BPS;
     }
 
     /// @notice Launch native token, register flywheel, configure buyback executor.

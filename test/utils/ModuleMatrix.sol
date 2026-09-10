@@ -20,7 +20,7 @@ library ModuleMatrix {
     uint16 internal constant BIT_DYNAMIC_FEES = 1 << 5;
     uint16 internal constant BIT_BUYBACK_VESTING = 1 << 6;
     uint16 internal constant BIT_AUTO_BURN = 1 << 7;
-    uint16 internal constant BIT_LP_DONATE = 1 << 8;
+    uint16 internal constant BIT_DEEPEN_LPS = 1 << 8;
     uint16 internal constant BIT_HOLDER_AIRDROP = 1 << 9;
     uint16 internal constant BIT_CREATOR_SHARE_TO_HOOK = 1 << 10;
 
@@ -55,7 +55,7 @@ library ModuleMatrix {
         m.dynamicFees = mask & BIT_DYNAMIC_FEES != 0;
         m.buybackVesting = mask & BIT_BUYBACK_VESTING != 0;
         m.autoBurn = mask & BIT_AUTO_BURN != 0;
-        m.lpDonate = mask & BIT_LP_DONATE != 0;
+        m.deepenLps = mask & BIT_DEEPEN_LPS != 0;
 
         if (m.antiSnipe) {
             m.antiSnipeDurationSeconds = 900;
@@ -65,7 +65,7 @@ library ModuleMatrix {
         if (m.maxWallet) m.maxWalletBps = 200;
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
-        if (m.lpDonate) m.lpDonateBps = 1_000;
+        if (m.deepenLps) m.deepenLpsBps = 1_000;
 
         return _ensureHookTax(m);
     }
@@ -86,7 +86,7 @@ library ModuleMatrix {
         uint256 routed;
         if (m.backedFloor) routed += m.floorAllocationBps;
         if (m.autoBurn) routed += m.autoBurnBps;
-        if (m.lpDonate) routed += m.lpDonateBps;
+        if (m.deepenLps) routed += m.deepenLpsBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) m.hookTaxBps = 200;
         if (m.dynamicFees) {
@@ -105,7 +105,7 @@ library ModuleMatrix {
         uint256 count;
         if (m.backedFloor) count++;
         if (m.autoBurn) count++;
-        if (m.lpDonate) count++;
+        if (m.deepenLps) count++;
         if (m.holderAirdrop) count++;
         if (count == 0) return m;
 
@@ -125,11 +125,11 @@ library ModuleMatrix {
         } else {
             m.autoBurnBps = 0;
         }
-        if (m.lpDonate) {
-            m.lpDonateBps = base + (idx < rem ? 1 : 0);
+        if (m.deepenLps) {
+            m.deepenLpsBps = base + (idx < rem ? 1 : 0);
             idx++;
         } else {
-            m.lpDonateBps = 0;
+            m.deepenLpsBps = 0;
         }
         if (m.holderAirdrop) {
             m.holderAirdropBps = base + (idx < rem ? 1 : 0);

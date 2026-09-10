@@ -35,7 +35,7 @@ contract ForkInkHkitBuybackTest is InkForkTestBase {
         uint256 packed = hook.configs(hkitKey.toId());
         assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.ANTI_SNIPE_ENABLED));
         assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.ANTI_MEV_COOLDOWN_ENABLED));
-        assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.LP_DONATE_ENABLED));
+        assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.DEEPEN_LPS_ENABLED));
         assertFalse(BitmaskConfig.enabled(packed, BitmaskConfig.BACKED_FLOOR_ENABLED));
     }
 

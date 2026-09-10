@@ -147,7 +147,7 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       dynamicFees: modules.dynamicFees,
       buybackVesting: modules.buybackVesting,
       autoBurn: modules.autoBurn,
-      lpDonate: modules.lpDonate,
+      deepenLps: modules.deepenLps,
       holderAirdrop: modules.holderAirdrop,
       creatorShareToHook: modules.creatorShareToHook,
       customHook: launch.customHook,

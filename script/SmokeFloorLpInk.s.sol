@@ -106,7 +106,7 @@ contract SmokeFloorLpInkScript is Script {
         address aapl = QuotronStockQuotes.wAAPLx;
         Currency quote = useAapl ? Currency.wrap(aapl) : Currency.wrap(address(0));
 
-        // BIT_BACKED_FLOOR | BIT_LP_DONATE — 50/50 hook pot, 2% hook tax.
+        // BIT_BACKED_FLOOR | BIT_DEEPEN_LPS — 50/50 hook pot, 2% hook tax.
         BitmaskConfig.Modules memory m = ModuleMatrix.fromMask(uint16((1 << 1) | (1 << 8)));
         m.hookTaxBps = 200;
         uint256 bitmask = BitmaskConfig.pack(m);
@@ -116,7 +116,7 @@ contract SmokeFloorLpInkScript is Script {
         console.log("aaplBefore", IERC20(aapl).balanceOf(user));
         console.log("useAapl", useAapl);
         console.log("floorBps", uint256(m.floorAllocationBps));
-        console.log("lpDonateBps", uint256(m.lpDonateBps));
+        console.log("deepenLpsBps", uint256(m.deepenLpsBps));
         console.log("hookTaxBps", uint256(m.hookTaxBps));
 
         uint256 buyEth = vm.envOr("FLOOR_BUY_WEI", uint256(0.00008 ether));
@@ -153,7 +153,7 @@ contract SmokeFloorLpInkScript is Script {
         bool zeroForOne = _buyZeroForOne(key, token);
         uint160 buyLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
 
-        uint256 pendingBefore = hook.pendingLpDonate(poolId);
+        uint256 pendingBefore = hook.pendingDeepenLps(poolId);
         if (useAapl) {
             IERC20(aapl).approve(address(router), buyAapl);
             router.swapExactIn(key, zeroForOne, buyAapl, 1, buyLimit);
@@ -162,7 +162,7 @@ contract SmokeFloorLpInkScript is Script {
         }
         vm.stopBroadcast();
 
-        uint256 pendingAfter = hook.pendingLpDonate(poolId);
+        uint256 pendingAfter = hook.pendingDeepenLps(poolId);
         uint256 floorReserve = vault.reserve(token);
         uint256 floorX18 = vault.floorPriceX18(token);
 

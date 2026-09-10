@@ -183,7 +183,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         assertGt(vault.reserve(l.token), 0);
         assertLt(IERC20(l.token).totalSupply(), supplyBefore);
         assertGt(airdrops.reserve(l.token), 0);
-        assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0);
+        assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingDeepenLps(l.poolId) > 0);
 
         vm.roll(block.number + 1);
         _routerSell(trader, l.key, l.token, _tokenBalance(l.token, trader) / 10);
