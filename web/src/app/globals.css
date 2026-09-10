@@ -1819,6 +1819,8 @@
 
   .token-hooks-chip-stat--live {
     font-variant-numeric: tabular-nums;
+    overflow-wrap: normal;
+    word-break: keep-all;
   }
 
   .token-hooks-chip-actions--buyback {

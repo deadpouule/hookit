@@ -249,6 +249,8 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   let liveBuybackClaimableWei = 0n;
   const fallbackDuration =
     (resolvedModules.buybackVestingDurationDays ?? 365 * 5) * 86_400;
+  const launchStart =
+    pool.launchedAt && pool.launchedAt > 1_000_000_000 ? pool.launchedAt : vestNowSec;
 
   if (buybackStream) {
     const amount = buybackStream[1] as bigint;
@@ -265,11 +267,10 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     buybackTotalHuman = Number(formatUnits(amount, decimals));
     buybackClaimedHuman = Number(formatUnits(claimed, decimals));
     buybackClaimableHuman = Number(formatUnits(liveBuybackClaimableWei, decimals));
-    if (start > 0) {
-      buybackVestSecondsLeft = Math.max(0, start + durationSec - vestNowSec);
-    }
+    const vestStart = start > 0 ? start : launchStart;
+    buybackVestSecondsLeft = Math.max(0, vestStart + durationSec - vestNowSec);
   } else if (needBuyback) {
-    buybackVestSecondsLeft = fallbackDuration;
+    buybackVestSecondsLeft = Math.max(0, launchStart + fallbackDuration - vestNowSec);
     buybackClaimableHuman = 0;
   }
 
