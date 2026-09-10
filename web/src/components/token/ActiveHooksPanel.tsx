@@ -23,6 +23,7 @@ import {
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
 import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
+import { quotePerTokenFromSqrtPrice, STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
 import { hookTaxSummary, totalFeePlain } from "@/lib/launch-module-summary";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
@@ -166,6 +167,14 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!floorVault && !!token && needFloor, refetchInterval: 15_000 },
   });
 
+  const { data: floorSlot0 } = useReadContract({
+    address: STATE_VIEW_ADDRESS,
+    abi: stateViewAbi,
+    functionName: "getSlot0",
+    args: poolId ? [poolId] : undefined,
+    query: { enabled: !!poolId && needFloor, refetchInterval: 12_000 },
+  });
+
   const { data: floorReserve } = useReadContract({
     address: floorVault as Address | undefined,
     abi: floorVaultAbi,
@@ -274,9 +283,21 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     buybackClaimableHuman = 0;
   }
 
+  const slotSqrt =
+    floorSlot0 !== undefined
+      ? (floorSlot0 as readonly [bigint, number, number, number])[0]
+      : undefined;
+  const liveSpot =
+    slotSqrt !== undefined
+      ? quotePerTokenFromSqrtPrice(slotSqrt, pool.tokenIsCurrency0 ?? false, 18, decimals)
+      : null;
+  const fallbackSpot = pool.priceEth && pool.priceEth > 0 ? pool.priceEth : null;
+  const spotPriceHuman = liveSpot && liveSpot > 0 ? liveSpot : fallbackSpot;
+
   const live: ModuleLiveStats = {
     floorPriceHuman:
       floorPriceX18 !== undefined ? Number(formatUnits(floorPriceX18 as bigint, 18)) : null,
+    spotPriceHuman,
     floorReserveHuman:
       floorReserve !== undefined ? Number(formatUnits(floorReserve as bigint, decimals)) : null,
     airdropPendingHuman:

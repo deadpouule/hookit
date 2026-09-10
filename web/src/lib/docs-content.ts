@@ -642,7 +642,8 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "Market price can trade above or below the floor.",
+            "The floor is not pegged to the DEX price. Spot (and mcap) can sit far above the vault — e.g. 1M mcap vs a 100k floor is a +900% premium.",
+            "Spot cannot sustainably trade below the floor: redeem / floor-fill is a quote bid at P_floor.",
             "Low volume → slow floor growth.",
             "Empty vault → redeem is useless until fees refill it.",
             "Failed auto-burn / LP donate cuts can also land in the floor vault as fallback.",

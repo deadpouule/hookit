@@ -5,6 +5,8 @@ import { formatCompactQuoteAmount, formatLiveQuoteWei } from "@/lib/format";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
+  /** DEX quote-per-token (same units as floorPriceHuman). */
+  spotPriceHuman: number | null;
   floorReserveHuman: number | null;
   airdropPendingHuman: number | null;
   airdropSecondsLeft: number | null;
@@ -59,6 +61,29 @@ export function buybackClaimableWei(args: {
   return unlocked > claimed ? unlocked - claimed : 0n;
 }
 
+/**
+ * Spot vs redeemable floor: `(spot - floor) / floor * 100`.
+ * 1M mcap vs 100k floor-implied mcap → +900. Null when either side is missing.
+ */
+export function floorPremiumPct(
+  spot: number | null | undefined,
+  floor: number | null | undefined,
+): number | null {
+  if (spot == null || floor == null) return null;
+  if (!Number.isFinite(spot) || !Number.isFinite(floor) || spot <= 0 || floor <= 0) return null;
+  return ((spot - floor) / floor) * 100;
+}
+
+/** Compact chip label, e.g. `+900% prem`. Near-zero prints `at floor`. */
+export function formatFloorPremiumPct(pct: number): string {
+  if (!Number.isFinite(pct)) return "";
+  if (Math.abs(pct) < 0.5) return "at floor";
+  const rounded = Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
+  const sign = rounded > 0 ? "+" : "";
+  const body = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${sign}${body}% prem`;
+}
+
 function formatCountdown(seconds: number): string {
   if (seconds <= 0) return "ready";
   const m = Math.floor(seconds / 60);
@@ -86,7 +111,9 @@ export function moduleLiveStatLine(
         live.floorPriceHuman != null
           ? `${formatCompactQuoteAmount(live.floorPriceHuman)} ${live.quoteLabel}`
           : `0 ${live.quoteLabel}`;
-      return `${modules.floorAllocation}% · Vault ${vault} · Floor ${floor}`;
+      const prem = floorPremiumPct(live.spotPriceHuman, live.floorPriceHuman);
+      const premPart = prem != null ? ` · ${formatFloorPremiumPct(prem)}` : "";
+      return `${modules.floorAllocation}% · Vault ${vault} · Floor ${floor}${premPart}`;
     }
     case "anti-mev":
       return null;

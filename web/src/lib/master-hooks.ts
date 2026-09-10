@@ -110,7 +110,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     id: "backed-floor",
     number: 2,
     title: "Backed Floor",
-    description: "ratcheting floor backed by quote in FloorVault",
+    description: "ratcheting redeemable floor — not pegged to DEX price",
     category: "protection",
     icon: Layers,
     theme: "gold",

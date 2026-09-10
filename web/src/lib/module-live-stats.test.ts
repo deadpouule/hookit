@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatLiveQuoteWei } from "./format";
-import { buybackClaimableWei, formatVestRemaining } from "./module-live-stats";
+import { formatCompactQuoteAmount, formatLiveQuoteWei } from "./format";
+import {
+  buybackClaimableWei,
+  floorPremiumPct,
+  formatFloorPremiumPct,
+  formatVestRemaining,
+  moduleLiveStatLine,
+} from "./module-live-stats";
+import type { LaunchModules } from "./types";
 
 test("buybackClaimableWei unlocks linearly each second", () => {
   const amount = 604_800n * 10n ** 9n;
@@ -58,4 +65,49 @@ test("formatLiveQuoteWei keeps enough digits to show a 1s tick", () => {
   const a = formatLiveQuoteWei(941_234_567n, 18);
   const b = formatLiveQuoteWei(942_234_567n, 18);
   assert.notEqual(a, b);
+});
+
+test("floorPremiumPct is (spot - floor) / floor — 1M vs 100k mcap is +900%", () => {
+  assert.equal(floorPremiumPct(10, 1), 900);
+  assert.equal(floorPremiumPct(1, 1), 0);
+  assert.equal(floorPremiumPct(9, 10), -10);
+  assert.equal(floorPremiumPct(null, 1), null);
+  assert.equal(floorPremiumPct(1, 0), null);
+  assert.equal(floorPremiumPct(0, 1), null);
+  const tiny = floorPremiumPct(1e-8, 1e-9);
+  assert.ok(tiny != null && Math.abs(tiny - 900) < 1e-6);
+});
+
+test("formatFloorPremiumPct", () => {
+  assert.equal(formatFloorPremiumPct(900), "+900% prem");
+  assert.equal(formatFloorPremiumPct(12.4), "+12% prem");
+  assert.equal(formatFloorPremiumPct(1.26), "+1.3% prem");
+  assert.equal(formatFloorPremiumPct(0.2), "at floor");
+  assert.equal(formatFloorPremiumPct(-8.2), "-8.2% prem");
+});
+
+test("backed-floor chip includes premium vs DEX spot", () => {
+  const modules = { floorAllocation: 40 } as LaunchModules;
+  const line = moduleLiveStatLine(
+    "backed-floor",
+    modules,
+    {
+      floorPriceHuman: 1e-9,
+      spotPriceHuman: 1e-8,
+      floorReserveHuman: 0.1,
+      airdropPendingHuman: null,
+      airdropSecondsLeft: null,
+      airdropLastAtSec: null,
+      airdropEpochSec: null,
+      burnedPct: null,
+      lpDonatePendingHuman: null,
+      buybackTotalHuman: null,
+      buybackClaimableHuman: null,
+      buybackClaimedHuman: null,
+      buybackVestSecondsLeft: null,
+      quoteLabel: "ETH",
+    },
+    {},
+  );
+  assert.equal(line, `40% · Vault 0.1 ETH · Floor ${formatCompactQuoteAmount(1e-9)} ETH · +900% prem`);
 });
