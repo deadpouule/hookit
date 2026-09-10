@@ -1077,13 +1077,23 @@ function HookSettings({
   if (hook.id === "lp-donate") {
     const routeKey: FeeRouteKey = "lpDonatePct";
     return (
-      <FeeRouteShareControl
-        routeKey={routeKey}
-        modules={modules}
-        theme={theme}
-        accent={accent}
-        onUpdate={onUpdate}
-      />
+      <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
+        <FeeRouteShareControl
+          routeKey={routeKey}
+          modules={modules}
+          theme={theme}
+          accent={accent}
+          onUpdate={onUpdate}
+        />
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          Quote fees mint into the launch LP range — thicker book for whales and traders, not extra LP fee income
+        </span>
+      </div>
     );
   }
 

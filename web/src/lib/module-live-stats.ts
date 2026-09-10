@@ -188,7 +188,7 @@ export function moduleLiveStatLine(
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
     case "lp-donate": {
       const pending = formatAmount(live.lpDonatePendingHuman, live.quoteLabel);
-      return `${modules.lpDonatePct}% of hook fees · ${pending} queued for LPs`;
+      return `${modules.lpDonatePct}% of hook fees · ${pending} queued to deepen LP`;
     }
     case "holder-airdrop": {
       const potHuman = live.airdropPendingHuman;

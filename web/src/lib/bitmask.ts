@@ -99,7 +99,7 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.lpDonate) routed += modules.lpDonatePct;
   if (modules.holderAirdrop) routed += modules.holderAirdropPct;
   if (routed > 100) {
-    throw new Error("Floor + Auto Burn + LP Donate + Holder Airdrop cannot exceed 100% of hook tax");
+    throw new Error("Floor + Auto Burn + Deepen LPs + Holder Airdrop cannot exceed 100% of hook tax");
   }
   const feeRouteCount =
     (modules.backedFloor ? 1 : 0) +

@@ -99,9 +99,9 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
   },
   lpDonate: {
     id: "lpDonate",
-    label: "LP Donate",
-    short: "LP",
-    hint: "Share of fees to in-range LPs",
+    label: "Deepen LPs",
+    short: "Deepen",
+    hint: "Hook fees mint extra LP depth",
     color: "#10b981",
     glow: "rgba(16,185,129,0.4)",
   },

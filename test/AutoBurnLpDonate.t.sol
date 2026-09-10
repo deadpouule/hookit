@@ -32,17 +32,18 @@ contract AutoBurnLpDonateTest is LaunchpadTestBase {
         assertEq(hook.pendingAutoBurn(poolId), 0);
     }
 
-    function testLpDonateAccruesFeeGrowth() public {
+    function testLpDeepenIncreasesInRangeLiquidity() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 500;
         m.lpDonate = true;
         m.lpDonateBps = 10_000;
         (,, PoolId poolId, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
+        uint128 seed = hook.launchState(poolId).seedLiquidity;
         buyExactIn(key, 5 ether);
-        (uint256 growth0, uint256 growth1) = manager.getFeeGrowthGlobals(poolId);
-        assertTrue(growth0 > 0 || growth1 > 0);
+        uint128 inRange = manager.getLiquidity(poolId);
         assertEq(hook.pendingLpDonate(poolId), 0);
+        assertGt(inRange, seed);
         key;
     }
 

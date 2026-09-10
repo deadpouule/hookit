@@ -169,7 +169,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
             _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "KS", "KS");
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+        uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
         if (quote.isAddressZero()) {
             _routerBuy(trader, l.key, l.token, 0.01 ether);
@@ -183,8 +183,7 @@ contract ForkInkCompletenessTest is InkForkTestBase {
         assertGt(vault.reserve(l.token), 0);
         assertLt(IERC20(l.token).totalSupply(), supplyBefore);
         assertGt(airdrops.reserve(l.token), 0);
-        (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-        assertTrue(g0After > g0Before || g1After > g1Before);
+        assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0);
 
         vm.roll(block.number + 1);
         _routerSell(trader, l.key, l.token, _tokenBalance(l.token, trader) / 10);

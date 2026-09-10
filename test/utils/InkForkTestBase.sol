@@ -393,9 +393,8 @@ abstract contract InkForkTestBase is Test {
         LaunchResult memory l,
         BitmaskConfig.Modules memory m,
         uint256 supplyBefore,
-        uint256 g0Before,
-        uint256 g1Before
-    ) internal {
+        uint128 seedLiq
+    ) internal view {
         // Max-wallet / anti-MEV caps swap patterns — skip volume-heavy module checks.
         if (m.maxWallet || m.antiMev) return;
 
@@ -411,10 +410,7 @@ abstract contract InkForkTestBase is Test {
             );
         }
         if (m.lpDonate) {
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(
-                g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0, "lpDonate fee growth"
-            );
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0, "lp deepen");
         }
     }
 
@@ -424,7 +420,7 @@ abstract contract InkForkTestBase is Test {
         LaunchResult memory l = _launch(creator, quote, m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, name, symbol);
 
         uint256 supplyBefore = IERC20(l.token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+        uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
         bool needsVolume = m.backedFloor || m.autoBurn || m.lpDonate || m.buybackVesting || m.holderAirdrop;
         uint256 buyIn = _smokeBuyAmountForQuote(m, quote);
@@ -439,7 +435,7 @@ abstract contract InkForkTestBase is Test {
         }
 
         _safeSell(trader, l.key, l.token, m, 1, 10);
-        _assertModuleSmokeEffects(l, m, supplyBefore, g0Before, g1Before);
+        _assertModuleSmokeEffects(l, m, supplyBefore, seedLiq);
     }
 
     function _claimCreatorFees(address user, Currency quote) internal {

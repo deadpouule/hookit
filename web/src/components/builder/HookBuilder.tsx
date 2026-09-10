@@ -97,7 +97,7 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
       {routeInvalid ? (
         <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs leading-relaxed text-red-100">
           Floor ({modules.backedFloor ? `${modules.floorAllocation}%` : "off"}) + Auto Burn (
-          {modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + LP Donate (
+          {modules.autoBurn ? `${modules.autoBurnPct}%` : "off"}) + Deepen LPs (
           {modules.lpDonate ? `${modules.lpDonatePct}%` : "off"}) + Airdrop (
           {modules.holderAirdrop ? `${modules.holderAirdropPct}%` : "off"}) = {routed}%. Adjust
           sliders so the total is exactly 100% before launch.
@@ -159,7 +159,7 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
           </li>
           <li>
             Floor fill does not catch a single-tick cross of P_floor. Allocation is a split of
-            fees, not extra buy overhead. Auto Burn and LP Donate also take a split of that
+            fees, not extra buy overhead. Auto Burn and Deepen LPs also take a split of that
             quote-fee pool (combined with floor, max 100%).
           </li>
           <li>

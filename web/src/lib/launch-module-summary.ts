@@ -67,7 +67,7 @@ export function moduleDetailLine(
     case "auto-burn":
       return `${modules.autoBurnPct}% of hook fees burned`;
     case "lp-donate":
-      return `${modules.lpDonatePct}% of hook fees → LPs`;
+      return `${modules.lpDonatePct}% of hook fees → extra LP depth`;
     case "holder-airdrop": {
       const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
       if (mcapUsd > 0) {
@@ -162,7 +162,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "dynamic-fees": "Fees scale with LP depth used",
   "buyback-vesting": "Creator fees vest over time or until a mcap target",
   "auto-burn": "Burns tokens on swaps",
-  "lp-donate": "Rewards in-range LPs",
+  "lp-donate": "Deepens the LP book",
   "holder-airdrop": "Drops quote to holders",
   "creator-share-to-hook": "Creator fees → hook pot",
 };
@@ -181,7 +181,7 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
-  "lp-donate": "Reward LPs",
+  "lp-donate": "Deepen LPs",
   "holder-airdrop": "Holder airdrops",
   "creator-share-to-hook": "Fees → hook pot",
 };
@@ -209,11 +209,11 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "lp-donate":
-    "Donates a share of hook fees to liquidity providers who are in-range at swap time. Rewards active LPs and keeps depth where it matters.",
+    "Routes a share of hook fees into the launch liquidity range — swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
     "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless — anyone can trigger the push.",
   "creator-share-to-hook":
-    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, LP donate, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
+    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
   "fixed-fee":
     "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules — leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
 };
@@ -235,7 +235,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "dynamic-fees": "fee vs in-range LP depth",
   "buyback-vesting": "locks creator fees until time or mcap",
   "auto-burn": "burns tokens on swaps",
-  "lp-donate": "rewards liquidity providers",
+  "lp-donate": "deepens the LP book",
   "holder-airdrop": "airdrops to holders",
   "creator-share-to-hook": "feeds creator fees into hooks",
 };

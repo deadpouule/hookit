@@ -22,7 +22,7 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bits 71-94   floorAllocationBps (uint24) — % of hook tax pot
 ///      bits 95-110  initialSnipeTaxBps (uint16)
 ///      bit 111      AUTO_BURN_ENABLED
-///      bit 112      LP_DONATE_ENABLED
+///      bit 112      LP_DONATE_ENABLED — Deepen LPs (fees mint extra range liquidity)
 ///      bits 113-128 autoBurnBps (uint16) — % of hook tax pot
 ///      bits 129-144 lpDonateBps (uint16) — % of hook tax pot
 ///      bit 145      HOLDER_AIRDROP_ENABLED

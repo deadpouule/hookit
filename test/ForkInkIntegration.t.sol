@@ -321,19 +321,18 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         assertEq(hook.pendingAutoBurn(l.poolId), 0);
     }
 
-    function testFork_LpDonate_IncreasesFeeGrowth() public onlyFork {
+    function testFork_LpDeepen_IncreasesLiquidity() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = 300;
         m.lpDonate = true;
         m.lpDonateBps = 10_000;
         InkForkTestBase.LaunchResult memory l = _launch(
-            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Donate", "DON"
+            creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Deepen", "DPN"
         );
 
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+        uint128 seed = hook.launchState(l.poolId).seedLiquidity;
         _routerBuy(trader, l.key, l.token, 1 ether);
-        (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-        assertTrue(g0After > g0Before || g1After > g1Before);
+        assertTrue(manager.getLiquidity(l.poolId) > seed || hook.pendingLpDonate(l.poolId) > 0);
         assertEq(hook.pendingLpDonate(l.poolId), 0);
     }
 

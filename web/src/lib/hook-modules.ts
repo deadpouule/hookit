@@ -107,7 +107,7 @@ export const HOOK_MODULE_ACCENTS = {
   },
   lpDonate: {
     id: "lp-donate",
-    label: "LP Donate",
+    label: "Deepen LPs",
     color: "#6ee7b7",
     glow: "rgba(110, 231, 183, 0.5)",
     bg: "bg-[#6ee7b7]/10",
@@ -137,6 +137,7 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Hook Tax": HOOK_MODULE_ACCENTS.hookTax,
   "Auto-Burn": HOOK_MODULE_ACCENTS.autoBurn,
   "Auto Burn": HOOK_MODULE_ACCENTS.autoBurn,
+  "Deepen LPs": HOOK_MODULE_ACCENTS.lpDonate,
   "LP Donate": HOOK_MODULE_ACCENTS.lpDonate,
   "Holder Airdrop": HOOK_MODULE_ACCENTS.holderAirdrop,
   "Custom Hook": {

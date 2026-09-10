@@ -33,6 +33,7 @@ import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {DynamicFeeMath} from "./libraries/DynamicFeeMath.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {McapVest} from "./libraries/McapVest.sol";
+import {LpDeepenLib} from "./libraries/LpDeepenLib.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
@@ -43,7 +44,7 @@ import {BuybackVault} from "./BuybackVault.sol";
 
 /// @title MasterLaunchHook
 /// @notice Singleton Uniswap v4 hook: quote-only fees, anti-rug LP lock, anti-snipe, anti-MEV,
-///         backed floor, auto-burn (buyback + burn), LP donate, and holder quote airdrops.
+///         backed floor, auto-burn (buyback + burn), Deepen LPs, and holder quote airdrops.
 /// @dev Optional multi-pair arb: when `arbActive` and `sender == arbExecutor`, swaps pay the 1%
 ///      base fee to protocol only (no hook tax / snipe / auto-burn). Both flags default off.
 contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
@@ -100,7 +101,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     );
     event FloorFill(PoolId indexed poolId, uint256 tokenIn, uint256 quoteOut);
     event AutoBurn(PoolId indexed poolId, uint256 quoteIn, uint256 tokenBurned);
-    event LpDonated(PoolId indexed poolId, uint256 quoteAmount);
+    event LpDeepened(PoolId indexed poolId, uint256 quoteAmount);
 
     error OnlyFactory();
     error AlreadyPrepared();
@@ -434,7 +435,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
         if (donateCut > 0) {
             pendingLpDonate[id] = 0;
-            if (!_lpDonate(key, st, donateCut)) {
+            if (!_deepenLp(key, st, donateCut)) {
                 pendingLpDonate[id] = donateCut;
             }
         }
@@ -758,17 +759,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return tokenOut > 0;
     }
 
-    function _lpDonate(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
-        if (poolManager.getLiquidity(key.toId()) == 0) {
-            return false;
-        }
-        uint256 amount0 = st.tokenIsCurrency0 ? 0 : quoteAmount;
-        uint256 amount1 = st.tokenIsCurrency0 ? quoteAmount : 0;
-        try poolManager.donate(key, amount0, amount1, "") {
-            st.quote.settle(poolManager, address(this), quoteAmount, true);
-            emit LpDonated(key.toId(), quoteAmount);
+    function _deepenLp(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
+        _setFeeAction(true);
+        try LpDeepenLib.deepen(
+            poolManager, key, st.quote, st.tokenIsCurrency0, st.tickLower, st.tickUpper, quoteAmount
+        ) {
+            _setFeeAction(false);
+            emit LpDeepened(key.toId(), quoteAmount);
             return true;
         } catch {
+            _setFeeAction(false);
             return false;
         }
     }

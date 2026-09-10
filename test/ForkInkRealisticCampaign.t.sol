@@ -98,7 +98,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             LaunchResult memory l =
                 _launch(creator, quotes[i], m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "AllHooks", "AHK");
             uint256 supplyBefore = IERC20(l.token).totalSupply();
-            (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(l.poolId);
+            uint128 seedLiq = hook.launchState(l.poolId).seedLiquidity;
 
             _routerBuy(trader, l.key, l.token, _quoteForUsd(quotes[i], 150e18));
 
@@ -107,8 +107,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             assertTrue(
                 IERC20(l.token).totalSupply() < supplyBefore || hook.pendingAutoBurn(l.poolId) > 0, "burn effect"
             );
-            (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(l.poolId);
-            assertTrue(g0After > g0Before || g1After > g1Before || hook.pendingLpDonate(l.poolId) > 0, "LP donation");
+            assertTrue(manager.getLiquidity(l.poolId) > seedLiq || hook.pendingLpDonate(l.poolId) > 0, "LP deepen");
 
             vm.roll(block.number + 1);
             _routerSell(trader, l.key, l.token, _tokenBalance(l.token, trader) / 10);

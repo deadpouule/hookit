@@ -232,7 +232,7 @@ export const MARKET_TOKENS: MarketToken[] = [
     id: "froggo",
     name: "Froggo",
     ticker: "FROG",
-    description: "froggo lp donate, 0.25% to in-range LPs",
+    description: "froggo deepen LPs, 0.25% minted into the book",
     emoji: "🐸",
     art: "linear-gradient(145deg, #166534 0%, #22c55e 45%, #bef264 100%)",
     artAccent: "#d9f99d",

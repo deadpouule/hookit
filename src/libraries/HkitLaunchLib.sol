@@ -20,7 +20,7 @@ library HkitLaunchLib {
         m.antiSnipe = true;
         m.antiMev = true;
         m.lpDonate = true;
-        // 1% hook tax → max LP donate slice (50% of hook pot; remainder → protocol).
+        // 1% hook tax → max Deepen LPs slice (50% of hook pot; remainder → protocol).
         m.hookTaxBps = 100;
         m.antiSnipeDurationSeconds = ProtocolConstants.HKIT_ANTI_SNIPE_DURATION_SECONDS;
         m.initialSnipeTaxBps = ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;

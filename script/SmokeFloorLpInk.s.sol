@@ -22,8 +22,8 @@ import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.so
 import {PoolModifyLiquidityTest} from "@uniswap/v4-core/src/test/PoolModifyLiquidityTest.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
 
-/// @notice Ink smoke: Master launch with Backed Floor + LP Donate, then a quote buy.
-/// @dev ETH pair by default (donate in ETH). `FLOOR_QUOTE=aapl` uses wAAPLx.
+/// @notice Ink smoke: Master launch with Backed Floor + Deepen LPs, then a quote buy.
+/// @dev ETH pair by default. `FLOOR_QUOTE=aapl` uses wAAPLx.
 ///      forge script script/SmokeFloorLpInk.s.sol --rpc-url $INK_RPC_URL --broadcast -vv
 contract SmokeFloorLpInkScript is Script {
     uint256 internal constant ETH_USD_X18 = 2_500e18;

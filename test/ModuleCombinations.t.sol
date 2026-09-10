@@ -274,14 +274,13 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         PoolKey memory key = factory.poolKeyOf(launchId);
 
         uint256 supplyBefore = LaunchTokenLike(token).totalSupply();
-        (uint256 g0Before, uint256 g1Before) = manager.getFeeGrowthGlobals(poolId);
+        uint128 seedLiq = hook.launchState(poolId).seedLiquidity;
 
         _buyAs(buyer, key, 1 ether);
 
         assertGt(vault.reserve(token), 0);
         assertLt(LaunchTokenLike(token).totalSupply(), supplyBefore);
-        (uint256 g0After, uint256 g1After) = manager.getFeeGrowthGlobals(poolId);
-        assertTrue(g0After > g0Before || g1After > g1Before);
+        assertTrue(manager.getLiquidity(poolId) > seedLiq || hook.pendingLpDonate(poolId) > 0);
     }
 
     function testAntiMevPlusAntiSnipe_BuyOnlySameBlock() public {

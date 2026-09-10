@@ -221,8 +221,8 @@ export const MASTER_HOOKS: MasterHook[] = [
   {
     id: "lp-donate",
     number: 9,
-    title: "LP Donate",
-    description: "share of hook tax donated to in-range LPs via Uniswap v4 donate",
+    title: "Deepen LPs",
+    description: "share of hook tax minted into the pool as extra liquidity — deeper book for whales and traders",
     category: "rewards",
     icon: Coins,
     theme: "nature",
@@ -231,8 +231,8 @@ export const MASTER_HOOKS: MasterHook[] = [
     uses: 6,
     royalty: "0% of hook fees",
     savedAt: "Block 25,799,801",
-    summary: "1 active hook block • hook-tax LP donate",
-    settings: ["+ % OF HOOK TAX POT", "+ DONATED TO IN-RANGE LPS", "+ IN-RANGE LP CHECK ON SWAP"],
+    summary: "1 active hook block • hook-tax LP deepen",
+    settings: ["+ % OF HOOK TAX POT", "+ MINTS INTO LAUNCH LP RANGE", "+ DEEPER BOOK FOR SWAPS"],
   },
   {
     id: "holder-airdrop",

@@ -177,8 +177,8 @@ export function BuilderTuner({
               onModulesChange={onModulesChange}
             />
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Uniswap v4 donate to in-range LPs. If no in-range liquidity, the cut falls back to the
-              floor vault.
+              Quote fees mint extra liquidity into the launch range. Thickens the book for
+              large swaps instead of donating extra fees to existing LPs.
             </p>
             <FeeRouteHint modules={modules} />
           </div>

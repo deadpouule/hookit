@@ -130,9 +130,9 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
   {
     id: "lpDonate",
     live: true,
-    label: "LP Donate",
-    short: "feeds in-range LPs",
-    description: "A cut of quote fees is donated to in-range liquidity via Uniswap v4 donate.",
+    label: "Deepen LPs",
+    short: "thickens the book",
+    description: "A cut of quote fees is minted into the launch LP range — extra depth for whales and traders.",
     accent: HOOK_MODULE_ACCENTS.lpDonate,
   },
   {
@@ -150,7 +150,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     label: "Creator → Hook",
     short: "70% into modules",
     description:
-      "Send the creator’s 70% of the base 1% fee into the hook pot (floor / burn / donate / airdrop) instead of escrow.",
+      "Send the creator’s 70% of the base 1% fee into the hook pot (floor / burn / deepen / airdrop) instead of escrow.",
     accent: HOOK_MODULE_ACCENTS.hookTax,
   },
   {
