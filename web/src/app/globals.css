@@ -4956,6 +4956,57 @@
     color: #bef264;
   }
 
+  button.orb-hook-desc-badge {
+    cursor: pointer;
+    font: inherit;
+    text-align: center;
+  }
+
+  .orb-hook-desc-badge.is-picked {
+    font-weight: 700;
+    box-shadow:
+      0 0 0 1px currentColor,
+      0 0 14px color-mix(in srgb, currentColor 48%, transparent);
+  }
+
+  .mcap-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .mcap-choice-or {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    color: inherit;
+    opacity: 0.72;
+  }
+
+  .mcap-choice-badge {
+    width: auto;
+  }
+
+  .mcap-step-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .mcap-step-pct-input {
+    width: 3.2ch;
+    caret-color: currentColor;
+  }
+
+  .mcap-step-sum--bad {
+    color: #fda4af;
+    border-color: rgb(244 63 94 / 0.45);
+    background: rgb(244 63 94 / 0.14);
+  }
+
   .orb-hook-desc-badge.orb-hook-title-badge {
     width: auto;
     max-width: calc(100% - 2rem);
