@@ -37,17 +37,24 @@ function abs(n: bigint) {
 function seriesToCandles(series: { mcap: number; t?: number }[]): LiveCandle[] {
   if (series.length === 0) return [];
   const candles: LiveCandle[] = [];
-  const bucket = Math.max(1, Math.floor(series.length / 48));
-  for (let i = 0; i < series.length; i += bucket) {
-    const slice = series.slice(i, i + bucket);
-    const values = slice.map((s) => s.mcap);
-    candles.push({
-      o: values[0]!,
-      c: values[values.length - 1]!,
-      h: Math.max(...values),
-      l: Math.min(...values),
-      t: slice[0]!.t,
-    });
+  const timed = series.filter((s) => s.t != null && s.t > 0);
+  const source = timed.length ? timed : series;
+  for (const point of source) {
+    const bucket = point.t != null && point.t > 0 ? Math.floor(point.t / 60) * 60 : undefined;
+    const last = candles[candles.length - 1];
+    if (!last || last.t !== bucket || bucket == null) {
+      candles.push({
+        t: bucket,
+        o: point.mcap,
+        h: point.mcap,
+        l: point.mcap,
+        c: point.mcap,
+      });
+    } else {
+      last.h = Math.max(last.h, point.mcap);
+      last.l = Math.min(last.l, point.mcap);
+      last.c = point.mcap;
+    }
   }
   return candles;
 }
@@ -274,8 +281,8 @@ export async function fetchOnChainLive(
   const candles =
     mcapSeries.length > 0
       ? seriesToCandles(mcapSeries)
-      : marketCap > 0
-        ? [{ o: marketCap, h: marketCap, l: marketCap, c: marketCap }]
+      : marketCap > 0 && pool.launchedAt && pool.launchedAt > 1_000_000_000
+        ? [{ t: pool.launchedAt, o: marketCap, h: marketCap, l: marketCap, c: marketCap }]
         : [];
 
   const volume24h = quoteVolumeUsd(volumeQuoteWei, pool, ethUsd, quoteUsd);

@@ -19,6 +19,7 @@ import {
   pinLiveMcap,
   priceBarsToMcap,
   scaleBars,
+  seedLaunchBars,
   ticksToBars,
   type ChartBar,
   type ChartInterval,
@@ -142,6 +143,7 @@ export function TokenCandleChart({
   onInterval,
   marketCap,
   tokenAddress,
+  launchedAt,
   change5m,
   change1h,
   change6h,
@@ -160,6 +162,7 @@ export function TokenCandleChart({
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
   tokenAddress?: string;
+  launchedAt?: number;
   change5m?: number;
   change1h?: number;
   change6h?: number;
@@ -197,13 +200,14 @@ export function TokenCandleChart({
         .map((s) => ({ t: s.t!, price: s.marketCap, volume: s.totalUsd })),
     );
     const house = mergeChartSeries(fromCandles, fromSwaps);
+    const seeded = house.length ? house : seedLaunchBars(launchedAt, marketCap ?? 0);
     const geckoMcap = pinLiveMcap(priceBarsToMcap(gecko.data?.bars ?? []), marketCap);
-    const source = pickChartBars(house, geckoMcap);
+    const source = pickChartBars(seeded, geckoMcap);
     const withTicks = applySwapTicks(source, swaps);
     const bucket = intervalBucketSec(interval);
     const display = barsForInterval(withTicks, interval);
     return scaleBars(fillEmptyBars(display, bucket, nowSec), scale);
-  }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars]);
+  }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars, launchedAt]);
 
   const hasData = bars.length > 0;
   const open = bars[0]?.open ?? 0;

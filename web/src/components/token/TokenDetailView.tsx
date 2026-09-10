@@ -435,6 +435,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             onInterval={setInterval}
             marketCap={live.marketCap}
             tokenAddress={contractAddress}
+            launchedAt={pool.launchedAt}
             change5m={live.change5m}
             change1h={live.change1h}
             change6h={live.change6h}

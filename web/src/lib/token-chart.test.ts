@@ -10,6 +10,7 @@ import {
   pickChartBars,
   priceBarsToMcap,
   scaleBars,
+  seedLaunchBars,
   ticksToBars,
 } from "./token-chart";
 import { TOTAL_SUPPLY } from "./token-live";
@@ -145,6 +146,14 @@ test("fillEmptyBars forward-fills like Sentry empty minutes", () => {
   assert.equal(filled[1]!.volume, 0);
   assert.equal(filled[1]!.close, 12);
   assert.equal(filled[3]!.time, 1_140);
+});
+
+test("seedLaunchBars plus fill spans launch to now", () => {
+  const seed = seedLaunchBars(1_700_000_000, 5_000);
+  const filled = fillEmptyBars(seed, 900, 1_700_003_600);
+  assert.ok(filled.length >= 4);
+  assert.equal(filled[0]!.close, 5_000);
+  assert.equal(filled[filled.length - 1]!.close, 5_000);
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

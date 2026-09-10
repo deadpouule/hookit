@@ -1,4 +1,4 @@
-import { formatCompactUsd } from "@/lib/format";
+import { formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import type { LiveCandle } from "@/lib/token-live";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 
@@ -249,6 +249,20 @@ export function fillEmptyBars(
 
 export function mergeChartSeries(left: ChartBar[], right: ChartBar[]): ChartBar[] {
   return mergeBars([...left, ...right].sort((a, b) => a.time - b.time));
+}
+
+export function seedLaunchBars(launchedAt: number | undefined, marketCap: number): ChartBar[] {
+  if (!(marketCap > 0) || !isValidLaunchTimestamp(launchedAt)) return [];
+  return [
+    {
+      time: launchedAt,
+      open: marketCap,
+      high: marketCap,
+      low: marketCap,
+      close: marketCap,
+      volume: 0,
+    },
+  ];
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
