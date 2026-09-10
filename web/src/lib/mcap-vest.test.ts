@@ -19,6 +19,7 @@ import {
   unpackPlan,
   unlockedPctAtFdv,
 } from "./mcap-vest";
+import type { LaunchModules } from "./types";
 
 test("presets are 5M through 10B", () => {
   assert.deepEqual([...MCAP_VEST_PRESET_USD], [
@@ -41,7 +42,7 @@ test("buyback cliff 10M round-trips in vestPacked", () => {
   assert.equal(plan.cliffPreset, 1);
   const packed = joinVestPacked(slice, 0n);
   const modules = applyVestPackedToModules(
-    { buybackVesting: true, holderAirdrop: false },
+    { buybackVesting: true, holderAirdrop: false } as LaunchModules,
     packed,
   );
   assert.equal(modules.buybackVestingMcapUsd, 10_000_000);

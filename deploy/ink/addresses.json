@@ -1,49 +1,53 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-09-09",
-  "deployBlock": 55495648,
+  "deployedAt": "2026-09-10",
+  "deployBlock": 55566276,
   "deployer": "0x67b436693b7f8ebad6b1b1caf88c2e197d961614",
   "contracts": {
     "LaunchFactoryLib": "0x7ab8d5b15b2192d18b24f92d340a38915ab44a3a",
     "LaunchDevBuyLib": "0x2de8b6093411b033a2e9935bed6a3230c2413117",
     "LaunchTokenDeployLib": "0xdb426240397507fe2666d3dc1dcf80b8f5a47831",
-    "FloorVault": "0x5c200fa9cef453ffe377b9dad0c65baa2bd07055",
-    "FeeEscrow": "0xc68c3addab5b6693f28dce2747f92a7f856188f9",
-    "ProtocolRevenueDistributor": "0xec00cf313cd2dacb7159d827c13463a214050db0",
-    "BuybackVault": "0x5bf81f623a15695957d4465d4a26e7c2913ff553",
-    "HolderAirdropVault": "0x7fc3adc0c617611d6d441de8c2008e58c175ec37",
-    "MasterLaunchHook": "0xf092f9fdf95a31671e2562b3d0ba7c2fd3b8aac8",
-    "LaunchFactory": "0xc4ba4e6c5233ded0fdeba344508688d796c2cde7",
-    "LaunchFactoryQuery": "0xee814fa35436486c0d23386d879661213592106f",
-    "GraduatedFeeHook": "0xb8bc49e928132cdaa89face73a574ab0e19ae088",
-    "BondingLaunchFactory": "0x376a629742ad7a76df57eda1df7cd000363c1529",
-    "HookitSwapRouter": "0x332e59c831df0045e557334f3735f3ca5c011abf",
-    "V4ClaimsRedeemer": "0xbe6c391a631a37280f8c8870d1d83582d27874c6",
-    "FeeEthRail": "0x36f87a6dd67b533c60ba69c6ae246e41ed88eb44",
-    "HkitBuyback": "0x5bdb903a24ecfb65092496d89cf2805eadce54b8",
-    "MultiPairArbExecutor": "0x6df4037d055cf076fa8cc84e31547de3ae8c2693",
+    "FloorVault": "0x5e8c52d4f137fcf8dcdd066fd3edd0ab78ea945b",
+    "FeeEscrow": "0xdc8e753918748e889b2773d44a6adcabd51ab784",
+    "ProtocolRevenueDistributor": "0x52b48b4d4d159ada83b5ba4a861acac61696a237",
+    "BuybackVault": "0x2311131ebfbda7b98bfdc906597522f569239753",
+    "HolderAirdropVault": "0xba64eaf9c797e8da2e2b7c6d98540ba70449b7e3",
+    "MasterLaunchHook": "0x9f0834cc829fd789782f7afc76de67e3dedb2ac8",
+    "LaunchFactory": "0xa0a7747976f96cac86d72194e59c82fed56aab75",
+    "LaunchFactoryQuery": "0xb901971f71be71e921b0509fbc4720cebc7cb4a0",
+    "GraduatedFeeHook": "0xe2748f1379b41505ed7498d0829d982581642088",
+    "BondingLaunchFactory": "0x10e4af269e373227301d4071c41e98b364097ac5",
+    "HookitSwapRouter": "0xfc6b2f7f3a600497489cb1614a70334ef420ffcf",
+    "V4ClaimsRedeemer": "0xc34ace71706ce0095d42d1e7911d079837265967",
+    "FeeEthRail": "0x6f5ab9285403f2149a723790fafc9817ba5e467d",
+    "HkitBuyback": "0x49156fe494908bb08dcb6dd4264c7879bb818874",
+    "MultiPairArbExecutor": "0x349d0aca1a44452773af90593332a1421ee2a417",
     "UniswapV3EthUsdTwapFeed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",
     "NativeToken": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
   },
   "previousContracts": {
     "LaunchFactories": [
+      "0xc4ba4e6c5233ded0fdeba344508688d796c2cde7",
       "0x4ac6815a8628576078474025407b6d0317c919a7",
       "0x480bfb88985fb94f4345ed4bb2ec267db9ab9626",
       "0x10c4687b66fec64066c59a59cae1a9c326779f35",
       "0xbadb0cbffc80b107082babab9e488bc6bef8f425"
     ],
     "BondingLaunchFactories": [
+      "0x376a629742ad7a76df57eda1df7cd000363c1529",
       "0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42",
       "0x13d6216a92b013daacd36e4f6d78ad9264af1a0c",
       "0x44dd5e6fbd3594f7c784b76f8362d6e68b16af98"
     ],
     "ProtocolRevenueDistributors": [
+      "0xec00cf313cd2dacb7159d827c13463a214050db0",
       "0xc724b1dadb0215a601c143fdec53152d8e61867f",
       "0x4149509d2293a61cb199e17227740eebfadd30c6",
       "0x10d0350b143b40509c7c5461d66ba28c5ad4b24f"
     ],
     "HkitBuybacks": [
+      "0x5bdb903a24ecfb65092496d89cf2805eadce54b8",
       "0x64ce593c8678512097cd0d53f737c3621fb66e5d",
       "0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb",
       "0xf5923fd54049e9896f6795b531e08df2f728e917"
@@ -55,7 +59,7 @@
     "address": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
   },
   "indexer": {
-    "startBlock": 55495648,
+    "startBlock": 55566276,
     "url": "https://indexer.hookit.fun"
   },
   "oracle": {
@@ -71,7 +75,7 @@
     "minimumStableReserve": "250000000000"
   },
   "notes": [
-    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-09.",
+    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-10.",
     "Existing native token carried forward; fair launch was skipped for this redeploy.",
     "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
     "customHookAllowlistEnabled expected true after harden.",
