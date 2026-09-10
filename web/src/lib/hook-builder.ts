@@ -51,6 +51,9 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   holderAirdrop: false,
   holderAirdropPct: 50,
   holderAirdropEpochSeconds: 15 * 60,
+  buybackVesting: false,
+  buybackVestingDurationDays: 365 * 5,
+  buybackVestingMcapUsd: 0,
   creatorShareToHook: false,
 };
 

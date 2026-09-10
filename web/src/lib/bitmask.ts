@@ -145,7 +145,9 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   packed |= lpDonateBps << SHIFT_LP_DONATE_BPS;
   packed |= holderAirdropBps << SHIFT_HOLDER_AIRDROP_BPS;
   if (modules.buybackVesting) {
-    const days = modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
+    const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
+    const days =
+      mcapUsd > 0 ? MAX_BUYBACK_VESTING_DAYS : modules.buybackVestingDurationDays ?? MAX_BUYBACK_VESTING_DAYS;
     packed |= BigInt(days * SECONDS_PER_DAY) << SHIFT_BUYBACK_VESTING_DURATION;
   }
 
@@ -233,6 +235,7 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
             : undefined,
       buybackVesting,
       buybackVestingDurationDays,
+      buybackVestingMcapUsd: 0,
       autoBurn,
       autoBurnPct: autoBurnBps === 0 ? 20 : Math.max(1, Math.round(autoBurnBps / 100)),
       lpDonate,

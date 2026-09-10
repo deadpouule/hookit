@@ -6364,6 +6364,30 @@
     background: rgb(255 255 255 / 0.03);
   }
 
+  /* Same type as Total volume / 24h volume / Protocol revenue (.stonk-stats dd). */
+  .mobile-token-row-price {
+    margin: 0;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #fff;
+  }
+
+  .mobile-token-row-chg {
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .mobile-token-row-chg.is-up {
+    color: #34d399;
+  }
+
+  .mobile-token-row-chg.is-down {
+    color: #fb7185;
+  }
+
   .mobile-token-row .token-copy-badge,
   .mobile-token-row .token-og-badge {
     top: auto;

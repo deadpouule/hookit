@@ -11,8 +11,20 @@ import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { hookPickTagline, isModuleEnabled } from "@/lib/launch-module-summary";
 import { creatorCutLock } from "@/lib/launch-wizard";
-import { MAX_HOOK_TAX_BPS } from "@/lib/constants";
-import { formatBps } from "@/lib/format";
+import {
+  BASE_FEE_BPS,
+  BUYBACK_VESTING_DEFAULT_DAYS,
+  BUYBACK_VESTING_MAX_DAYS,
+  BUYBACK_VESTING_MCAP_DEFAULT_USD,
+  BUYBACK_VESTING_MCAP_MAX_USD,
+  BUYBACK_VESTING_MCAP_MIN_USD,
+  BUYBACK_VESTING_MIN_DAYS,
+  clampBuybackVestingMcapUsd,
+  DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
+  MAX_HOOK_TAX_BPS,
+  MAX_TOTAL_FEE_BPS,
+} from "@/lib/constants";
+import { formatBps, formatCompactUsd } from "@/lib/format";
 import {
   clampDynamicFeeRange,
   formatTotalFeePercent,
@@ -30,18 +42,11 @@ import {
   HOLDER_AIRDROP_EPOCH_MINUTES,
   HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
   HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES,
+  DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT,
+  DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT,
   bpsToSupplyPct,
   formatSupplyCap,
   supplyPctToBps,
-} from "@/lib/protocol-limits";
-import {
-  BASE_FEE_BPS,
-  DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
-  MAX_TOTAL_FEE_BPS,
-} from "@/lib/constants";
-import {
-  DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT,
-  DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT,
 } from "@/lib/protocol-limits";
 import {
   feeRouteSliderMax,
@@ -979,30 +984,107 @@ function HookSettings({
   }
 
   if (hook.id === "buyback-vesting") {
-    const days = modules.buybackVestingDurationDays ?? 365 * 5;
+    const days = modules.buybackVestingDurationDays ?? BUYBACK_VESTING_DEFAULT_DAYS;
+    const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
+    const untilMcap = mcapUsd > 0;
     return (
-      <PickConfigControl
-        theme={theme}
-        label="Vest duration"
-        value={days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
-        edit={{
-          numericValue: days,
-          min: 7,
-          max: 365 * 5,
-          step: 7,
-          suffix: "d",
-          onCommit: (next) => onUpdate({ buybackVestingDurationDays: next }),
-        }}
-      >
-        <AccentSlider
-          accentColor={accent}
-          value={[days]}
-          onValueChange={([v]) => onUpdate({ buybackVestingDurationDays: v })}
-          min={7}
-          max={365 * 5}
-          step={7}
-        />
-      </PickConfigControl>
+      <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
+        <div
+          className="launch-mode-toggle launch-mode-toggle--compact"
+          role="tablist"
+          aria-label="Buyback vesting unlock"
+        >
+          {(
+            [
+              { value: "time" as const, label: "Time" },
+              { value: "mcap" as const, label: "Until mcap" },
+            ] as const
+          ).map((opt) => {
+            const active = opt.value === "mcap" ? untilMcap : !untilMcap;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() =>
+                  onUpdate({
+                    buybackVestingMcapUsd:
+                      opt.value === "mcap"
+                        ? mcapUsd > 0
+                          ? mcapUsd
+                          : BUYBACK_VESTING_MCAP_DEFAULT_USD
+                        : 0,
+                  })
+                }
+                className={cn(
+                  "launch-mode-toggle__btn launch-mode-toggle__btn--single",
+                  active && "is-active",
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        {untilMcap ? (
+          <PickConfigControl
+            theme={theme}
+            label="Unlock mcap"
+            value={formatCompactUsd(mcapUsd)}
+            edit={{
+              numericValue: mcapUsd,
+              min: BUYBACK_VESTING_MCAP_MIN_USD,
+              max: BUYBACK_VESTING_MCAP_MAX_USD,
+              step: 5_000,
+              suffix: "",
+              onCommit: (next) => onUpdate({ buybackVestingMcapUsd: clampBuybackVestingMcapUsd(next) }),
+            }}
+          >
+            <AccentSlider
+              accentColor={accent}
+              value={[mcapUsd]}
+              onValueChange={([v]) => onUpdate({ buybackVestingMcapUsd: clampBuybackVestingMcapUsd(v) })}
+              min={BUYBACK_VESTING_MCAP_MIN_USD}
+              max={BUYBACK_VESTING_MCAP_MAX_USD}
+              step={5_000}
+            />
+          </PickConfigControl>
+        ) : (
+          <PickConfigControl
+            theme={theme}
+            label="Vest duration"
+            value={days >= 365 ? `${(days / 365).toFixed(1)}y` : `${days}d`}
+            edit={{
+              numericValue: days,
+              min: BUYBACK_VESTING_MIN_DAYS,
+              max: BUYBACK_VESTING_MAX_DAYS,
+              step: 7,
+              suffix: "d",
+              onCommit: (next) => onUpdate({ buybackVestingDurationDays: next }),
+            }}
+          >
+            <AccentSlider
+              accentColor={accent}
+              value={[days]}
+              onValueChange={([v]) => onUpdate({ buybackVestingDurationDays: v })}
+              min={BUYBACK_VESTING_MIN_DAYS}
+              max={BUYBACK_VESTING_MAX_DAYS}
+              step={7}
+            />
+          </PickConfigControl>
+        )}
+        <span
+          className={cn(
+            "orb-hook-desc-badge pick-config-hint-badge",
+            `orb-hook-desc-badge--${theme}`,
+          )}
+        >
+          {untilMcap
+            ? "Lock until this FDV (saved on the token). Live vault still vests over 5 years until a vault upgrade can release at mcap"
+            : "Creator fees unlock linearly over this duration — claim the unlocked slice anytime"}
+        </span>
+      </div>
     );
   }
 

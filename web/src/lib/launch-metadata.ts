@@ -1,4 +1,5 @@
 import { clipImageForMetadata } from "@/lib/token-metadata";
+import { clampBuybackVestingMcapUsd } from "@/lib/constants";
 import type { LaunchFormState } from "@/lib/types";
 
 /** EIP-3860 init-code budget for LaunchToken CREATE2 (creation code + ctor args). */
@@ -13,6 +14,12 @@ export type BuildMetadataOptions = {
 };
 
 export type MetadataPayload = Record<string, unknown>;
+
+function attachBuybackVestingMcap(payload: MetadataPayload, form: LaunchFormState): void {
+  if (!form.modules.buybackVesting) return;
+  const mcapUsd = clampBuybackVestingMcapUsd(form.modules.buybackVestingMcapUsd ?? 0);
+  if (mcapUsd > 0) payload.buybackVestingMcapUsd = mcapUsd;
+}
 
 /** JSON payload for IPFS / display — hook source is never embedded (too large for chain). */
 export function buildMetadataPayload(
@@ -32,6 +39,8 @@ export function buildMetadataPayload(
     app: "hookit",
     version: 1,
   };
+
+  attachBuybackVestingMcap(payload, form);
 
   if (form.hookMode === "custom") {
     payload.hook = {
@@ -60,13 +69,16 @@ export function buildMinimalOnChainMetadataUri(
   const safeImage =
     image && (image.startsWith("ipfs://") || image.startsWith("https://")) ? image : undefined;
 
-  const uri = encodeDataJsonUri({
+  const payload: MetadataPayload = {
     name: form.name.trim(),
     symbol: form.ticker.trim().toUpperCase(),
     image: safeImage,
     app: "hookit",
     version: 1,
-  });
+  };
+  attachBuybackVestingMcap(payload, form);
+
+  const uri = encodeDataJsonUri(payload);
 
   if (uri.length > MAX_ON_CHAIN_METADATA_URI) {
     throw new Error(

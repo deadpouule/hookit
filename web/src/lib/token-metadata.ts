@@ -1,3 +1,5 @@
+import { clampBuybackVestingMcapUsd } from "@/lib/constants";
+
 const MAX_IMAGE_CHARS = 80_000;
 
 export type TokenMetadataFields = {
@@ -6,6 +8,8 @@ export type TokenMetadataFields = {
   twitter?: string;
   website?: string;
   github?: string;
+  /** USD FDV that unlocks buyback vesting when the launcher picked until-mcap. */
+  buybackVestingMcapUsd?: number;
 };
 
 function str(value: unknown): string | undefined {
@@ -121,12 +125,21 @@ export function parseTokenMetadata(uri: string): TokenMetadataFields {
 function fieldsFromUnknown(parsed: unknown): TokenMetadataFields {
   if (!parsed || typeof parsed !== "object") return {};
   const record = parsed as Record<string, unknown>;
+  const mcapRaw = record.buybackVestingMcapUsd;
+  const mcapNum =
+    typeof mcapRaw === "number"
+      ? mcapRaw
+      : typeof mcapRaw === "string"
+        ? Number(mcapRaw)
+        : NaN;
+  const buybackVestingMcapUsd = clampBuybackVestingMcapUsd(mcapNum);
   return {
     image: typeof record.image === "string" ? record.image : undefined,
     description: str(record.description),
     twitter: str(record.twitter),
     website: str(record.website),
     github: str(record.github),
+    buybackVestingMcapUsd: buybackVestingMcapUsd > 0 ? buybackVestingMcapUsd : undefined,
   };
 }
 

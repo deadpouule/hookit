@@ -594,7 +594,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault and vests linearly over the duration you pick (7 days to 5 years). Claim unlocks gradually on the token page.",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target you set at launch. The mcap target is stored in token metadata. The live vault still vests linearly (5 years when you pick until-mcap) until a vault upgrade can release at the target. Claim the unlocked slice on the token page.",
         },
         {
           type: "h3",
@@ -643,6 +643,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "The floor is not pegged to the DEX price. Spot (and mcap) can sit far above the vault — e.g. 1M mcap vs a 100k floor is a +900% premium.",
+            "Premium % is hidden while the vault is still dust vs spot (a $5k launch FDV vs a few cents of collateral is not a +30,000,000% premium).",
             "Spot cannot sustainably trade below the floor: redeem / floor-fill is a quote bid at P_floor.",
             "Low volume → slow floor growth.",
             "Empty vault → redeem is useless until fees refill it.",

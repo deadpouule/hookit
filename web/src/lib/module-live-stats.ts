@@ -1,7 +1,7 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
-import { formatCompactQuoteAmount, formatLiveQuoteWei } from "@/lib/format";
+import { formatCompactQuoteAmount, formatCompactUsd, formatLiveQuoteWei } from "@/lib/format";
 
 export type ModuleLiveStats = {
   floorPriceHuman: number | null;
@@ -63,15 +63,23 @@ export function buybackClaimableWei(args: {
 
 /**
  * Spot vs redeemable floor: `(spot - floor) / floor * 100`.
- * 1M mcap vs 100k floor-implied mcap → +900. Null when either side is missing.
+ * 1M mcap vs 100k floor-implied mcap → +900.
+ * Null when either side is missing, or the vault is still dust vs spot
+ * (e.g. $5k launch FDV vs a $0.01 vault would print tens of millions of %
+ * and is not a real premium).
  */
+const FLOOR_PREM_MIN_COVERAGE = 0.01;
+
 export function floorPremiumPct(
   spot: number | null | undefined,
   floor: number | null | undefined,
 ): number | null {
   if (spot == null || floor == null) return null;
   if (!Number.isFinite(spot) || !Number.isFinite(floor) || spot <= 0 || floor <= 0) return null;
-  return ((spot - floor) / floor) * 100;
+  if (floor / spot < FLOOR_PREM_MIN_COVERAGE) return null;
+  const pct = ((spot - floor) / floor) * 100;
+  if (!Number.isFinite(pct) || Math.abs(pct) >= 10_000) return null;
+  return pct;
 }
 
 /** Compact chip label, e.g. `+900% prem`. Near-zero prints `at floor`. */
@@ -95,7 +103,7 @@ export function moduleLiveStatLine(
   id: MasterHookId,
   modules: LaunchModules,
   live: ModuleLiveStats,
-  pool: { launchedAt?: number; creator?: string },
+  pool: { launchedAt?: number; creator?: string; marketCap?: number },
   _hookTaxBps = 0,
 ): string | null {
   switch (id) {
@@ -124,6 +132,7 @@ export function moduleLiveStatLine(
     case "dynamic-fees":
       return formatDynamicFeeRange(modules, _hookTaxBps);
     case "buyback-vesting": {
+      const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       const remain =
         live.buybackVestSecondsLeft != null
@@ -135,10 +144,20 @@ export function moduleLiveStatLine(
         live.buybackClaimableWei != null && live.buybackQuoteDecimals != null
           ? `${formatLiveQuoteWei(live.buybackClaimableWei, live.buybackQuoteDecimals)} ${live.quoteLabel}`
           : formatAmount(live.buybackClaimableHuman ?? 0, live.quoteLabel);
-      if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) {
-        return `0 ${live.quoteLabel} · ${remain}`;
+      const amountPart =
+        live.buybackTotalHuman == null || live.buybackTotalHuman <= 0
+          ? `0 ${live.quoteLabel}`
+          : claimable;
+      if (mcapUsd > 0) {
+        const goal = formatCompactUsd(mcapUsd);
+        const liveMcap = pool.marketCap;
+        if (liveMcap != null && liveMcap > 0) {
+          if (liveMcap >= mcapUsd) return `${amountPart} · hit ${goal} FDV`;
+          return `${amountPart} · ${formatCompactUsd(liveMcap)} / ${goal} FDV`;
+        }
+        return `${amountPart} · until ${goal} FDV`;
       }
-      return `${claimable} · ${remain}`;
+      return `${amountPart} · ${remain}`;
     }
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
@@ -166,7 +185,7 @@ export function moduleLiveStatLine(
 export function moduleMeterPct(
   id: MasterHookId,
   modules: LaunchModules,
-  pool: { launchedAt?: number },
+  pool: { launchedAt?: number; marketCap?: number },
   live: ModuleLiveStats,
 ): number | null {
   switch (id) {
@@ -179,6 +198,10 @@ export function moduleMeterPct(
     case "auto-burn":
       return live.burnedPct ?? 0;
     case "buyback-vesting": {
+      const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
+      if (mcapUsd > 0 && pool.marketCap != null && pool.marketCap > 0) {
+        return Math.max(0, Math.min(100, (pool.marketCap / mcapUsd) * 100));
+      }
       if (live.buybackTotalHuman == null || live.buybackTotalHuman <= 0) return null;
       if (live.buybackVestSecondsLeft == null) return null;
       const duration = (modules.buybackVestingDurationDays ?? 365 * 5) * 86_400;

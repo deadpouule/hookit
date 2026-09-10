@@ -38,6 +38,11 @@ export interface LaunchModules {
   buybackVesting?: boolean;
   /** Linear vest duration when buyback vesting is on (days). */
   buybackVestingDurationDays?: number;
+  /**
+   * Optional USD fully-diluted mcap that fully unlocks creator vest.
+   * 0 / omitted = time vest only.
+   */
+  buybackVestingMcapUsd?: number;
   autoBurn: boolean;
   autoBurnPct: number;
   lpDonate: boolean;

@@ -22,6 +22,18 @@ export const DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT = 100;
 export const BUYBACK_VESTING_DEFAULT_DAYS = 365 * 5;
 export const BUYBACK_VESTING_MIN_DAYS = 7;
 export const BUYBACK_VESTING_MAX_DAYS = 365 * 5;
+export const BUYBACK_VESTING_MCAP_DEFAULT_USD = 100_000;
+export const BUYBACK_VESTING_MCAP_MIN_USD = 10_000;
+export const BUYBACK_VESTING_MCAP_MAX_USD = 10_000_000;
+
+/** 0 = time vest. Otherwise clamp into the launch slider range. */
+export function clampBuybackVestingMcapUsd(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.min(
+    BUYBACK_VESTING_MCAP_MAX_USD,
+    Math.max(BUYBACK_VESTING_MCAP_MIN_USD, Math.round(value)),
+  );
+}
 export const SECONDS_PER_DAY = 86_400;
 
 /** Max % of total supply per swap / wallet — mirrors ProtocolConstants (10_000 bps = 100%). */
@@ -62,6 +74,7 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     holderAirdropEpochSeconds: 15 * 60,
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
+    buybackVestingMcapUsd: 0,
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
@@ -100,6 +113,7 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     holderAirdropEpochSeconds: 15 * 60,
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
+    buybackVestingMcapUsd: 0,
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,

@@ -81,7 +81,7 @@ const PRESET_LINES: Record<MasterHookId, string[]> = {
   ],
   "buyback-vesting": [
     "CREATOR PROCEEDS → BUYBACKVAULT",
-    "LINEAR VEST 5 YEARS ON-CHAIN",
+    "TIME VEST OR UNTIL MCAP TARGET",
     "CLAIM AFTER UNLOCK",
   ],
   "auto-burn": [

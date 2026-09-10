@@ -58,6 +58,7 @@ export type OnChainLaunch = LaunchRow & {
   twitter?: string;
   website?: string;
   github?: string;
+  buybackVestingMcapUsd?: number;
   marketCount?: number;
   markets?: TokenPoolMarket[];
 };
@@ -86,6 +87,9 @@ function rowFromResult(result: unknown): LaunchRow | null {
 
 export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
   const { modules, hookTaxBps } = unpackLaunchBitmask(launch.bitmask);
+  if (modules.buybackVesting && launch.buybackVestingMcapUsd && launch.buybackVestingMcapUsd > 0) {
+    modules.buybackVestingMcapUsd = launch.buybackVestingMcapUsd;
+  }
   const token = launch.token.toLowerCase() as Address;
   const quote = (launch.quote ?? zeroAddress).toLowerCase() as Address;
   const tokenIsCurrency0 = BigInt(launch.token) < BigInt(quote);
@@ -324,9 +328,8 @@ async function hydrateLaunches(
   return Promise.all(
     rows.map(async ({ id, row, bitmask, launchedAt, quote, fee, tickSpacing }, i) => {
       const identity = identities[i] ?? { name: "", symbol: "", metadataURI: "" };
-      const { image, description, twitter, website, github } = await resolveTokenMetadata(
-        identity.metadataURI,
-      );
+      const { image, description, twitter, website, github, buybackVestingMcapUsd } =
+        await resolveTokenMetadata(identity.metadataURI);
       let packed = bitmask ?? BigInt(0);
       if (packed === BigInt(0) && !row.customHook) {
         packed = bitmaskByIndex.get(i) ?? BigInt(0);
@@ -346,6 +349,7 @@ async function hydrateLaunches(
         twitter,
         website,
         github,
+        buybackVestingMcapUsd,
       };
     }),
   );

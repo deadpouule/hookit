@@ -1,4 +1,5 @@
 import { CREATOR_SHARE_BPS } from "@/lib/constants";
+import { formatCompactUsd } from "@/lib/format";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
@@ -51,6 +52,10 @@ export function moduleDetailLine(
     case "dynamic-fees":
       return formatDynamicFeeRange(modules, hookTaxBps);
     case "buyback-vesting": {
+      const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
+      if (mcapUsd > 0) {
+        return `Unlocks when mcap hits ${formatCompactUsd(mcapUsd)}`;
+      }
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
         ? `Creator fees unlock over ${Math.round(days / 365)} years`
@@ -144,7 +149,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "max-tx": "Caps swap size vs supply",
   "max-wallet": "Caps wallet holdings",
   "dynamic-fees": "Fees scale with LP depth used",
-  "buyback-vesting": "Creator fees vest over time",
+  "buyback-vesting": "Creator fees vest over time or until a mcap target",
   "auto-burn": "Burns tokens on swaps",
   "lp-donate": "Rewards in-range LPs",
   "holder-airdrop": "Drops quote to holders",
@@ -189,7 +194,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
-    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Proceeds unlock linearly over the duration you pick and are claimable on the token page. Can't combine with Creator → Hook — both spend that same 70% cut.",
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until the token hits a USD market-cap target. Can't combine with Creator → Hook — both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "lp-donate":
@@ -217,7 +222,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "max-tx": "limits trade size",
   "max-wallet": "limits wallet size",
   "dynamic-fees": "fee vs in-range LP depth",
-  "buyback-vesting": "locks creator fees over time",
+  "buyback-vesting": "locks creator fees until time or mcap",
   "auto-burn": "burns tokens on swaps",
   "lp-donate": "rewards liquidity providers",
   "holder-airdrop": "airdrops to holders",
