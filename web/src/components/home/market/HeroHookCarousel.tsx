@@ -7,15 +7,14 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import {
-  FIXED_FEE_HOOK,
-  MASTER_HOOKS,
+  EXPLORE_HOOKS,
   launchWithHookHref,
   type BrowseHook,
 } from "@/lib/master-hooks";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
-const HOOKS: BrowseHook[] = [...MASTER_HOOKS, FIXED_FEE_HOOK];
+const HOOKS: BrowseHook[] = EXPLORE_HOOKS;
 const SLOTS = [-2, -1, 0, 1, 2] as const;
 const EASE = "easeInOut" as const;
 const DURATION = 0.45;
