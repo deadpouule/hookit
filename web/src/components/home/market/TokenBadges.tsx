@@ -99,6 +99,7 @@ export function TokenTypeBadges({
   const badges: ReactNode[] = [];
   const isMaster =
     token.hookType === "Master" || (token.rail === "master" && token.hookType !== "Custom");
+  const isClassic = !isMaster && (token.hookType === "Classic" || token.rail === "classic");
 
   if (isMaster && !hideMaster) {
     badges.push(
@@ -117,7 +118,7 @@ export function TokenTypeBadges({
         )}
       </BadgeTip>,
     );
-  } else if (token.hookType === "Classic" || token.rail === "classic") {
+  } else if (isClassic && !hideMaster) {
     badges.push(
       <BadgeTip key="classic" tip="Bonding-curve launch — graduates into a Uniswap pool.">
         <span className="token-type-badge token-type-badge--curve">Classic</span>

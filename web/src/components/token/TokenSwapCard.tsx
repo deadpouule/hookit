@@ -3,7 +3,7 @@
 import { formatUnits, parseEther, parseUnits, zeroAddress } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { PoolMarketMark } from "@/components/token/PoolQuoteMark";
@@ -129,6 +129,7 @@ export function TokenSwapCard({
   onBuyPrefillConsumed,
   initialSide = "buy",
   variant = "card",
+  footer,
 }: {
   pool: TokenPool;
   ticker?: string;
@@ -139,6 +140,7 @@ export function TokenSwapCard({
   onBuyPrefillConsumed?: () => void;
   initialSide?: Side;
   variant?: "card" | "sheet";
+  footer?: ReactNode;
 }) {
   const ticker = pool.ticker;
   const searchParams = useSearchParams();
@@ -536,12 +538,6 @@ export function TokenSwapCard({
         </div>
       ) : null}
 
-      {onBonding && (
-        <p className="mt-3 rounded-lg border border-[#9514d1]/30 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
-          Classic bonding curve — trades until 4.2 ETH-equiv graduation.
-        </p>
-      )}
-
       {variant === "card" ? <SwapSideTabs side={side} onSide={applySide} variant="card" /> : null}
 
       <TokenProSwap
@@ -598,6 +594,7 @@ export function TokenSwapCard({
       {(error || swap.error) && (
         <p className="mt-2 text-center text-[12px] text-red-400">{error ?? swap.error}</p>
       )}
+      {footer ? <div className="mt-3">{footer}</div> : null}
     </div>
   );
 }
