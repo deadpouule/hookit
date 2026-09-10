@@ -32,11 +32,12 @@ import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 /// @dev Wallet is thin (~0.001 ETH). Launch fees are dropped to 0.0001 ETH for the two
 ///      launches then restored to 0.0005 ETH in the same broadcast.
 contract SmokeMinTxVestClassicInkScript is Script {
-    address internal constant DEFAULT_FACTORY = 0x4ac6815a8628576078474025407b6D0317C919A7;
-    address internal constant DEFAULT_BONDING = 0x04d6b9ca57b6F655bF3E2d4a4fa1D51a88f1ee42;
-    address internal constant DEFAULT_ROUTER = 0xD95634238C39Cc5Aa17b1be70be3B041ecE0038C;
-    address internal constant DEFAULT_HOOK = 0xB6108b8170E0c5153c2A5aA4a0D7e112Dbb9aaC8;
-    address internal constant DEFAULT_BUYBACKS = 0x6B4509Af573F04b14455362dB5C041f585F82938;
+    /// @dev Canonical Ink factories from `deploy/ink/addresses.json` (UI catalogue).
+    address internal constant DEFAULT_FACTORY = 0xc4ba4E6c5233dED0FDEBA344508688D796C2cde7;
+    address internal constant DEFAULT_BONDING = 0x376A629742aD7a76Df57eda1Df7CD000363c1529;
+    address internal constant DEFAULT_ROUTER = 0x332e59C831Df0045E557334F3735f3CA5C011ABf;
+    address internal constant DEFAULT_HOOK = 0xF092f9fdF95a31671e2562b3d0Ba7c2FD3b8aAC8;
+    address internal constant DEFAULT_BUYBACKS = 0x5Bf81f623A15695957d4465D4A26e7c2913ff553;
 
     uint256 internal constant TEMP_LAUNCH_FEE = 0.0001 ether;
     uint256 internal constant DEV_BUY_WEI = 0.000025 ether;
