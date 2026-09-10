@@ -91,7 +91,19 @@ async function attachPriceSeries(
   });
 }
 
-function applyBars(handle: ChartHandle, next: ChartBar[], fit: boolean, lineColor: string) {
+function pinLastBarRight(chart: IChartApi, barCount: number) {
+  if (barCount <= 0) return;
+  const rightPad = 2;
+  const minVisible = 16;
+  const last = barCount - 1;
+  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 48));
+  chart.timeScale().setVisibleLogicalRange({
+    from: last + rightPad - visible + 1,
+    to: last + rightPad,
+  });
+}
+
+function applyBars(handle: ChartHandle, next: ChartBar[], _fit: boolean, lineColor: string) {
   if (handle.style === "line") {
     const line = handle.price as ISeriesApi<"Line">;
     line.applyOptions({ color: lineColor });
@@ -126,7 +138,7 @@ function applyBars(handle: ChartHandle, next: ChartBar[], fit: boolean, lineColo
         }))
       : [],
   );
-  if (fit) handle.chart.timeScale().fitContent();
+  pinLastBarRight(handle.chart, next.length);
 }
 
 export function TokenLightweightPlot({
@@ -268,7 +280,8 @@ export function TokenLightweightPlot({
 
   useEffect(() => {
     if (fitNonce === 0) return;
-    handleRef.current?.chart.timeScale().fitContent();
+    const handle = handleRef.current;
+    if (handle) pinLastBarRight(handle.chart, pendingBarsRef.current.length);
   }, [fitNonce]);
 
   return <div ref={hostRef} className="absolute inset-0 z-[2]" />;
