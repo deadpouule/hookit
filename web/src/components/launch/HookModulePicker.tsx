@@ -452,16 +452,7 @@ function PickConfigControl({
           !label && "pick-config-control-head--value-only",
         )}
       >
-        {label ? (
-          <span
-            className={cn(
-              "pick-config-control-badge orb-hook-desc-badge",
-              `orb-hook-desc-badge--${theme}`,
-            )}
-          >
-            {label}
-          </span>
-        ) : null}
+        {label ? <span className="pick-config-control-label">{label}</span> : null}
         {presets ? null : valueEditor}
       </div>
       <div className="pick-config-control-track">{children}</div>
