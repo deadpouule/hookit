@@ -121,6 +121,13 @@ const DYNAMIC_FEE_MAX_PRESETS: readonly ConfigPreset[] = [
   { value: 10, label: "10%" },
 ];
 
+const DYNAMIC_FEE_DEPTH_PRESETS: readonly ConfigPreset[] = [
+  { value: 20, label: "20%" },
+  { value: 50, label: "50%" },
+  { value: 70, label: "70%" },
+  { value: 90, label: "90%" },
+];
+
 function valuesMatch(a: number, b: number, step: number): boolean {
   return Math.abs(a - b) <= Math.max(step / 2, 1e-9);
 }
@@ -364,7 +371,6 @@ function PickConfigControl({
   );
   const matchedPreset =
     edit && presets ? presets.find((preset) => valuesMatch(edit.numericValue, preset.value, step)) : undefined;
-  const hideCustomValue = Boolean(presets && matchedPreset && !focused);
 
   useEffect(() => {
     if (!edit || focused) return;
@@ -397,7 +403,6 @@ function PickConfigControl({
         `orb-hook-desc-badge--${theme}`,
         presets && "pick-preset-custom",
         presets && !matchedPreset && "is-picked",
-        hideCustomValue && "is-empty",
       )}
     >
       <input
@@ -408,9 +413,7 @@ function PickConfigControl({
         style={{
           width: `${Math.max(String(Math.floor(edit.max)).length, 2) + (step < 1 ? 2 : 0) + 1}ch`,
         }}
-        value={
-          hideCustomValue ? "" : focused ? draft : formatEditableNumber(edit.numericValue, step)
-        }
+        value={focused ? draft : formatEditableNumber(edit.numericValue, step)}
         onFocus={(event) => {
           setFocused(true);
           setDraft(formatEditableNumber(edit.numericValue, step));
@@ -429,9 +432,7 @@ function PickConfigControl({
           if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
-      {edit.suffix && !hideCustomValue ? (
-        <span className="pick-config-value-suffix">{edit.suffix}</span>
-      ) : null}
+      {edit.suffix ? <span className="pick-config-value-suffix">{edit.suffix}</span> : null}
     </label>
   ) : (
     <span
@@ -1016,10 +1017,12 @@ function HookSettings({
             step={10}
           />
         </PickConfigControl>
+        <div className="sm:col-span-2">
         <PickConfigControl
           theme={theme}
           label="Depth % for max fee"
           value={`${Math.round((modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100)}%`}
+          presets={DYNAMIC_FEE_DEPTH_PRESETS}
           edit={{
             numericValue: Math.round(
               (modules.dynamicFeeDepthSaturationBps ?? DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS) / 100,
@@ -1044,6 +1047,7 @@ function HookSettings({
             step={5}
           />
         </PickConfigControl>
+        </div>
         <ConfigHint className="sm:col-span-2">
           Fee scales with how much in-range LP depth your swap consumes — same quote size pays more in a shallow pool · no oracle · ceiling is hard-rejected below base fee
         </ConfigHint>
