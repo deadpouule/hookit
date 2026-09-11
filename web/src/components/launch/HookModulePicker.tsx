@@ -1107,70 +1107,74 @@ function HookSettings({
     const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
     const stepPct = modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FeeRouteShareControl
-          routeKey={routeKey}
-          modules={modules}
+      <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
+        <McapUnlockPicker
           theme={theme}
-          accent={accent}
-          onUpdate={onUpdate}
+          untilMcap={untilMcap}
+          mode={mode}
+          cliffUsd={untilMcap ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD}
+          presets={AIRDROP_MCAP_PRESET_USD}
+          stepUsd={AIRDROP_STEP_PRESET_USD}
+          stepPct={stepPct}
+          untilLabel="Until mcap"
+          onUntilMcap={(next) =>
+            onUpdate({
+              holderAirdropMcapUsd: next ? HOLDER_AIRDROP_MCAP_DEFAULT_USD : 0,
+              holderAirdropUnlockMode: next ? mode : "all",
+            })
+          }
+          onMode={(next) =>
+            onUpdate({
+              holderAirdropUnlockMode: next,
+              holderAirdropMcapUsd: mcapUsd > 0 ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD,
+            })
+          }
+          onCliff={(usd) => onUpdate({ holderAirdropMcapUsd: usd, holderAirdropUnlockMode: "all" })}
+          onStepPct={(pct) => onUpdate({ holderAirdropStepPct: pct, holderAirdropUnlockMode: "steps" })}
         />
-        <PickConfigControl
-          theme={theme}
-          label="Epoch"
-          value={`${epochMinutes}m`}
-          edit={{
-            numericValue: epochMinutes,
-            min: HOLDER_AIRDROP_EPOCH_MINUTES,
-            max: HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
-            step: 1,
-            suffix: "m",
-            onCommit: (next) => onUpdate({ holderAirdropEpochSeconds: next * 60 }),
-          }}
-        >
-          <AccentSlider
-            accentColor={accent}
-            value={[epochMinutes]}
-            onValueChange={([v]) => onUpdate({ holderAirdropEpochSeconds: v * 60 })}
-            min={HOLDER_AIRDROP_EPOCH_MINUTES}
-            max={HOLDER_AIRDROP_EPOCH_MAX_MINUTES}
-            step={1}
-          />
-        </PickConfigControl>
-        <div className="sm:col-span-2">
-          <McapUnlockPicker
+        <div className={cn("grid gap-4", untilMcap ? "sm:grid-cols-1" : "sm:grid-cols-2")}>
+          <FeeRouteShareControl
+            routeKey={routeKey}
+            modules={modules}
             theme={theme}
-            untilMcap={untilMcap}
-            mode={mode}
-            cliffUsd={untilMcap ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD}
-            presets={AIRDROP_MCAP_PRESET_USD}
-            stepUsd={AIRDROP_STEP_PRESET_USD}
-            stepPct={stepPct}
-            untilLabel="Until mcap"
-            onUntilMcap={(next) =>
-              onUpdate({
-                holderAirdropMcapUsd: next ? HOLDER_AIRDROP_MCAP_DEFAULT_USD : 0,
-                holderAirdropUnlockMode: next ? mode : "all",
-              })
-            }
-            onMode={(next) =>
-              onUpdate({
-                holderAirdropUnlockMode: next,
-                holderAirdropMcapUsd: mcapUsd > 0 ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD,
-              })
-            }
-            onCliff={(usd) => onUpdate({ holderAirdropMcapUsd: usd, holderAirdropUnlockMode: "all" })}
-            onStepPct={(pct) => onUpdate({ holderAirdropStepPct: pct, holderAirdropUnlockMode: "steps" })}
+            accent={accent}
+            onUpdate={onUpdate}
           />
+          {untilMcap ? null : (
+            <PickConfigControl
+              theme={theme}
+              label="Epoch"
+              value={`${epochMinutes}m`}
+              edit={{
+                numericValue: epochMinutes,
+                min: HOLDER_AIRDROP_EPOCH_MINUTES,
+                max: HOLDER_AIRDROP_EPOCH_MAX_MINUTES,
+                step: 1,
+                suffix: "m",
+                onCommit: (next) => onUpdate({ holderAirdropEpochSeconds: next * 60 }),
+              }}
+            >
+              <AccentSlider
+                accentColor={accent}
+                value={[epochMinutes]}
+                onValueChange={([v]) => onUpdate({ holderAirdropEpochSeconds: v * 60 })}
+                min={HOLDER_AIRDROP_EPOCH_MINUTES}
+                max={HOLDER_AIRDROP_EPOCH_MAX_MINUTES}
+                step={1}
+              />
+            </PickConfigControl>
+          )}
         </div>
         <span
           className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
+            "orb-hook-desc-badge pick-config-hint-badge",
             `orb-hook-desc-badge--${theme}`,
           )}
         >
           {untilMcap
-            ? "Epoch still batches payouts, but only the unlocked FDV slice is paid — packed on-chain at launch"
+            ? mode === "steps"
+              ? "Holder drops unlock by % as FDV hits each rung — packed on-chain at launch"
+              : "Holder drops unlock in full when FDV hits this target — packed on-chain at launch"
             : "Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically"}
         </span>
       </div>

@@ -7,6 +7,43 @@ import {
   type McapUnlockMode,
 } from "@/lib/mcap-vest";
 
+function HookChoiceBadge({
+  theme,
+  active,
+  children,
+  onClick,
+  ariaPressed,
+}: {
+  theme: string;
+  active: boolean;
+  children: string;
+  onClick: () => void;
+  ariaPressed: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={ariaPressed}
+      onClick={onClick}
+      className={cn(
+        "orb-hook-desc-badge pick-config-control-badge mcap-choice-badge",
+        `orb-hook-desc-badge--${theme}`,
+        active && "is-picked",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ChoiceOr({ theme }: { theme: string }) {
+  return (
+    <span className={cn("mcap-choice-or", `orb-hook-desc-badge--${theme}`)} aria-hidden>
+      or
+    </span>
+  );
+}
+
 export function McapUnlockPicker({
   theme,
   untilMcap,
@@ -39,52 +76,36 @@ export function McapUnlockPicker({
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <div className="launch-mode-toggle launch-mode-toggle--compact" role="tablist" aria-label="Unlock condition">
-        {(
-          [
-            { value: false, label: "Time" },
-            { value: true, label: untilLabel },
-          ] as const
-        ).map((opt) => (
-          <button
-            key={String(opt.value)}
-            type="button"
-            role="tab"
-            aria-selected={untilMcap === opt.value}
-            onClick={() => onUntilMcap(opt.value)}
-            className={cn(
-              "launch-mode-toggle__btn launch-mode-toggle__btn--single",
-              untilMcap === opt.value && "is-active",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="mcap-choice-row" role="group" aria-label="Unlock condition">
+        <HookChoiceBadge theme={theme} active={!untilMcap} ariaPressed={!untilMcap} onClick={() => onUntilMcap(false)}>
+          Time
+        </HookChoiceBadge>
+        <ChoiceOr theme={theme} />
+        <HookChoiceBadge theme={theme} active={untilMcap} ariaPressed={untilMcap} onClick={() => onUntilMcap(true)}>
+          {untilLabel}
+        </HookChoiceBadge>
       </div>
 
       {untilMcap ? (
         <>
-          <div className="launch-mode-toggle launch-mode-toggle--compact" role="tablist" aria-label="Unlock amount">
-            {(
-              [
-                { value: "all" as const, label: "All unlock" },
-                { value: "steps" as const, label: "By %" },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                role="tab"
-                aria-selected={mode === opt.value}
-                onClick={() => onMode(opt.value)}
-                className={cn(
-                  "launch-mode-toggle__btn launch-mode-toggle__btn--single",
-                  mode === opt.value && "is-active",
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="mcap-choice-row" role="group" aria-label="Unlock amount">
+            <HookChoiceBadge
+              theme={theme}
+              active={mode === "all"}
+              ariaPressed={mode === "all"}
+              onClick={() => onMode("all")}
+            >
+              All unlock
+            </HookChoiceBadge>
+            <ChoiceOr theme={theme} />
+            <HookChoiceBadge
+              theme={theme}
+              active={mode === "steps"}
+              ariaPressed={mode === "steps"}
+              onClick={() => onMode("steps")}
+            >
+              By %
+            </HookChoiceBadge>
           </div>
 
           {mode === "all" ? (
@@ -95,44 +116,59 @@ export function McapUnlockPicker({
                   type="button"
                   onClick={() => onCliff(usd)}
                   className={cn(
-                    "orb-hook-desc-badge pick-config-hint-badge",
+                    "orb-hook-desc-badge pick-config-control-badge mcap-choice-badge",
                     `orb-hook-desc-badge--${theme}`,
-                    cliffUsd === usd && "is-active",
+                    cliffUsd === usd && "is-picked",
                   )}
-                  style={
-                    cliffUsd === usd
-                      ? { outline: "1px solid currentColor", fontWeight: 700 }
-                      : undefined
-                  }
                 >
                   {formatMcapPreset(usd)}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               {stepUsd.map((usd, i) => (
-                <label key={usd} className="flex items-center justify-between gap-3 text-xs text-zinc-300">
-                  <span>{formatMcapPreset(usd)}</span>
-                  <span className="flex items-center gap-1">
+                <label key={usd} className="mcap-step-row">
+                  <span
+                    className={cn(
+                      "orb-hook-desc-badge pick-config-control-badge",
+                      `orb-hook-desc-badge--${theme}`,
+                    )}
+                  >
+                    {formatMcapPreset(usd)}
+                  </span>
+                  <span
+                    className={cn(
+                      "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge is-picked",
+                      `orb-hook-desc-badge--${theme}`,
+                    )}
+                  >
                     <input
                       type="number"
                       min={0}
                       max={100}
                       step={1}
+                      inputMode="numeric"
+                      aria-label={`${formatMcapPreset(usd)} unlock percent`}
                       value={pct[i] ?? 0}
                       onChange={(e) => {
                         const next = [...pct];
                         next[i] = Math.max(0, Math.min(100, Number(e.target.value) || 0));
                         onStepPct(next);
                       }}
-                      className="w-16 rounded-md border border-white/10 bg-black/40 px-2 py-1 text-right text-white"
+                      className="pick-config-value-input mcap-step-pct-input"
                     />
-                    <span className="text-zinc-500">%</span>
+                    <span className="pick-config-value-suffix">%</span>
                   </span>
                 </label>
               ))}
-              <span className={cn("text-[11px]", sum === 100 ? "text-zinc-500" : "text-rose-400")}>
+              <span
+                className={cn(
+                  "orb-hook-desc-badge pick-config-hint-badge",
+                  `orb-hook-desc-badge--${theme}`,
+                  sum !== 100 && "mcap-step-sum--bad",
+                )}
+              >
                 {sum === 100 ? "Unlocks add to 100%" : `Unlocks sum to ${sum}% — need 100%`}
               </span>
             </div>
