@@ -1288,6 +1288,29 @@
     flex-shrink: 0;
   }
 
+  .pick-preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .pick-preset-badge {
+    width: auto;
+    cursor: pointer;
+  }
+
+  .pick-preset-row .pick-config-control-value--edit {
+    min-width: 4.8rem;
+  }
+
+  .orb-hook-desc-badge.is-picked {
+    font-weight: 700;
+    box-shadow:
+      0 0 0 1px currentColor,
+      0 0 14px color-mix(in srgb, currentColor 48%, transparent);
+  }
+
   .pick-config-control-track {
     padding: 0.15rem 0.1rem 0.2rem;
   }
