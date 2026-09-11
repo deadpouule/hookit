@@ -447,6 +447,7 @@ function PickConfigControl({
         ) : null}
         {presets ? null : valueEditor}
       </div>
+      <div className="pick-config-control-track">{children}</div>
       {presets && edit ? (
         <div className="pick-preset-row" role="group" aria-label={label ? `${label} presets` : "Presets"}>
           {presets.map((preset) => {
@@ -470,7 +471,6 @@ function PickConfigControl({
           {valueEditor}
         </div>
       ) : null}
-      <div className="pick-config-control-track">{children}</div>
     </div>
   );
 }
