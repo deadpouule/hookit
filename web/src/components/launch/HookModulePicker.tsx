@@ -77,6 +77,47 @@ const FIXED_FEE_THEME: HookTheme = "rose";
 const DEFAULT_FIXED_FEE_BPS = 50;
 type PickerFocusId = MasterHookId | "fixed-fee";
 
+type ConfigPreset = { value: number; label: string };
+
+const ANTI_SNIPE_DURATION_PRESETS: readonly ConfigPreset[] = [
+  { value: 60, label: "1 min" },
+  { value: 300, label: "5 min" },
+  { value: 900, label: "15 min" },
+  { value: 1800, label: "30 min" },
+];
+
+const SUPPLY_CAP_PRESETS: readonly ConfigPreset[] = [
+  { value: 0.2, label: "0.2%" },
+  { value: 0.5, label: "0.5%" },
+  { value: 1, label: "1%" },
+  { value: 2, label: "2%" },
+];
+
+const FIXED_FEE_PRESETS: readonly ConfigPreset[] = [
+  { value: 1, label: "1%" },
+  { value: 3, label: "3%" },
+  { value: 5, label: "5%" },
+  { value: 8, label: "8%" },
+];
+
+const DYNAMIC_FEE_MIN_PRESETS: readonly ConfigPreset[] = [
+  { value: 1, label: "1%" },
+  { value: 2, label: "2%" },
+  { value: 3, label: "3%" },
+  { value: 5, label: "5%" },
+];
+
+const DYNAMIC_FEE_MAX_PRESETS: readonly ConfigPreset[] = [
+  { value: 3, label: "3%" },
+  { value: 5, label: "5%" },
+  { value: 8, label: "8%" },
+  { value: 10, label: "10%" },
+];
+
+function valuesMatch(a: number, b: number, step: number): boolean {
+  return Math.abs(a - b) <= Math.max(step / 2, 1e-9);
+}
+
 function FixedFeePickCard({
   selected,
   onClick,
@@ -163,6 +204,7 @@ function FixedFeeConfigPanel({
         theme={FIXED_FEE_THEME}
         label="Hook fee"
         value={formatBps(hookTaxBps)}
+        presets={FIXED_FEE_PRESETS}
         edit={{
           numericValue: hookTaxBps / 100,
           min: 0,
@@ -289,11 +331,13 @@ function PickConfigControl({
   value,
   children,
   edit,
+  presets,
 }: {
   theme: HookTheme;
   label?: string;
   value: string;
   children: ReactNode;
+  presets?: readonly ConfigPreset[];
   edit?: {
     numericValue: number;
     min: number;
@@ -308,6 +352,8 @@ function PickConfigControl({
   const [draft, setDraft] = useState(() =>
     edit ? formatEditableNumber(edit.numericValue, step) : "",
   );
+  const matchedPreset =
+    edit && presets ? presets.find((preset) => valuesMatch(edit.numericValue, preset.value, step)) : undefined;
 
   useEffect(() => {
     if (!edit || focused) return;
@@ -327,6 +373,60 @@ function PickConfigControl({
     if (next !== edit.numericValue) edit.onCommit(next);
   };
 
+  const commitPreset = (presetValue: number) => {
+    if (!edit) return;
+    const next = snapToStep(Math.min(edit.max, Math.max(edit.min, presetValue)), step);
+    if (next !== edit.numericValue) edit.onCommit(next);
+  };
+
+  const valueEditor = edit ? (
+    <label
+      className={cn(
+        "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge",
+        `orb-hook-desc-badge--${theme}`,
+        presets && !matchedPreset && "is-picked",
+      )}
+    >
+      <input
+        className="pick-config-value-input"
+        inputMode="decimal"
+        autoComplete="off"
+        aria-label={presets ? `${label ?? "Value"} custom` : (label ?? "Value")}
+        style={{
+          width: `${Math.max(String(Math.floor(edit.max)).length, 2) + (step < 1 ? 2 : 0) + 1}ch`,
+        }}
+        value={focused ? draft : formatEditableNumber(edit.numericValue, step)}
+        onFocus={(event) => {
+          setFocused(true);
+          setDraft(formatEditableNumber(edit.numericValue, step));
+          event.currentTarget.select();
+        }}
+        onBlur={() => {
+          applyDraft(draft, true);
+          setFocused(false);
+        }}
+        onChange={(event) => {
+          const next = event.target.value.replace(/[^\d.,]/g, "");
+          setDraft(next);
+          applyDraft(next, false);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+        }}
+      />
+      {edit.suffix ? <span className="pick-config-value-suffix">{edit.suffix}</span> : null}
+    </label>
+  ) : (
+    <span
+      className={cn(
+        "pick-config-control-value orb-hook-desc-badge",
+        `orb-hook-desc-badge--${theme}`,
+      )}
+    >
+      {value}
+    </span>
+  );
+
   return (
     <div className="pick-config-control">
       <div
@@ -345,53 +445,31 @@ function PickConfigControl({
             {label}
           </span>
         ) : null}
-        {edit ? (
-          <label
-            className={cn(
-              "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge",
-              `orb-hook-desc-badge--${theme}`,
-            )}
-          >
-            <input
-              className="pick-config-value-input"
-              inputMode="decimal"
-              autoComplete="off"
-              aria-label={label ?? "Value"}
-              style={{
-                width: `${Math.max(String(Math.floor(edit.max)).length, 2) + (step < 1 ? 2 : 0) + 1}ch`,
-              }}
-              value={focused ? draft : formatEditableNumber(edit.numericValue, step)}
-              onFocus={(event) => {
-                setFocused(true);
-                setDraft(formatEditableNumber(edit.numericValue, step));
-                event.currentTarget.select();
-              }}
-              onBlur={() => {
-                applyDraft(draft, true);
-                setFocused(false);
-              }}
-              onChange={(event) => {
-                const next = event.target.value.replace(/[^\d.,]/g, "");
-                setDraft(next);
-                applyDraft(next, false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") event.currentTarget.blur();
-              }}
-            />
-            {edit.suffix ? <span className="pick-config-value-suffix">{edit.suffix}</span> : null}
-          </label>
-        ) : (
-          <span
-            className={cn(
-              "pick-config-control-value orb-hook-desc-badge",
-              `orb-hook-desc-badge--${theme}`,
-            )}
-          >
-            {value}
-          </span>
-        )}
+        {presets ? null : valueEditor}
       </div>
+      {presets && edit ? (
+        <div className="pick-preset-row" role="group" aria-label={label ? `${label} presets` : "Presets"}>
+          {presets.map((preset) => {
+            const active = valuesMatch(edit.numericValue, preset.value, step);
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => commitPreset(preset.value)}
+                className={cn(
+                  "orb-hook-desc-badge pick-config-control-badge pick-preset-badge",
+                  `orb-hook-desc-badge--${theme}`,
+                  active && "is-picked",
+                )}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+          {valueEditor}
+        </div>
+      ) : null}
       <div className="pick-config-control-track">{children}</div>
     </div>
   );
@@ -725,10 +803,12 @@ function HookSettings({
   if (hook.id === "anti-snipe") {
     return (
       <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
         <PickConfigControl
           theme={theme}
           label="Duration"
           value={`${modules.antiSnipeDuration}s`}
+          presets={ANTI_SNIPE_DURATION_PRESETS}
           edit={{
             numericValue: modules.antiSnipeDuration,
             min: MIN_ANTI_SNIPE_DURATION_SEC,
@@ -747,6 +827,7 @@ function HookSettings({
             step={1}
           />
         </PickConfigControl>
+        </div>
         <PickConfigControl
           theme={theme}
           label="Initial tax"
@@ -823,6 +904,7 @@ function HookSettings({
           theme={theme}
           label="Per wallet"
           value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
+          presets={SUPPLY_CAP_PRESETS}
           edit={{
             numericValue: bpsToSupplyPct(modules.maxWalletBps),
             min: MIN_SUPPLY_CAP_SLIDER_PCT,
@@ -860,6 +942,7 @@ function HookSettings({
           theme={theme}
           label="Per swap"
           value={`${formatSupplyCap(modules.maxTxBps)} of supply`}
+          presets={SUPPLY_CAP_PRESETS}
           edit={{
             numericValue: bpsToSupplyPct(modules.maxTxBps),
             min: MIN_SUPPLY_CAP_SLIDER_PCT,
@@ -909,6 +992,7 @@ function HookSettings({
           theme={theme}
           label="Min total fee"
           value={formatTotalFeePercent(minBps)}
+          presets={DYNAMIC_FEE_MIN_PRESETS}
           edit={{
             numericValue: minBps / 100,
             min: BASE_FEE_BPS / 100,
@@ -931,6 +1015,7 @@ function HookSettings({
           theme={theme}
           label="Max total fee"
           value={formatTotalFeePercent(maxBps)}
+          presets={DYNAMIC_FEE_MAX_PRESETS}
           edit={{
             numericValue: maxBps / 100,
             min: (BASE_FEE_BPS + 10) / 100,
