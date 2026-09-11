@@ -128,6 +128,14 @@ const DYNAMIC_FEE_DEPTH_PRESETS: readonly ConfigPreset[] = [
   { value: 90, label: "90%" },
 ];
 
+const HOLDER_AIRDROP_EPOCH_PRESETS: readonly ConfigPreset[] = [
+  { value: 5, label: "5 min" },
+  { value: 15, label: "15 min" },
+  { value: 60, label: "1h" },
+  { value: 360, label: "6h" },
+  { value: 1440, label: "24h" },
+];
+
 function valuesMatch(a: number, b: number, step: number): boolean {
   return Math.abs(a - b) <= Math.max(step / 2, 1e-9);
 }
@@ -1188,7 +1196,7 @@ function HookSettings({
           onCliff={(usd) => onUpdate({ holderAirdropMcapUsd: usd, holderAirdropUnlockMode: "all" })}
           onStepPct={(pct) => onUpdate({ holderAirdropStepPct: pct, holderAirdropUnlockMode: "steps" })}
         />
-        <div className={cn("grid gap-4", untilMcap ? "sm:grid-cols-1" : "sm:grid-cols-2")}>
+        <div className="flex min-w-0 flex-col gap-4">
           <FeeRouteShareControl
             routeKey={routeKey}
             modules={modules}
@@ -1201,6 +1209,7 @@ function HookSettings({
               theme={theme}
               label="Epoch"
               value={`${epochMinutes}m`}
+              presets={HOLDER_AIRDROP_EPOCH_PRESETS}
               edit={{
                 numericValue: epochMinutes,
                 min: HOLDER_AIRDROP_EPOCH_MINUTES,
