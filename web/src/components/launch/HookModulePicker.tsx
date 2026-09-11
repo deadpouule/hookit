@@ -86,6 +86,13 @@ const ANTI_SNIPE_DURATION_PRESETS: readonly ConfigPreset[] = [
   { value: 1800, label: "30 min" },
 ];
 
+const ANTI_SNIPE_TAX_PRESETS: readonly ConfigPreset[] = [
+  { value: 10, label: "10%" },
+  { value: 20, label: "20%" },
+  { value: 50, label: "50%" },
+  { value: 90, label: "90%" },
+];
+
 const SUPPLY_CAP_PRESETS: readonly ConfigPreset[] = [
   { value: 0.2, label: "0.2%" },
   { value: 0.5, label: "0.5%" },
@@ -116,6 +123,16 @@ const DYNAMIC_FEE_MAX_PRESETS: readonly ConfigPreset[] = [
 
 function valuesMatch(a: number, b: number, step: number): boolean {
   return Math.abs(a - b) <= Math.max(step / 2, 1e-9);
+}
+
+function ConfigHint({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <p className={cn("pick-config-hint", className)}>{children}</p>;
 }
 
 function FixedFeePickCard({
@@ -223,14 +240,7 @@ function FixedFeeConfigPanel({
           step={10}
         />
       </PickConfigControl>
-      <span
-        className={cn(
-          "orb-hook-desc-badge pick-config-hint-badge mt-2",
-          `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
-        )}
-      >
-        Extra fee for hook modules · leftover → protocol
-      </span>
+      <ConfigHint>Extra fee for hook modules · leftover → protocol</ConfigHint>
     </>
   );
 }
@@ -354,6 +364,7 @@ function PickConfigControl({
   );
   const matchedPreset =
     edit && presets ? presets.find((preset) => valuesMatch(edit.numericValue, preset.value, step)) : undefined;
+  const hideCustomValue = Boolean(presets && matchedPreset && !focused);
 
   useEffect(() => {
     if (!edit || focused) return;
@@ -384,7 +395,9 @@ function PickConfigControl({
       className={cn(
         "pick-config-control-value pick-config-control-value--edit orb-hook-desc-badge",
         `orb-hook-desc-badge--${theme}`,
+        presets && "pick-preset-custom",
         presets && !matchedPreset && "is-picked",
+        hideCustomValue && "is-empty",
       )}
     >
       <input
@@ -395,7 +408,9 @@ function PickConfigControl({
         style={{
           width: `${Math.max(String(Math.floor(edit.max)).length, 2) + (step < 1 ? 2 : 0) + 1}ch`,
         }}
-        value={focused ? draft : formatEditableNumber(edit.numericValue, step)}
+        value={
+          hideCustomValue ? "" : focused ? draft : formatEditableNumber(edit.numericValue, step)
+        }
         onFocus={(event) => {
           setFocused(true);
           setDraft(formatEditableNumber(edit.numericValue, step));
@@ -414,7 +429,9 @@ function PickConfigControl({
           if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
-      {edit.suffix ? <span className="pick-config-value-suffix">{edit.suffix}</span> : null}
+      {edit.suffix && !hideCustomValue ? (
+        <span className="pick-config-value-suffix">{edit.suffix}</span>
+      ) : null}
     </label>
   ) : (
     <span
@@ -828,10 +845,12 @@ function HookSettings({
           />
         </PickConfigControl>
         </div>
+        <div className="sm:col-span-2">
         <PickConfigControl
           theme={theme}
           label="Initial tax"
           value={`${modules.antiSnipeInitialTax}%`}
+          presets={ANTI_SNIPE_TAX_PRESETS}
           edit={{
             numericValue: modules.antiSnipeInitialTax,
             min: MIN_ANTI_SNIPE_TAX_PCT,
@@ -850,14 +869,10 @@ function HookSettings({
             step={1}
           />
         </PickConfigControl>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        </div>
+        <ConfigHint className="sm:col-span-2">
           Snipe tax and window are fixed at launch (up to {MAX_ANTI_SNIPE_TAX_PCT}% · {MAX_ANTI_SNIPE_DURATION_SEC}s max)
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -874,24 +889,10 @@ function HookSettings({
           onUpdate={onUpdate}
         />
         {floorEst > 0 && (
-          <span
-            className={cn(
-              "orb-hook-desc-badge pick-config-hint-badge mt-2",
-              `orb-hook-desc-badge--${theme}`,
-            )}
-          >
-            Est. floor ≈ {floorEst.toFixed(6)} ETH / token
-          </span>
+          <ConfigHint>Est. floor ≈ {floorEst.toFixed(6)} ETH / token</ConfigHint>
         )}
         {multiMarket && (
-          <span
-            className={cn(
-              "orb-hook-desc-badge pick-config-hint-badge mt-2",
-              `orb-hook-desc-badge--${theme}`,
-            )}
-          >
-            Backed floor is single-pair only — switch to one market to enable
-          </span>
+          <ConfigHint>Backed floor is single-pair only — switch to one market to enable</ConfigHint>
         )}
       </div>
     );
@@ -923,14 +924,9 @@ function HookSettings({
             step={0.1}
           />
         </PickConfigControl>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge mt-2",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint>
           Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -961,14 +957,9 @@ function HookSettings({
             step={0.1}
           />
         </PickConfigControl>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge mt-2",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint>
           Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -1062,14 +1053,9 @@ function HookSettings({
             step={5}
           />
         </PickConfigControl>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge sm:col-span-2",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint className="sm:col-span-2">
           Fee scales with how much in-range LP depth your swap consumes — same quote size pays more in a shallow pool · no oracle · ceiling is hard-rejected below base fee
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -1130,18 +1116,13 @@ function HookSettings({
             />
           </PickConfigControl>
         )}
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint>
           {untilMcap
             ? mode === "steps"
               ? "Creator fees unlock by % as FDV hits each rung — packed on-chain at launch"
               : "Creator fees unlock in full when FDV hits this target — packed on-chain at launch"
             : "Creator fees unlock linearly over this duration — claim the unlocked slice anytime"}
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -1170,14 +1151,9 @@ function HookSettings({
           accent={accent}
           onUpdate={onUpdate}
         />
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint>
           Quote fees mint into the launch LP range — thicker book for whales and traders, not extra LP fee income
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -1250,18 +1226,13 @@ function HookSettings({
             </PickConfigControl>
           )}
         </div>
-        <span
-          className={cn(
-            "orb-hook-desc-badge pick-config-hint-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
+        <ConfigHint>
           {untilMcap
             ? mode === "steps"
               ? "Holder drops unlock by % as FDV hits each rung — packed on-chain at launch"
               : "Holder drops unlock in full when FDV hits this target — packed on-chain at launch"
             : "Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically"}
-        </span>
+        </ConfigHint>
       </div>
     );
   }
@@ -1275,16 +1246,11 @@ function HookSettings({
       hookTaxBps > 0;
 
     return (
-      <span
-        className={cn(
-          "orb-hook-desc-badge pick-config-hint-badge",
-          `orb-hook-desc-badge--${theme}`,
-        )}
-      >
+      <ConfigHint>
         {hasFeeSink
           ? "70% creator share → hook pot with your modules"
           : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
-      </span>
+      </ConfigHint>
     );
   }
 
@@ -1310,14 +1276,7 @@ function FeeRouteShareControl({
 
   if (solo) {
     return (
-      <span
-        className={cn(
-          "orb-hook-desc-badge pick-config-hint-badge",
-          `orb-hook-desc-badge--${theme}`,
-        )}
-      >
-        100% of hook tax · sole enabled module
-      </span>
+      <ConfigHint>100% of hook tax · sole enabled module</ConfigHint>
     );
   }
 
@@ -1345,25 +1304,19 @@ function FeeRouteShareControl({
           step={1}
         />
       </PickConfigControl>
-      <FeeRouteHint modules={modules} theme={theme} />
+      <FeeRouteHint modules={modules} />
     </div>
   );
 }
 
-function FeeRouteHint({ modules, theme }: { modules: LaunchModules; theme: HookTheme }) {
+function FeeRouteHint({ modules }: { modules: LaunchModules }) {
   const enabled = listEnabledFeeRoutes(modules);
   if (enabled.length <= 1) return null;
   const total = feeRouteTotalPct(modules);
 
   return (
-    <span
-      className={cn(
-        "orb-hook-desc-badge pick-config-hint-badge mt-2 block",
-        `orb-hook-desc-badge--${theme}`,
-        total !== 100 && "border-amber-500/40 text-amber-100",
-      )}
-    >
+    <ConfigHint className={cn(total !== 100 && "pick-config-hint--warn")}>
       Enabled modules must share exactly 100% of the hook tax · total {total}%
-    </span>
+    </ConfigHint>
   );
 }

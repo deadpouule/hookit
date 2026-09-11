@@ -1300,8 +1300,29 @@
     cursor: pointer;
   }
 
-  .pick-preset-row .pick-config-control-value--edit {
+  .pick-preset-row .pick-preset-custom {
+    margin-left: auto;
     min-width: 4.8rem;
+    min-height: 1.55rem;
+  }
+
+  .pick-preset-custom.is-empty {
+    justify-content: center;
+  }
+
+  .pick-config-hint {
+    margin: 0.4rem 0 0;
+    max-width: 100%;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgb(161 161 170 / 0.9);
+  }
+
+  .pick-config-hint--warn {
+    color: #fda4af;
   }
 
   .orb-hook-desc-badge.is-picked {

@@ -162,15 +162,9 @@ export function McapUnlockPicker({
                   </span>
                 </label>
               ))}
-              <span
-                className={cn(
-                  "orb-hook-desc-badge pick-config-hint-badge",
-                  `orb-hook-desc-badge--${theme}`,
-                  sum !== 100 && "mcap-step-sum--bad",
-                )}
-              >
+              <p className={cn("pick-config-hint", sum !== 100 && "pick-config-hint--warn")}>
                 {sum === 100 ? "Unlocks add to 100%" : `Unlocks sum to ${sum}% — need 100%`}
-              </span>
+              </p>
             </div>
           )}
         </>
