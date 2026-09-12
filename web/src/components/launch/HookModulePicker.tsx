@@ -185,10 +185,18 @@ function FixedFeePickCard({
           Leftover fees route to the protocol.
         </TooltipContent>
       </Tooltip>
+      <h2
+        className={cn(
+          "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
+          `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
+        )}
+      >
+        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+        <span>Fixed Fees</span>
+      </h2>
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
       </div>
-      <p className="pick-card-title">fixed fees</p>
       <p className="pick-card-sub pick-card-sub--hook">Flat hook tax</p>
     </button>
   );
@@ -314,10 +322,18 @@ function HookPickCard({
       }}
     >
       <HookPickTooltip hook={hook} />
+      <h2
+        className={cn(
+          "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
+          `orb-hook-desc-badge--${hook.theme}`,
+        )}
+      >
+        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+        <span>{hook.title}</span>
+      </h2>
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
-      <p className="pick-card-title">{hook.title}</p>
       <p className="pick-card-sub pick-card-sub--hook">
         {disabled && disabledHint ? disabledHint : hookPickTagline(hook.id)}
       </p>

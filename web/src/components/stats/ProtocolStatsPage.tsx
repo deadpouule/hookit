@@ -120,7 +120,7 @@ export function ProtocolStatsPage() {
           <Kpi
             label="Sent to $HKT holders"
             value={formatFullUsd(hktHolderDropFromVolumeUsd(volume?.totalVolumeUsd ?? 0))}
-            hint={`${formatCount(stats?.hktHolderDrop?.tokensSent ?? 0)} tokens · ${formatCount(stats?.hktHolderDrop?.wallets ?? 0)} wallets`}
+            hint={`${formatCount(stats?.hktHolderDrop?.tokensSent ?? 0)} tokens · ${formatCount(stats?.hktHolderDrop?.wallets ?? 0)} wallet transfers`}
           />
           <HktDropRank rows={stats?.hktHolderDrop?.topTokens ?? []} />
         </div>

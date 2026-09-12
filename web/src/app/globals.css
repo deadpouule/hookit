@@ -829,6 +829,8 @@
 
   .pick-card--hook {
     position: relative;
+    justify-content: flex-start;
+    padding-top: 1.15rem;
   }
 
   .hook-pick-tooltip-trigger {
@@ -1139,6 +1141,20 @@
     text-transform: none;
   }
 
+  .pick-card--hook .pick-card-hook-title {
+    max-width: calc(100% - 1.5rem);
+    gap: 0.28rem;
+    margin: 0;
+    padding: 0.28rem 0.5rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+  }
+
+  .pick-card--hook .pick-card-hook-title .orb-hook-desc-badge-glyph {
+    width: 0.72rem;
+    font-size: 0.24rem;
+  }
+
   .pick-card-title--pair,
   .pick-card--pair .pick-card-title,
   .pick-grid--pairs .pick-card .pick-card-title {
@@ -1329,7 +1345,7 @@
     color: rgb(161 161 170 / 0.9);
   }
 
-  .pick-config-hint--swap {
+  .pick-config-hint.pick-config-hint--swap {
     color: #fff;
   }
 
@@ -2224,6 +2240,50 @@
     border: 1px solid rgb(255 255 255 / 0.1);
     background: #111111;
     padding: 0.45rem 0.4rem 0.4rem;
+  }
+
+  .launch-reel-card.orb-card--fire {
+    border-color: rgb(239 68 68 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--gold {
+    border-color: rgb(245 158 11 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--void {
+    border-color: rgb(232 121 249 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--nature {
+    border-color: rgb(16 185 129 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--volt {
+    border-color: rgb(3 177 237 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--ice {
+    border-color: rgb(56 189 248 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--ember {
+    border-color: rgb(249 115 22 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--rose {
+    border-color: rgb(244 63 94 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--steel {
+    border-color: rgb(99 102 241 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--crimson {
+    border-color: rgb(220 38 38 / 0.35);
+  }
+
+  .launch-reel-card.orb-card--lime {
+    border-color: rgb(132 204 22 / 0.35);
   }
 
   .launch-reel-card.is-on.orb-card--fire {
@@ -7998,10 +8058,17 @@
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, 1fr);
     align-items: baseline;
     gap: 0.6rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
     font-family: var(--font-geist-mono), ui-monospace, Menlo, monospace;
     font-size: 13px;
     line-height: 1.35;
     color: #e4e4e7;
+  }
+
+  .stats-hkt-rank li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
   }
 
   .stats-hkt-rank li span:first-child {

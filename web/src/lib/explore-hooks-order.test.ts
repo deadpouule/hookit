@@ -15,9 +15,9 @@ test("hooks page order: airdrop / deepen / burn swapped to the front slots", () 
       "deepen-lps",
       "auto-burn",
       "anti-mev",
-      "anti-snipe",
-      "max-tx",
       "max-wallet",
+      "max-tx",
+      "anti-snipe",
       "creator-share-to-hook",
     ],
   );
@@ -31,9 +31,9 @@ test("hooks page order: airdrop / deepen / burn swapped to the front slots", () 
       "deepen-lps",
       "auto-burn",
       "anti-mev",
-      "anti-snipe",
-      "max-tx",
       "max-wallet",
+      "max-tx",
+      "anti-snipe",
       "creator-share-to-hook",
     ],
   );
