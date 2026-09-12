@@ -4779,37 +4779,38 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 10.75rem;
-    height: 9.4rem;
-    border-radius: 0.7rem 0.7rem 1rem 1rem;
-    background: linear-gradient(180deg, #3f3f46 0%, #18181b 38%, #09090b 100%);
+    width: 11rem;
+    height: 9.6rem;
+    border-radius: 0.55rem 0.55rem 0.85rem 0.85rem;
+    background:
+      linear-gradient(180deg, #6b7280 0%, #3f3f46 14%, #27272a 42%, #18181b 100%);
     box-shadow:
-      0 0 0 1px #52525b,
-      0 0 0 5px #141416,
-      inset 0 1px 0 rgb(255 255 255 / 0.16),
-      0 12px 24px rgb(0 0 0 / 0.5);
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      inset 0 -8px 0 #0a0a0a,
+      0 0 0 1px #09090b,
+      0 10px 20px rgb(0 0 0 / 0.55);
   }
 
   .hook-arcade-screen::before,
   .hook-arcade-screen::after {
     content: "";
     position: absolute;
-    inset: 0.52rem 0.48rem 0.72rem;
-    border-radius: 0.35rem;
+    inset: 0.62rem 0.58rem 1.05rem;
+    border-radius: 0.28rem;
     pointer-events: none;
   }
 
   .hook-arcade-screen::before {
-    background: #050505;
+    background: #030303;
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.06),
-      inset 0 0 32px rgb(0 0 0 / 0.9);
+      inset 0 0 0 1px rgb(255 255 255 / 0.08),
+      inset 0 0 32px rgb(0 0 0 / 0.92);
   }
 
   .hook-arcade-screen::after {
     background: repeating-linear-gradient(
       to bottom,
-      rgb(255 255 255 / 0.045) 0 1px,
+      rgb(255 255 255 / 0.07) 0 1px,
       transparent 1px 3px
     );
     mix-blend-mode: overlay;
