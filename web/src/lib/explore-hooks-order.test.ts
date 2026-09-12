@@ -3,37 +3,37 @@ import test from "node:test";
 
 import { EXPLORE_HOOKS, MASTER_HOOKS } from "./master-hooks";
 
-test("hooks page order: vest↔mev, max-tx↔dynamic, fixed↔max-wallet", () => {
+test("hooks page order: airdrop / deepen / burn swapped to the front slots", () => {
   assert.deepEqual(
     EXPLORE_HOOKS.map((hook) => hook.id),
     [
-      "anti-snipe",
+      "holder-airdrop",
       "backed-floor",
       "buyback-vesting",
       "dynamic-fees",
       "fixed-fee",
+      "deepen-lps",
+      "auto-burn",
+      "anti-mev",
+      "anti-snipe",
       "max-tx",
       "max-wallet",
-      "anti-mev",
-      "auto-burn",
-      "deepen-lps",
-      "holder-airdrop",
       "creator-share-to-hook",
     ],
   );
   assert.deepEqual(
     MASTER_HOOKS.map((hook) => hook.id),
     [
-      "anti-snipe",
+      "holder-airdrop",
       "backed-floor",
       "buyback-vesting",
       "dynamic-fees",
+      "deepen-lps",
+      "auto-burn",
+      "anti-mev",
+      "anti-snipe",
       "max-tx",
       "max-wallet",
-      "anti-mev",
-      "auto-burn",
-      "deepen-lps",
-      "holder-airdrop",
       "creator-share-to-hook",
     ],
   );

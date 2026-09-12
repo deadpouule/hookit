@@ -81,7 +81,7 @@ export function FeeSplitStep({
       </p>
 
       {potBps > 0 ? (
-        <p className="pick-config-hint" style={{ marginTop: 0 }}>
+        <p className="pick-config-hint pick-config-hint--swap" style={{ marginTop: 0 }}>
           Hook pot to split: {swapPctLabel(potBps)} of each swap
           {modules.creatorShareToHook
             ? ` (${swapPctLabel(taxBps)} hook tax + ${swapPctLabel(creatorCutBps)} creator → hook)`
@@ -136,7 +136,10 @@ export function FeeSplitStep({
                     />
                   </div>
                 )}
-                <p className="pick-config-hint" style={{ marginTop: 0 }}>
+                <p
+                  className={cn("pick-config-hint", potBps > 0 && "pick-config-hint--swap")}
+                  style={{ marginTop: 0 }}
+                >
                   {potBps > 0
                     ? `${swapPctLabel(swapBps)} of each swap goes to ${hook.title.toLowerCase()}`
                     : "Waiting for a hook tax or Creator → Hook"}
@@ -155,7 +158,7 @@ export function FeeSplitStep({
       ) : null}
 
       {modules.buybackVesting ? (
-        <p className="pick-config-hint">
+        <p className="pick-config-hint pick-config-hint--swap">
           Buyback vesting takes the creator cut separately. {swapPctLabel(creatorCutBps)} of each
           swap vests to you, not this split.
         </p>

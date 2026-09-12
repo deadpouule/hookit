@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
+import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { MASTER_HOOKS } from "@/lib/master-hooks";
+import { cn } from "@/lib/utils";
 
 const SLOTS = [-2, -1, 0, 1, 2] as const;
 const EASE = "easeInOut" as const;
@@ -72,11 +74,23 @@ export function LaunchHookReel() {
                 }}
               >
                 <motion.div
-                  className={isOn ? "launch-reel-card is-on" : "launch-reel-card"}
+                  className={cn(
+                    "launch-reel-card",
+                    `orb-card--${hook.theme}`,
+                    isOn && "is-on",
+                  )}
                   animate={{ filter: reduce || isOn ? "blur(0px)" : "blur(1.5px)" }}
                   transition={{ duration: DURATION, ease: EASE }}
                 >
-                  <p>{hook.title}</p>
+                  <h2
+                    className={cn(
+                      "orb-hook-desc-badge orb-hook-title-badge",
+                      `orb-hook-desc-badge--${hook.theme}`,
+                    )}
+                  >
+                    <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
+                    <span>{hook.title}</span>
+                  </h2>
                   <div className="launch-reel-ascii">
                     <HookLogo hookId={hook.id} theme={hook.theme} />
                   </div>

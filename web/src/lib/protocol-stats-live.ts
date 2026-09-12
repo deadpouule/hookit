@@ -52,6 +52,11 @@ export type LiveProtocolStatsPayload = {
   latestBuybacks: LiveBuybackFeed[];
   buybackBurns: LiveBurnFeed[];
   indexerOk: boolean;
+  hktHolderDrop?: {
+    tokensSent: number;
+    wallets: number;
+    topTokens: Array<{ ticker: string; wallets: number; payouts: number }>;
+  };
 };
 
 function toCumulative(points: SeriesPoint[]): SeriesPoint[] {

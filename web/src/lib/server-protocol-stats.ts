@@ -440,6 +440,11 @@ export async function loadLiveProtocolStats(): Promise<LiveProtocolStatsPayload>
     latestBuybacks: onChain.feeds,
     buybackBurns: onChain.burns,
     indexerOk: !!indexer,
+    hktHolderDrop: {
+      tokensSent: 0,
+      wallets: 0,
+      topTokens: [],
+    },
   };
 }
 

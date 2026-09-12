@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
+import { hktHolderDropFromVolumeUsd } from "@/lib/protocol-fees";
 import {
   metricLabel,
   metricSubtitle,
@@ -87,7 +88,7 @@ export function ProtocolStatsPage() {
             onChange={setVolumeWindow}
           />
         </div>
-        <div className="stats-kpi-4">
+        <div className="stats-kpi-volume">
           <Kpi
             label="Total volume"
             value={formatFullUsd(volume?.totalVolumeUsd ?? 0)}
@@ -116,6 +117,12 @@ export function ProtocolStatsPage() {
                 : "On-chain BuybackBurned events only"
             }
           />
+          <Kpi
+            label="Sent to $HKT holders"
+            value={formatFullUsd(hktHolderDropFromVolumeUsd(volume?.totalVolumeUsd ?? 0))}
+            hint={`${formatCount(stats?.hktHolderDrop?.tokensSent ?? 0)} tokens · ${formatCount(stats?.hktHolderDrop?.wallets ?? 0)} wallets`}
+          />
+          <HktDropRank rows={stats?.hktHolderDrop?.topTokens ?? []} />
         </div>
         {stats?.pendingBuybackEth ? (
           <p className="stats-footnote">
@@ -271,12 +278,7 @@ export function ProtocolStatsPage() {
 
         <section className="stats-feed">
           <div className="stats-console-head">
-            <h2>
-              <span className="stats-flame" aria-hidden>
-                🔥
-              </span>{" "}
-              Buyback burns
-            </h2>
+            <h2>Buyback burns</h2>
             <a href={`${BLOCK_EXPLORER_URL}/address/${DEAD}`} target="_blank" rel="noopener noreferrer">
               dead ↗
             </a>
@@ -313,6 +315,42 @@ export function ProtocolStatsPage() {
           Auto-refresh every 15s · last sync {new Date(dataUpdatedAt).toLocaleTimeString()}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function formatCount(value: number): string {
+  return Math.round(value).toLocaleString("en-US");
+}
+
+const HKT_RANK_SLOTS = 5;
+
+function HktDropRank({
+  rows,
+}: {
+  rows: Array<{ ticker: string; wallets: number; payouts: number }>;
+}) {
+  const filled = Array.from({ length: HKT_RANK_SLOTS }, (_, index) => rows[index] ?? null);
+  return (
+    <div className="stats-metric stats-hkt-rank">
+      <p>Top tokens to $HKT holders</p>
+      <ul>
+        {filled.map((row, index) =>
+          row ? (
+            <li key={row.ticker}>
+              <span>{row.ticker}</span>
+              <span>{formatCount(row.wallets)} wallets</span>
+              <span>{formatCount(row.payouts)} payouts</span>
+            </li>
+          ) : (
+            <li key={`empty-${index}`} className="is-empty">
+              <span>—</span>
+              <span>0 wallets</span>
+              <span>0 payouts</span>
+            </li>
+          ),
+        )}
+      </ul>
     </div>
   );
 }

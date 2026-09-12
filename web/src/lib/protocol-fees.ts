@@ -1,6 +1,7 @@
 import {
   BASE_FEE_BPS,
   FLYWHEEL_SHARE_BPS,
+  HKT_HOLDER_SHARE_BPS,
   PROTOCOL_SHARE_BPS,
 } from "@/lib/constants";
 
@@ -18,4 +19,10 @@ export function buybackFromProtocolRevenueUsd(revenueUsd: number): number {
 
 export function buybackFromVolumeUsd(volumeUsd: number): number {
   return buybackFromProtocolRevenueUsd(protocolRevenueFromVolumeUsd(volumeUsd));
+}
+
+/** Quote leg volume → launched tokens bought for live $HKT holders (1% base × 10%). */
+export function hktHolderDropFromVolumeUsd(volumeUsd: number): number {
+  if (!Number.isFinite(volumeUsd) || volumeUsd <= 0) return 0;
+  return volumeUsd * (BASE_FEE_BPS / 10_000) * (HKT_HOLDER_SHARE_BPS / 10_000);
 }
