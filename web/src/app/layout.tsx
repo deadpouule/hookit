@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Geist, Geist_Mono, Bricolage_Grotesque, Audiowide } from "next/font/google";
 
+import { TermsGate } from "@/components/legal/TermsGate";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
 import { Web3Provider } from "@/components/providers/Web3Provider";
@@ -76,6 +77,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Web3Provider>
             <TooltipProvider>
               {children}
+              <TermsGate />
               <MobileBottomNav />
               <AppToaster />
               <Telemetry />

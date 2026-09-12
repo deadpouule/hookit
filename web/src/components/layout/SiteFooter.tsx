@@ -65,6 +65,12 @@ export function SiteFooter() {
             >
               Uniswap v4
             </a>
+            <Link href="/terms" className="text-zinc-400 transition hover:text-zinc-200">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-zinc-400 transition hover:text-zinc-200">
+              Privacy notice
+            </Link>
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-zinc-600 uppercase">Network</span>

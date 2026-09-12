@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, Copy, ExternalLink, Flame, Globe } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
@@ -336,7 +335,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 <span className="token-hero-uniswap" aria-hidden />
               </HeroLink>
               <HeroLink href={explorerUrl} label="Explorer">
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="token-hero-explorer" />
               </HeroLink>
               <HeroLink
                 href={
@@ -346,7 +345,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 }
                 label="Master hook"
               >
-                <CarabinerLogo className="token-hero-hook-glyph" />
+                <MasterHookGlyph className="token-hero-hook-glyph" />
               </HeroLink>
             </div>
           </div>
