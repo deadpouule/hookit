@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatedGridBackground } from "./AnimatedGridBackground";
 import { HeroHookTotem } from "./HeroHookTotem";
 import { TypewriterTitle } from "./TypewriterTitle";
 
@@ -12,7 +11,6 @@ export function LeanHero() {
           <TypewriterTitle />
         </div>
         <div className="hero-stage">
-          <AnimatedGridBackground />
           <HeroHookTotem />
         </div>
       </div>
