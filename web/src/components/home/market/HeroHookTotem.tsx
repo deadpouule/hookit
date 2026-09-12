@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useReducedMotion } from "framer-motion";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { WelcomeOwl } from "@/components/brand/WelcomeOwl";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import {
   EXPLORE_HOOKS,
   hookThemeAccentColor,
-  launchWithHookHref,
   type BrowseHook,
   type BrowseHookId,
 } from "@/lib/master-hooks";
@@ -31,7 +30,8 @@ const TOTEM_HOOKS: BrowseHook[] = TOTEM_IDS.map((id) => {
   return hook;
 });
 
-const RING = 38;
+const RING = 42;
+const ROTATE_MS = 2800;
 
 function nodePoint(index: number, count: number, radius = RING) {
   const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
@@ -42,12 +42,23 @@ function nodePoint(index: number, count: number, radius = RING) {
 }
 
 export function HeroHookTotem() {
-  const [activeId, setActiveId] = useState<BrowseHookId>("backed-floor");
+  const reduceMotion = useReducedMotion();
+  const [activeIndex, setActiveIndex] = useState(1);
   const [hoverId, setHoverId] = useState<BrowseHookId | null>(null);
-  const active = TOTEM_HOOKS.find((hook) => hook.id === activeId) ?? TOTEM_HOOKS[0];
-  const litId = hoverId ?? activeId;
+  const [rotateToken, setRotateToken] = useState(0);
+  const active = TOTEM_HOOKS[activeIndex] ?? TOTEM_HOOKS[0];
+  const litId = hoverId ?? active.id;
   const lit = TOTEM_HOOKS.find((hook) => hook.id === litId) ?? active;
   const accent = hookThemeAccentColor(lit.theme);
+  const paused = hoverId !== null || !!reduceMotion;
+
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % TOTEM_HOOKS.length);
+    }, ROTATE_MS);
+    return () => window.clearInterval(timer);
+  }, [paused, rotateToken]);
 
   return (
     <div className="hero-totem">
@@ -86,7 +97,7 @@ export function HeroHookTotem() {
 
         {TOTEM_HOOKS.map((hook, index) => {
           const point = nodePoint(index, TOTEM_HOOKS.length);
-          const on = hook.id === activeId;
+          const on = hook.id === active.id;
           const hot = hook.id === litId;
           return (
             <button
@@ -109,7 +120,10 @@ export function HeroHookTotem() {
               aria-label={hook.title}
               onMouseEnter={() => setHoverId(hook.id)}
               onFocus={() => setHoverId(hook.id)}
-              onClick={() => setActiveId(hook.id)}
+              onClick={() => {
+                setActiveIndex(index);
+                setRotateToken((token) => token + 1);
+              }}
             >
               <HookLogo hookId={hook.id} theme={hook.theme} />
             </button>
@@ -124,9 +138,6 @@ export function HeroHookTotem() {
       >
         <p className="hero-totem-title">{lit.title}</p>
         <p className="hero-totem-copy">{lit.description}</p>
-        <Link href={launchWithHookHref(lit.id)} className="hero-totem-launch">
-          Launch with {lit.title}
-        </Link>
       </div>
     </div>
   );
