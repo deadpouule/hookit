@@ -2420,20 +2420,16 @@
     pointer-events: none;
     z-index: 1;
     height: 100%;
-    padding: 0.45rem 0.55rem 0.5rem;
+    padding: 0.35rem 0.5rem 0.4rem;
   }
 
   .launch-model-stage .hero-totem-stage {
-    width: min(168px, 78%);
-    max-height: 158px;
-  }
-
-  .launch-model-stage .hero-totem-stage .welcome-owl--totem {
-    width: min(64%, 5.7rem);
+    width: min(152px, 72%);
+    max-height: 152px;
   }
 
   .launch-model-stage .hero-totem-halo {
-    filter: blur(14px);
+    filter: blur(12px);
   }
 
   .launch-model-stage .hero-totem-mark {
@@ -9508,6 +9504,10 @@
   width: 16.4rem;
 }
 
+.welcome-owl--totem.welcome-owl--preview {
+  width: 5.5rem;
+}
+
 @media (min-width: 640px) {
   .welcome-owl {
     width: 12.5rem;
@@ -9515,6 +9515,10 @@
 
   .welcome-owl--totem {
     width: 17.4rem;
+  }
+
+  .welcome-owl--totem.welcome-owl--preview {
+    width: 5.5rem;
   }
 }
 

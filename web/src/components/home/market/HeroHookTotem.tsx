@@ -93,7 +93,13 @@ export function HeroHookTotem({ interactive = true, className }: HeroHookTotemPr
     >
       <div className="hero-totem-stage">
         <span className="hero-totem-halo" aria-hidden />
-        <WelcomeOwl className={cn("welcome-owl--totem", cue && "welcome-owl--cue")} />
+        <WelcomeOwl
+          className={cn(
+            "welcome-owl--totem",
+            !interactive && "welcome-owl--preview",
+            cue && "welcome-owl--cue",
+          )}
+        />
 
         {TOTEM_HOOKS.map((hook, index) => {
           const point = nodePoint(index, TOTEM_HOOKS.length);
