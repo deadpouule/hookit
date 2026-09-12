@@ -55,13 +55,6 @@ import {
   supplyPctToBps,
 } from "@/lib/protocol-limits";
 import {
-  feeRouteSliderMax,
-  feeRouteTotalPct,
-  listEnabledFeeRoutes,
-  setFeeRouteShare,
-  type FeeRouteKey,
-} from "@/lib/hook-fee-route";
-import {
   hookAccentColor,
   hookThemeAccentColor,
   MASTER_HOOKS,
@@ -878,16 +871,9 @@ function HookSettings({
   }
 
   if (hook.id === "backed-floor") {
-    const routeKey: FeeRouteKey = "floorAllocation";
     return (
       <div>
-        <FeeRouteShareControl
-          routeKey={routeKey}
-          modules={modules}
-          theme={theme}
-          accent={accent}
-          onUpdate={onUpdate}
-        />
+        <ConfigHint>Its share of hook tax is set on the next step — Fee split.</ConfigHint>
         {floorEst > 0 && (
           <ConfigHint>Est. floor ≈ {floorEst.toFixed(6)} ETH / token</ConfigHint>
         )}
@@ -1131,38 +1117,22 @@ function HookSettings({
   }
 
   if (hook.id === "auto-burn") {
-    const routeKey: FeeRouteKey = "autoBurnPct";
     return (
-      <FeeRouteShareControl
-        routeKey={routeKey}
-        modules={modules}
-        theme={theme}
-        accent={accent}
-        onUpdate={onUpdate}
-      />
+      <ConfigHint>Its share of hook tax is set on the next step — Fee split. Quote fees buy and burn tokens after each swap.</ConfigHint>
     );
   }
 
   if (hook.id === "deepen-lps") {
-    const routeKey: FeeRouteKey = "deepenLpsPct";
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
-        <FeeRouteShareControl
-          routeKey={routeKey}
-          modules={modules}
-          theme={theme}
-          accent={accent}
-          onUpdate={onUpdate}
-        />
         <ConfigHint>
-          Quote fees mint into the launch LP range — thicker book for whales and traders, not extra LP fee income
+          Quote fees mint into the launch LP range — thicker book for whales and traders, not extra LP fee income. Share of hook tax is set on the next step.
         </ConfigHint>
       </div>
     );
   }
 
   if (hook.id === "holder-airdrop") {
-    const routeKey: FeeRouteKey = "holderAirdropPct";
     const epochMinutes = Math.round(
       (modules.holderAirdropEpochSeconds ?? HOLDER_AIRDROP_EPOCH_DEFAULT_MINUTES * 60) / 60,
     );
@@ -1197,13 +1167,6 @@ function HookSettings({
           onStepPct={(pct) => onUpdate({ holderAirdropStepPct: pct, holderAirdropUnlockMode: "steps" })}
         />
         <div className="flex min-w-0 flex-col gap-4">
-          <FeeRouteShareControl
-            routeKey={routeKey}
-            modules={modules}
-            theme={theme}
-            accent={accent}
-            onUpdate={onUpdate}
-          />
           {untilMcap ? null : (
             <PickConfigControl
               theme={theme}
@@ -1252,75 +1215,11 @@ function HookSettings({
     return (
       <ConfigHint>
         {hasFeeSink
-          ? "70% creator share → hook pot with your modules"
+          ? "70% creator share → hook pot with your modules — split it on the next step"
           : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
       </ConfigHint>
     );
   }
 
   return null;
-}
-
-function FeeRouteShareControl({
-  routeKey,
-  modules,
-  theme,
-  accent,
-  onUpdate,
-}: {
-  routeKey: FeeRouteKey;
-  modules: LaunchModules;
-  theme: HookTheme;
-  accent: string;
-  onUpdate: (patch: Partial<LaunchModules>) => void;
-}) {
-  const enabled = listEnabledFeeRoutes(modules);
-  const solo = enabled.length === 1;
-  const value = modules[routeKey];
-
-  if (solo) {
-    return (
-      <ConfigHint>100% of hook tax · sole enabled module</ConfigHint>
-    );
-  }
-
-  return (
-    <div>
-      <PickConfigControl
-        theme={theme}
-        label="Share of hook tax"
-        value={`${value}%`}
-        edit={{
-          numericValue: value,
-          min: 1,
-          max: feeRouteSliderMax(modules, routeKey),
-          step: 1,
-          suffix: "%",
-          onCommit: (next) => onUpdate(setFeeRouteShare(modules, routeKey, next)),
-        }}
-      >
-        <AccentSlider
-          accentColor={accent}
-          value={[value]}
-          onValueChange={([v]) => onUpdate(setFeeRouteShare(modules, routeKey, v))}
-          min={1}
-          max={feeRouteSliderMax(modules, routeKey)}
-          step={1}
-        />
-      </PickConfigControl>
-      <FeeRouteHint modules={modules} />
-    </div>
-  );
-}
-
-function FeeRouteHint({ modules }: { modules: LaunchModules }) {
-  const enabled = listEnabledFeeRoutes(modules);
-  if (enabled.length <= 1) return null;
-  const total = feeRouteTotalPct(modules);
-
-  return (
-    <ConfigHint className={cn(total !== 100 && "pick-config-hint--warn")}>
-      Enabled modules must share exactly 100% of the hook tax · total {total}%
-    </ConfigHint>
-  );
 }

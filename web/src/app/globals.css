@@ -1333,6 +1333,17 @@
     color: #fda4af;
   }
 
+  .fee-split-row-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .fee-split-row-title .hook-logo {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
   .orb-hook-desc-badge.is-picked {
     font-weight: 700;
     box-shadow:
@@ -5041,11 +5052,19 @@
     width: auto;
   }
 
+  .mcap-step-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
   .mcap-step-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 0.4rem;
   }
 
   .mcap-step-pct-input {

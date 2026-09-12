@@ -126,7 +126,7 @@ export function McapUnlockPicker({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="mcap-step-list">
               {stepUsd.map((usd, i) => (
                 <label key={usd} className="mcap-step-row">
                   <span

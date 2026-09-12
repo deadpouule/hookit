@@ -6,7 +6,8 @@ export const MASTER_LAUNCH_STEPS = [
   { id: 2, label: "Protection" },
   { id: 3, label: "Trading fees" },
   { id: 4, label: "Tokenomics" },
-  { id: 5, label: "Review & launch" },
+  { id: 5, label: "Fee split" },
+  { id: 6, label: "Review & launch" },
 ] as const;
 
 export const MASTER_WIZARD_STEP_SUBTITLES: Record<
@@ -17,7 +18,8 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
   2: "Shield your launch — block bots, limit trade size, and limit wallet holdings.",
   3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the 70% creator cut.",
   4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
-  5: "Review your token and launch when ready.",
+  5: "Split the hook tax — see how much of each swap goes to burn, floor, LPs, and airdrops.",
+  6: "Review your token and launch when ready.",
 };
 
 export const MASTER_WIZARD_STEP_INTRO =

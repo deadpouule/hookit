@@ -64,6 +64,18 @@ export function summarizeCompletedSteps(
     });
   }
 
+  if (step > 5) {
+    const parts: string[] = [];
+    if (form.modules.autoBurn) parts.push(`Burn ${form.modules.autoBurnPct}%`);
+    if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
+    if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
+    if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
+    blocks.push({
+      title: "Fee split",
+      detail: parts.length > 0 ? parts.join(" · ") : "No hook-tax modules",
+    });
+  }
+
   return blocks;
 }
 
@@ -97,6 +109,17 @@ export function summarizePreviousStep(
         title: "Tokenomics",
         detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[4]),
       };
+    case 6: {
+      const parts: string[] = [];
+      if (form.modules.autoBurn) parts.push(`Burn ${form.modules.autoBurnPct}%`);
+      if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
+      if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
+      if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
+      return {
+        title: "Fee split",
+        detail: parts.length > 0 ? parts.join(" · ") : "No hook-tax modules",
+      };
+    }
     default:
       return null;
   }
@@ -106,7 +129,8 @@ const NEXT_STEP_HINTS: Record<number, string> = {
   2: "Anti-MEV, anti-snipe, max tx and max wallet caps.",
   3: "Dynamic Fees, fixed hook tax, and creator share routing.",
   4: "Burn, floor, vesting, Deepen LPs, and holder airdrops.",
-  5: "Final review, optional dev buy, and launch.",
+  5: "Split hook tax and see how much of each swap each module gets.",
+  6: "Final review, optional dev buy, and launch.",
 };
 
 export function summarizeNextStep(step: number): WizardContextBlock | null {
