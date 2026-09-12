@@ -9698,6 +9698,16 @@
   animation: hookit-blink 180ms ease-in-out;
 }
 
+.welcome-owl--totem .welcome-owl-lid,
+.welcome-owl--totem:hover .welcome-owl-lid {
+  animation: none;
+}
+
+.welcome-owl--totem.welcome-owl--cue .welcome-owl-lid,
+.welcome-owl--totem.welcome-owl--cue:hover .welcome-owl-lid {
+  animation: hookit-blink 180ms ease-in-out;
+}
+
 /* Eye holes measured from the filled 1358×951 mark. */
 .welcome-owl-lid--l {
   left: 19.2%;

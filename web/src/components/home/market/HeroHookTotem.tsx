@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { WelcomeOwl } from "@/components/brand/WelcomeOwl";
 import { HookLogo } from "@/components/home/market/HookLogo";
@@ -47,6 +47,7 @@ export function HeroHookTotem() {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [cue, setCue] = useState(false);
+  const skipFirstCue = useRef(true);
   const litIndex = hoverIndex ?? activeIndex;
   const lit = TOTEM_HOOKS[litIndex] ?? TOTEM_HOOKS[0];
   const accent = hookThemeAccentColor(lit.theme);
@@ -62,10 +63,14 @@ export function HeroHookTotem() {
 
   useEffect(() => {
     if (reduceMotion) return;
+    if (skipFirstCue.current) {
+      skipFirstCue.current = false;
+      return;
+    }
     setCue(true);
     const timer = window.setTimeout(() => setCue(false), 220);
     return () => window.clearTimeout(timer);
-  }, [litIndex, reduceMotion]);
+  }, [activeIndex, reduceMotion]);
 
   return (
     <div
