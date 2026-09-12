@@ -1545,7 +1545,22 @@
   }
 
   .token-hooks-chip-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     white-space: normal;
+  }
+
+  .token-hooks-chip-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  .token-hooks-chip-mark .pick-logo--sm,
+  .token-hooks-chip-mark img {
+    width: 14px;
+    height: 14px;
   }
 
   .token-hooks-chip-sep {

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import {
   chartRangeSignature,
+  chartVisibleLogicalRange,
   formatChartUsd,
   hasChartVolume,
   type ChartBar,
@@ -109,19 +110,13 @@ async function attachPriceSeries(
   });
 }
 
-function pinLastBarRight(chart: IChartApi, barCount: number) {
-  if (barCount <= 0) return;
-  const rightPad = 3;
-  const minVisible = 52;
-  const last = barCount - 1;
-  const visible = Math.max(minVisible, Math.min(barCount + rightPad, 90));
-  chart.timeScale().setVisibleLogicalRange({
-    from: last + rightPad - visible + 1,
-    to: last + rightPad,
-  });
+function fitChartView(chart: IChartApi, barCount: number) {
+  const range = chartVisibleLogicalRange(barCount);
+  if (!range) return;
+  chart.timeScale().setVisibleLogicalRange(range);
 }
 
-function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string) {
+function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, refit = true) {
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
 
@@ -162,7 +157,7 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string) {
         }))
       : [],
   );
-  pinLastBarRight(handle.chart, next.length);
+  if (refit) fitChartView(handle.chart, next.length);
 }
 
 export function TokenLightweightPlot({
@@ -214,12 +209,12 @@ export function TokenLightweightPlot({
           borderColor: GRID,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 3,
-          barSpacing: 6,
-          minBarSpacing: 3,
-          maxBarSpacing: 8,
-          fixRightEdge: true,
-          lockVisibleTimeRangeOnResize: true,
+          rightOffset: 4,
+          barSpacing: 8,
+          minBarSpacing: 2,
+          maxBarSpacing: 28,
+          fixRightEdge: false,
+          lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
         },
         localization: {
@@ -302,14 +297,15 @@ export function TokenLightweightPlot({
     const handle = handleRef.current;
     if (!handle) return;
     const signature = chartRangeSignature(bars);
+    const refit = rangeSigRef.current !== signature;
     rangeSigRef.current = signature;
-    applyBars(handle, bars, lineColor);
+    applyBars(handle, bars, lineColor, refit);
   }, [bars, lineColor]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
     const handle = handleRef.current;
-    if (handle) pinLastBarRight(handle.chart, pendingBarsRef.current.length);
+    if (handle) fitChartView(handle.chart, pendingBarsRef.current.length);
   }, [fitNonce]);
 
   return <div ref={hostRef} className="absolute inset-0 z-[2]" />;

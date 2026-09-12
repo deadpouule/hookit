@@ -5,6 +5,7 @@ import {
   aggregateBars,
   barChangePct,
   barsForInterval,
+  chartVisibleLogicalRange,
   fillEmptyBars,
   formatChartUsd,
   liveCandlesToBars,
@@ -157,6 +158,24 @@ test("a single print stays one bar so it sits on the right", () => {
   const filled = fillEmptyBars(seed, 900, 1_700_003_600);
   assert.equal(filled.length, 1);
   assert.equal(filled[0]!.close, 5_000);
+});
+
+test("few candles sit in the middle of the visible window", () => {
+  const one = chartVisibleLogicalRange(1);
+  assert.ok(one);
+  assert.equal(one.from, -11.5);
+  assert.equal(one.to, 11.5);
+  const two = chartVisibleLogicalRange(2);
+  assert.ok(two);
+  assert.equal(two.from, -11);
+  assert.equal(two.to, 12);
+});
+
+test("long series show recent history without inventing a 52-bar empty pad", () => {
+  const range = chartVisibleLogicalRange(120);
+  assert.ok(range);
+  assert.equal(range.from, 30);
+  assert.equal(range.to, 121);
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

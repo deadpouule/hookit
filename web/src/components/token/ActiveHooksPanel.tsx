@@ -9,6 +9,7 @@ import { useNowSeconds } from "@/hooks/useNowSeconds";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
+import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
@@ -69,11 +70,13 @@ function HookModuleBadge({
   hook,
   stat,
   tip,
+  mark,
   children,
 }: {
   hook: { id: string; title: string; theme: string };
   stat: string | null;
   tip: string;
+  mark?: ReactNode;
   children?: ReactNode;
 }) {
   const stacked = Boolean(children);
@@ -93,7 +96,10 @@ function HookModuleBadge({
             className="token-hooks-ascii"
           />
           <span className="token-hooks-chip-copy">
-            <span className="token-hooks-chip-title">{hook.title}</span>
+            <span className="token-hooks-chip-title">
+              {hook.title}
+              {mark ? <span className="token-hooks-chip-mark">{mark}</span> : null}
+            </span>
             {stat ? (
               <>
                 <span className="token-hooks-chip-sep" aria-hidden>
@@ -350,7 +356,16 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
           return (
             <li key={hook.id} className={cn("token-hooks-row", `token-hooks-row--${hook.theme}`)}>
-              <HookModuleBadge hook={hook} stat={stat} tip={tip}>
+              <HookModuleBadge
+                hook={hook}
+                stat={stat}
+                tip={tip}
+                mark={
+                  hook.id === "holder-airdrop" ? (
+                    <PoolQuoteMark quoteAddress={pool.quoteAddress} quoteAsset={pool.quoteAsset} />
+                  ) : undefined
+                }
+              >
                 {expanded && hook.id !== "buyback-vesting" ? (
                   <HookInlineAction
                     id={hook.id}
