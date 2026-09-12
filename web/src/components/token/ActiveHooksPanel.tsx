@@ -10,6 +10,7 @@ import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
+import { resolveMediaUrl } from "@/lib/token-metadata";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
@@ -329,10 +330,22 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
   const moduleCount = enabledHooks.length + (showFixedFee ? 1 : 0);
+  const tokenMedia = resolveMediaUrl(pool.image);
 
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
+        <span className="token-hooks-token">
+          <span className="token-hooks-token-logo" style={{ background: pool.bannerGradient }}>
+            {tokenMedia ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tokenMedia} alt="" />
+            ) : (
+              <span>{pool.ticker[0]}</span>
+            )}
+          </span>
+          <span className="token-hooks-token-name">{pool.name}</span>
+        </span>
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />
           {moduleCount} master module{moduleCount === 1 ? "" : "s"}

@@ -189,74 +189,37 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
-/** Visible window for price candles. Few prints sit in the middle; long series show recent history. */
+/**
+ * Visible window. First prints start on the left (like other launchpads) and grow right.
+ * Long series show the most recent ~90 bars.
+ */
 export function chartVisibleLogicalRange(barCount: number): { from: number; to: number } | null {
   if (barCount <= 0) return null;
+  const rightPad = 3;
   if (barCount <= 24) {
-    const pad = (24 - barCount) / 2;
-    return { from: -pad, to: barCount - 1 + pad };
+    return { from: -0.5, to: Math.max(barCount - 1 + rightPad, 23) };
   }
   const visible = Math.min(barCount, 90);
-  return { from: barCount - visible, to: barCount - 1 + 2 };
+  return { from: barCount - visible, to: barCount - 1 + rightPad };
 }
 
 /**
- * Fill gaps between the first and last trade only.
- * Do not extend to `now` — empty future slots squash real candles.
+ * Keep real prints only. Inventing flat OHLC in empty buckets draws a dotted
+ * line across the pane and breaks timeframe switches.
  */
 export function fillEmptyBars(
   bars: ChartBar[],
   bucketSec: number,
   nowSec?: number,
-  maxBars = 2_000,
+  _maxBars = 2_000,
 ): ChartBar[] {
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
-  const merged = mergeBars(
+  void nowSec;
+  return mergeBars(
     [...bars]
       .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec }))
       .sort((a, b) => a.time - b.time),
   );
-  const start = merged[0]!.time;
-  const end = merged[merged.length - 1]!.time;
-  if (end <= start) return merged;
-  const slots = Math.floor((end - start) / bucketSec) + 1;
-  const stepSlots = slots > maxBars ? Math.ceil(slots / maxBars) : 1;
-  const step = stepSlots * bucketSec;
-  const byTime = new Map(merged.map((b) => [b.time, b]));
-  const out: ChartBar[] = [];
-  let prev = merged[0]!;
-  for (let time = start; time <= end; time += step) {
-    let hit = byTime.get(time);
-    if (!hit && step > bucketSec) {
-      for (let inner = time; inner < time + step; inner += bucketSec) {
-        const row = byTime.get(inner);
-        if (!row) continue;
-        if (!hit) {
-          hit = { ...row, time };
-        } else {
-          hit.high = Math.max(hit.high, row.high);
-          hit.low = Math.min(hit.low, row.low);
-          hit.close = row.close;
-          hit.volume += row.volume;
-        }
-      }
-    }
-    if (hit) {
-      prev = hit;
-      out.push({ ...hit, time });
-    } else {
-      out.push({
-        time,
-        open: prev.close,
-        high: prev.close,
-        low: prev.close,
-        close: prev.close,
-        volume: 0,
-      });
-    }
-  }
-  void nowSec;
-  return out;
 }
 
 export function mergeChartSeries(left: ChartBar[], right: ChartBar[]): ChartBar[] {
@@ -299,6 +262,6 @@ export function barChangePct(bar: ChartBar): number {
   return ((bar.close - bar.open) / bar.open) * 100;
 }
 
-export function chartRangeSignature(bars: ChartBar[]): string {
-  return `${bars[0]?.time ?? 0}:${bars.length}:${bars[bars.length - 1]?.time ?? 0}`;
+export function chartRangeSignature(bars: ChartBar[], interval?: ChartInterval): string {
+  return `${interval ?? ""}:${bars[0]?.time ?? 0}:${bars.length}:${bars[bars.length - 1]?.time ?? 0}`;
 }

@@ -185,6 +185,9 @@ function FixedFeePickCard({
           Leftover fees route to the protocol.
         </TooltipContent>
       </Tooltip>
+      <div className="pick-card-mark pick-ascii">
+        <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
+      </div>
       <h2
         className={cn(
           "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
@@ -194,9 +197,6 @@ function FixedFeePickCard({
         <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
         <span>Fixed Fees</span>
       </h2>
-      <div className="pick-card-mark pick-ascii">
-        <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
-      </div>
       <p className="pick-card-sub pick-card-sub--hook">Flat hook tax</p>
     </button>
   );
@@ -322,6 +322,9 @@ function HookPickCard({
       }}
     >
       <HookPickTooltip hook={hook} />
+      <div className="pick-card-mark pick-ascii">
+        <HookLogo hookId={hook.id} theme={hook.theme} />
+      </div>
       <h2
         className={cn(
           "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
@@ -331,9 +334,6 @@ function HookPickCard({
         <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
         <span>{hook.title}</span>
       </h2>
-      <div className="pick-card-mark pick-ascii">
-        <HookLogo hookId={hook.id} theme={hook.theme} />
-      </div>
       <p className="pick-card-sub pick-card-sub--hook">
         {disabled && disabledHint ? disabledHint : hookPickTagline(hook.id)}
       </p>

@@ -8,6 +8,7 @@ import {
   formatChartUsd,
   hasChartVolume,
   type ChartBar,
+  type ChartInterval,
   type ChartScale,
   type ChartStyle,
 } from "@/lib/token-chart";
@@ -23,6 +24,7 @@ type TokenLightweightPlotProps = {
   bars: ChartBar[];
   style: ChartStyle;
   scale: ChartScale;
+  interval?: ChartInterval;
   lineColor?: string;
   fitNonce?: number;
   onHover: (bar: ChartBar | null) => void;
@@ -38,8 +40,8 @@ type ChartHandle = {
 };
 
 /**
- * Stonk autoscales to the wick. A flat doji gets a tight centered pad so the
- * last-price line runs through the body (8% of mid left the print in empty air).
+ * Sit candles toward the bottom of the pane (other launchpads): more headroom
+ * above the wick than below the low. Flat dojis get a readable body.
  */
 const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
@@ -47,13 +49,12 @@ const padPriceRange: AutoscaleInfoProvider = (original) => {
   const { minValue, maxValue } = res.priceRange;
   const mid = (minValue + maxValue) / 2;
   const span = Math.max(maxValue - minValue, 0);
-  const minSpan = Math.max(Math.abs(mid) * 0.005, mid > 1 ? 0.01 : 1e-18);
-  if (span >= minSpan) {
-    const pad = span * 0.06;
-    return { ...res, priceRange: { minValue: minValue - pad, maxValue: maxValue + pad } };
-  }
-  const pad = minSpan / 2;
-  return { ...res, priceRange: { minValue: mid - pad, maxValue: mid + pad } };
+  const minSpan = Math.max(Math.abs(mid) * 0.08, mid > 1 ? 0.01 : 1e-18);
+  const lo = span >= minSpan ? minValue : mid - minSpan * 0.35;
+  const hi = span >= minSpan ? maxValue : mid + minSpan * 0.65;
+  const height = Math.max(hi - lo, minSpan);
+  const floor = Math.max(lo - height * 0.08, 0);
+  return { ...res, priceRange: { minValue: floor, maxValue: hi + height * 0.22 } };
 };
 
 function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
@@ -100,7 +101,9 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: false,
+    borderVisible: true,
+    borderUpColor: UP,
+    borderDownColor: DOWN,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -134,13 +137,20 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
       priceLineColor: line,
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
-      next.map((b) => ({
-        time: b.time as UTCTimestamp,
-        open: b.open,
-        high: b.high,
-        low: b.low,
-        close: b.close,
-      })),
+      next.map((b) => {
+        const mid = b.close || b.open;
+        const span = Math.max(b.high - b.low, 0);
+        const minSpan = mid > 0 ? mid * 0.004 : 0;
+        const high = span >= minSpan ? b.high : mid + minSpan;
+        const low = span >= minSpan ? b.low : Math.max(mid - minSpan, 0);
+        return {
+          time: b.time as UTCTimestamp,
+          open: b.open,
+          high,
+          low,
+          close: b.close,
+        };
+      }),
     );
   }
 
@@ -164,6 +174,7 @@ export function TokenLightweightPlot({
   bars,
   style,
   scale,
+  interval,
   lineColor = UP,
   fitNonce = 0,
   onHover,
@@ -201,18 +212,18 @@ export function TokenLightweightPlot({
           attributionLogo: true,
         },
         grid: {
-          vertLines: { color: GRID },
-          horzLines: { color: GRID },
+          vertLines: { visible: false },
+          horzLines: { visible: false },
         },
         rightPriceScale: { borderColor: GRID },
         timeScale: {
           borderColor: GRID,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 4,
-          barSpacing: 8,
-          minBarSpacing: 2,
-          maxBarSpacing: 28,
+          rightOffset: 6,
+          barSpacing: 12,
+          minBarSpacing: 4,
+          maxBarSpacing: 36,
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
@@ -237,7 +248,7 @@ export function TokenLightweightPlot({
       const handle: ChartHandle = { chart, price, volume, style: styleRef.current };
       handleRef.current = handle;
       const next = pendingBarsRef.current;
-      rangeSigRef.current = chartRangeSignature(next);
+      rangeSigRef.current = chartRangeSignature(next, interval);
       applyBars(handle, next, lineColorRef.current);
 
       chart.subscribeCrosshairMove((param) => {
@@ -296,11 +307,11 @@ export function TokenLightweightPlot({
   useEffect(() => {
     const handle = handleRef.current;
     if (!handle) return;
-    const signature = chartRangeSignature(bars);
+    const signature = chartRangeSignature(bars, interval);
     const refit = rangeSigRef.current !== signature;
     rangeSigRef.current = signature;
     applyBars(handle, bars, lineColor, refit);
-  }, [bars, lineColor]);
+  }, [bars, lineColor, interval]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
