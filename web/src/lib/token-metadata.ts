@@ -192,6 +192,14 @@ export function tokenTwitterUrl(value: string | undefined | null): string | unde
   return `https://x.com/${handle}`;
 }
 
+/** Defined.fi token chart — Dexscreener does not index Uniswap v4 on Ink. */
+export function definedChartUrl(tokenAddress: string | undefined | null): string | undefined {
+  const token = tokenAddress?.trim();
+  if (!token || !/^0x[a-fA-F0-9]{40}$/.test(token)) return undefined;
+  const network = resolveHookitChainKey() === "ink" ? "ink" : "base";
+  return `https://www.defined.fi/${network}/${token.toLowerCase()}`;
+}
+
 /** Uniswap web app swap for this token (already listed on the active chain). */
 export function uniswapSwapUrl(
   tokenAddress: string | undefined | null,

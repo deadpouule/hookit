@@ -37,10 +37,10 @@ import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 import {
   resolveMediaUrl,
+  definedChartUrl,
   tokenGithubUrl,
   tokenTwitterUrl,
   tokenWebsiteUrl,
-  uniswapSwapUrl,
 } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -203,7 +203,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const websiteUrl = tokenWebsiteUrl(pool.website);
   const githubUrl = tokenGithubUrl(pool.github);
   const explorerUrl = `${BLOCK_EXPLORER_URL}/address/${contractAddress}`;
-  const uniswapUrl = uniswapSwapUrl(contractAddress, pool.quoteAddress);
+  const definedUrl = definedChartUrl(contractAddress);
   const ath = useMemo(
     () => live.candles.reduce((m, c) => Math.max(m, c.h), live.marketCap),
     [live.candles, live.marketCap],
@@ -333,9 +333,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </span>
             )}
             <div className="token-hero-links token-hero-links--trade">
-              <HeroLink href={uniswapUrl} label="Trade on Uniswap" className="token-hero-link--uniswap">
-                <span className="token-hero-uniswap-label">Trade on</span>
-                <span className="token-hero-uniswap" aria-hidden />
+              <HeroLink href={definedUrl} label="Chart on Defined" className="token-hero-link--defined">
+                <span className="token-hero-defined-label">Chart</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand/defined-mark.png" alt="" className="token-hero-defined" />
               </HeroLink>
               <HeroLink href={explorerUrl} label="Explorer">
                 <ExternalLink className="token-hero-explorer" />

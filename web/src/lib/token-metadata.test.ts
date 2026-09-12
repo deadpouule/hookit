@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { uniswapSwapUrl } from "./token-metadata";
+import { definedChartUrl, uniswapSwapUrl } from "./token-metadata";
+
+test("definedChartUrl builds an Ink Defined chart link for the token", () => {
+  const token = "0x51a700000000000000000000000000000000d228";
+  const url = definedChartUrl(token);
+  assert.equal(url, "https://www.defined.fi/ink/0x51a700000000000000000000000000000000d228");
+});
+
+test("definedChartUrl ignores a missing or junk address", () => {
+  assert.equal(definedChartUrl(undefined), undefined);
+  assert.equal(definedChartUrl("not-an-address"), undefined);
+});
 
 test("uniswapSwapUrl builds an Ink swap deep-link for the token", () => {
   const token = "0x51a700000000000000000000000000000000d228";
