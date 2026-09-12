@@ -109,16 +109,18 @@ function HeroStat({
 function HeroLink({
   href,
   label,
+  className,
   children,
 }: {
   href?: string;
   label: string;
+  className?: string;
   children: ReactNode;
 }) {
   if (!href) {
     return (
       <span
-        className="token-hero-link token-hero-link--off"
+        className={cn("token-hero-link token-hero-link--off", className)}
         aria-label={`${label} not set`}
         title={`${label} not set`}
         aria-disabled
@@ -132,7 +134,7 @@ function HeroLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="token-hero-link"
+      className={cn("token-hero-link", className)}
       aria-label={`Token ${label}`}
       title={label}
     >
@@ -331,7 +333,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </span>
             )}
             <div className="token-hero-links token-hero-links--trade">
-              <HeroLink href={uniswapUrl} label="Uniswap">
+              <HeroLink href={uniswapUrl} label="Trade on Uniswap" className="token-hero-link--uniswap">
+                <span className="token-hero-uniswap-label">Trade on</span>
                 <span className="token-hero-uniswap" aria-hidden />
               </HeroLink>
               <HeroLink href={explorerUrl} label="Explorer">
