@@ -5,11 +5,11 @@ export const SITE_NAME = "Hookit";
 export const SITE_DESCRIPTION =
   "Permissionless modular launchpad on Ink. Dual-rail Master + Classic bonding, Quotrons wStocks, locked LP, quote-only fees.";
 
-/** Homepage / generic link preview (WhatsApp / Telegram / X). 1200×630 JPEG. */
+/** Homepage / generic link preview (WhatsApp / Telegram / X). Square, full black. */
 export const SITE_OG_IMAGE = {
-  url: "/brand/og.jpg",
+  url: "/brand/og.png",
   width: 1200,
-  height: 630,
+  height: 1200,
   alt: "Hookit",
 } as const;
 

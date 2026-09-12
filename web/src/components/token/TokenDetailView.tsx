@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, Copy, ExternalLink, Flame, Globe } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { CarabinerLogo } from "@/components/brand/CarabinerLogo";
 import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
@@ -325,23 +326,29 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               <Copy className="h-3 w-3" />
               {copied && <span className="text-[#10b981]">Copied</span>}
             </button>
-            {masterHookAddr &&
-              masterHookAddr.toLowerCase() !== contractAddress.toLowerCase() && (
-              <a
-                href={`${BLOCK_EXPLORER_URL}/address/${masterHookAddr}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] text-muted-foreground transition hover:text-[#d8b4fe]"
-                title="Master hook contract"
-              >
-                Hook
-              </a>
-            )}
             {ageSeconds != null && (
               <span className="rounded-full bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
+            <div className="token-hero-links token-hero-links--trade">
+              <HeroLink href={uniswapUrl} label="Uniswap">
+                <span className="token-hero-uniswap" aria-hidden />
+              </HeroLink>
+              <HeroLink href={explorerUrl} label="Explorer">
+                <ExternalLink className="h-4 w-4" />
+              </HeroLink>
+              <HeroLink
+                href={
+                  masterHookAddr
+                    ? `${BLOCK_EXPLORER_URL}/address/${masterHookAddr}`
+                    : undefined
+                }
+                label="Master hook"
+              >
+                <CarabinerLogo className="token-hero-hook-glyph" />
+              </HeroLink>
+            </div>
           </div>
         </div>
       </header>
@@ -366,7 +373,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </p>
         </div>
 
-        <div className="token-hero-links">
+        <div className="token-hero-links token-hero-links--social">
           <HeroLink href={twitterUrl} label="X">
             <XGlyph className="h-[16px] w-[16px]" />
           </HeroLink>
@@ -375,12 +382,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </HeroLink>
           <HeroLink href={githubUrl} label="GitHub">
             <GithubGlyph className="h-4 w-4" />
-          </HeroLink>
-          <HeroLink href={uniswapUrl} label="Uniswap">
-            <span className="token-hero-uniswap" aria-hidden />
-          </HeroLink>
-          <HeroLink href={explorerUrl} label="Explorer">
-            <ExternalLink className="h-4 w-4" />
           </HeroLink>
         </div>
 

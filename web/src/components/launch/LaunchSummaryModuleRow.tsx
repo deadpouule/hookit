@@ -11,7 +11,6 @@ import {
 import { hookMarkSummaryDetail } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, type HookTheme } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 function resolveHookTheme(id: HookId): HookTheme {
   const masterId = HOOK_MARK_TO_MASTER[id];
@@ -52,37 +51,18 @@ export function LaunchSummaryModuleRow({
     return (
       <li className="flex items-center justify-between gap-2">
         <HookChip id={id} className="shrink-0" />
-        <span
-          className={cn(
-            "launch-summary-detail-badge orb-hook-desc-badge",
-            `orb-hook-desc-badge--${theme}`,
-          )}
-        >
-          {detail}
-        </span>
+        <span className="launch-summary-detail">{detail}</span>
       </li>
     );
   }
 
   return (
     <li className="flex items-center justify-between gap-2">
-      <span
-        className={cn(
-          "launch-summary-hook-chip orb-hook-desc-badge",
-          `orb-hook-desc-badge--${theme}`,
-        )}
-      >
+      <span className="launch-summary-hook-chip">
         <HookAsciiMark id={id} theme={theme} />
         {def.short}
       </span>
-      <span
-        className={cn(
-          "launch-summary-detail-badge orb-hook-desc-badge",
-          `orb-hook-desc-badge--${theme}`,
-        )}
-      >
-        {detail}
-      </span>
+      <span className="launch-summary-detail">{detail}</span>
     </li>
   );
 }

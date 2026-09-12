@@ -1458,28 +1458,26 @@
     height: 1rem;
   }
 
-  .launch-summary-hook-chip.orb-hook-desc-badge {
+  .launch-summary-hook-chip {
+    display: inline-flex;
     width: auto;
     flex-shrink: 0;
     align-items: center;
     gap: 0.3rem;
-    border-radius: 0;
-    padding: 0.22rem 0.5rem 0.22rem 0.2rem;
     font-size: 10px;
     font-weight: 600;
     line-height: 1.2;
+    color: #e4e4e7;
   }
 
-  .launch-summary-detail-badge.orb-hook-desc-badge {
-    width: auto;
+  .launch-summary-detail {
     max-width: 62%;
     flex-shrink: 1;
-    align-items: center;
-    padding: 0.3rem 0.5rem;
     font-size: 10px;
     font-weight: 600;
     line-height: 1.35;
     text-align: right;
+    color: #a1a1aa;
   }
 
   .token-hooks-panel {
@@ -1648,12 +1646,16 @@
     white-space: normal;
   }
 
-  .token-hooks-chip-mark {
+  .token-hooks-quote-mark {
     display: inline-flex;
     flex-shrink: 0;
     align-items: center;
+    margin-right: 0.2rem;
+    vertical-align: -2px;
   }
 
+  .token-hooks-quote-mark .pick-logo--sm,
+  .token-hooks-quote-mark img,
   .token-hooks-chip-mark .pick-logo--sm,
   .token-hooks-chip-mark img {
     width: 14px;
@@ -3662,6 +3664,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px 8px;
+    width: 100%;
     margin-top: 6px;
   }
 
@@ -3874,8 +3877,29 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    grid-area: links;
     margin: 0;
+  }
+
+  .token-hero-links--social {
+    grid-area: links;
+  }
+
+  .token-hero-links--trade {
+    margin-left: auto;
+  }
+
+  .token-hero-hook-glyph {
+    height: 16px;
+    width: 12px;
+    color: #e4e4e7;
+    filter: none;
+  }
+
+  html[data-device="desktop"] {
+    .token-hero-hook-glyph {
+      height: 18px;
+      width: 14px;
+    }
   }
 
   .token-hero-uniswap {

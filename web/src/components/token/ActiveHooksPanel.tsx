@@ -10,7 +10,6 @@ import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { MasterHookAsciiIcon } from "@/components/home/market/MasterHookAsciiIcon";
 import { HookInlineAction } from "@/components/token/HookInlineActions";
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
-import { resolveMediaUrl } from "@/lib/token-metadata";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
@@ -67,17 +66,31 @@ const EXPANDED_HOOK_IDS = new Set<MasterHookId>([
   "holder-airdrop",
 ]);
 
+function withQuoteMark(stat: string, quoteLabel: string, mark: ReactNode): ReactNode {
+  const i = stat.indexOf(quoteLabel);
+  if (i < 0) return stat;
+  return (
+    <>
+      {stat.slice(0, i)}
+      <span className="token-hooks-quote-mark">{mark}</span>
+      {stat.slice(i)}
+    </>
+  );
+}
+
 function HookModuleBadge({
   hook,
   stat,
   tip,
   mark,
+  quoteLabel,
   children,
 }: {
   hook: { id: string; title: string; theme: string };
   stat: string | null;
   tip: string;
   mark?: ReactNode;
+  quoteLabel?: string;
   children?: ReactNode;
 }) {
   const stacked = Boolean(children);
@@ -96,16 +109,17 @@ function HookModuleBadge({
             className="token-hooks-ascii"
           />
           <span className="token-hooks-chip-copy">
-            <span className="token-hooks-chip-title">
-              {hook.title}
-              {mark ? <span className="token-hooks-chip-mark">{mark}</span> : null}
-            </span>
+            <span className="token-hooks-chip-title">{hook.title}</span>
             {stat ? (
               <>
                 <span className="token-hooks-chip-sep" aria-hidden>
                   ·
                 </span>
-                <span className="token-hooks-chip-stat token-hooks-chip-stat--live">{stat}</span>
+                <span className="token-hooks-chip-stat token-hooks-chip-stat--live">
+                  {mark && quoteLabel
+                    ? withQuoteMark(stat, quoteLabel, mark)
+                    : stat}
+                </span>
               </>
             ) : null}
           </span>
@@ -329,22 +343,10 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
   const floorReserveWei = (floorReserve as bigint | undefined) ?? BigInt(0);
   const moduleCount = enabledHooks.length + (showFixedFee ? 1 : 0);
-  const tokenMedia = resolveMediaUrl(pool.image);
 
   return (
     <section className="token-hooks-panel desk-card">
       <header className="token-hooks-head">
-        <span className="token-hooks-token">
-          <span className="token-hooks-token-logo" style={{ background: pool.bannerGradient }}>
-            {tokenMedia ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={tokenMedia} alt="" />
-            ) : (
-              <span>{pool.ticker[0]}</span>
-            )}
-          </span>
-          <span className="token-hooks-token-name">{pool.name}</span>
-        </span>
         <span className="token-type-badge token-type-badge--master token-hooks-count-badge">
           <MasterHookGlyph className="token-type-badge-glyph" />
           {moduleCount} master module{moduleCount === 1 ? "" : "s"}
@@ -372,6 +374,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                 hook={hook}
                 stat={stat}
                 tip={tip}
+                quoteLabel={live.quoteLabel}
                 mark={
                   hook.id === "holder-airdrop" ? (
                     <PoolQuoteMark quoteAddress={pool.quoteAddress} quoteAsset={pool.quoteAsset} />
