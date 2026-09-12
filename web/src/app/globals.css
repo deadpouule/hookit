@@ -2416,215 +2416,56 @@
     pointer-events: none;
   }
 
-  .launch-reel {
-    position: relative;
+  .launch-model-stage .hero-totem {
+    pointer-events: none;
     z-index: 1;
     height: 100%;
-    width: 100%;
-    overflow: hidden;
-    pointer-events: none;
-    transform: scale(0.78);
-    transform-origin: center center;
+    padding: 0.35rem 0.5rem 0.4rem;
   }
 
-  .launch-reel-scene {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    perspective: 900px;
-    perspective-origin: 50% 48%;
+  .launch-model-stage .hero-totem-stage {
+    width: min(152px, 72%);
+    max-height: 152px;
   }
 
-  .launch-reel-item {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 132px;
-    margin-left: -66px;
-    margin-top: -72px;
-    transform-style: preserve-3d;
-    will-change: transform, opacity;
+  .launch-model-stage .hero-totem-halo {
+    filter: blur(12px);
   }
 
-  .launch-reel-card {
-    display: flex;
-    height: 144px;
-    width: 132px;
-    flex-direction: column;
-    gap: 0.2rem;
-    border-radius: 10px;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: #111111;
-    padding: 0.55rem 0.5rem 0.4rem;
+  .launch-model-stage .hero-totem-mark {
+    width: 1.3rem;
+    height: 1.3rem;
+    cursor: default;
   }
 
-  .launch-reel-card.orb-card--fire {
-    border-color: rgb(239 68 68 / 0.35);
+  .launch-model-stage .hero-totem-mark .hook-logo {
+    width: 1.22rem;
+    height: 1.22rem;
   }
 
-  .launch-reel-card.orb-card--gold {
-    border-color: rgb(245 158 11 / 0.35);
+  .launch-model-stage .hero-totem-dots {
+    margin: 0.02rem 0 0.04rem;
+    gap: 0.26rem;
   }
 
-  .launch-reel-card.orb-card--void {
-    border-color: rgb(232 121 249 / 0.35);
+  .launch-model-stage .hero-totem-dot {
+    width: 0.3rem;
+    height: 0.3rem;
+    cursor: default;
   }
 
-  .launch-reel-card.orb-card--nature {
-    border-color: rgb(16 185 129 / 0.35);
+  .launch-model-stage .hero-totem-dot.is-on {
+    width: 0.38rem;
+    height: 0.38rem;
   }
 
-  .launch-reel-card.orb-card--volt {
-    border-color: rgb(3 177 237 / 0.35);
+  .launch-model-stage .hero-totem-caption {
+    width: min(100%, 16rem);
+    padding: 0 0.4rem;
   }
 
-  .launch-reel-card.orb-card--ice {
-    border-color: rgb(56 189 248 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--ember {
-    border-color: rgb(249 115 22 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--rose {
-    border-color: rgb(244 63 94 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--steel {
-    border-color: rgb(99 102 241 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--crimson {
-    border-color: rgb(220 38 38 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--lime {
-    border-color: rgb(132 204 22 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--pearl {
-    border-color: rgb(228 228 231 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--yellow {
-    border-color: rgb(250 204 21 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--teal {
-    border-color: rgb(45 212 191 / 0.35);
-  }
-
-  .launch-reel-card.orb-card--cobalt {
-    border-color: rgb(59 130 246 / 0.35);
-  }
-
-  .launch-reel-card.is-on.orb-card--fire {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 1px #ef4444, 0 0 28px -8px rgb(239 68 68 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--gold {
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 1px #f59e0b, 0 0 28px -8px rgb(245 158 11 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--void {
-    border-color: #e879f9;
-    box-shadow: 0 0 0 1px #e879f9, 0 0 28px -8px rgb(232 121 249 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--nature {
-    border-color: #10b981;
-    box-shadow: 0 0 0 1px #10b981, 0 0 28px -8px rgb(16 185 129 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--volt {
-    border-color: #03b1ed;
-    box-shadow: 0 0 0 1px #03b1ed, 0 0 28px -8px rgb(3 177 237 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--ice {
-    border-color: #38bdf8;
-    box-shadow: 0 0 0 1px #38bdf8, 0 0 28px -8px rgb(56 189 248 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--ember {
-    border-color: #f97316;
-    box-shadow: 0 0 0 1px #f97316, 0 0 28px -8px rgb(249 115 22 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--rose {
-    border-color: #f43f5e;
-    box-shadow: 0 0 0 1px #f43f5e, 0 0 28px -8px rgb(244 63 94 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--steel {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 1px #6366f1, 0 0 28px -8px rgb(99 102 241 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--crimson {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 1px #dc2626, 0 0 28px -8px rgb(220 38 38 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--lime {
-    border-color: #84cc16;
-    box-shadow: 0 0 0 1px #84cc16, 0 0 28px -8px rgb(132 204 22 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--pearl {
-    border-color: #e4e4e7;
-    box-shadow: 0 0 0 1px #e4e4e7, 0 0 28px -8px rgb(228 228 231 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--yellow {
-    border-color: #facc15;
-    box-shadow: 0 0 0 1px #facc15, 0 0 28px -8px rgb(250 204 21 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--teal {
-    border-color: #2dd4bf;
-    box-shadow: 0 0 0 1px #2dd4bf, 0 0 28px -8px rgb(45 212 191 / 0.45);
-  }
-
-  .launch-reel-card.is-on.orb-card--cobalt {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 1px #3b82f6, 0 0 28px -8px rgb(59 130 246 / 0.45);
-  }
-
-  .launch-reel-card .orb-hook-desc-badge.orb-hook-title-badge {
-    max-width: 100%;
-    gap: 0.18rem;
-    padding: 0.12rem 0.32rem;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-
-  .launch-reel-card .orb-hook-desc-badge.orb-hook-title-badge .orb-hook-desc-badge-glyph {
-    width: 0.7rem;
-    font-size: 0.22rem;
-  }
-
-  .launch-reel-ascii {
-    display: flex;
-    min-height: 0;
-    flex: 1 1 auto;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .launch-reel-ascii .hook-logo {
-    width: 3.2rem;
-    height: 3.2rem;
-  }
-
-  .launch-reel-ascii .ascii-shape {
-    font-size: 4.5px;
-    line-height: 1;
+  .launch-model-stage .hero-totem-title {
+    font-size: 0.7rem;
   }
 
   .launch-model-copy {
@@ -9667,6 +9508,10 @@
   width: 16.4rem;
 }
 
+.welcome-owl--totem.welcome-owl--preview {
+  width: 5.5rem;
+}
+
 @media (min-width: 640px) {
   .welcome-owl {
     width: 12.5rem;
@@ -9674,6 +9519,10 @@
 
   .welcome-owl--totem {
     width: 17.4rem;
+  }
+
+  .welcome-owl--totem.welcome-owl--preview {
+    width: 5.5rem;
   }
 }
 
