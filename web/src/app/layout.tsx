@@ -1,7 +1,7 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque, Silkscreen } from "next/font/google";
 
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { AppErrorBoundary } from "@/components/providers/AppErrorBoundary";
@@ -28,6 +28,12 @@ const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
   subsets: ["latin"],
   weight: ["600", "700"],
+});
+
+const pixel = Silkscreen({
+  variable: "--font-pixel",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -59,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="en"
       data-device={isPhone ? "phone" : "desktop"}
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} dark min-h-dvh antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${pixel.variable} dark min-h-dvh antialiased`}
       suppressHydrationWarning
     >
       <body
