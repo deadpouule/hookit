@@ -10,14 +10,12 @@ import {
   MASTER_HOOK_FILTERS,
   EXPLORE_HOOKS,
   countHookUsage,
-  type BrowseHookId,
   type MasterHookCategory,
   type MasterHookId,
 } from "@/lib/master-hooks";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
 import { SEARCH_FIELD_PROPS } from "@/lib/search-field";
 import type { TokenPool } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 type HookFilter = "all" | MasterHookCategory;
 
@@ -87,18 +85,15 @@ function ExplorePageContent() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-1 rounded-full bg-card p-1">
+        <div className="hooks-filter-range" role="tablist">
           {MASTER_HOOK_FILTERS.map((filter) => (
             <button
               key={filter.id}
               type="button"
+              role="tab"
+              aria-selected={category === filter.id}
               onClick={() => setCategory(filter.id)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium transition",
-                category === filter.id
-                  ? "bg-surface-raised text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              className={category === filter.id ? "is-on" : undefined}
             >
               {filter.label}
             </button>

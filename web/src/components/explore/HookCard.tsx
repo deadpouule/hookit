@@ -48,10 +48,7 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
         </div>
 
         <div className="orb-footer">
-          <span className={cn("orb-hook-desc-badge", `orb-hook-desc-badge--${hook.theme}`)}>
-            <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-            <span>{capitalizeDescription(hook.description)}</span>
-          </span>
+          <p className="orb-hook-blurb">{capitalizeDescription(hook.description)}</p>
 
           <div className="orb-footer-actions">
             <a

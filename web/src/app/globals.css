@@ -5085,9 +5085,47 @@
     margin: 0;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 500;
+    font-family: var(--font-pixel), ui-monospace, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
     line-height: 1.25;
+    letter-spacing: 0.02em;
+  }
+
+  .orb-hook-blurb {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: #a1a1aa;
+  }
+
+  .hooks-filter-range {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .hooks-filter-range button {
+    border: 0;
+    border-radius: 9999px;
+    padding: 0.4rem 0.8rem;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 500;
+    color: #a1a1aa;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .hooks-filter-range button:hover {
+    color: #fff;
+  }
+
+  .hooks-filter-range button.is-on {
+    background: #9514d1;
+    color: #fff;
   }
 
   .orb-hook-desc-badge.orb-hook-title-badge .orb-hook-desc-badge-glyph {
