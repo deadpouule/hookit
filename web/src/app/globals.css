@@ -1689,6 +1689,13 @@
     min-width: 0;
   }
 
+  .token-hooks-chip-top .master-hook-ascii-icon,
+  .token-hooks-chip-top .token-hooks-ascii {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+  }
+
   .token-hooks-chip-actions {
     display: flex;
     gap: 0.35rem;
