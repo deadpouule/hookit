@@ -122,7 +122,7 @@ export function V4ClaimsClaimAction({
       </div>
       {claimWei <= BigInt(0) ? (
         <p className="text-[11px] leading-relaxed text-zinc-600">
-          After a payout swap, your share appears here as a v4 claim — claim to receive spendable{" "}
+          After a payout swap, your share appears here as a v4 claim. claim to receive spendable{" "}
           {quoteLabel}.
         </p>
       ) : null}

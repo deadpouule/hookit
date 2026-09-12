@@ -161,9 +161,9 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
     {
       type: "ul",
       items: [
-        "Master — atomic token + v4 pool + locked LP with bitmask modules (anti-snipe, floor, MEV, burns…).",
-        "Classic — bonding curve until graduation, then a graduated fee hook pool.",
-        "Custom — bring your own Solidity hook; Hookit mines CREATE2 flags and deploys from your wallet.",
+        "Master. atomic token + v4 pool + locked LP with bitmask modules (anti-snipe, floor, MEV, burns…).",
+        "Classic. bonding curve until graduation, then a graduated fee hook pool.",
+        "Custom. bring your own Solidity hook; Hookit mines CREATE2 flags and deploys from your wallet.",
       ],
     },
   ],
@@ -190,7 +190,7 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
     { type: "h3", text: "Limit & stop" },
     {
       type: "p",
-      text: "Limit and stop are client-side price alerts stored in your browser. They toast when spot crosses your target — they are not on-chain resting orders.",
+      text: "Limit and stop are client-side price alerts stored in your browser. They toast when spot crosses your target. they are not on-chain resting orders.",
     },
   ],
   floor: [
@@ -245,7 +245,7 @@ const DOCS_BODY: Record<DocsSlug, DocsBlock[]> = {
     {
       type: "ul",
       items: [
-        "Unaudited software — expect bugs.",
+        "Unaudited software. expect bugs.",
         "Tokens can go to zero; custom hooks are unverified by default.",
         "Testnet / early mainnet liquidity is thin; slippage can be severe.",
         "Client limit/stop alerts require the browser tab open (or a future worker).",

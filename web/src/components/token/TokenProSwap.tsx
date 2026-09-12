@@ -75,7 +75,7 @@ function PickerLabel({ asset }: { asset: SwapAsset }) {
   );
 }
 
-/** Market swap — pools.fun Sell Token / Buy Token layout. */
+/** Market swap. pools.fun Sell Token / Buy Token layout. */
 export function TokenProSwap({
   pool,
   sellAsset,
@@ -105,10 +105,10 @@ export function TokenProSwap({
   receiveAmount?: string;
   slippagePct: number;
   sellBalance: number;
-  /** Exact on-chain balance — presets / MAX derive from this so the amount never exceeds it. */
+  /** Exact on-chain balance. presets / MAX derive from this so the amount never exceeds it. */
   sellBalanceRaw?: bigint;
   tokenPriceEth?: number;
-  /** Live ETH/USD — never hardcode $1000. */
+  /** Live ETH/USD. never hardcode $1000. */
   ethUsd?: number;
   /** USD price of one pool quote unit (ETH / USDG / stock). */
   quoteUsd?: number;
@@ -155,7 +155,7 @@ export function TokenProSwap({
   const spendableRaw = (() => {
     if (sellBalanceRaw === undefined) return undefined;
     if (sellAsset.isNative) {
-      // Keep a sliver of ETH for gas — sending the full balance as value fails on-chain.
+      // Keep a sliver of ETH for gas. sending the full balance as value fails on-chain.
       return sellBalanceRaw > ETH_GAS_RESERVE ? sellBalanceRaw - ETH_GAS_RESERVE : 0n;
     }
     // Launch tokens deployed against the pre-fix HolderAirdropVault panic when the last

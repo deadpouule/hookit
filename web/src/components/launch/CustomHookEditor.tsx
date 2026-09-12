@@ -162,7 +162,7 @@ export function CustomHookEditor({ source, fileName, onChange }: Props) {
           {analysis.valid && (
             <p className="flex items-center gap-2 text-xs text-emerald-400/90">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Hook source looks valid — ready to deploy at launch
+              Hook source looks valid. ready to deploy at launch
             </p>
           )}
         </div>

@@ -99,7 +99,7 @@ export function DevBuySection({ form, variant, onChange }: Props) {
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-        Buy up to {MAX_DEV_BUY_SUPPLY_PCT}% of the supply as the pool&apos;s very first trade — bundled
+        Buy up to {MAX_DEV_BUY_SUPPLY_PCT}% of the supply as the pool&apos;s very first trade. bundled
         atomically with launch so nothing can trade before you. Paid in {payLabel} with the launch fee;
         the tokens land in your wallet the moment the pool is live.
       </p>

@@ -234,7 +234,7 @@ export function TokenLightweightPlot({
         priceLineVisible: false,
         lastValueVisible: false,
       });
-      // Thin volume strip — fat histogram bars were being read as candles.
+      // Thin volume strip. fat histogram bars were being read as candles.
       chart.priceScale("volume").applyOptions({
         scaleMargins: { top: 0.88, bottom: 0 },
       });

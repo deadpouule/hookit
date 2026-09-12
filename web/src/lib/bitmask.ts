@@ -107,7 +107,7 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
     (modules.deepenLps ? 1 : 0) +
     (modules.holderAirdrop ? 1 : 0);
   if (feeRouteCount > 0 && routed !== 100) {
-    throw new Error("Fee routes must total exactly 100% of the hook tax — nothing left unallocated");
+    throw new Error("Fee routes must total exactly 100% of the hook tax. Nothing left unallocated");
   }
   if (routed > 0 && effectiveHookTax === 0 && !modules.creatorShareToHook) {
     throw new Error(

@@ -55,10 +55,10 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   buybackVestingDurationDays: 365 * 5,
   buybackVestingMcapUsd: 0,
   buybackVestingUnlockMode: "all",
-  buybackVestingStepPct: [5, 5, 15, 20, 25, 30],
+  buybackVestingStepPct: [0, 0, 0, 0, 0, 0],
   holderAirdropMcapUsd: 0,
   holderAirdropUnlockMode: "all",
-  holderAirdropStepPct: [5, 5, 15, 20, 25, 30],
+  holderAirdropStepPct: [0, 0, 0, 0, 0, 0],
   creatorShareToHook: false,
 };
 
@@ -132,7 +132,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     live: true,
     label: "Deepen LPs",
     short: "thickens the book",
-    description: "A cut of quote fees is minted into the launch LP range — extra depth for whales and traders.",
+    description: "A cut of quote fees is minted into the launch LP range. extra depth for whales and traders.",
     accent: HOOK_MODULE_ACCENTS.deepenLps,
   },
   {
@@ -182,7 +182,7 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     live: true,
     label: "Hook Tax",
     short: "extra quote cut",
-    description: "Extra quote fee for Master modules (floor, burn, deepen LPs, airdrop) — not paid to the creator.",
+    description: "Extra quote fee for Master modules (floor, burn, deepen LPs, airdrop). not paid to the creator.",
     accent: HOOK_MODULE_ACCENTS.hookTax,
   },
 ];

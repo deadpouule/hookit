@@ -131,7 +131,7 @@ export function DocsPage() {
           <p className="docs-eyebrow">hook it docs</p>
           <h1 className="docs-hero-title">Everything about hook it, in one place.</h1>
           <p className="docs-hero-lede">
-            How to launch, trade, and stay safe on {network}. Plain language — no custody, no hidden steps.
+            How to launch, trade, and stay safe on {network}. Plain language. no custody, no hidden steps.
           </p>
         </header>
 

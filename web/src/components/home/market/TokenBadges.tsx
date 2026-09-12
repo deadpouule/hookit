@@ -20,7 +20,7 @@ import { MasterHookTokenBadgeFilter } from "./MasterHookFilterMenu";
 
 const BADGE_TIPS = {
   master: "Uniswap v4 token with our programmable hooks.",
-  customs: "Custom unaudited hook code — treat as higher risk.",
+  customs: "Custom unaudited hook code. Treat as higher risk.",
   rwa: "Liquidity is paired with a real-world asset token (stock, index, etc.). Powered by Quotrons",
   multiPair: "Trades across multiple quote pools at once.",
   pairing: (name: string) => `Pool liquidity is paired against ${name}.`,
@@ -44,12 +44,12 @@ function BadgeTip({ tip, children }: { tip: string; children: ReactNode }) {
   );
 }
 
-/** COPY / OG overlay on the token art — top-right corner. */
+/** COPY / OG overlay on the token art. top-right corner. */
 export function TokenCopyBadge({ token }: { token: MarketToken }) {
   if (token.isCopycat) {
     return (
-      <BadgeTip tip="Copycat launch — verify the contract address before trading.">
-        <span className="token-copy-badge" title="Copycat launch — verify the contract address">
+      <BadgeTip tip="Copycat launch. Verify the contract address before trading.">
+        <span className="token-copy-badge" title="Copycat launch. Verify the contract address">
           COPY
         </span>
       </BadgeTip>
@@ -57,8 +57,8 @@ export function TokenCopyBadge({ token }: { token: MarketToken }) {
   }
   if (token.isOriginal) {
     return (
-      <BadgeTip tip="Original launch — first token with this ticker on Hookit.">
-        <span className="token-og-badge" title="Original launch — first token with this ticker">
+      <BadgeTip tip="Original launch. First token with this ticker on Hookit.">
+        <span className="token-og-badge" title="Original launch. First token with this ticker">
           OG
         </span>
       </BadgeTip>
@@ -83,7 +83,7 @@ function PairingBadgeRow({
   );
 }
 
-/** Type badges row — Master, Customs, Quotrons Lps, multi-pair, pairing legs. */
+/** Type badges row. Master, Customs, Quotrons Lps, multi-pair, pairing legs. */
 export function TokenTypeBadges({
   token,
   masterHookFilters,
@@ -120,7 +120,7 @@ export function TokenTypeBadges({
     );
   } else if (isClassic && !hideMaster) {
     badges.push(
-      <BadgeTip key="classic" tip="Bonding-curve launch — graduates into a Uniswap pool.">
+      <BadgeTip key="classic" tip="Bonding-curve launch. Graduates into a Uniswap pool.">
         <span className="token-type-badge token-type-badge--curve">Classic</span>
       </BadgeTip>,
     );
@@ -180,7 +180,7 @@ export function TokenTypeBadges({
   );
 }
 
-/** Compact meta line under the name — age + copy hint. */
+/** Compact meta line under the name. age + copy hint. */
 export function TokenMetaLine({ token, className }: { token: MarketToken; className?: string }) {
   return (
     <p className={cn("token-meta-line", className)}>

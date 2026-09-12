@@ -29,7 +29,7 @@ import {
   AIRDROP_STEP_PRESET_USD,
   BUYBACK_MCAP_PRESET_USD,
   BUYBACK_STEP_PRESET_USD,
-  DEFAULT_MCAP_STEP_PCT,
+  EMPTY_MCAP_STEP_PCT,
 } from "@/lib/mcap-vest";
 import {
   clampDynamicFeeRange,
@@ -181,7 +181,7 @@ function FixedFeePickCard({
           sideOffset={8}
           className="max-w-[260px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
         >
-          Flat extra fee on every swap — deducted in quote only, zero sell pressure on your token.
+          Flat extra fee on every swap. Deducted in quote only, zero sell pressure on your token.
           Leftover fees route to the protocol.
         </TooltipContent>
       </Tooltip>
@@ -660,7 +660,7 @@ export function HookModulePicker({
             <p className="pick-heading">{configHeading}</p>
           ) : (
             <p className="text-xs text-zinc-500">
-              All active modules — settings stay visible when you switch focus.
+              All active modules. Settings stay visible when you switch focus.
             </p>
           )
         ) : (
@@ -873,12 +873,12 @@ function HookSettings({
   if (hook.id === "backed-floor") {
     return (
       <div>
-        <ConfigHint>Its share of hook tax is set on the next step — Fee split.</ConfigHint>
+        <ConfigHint>Its share of hook tax is set on the Fee split step.</ConfigHint>
         {floorEst > 0 && (
           <ConfigHint>Est. floor ≈ {floorEst.toFixed(6)} ETH / token</ConfigHint>
         )}
         {multiMarket && (
-          <ConfigHint>Backed floor is single-pair only — switch to one market to enable</ConfigHint>
+          <ConfigHint>Backed floor is single-pair only. Switch to one market to enable</ConfigHint>
         )}
       </div>
     );
@@ -1043,7 +1043,7 @@ function HookSettings({
         </PickConfigControl>
         </div>
         <ConfigHint className="sm:col-span-2">
-          Fee scales with how much in-range LP depth your swap consumes — same quote size pays more in a shallow pool · no oracle · ceiling is hard-rejected below base fee
+          Fee scales with how much in-range LP depth your swap consumes. Same quote size pays more in a shallow pool · no oracle · ceiling is hard-rejected below base fee
         </ConfigHint>
       </div>
     );
@@ -1054,7 +1054,7 @@ function HookSettings({
     const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
     const untilMcap = mcapUsd > 0;
     const mode = modules.buybackVestingUnlockMode === "steps" ? "steps" : "all";
-    const stepPct = modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
+    const stepPct = modules.buybackVestingStepPct ?? [...EMPTY_MCAP_STEP_PCT];
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
         <McapUnlockPicker
@@ -1074,7 +1074,8 @@ function HookSettings({
           onMode={(next) =>
             onUpdate({
               buybackVestingUnlockMode: next,
-              buybackVestingStepPct: next === "steps" ? stepPct : stepPct,
+              buybackVestingStepPct:
+                next === "steps" && mode !== "steps" ? [...EMPTY_MCAP_STEP_PCT] : stepPct,
               buybackVestingMcapUsd: mcapUsd > 0 ? mcapUsd : BUYBACK_VESTING_MCAP_DEFAULT_USD,
             })
           }
@@ -1108,9 +1109,9 @@ function HookSettings({
         <ConfigHint>
           {untilMcap
             ? mode === "steps"
-              ? "Creator fees unlock by % as FDV hits each rung — packed on-chain at launch"
-              : "Creator fees unlock in full when FDV hits this target — packed on-chain at launch"
-            : "Creator fees unlock linearly over this duration — claim the unlocked slice anytime"}
+              ? "Creator fees unlock by % as FDV hits each rung. Packed on-chain at launch"
+              : "Creator fees unlock in full when FDV hits this target. Packed on-chain at launch"
+            : "Creator fees unlock linearly over this duration. Claim the unlocked slice anytime"}
         </ConfigHint>
       </div>
     );
@@ -1118,7 +1119,7 @@ function HookSettings({
 
   if (hook.id === "auto-burn") {
     return (
-      <ConfigHint>Its share of hook tax is set on the next step — Fee split. Quote fees buy and burn tokens after each swap.</ConfigHint>
+      <ConfigHint>Its share of hook tax is set on the Fee split step. Quote fees buy and burn tokens after each swap.</ConfigHint>
     );
   }
 
@@ -1126,7 +1127,7 @@ function HookSettings({
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
         <ConfigHint>
-          Quote fees mint into the launch LP range — thicker book for whales and traders, not extra LP fee income. Share of hook tax is set on the next step.
+          Quote fees mint into the launch LP range. Thicker book for whales and traders, not extra LP fee income. Share of hook tax is set on the Fee split step.
         </ConfigHint>
       </div>
     );
@@ -1139,7 +1140,7 @@ function HookSettings({
     const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
     const untilMcap = mcapUsd > 0;
     const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
-    const stepPct = modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
+    const stepPct = modules.holderAirdropStepPct ?? [...EMPTY_MCAP_STEP_PCT];
     return (
       <div className="flex min-w-0 flex-col gap-3 sm:col-span-2">
         <McapUnlockPicker
@@ -1160,6 +1161,8 @@ function HookSettings({
           onMode={(next) =>
             onUpdate({
               holderAirdropUnlockMode: next,
+              holderAirdropStepPct:
+                next === "steps" && mode !== "steps" ? [...EMPTY_MCAP_STEP_PCT] : stepPct,
               holderAirdropMcapUsd: mcapUsd > 0 ? mcapUsd : HOLDER_AIRDROP_MCAP_DEFAULT_USD,
             })
           }
@@ -1196,8 +1199,8 @@ function HookSettings({
         <ConfigHint>
           {untilMcap
             ? mode === "steps"
-              ? "Holder drops unlock by % as FDV hits each rung — packed on-chain at launch"
-              : "Holder drops unlock in full when FDV hits this target — packed on-chain at launch"
+              ? "Holder drops unlock by % as FDV hits each rung. Packed on-chain at launch"
+              : "Holder drops unlock in full when FDV hits this target. Packed on-chain at launch"
             : "Accrues on swap; next swap after epoch pays all on-chain tracked holders automatically"}
         </ConfigHint>
       </div>
@@ -1215,7 +1218,7 @@ function HookSettings({
     return (
       <ConfigHint>
         {hasFeeSink
-          ? "70% creator share → hook pot with your modules — split it on the next step"
+          ? "70% creator share → hook pot with your modules. Split it on the next step"
           : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
       </ConfigHint>
     );

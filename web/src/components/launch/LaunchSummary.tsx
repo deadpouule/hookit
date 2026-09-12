@@ -9,6 +9,7 @@ import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { BASE_FEE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatDynamicFeeRange, totalFeeBps } from "@/lib/fee-range";
 import { feeRouteIsComplete } from "@/lib/hook-fee-route";
+import { mcapStepUnlockError } from "@/lib/mcap-vest";
 import { getNetworkLabel } from "@/lib/chains";
 import { formatPairingTicker } from "@/lib/pairing-tokens";
 import { analyzeCustomHookSource } from "@/lib/custom-hook";
@@ -80,7 +81,8 @@ export function LaunchSummaryCta({
     factoryConfigured &&
     !isPending &&
     (form.hookMode !== "custom" || (hookAnalysis?.valid ?? false)) &&
-    (form.hookMode !== "master" || feeRouteIsComplete(form.modules));
+    (form.hookMode !== "master" || feeRouteIsComplete(form.modules)) &&
+    !mcapStepUnlockError(form.modules);
 
   const ctaLabel = !walletReady
     ? "Connect wallet"

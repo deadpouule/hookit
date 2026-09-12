@@ -195,27 +195,27 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "anti-snipe":
     "Adds a decaying tax on early buys during your launch window. Snipers pay the highest rate at open; the tax steps down over the duration you choose until it matches your base swap fee.",
   "backed-floor":
-    "Skims a share of hook fees into a FloorVault as quote collateral. Floor = vault ÷ supply and only ratchets up — it is a redeemable bid, not a peg to the DEX price, so the token can trade at a large premium to the floor. Holders can redeem against the vault. Single-pair launches only.",
+    "Skims a share of hook fees into a FloorVault as quote collateral. Floor = vault ÷ supply and only ratchets up. It is a redeemable bid, not a peg to the DEX price, so the token can trade at a large premium to the floor. Holders can redeem against the vault. Single-pair launches only.",
   "anti-mev":
     "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
   "max-tx":
-    "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert — useful against whale dumps or bot-sized trades.",
+    "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert. Useful against whale dumps or bot-sized trades.",
   "max-wallet":
     "Caps how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
   "dynamic-fees":
-    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes — shallow pools charge more for the same quote size. No oracle.",
+    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
-    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook — both spend that same 70% cut.",
+    "Routes the creator's 70% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook. Both spend that same 70% cut.",
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "deepen-lps":
-    "Routes a share of hook fees into the launch liquidity range — swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
+    "Routes a share of hook fees into the launch liquidity range. Swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
-    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless — anyone can trigger the push.",
+    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless. Anyone can trigger the push.",
   "creator-share-to-hook":
-    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting — both spend that same 70% cut.",
+    "Redirects your 70% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting. Both spend that same 70% cut.",
   "fixed-fee":
-    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules — leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
+    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
 };
 
 /** Longer copy for pick-card and config tooltips. */

@@ -51,7 +51,7 @@ export function LaunchModelPicker() {
             <div className="launch-model-copy">
               <h2 className="terminal-title font-mono text-3xl font-semibold tracking-tight text-white">Master.</h2>
               <p>
-                Master modules — anti-snipe, floor, burn
+                Master modules. anti-snipe, floor, burn
                 <span aria-hidden>-&gt;</span>
               </p>
             </div>

@@ -110,10 +110,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "Explore — browse all launches, filter by modules, and see live stats.",
-            "Launch — create your own token in one or two wallet confirmations.",
-            "Trade — swap on the token page with instant or Pro mode.",
-            "Portfolio — see tokens you created or hold, linked to your connected wallet.",
+            "Explore. browse all launches, filter by modules, and see live stats.",
+            "Launch. create your own token in one or two wallet confirmations.",
+            "Trade. swap on the token page with instant or Pro mode.",
+            "Portfolio. see tokens you created or hold, linked to your connected wallet.",
           ],
         },
         {
@@ -141,7 +141,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Before you trade or launch",
           items: [
-            "Always check the token contract address — names and logos can be copied.",
+            "Always check the token contract address. names and logos can be copied.",
             "Starting market cap on Master launches is about $" + TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US") + "; that does not mean the token is worth that forever.",
             "Most tokens are experimental. Price can drop to zero and liquidity can disappear.",
             "Nothing here is financial advice.",
@@ -178,7 +178,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "03",
               title: "Pick Classic or Custom",
-              text: "Classic opens a bonding curve. Custom deploys a Master launch — modules, quote asset (ETH or stable), or your own hook code.",
+              text: "Classic opens a bonding curve. Custom deploys a Master launch. modules, quote asset (ETH or stable), or your own hook code.",
             },
             {
               num: "04",
@@ -198,7 +198,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "In the app this is /launch/custom. On-chain it uses LaunchFactory + MasterLaunchHook — a single Uniswap v4 hook shared by every Master pool.",
+          text: "In the app this is /launch/custom. On-chain it uses LaunchFactory + MasterLaunchHook. a single Uniswap v4 hook shared by every Master pool.",
         },
         {
           type: "ul",
@@ -206,7 +206,7 @@ export function buildDocsSections(): DocsSection[] {
             "1 billion tokens are minted (fixed supply, 18 decimals).",
             `Starting price targets roughly $${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")} fully diluted market cap at launch (converted to ETH or your chosen quote using the chain price feed / Quotrons pool price for wStocks).`,
             "A Uniswap v4 pool is created with LP fee tier 0%. Trading fees are charged by the hook instead (quote-only).",
-            "Liquidity is seeded in a locked price range — the creator cannot remove that LP (anti-rug).",
+            "Liquidity is seeded in a locked price range. the creator cannot remove that LP (anti-rug).",
             "Trading starts in the same transaction. Buyers and sellers move price like any AMM.",
             "You pick optional modules at launch (anti-snipe, floor, airdrop, burns…). They are packed into a bitmask and cannot be changed later.",
             "Quote asset can be ETH, USDG, or a Quotrons wrapped xStock (e.g. wNVDAx) when those markets are seeded on Ink.",
@@ -227,12 +227,12 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "02",
               title: "Take fee in quote",
-              text: "The hook pulls the fee from the quote leg only — never from the memecoin amount as a token tax.",
+              text: "The hook pulls the fee from the quote leg only. never from the memecoin amount as a token tax.",
             },
             {
               num: "03",
               title: "Route the fee pool",
-              text: "Hook tax (if any) funds Master modules (floor, auto-burn, Deepen LPs, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol — modules never touch that split.",
+              text: "Hook tax (if any) funds Master modules (floor, auto-burn, Deepen LPs, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol. modules never touch that split.",
             },
             {
               num: "04",
@@ -243,7 +243,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Classic launch — what actually happens",
+          text: "Classic launch. what actually happens",
         },
         {
           type: "ul",
@@ -260,7 +260,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Master = pool + locked LP + modular hook from block one.",
             "Classic = bonding curve first, then graduate into a simpler fee hook pool.",
-            "Custom Solidity hooks are an advanced Master path — unaudited by default.",
+            "Custom Solidity hooks are an advanced Master path. unaudited by default.",
           ],
         },
       ],
@@ -272,7 +272,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "When you buy or sell on a token page, you swap against either the live Uniswap pool (Master or graduated Classic) or the bonding curve (Classic pre-graduation). The price shown is the current on-chain price — not a quote from hook it.",
+          text: "When you buy or sell on a token page, you swap against either the live Uniswap pool (Master or graduated Classic) or the bonding curve (Classic pre-graduation). The price shown is the current on-chain price. not a quote from hook it.",
         },
         {
           type: "h3",
@@ -291,7 +291,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Liquidity",
-              text: "Roughly how much value sits in the pool near the current price (TVL in USD). Higher usually means smaller price jumps per trade — but thin pools still exist.",
+              text: "Roughly how much value sits in the pool near the current price (TVL in USD). Higher usually means smaller price jumps per trade. but thin pools still exist.",
             },
             {
               term: "24h volume",
@@ -316,8 +316,8 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Connect wallet on the token page.",
             "Choose buy or sell and enter an amount.",
-            "Market swap — enter amount, review quote, slippage, and route before confirming.",
-            "Pro mode — pick slippage, see estimated receive amount, optionally pay with ETH or a supported stable.",
+            "Market swap. enter amount, review quote, slippage, and route before confirming.",
+            "Pro mode. pick slippage, see estimated receive amount, optionally pay with ETH or a supported stable.",
             `Every swap pays a trading fee on the quote side (see Fees). Fees are taken in ETH/USDC/etc., never in the memecoin itself.`,
           ],
         },
@@ -327,7 +327,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "These are price alerts in your browser, not real orders on the blockchain. You set a target price; when spot crosses it, you get a toast notification. You still need to place a market swap yourself. Alerts are stored locally — they do not work if you close the tab or use another device.",
+          text: "These are price alerts in your browser, not real orders on the blockchain. You set a target price; when spot crosses it, you get a toast notification. You still need to place a market swap yourself. Alerts are stored locally. they do not work if you close the tab or use another device.",
         },
         {
           type: "callout",
@@ -346,7 +346,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Graduation only applies to Classic launches. Master launches skip this — they have a pool from day one.",
+          text: "Graduation only applies to Classic launches. Master launches skip this. they have a pool from day one.",
         },
         {
           type: "h3",
@@ -362,7 +362,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `Automatically when the curve collects about ${GRADUATION_ETH} ETH worth of real quote (or the same USD value if you launched against USDC/USDG). No button to press — the next trade that crosses the threshold triggers graduation in the same flow.`,
+          text: `Automatically when the curve collects about ${GRADUATION_ETH} ETH worth of real quote (or the same USD value if you launched against USDC/USDG). No button to press. the next trade that crosses the threshold triggers graduation in the same flow.`,
         },
         {
           type: "h3",
@@ -373,7 +373,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Trading moves from the bonding contract to a normal Uniswap v4 pool.",
             "Leftover tokens (20% of supply) plus collected quote become locked liquidity in that pool.",
-            "Fees switch to the graduated fee hook — same base 1% quote-only fee, 70/30 creator/protocol (no hook tax on Classic).",
+            "Fees switch to the graduated fee hook. same base 1% quote-only fee, 70/30 creator/protocol (no hook tax on Classic).",
             "The token page chart and swap widget automatically use the new pool.",
           ],
         },
@@ -395,7 +395,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Every buy and sell pays a trading fee. Fees are always taken from the quote asset (ETH, USDC, USDG, wStock, etc.) — you never pay fees in the launched memecoin itself.",
+          text: "Every buy and sell pays a trading fee. Fees are always taken from the quote asset (ETH, USDC, USDG, wStock, etc.). you never pay fees in the launched memecoin itself.",
         },
         {
           type: "h3",
@@ -476,8 +476,8 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Remember",
           items: [
-            "Pool LP fee tier is 0% — the hook charges instead.",
-            "Hook tax is for the hook modules — not an extra creator take.",
+            "Pool LP fee tier is 0%. the hook charges instead.",
+            "Hook tax is for the hook modules. not an extra creator take.",
             "Module % are of the hook-tax pot. Base fee stays a clean 70/30 for the creator.",
             "Percentages are fixed at launch and cannot be edited later.",
           ],
@@ -488,7 +488,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Protocol stats show live launch count, TVL, and indexer volume where available. Buyback and burn history only appear when those events are actually indexed — we do not fabricate lists.",
+          text: "Protocol stats show live launch count, TVL, and indexer volume where available. Buyback and burn history only appear when those events are actually indexed. we do not fabricate lists.",
         },
       ],
     },
@@ -505,12 +505,12 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Important limits",
           items: [
-            "Floor + auto-burn + Deepen LPs + holder airdrop shares of the hook-tax pot must total exactly 100% — nothing left unallocated.",
+            "Floor + auto-burn + Deepen LPs + holder airdrop shares of the hook-tax pot must total exactly 100%. nothing left unallocated.",
             "One module alone gets 100%; with two or more, split however you like (e.g. 50/50, 75/25, 80/10/10).",
             "Max tx and max wallet: launcher picks between 0.1% and 2.5% of supply (fixed in the bitmask at launch).",
             "Any fee sink requires hook tax > 0.",
             "Base fee (1%) + hook tax cannot exceed 10%.",
-            "Anti-snipe only affects opening buys and fades out — it is not a permanent tax.",
+            "Anti-snipe only affects opening buys and fades out. it is not a permanent tax.",
             "Classic launches do not use these Master modules (base 1% only).",
           ],
         },
@@ -576,7 +576,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote — ETH, USDG, or wStock). Fees accumulate there. Every epoch (launcher picks the minutes), a swap can push the unlocked slice pro-rata to holders.",
+          text: "Routes a % of the hook pot into HolderAirdropVault (still in quote. ETH, USDG, or wStock). Fees accumulate there. Every epoch (launcher picks the minutes), a swap can push the unlocked slice pro-rata to holders.",
         },
         {
           type: "ul",
@@ -586,7 +586,7 @@ export function buildDocsSections(): DocsSection[] {
             "The holder list must cover all circulating balances or the call reverts (keeps the airdrop fair).",
             "Optional until-mcap: keep drops locked until FDV hits a preset from $5M to $10B. Unlock all at that cliff, or by % at each rung (percents must add to 100).",
             "Token page shows pending pot and countdown when the module is on.",
-            "No dedicated keeper bot — the Hookit swap path supplies the holder set from the indexer when the epoch is ready.",
+            "No dedicated keeper bot. the Hookit swap path supplies the holder set from the indexer when the epoch is ready.",
           ],
         },
         {
@@ -595,7 +595,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B — all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.",
+          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B. all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.",
         },
         {
           type: "h3",
@@ -603,11 +603,11 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Instead of MasterLaunchHook modules, developers can paste their own Uniswap v4 hook Solidity. hook it compiles it, mines a CREATE2 address with the required permission flags, and deploys from your wallet. Custom hooks are not reviewed by hook it — read the code or treat the token as high risk.",
+          text: "Instead of MasterLaunchHook modules, developers can paste their own Uniswap v4 hook Solidity. hook it compiles it, mines a CREATE2 address with the required permission flags, and deploys from your wallet. Custom hooks are not reviewed by hook it. read the code or treat the token as high risk.",
         },
         {
           type: "p",
-          text: "Explore lists which modules each token uses and live usage counts — popularity is not a safety signal.",
+          text: "Explore lists which modules each token uses and live usage counts. popularity is not a safety signal.",
         },
       ],
     },
@@ -643,7 +643,7 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "The floor is not pegged to the DEX price. Spot (and mcap) can sit far above the vault — e.g. 1M mcap vs a 100k floor is a +900% premium.",
+            "The floor is not pegged to the DEX price. Spot (and mcap) can sit far above the vault. e.g. 1M mcap vs a 100k floor is a +900% premium.",
             "Premium % is hidden while the vault is still dust vs spot (a $5k launch FDV vs a few cents of collateral is not a +30,000,000% premium).",
             "Spot cannot sustainably trade below the floor: redeem / floor-fill is a quote bid at P_floor.",
             "Low volume → slow floor growth.",
@@ -656,7 +656,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "callout",
           title: "Known limitation",
           items: [
-            "Floor fills help when spot is already at/near the floor path the hook implements — it is not a guarantee that every market sell is caught at floor across all tick moves.",
+            "Floor fills help when spot is already at/near the floor path the hook implements. it is not a guarantee that every market sell is caught at floor across all tick moves.",
             "Always verify vault balance and token address before relying on floor as an exit.",
           ],
         },
@@ -674,11 +674,11 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "Launches — read TokenLaunched events from LaunchFactory (Master) or BondingLaunchFactory (Classic).",
-            "Trades — read Swap events from the Uniswap v4 PoolManager for each pool.",
-            "Live price — read pool state via StateView (sqrtPriceX96) or simulate swaps via the V4 Quoter.",
-            "Metadata — each LaunchToken exposes metadataURI (JSON with name, image, links).",
-            "Indexer — optional HTTP API for candles, recent trades, and holder lists (see INDEXER_URL in env).",
+            "Launches. read TokenLaunched events from LaunchFactory (Master) or BondingLaunchFactory (Classic).",
+            "Trades. read Swap events from the Uniswap v4 PoolManager for each pool.",
+            "Live price. read pool state via StateView (sqrtPriceX96) or simulate swaps via the V4 Quoter.",
+            "Metadata. each LaunchToken exposes metadataURI (JSON with name, image, links).",
+            "Indexer. optional HTTP API for candles, recent trades, and holder lists (see INDEXER_URL in env).",
           ],
         },
         {
@@ -718,7 +718,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Hook-specific addresses (LaunchFactory, BondingLaunchFactory, swap router) come from your environment variables. Below are the shared Uniswap v4 core contracts on the active chain — the same infrastructure every v4 pool uses.",
+          text: "Hook-specific addresses (LaunchFactory, BondingLaunchFactory, swap router) come from your environment variables. Below are the shared Uniswap v4 core contracts on the active chain. the same infrastructure every v4 pool uses.",
         },
         {
           type: "contract",
@@ -773,14 +773,14 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "To build your own explorer or bot, index these events from the deployment block forward. Wide getLogs ranges on public RPCs often timeout — paginate in chunks.",
+          text: "To build your own explorer or bot, index these events from the deployment block forward. Wide getLogs ranges on public RPCs often timeout. paginate in chunks.",
         },
         {
           type: "ul",
           items: [
-            "LaunchFactory.TokenLaunched — new Master (or custom hook) launch.",
-            "BondingLaunchFactory.TokenLaunched / Bought / Sold / Graduated — Classic lifecycle.",
-            "PoolManager.Swap — every pool trade after graduation or on Master.",
+            "LaunchFactory.TokenLaunched. new Master (or custom hook) launch.",
+            "BondingLaunchFactory.TokenLaunched / Bought / Sold / Graduated. Classic lifecycle.",
+            "PoolManager.Swap. every pool trade after graduation or on Master.",
           ],
         },
         {
@@ -811,7 +811,7 @@ const launches = await client.getLogs({
       blocks: [
         {
           type: "p",
-          text: "Each launch gets a numeric launchId on the factory. From there you can load the token address, pool, creator, module bitmask, and quote asset — all on-chain.",
+          text: "Each launch gets a numeric launchId on the factory. From there you can load the token address, pool, creator, module bitmask, and quote asset. all on-chain.",
         },
         {
           type: "code",
@@ -877,13 +877,13 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
         {
           type: "ul",
           items: [
-            "You can lose all money you spend — prices are volatile and many tokens go to zero.",
+            "You can lose all money you spend. prices are volatile and many tokens go to zero.",
             "Copycat names, logos, and social links are common. Verify the contract address every time.",
             "Smart contracts may contain bugs. hook it and Uniswap v4 code are not fully audited for all configurations.",
             "Custom hooks can include malicious logic (honeypots, hidden taxes, blocked sells).",
             "Low liquidity means you may not be able to sell at the price shown.",
             "RPC, wallet, and indexer outages can break the UI or show stale data.",
-            "Limit/stop alerts are not guaranteed — they depend on your browser staying open.",
+            "Limit/stop alerts are not guaranteed. they depend on your browser staying open.",
             "Testnet tokens have no real value; mainnet launches involve real funds.",
           ],
         },
@@ -908,7 +908,7 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
         },
         {
           type: "p",
-          text: "Include your chain, token address, transaction hash, and wallet type when reporting swap or launch failures — it speeds up debugging.",
+          text: "Include your chain, token address, transaction hash, and wallet type when reporting swap or launch failures. it speeds up debugging.",
         },
       ],
     },

@@ -1,11 +1,12 @@
-import type { MasterHookId } from "@/lib/master-hooks";
+import { listEnabledFeeRoutes, type FeeRouteKey } from "@/lib/hook-fee-route";
+import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 
 export const MASTER_LAUNCH_STEPS = [
   { id: 1, label: "Token & pair" },
   { id: 2, label: "Protection" },
-  { id: 3, label: "Trading fees" },
-  { id: 4, label: "Tokenomics" },
+  { id: 3, label: "Tokenomics" },
+  { id: 4, label: "Trading fees" },
   { id: 5, label: "Fee split" },
   { id: 6, label: "Review & launch" },
 ] as const;
@@ -15,25 +16,49 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
   string | null
 > = {
   1: null,
-  2: "Shield your launch — block bots, limit trade size, and limit wallet holdings.",
-  3: "Tune swap fees — pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the 70% creator cut.",
-  4: "Long-term token mechanics — burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
-  5: "Split the hook tax — see how much of each swap goes to burn, floor, LPs, and airdrops.",
+  2: "Shield your launch. Block bots, limit trade size, and limit wallet holdings.",
+  3: "Long-term token mechanics. Burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
+  4: "Tune swap fees. Pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the 70% creator cut.",
+  5: "Configure how much of each swap goes to your hook modules.",
   6: "Review your token and launch when ready.",
 };
 
 export const MASTER_WIZARD_STEP_INTRO =
-  "Name your token, pick a quote pair, then stack protection, fees, and tokenomics hooks.";
+  "Name your token, pick a quote pair, then stack protection, tokenomics, and trading-fee hooks.";
 
 /** Hook groups per wizard step (Master launch). */
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
   2: ["anti-mev", "anti-snipe", "max-tx", "max-wallet"],
-  3: ["dynamic-fees", "creator-share-to-hook"],
-  4: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps"],
+  3: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps"],
+  4: ["dynamic-fees", "creator-share-to-hook"],
 };
 
+const FEE_ROUTE_HOOK: Record<FeeRouteKey, MasterHookId> = {
+  floorAllocation: "backed-floor",
+  autoBurnPct: "auto-burn",
+  deepenLpsPct: "deepen-lps",
+  holderAirdropPct: "holder-airdrop",
+};
+
+export function formatEnglishList(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0]!;
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+export function feeSplitStepSubtitle(modules: LaunchModules): string {
+  const titles = listEnabledFeeRoutes(modules).map((key) => {
+    const hook = MASTER_HOOKS.find((item) => item.id === FEE_ROUTE_HOOK[key]);
+    return hook?.title ?? key;
+  });
+  const list = formatEnglishList(titles);
+  if (!list) return "Configure how much of each swap goes to your hook modules.";
+  return `Configure how much of each swap goes to ${list}.`;
+}
+
 export function masterHookWizardStep(hookId: MasterHookId | "fixed-fee"): 2 | 3 | 4 {
-  if (hookId === "fixed-fee") return 3;
+  if (hookId === "fixed-fee") return 4;
   if (LAUNCH_WIZARD_HOOK_IDS[2].includes(hookId)) return 2;
   if (LAUNCH_WIZARD_HOOK_IDS[3].includes(hookId)) return 3;
   return 4;

@@ -34,7 +34,7 @@ export function BuilderPage() {
               Build a <span className="text-degen">hook</span>
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-500">
-              Compose live modules as blocks. One hook per pool — this is a swap path, not a
+              Compose live modules as blocks. One hook per pool. this is a swap path, not a
               mix. Fees stay quote-only. Then launch the token on Hookit.
             </p>
           </div>

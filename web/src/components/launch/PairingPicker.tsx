@@ -55,7 +55,7 @@ export function PairingPicker({
   onMarketsChange: (markets: LaunchMarketInput[]) => void;
   onFloorQuoteIndexChange: (index: number) => void;
   compact?: boolean;
-  /** Classic: single quote only (ETH / USDG / stocks) — no multi-pair. */
+  /** Classic: single quote only (ETH / USDG / stocks). no multi-pair. */
   variant?: "master" | "classic";
 }) {
   const classicOnly = variant === "classic";
@@ -112,14 +112,14 @@ export function PairingPicker({
           {!compact ? (
             <p className="mt-2 text-xs text-zinc-600">
               {isMulti
-                ? "One token, several locked v4 pools — supply split by weight. Same launch FDV per leg."
+                ? "One token, several locked v4 pools. supply split by weight. Same launch FDV per leg."
                 : "Classic one-pool launch against a single quote asset."}
             </p>
           ) : null}
         </div>
       ) : !compact ? (
         <p className="mb-4 text-xs text-zinc-600">
-          Classic Coin is one bonding pool — pick ETH, USDG, or a stock quote. Multi-pair is Master-only.
+          Classic Coin is one bonding pool. pick ETH, USDG, or a stock quote. Multi-pair is Master-only.
         </p>
       ) : null}
 

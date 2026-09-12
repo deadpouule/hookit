@@ -39,6 +39,17 @@ function hookForRoute(key: FeeRouteKey) {
   return MASTER_HOOKS.find((hook) => hook.id === ROUTE_HOOK[key]);
 }
 
+function feeChoiceRecall(modules: LaunchModules, hookTaxBps: number): string {
+  const taxBps = resolveEffectiveHookTaxBps(modules, hookTaxBps);
+  if (modules.dynamicFees) {
+    return `You chose dynamic fees from ${formatDynamicFeeRange(modules, hookTaxBps)}.`;
+  }
+  if (taxBps > 0) {
+    return `You chose a fixed hook tax of ${swapPctLabel(taxBps)}. Traders also pay the ${swapPctLabel(BASE_FEE_BPS)} base fee.`;
+  }
+  return `You chose no extra hook tax. Traders pay the ${swapPctLabel(BASE_FEE_BPS)} base fee.`;
+}
+
 export function FeeSplitStep({
   modules,
   hookTaxBps,
@@ -61,9 +72,7 @@ export function FeeSplitStep({
       <p className="pick-heading">Split hook fees</p>
 
       <p className="pick-config-hint" style={{ marginTop: 0 }}>
-        {modules.dynamicFees
-          ? `Traders pay ${formatDynamicFeeRange(modules, hookTaxBps)} per swap. Big trades sit at the top of that range.`
-          : `Traders pay ${swapPctLabel(totalBps)} per swap — ${swapPctLabel(BASE_FEE_BPS)} base + ${swapPctLabel(taxBps)} hook tax.`}
+        {feeChoiceRecall(modules, hookTaxBps)}
       </p>
 
       {potBps > 0 ? (
@@ -71,8 +80,10 @@ export function FeeSplitStep({
           Hook pot to split: {swapPctLabel(potBps)} of each swap
           {modules.creatorShareToHook
             ? ` (${swapPctLabel(taxBps)} hook tax + ${swapPctLabel(creatorCutBps)} creator → hook)`
-            : null}
-          . Move a slider — the others rebalance so it stays 100%.
+            : modules.dynamicFees
+              ? ` at the top of the ${swapPctLabel(totalBps)} range`
+              : null}
+          . Move a slider and the others rebalance so it stays 100%.
         </p>
       ) : routes.length > 0 ? (
         <p className="pick-config-hint pick-config-hint--warn" style={{ marginTop: 0 }}>
@@ -80,7 +91,7 @@ export function FeeSplitStep({
         </p>
       ) : (
         <p className="pick-config-hint" style={{ marginTop: 0 }}>
-          No burn, floor, Deepen LPs, or holder airdrop is on — leftover hook tax goes to the protocol.
+          No burn, floor, Deepen LPs, or holder airdrop is on. Leftover hook tax goes to the protocol.
         </p>
       )}
 
@@ -132,7 +143,7 @@ export function FeeSplitStep({
             <p className={cn("pick-config-hint", shareTotal !== 100 && "pick-config-hint--warn")}>
               {shareTotal === 100
                 ? "Shares add to 100% of the hook pot"
-                : `Shares add to ${shareTotal}% — need 100%`}
+                : `Shares add to ${shareTotal}%. Need 100%`}
             </p>
           ) : null}
         </div>
@@ -140,7 +151,7 @@ export function FeeSplitStep({
 
       {modules.buybackVesting ? (
         <p className="pick-config-hint">
-          Buyback vesting takes the creator cut separately — {swapPctLabel(creatorCutBps)} of each
+          Buyback vesting takes the creator cut separately. {swapPctLabel(creatorCutBps)} of each
           swap vests to you, not this split.
         </p>
       ) : null}

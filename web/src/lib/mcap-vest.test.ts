@@ -5,6 +5,7 @@ import {
   AIRDROP_STEP_PRESET_USD,
   BUYBACK_STEP_PRESET_USD,
   DEFAULT_MCAP_STEP_PCT,
+  EMPTY_MCAP_STEP_PCT,
   MCAP_VEST_KIND_CLIFF,
   MCAP_VEST_KIND_STEPS,
   MCAP_VEST_PRESET_USD,
@@ -15,6 +16,7 @@ import {
   packBuybackVestSlice,
   packPlan,
   packVestPackedFromModules,
+  mcapStepUnlockError,
   splitVestPacked,
   unpackPlan,
   unlockedPctAtFdv,
@@ -103,6 +105,28 @@ test("join/split keeps buyback and airdrop independent", () => {
   const split = splitVestPacked(packed);
   assert.equal(split.buyback, buyback);
   assert.equal(split.airdrop, airdrop);
+});
+
+test("mcapStepUnlockError flags empty By % unlocks", () => {
+  assert.equal(mcapStepUnlockError({}), null);
+  assert.equal(
+    mcapStepUnlockError({
+      buybackVesting: true,
+      buybackVestingMcapUsd: 10_000_000,
+      buybackVestingUnlockMode: "steps",
+      buybackVestingStepPct: [...EMPTY_MCAP_STEP_PCT],
+    }),
+    "Buyback vesting unlock percents must add to 100%.",
+  );
+  assert.equal(
+    mcapStepUnlockError({
+      buybackVesting: true,
+      buybackVestingMcapUsd: 10_000_000,
+      buybackVestingUnlockMode: "steps",
+      buybackVestingStepPct: [...DEFAULT_MCAP_STEP_PCT],
+    }),
+    null,
+  );
 });
 
 test("packVestPackedFromModules throws when step percents miss 100", () => {

@@ -25,9 +25,9 @@ export interface MarketToken {
   isRwa?: boolean;
   /** Resolved HTTP/IPFS gateway URL for custom token art when present. */
   imageUrl?: string;
-  /** First launch of this ticker when duplicates exist — gets the OG badge. */
+  /** First launch of this ticker when duplicates exist. gets the OG badge. */
   isOriginal?: boolean;
-  /** Later launch reusing the same ticker — gets the COPY flag. */
+  /** Later launch reusing the same ticker. gets the COPY flag. */
   isCopycat?: boolean;
   /** Enabled master hook modules (on-chain pools only). */
   masterHookIds?: import("@/lib/master-hooks").MasterHookId[];
@@ -62,7 +62,7 @@ export const MARKET_TOKENS: MarketToken[] = [
     id: "smingo-copy",
     name: "Sushi Mingo",
     ticker: "SMINGO",
-    description: "copycat launch — same name, different contract",
+    description: "copycat launch. same name, different contract",
     emoji: "🦩",
     art: "linear-gradient(160deg, #52525b 0%, #3f3f46 40%, #27272a 100%)",
     artAccent: "#a1a1aa",
@@ -399,7 +399,7 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     description:
       pool.rail === "classic"
         ? pool.bondingPhase === 0
-          ? "Classic bonding curve — graduating at 4.2 ETH-equiv"
+          ? "Classic bonding curve. graduating at 4.2 ETH-equiv"
           : "Classic graduated pool"
         : pool.hookType === "Custom"
           ? "Custom Uniswap v4 hook"

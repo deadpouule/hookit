@@ -9,7 +9,7 @@ import { MobileTokenRow } from "./MobileTokenRow";
 
 const ROW_ESTIMATE = 118;
 
-/** Window-virtualized mobile explore list — keeps DOM light on long catalogs. */
+/** Window-virtualized mobile explore list. keeps DOM light on long catalogs. */
 export function MobileExploreVirtualList({ tokens }: { tokens: MarketToken[] }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);

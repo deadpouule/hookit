@@ -118,7 +118,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       }
       const isMulti = form.markets.length > 1;
       if (isMulti && form.modules.backedFloor) {
-        throw new Error("Backed floor is single-pair only — disable it or switch to one market.");
+        throw new Error("Backed floor is single-pair only. Disable it or switch to one market.");
       }
       const devBuyConfigured = hasDevBuyConfigured(form);
       const devBuyQuoteWei = devBuyConfigured
@@ -162,7 +162,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
 
       if (rail === "classic") {
         if (form.markets.length > 1) {
-          throw new Error("Classic Coin is single-pair only — use Master for multi-pair.");
+          throw new Error("Classic Coin is single-pair only. Use Master for multi-pair.");
         }
         hash = await writeContractAsync({
           address: factory,
@@ -185,7 +185,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       } else {
         if (form.hookMode === "custom") {
           if (!CUSTOM_SOLIDITY_HOOKS_ENABLED) {
-            throw new Error("Custom Solidity hooks are not available yet — use Master modules.");
+            throw new Error("Custom Solidity hooks are not available yet. Use Master modules.");
           }
           const analysis = analyzeCustomHookSource(form.customHookSource);
           if (!analysis.valid) {
@@ -422,10 +422,10 @@ function resolveLaunchQuote(id: PairingTokenId): Address | null {
 function launchSimulationHint(err: unknown): string | null {
   const msg = err instanceof Error ? err.message : String(err);
   if (/CreateInitCodeSizeLimit|init.?code.?size|#-39004/i.test(msg)) {
-    return "Metadata too large for on-chain token deploy. Image/metadata is now pinned to IPFS when configured — retry, or shorten name/description.";
+    return "Metadata too large for on-chain token deploy. Image/metadata is now pinned to IPFS when configured. Retry, or shorten name/description.";
   }
   if (/gas/i.test(msg) && /limit|required|exceed/i.test(msg)) {
-    return "Transaction needs more gas (multi-market launches use ~4M gas). Retry — gas is estimated automatically.";
+    return "Transaction needs more gas (multi-market launches use ~4M gas). Retry. Gas is estimated automatically.";
   }
   return null;
 }

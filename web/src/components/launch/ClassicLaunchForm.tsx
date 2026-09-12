@@ -20,7 +20,7 @@ import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import type { LaunchFormState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Classic bonding-curve launch — original single-page form (unchanged). */
+/** Classic bonding-curve launch. original single-page form (unchanged). */
 export function ClassicLaunchForm() {
   const router = useRouter();
   const [form, setForm] = useState<LaunchFormState>(DEFAULT_CLASSIC_LAUNCH_STATE);
@@ -59,7 +59,7 @@ export function ClassicLaunchForm() {
       await launch(form);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Transaction failed — check your wallet";
+        err instanceof Error ? err.message : "Transaction failed. check your wallet";
       setError(message);
     }
   };
@@ -196,7 +196,7 @@ export function ClassicLaunchForm() {
                 <Label className="mb-1.5 block text-xs text-zinc-500">Description</Label>
                 <textarea
                   className="field-textarea"
-                  placeholder="Describe your token — story, utility, or community."
+                  placeholder="Describe your token. story, utility, or community."
                   value={form.description}
                   onChange={(e) => updateField("description", e.target.value)}
                 />

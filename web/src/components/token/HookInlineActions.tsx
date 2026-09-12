@@ -313,7 +313,7 @@ export function HolderAirdropInline({
         </span>
       </div>
       <p className="token-hooks-vault-copy">
-        {Number(holderCount ?? 0).toLocaleString()} on-chain holders tracked. {status} — no keeper or
+        {Number(holderCount ?? 0).toLocaleString()} on-chain holders tracked. {status}. no keeper or
         indexer required.
       </p>
       <V4ClaimsClaimAction quote={quote} decimals={decimals} quoteLabel={quoteLabel} />

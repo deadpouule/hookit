@@ -119,7 +119,7 @@ function HeroLink({
       <span
         className="token-hero-link token-hero-link--off"
         aria-label={`${label} not set`}
-        title={`${label} — not set`}
+        title={`${label} not set`}
         aria-disabled
       >
         {children}
@@ -268,18 +268,18 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             <h1 className="token-hero-name">{pool.name}</h1>
             <span className="token-hero-ticker">${pool.ticker}</span>
             {isCopycat && (
-              <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch — verify the contract address">
+              <span className="token-copy-badge !static !top-auto !right-auto" title="Copycat launch. Verify the contract address">
                 COPY
               </span>
             )}
             {isOriginal && !isCopycat && (
-              <span className="token-og-badge !static !top-auto !right-auto" title="Original launch — first token with this ticker">
+              <span className="token-og-badge !static !top-auto !right-auto" title="Original launch. First token with this ticker">
                 OG
               </span>
             )}
             <TokenTypeBadges token={{ ...marketToken, isOriginal, isCopycat }} hideMaster />
             {pool.rail === "master" && !pool.hooks.customHook && (
-              <HeaderTip tip="Trades through Hookit’s MasterLaunchHook — LP is locked, fees are quote-only.">
+              <HeaderTip tip="Trades through Hookit’s MasterLaunchHook. LP is locked, fees are quote-only.">
                 <span className="token-type-badge token-type-badge--master">
                   <MasterHookGlyph className="token-type-badge-glyph" />
                   Master hook
@@ -290,8 +290,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               <HeaderTip
                 tip={
                   pool.bondingPhase === 0
-                    ? "Still on the bonding curve — graduates to a Uniswap pool when the target is hit."
-                    : "Bonding curve finished — now trading on a Uniswap v4 pool."
+                    ? "Still on the bonding curve. Graduates to a Uniswap pool when the target is hit."
+                    : "Bonding curve finished. Now trading on a Uniswap v4 pool."
                 }
               >
                 <span className="rounded-full bg-[#9514d1]/20 px-2 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
@@ -422,7 +422,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           {multi && (
             <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
               This token trades on <strong className="text-foreground">{markets.length} pools</strong>
-              {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them — pick a
+              {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
               pool tab on the chart or swap to trade that quote.
             </p>
           )}

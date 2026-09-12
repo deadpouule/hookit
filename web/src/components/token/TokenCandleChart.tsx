@@ -319,7 +319,7 @@ export function TokenCandleChart({
             <div>
               <p className="text-sm text-foreground">No trades yet</p>
               <p className="mt-1 text-xs text-muted-foreground/80">
-                Be the first buy — the chart fills from on-chain swaps
+                Be the first buy. the chart fills from on-chain swaps
               </p>
             </div>
             {onBeFirstBuy ? (

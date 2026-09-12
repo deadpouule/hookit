@@ -35,11 +35,11 @@ export function analyzeCustomHookSource(source: string): CustomHookValidation {
   }
 
   if (!/getHookPermissions\s*\(/i.test(trimmed)) {
-    errors.push("Implement `getHookPermissions()` — required by Uniswap v4");
+    errors.push("Implement `getHookPermissions()`. Required by Uniswap v4");
   }
 
   if (!/IPoolManager/i.test(trimmed)) {
-    warnings.push("Constructor should accept IPoolManager — Hookit wires the canonical pool manager");
+    warnings.push("Constructor should accept IPoolManager. Hookit wires the canonical pool manager");
   }
 
   if (/forge-std|\bvm\.|\bffi\b|selfdestruct|delegatecall/i.test(trimmed)) {
@@ -47,7 +47,7 @@ export function analyzeCustomHookSource(source: string): CustomHookValidation {
   }
 
   if (trimmed.length > 48_000) {
-    errors.push("Source is too large — keep the hook under ~48 KB for metadata storage");
+    errors.push("Source is too large. Keep the hook under ~48 KB for metadata storage");
   }
 
   return {

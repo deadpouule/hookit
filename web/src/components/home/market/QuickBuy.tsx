@@ -8,7 +8,7 @@ import { QUICK_BUY_AMOUNTS } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-/** Preset USD amounts — open token desk with buy amount prefilled in ETH. */
+/** Preset USD amounts. open token desk with buy amount prefilled in ETH. */
 export function QuickBuy({
   tokenId,
   size = "md",

@@ -86,7 +86,7 @@ export function HeroStage() {
           </h1>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-black/70 sm:text-base">
             Atomic token + pool. Locked LP. Quote-only fees. Mix master modules or drop your own
-            Solidity — ${TARGET_LAUNCH_MCAP_USD.toLocaleString()} FDV from block zero.
+            Solidity. ${TARGET_LAUNCH_MCAP_USD.toLocaleString()} FDV from block zero.
           </p>
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">

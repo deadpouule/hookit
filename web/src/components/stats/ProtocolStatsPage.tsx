@@ -148,7 +148,7 @@ export function ProtocolStatsPage() {
           </div>
 
           {barSeries.length === 0 ? (
-            <p className="stats-empty">No chart data yet — swaps will populate once the indexer catches up.</p>
+            <p className="stats-empty">No chart data yet. swaps will populate once the indexer catches up.</p>
           ) : (
             <>
               <div className="stats-chart-section">
@@ -171,7 +171,7 @@ export function ProtocolStatsPage() {
                 {view === "chart" ? (
                   <div className="stats-panel stats-panel-inset">
                     <p className="stats-tooltip">
-                      {areaPoint?.label ?? "—"} — {formatFullUsd(areaTooltipValue)}
+                      {areaPoint?.label ?? "—"}. {formatFullUsd(areaTooltipValue)}
                     </p>
                     <StatsAreaChart
                       series={areaSeries}
@@ -209,7 +209,7 @@ export function ProtocolStatsPage() {
                   <div>
                     <h3>Daily buyback &amp; burn</h3>
                     <p>
-                      Derived from indexed swap volume — buyback and burn estimates update as trades
+                      Derived from indexed swap volume. buyback and burn estimates update as trades
                       are indexed.
                     </p>
                   </div>
@@ -225,7 +225,7 @@ export function ProtocolStatsPage() {
                 </div>
                 <div className="stats-panel stats-panel-inset">
                   <p className="stats-tooltip">
-                    {barPoint?.label ?? "—"} — bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
+                    {barPoint?.label ?? "—"}. bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
                     {formatFullUsd(barPoint?.burnUsd ?? 0)}
                   </p>
                   <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />

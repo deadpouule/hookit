@@ -46,7 +46,7 @@ export function HookArchitectureSection({ mode, onChange }: Props) {
         <p className="mt-2 text-xs text-zinc-600">
           {mode === "custom"
             ? "Deploy your own Uniswap v4 hook bytecode at launch."
-            : "Pre-built Hookit modules — anti-snipe, backed floor, anti-MEV, and quote-only fees. Configure below."}
+            : "Pre-built Hookit modules. anti-snipe, backed floor, anti-MEV, and quote-only fees. Configure below."}
         </p>
       </div>
     </div>

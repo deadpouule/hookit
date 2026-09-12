@@ -154,7 +154,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
   const sourcePools = useMemo((): TokenPool[] => {
     if (!liveLaunches) return [];
-    // Prefer cached / previous query data — never wipe the catalog during refetch.
+    // Prefer cached / previous query data. never wipe the catalog during refetch.
     return (onChainPools ?? []).filter((pool) => !isPlaceholderLaunchIdentity(pool));
   }, [liveLaunches, onChainPools]);
 
@@ -233,7 +233,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     <div className="space-y-3 md:space-y-5">
       {!liveLaunches && process.env.NODE_ENV === "development" && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-          Local dev — demo catalog. Set{" "}
+          Local dev. demo catalog. Set{" "}
           <code className="text-zinc-200">NEXT_PUBLIC_USE_LIVE_LAUNCHES=true</code> to sync on-chain
           launches.
         </p>
@@ -243,12 +243,12 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
       )}
       {liveLaunches && isError && (
         <p className="text-xs text-amber-400">
-          Could not load launches from the factory — check RPC / factory address.
+          Could not load launches from the factory. check RPC / factory address.
         </p>
       )}
       {liveLaunches && !isLoading && !isError && onChainPools?.length === 0 && (
         <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
-          No launches yet — be the first from{" "}
+          No launches yet. be the first from{" "}
           <Link href="/launch" className="text-zinc-200 underline">
             Launch
           </Link>

@@ -42,7 +42,9 @@ import {
   MASTER_WIZARD_STEP_INTRO,
   MASTER_WIZARD_STEP_SUBTITLES,
   creatorCutLock,
+  feeSplitStepSubtitle,
 } from "@/lib/launch-wizard";
+import { mcapStepUnlockError } from "@/lib/mcap-vest";
 import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
@@ -64,7 +66,7 @@ export function MasterLaunchWizard() {
   const searchParams = useSearchParams();
   const reviewStep = 6;
 
-  // Always start at token/name — `?hook=` only preselects the module for its later step.
+  // Always start at token/name. `?hook=` only preselects the module for its later step.
   const [step, setStep] = useState(1);
 
   const [form, setForm] = useState<LaunchFormState>(() =>
@@ -107,7 +109,9 @@ export function MasterLaunchWizard() {
 
   const launchFeeEth = launchFee ? Number(formatEther(launchFee)) : LAUNCH_FEE_ETH;
   const stepSubtitle = !result
-    ? MASTER_WIZARD_STEP_SUBTITLES[step as keyof typeof MASTER_WIZARD_STEP_SUBTITLES]
+    ? step === 5
+      ? feeSplitStepSubtitle(form.modules)
+      : MASTER_WIZARD_STEP_SUBTITLES[step as keyof typeof MASTER_WIZARD_STEP_SUBTITLES]
     : null;
 
   const updateField = useCallback((field: string, value: string) => {
@@ -206,7 +210,7 @@ export function MasterLaunchWizard() {
       await launch(form);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Transaction failed — check your wallet";
+        err instanceof Error ? err.message : "Transaction failed. Check your wallet";
       setError(message);
     }
   };
@@ -243,6 +247,13 @@ export function MasterLaunchWizard() {
       const validationError = validateTokenStep(form);
       if (validationError) {
         setError(validationError);
+        return;
+      }
+    }
+    if (step === 3) {
+      const unlockError = mcapStepUnlockError(form.modules);
+      if (unlockError) {
+        setError(unlockError);
         return;
       }
     }
@@ -298,7 +309,7 @@ export function MasterLaunchWizard() {
             </p>
           ) : null}
           {draftLoaded && (
-            <p className="mx-auto mt-1.5 text-xs text-[#d8b4fe]">Builder draft loaded — modules applied.</p>
+            <p className="mx-auto mt-1.5 text-xs text-[#d8b4fe]">Builder draft loaded. Modules applied.</p>
           )}
         </div>
       </div>
@@ -544,15 +555,13 @@ export function MasterLaunchWizard() {
 
               {step === 3 && (
                 <HookModulePicker
-                  heading="Trading fee hooks"
+                  heading="Tokenomics hooks"
                   hookIds={LAUNCH_WIZARD_HOOK_IDS[3]}
-                  includeFixedFee
                   configHeading="Configure your hooks below"
                   modules={form.modules}
                   onToggle={toggleModule}
                   onUpdate={updateModules}
                   onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
-                  onHookTaxBpsChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                   floorEst={floorEst}
                   multiMarket={form.markets.length > 1}
                   hookTaxBps={form.hookTaxBps}
@@ -561,13 +570,15 @@ export function MasterLaunchWizard() {
 
               {step === 4 && (
                 <HookModulePicker
-                  heading="Tokenomics hooks"
+                  heading="Trading fee hooks"
                   hookIds={LAUNCH_WIZARD_HOOK_IDS[4]}
+                  includeFixedFee
                   configHeading="Configure your hooks below"
                   modules={form.modules}
                   onToggle={toggleModule}
                   onUpdate={updateModules}
                   onHookTaxChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
+                  onHookTaxBpsChange={(hookTaxBps) => setForm((p) => ({ ...p, hookTaxBps }))}
                   floorEst={floorEst}
                   multiMarket={form.markets.length > 1}
                   hookTaxBps={form.hookTaxBps}

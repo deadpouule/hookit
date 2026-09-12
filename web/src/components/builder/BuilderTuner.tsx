@@ -56,7 +56,7 @@ export function BuilderTuner({
         <p className="mt-2 text-xs leading-relaxed text-zinc-500">{soonNote.description}</p>
         <p className="mt-3 text-xs leading-relaxed text-zinc-600">
           Live blocks settle through MasterLaunchHook (quote-only delta). These need new
-          protocol surface — they are listed so the circuit matches the product, not vapor.
+          protocol surface. they are listed so the circuit matches the product, not vapor.
         </p>
       </div>
     );

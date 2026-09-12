@@ -63,7 +63,7 @@ function FeeQuoteAmount({
   );
 }
 
-/** Creator fee claim — floor redeem lives inside ActiveHooksPanel / Backed floor. */
+/** Creator fee claim. floor redeem lives inside ActiveHooksPanel / Backed floor. */
 export function CreatorActions({ pool }: { pool: TokenPool }) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -146,7 +146,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   if (!creator) return null;
 
   const feesToHooks = !isClassic && !!pool.hooks.creatorShareToHook;
-  // Buyback vesting routes creator fees to BuybackVault — claim lives in ActiveHooksPanel.
+  // Buyback vesting routes creator fees to BuybackVault. claim lives in ActiveHooksPanel.
   const feesVesting = !isClassic && !!pool.hooks.buybackVesting;
 
   const pendingWei = (pendingOnHook as bigint | undefined) ?? BigInt(0);
@@ -170,7 +170,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       await publicClient?.waitForTransactionReceipt({ hash });
       await Promise.all([refetchPending(), refetchClaimable()]);
       setMessage("Fees synced to escrow");
-      toast.success("Fees synced — you can claim now");
+      toast.success("Fees synced. you can claim now");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sync failed";
       setMessage(msg);
@@ -218,14 +218,14 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
       {feesToHooks ? (
         <p className="rounded-lg border border-[#9514d1]/20 bg-[#9514d1]/10 px-3 py-2 text-[12px] leading-snug text-zinc-300">
-          Creator hook is on — the creator&apos;s fee share is routed into the hook modules instead of
+          Creator hook is on. the creator&apos;s fee share is routed into the hook modules instead of
           this escrow.
         </p>
       ) : null}
 
       {feesVesting ? (
         <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[12px] leading-snug text-zinc-400">
-          Fees vest through the Buyback vault — see the Buyback hook in Active hooks.
+          Fees vest through the Buyback vault. see the Buyback hook in Active hooks.
         </p>
       ) : null}
 

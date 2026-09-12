@@ -1,5 +1,8 @@
 import type { LaunchFormState, ProtocolMetrics, TokenPool } from "./types";
-import { DEFAULT_MCAP_STEP_PCT as MCAP_STEP_PCT_DEFAULT } from "./mcap-vest";
+import {
+  DEFAULT_MCAP_STEP_PCT as MCAP_STEP_PCT_DEFAULT,
+  EMPTY_MCAP_STEP_PCT as MCAP_STEP_PCT_EMPTY,
+} from "./mcap-vest";
 
 export const LAUNCH_FEE_ETH = 0.0005;
 export const TARGET_LAUNCH_MCAP_USD = 5_000;
@@ -30,6 +33,7 @@ export const HOLDER_AIRDROP_MCAP_DEFAULT_USD = 5_000_000;
 export const HOLDER_AIRDROP_MCAP_MIN_USD = 5_000_000;
 export const HOLDER_AIRDROP_MCAP_MAX_USD = 10_000_000_000;
 export const DEFAULT_MCAP_STEP_PCT = [...MCAP_STEP_PCT_DEFAULT];
+export const EMPTY_MCAP_STEP_PCT = [...MCAP_STEP_PCT_EMPTY];
 
 /** 0 = time vest. Otherwise snap onto the 10M–10B preset ladder. */
 export function clampBuybackVestingMcapUsd(value: number): number {
@@ -87,12 +91,12 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     holderAirdropEpochSeconds: 15 * 60,
     holderAirdropMcapUsd: 0,
     holderAirdropUnlockMode: "all",
-    holderAirdropStepPct: [...DEFAULT_MCAP_STEP_PCT],
+    holderAirdropStepPct: [...EMPTY_MCAP_STEP_PCT],
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     buybackVestingMcapUsd: 0,
     buybackVestingUnlockMode: "all",
-    buybackVestingStepPct: [...DEFAULT_MCAP_STEP_PCT],
+    buybackVestingStepPct: [...EMPTY_MCAP_STEP_PCT],
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
@@ -131,12 +135,12 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     holderAirdropEpochSeconds: 15 * 60,
     holderAirdropMcapUsd: 0,
     holderAirdropUnlockMode: "all",
-    holderAirdropStepPct: [...DEFAULT_MCAP_STEP_PCT],
+    holderAirdropStepPct: [...EMPTY_MCAP_STEP_PCT],
     buybackVesting: false,
     buybackVestingDurationDays: BUYBACK_VESTING_DEFAULT_DAYS,
     buybackVestingMcapUsd: 0,
     buybackVestingUnlockMode: "all",
-    buybackVestingStepPct: [...DEFAULT_MCAP_STEP_PCT],
+    buybackVestingStepPct: [...EMPTY_MCAP_STEP_PCT],
     dynamicFees: false,
     dynamicFeeMinBps: BASE_FEE_BPS,
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,

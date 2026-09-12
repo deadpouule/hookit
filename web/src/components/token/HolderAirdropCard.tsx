@@ -95,7 +95,7 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
       </dl>
       <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
         Quote fees accrue here. Holders are tracked on-chain via token transfers. Once the epoch
-        window opens, the next swap automatically pays every holder pro-rata — no keeper bot.
+        window opens, the next swap automatically pays every holder pro-rata. no keeper bot.
       </p>
       <V4ClaimsClaimAction quote={quote} decimals={decimals} quoteLabel={quoteLabel} />
     </div>

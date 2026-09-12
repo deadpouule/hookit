@@ -172,7 +172,7 @@ function FilterPill({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={disabled && hint ? `${label} — ${hint}` : undefined}
+      title={disabled && hint ? `${label}. ${hint}` : undefined}
       {...TOOLBAR_BUTTON_PROPS}
       className={cn(
         "market-filter-pill",

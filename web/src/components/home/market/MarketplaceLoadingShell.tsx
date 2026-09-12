@@ -10,7 +10,7 @@ function SkeletonCard() {
   );
 }
 
-/** Pre-hydration / loading shell — no demo tokens. */
+/** Pre-hydration / loading shell. no demo tokens. */
 export function MarketplaceLoadingShell() {
   return (
     <div className="min-h-dvh bg-background pb-40 phone:pb-28">

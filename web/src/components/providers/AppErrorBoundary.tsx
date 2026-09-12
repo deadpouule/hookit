@@ -21,7 +21,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-black px-6 text-center text-white">
-          <p className="text-lg font-semibold">hook it — client error</p>
+          <p className="text-lg font-semibold">hook it. client error</p>
           <p className="max-w-lg text-sm text-zinc-400">
             The UI crashed during load. Try a hard refresh, disable browser extensions (Dashlane,
             1Password), or run{" "}

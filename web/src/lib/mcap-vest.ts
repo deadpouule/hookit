@@ -18,6 +18,8 @@ export const AIRDROP_STEP_PRESET_USD = [
 ] as const;
 
 export const DEFAULT_MCAP_STEP_PCT = [5, 5, 15, 20, 25, 30] as const;
+/** Empty By % boxes in the launch UI. Must sum to 100 before packing. */
+export const EMPTY_MCAP_STEP_PCT = [0, 0, 0, 0, 0, 0] as const;
 
 export type McapUnlockMode = "all" | "steps";
 
@@ -68,6 +70,35 @@ export function assertStepPctSum(pct: number[]): void {
   if (sum !== 100) {
     throw new Error(`Mcap unlock percents must add to 100 (got ${sum})`);
   }
+}
+
+export function mcapStepUnlockError(modules: {
+  buybackVesting?: boolean;
+  buybackVestingMcapUsd?: number;
+  buybackVestingUnlockMode?: McapUnlockMode;
+  buybackVestingStepPct?: number[];
+  holderAirdrop?: boolean;
+  holderAirdropMcapUsd?: number;
+  holderAirdropUnlockMode?: McapUnlockMode;
+  holderAirdropStepPct?: number[];
+}): string | null {
+  if (
+    modules.buybackVesting &&
+    (modules.buybackVestingMcapUsd ?? 0) > 0 &&
+    modules.buybackVestingUnlockMode === "steps" &&
+    stepPctSum(modules.buybackVestingStepPct ?? []) !== 100
+  ) {
+    return "Buyback vesting unlock percents must add to 100%.";
+  }
+  if (
+    modules.holderAirdrop &&
+    (modules.holderAirdropMcapUsd ?? 0) > 0 &&
+    modules.holderAirdropUnlockMode === "steps" &&
+    stepPctSum(modules.holderAirdropStepPct ?? []) !== 100
+  ) {
+    return "Holder airdrop unlock percents must add to 100%.";
+  }
+  return null;
 }
 
 export function packPlan(plan: McapVestPlan): bigint {

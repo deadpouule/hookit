@@ -26,6 +26,23 @@ function pairSummary(form: LaunchFormState): string {
   return formatPairingTicker(form.markets[0]?.id ?? form.quoteAsset);
 }
 
+function tradingFeesDetail(form: LaunchFormState): string {
+  const parts: string[] = [];
+  if (form.modules.dynamicFees) parts.push("Dynamic Fees");
+  if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
+  if (form.modules.creatorShareToHook) parts.push("Creator → Hook");
+  return parts.length > 0 ? parts.join(" · ") : "None selected";
+}
+
+function feeSplitDetail(form: LaunchFormState): string {
+  const parts: string[] = [];
+  if (form.modules.autoBurn) parts.push(`Burn ${form.modules.autoBurnPct}%`);
+  if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
+  if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
+  if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
+  return parts.length > 0 ? parts.join(" · ") : "No hook-tax modules";
+}
+
 export function summarizeCompletedSteps(
   step: number,
   form: LaunchFormState,
@@ -47,32 +64,23 @@ export function summarizeCompletedSteps(
   }
 
   if (step > 3) {
-    const parts: string[] = [];
-    if (form.modules.dynamicFees) parts.push("Dynamic Fees");
-    if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
-    if (form.modules.creatorShareToHook) parts.push("Creator → Hook");
     blocks.push({
-      title: "Trading fees",
-      detail: parts.length > 0 ? parts.join(" · ") : "None selected",
+      title: "Tokenomics",
+      detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[3]),
     });
   }
 
   if (step > 4) {
     blocks.push({
-      title: "Tokenomics",
-      detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[4]),
+      title: "Trading fees",
+      detail: tradingFeesDetail(form),
     });
   }
 
   if (step > 5) {
-    const parts: string[] = [];
-    if (form.modules.autoBurn) parts.push(`Burn ${form.modules.autoBurnPct}%`);
-    if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
-    if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
-    if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
     blocks.push({
       title: "Fee split",
-      detail: parts.length > 0 ? parts.join(" · ") : "No hook-tax modules",
+      detail: feeSplitDetail(form),
     });
   }
 
@@ -94,32 +102,21 @@ export function summarizePreviousStep(
         title: "Protection",
         detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[2]),
       };
-    case 4: {
-      const parts: string[] = [];
-      if (form.modules.dynamicFees) parts.push("Dynamic Fees");
-      if (form.hookTaxBps > 0) parts.push(`Fixed ${formatBps(form.hookTaxBps)}`);
-      if (form.modules.creatorShareToHook) parts.push("Creator → Hook");
-      return {
-        title: "Trading fees",
-        detail: parts.length > 0 ? parts.join(" · ") : "None selected",
-      };
-    }
-    case 5:
+    case 4:
       return {
         title: "Tokenomics",
-        detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[4]),
+        detail: enabledHookTitles(form, LAUNCH_WIZARD_HOOK_IDS[3]),
       };
-    case 6: {
-      const parts: string[] = [];
-      if (form.modules.autoBurn) parts.push(`Burn ${form.modules.autoBurnPct}%`);
-      if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
-      if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
-      if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
+    case 5:
+      return {
+        title: "Trading fees",
+        detail: tradingFeesDetail(form),
+      };
+    case 6:
       return {
         title: "Fee split",
-        detail: parts.length > 0 ? parts.join(" · ") : "No hook-tax modules",
+        detail: feeSplitDetail(form),
       };
-    }
     default:
       return null;
   }
@@ -127,8 +124,8 @@ export function summarizePreviousStep(
 
 const NEXT_STEP_HINTS: Record<number, string> = {
   2: "Anti-MEV, anti-snipe, max tx and max wallet caps.",
-  3: "Dynamic Fees, fixed hook tax, and creator share routing.",
-  4: "Burn, floor, vesting, Deepen LPs, and holder airdrops.",
+  3: "Burn, floor, vesting, Deepen LPs, and holder airdrops.",
+  4: "Dynamic Fees, fixed hook tax, and creator share routing.",
   5: "Split hook tax and see how much of each swap each module gets.",
   6: "Final review, optional dev buy, and launch.",
 };
