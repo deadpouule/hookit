@@ -2,41 +2,25 @@
 
 import { useMemo, useState } from "react";
 
-import { StatsAreaChart, StatsBarChart } from "@/components/stats/StatsCharts";
+import { StatsBarChart } from "@/components/stats/StatsCharts";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatCompactUsd, formatFullUsd, formatTokenAmount } from "@/lib/format";
 import { hktHolderDropFromVolumeUsd } from "@/lib/protocol-fees";
 import {
-  metricLabel,
-  metricSubtitle,
-  type ChartMetric,
   type ChartWindow,
   type VolumeWindow,
   VOLUME_WINDOWS,
   CHART_WINDOWS,
 } from "@/lib/protocol-stats";
-import {
-  metricValueFromSeries,
-  sliceSeriesForWindow,
-} from "@/lib/protocol-stats-live";
 import { useProtocolStats } from "@/hooks/useProtocolStats";
 
 const DEAD = "0x000000000000000000000000000000000000dEaD";
-const CHART_METRICS = ["buybacks", "revenue", "burns", "fdv"] as const;
-const METRIC_LABELS: Record<ChartMetric, string> = {
-  buybacks: "Projected buybacks",
-  revenue: "Estimated revenue",
-  burns: "Projected burns",
-  fdv: "Protocol token FDV",
-};
 
 export function ProtocolStatsPage() {
   const { data: stats, dataUpdatedAt } = useProtocolStats();
   const [volumeWindow, setVolumeWindow] = useState<VolumeWindow>("all");
   const [chartWindow, setChartWindow] = useState<ChartWindow>("90d");
-  const [chartMetric, setChartMetric] = useState<ChartMetric>("buybacks");
   const [view, setView] = useState<"chart" | "table">("chart");
-  const [areaHover, setAreaHover] = useState<number | null>(null);
   const [barHover, setBarHover] = useState<number | null>(null);
 
   const volume = stats?.windows[volumeWindow];
@@ -54,24 +38,15 @@ export function ProtocolStatsPage() {
     return daily;
   }, [stats, chartWindow]);
 
-  const areaSeries = useMemo(() => {
-    if (!stats) return [];
-    return sliceSeriesForWindow(stats.daily, stats.hourly, chartWindow, chartMetric);
-  }, [stats, chartWindow, chartMetric]);
-
-  const areaActive = Math.min(areaHover ?? Math.max(areaSeries.length - 1, 0), Math.max(areaSeries.length - 1, 0));
   const barActive = Math.min(barHover ?? Math.max(barSeries.length - 1, 0), Math.max(barSeries.length - 1, 0));
-  const areaPoint = areaSeries[areaActive] ?? areaSeries[0];
   const barPoint = barSeries[barActive] ?? barSeries[0];
-  const tableRows = [...areaSeries].reverse();
+  const tableRows = [...barSeries].reverse();
   const barAvg =
     barSeries.reduce((sum, point) => sum + point.buybackUsd, 0) / Math.max(barSeries.length, 1);
-  const areaTooltipValue = areaPoint ? metricValueFromSeries(areaPoint, chartMetric) : 0;
 
   return (
     <div className="market-shell stats-page">
       <header className="stats-head">
-        <div className="stats-title-halo" aria-hidden />
         <h1 className="terminal-title">Analytics</h1>
         <p className="stats-lede">
           Stock-denominated protocol fees consolidate into USDG. Buyback activates with the official protocol token.
@@ -99,21 +74,20 @@ export function ProtocolStatsPage() {
             }
           />
           <Kpi
-            label="Estimated revenue"
+            label="Revenue"
             value={formatFullUsd(volume?.revenueUsd ?? overview?.revenueUsd ?? 0)}
             hint="Indexed volume × on-chain protocol fee schedule"
           />
           <Kpi
-            label="Pending protocol fees"
-            value={formatFullUsd(stats?.pendingProtocolUsd ?? 0)}
-            hint="Live distributor claims, valued by quote asset"
-          />
-          <Kpi
-            label="Executed buybacks"
-            value={formatFullUsd(stats?.totalBuybacksUsd ?? 0)}
-            hint={
+            label="$HKT burned"
+            value={
               stats?.totalHookBought
-                ? `${formatTokenAmount(stats.totalHookBought)} ${nativeSymbol} · ${stats.totalBuybacksCount} fills`
+                ? `${formatTokenAmount(stats.totalHookBought)} $HKT`
+                : formatFullUsd(stats?.totalBuybacksUsd ?? 0)
+            }
+            hint={
+              stats?.totalBuybacksCount
+                ? `${formatFullUsd(stats.totalBuybacksUsd)} · ${stats.totalBuybacksCount} fills`
                 : "On-chain BuybackBurned events only"
             }
           />
@@ -141,7 +115,6 @@ export function ProtocolStatsPage() {
                 labels={{ "1d": "1D", "7d": "7D", "30d": "30D", "90d": "90D", all: "All" }}
                 onChange={(next) => {
                   setChartWindow(next);
-                  setAreaHover(null);
                   setBarHover(null);
                 }}
               />
@@ -161,59 +134,6 @@ export function ProtocolStatsPage() {
               <div className="stats-chart-section">
                 <div className="stats-chart-section-head">
                   <div>
-                    <h3>{metricLabel(chartMetric)}</h3>
-                    <p>{metricSubtitle(chartMetric)}</p>
-                  </div>
-                  <RangePills
-                    value={chartMetric}
-                    options={CHART_METRICS}
-                    labels={METRIC_LABELS}
-                    onChange={(next) => {
-                      setChartMetric(next);
-                      setAreaHover(null);
-                    }}
-                  />
-                </div>
-
-                {view === "chart" ? (
-                  <div className="stats-panel stats-panel-inset">
-                    <p className="stats-tooltip">
-                      {areaPoint?.label ?? "—"}. {formatFullUsd(areaTooltipValue)}
-                    </p>
-                    <StatsAreaChart
-                      series={areaSeries}
-                      active={areaActive}
-                      metric={chartMetric}
-                      onHover={setAreaHover}
-                    />
-                  </div>
-                ) : (
-                  <div className="stats-table-wrap">
-                    <table className="stats-table">
-                      <thead>
-                        <tr>
-                          <th>When</th>
-                          <th>{metricLabel(chartMetric)}</th>
-                          <th>Cumulative burns</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tableRows.map((row) => (
-                          <tr key={row.label + row.buybackUsd}>
-                            <td>{row.label}</td>
-                            <td>{formatFullUsd(metricValueFromSeries(row, chartMetric))}</td>
-                            <td>{formatFullUsd(row.burnUsd)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              <div className="stats-chart-section stats-chart-section-divider">
-                <div className="stats-chart-section-head">
-                  <div>
                     <h3>Daily buyback &amp; burn</h3>
                     <p>
                       Derived from indexed swap volume. buyback and burn estimates update as trades
@@ -230,13 +150,36 @@ export function ProtocolStatsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="stats-panel stats-panel-inset">
-                  <p className="stats-tooltip">
-                    {barPoint?.label ?? "—"}. bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
-                    {formatFullUsd(barPoint?.burnUsd ?? 0)}
-                  </p>
-                  <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />
-                </div>
+                {view === "chart" ? (
+                  <div className="stats-panel stats-panel-inset">
+                    <p className="stats-tooltip">
+                      {barPoint?.label ?? "—"}. bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
+                      {formatFullUsd(barPoint?.burnUsd ?? 0)}
+                    </p>
+                    <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />
+                  </div>
+                ) : (
+                  <div className="stats-table-wrap">
+                    <table className="stats-table">
+                      <thead>
+                        <tr>
+                          <th>When</th>
+                          <th>Bought</th>
+                          <th>Burned</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableRows.map((row) => (
+                          <tr key={row.label + row.buybackUsd}>
+                            <td>{row.label}</td>
+                            <td>{formatFullUsd(row.buybackUsd)}</td>
+                            <td>{formatFullUsd(row.burnUsd)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </>
           )}
