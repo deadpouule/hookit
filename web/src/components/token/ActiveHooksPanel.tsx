@@ -354,7 +354,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
 
       <ul className="token-hooks-list">
         {showFixedFee ? (
-          <li className="token-hooks-row token-hooks-row--rose">
+          <li className={cn("token-hooks-row", `token-hooks-row--${FIXED_FEE_HOOK.theme}`)}>
             <HookModuleBadge
               hook={FIXED_FEE_HOOK}
               stat={totalFeePlain(hookTaxBps)}

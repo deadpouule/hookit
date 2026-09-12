@@ -55,6 +55,7 @@ import {
   supplyPctToBps,
 } from "@/lib/protocol-limits";
 import {
+  FIXED_FEE_HOOK,
   hookAccentColor,
   hookThemeAccentColor,
   MASTER_HOOKS,
@@ -66,7 +67,7 @@ import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const NO_CONFIG_HOOKS = new Set<MasterHookId>(["anti-mev"]);
-const FIXED_FEE_THEME: HookTheme = "rose";
+const FIXED_FEE_THEME: HookTheme = FIXED_FEE_HOOK.theme;
 const DEFAULT_FIXED_FEE_BPS = 50;
 type PickerFocusId = MasterHookId | "fixed-fee";
 

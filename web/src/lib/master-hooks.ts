@@ -41,7 +41,11 @@ export type HookTheme =
   | "rose"
   | "steel"
   | "crimson"
-  | "lime";
+  | "lime"
+  | "pearl"
+  | "yellow"
+  | "teal"
+  | "cobalt";
 
 /** Slider / accent colors aligned with pick-card hook themes */
 export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
@@ -56,6 +60,10 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   steel: "#6366f1",
   crimson: "#dc2626",
   lime: "#84cc16",
+  pearl: "#e4e4e7",
+  yellow: "#facc15",
+  teal: "#2dd4bf",
+  cobalt: "#3b82f6",
 };
 
 export function hookThemeAccentColor(theme: HookTheme): string {
@@ -117,7 +125,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "ratcheting redeemable floor. Not pegged to DEX price",
     category: "protection",
     icon: Layers,
-    theme: "gold",
+    theme: "pearl",
     keyword: "FLOOR",
     creator: CREATOR,
     uses: 9,
@@ -229,7 +237,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "caps each swap between 0.1% and 2.5% of total supply. Fixed at launch",
     category: "protection",
     icon: Gauge,
-    theme: "nature",
+    theme: "yellow",
     keyword: "TX",
     creator: CREATOR,
     uses: 6,
@@ -245,7 +253,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "decay tax on opening buys, fades over the launch window",
     category: "protection",
     icon: Shield,
-    theme: "fire",
+    theme: "teal",
     keyword: "SNIPE",
     creator: CREATOR,
     uses: 11,
@@ -287,7 +295,7 @@ export const FIXED_FEE_HOOK: BrowseHook = {
   description: "flat extra fee on every swap. Deducted in quote only, zero sell pressure",
   category: "trading-fees",
   icon: Gauge,
-  theme: "rose",
+  theme: "cobalt",
   keyword: "FIXED",
   creator: CREATOR,
   uses: 0,
