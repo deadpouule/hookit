@@ -189,18 +189,63 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
+/** Fixed candle pitch (px) — thin Stonk-style candles that never stretch to fill the pane. */
+export const CHART_BAR_SPACING = 9;
+/** Empty bars kept between the last candle and the right axis. */
+export const CHART_RIGHT_OFFSET = 5;
+
 /**
- * Visible window. First prints start on the left (like other launchpads) and grow right.
- * Long series show the most recent ~90 bars.
+ * Visible window. Candles sit against the right axis at a fixed pixel pitch
+ * (Stonk / TradingView): one print stays a thin candle, a long series scrolls.
  */
-export function chartVisibleLogicalRange(barCount: number): { from: number; to: number } | null {
+export function chartVisibleLogicalRange(
+  barCount: number,
+  paneWidthPx = 720,
+  barSpacing = CHART_BAR_SPACING,
+  rightOffset = CHART_RIGHT_OFFSET,
+): { from: number; to: number } | null {
   if (barCount <= 0) return null;
-  const rightPad = 3;
-  if (barCount <= 24) {
-    return { from: -0.5, to: Math.max(barCount - 1 + rightPad, 23) };
-  }
-  const visible = Math.min(barCount, 90);
-  return { from: barCount - visible, to: barCount - 1 + rightPad };
+  const width = Math.max(paneWidthPx, barSpacing * 12);
+  const visible = Math.max(Math.floor(width / barSpacing), 12);
+  const to = barCount - 1 + rightOffset + 0.5;
+  return { from: to - visible, to };
+}
+
+/**
+ * Price pane geometry. Candles sit in the bottom part of the pane with empty
+ * headroom above (Stonk layout) and a flat print still gets a readable band.
+ */
+export function chartPriceBand(
+  minValue: number,
+  maxValue: number,
+): { minValue: number; maxValue: number } | null {
+  if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) return null;
+  const lo0 = Math.min(minValue, maxValue);
+  const hi0 = Math.max(minValue, maxValue);
+  const mid = (lo0 + hi0) / 2;
+  if (!(mid > 0)) return null;
+  const minSpan = mid * 0.04;
+  const span = hi0 - lo0;
+  const lo = span >= minSpan ? lo0 : mid - minSpan / 2;
+  const hi = span >= minSpan ? hi0 : mid + minSpan / 2;
+  const height = hi - lo;
+  return {
+    minValue: Math.max(lo - height * 0.1, 0),
+    maxValue: hi + height * 1.3,
+  };
+}
+
+/**
+ * Right-axis label. Fixed decimals per magnitude so ticks line up
+ * ($0.000003080, $0.000003090 …) instead of trimming zeros.
+ */
+export function formatChartAxis(value: number, scale: ChartScale): string {
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (scale === "mcap") return formatCompactUsd(value);
+  if (value >= 1000) return formatCompactUsd(value);
+  if (value >= 1) return `$${value.toFixed(2)}`;
+  const decimals = Math.min(-Math.floor(Math.log10(value)) + 3, 14);
+  return `$${value.toFixed(decimals)}`;
 }
 
 /**

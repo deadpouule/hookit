@@ -5,8 +5,12 @@ import {
   aggregateBars,
   barChangePct,
   barsForInterval,
+  CHART_BAR_SPACING,
+  CHART_RIGHT_OFFSET,
+  chartPriceBand,
   chartVisibleLogicalRange,
   fillEmptyBars,
+  formatChartAxis,
   formatChartUsd,
   liveCandlesToBars,
   pickChartBars,
@@ -158,22 +162,39 @@ test("a single print stays one bar so it sits on the right", () => {
   assert.equal(filled[0]!.close, 5_000);
 });
 
-test("few candles start on the left and leave room to grow right", () => {
-  const one = chartVisibleLogicalRange(1);
+test("candles pin to the right axis at a fixed 9px pitch", () => {
+  const one = chartVisibleLogicalRange(1, 720);
   assert.ok(one);
-  assert.equal(one.from, -0.5);
-  assert.equal(one.to, 23);
-  const two = chartVisibleLogicalRange(2);
-  assert.ok(two);
-  assert.equal(two.from, -0.5);
-  assert.equal(two.to, 23);
+  assert.equal(one.to, 0 + CHART_RIGHT_OFFSET + 0.5);
+  assert.equal(one.to - one.from, 80);
+  assert.equal((one.to - one.from) * CHART_BAR_SPACING, 720);
+  const many = chartVisibleLogicalRange(120, 720);
+  assert.ok(many);
+  assert.equal(many.to, 119 + CHART_RIGHT_OFFSET + 0.5);
+  assert.equal(many.to - many.from, 80);
+  assert.equal(chartVisibleLogicalRange(0), null);
 });
 
-test("long series show recent history without inventing a 52-bar empty pad", () => {
-  const range = chartVisibleLogicalRange(120);
-  assert.ok(range);
-  assert.equal(range.from, 30);
-  assert.equal(range.to, 122);
+test("chartPriceBand keeps candles low with headroom above and pads a flat print", () => {
+  const band = chartPriceBand(100, 120);
+  assert.ok(band);
+  assert.equal(band.minValue, 98);
+  assert.equal(band.maxValue, 146);
+  const flat = chartPriceBand(0.000003, 0.000003);
+  assert.ok(flat);
+  assert.ok(flat.minValue < 0.000003);
+  assert.ok(flat.maxValue > 0.000003);
+  assert.ok((0.000003 - flat.minValue) * 2 < flat.maxValue - 0.000003);
+  assert.equal(chartPriceBand(0, 0), null);
+});
+
+test("formatChartAxis uses fixed decimals so ticks align", () => {
+  assert.equal(formatChartAxis(0.00000308, "price"), "$0.000003080");
+  assert.equal(formatChartAxis(0.00000309, "price"), "$0.000003090");
+  assert.equal(formatChartAxis(0.0234, "price"), "$0.02340");
+  assert.equal(formatChartAxis(2.5, "price"), "$2.50");
+  assert.equal(formatChartAxis(12_500, "mcap"), "$12.50K");
+  assert.equal(formatChartAxis(0, "price"), "");
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

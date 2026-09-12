@@ -3,9 +3,12 @@
 import { useEffect, useRef } from "react";
 
 import {
+  CHART_BAR_SPACING,
+  CHART_RIGHT_OFFSET,
+  chartPriceBand,
   chartRangeSignature,
   chartVisibleLogicalRange,
-  formatChartUsd,
+  formatChartAxis,
   hasChartVolume,
   type ChartBar,
   type ChartInterval,
@@ -16,9 +19,11 @@ import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from 
 
 const UP = "#10b981";
 const DOWN = "#ef4444";
+const UP_VOLUME = "rgba(16,185,129,0.32)";
+const DOWN_VOLUME = "rgba(239,68,68,0.32)";
 const SURFACE = "#0a0a0a";
-const GRID = "rgba(255,255,255,0.06)";
-const AXIS = "#71717a";
+const GRID = "rgba(255,255,255,0.045)";
+const AXIS = "#8b8b95";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
@@ -39,22 +44,13 @@ type ChartHandle = {
   style: ChartStyle;
 };
 
-/**
- * Sit candles toward the bottom of the pane (other launchpads): more headroom
- * above the wick than below the low. Flat dojis get a readable body.
- */
+/** Candles live in the lower part of the pane with headroom above (Stonk layout). */
 const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
   if (!res?.priceRange) return res;
-  const { minValue, maxValue } = res.priceRange;
-  const mid = (minValue + maxValue) / 2;
-  const span = Math.max(maxValue - minValue, 0);
-  const minSpan = Math.max(Math.abs(mid) * 0.08, mid > 1 ? 0.01 : 1e-18);
-  const lo = span >= minSpan ? minValue : mid - minSpan * 0.35;
-  const hi = span >= minSpan ? maxValue : mid + minSpan * 0.65;
-  const height = Math.max(hi - lo, minSpan);
-  const floor = Math.max(lo - height * 0.08, 0);
-  return { ...res, priceRange: { minValue: floor, maxValue: hi + height * 0.22 } };
+  const band = chartPriceBand(res.priceRange.minValue, res.priceRange.maxValue);
+  if (!band) return res;
+  return { ...res, priceRange: band };
 };
 
 function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
@@ -101,9 +97,7 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: true,
-    borderUpColor: UP,
-    borderDownColor: DOWN,
+    borderVisible: false,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -113,10 +107,14 @@ async function attachPriceSeries(
   });
 }
 
+/** Pin the newest candle against the right axis at the fixed Stonk pitch. */
 function fitChartView(chart: IChartApi, barCount: number) {
-  const range = chartVisibleLogicalRange(barCount);
+  const timeScale = chart.timeScale();
+  const width = timeScale.width();
+  const range = chartVisibleLogicalRange(barCount, width > 0 ? width : undefined);
   if (!range) return;
-  chart.timeScale().setVisibleLogicalRange(range);
+  timeScale.applyOptions({ barSpacing: CHART_BAR_SPACING, rightOffset: CHART_RIGHT_OFFSET });
+  timeScale.setVisibleLogicalRange(range);
 }
 
 function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, refit = true) {
@@ -138,11 +136,12 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => {
+        // A flat print (open = close = high = low) still needs a visible body.
         const mid = b.close || b.open;
         const span = Math.max(b.high - b.low, 0);
-        const minSpan = mid > 0 ? mid * 0.004 : 0;
-        const high = span >= minSpan ? b.high : mid + minSpan;
-        const low = span >= minSpan ? b.low : Math.max(mid - minSpan, 0);
+        const minSpan = mid > 0 ? mid * 0.01 : 0;
+        const high = span >= minSpan ? b.high : mid + minSpan / 2;
+        const low = span >= minSpan ? b.low : Math.max(mid - minSpan / 2, 0);
         return {
           time: b.time as UTCTimestamp,
           open: b.open,
@@ -156,14 +155,14 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
 
   const showVolume = hasChartVolume(next);
   handle.price.priceScale().applyOptions({
-    scaleMargins: { top: 0.06, bottom: showVolume ? 0.14 : 0.06 },
+    scaleMargins: { top: 0.04, bottom: showVolume ? 0.13 : 0.04 },
   });
   handle.volume.setData(
     showVolume
       ? next.map((b) => ({
           time: b.time as UTCTimestamp,
           value: b.volume,
-          color: b.close >= b.open ? "rgba(16,185,129,0.28)" : "rgba(239,68,68,0.28)",
+          color: b.close >= b.open ? UP_VOLUME : DOWN_VOLUME,
         }))
       : [],
   );
@@ -213,25 +212,34 @@ export function TokenLightweightPlot({
         },
         grid: {
           vertLines: { visible: false },
-          horzLines: { visible: false },
+          horzLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
         },
-        rightPriceScale: { borderColor: GRID },
+        rightPriceScale: {
+          borderVisible: false,
+          ticksVisible: false,
+          entireTextOnly: true,
+          minimumWidth: 96,
+        },
         timeScale: {
-          borderColor: GRID,
+          borderVisible: false,
           timeVisible: true,
           secondsVisible: false,
-          rightOffset: 6,
-          barSpacing: 12,
-          minBarSpacing: 4,
-          maxBarSpacing: 36,
+          rightOffset: CHART_RIGHT_OFFSET,
+          barSpacing: CHART_BAR_SPACING,
+          minBarSpacing: 3,
+          maxBarSpacing: 24,
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
         },
         localization: {
-          priceFormatter: (price: number) => formatChartUsd(price, scaleRef.current),
+          priceFormatter: (price: number) => formatChartAxis(price, scaleRef.current),
         },
-        crosshair: { mode: tv.CrosshairMode.Normal },
+        crosshair: {
+          mode: tv.CrosshairMode.Normal,
+          vertLine: { color: "rgba(255,255,255,0.18)", labelBackgroundColor: "#27272a" },
+          horzLine: { color: "rgba(255,255,255,0.18)", labelBackgroundColor: "#27272a" },
+        },
       });
 
       const price = await attachPriceSeries(chart, tv, styleRef.current, scaleRef.current, lineColorRef.current);
@@ -239,10 +247,12 @@ export function TokenLightweightPlot({
         priceScaleId: "volume",
         priceLineVisible: false,
         lastValueVisible: false,
+        priceFormat: { type: "volume" },
       });
-      // Thin volume strip. fat histogram bars were being read as candles.
+      // Volume is a thin strip along the bottom edge, never competing with candles.
       chart.priceScale("volume").applyOptions({
-        scaleMargins: { top: 0.88, bottom: 0 },
+        scaleMargins: { top: 0.95, bottom: 0 },
+        visible: false,
       });
 
       const handle: ChartHandle = { chart, price, volume, style: styleRef.current };
@@ -293,7 +303,7 @@ export function TokenLightweightPlot({
     if (!handle) return;
     handle.chart.applyOptions({
       localization: {
-        priceFormatter: (price: number) => formatChartUsd(price, scale),
+        priceFormatter: (price: number) => formatChartAxis(price, scale),
       },
     });
     handle.price.applyOptions({
