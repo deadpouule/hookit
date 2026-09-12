@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatedGridBackground } from "./AnimatedGridBackground";
-import { HeroHookCarousel } from "./HeroHookCarousel";
+import { HeroHookTotem } from "./HeroHookTotem";
 import { TypewriterTitle } from "./TypewriterTitle";
 
 export function LeanHero() {
@@ -13,7 +13,7 @@ export function LeanHero() {
         </div>
         <div className="hero-stage">
           <AnimatedGridBackground />
-          <HeroHookCarousel />
+          <HeroHookTotem />
         </div>
       </div>
     </section>

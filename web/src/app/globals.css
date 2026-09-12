@@ -7821,6 +7821,174 @@
     overflow: hidden;
   }
 
+  .hero-totem {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0.1rem 0.2rem 0.15rem;
+  }
+
+  .hero-totem-stage {
+    position: relative;
+    width: min(100%, 22rem);
+    aspect-ratio: 1;
+    max-height: 100%;
+  }
+
+  .hero-totem-rays {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .hero-totem-ray {
+    fill: none;
+    stroke: color-mix(in srgb, var(--hook-accent, #f4f0ff) 26%, transparent);
+    stroke-width: 1.15;
+    stroke-linecap: round;
+    opacity: 0.5;
+    filter: drop-shadow(0 0 0 transparent);
+    transition:
+      stroke 160ms ease,
+      opacity 160ms ease,
+      filter 160ms ease,
+      stroke-width 160ms ease;
+  }
+
+  .hero-totem-ray.is-on {
+    stroke: var(--hook-accent, #f4f0ff);
+    stroke-width: 1.7;
+    opacity: 0.96;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--hook-accent) 72%, transparent));
+  }
+
+  .hero-totem-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 9.2rem;
+    height: 9.2rem;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-totem-core .welcome-owl--totem {
+    width: 8.4rem;
+  }
+
+  .hero-totem-node {
+    position: absolute;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 2.55rem;
+    height: 2.55rem;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--hook-accent, #f4f0ff) 28%, rgba(255, 255, 255, 0.08));
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--hook-accent) 22%, transparent), transparent 62%),
+      #07070b;
+    color: var(--hook-accent);
+    box-shadow: 0 0 0 0 transparent;
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease,
+      background 160ms ease;
+  }
+
+  .hero-totem-node:hover,
+  .hero-totem-node.is-hot,
+  .hero-totem-node.is-on {
+    border-color: var(--hook-accent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--hook-accent) 45%, transparent),
+      0 0 16px color-mix(in srgb, var(--hook-accent) 38%, transparent);
+  }
+
+  .hero-totem-node.is-on {
+    background:
+      radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--hook-accent) 38%, transparent), transparent 64%),
+      #0a0810;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+
+  .hero-totem-node .hook-logo {
+    width: 1.42rem;
+    height: 1.42rem;
+  }
+
+  .hero-totem-caption {
+    display: grid;
+    justify-items: center;
+    gap: 0.16rem;
+    width: min(100%, 22rem);
+    padding: 0 0.2rem;
+    text-align: center;
+  }
+
+  .hero-totem-title {
+    margin: 0;
+    color: var(--hook-accent, #fff);
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+  }
+
+  .hero-totem-copy {
+    margin: 0;
+    max-width: 22rem;
+    color: rgba(244, 240, 255, 0.58);
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+  }
+
+  .hero-totem-launch {
+    margin-top: 0.06rem;
+    color: var(--hook-accent, #f4f0ff);
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--hook-accent) 40%, transparent);
+  }
+
+  .hero-totem-launch:hover {
+    color: #fff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-totem-ray,
+    .hero-totem-node {
+      transition: none;
+    }
+
+    .hero-totem-node.is-on {
+      transform: translate(-50%, -50%);
+    }
+  }
+
   .hero-grid {
     position: absolute;
     inset: 0;
@@ -8123,6 +8291,38 @@
     .hero-stage {
       width: 60%;
       height: 100%;
+    }
+
+    .hero-totem-stage,
+    .hero-totem-caption {
+      width: min(100%, 24rem);
+    }
+
+    .hero-totem-core {
+      width: 10.4rem;
+      height: 10.4rem;
+    }
+
+    .hero-totem-core .welcome-owl--totem {
+      width: 9.6rem;
+    }
+
+    .hero-totem-node {
+      width: 2.7rem;
+      height: 2.7rem;
+    }
+
+    .hero-totem-node .hook-logo {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .hero-totem-title {
+      font-size: 0.86rem;
+    }
+
+    .hero-totem-copy {
+      font-size: 0.62rem;
     }
 
     .hero-carousel {
@@ -9582,6 +9782,10 @@
   width: 9.75rem;
   aspect-ratio: 1358 / 951;
   flex-shrink: 0;
+}
+
+.welcome-owl--totem {
+  width: 8.4rem;
 }
 
 @media (min-width: 640px) {
