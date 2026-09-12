@@ -9485,7 +9485,10 @@
 }
 
 .legal-gate-card {
+  display: flex;
   width: min(100%, 26.5rem);
+  flex-direction: column;
+  align-items: stretch;
   padding: 0;
   border: 0;
   background: transparent;
@@ -9494,14 +9497,14 @@
 
 .legal-gate-title {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem 0.75rem;
-  margin: 0 0 1.35rem;
+  gap: 1rem;
+  margin: 0 0 1.45rem;
   font-size: clamp(2rem, 7.2vw, 2.75rem);
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   line-height: 1;
   color: #fff;
 }
@@ -9509,18 +9512,22 @@
 .welcome-owl {
   position: relative;
   display: block;
-  width: 7rem;
+  width: 9.75rem;
   aspect-ratio: 1358 / 951;
   flex-shrink: 0;
 }
 
 @media (min-width: 640px) {
   .welcome-owl {
-    width: 8.75rem;
+    width: 12.5rem;
   }
 }
 
 .welcome-owl-mark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
