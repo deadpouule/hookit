@@ -9492,19 +9492,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem 1.25rem;
-  background: #000;
+  padding: 1.5rem 1.15rem;
+  background: rgb(0 0 0 / 0.52);
+  backdrop-filter: blur(8px);
 }
 
 .legal-gate-card {
   display: flex;
-  width: min(100%, 26.5rem);
+  width: min(100%, 34rem);
   flex-direction: column;
   align-items: stretch;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 2.4rem 2rem 1.85rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 28px;
+  background: #000;
+  box-shadow: 0 28px 80px rgb(0 0 0 / 0.55);
   text-align: center;
+}
+
+@media (min-width: 640px) {
+  .legal-gate-card {
+    padding: 2.75rem 2.4rem 2.1rem;
+  }
 }
 
 .legal-gate-title {
@@ -9595,7 +9604,7 @@
   min-height: 52px;
   border: 0;
   border-radius: 999px;
-  background: #c4b5fd;
+  background: #9514d1;
   color: #fff;
   font-size: 17px;
   font-weight: 600;
@@ -9603,7 +9612,7 @@
 }
 
 .legal-gate-cta:hover {
-  background: #ddd6fe;
+  background: #b026e8;
   color: #fff;
 }
 
