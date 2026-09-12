@@ -41,11 +41,11 @@ test("liveCandlesToBars keeps timed indexer candles", () => {
   assert.equal(bars[1]!.close, 118);
 });
 
-test("liveCandlesToBars pins the last close to live market cap", () => {
+test("liveCandlesToBars keeps the indexer close (live mcap is pinned later)", () => {
   const candles: LiveCandle[] = [{ t: 1_000, o: 10, h: 12, l: 9, c: 11, v: 50 }];
   const [bar] = liveCandlesToBars(candles, 1_000, 15);
-  assert.equal(bar!.close, 15);
-  assert.equal(bar!.high, 15);
+  assert.equal(bar!.close, 11);
+  assert.equal(bar!.high, 12);
   assert.equal(bar!.volume, 50);
 });
 
@@ -108,7 +108,7 @@ test("priceBarsToMcap converts GeckoTerminal USD price into FDV", () => {
   assert.equal(mcap[0]!.volume, 50);
 });
 
-test("pickChartBars prefers house swap series over GeckoTerminal", () => {
+test("pickChartBars uses the denser Gecko series when house only has a few prints", () => {
   const indexer = [{ time: 1, open: 1, high: 1, low: 1, close: 1, volume: 0 }];
   const gecko = Array.from({ length: 8 }, (_, i) => ({
     time: i,
@@ -118,8 +118,17 @@ test("pickChartBars prefers house swap series over GeckoTerminal", () => {
     close: 2,
     volume: 1,
   }));
-  assert.equal(pickChartBars(indexer, gecko, "5m")[0]!.close, 1);
+  assert.ok(pickChartBars(indexer, gecko, "5m").length >= 8);
   assert.equal(pickChartBars([], gecko, "ALL")[0]!.close, 2);
+  const houseTape = Array.from({ length: 12 }, (_, i) => ({
+    time: i,
+    open: 1,
+    high: 1,
+    low: 1,
+    close: 1,
+    volume: 0,
+  }));
+  assert.equal(pickChartBars(houseTape, gecko, "5m")[0]!.close, 1);
 });
 
 test("ticksToBars buckets swaps into 1m OHLC", () => {
@@ -140,26 +149,32 @@ test("ticksToBars buckets swaps into 1m OHLC", () => {
   assert.equal(bars[1]!.time, 1_080);
 });
 
-test("fillEmptyBars keeps real prints only — no invented flat candles", () => {
+test("fillEmptyBars carries the last close across empty buckets", () => {
   const filled = fillEmptyBars(
     [
       { time: 960, open: 10, high: 11, low: 9, close: 12, volume: 4 },
       { time: 1_140, open: 12, high: 13, low: 11, close: 12.5, volume: 2 },
     ],
     60,
-    1_800,
+    1_260,
   );
-  assert.equal(filled.length, 2);
-  assert.equal(filled[0]!.time, 960);
-  assert.equal(filled[1]!.time, 1_140);
-  assert.equal(filled[1]!.close, 12.5);
+  assert.equal(filled.length, 6);
+  assert.equal(filled[1]!.time, 1_020);
+  assert.equal(filled[1]!.close, 12);
+  assert.equal(filled[1]!.volume, 0);
+  assert.equal(filled[3]!.time, 1_140);
+  assert.equal(filled[3]!.close, 12.5);
+  assert.equal(filled[5]!.time, 1_260);
+  assert.equal(filled[5]!.close, 12.5);
 });
 
-test("a single print stays one bar so it sits on the right", () => {
+test("a single print grows into a tape up to now", () => {
   const seed = seedLaunchBars(1_700_000_000, 5_000);
   const filled = fillEmptyBars(seed, 900, 1_700_003_600);
-  assert.equal(filled.length, 1);
+  assert.ok(filled.length >= 4);
   assert.equal(filled[0]!.close, 5_000);
+  assert.equal(filled[filled.length - 1]!.time, 1_700_002_800);
+  assert.equal(filled[filled.length - 1]!.close, 5_000);
 });
 
 test("candles pin to the right axis at a fixed 9px pitch", () => {
