@@ -61,21 +61,23 @@ export function HeroHookTotem() {
         }}
       >
         <svg className="hero-totem-rays" viewBox="0 0 100 100" aria-hidden>
-          {TOTEM_HOOKS.map((hook, index) => {
-            const point = nodePoint(index, TOTEM_HOOKS.length);
-            const on = hook.id === litId;
-            return (
-              <line
-                key={hook.id}
-                x1="50"
-                y1="50"
-                x2={point.x}
-                y2={point.y}
-                className={cn("hero-totem-ray", on && "is-on")}
-                style={{ "--hook-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
-              />
-            );
-          })}
+          {TOTEM_HOOKS.map((hook, index) => ({ hook, index }))
+            .sort((a, b) => Number(a.hook.id === litId) - Number(b.hook.id === litId))
+            .map(({ hook, index }) => {
+              const point = nodePoint(index, TOTEM_HOOKS.length);
+              const on = hook.id === litId;
+              return (
+                <line
+                  key={hook.id}
+                  x1="50"
+                  y1="50"
+                  x2={point.x}
+                  y2={point.y}
+                  className={cn("hero-totem-ray", on && "is-on")}
+                  style={{ "--hook-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
+                />
+              );
+            })}
         </svg>
 
         <div className="hero-totem-core">
