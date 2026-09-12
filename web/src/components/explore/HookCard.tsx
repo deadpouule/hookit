@@ -53,17 +53,10 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
           <div className="orb-footer-actions">
             <a
               href={hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id)}
-              className="orb-use-badge"
+              className="orb-live-uses"
               onClick={(event) => event.stopPropagation()}
             >
               {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
-            </a>
-            <a
-              href={launchWithHookHref(hook.id)}
-              className="orb-use-badge"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Use this hook
             </a>
           </div>
         </div>

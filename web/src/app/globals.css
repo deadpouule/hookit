@@ -5700,132 +5700,21 @@
     font-size: 0.34rem;
   }
 
-  .orb-use-badge {
+  .orb-live-uses {
     display: inline-flex;
-    width: auto;
-    flex-shrink: 0;
     align-items: center;
-    padding: 0.35rem 0.7rem;
-    white-space: nowrap;
-    border-radius: 0.5rem;
-    border: 1px solid rgb(255 255 255 / 0.1);
-    background: rgb(255 255 255 / 0.05);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.4;
-    color: rgb(212 212 216);
-    cursor: pointer;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #71717a;
     text-decoration: none;
-    transition:
-      background 0.2s ease,
-      color 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
   }
 
-  .orb-card--fire .orb-use-badge:hover {
-    border-color: #ef4444;
-    background: rgb(239 68 68 / 0.12);
-    box-shadow: 0 0 12px rgb(239 68 68 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--gold .orb-use-badge:hover {
-    border-color: #f59e0b;
-    background: rgb(245 158 11 / 0.12);
-    box-shadow: 0 0 12px rgb(245 158 11 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--void .orb-use-badge:hover {
-    border-color: #e879f9;
-    background: rgb(232 121 249 / 0.12);
-    box-shadow: 0 0 12px rgb(232 121 249 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--nature .orb-use-badge:hover {
-    border-color: #10b981;
-    background: rgb(16 185 129 / 0.12);
-    box-shadow: 0 0 12px rgb(16 185 129 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--volt .orb-use-badge:hover {
-    border-color: #03b1ed;
-    background: rgb(3 177 237 / 0.12);
-    box-shadow: 0 0 12px rgb(3 177 237 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--ice .orb-use-badge:hover {
-    border-color: #38bdf8;
-    background: rgb(56 189 248 / 0.12);
-    box-shadow: 0 0 12px rgb(56 189 248 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--ember .orb-use-badge:hover {
-    border-color: #f97316;
-    background: rgb(249 115 22 / 0.12);
-    box-shadow: 0 0 12px rgb(249 115 22 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--rose .orb-use-badge:hover {
-    border-color: #f43f5e;
-    background: rgb(244 63 94 / 0.12);
-    box-shadow: 0 0 12px rgb(244 63 94 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--steel .orb-use-badge:hover {
-    border-color: #6366f1;
-    background: rgb(99 102 241 / 0.12);
-    box-shadow: 0 0 12px rgb(99 102 241 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--crimson .orb-use-badge:hover {
-    border-color: #dc2626;
-    background: rgb(220 38 38 / 0.12);
-    box-shadow: 0 0 12px rgb(220 38 38 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--lime .orb-use-badge:hover {
-    border-color: #84cc16;
-    background: rgb(132 204 22 / 0.12);
-    box-shadow: 0 0 12px rgb(132 204 22 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--pearl .orb-use-badge:hover {
-    border-color: #e4e4e7;
-    background: rgb(228 228 231 / 0.12);
-    box-shadow: 0 0 12px rgb(228 228 231 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--yellow .orb-use-badge:hover {
-    border-color: #facc15;
-    background: rgb(250 204 21 / 0.12);
-    box-shadow: 0 0 12px rgb(250 204 21 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--teal .orb-use-badge:hover {
-    border-color: #2dd4bf;
-    background: rgb(45 212 191 / 0.12);
-    box-shadow: 0 0 12px rgb(45 212 191 / 0.55);
-    color: #fff;
-  }
-
-  .orb-card--cobalt .orb-use-badge:hover {
-    border-color: #3b82f6;
-    background: rgb(59 130 246 / 0.12);
-    box-shadow: 0 0 12px rgb(59 130 246 / 0.55);
-    color: #fff;
+  .orb-live-uses:hover {
+    color: #d4d4d8;
   }
 
   .orb-footer-actions {
@@ -7831,105 +7720,18 @@
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 0.1rem 0.2rem 0.15rem;
+    padding: 0.2rem 0.2rem 0.2rem;
   }
 
   .hero-totem-stage {
-    position: relative;
+    display: grid;
+    place-items: center;
     width: min(100%, 28rem);
-    aspect-ratio: 1;
     max-height: 100%;
   }
 
-  .hero-totem-rays {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  .hero-totem-ray {
-    fill: none;
-    stroke: color-mix(in srgb, var(--hook-accent, #f4f0ff) 48%, transparent);
-    stroke-width: 1.85;
-    stroke-linecap: round;
-    opacity: 0.7;
-    filter: drop-shadow(0 0 0 transparent);
-    transition:
-      stroke 220ms ease,
-      opacity 220ms ease,
-      filter 220ms ease,
-      stroke-width 220ms ease;
-  }
-
-  .hero-totem-ray.is-on {
-    stroke: var(--hook-accent, #f4f0ff);
-    stroke-width: 3.15;
-    opacity: 1;
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hook-accent) 88%, transparent));
-  }
-
-  .hero-totem-core {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    width: 13.5rem;
-    height: 13.5rem;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .hero-totem-core .welcome-owl--totem {
-    width: 13rem;
-  }
-
-  .hero-totem-node {
-    position: absolute;
-    z-index: 3;
-    display: grid;
-    place-items: center;
-    width: 3.15rem;
-    height: 3.15rem;
-    padding: 0;
-    border: 1px solid color-mix(in srgb, var(--hook-accent, #f4f0ff) 28%, rgba(255, 255, 255, 0.08));
-    border-radius: 50%;
-    background:
-      radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--hook-accent) 22%, transparent), transparent 62%),
-      #07070b;
-    color: var(--hook-accent);
-    box-shadow: 0 0 0 0 transparent;
-    cursor: pointer;
-    transform: translate(-50%, -50%);
-    transition:
-      border-color 160ms ease,
-      box-shadow 160ms ease,
-      transform 160ms ease,
-      background 160ms ease;
-  }
-
-  .hero-totem-node:hover,
-  .hero-totem-node.is-hot,
-  .hero-totem-node.is-on {
-    border-color: var(--hook-accent);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--hook-accent) 45%, transparent),
-      0 0 16px color-mix(in srgb, var(--hook-accent) 38%, transparent);
-  }
-
-  .hero-totem-node.is-on {
-    background:
-      radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--hook-accent) 38%, transparent), transparent 64%),
-      #0a0810;
-    transform: translate(-50%, -50%) scale(1.08);
-  }
-
-  .hero-totem-node .hook-logo {
-    width: 1.75rem;
-    height: 1.75rem;
+  .hero-totem-stage .welcome-owl--totem {
+    width: min(100%, 18.5rem);
   }
 
   .hero-totem-caption {
@@ -7960,17 +7762,6 @@
     font-weight: 500;
     letter-spacing: 0.02em;
     line-height: 1.4;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-totem-ray,
-    .hero-totem-node {
-      transition: none;
-    }
-
-    .hero-totem-node.is-on {
-      transform: translate(-50%, -50%);
-    }
   }
 
   .hero-grid {
@@ -8279,34 +8070,19 @@
 
     .hero-totem-stage,
     .hero-totem-caption {
-      width: min(100%, 32rem);
+      width: min(100%, 36rem);
     }
 
-    .hero-totem-core {
-      width: 16.2rem;
-      height: 16.2rem;
-    }
-
-    .hero-totem-core .welcome-owl--totem {
-      width: 15.6rem;
-    }
-
-    .hero-totem-node {
-      width: 3.65rem;
-      height: 3.65rem;
-    }
-
-    .hero-totem-node .hook-logo {
-      width: 2.05rem;
-      height: 2.05rem;
+    .hero-totem-stage .welcome-owl--totem {
+      width: min(100%, 22.5rem);
     }
 
     .hero-totem-title {
-      font-size: 1rem;
+      font-size: 1.05rem;
     }
 
     .hero-totem-copy {
-      font-size: 0.68rem;
+      font-size: 0.7rem;
     }
 
     .hero-carousel {
@@ -9769,7 +9545,7 @@
 }
 
 .welcome-owl--totem {
-  width: 13rem;
+  width: 18.5rem;
 }
 
 @media (min-width: 640px) {
@@ -9778,7 +9554,7 @@
   }
 
   .welcome-owl--totem {
-    width: 15.6rem;
+    width: 22.5rem;
   }
 }
 
