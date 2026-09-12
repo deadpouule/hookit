@@ -101,7 +101,9 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: false,
+    borderVisible: true,
+    borderUpColor: UP,
+    borderDownColor: DOWN,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -135,13 +137,20 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
       priceLineColor: line,
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
-      next.map((b) => ({
-        time: b.time as UTCTimestamp,
-        open: b.open,
-        high: b.high,
-        low: b.low,
-        close: b.close,
-      })),
+      next.map((b) => {
+        const mid = b.close || b.open;
+        const span = Math.max(b.high - b.low, 0);
+        const minSpan = mid > 0 ? mid * 0.004 : 0;
+        const high = span >= minSpan ? b.high : mid + minSpan;
+        const low = span >= minSpan ? b.low : Math.max(mid - minSpan, 0);
+        return {
+          time: b.time as UTCTimestamp,
+          open: b.open,
+          high,
+          low,
+          close: b.close,
+        };
+      }),
     );
   }
 
