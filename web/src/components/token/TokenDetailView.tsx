@@ -40,6 +40,7 @@ import {
   tokenGithubUrl,
   tokenTwitterUrl,
   tokenWebsiteUrl,
+  uniswapSwapUrl,
 } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -199,6 +200,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const twitterUrl = tokenTwitterUrl(pool.twitter);
   const websiteUrl = tokenWebsiteUrl(pool.website);
   const githubUrl = tokenGithubUrl(pool.github);
+  const explorerUrl = `${BLOCK_EXPLORER_URL}/address/${contractAddress}`;
+  const uniswapUrl = uniswapSwapUrl(contractAddress, pool.quoteAddress);
   const ath = useMemo(
     () => live.candles.reduce((m, c) => Math.max(m, c.h), live.marketCap),
     [live.candles, live.marketCap],
@@ -322,22 +325,14 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               <Copy className="h-3 w-3" />
               {copied && <span className="text-[#10b981]">Copied</span>}
             </button>
-            <a
-              href={`${BLOCK_EXPLORER_URL}/address/${contractAddress}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground transition hover:text-[#03b1ed]"
-              aria-label="Token on explorer"
-              title="Token contract"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-            {masterHookAddr && (
+            {masterHookAddr &&
+              masterHookAddr.toLowerCase() !== contractAddress.toLowerCase() && (
               <a
                 href={`${BLOCK_EXPLORER_URL}/address/${masterHookAddr}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[11px] text-muted-foreground transition hover:text-[#d8b4fe]"
+                title="Master hook contract"
               >
                 Hook
               </a>
@@ -347,17 +342,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
-            <div className="token-hero-links">
-              <HeroLink href={twitterUrl} label="X">
-                <XGlyph className="h-[16px] w-[16px]" />
-              </HeroLink>
-              <HeroLink href={websiteUrl} label="Website">
-                <Globe className="h-4 w-4" strokeWidth={1.75} />
-              </HeroLink>
-              <HeroLink href={githubUrl} label="GitHub">
-                <GithubGlyph className="h-4 w-4" />
-              </HeroLink>
-            </div>
           </div>
         </div>
       </header>
@@ -380,6 +364,24 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <p className={cn("token-hero-about-text", description ? "text-zinc-300" : "text-zinc-500")}>
             {description ?? "No description yet."}
           </p>
+        </div>
+
+        <div className="token-hero-links">
+          <HeroLink href={twitterUrl} label="X">
+            <XGlyph className="h-[16px] w-[16px]" />
+          </HeroLink>
+          <HeroLink href={websiteUrl} label="Website">
+            <Globe className="h-4 w-4" strokeWidth={1.75} />
+          </HeroLink>
+          <HeroLink href={githubUrl} label="GitHub">
+            <GithubGlyph className="h-4 w-4" />
+          </HeroLink>
+          <HeroLink href={uniswapUrl} label="Uniswap">
+            <span className="token-hero-uniswap" aria-hidden />
+          </HeroLink>
+          <HeroLink href={explorerUrl} label="Explorer">
+            <ExternalLink className="h-4 w-4" />
+          </HeroLink>
         </div>
 
         <dl className="token-hero-stats">

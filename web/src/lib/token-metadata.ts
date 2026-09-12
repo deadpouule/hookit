@@ -1,3 +1,4 @@
+import { resolveHookitChainKey } from "@/lib/chains";
 import { clampBuybackVestingMcapUsd, clampHolderAirdropMcapUsd } from "@/lib/constants";
 import type { McapUnlockMode } from "@/lib/mcap-vest";
 
@@ -189,6 +190,25 @@ export function tokenTwitterUrl(value: string | undefined | null): string | unde
   const handle = raw.replace(/^@/, "").replace(/^(?:www\.)?(?:x|twitter)\.com\//i, "").replace(/\/+$/, "");
   if (!handle) return undefined;
   return `https://x.com/${handle}`;
+}
+
+/** Uniswap web app swap for this token (already listed on the active chain). */
+export function uniswapSwapUrl(
+  tokenAddress: string | undefined | null,
+  quoteAddress?: string | null,
+): string | undefined {
+  const token = tokenAddress?.trim();
+  if (!token || !/^0x[a-fA-F0-9]{40}$/.test(token)) return undefined;
+  const chain = resolveHookitChainKey() === "ink" ? "ink" : "base_sepolia";
+  const params = new URLSearchParams({
+    chain,
+    outputCurrency: token,
+    inputCurrency:
+      quoteAddress && quoteAddress !== "0x0000000000000000000000000000000000000000"
+        ? quoteAddress
+        : "NATIVE",
+  });
+  return `https://app.uniswap.org/swap?${params.toString()}`;
 }
 
 /** Normalize a creator-entered website into an absolute link. */

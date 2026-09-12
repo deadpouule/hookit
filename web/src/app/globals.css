@@ -1617,16 +1617,18 @@
     gap: 0.45rem;
   }
 
-  .token-hooks-chip.orb-hook-desc-badge {
+  .token-hooks-chip {
+    display: flex;
     width: 100%;
     max-width: 100%;
     margin: 0;
     align-items: flex-start;
     gap: 0.4rem;
-    padding: 0.4rem 0.55rem;
+    padding: 0.15rem 0;
     font-size: 0.72rem;
     font-weight: 600;
     line-height: 1.35;
+    color: #e4e4e7;
     white-space: normal;
     box-sizing: border-box;
     overflow: hidden;
@@ -3700,6 +3702,9 @@
   .token-hero-about {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "stats"
+      "links";
     align-items: center;
     gap: 8px 20px;
     padding: 0 12px 10px;
@@ -3744,13 +3749,18 @@
     }
 
     .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px 20px;
+      grid-template-columns: minmax(0, 1fr) auto minmax(36px, 0.42fr);
+      grid-template-areas:
+        "desc stats ."
+        "links stats .";
+      align-items: start;
+      gap: 10px 16px;
       padding: 4px 20px 16px;
     }
 
     .token-hero-about-desc {
       display: block;
+      grid-area: desc;
     }
 
     .token-hero-about-text {
@@ -3763,6 +3773,7 @@
   .token-hero-stats {
     display: flex;
     align-items: stretch;
+    grid-area: stats;
     justify-self: stretch;
     width: 100%;
     margin: 0;
@@ -3826,7 +3837,8 @@
   html[data-device="desktop"] {
     .token-hero-stats {
       width: auto;
-      justify-self: center;
+      justify-self: start;
+      align-self: center;
     }
 
     .token-hero-stat {
@@ -3862,7 +3874,24 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: auto;
+    grid-area: links;
+    margin: 0;
+  }
+
+  .token-hero-uniswap {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background: #ff007a;
+    -webkit-mask: url("/brand/uniswap-mark.png") center / contain no-repeat;
+    mask: url("/brand/uniswap-mark.png") center / contain no-repeat;
+  }
+
+  html[data-device="desktop"] {
+    .token-hero-uniswap {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   .token-hero-link--off {

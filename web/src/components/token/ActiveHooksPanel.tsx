@@ -85,8 +85,7 @@ function HookModuleBadge({
   return (
     <div
       className={cn(
-        "token-hooks-chip orb-hook-desc-badge",
-        `orb-hook-desc-badge--${hook.theme}`,
+        "token-hooks-chip",
         stacked && "token-hooks-chip--expanded",
       )}
     >
