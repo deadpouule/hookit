@@ -10,7 +10,7 @@ export const SITE_OG_IMAGE = {
   url: "/brand/og.jpg",
   width: 1200,
   height: 630,
-  alt: "Hookit.fun",
+  alt: "Hookit",
 } as const;
 
 export const TOKEN_OG_SIZE = { width: 1200, height: 1200 } as const;
