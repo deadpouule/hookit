@@ -13,7 +13,7 @@ There is no Hookit-seeded ETH/USDG LP. Protocol fees keep **ETH as ETH** for the
 2. **Classic bonding → graduate.** `BondingLaunchFactory` sells on a CPMM until 4.2 ETH-equiv is raised (or curve supply sold), then seeds full-range LP into the locker. Steady fees match Master: 1% base + creator tax, hard-capped at **10%** total.
 3. **Permanent LP lock.** Master reverts remove of the launch range; Classic LP is held by `LiquidityLocker` with no withdraw.
 4. **Hybrid hooks.** Default Master pools use the mined singleton. Optional `customHook` (allowlist can be enabled by owner). Classic uses `GraduatedFeeHook` (fee take + sweep).
-5. **Quote-only fees / flywheel.** 70% creator / 30% protocol of the base pool; protocol 20% ops / 80% HKIT buyback. HKIT is fair-launched as launch #1.
+5. **Quote-only fees / flywheel.** 60% creator / 10% $HKT holders / 30% protocol of the base pool; the 10% buys the launched token and epoch-pushes it pro-rata to live $HKT holders. Protocol 20% ops / 80% HKIT buyback. HKIT is fair-launched as launch #1.
 6. **Backed floor.** Vault-backed `P_floor`; sells that sit at or would **cross** the floor are filled from the vault.
 7. **Ink.** Chain ID 57073, native ETH, Uniswap v4 PoolManager — see [Ink docs](https://docs.inkonchain.com/).
 

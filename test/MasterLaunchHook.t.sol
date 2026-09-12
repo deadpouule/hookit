@@ -73,7 +73,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         uint256 floorBefore = vault.reserve(token);
         buyExactIn(key, 10 ether);
 
-        // Creator's 70% of base went to the hook pot → floor, not escrow.
+        // Creator's 60% of base went to the hook pot → floor, not escrow.
         assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), creatorBefore);
         assertGt(vault.reserve(token), floorBefore);
         // Protocol still gets 30% of base.
@@ -113,7 +113,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
         uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
         uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
-        // Sell fee = base 1% + hook tax 1%. Creator only gets 70% of the base slice; hook tax → protocol
+        // Sell fee = base 1% + hook tax 1%. Creator only gets 60% of the base slice; hook tax → protocol
         // (no modules). Creator should still outpace protocol-from-base, but not the old ~85% creator-tax path.
         assertGt(creatorDelta, 0);
         assertGt(protoDelta, creatorDelta); // hook tax remainder tips protocol above creator

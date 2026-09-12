@@ -10,7 +10,8 @@ export const DEFAULT_LAUNCH_ETH_USD = 4_000;
 /** Classic bonding graduation target (~4.2 ETH or USD-equivalent). */
 export const GRADUATION_ETH = 4.2;
 export const BASE_FEE_BPS = 100;
-export const CREATOR_SHARE_BPS = 7000;
+export const CREATOR_SHARE_BPS = 6000;
+export const HKT_HOLDER_SHARE_BPS = 1000;
 export const PROTOCOL_SHARE_BPS = 3000;
 export const OPS_SHARE_BPS = 2000;
 export const FLYWHEEL_SHARE_BPS = 8000;

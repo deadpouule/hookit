@@ -21,6 +21,7 @@ import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 
 import {FeeEscrow} from "./FeeEscrow.sol";
+import {HktHolderDropVault} from "./HktHolderDropVault.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {BondingConstants} from "./libraries/BondingConstants.sol";
@@ -52,16 +53,20 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     address public factory;
     FeeEscrow public immutable escrow;
     ProtocolRevenueDistributor public immutable distributor;
+    HktHolderDropVault public hktDropVault;
 
     mapping(PoolId => LaunchConfig) public launches;
     /// @notice Protocol share accrued per pool / currency (pre-sweep).
     mapping(PoolId => mapping(Currency => uint256)) public pendingFees;
     /// @notice Creator share accrued per pool / currency (pre-sweep).
     mapping(PoolId => mapping(Currency => uint256)) public pendingCreatorTax;
+    /// @notice 10% $HKT-holder cut accrued per pool / quote (converted on sweep).
+    mapping(PoolId => mapping(Currency => uint256)) public pendingHktDrop;
     mapping(address => bool) public operators;
 
     event FactorySet(address indexed factory);
     event OperatorSet(address indexed operator, bool allowed);
+    event HktDropVaultSet(address indexed vault);
     event LaunchRegistered(PoolId indexed poolId, address indexed token, address indexed creator);
     event FeesAccrued(PoolId indexed poolId, Currency indexed currency, uint256 creatorAmount, uint256 protocolAmount);
     event Swept(PoolId indexed poolId, Currency indexed currency, uint256 creatorAmount, uint256 protocolAmount);
@@ -101,6 +106,11 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     function setOperator(address operator, bool allowed) external onlyOwner {
         operators[operator] = allowed;
         emit OperatorSet(operator, allowed);
+    }
+
+    function setHktDropVault(HktHolderDropVault next) external onlyOwner {
+        hktDropVault = next;
+        emit HktDropVaultSet(address(next));
     }
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
@@ -168,10 +178,14 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         Currency quoteCur = Currency.wrap(cfg.quote);
         quoteCur.take(poolManager, address(this), feeAmount, true);
 
-        uint256 creatorShare = FixedPointMath.applyBps(feeAmount, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = feeAmount - creatorShare;
+        (uint256 creatorShare, uint256 hktShare, uint256 protocolShare) = ProtocolConstants.splitBaseFee(feeAmount);
+        if (!_hktDropReady()) {
+            protocolShare += hktShare;
+            hktShare = 0;
+        }
 
         pendingCreatorTax[id][quoteCur] += creatorShare;
+        if (hktShare > 0) pendingHktDrop[id][quoteCur] += hktShare;
         // Push protocol share to the distributor immediately so protocol stats aren't $0 until sweep.
         if (protocolShare > 0) {
             _push(quoteCur, address(distributor), protocolShare);
@@ -216,25 +230,52 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         pendingCreatorTax[id][tokenCur] = 0;
 
         uint256 quoteBefore = cfg.quote == address(0) ? address(this).balance : _erc20Bal(cfg.quote);
-        poolManager.unlock(abi.encode(key, cfg.tokenIsCurrency0, tokenFees, minQuoteOut));
+        poolManager.unlock(abi.encode(uint8(0), key, cfg.tokenIsCurrency0, tokenFees, minQuoteOut));
         uint256 quoteAfter = cfg.quote == address(0) ? address(this).balance : _erc20Bal(cfg.quote);
         uint256 quoteGained = quoteAfter - quoteBefore;
         if (quoteGained == 0) revert ZeroAmount();
 
-        // Converted proceeds are already fee amounts — split 70/30 like base fee.
-        uint256 creatorShare = FixedPointMath.applyBps(quoteGained, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = quoteGained - creatorShare;
+        // Converted proceeds are already fee amounts — split 60/10/30 like base fee.
+        (uint256 creatorShare, uint256 hktShare, uint256 protocolShare) = ProtocolConstants.splitBaseFee(quoteGained);
+        if (!_hktDropReady()) {
+            protocolShare += hktShare;
+            hktShare = 0;
+        }
 
         Currency quote = Currency.wrap(cfg.quote);
         pendingCreatorTax[id][quote] += creatorShare;
         pendingFees[id][quote] += protocolShare;
+        if (hktShare > 0) pendingHktDrop[id][quote] += hktShare;
         _sweepCurrency(id, cfg, quote);
+    }
+
+    /// @notice Buy the launched token with the accrued 10% quote cut and credit the $HKT vault.
+    function sweepHktDrop(PoolKey calldata key, uint256 minTokensOut) external {
+        PoolId id = key.toId();
+        LaunchConfig storage cfg = launches[id];
+        if (!cfg.registered) revert NotRegistered();
+        if (!_hktDropReady()) revert ZeroAmount();
+
+        Currency quote = Currency.wrap(cfg.quote);
+        uint256 amount = pendingHktDrop[id][quote];
+        if (amount == 0) revert ZeroAmount();
+
+        bytes memory ret = poolManager.unlock(abi.encode(uint8(1), key, cfg.tokenIsCurrency0, amount, minTokensOut));
+        uint256 tokensOut = abi.decode(ret, (uint256));
+        if (tokensOut == 0) revert ZeroAmount();
+        pendingHktDrop[id][quote] = 0;
+        hktDropVault.creditInternal(cfg.token, tokensOut);
+        try hktDropVault.tryPush(cfg.token) {} catch {}
     }
 
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         if (msg.sender != address(poolManager)) revert NotPoolManager();
-        (PoolKey memory key, bool tokenIsCurrency0, uint256 tokenIn, uint256 minQuoteOut) =
-            abi.decode(data, (PoolKey, bool, uint256, uint256));
+        (uint8 mode, PoolKey memory key, bool tokenIsCurrency0, uint256 amount, uint256 minOut) =
+            abi.decode(data, (uint8, PoolKey, bool, uint256, uint256));
+        if (mode == 1) return _buyLaunchedToken(key, tokenIsCurrency0, amount, minOut);
+
+        uint256 tokenIn = amount;
+        uint256 minQuoteOut = minOut;
 
         // Sell launch token for quote.
         bool zeroForOne = tokenIsCurrency0;
@@ -268,6 +309,37 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
         Currency quoteCur = tokenIsCurrency0 ? key.currency1 : key.currency0;
         quoteCur.take(poolManager, address(this), quoteOut, false);
         return abi.encode(quoteOut);
+    }
+
+    function _hktDropReady() private view returns (bool) {
+        return address(hktDropVault) != address(0) && hktDropVault.hkt() != address(0);
+    }
+
+    function _buyLaunchedToken(PoolKey memory key, bool tokenIsCurrency0, uint256 quoteIn, uint256 minTokensOut)
+        private
+        returns (bytes memory)
+    {
+        bool zeroForOne = !tokenIsCurrency0;
+        Currency quoteCur = tokenIsCurrency0 ? key.currency1 : key.currency0;
+        quoteCur.settle(poolManager, address(this), quoteIn, true);
+
+        BalanceDelta delta = poolManager.swap(
+            key,
+            SwapParams({
+                zeroForOne: zeroForOne,
+                amountSpecified: -int256(quoteIn),
+                sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+            }),
+            ""
+        );
+
+        int128 tokenDelta = tokenIsCurrency0 ? delta.amount0() : delta.amount1();
+        uint256 tokensOut = tokenDelta > 0 ? uint256(uint128(tokenDelta)) : 0;
+        if (tokensOut < minTokensOut) revert ImpactTooHigh();
+
+        Currency tokenCur = tokenIsCurrency0 ? key.currency0 : key.currency1;
+        tokenCur.take(poolManager, address(hktDropVault), tokensOut, false);
+        return abi.encode(tokensOut);
     }
 
     function _sweepCurrency(PoolId id, LaunchConfig storage cfg, Currency currency) private {

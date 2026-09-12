@@ -69,7 +69,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
         uint256 creatorBefore = creator.balance;
         _claimCreatorFees(creator, quote);
-        assertGt(creator.balance, creatorBefore, "creator claims 70% share");
+        assertGt(creator.balance, creatorBefore, "creator claims 60% share");
 
         uint256 pending = distributor.pending(quote);
         assertGt(pending, 0);
@@ -248,7 +248,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
         uint256 escrowDelta = escrow.balanceOf(creator, quote) - escrowBefore;
         uint256 protoDelta = distributor.pending(quote) - protoBefore;
-        // Creator only gets 70% of the 1% base; hook tax tips protocol above creator.
+        // Creator only gets 60% of the 1% base; hook tax tips protocol above creator.
         assertGt(escrowDelta, 0);
         assertGt(protoDelta, escrowDelta);
     }

@@ -148,9 +148,9 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     id: "creatorShareToHook",
     live: true,
     label: "Creator → Hook",
-    short: "70% into modules",
+    short: "60% into modules",
     description:
-      "Send the creator’s 70% of the base 1% fee into the hook pot (floor / burn / deepen / airdrop) instead of escrow.",
+      "Send the creator’s 60% of the base 1% fee into the hook pot (floor / burn / deepen / airdrop) instead of escrow.",
     accent: HOOK_MODULE_ACCENTS.hookTax,
   },
   {

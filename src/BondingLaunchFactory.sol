@@ -15,6 +15,7 @@ import {LaunchToken} from "./LaunchToken.sol";
 import {GraduatedFeeHook} from "./GraduatedFeeHook.sol";
 import {LiquidityLocker} from "./LiquidityLocker.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
+import {HktHolderDropVault} from "./HktHolderDropVault.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {BondingConstants} from "./libraries/BondingConstants.sol";
 import {BondingMath} from "./libraries/BondingMath.sol";
@@ -88,6 +89,7 @@ contract BondingLaunchFactory is Owned {
     LiquidityLocker public immutable locker;
     FeeEscrow public immutable escrow;
     ProtocolRevenueDistributor public immutable distributor;
+    HktHolderDropVault public hktDropVault;
     address public treasury;
 
     uint256 public launchFee = ProtocolConstants.LAUNCH_FEE_WEI;
@@ -109,6 +111,8 @@ contract BondingLaunchFactory is Owned {
     );
     event QuoteSet(address indexed token, bool allowed, uint8 decimals, uint256 usdPriceX18, address usdFeed);
     event EthUsdPriceSet(uint256 priceX18, address feed);
+    event HktDropVaultSet(address indexed vault);
+    event HktHolderDrop(uint256 indexed launchId, address indexed token, uint256 quoteIn, uint256 tokensOut);
 
     error LaunchFeeRequired();
     error InvalidSupply();
@@ -151,6 +155,11 @@ contract BondingLaunchFactory is Owned {
 
     function setTreasury(address treasury_) external onlyOwner {
         treasury = treasury_;
+    }
+
+    function setHktDropVault(HktHolderDropVault next) external onlyOwner {
+        hktDropVault = next;
+        emit HktDropVaultSet(address(next));
     }
 
     function setEthUsdPrice(uint256 priceX18, address feed) external onlyOwner {
@@ -347,13 +356,13 @@ contract BondingLaunchFactory is Owned {
         if (devBuyFromLaunch && tokensOut > maxDevTokens) revert DevBuyTooLarge();
         if (tokensOut < minTokensOut) revert InsufficientOutput();
 
-        _payFees(l.creator, l.quote, feeQuote);
-
         l.tokensSold += tokensOut;
         l.realQuote += quoteForCurve;
 
         if (!IERC20Minimal(l.token).transfer(buyer, tokensOut)) revert TransferFailed();
         if (refundGross > 0) _pushQuote(l.quote, buyer, refundGross);
+
+        _payFees(l, launchId, feeQuote);
 
         emit Bought(launchId, buyer, quoteForCurve, tokensOut, feeQuote);
 
@@ -379,10 +388,12 @@ contract BondingLaunchFactory is Owned {
         uint256 netOut;
         (feeQuote, netOut) = _splitFee(quoteOut);
         if (netOut < minQuoteOut) revert InsufficientOutput();
-        _payFees(l.creator, l.quote, feeQuote);
+        _payFees(l, launchId, feeQuote);
         _pushQuote(l.quote, msg.sender, netOut);
 
         emit Sold(launchId, msg.sender, tokensIn, netOut, feeQuote);
+
+        if (l.realQuote >= l.graduationQuote || l.tokensSold >= l.curveSupply) _graduate(launchId);
     }
 
     function graduate(uint256 launchId) external {
@@ -495,10 +506,39 @@ contract BondingLaunchFactory is Owned {
         netAmount = amount - feeQuote;
     }
 
-    function _payFees(address creator, address quote, uint256 feeQuote) private {
+    function _hktDropReady() private view returns (bool) {
+        return address(hktDropVault) != address(0) && hktDropVault.hkt() != address(0);
+    }
+
+    /// @dev Spend the 10% quote cut on the curve (no extra fee) and credit launched tokens to $HKT holders.
+    function _buyHktDrop(Launch storage l, uint256 launchId, uint256 quoteIn) private returns (uint256 tokensOut) {
+        if (quoteIn == 0 || !_hktDropReady()) return 0;
+        uint256 available = l.curveSupply - l.tokensSold;
+        if (available == 0) return 0;
+
+        uint256 newVq;
+        uint256 newVt;
+        (tokensOut, newVq, newVt) = BondingMath.buyQuoteIn(l.virtualQuote, l.virtualToken, quoteIn);
+        if (tokensOut == 0 || tokensOut > available) return 0;
+        l.virtualQuote = newVq;
+        l.virtualToken = newVt;
+        l.tokensSold += tokensOut;
+        l.realQuote += quoteIn;
+        if (!IERC20Minimal(l.token).transfer(address(hktDropVault), tokensOut)) revert TransferFailed();
+        hktDropVault.creditInternal(l.token, tokensOut);
+        emit HktHolderDrop(launchId, l.token, quoteIn, tokensOut);
+    }
+
+    function _payFees(Launch storage l, uint256 launchId, uint256 feeQuote) private {
         if (feeQuote == 0) return;
-        uint256 creatorShare = FixedPointMath.applyBps(feeQuote, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolAmt = feeQuote - creatorShare;
+        (uint256 creatorShare, uint256 hktShare, uint256 protocolAmt) = ProtocolConstants.splitBaseFee(feeQuote);
+        if (!_hktDropReady() || _buyHktDrop(l, launchId, hktShare) == 0) {
+            protocolAmt += hktShare;
+            hktShare = 0;
+        }
+
+        address creator = l.creator;
+        address quote = l.quote;
         Currency c = Currency.wrap(quote);
 
         if (quote == address(0)) {

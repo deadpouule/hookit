@@ -3,6 +3,7 @@ import {
   CREATOR_SHARE_BPS,
   GITHUB_REPO_URL,
   GRADUATION_ETH,
+  HKT_HOLDER_SHARE_BPS,
   LAUNCH_FEE_ETH,
   MAX_HOOK_TAX_BPS,
   PROTOCOL_SHARE_BPS,
@@ -49,6 +50,7 @@ export type DocsSection = {
 
 const BASE_FEE_PCT = BASE_FEE_BPS / 100;
 const CREATOR_FEE_PCT = CREATOR_SHARE_BPS / 100;
+const HKT_HOLDER_FEE_PCT = HKT_HOLDER_SHARE_BPS / 100;
 const PROTOCOL_FEE_PCT = PROTOCOL_SHARE_BPS / 100;
 const dep = getChainDeployment();
 const chainKey = resolveHookitChainKey();
@@ -125,7 +127,7 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             {
               term: "Classic (/launch/classic)",
-              text: "Bonding curve first, then graduation to a Uniswap pool. Similar to pump.fun-style launches. Steady fee is the base 1% only (70% creator / 30% protocol).",
+              text: `Bonding curve first, then graduation to a Uniswap pool. Similar to pump.fun-style launches. Steady fee is the base 1% only (${CREATOR_FEE_PCT}% creator / ${HKT_HOLDER_FEE_PCT}% $HKT holders / ${PROTOCOL_FEE_PCT}% protocol).`,
             },
             {
               term: "Custom (/launch/custom)",
@@ -232,7 +234,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "03",
               title: "Route the fee pool",
-              text: "Hook tax (if any) funds Master modules (floor, auto-burn, Deepen LPs, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits 70% creator / 30% protocol. modules never touch that split.",
+              text: `Hook tax (if any) funds Master modules (floor, auto-burn, Deepen LPs, airdrop); leftover hook tax goes to protocol. Base 1% (+ anti-snipe share) always splits ${CREATOR_FEE_PCT}% creator / ${HKT_HOLDER_FEE_PCT}% $HKT holders / ${PROTOCOL_FEE_PCT}% protocol. modules never touch that split.`,
             },
             {
               num: "04",
@@ -433,7 +435,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               num: "02",
               title: "Optional: creator → hook",
-              text: "If enabled, the creator’s 70% of the base also joins the hook pot instead of FeeEscrow. Protocol still keeps its 30% of the base.",
+              text: `If enabled, the creator’s ${CREATOR_FEE_PCT}% of the base also joins the hook pot instead of FeeEscrow. Protocol still keeps its ${PROTOCOL_FEE_PCT}% of the base. The ${HKT_HOLDER_FEE_PCT}% $HKT holder drop still buys the launched token.`,
             },
             {
               num: "03",
@@ -450,7 +452,8 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "Creator share (70% of base only) → FeeEscrow (claim on the token page), or BuybackVault if buyback-vesting is on, or HKIT buyback pot for the protocol native token.",
+            `Creator share (${CREATOR_FEE_PCT}% of base only) → FeeEscrow (claim on the token page), or BuybackVault if buyback-vesting is on, or HKIT buyback pot for the protocol native token.`,
+            `$HKT holder share (${HKT_HOLDER_FEE_PCT}% of base) → buys the launched token and epoch-pushes it pro-rata to live $HKT holders. Hold $HKT to get exposure to every token on the pad. More $HKT means a larger share.`,
             "Protocol share → ProtocolRevenueDistributor: 20% ops / 80% flywheel, plus any unallocated hook tax.",
             "Classic launches: base 1% only (no hook tax / Master modules).",
             "wStock protocol fees can be converted to USDG via Quotrons pools before buyback routing.",
@@ -462,7 +465,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `Trade pays 1% base + 2% hook tax. Creator sets auto-burn 80% and floor 20% of the hook tax (100% of the pot). The 1% base still splits ${CREATOR_FEE_PCT}/${PROTOCOL_FEE_PCT} creator/protocol.`,
+          text: `Trade pays 1% base + 2% hook tax. Creator sets auto-burn 80% and floor 20% of the hook tax (100% of the pot). The 1% base still splits ${CREATOR_FEE_PCT}/${HKT_HOLDER_FEE_PCT}/${PROTOCOL_FEE_PCT} creator / $HKT holders / protocol.`,
         },
         {
           type: "h3",
@@ -544,7 +547,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Permanent extra quote fee on every swap. That slice funds Master modules (floor, auto-burn, Deepen LPs, holder airdrop). Unallocated hook tax goes to the protocol. The creator’s take stays the 70% of the separate 1% base fee.",
+          text: `Permanent extra quote fee on every swap. That slice funds Master modules (floor, auto-burn, Deepen LPs, holder airdrop). Unallocated hook tax goes to the protocol. The creator’s take stays the ${CREATOR_FEE_PCT}% of the separate 1% base fee.`,
         },
         {
           type: "h3",
@@ -591,11 +594,28 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
+          text: "$HKT holder drop (always on)",
+        },
+        {
+          type: "p",
+          text: `Separate from the optional Holder Airdrop module. ${HKT_HOLDER_FEE_PCT}% of the 1% base fee buys the launched token (the meme, not $HKT) and a vault pushes those tokens to live $HKT holders each epoch, pro-rata by $HKT balance. Holding $HKT is exposure to every launchpad token.`,
+        },
+        {
+          type: "ul",
+          items: [
+            "Pays the launched token, not $HKT.",
+            "Recipients are live $HKT holders. Not a first-round snapshot.",
+            "Amount is pro-rata to each wallet’s $HKT balance. More $HKT means more of every launched token.",
+            "Accrues in HktHolderDropVault and pushes in batches each epoch so swaps stay cheap.",
+          ],
+        },
+        {
+          type: "h3",
           text: "Buyback Vesting (optional)",
         },
         {
           type: "p",
-          text: "When enabled, the creator’s escrowed fee share (70% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B. all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.",
+          text: `When enabled, the creator’s escrowed fee share (${CREATOR_FEE_PCT}% of base) goes to BuybackVault. Pick a linear time vest (7 days to 5 years) or lock until fully-diluted mcap hits a USD target packed on-chain at launch. Cliff presets are $10M, $50M, $100M, $500M, $1B, $10B. all unlock at that FDV, or unlock by % as FDV climbs each rung (percents must add to 100). Unlocks ratchet up with high-water FDV and do not relock if price dumps. Claim the unlocked slice on the token page. Needs the factory + vault cutover that ships this packing.`,
         },
         {
           type: "h3",

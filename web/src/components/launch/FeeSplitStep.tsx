@@ -2,7 +2,7 @@
 
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { BASE_FEE_BPS, CREATOR_SHARE_BPS } from "@/lib/constants";
+import { BASE_FEE_BPS, CREATOR_SHARE_BPS, HKT_HOLDER_SHARE_BPS, PROTOCOL_SHARE_BPS } from "@/lib/constants";
 import {
   formatDynamicFeeRange,
   resolveEffectiveHookTaxBps,
@@ -73,6 +73,11 @@ export function FeeSplitStep({
 
       <p className="pick-config-hint" style={{ marginTop: 0 }}>
         {feeChoiceRecall(modules, hookTaxBps)}
+      </p>
+      <p className="pick-config-hint" style={{ marginTop: 0 }}>
+        The {swapPctLabel(BASE_FEE_BPS)} base fee always splits {CREATOR_SHARE_BPS / 100}% creator /{" "}
+        {HKT_HOLDER_SHARE_BPS / 100}% $HKT holders / {PROTOCOL_SHARE_BPS / 100}% protocol. $HKT holders
+        receive the launched token, pro-rata.
       </p>
 
       {potBps > 0 ? (

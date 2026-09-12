@@ -19,6 +19,6 @@ test("hook pot is hook tax plus optional creator cut", () => {
   assert.equal(feeRouteSwapBps(modules, 500, "holderAirdropPct"), 300);
 
   const withCreator = { ...modules, creatorShareToHook: true };
-  assert.equal(hookPotBps(withCreator, 500), 570);
-  assert.equal(feeRouteSwapBps(withCreator, 500, "autoBurnPct"), 228);
+  assert.equal(hookPotBps(withCreator, 500), 560);
+  assert.equal(feeRouteSwapBps(withCreator, 500, "autoBurnPct"), 224);
 });

@@ -1218,8 +1218,8 @@ function HookSettings({
     return (
       <ConfigHint>
         {hasFeeSink
-          ? "70% creator share → hook pot with your modules. Split it on the next step"
-          : "70% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
+          ? "60% creator share → hook pot with your modules. Split it on the next step"
+          : "60% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
       </ConfigHint>
     );
   }

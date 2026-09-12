@@ -64,7 +64,7 @@ export interface LaunchModules {
   holderAirdropMcapUsd?: number;
   holderAirdropUnlockMode?: "all" | "steps";
   holderAirdropStepPct?: number[];
-  /** Route creator's 70% of the base fee into the hook pot (modules) instead of escrow. */
+  /** Route creator's 60% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
 }
 

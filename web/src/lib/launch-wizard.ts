@@ -1,6 +1,9 @@
+import { CREATOR_SHARE_BPS } from "@/lib/constants";
 import { listEnabledFeeRoutes, type FeeRouteKey } from "@/lib/hook-fee-route";
 import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
+
+const CREATOR_CUT_PCT = CREATOR_SHARE_BPS / 100;
 
 export const MASTER_LAUNCH_STEPS = [
   { id: 1, label: "Token & pair" },
@@ -18,7 +21,7 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
   1: null,
   2: "Shield your launch. Block bots, limit trade size, and limit wallet holdings.",
   3: "Long-term token mechanics. Burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
-  4: "Tune swap fees. Pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the 70% creator cut.",
+  4: `Tune swap fees. Pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the ${CREATOR_CUT_PCT}% creator cut.`,
   5: "Configure how much of each swap goes to your hook modules.",
   6: "Review your token and launch when ready.",
 };
@@ -65,7 +68,7 @@ export function masterHookWizardStep(hookId: MasterHookId | "fixed-fee"): 2 | 3 
 }
 
 /**
- * Buyback Vesting and Creator → Hook both spend the creator's 70% of the 1%
+ * Buyback Vesting and Creator → Hook both spend the creator's share of the 1%
  * base fee. Return a lock reason when the other one is already on.
  */
 export function creatorCutLock(
@@ -75,15 +78,13 @@ export function creatorCutLock(
   if (id === "buyback-vesting" && modules.creatorShareToHook) {
     return {
       card: "Can't combine with Creator → Hook",
-      detail:
-        "Both take the same 70% creator cut. Turn off Creator → Hook in Trading fees first.",
+      detail: `Both take the same ${CREATOR_CUT_PCT}% creator cut. Turn off Creator → Hook in Trading fees first.`,
     };
   }
   if (id === "creator-share-to-hook" && modules.buybackVesting) {
     return {
       card: "Can't combine with Buyback Vesting",
-      detail:
-        "Both take the same 70% creator cut. Turn off Buyback Vesting in Tokenomics first.",
+      detail: `Both take the same ${CREATOR_CUT_PCT}% creator cut. Turn off Buyback Vesting in Tokenomics first.`,
     };
   }
   return null;

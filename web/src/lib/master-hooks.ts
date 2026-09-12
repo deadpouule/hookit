@@ -258,7 +258,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     id: "creator-share-to-hook",
     number: 11,
     title: "Creator → Hook",
-    description: "send your 70% of the base 1% into the hook pot instead of claiming escrow",
+    description: "send your 60% of the base 1% into the hook pot instead of claiming escrow",
     category: "rewards",
     icon: Percent,
     theme: "lime",
@@ -270,7 +270,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     summary: "creator base share → hook modules",
     settings: [
       "+ BASE FEE STILL 1%",
-      "+ YOUR 70% JOINS HOOK POT",
+      "+ YOUR 60% JOINS HOOK POT",
       "+ SAME MODULE SPLIT AS HOOK TAX",
     ],
   },

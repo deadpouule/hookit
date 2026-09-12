@@ -135,7 +135,7 @@ export function feeRouteSliderMax(modules: LaunchModules, key: FeeRouteKey): num
   return Math.max(1, 100 - othersMin);
 }
 
-/** Creator → Hook adds 70% of the 1% base fee (0.70%) to the same pot as hook tax. */
+/** Creator → Hook adds 60% of the 1% base fee (0.60%) to the same pot as hook tax. */
 export function creatorCutToHookBps(modules: LaunchModules): number {
   if (!modules.creatorShareToHook) return 0;
   return Math.round((BASE_FEE_BPS * CREATOR_SHARE_BPS) / 10_000);

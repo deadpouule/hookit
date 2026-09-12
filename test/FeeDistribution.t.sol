@@ -141,17 +141,17 @@ contract FeeDistributionTest is Test {
         assertEq(FixedPointMath.snipeTaxBps(initial, 1_000, duration, 1_200), 0);
     }
 
-    function testSeventyThirtySplit() public {
+    function testSixtyTenThirtySplit() public {
         uint256 fee = 10 ether;
-        uint256 creatorShare = FixedPointMath.applyBps(fee, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolShare = fee - creatorShare;
-        assertEq(creatorShare, 7 ether);
+        (uint256 creatorShare, uint256 hktShare, uint256 protocolShare) = ProtocolConstants.splitBaseFee(fee);
+        assertEq(creatorShare, 6 ether);
+        assertEq(hktShare, 1 ether);
         assertEq(protocolShare, 3 ether);
 
         escrow.credit{value: creatorShare}(creator, Currency.wrap(address(0)), creatorShare);
         distributor.notify{value: protocolShare}(Currency.wrap(address(0)), protocolShare);
 
-        assertEq(escrow.balanceOf(creator, Currency.wrap(address(0))), 7 ether);
+        assertEq(escrow.balanceOf(creator, Currency.wrap(address(0))), 6 ether);
         assertEq(distributor.pending(Currency.wrap(address(0))), 3 ether);
     }
 

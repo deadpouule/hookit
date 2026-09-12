@@ -10,10 +10,24 @@ library ProtocolConstants {
     uint16 internal constant BASE_FEE_BPS = 100;
     uint16 internal constant BPS_DENOMINATOR = 10_000;
 
-    /// @dev Split of the 1% base fee (+ snipe tax): 70% creator / 30% protocol.
+    /// @dev Split of the 1% base fee (+ snipe tax): 60% creator / 10% $HKT holders / 30% protocol.
+    ///      The 10% buys the launched token and epoch-pushes it pro-rata to live $HKT holders.
     ///      Hook tax is separate and never enters this split — it funds Master hook modules.
-    uint16 internal constant CREATOR_SHARE_BPS = 7_000;
+    ///      Must sum to BPS_DENOMINATOR. Existing pools keep the old 70/30 until a hook cutover.
+    uint16 internal constant CREATOR_SHARE_BPS = 6_000;
+    uint16 internal constant HKT_HOLDER_SHARE_BPS = 1_000;
     uint16 internal constant PROTOCOL_SHARE_BPS = 3_000;
+
+    /// @notice Split `amount` of the base-fee pool into creator / $HKT holders / protocol.
+    function splitBaseFee(uint256 amount)
+        internal
+        pure
+        returns (uint256 creatorAmt, uint256 hktHolderAmt, uint256 protocolAmt)
+    {
+        creatorAmt = amount * uint256(CREATOR_SHARE_BPS) / uint256(BPS_DENOMINATOR);
+        hktHolderAmt = amount * uint256(HKT_HOLDER_SHARE_BPS) / uint256(BPS_DENOMINATOR);
+        protocolAmt = amount - creatorAmt - hktHolderAmt;
+    }
 
     /// @dev Protocol flywheel: 20% ops / 80% HKIT buyback (or legacy floor mode).
     uint16 internal constant OPS_SHARE_BPS = 2_000;

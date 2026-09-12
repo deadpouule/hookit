@@ -295,7 +295,7 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
         assertEq(creator.balance - before, claimable);
     }
 
-    function test_SeventyThirtySplit_OnMasterSwap() public {
+    function test_SixtyTenThirtySplit_OnMasterSwap() public {
         BitmaskConfig.Modules memory m = defaultModules();
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
         token;

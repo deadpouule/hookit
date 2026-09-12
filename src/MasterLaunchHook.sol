@@ -39,6 +39,7 @@ import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
 import {FloorVault} from "./FloorVault.sol";
 import {HolderAirdropVault} from "./HolderAirdropVault.sol";
+import {HktHolderDropVault} from "./HktHolderDropVault.sol";
 import {ProtocolRevenueDistributor} from "./ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "./BuybackVault.sol";
 
@@ -68,6 +69,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     /// Replaceable so a vault bugfix does not require a new hook/factory. Existing
     /// LaunchTokens still point at the vault baked into their constructor.
     HolderAirdropVault public airdropVault;
+    /// @dev Replaceable protocol vault: 10% of the base fee buys the launched token for $HKT holders.
+    HktHolderDropVault public hktDropVault;
 
     mapping(PoolId => uint256) public override configs;
     mapping(PoolId => uint256) public vestPacked;
@@ -75,6 +78,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     mapping(PoolId => mapping(address => uint256)) public lastSwapPacked;
     mapping(PoolId => uint256) public pendingAutoBurn;
     mapping(PoolId => uint256) public pendingDeepenLps;
+    mapping(PoolId => uint256) public pendingHktDrop;
     mapping(address => bool) public airdropDue;
 
     /// @notice Contract allowed to PoolManager.swap without hook tax. Default unset.
@@ -86,6 +90,8 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
     event FactorySet(address indexed factory);
     event AirdropVaultSet(address indexed vault);
+    event HktDropVaultSet(address indexed vault);
+    event HktHolderDrop(PoolId indexed poolId, uint256 quoteIn, uint256 tokensOut);
     event ArbExecutorSet(address indexed executor);
     event ArbActiveSet(bool active);
     event LaunchPrepared(PoolId indexed poolId, address indexed creator, address indexed token, uint256 bitmask);
@@ -151,6 +157,12 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         emit AirdropVaultSet(address(next));
     }
 
+    /// @notice Point the always-on $HKT holder drop at a vault. `address(0)` unsets (10% falls back to protocol).
+    function setHktDropVault(HktHolderDropVault next) external onlyOwner {
+        hktDropVault = next;
+        emit HktDropVaultSet(address(next));
+    }
+
     /// @notice Whitelist the dedicated arb executor (not the public router). `address(0)` unsets.
     function setArbExecutor(address executor) external onlyOwner {
         arbExecutor = executor;
@@ -181,6 +193,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
     function holderAirdropVault() external view returns (address) {
         return address(airdropVault);
+    }
+
+    function hktHolderDropVault() external view override returns (address) {
+        return address(hktDropVault);
     }
 
     function launchState(PoolId poolId) external view returns (LaunchState memory) {
@@ -334,6 +350,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
                     if (done) airdropDue[st.token] = false;
                 } catch {}
             }
+            if (_hktDropReady()) {
+                try hktDropVault.tryPush(st.token) {} catch {}
+            }
         }
 
         uint256 specifiedAbs = exactInput ? uint256(-params.amountSpecified) : uint256(params.amountSpecified);
@@ -427,10 +446,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         uint256 burnCut = pendingAutoBurn[id];
         uint256 deepenCut = pendingDeepenLps[id];
+        uint256 hktCut = pendingHktDrop[id];
         if (burnCut > 0) {
             pendingAutoBurn[id] = 0;
             if (!_autoBurn(key, st, burnCut)) {
                 pendingAutoBurn[id] = burnCut;
+            }
+        }
+        if (hktCut > 0) {
+            pendingHktDrop[id] = 0;
+            if (!_hktDropBuy(key, st, hktCut)) {
+                pendingHktDrop[id] = hktCut;
             }
         }
         if (deepenCut > 0) {
@@ -561,13 +587,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
         if (totalBps == 0) return;
 
-        // Base (+ snipe) always computes 70/30. Hook tax is a separate pot for modules.
-        // Optional: creator can fold their 70% of base into that same hook pot.
+        // Base (+ snipe) always computes 60/10/30. Hook tax is a separate pot for modules.
+        // Optional: creator can fold their 60% of base into that same hook pot.
         uint256 hookTaxAmount = feeAmount * uint256(hookTaxBps_) / totalBps;
         uint256 basePool = feeAmount - hookTaxAmount;
 
-        uint256 creatorShare = FixedPointMath.applyBps(basePool, ProtocolConstants.CREATOR_SHARE_BPS);
-        uint256 protocolFromBase = basePool - creatorShare;
+        (uint256 creatorShare, uint256 hktShare, uint256 protocolFromBase) = ProtocolConstants.splitBaseFee(basePool);
+        if (!_hktDropReady()) {
+            protocolFromBase += hktShare;
+            hktShare = 0;
+        }
 
         uint256 hookPot = hookTaxAmount;
         uint256 creatorEscrowAmt = creatorShare;
@@ -634,6 +663,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
 
         pendingAutoBurn[id] += autoBurnCut;
         pendingDeepenLps[id] += deepenLpsCut;
+        pendingHktDrop[id] += hktShare;
 
         emit FeesDistributed(
             id,
@@ -731,7 +761,16 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         if (IERC20Supply(st.token).balanceOf(recipient) + tokenIn > cap) revert MaxWalletExceeded();
     }
 
-    function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
+    function _hktDropReady() private view returns (bool) {
+        return address(hktDropVault) != address(0) && hktDropVault.hkt() != address(0);
+    }
+
+    /// @dev Inner quote→token buy (skips hook tax). Tokens are taken to `to`.
+    function _swapQuoteForToken(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount, address to)
+        private
+        returns (uint256 quotePaid, uint256 tokenOut, bool ok)
+    {
+        if (quoteAmount == 0 || to == address(0)) return (0, 0, false);
         bool zeroForOne = !st.tokenIsCurrency0;
         _setFeeAction(true);
         BalanceDelta delta;
@@ -749,21 +788,34 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             delta = d;
         } catch {
             _setFeeAction(false);
-            return false;
+            return (0, 0, false);
         }
         _setFeeAction(false);
 
         int128 quoteDelta = zeroForOne ? delta.amount0() : delta.amount1();
         int128 tokenDelta = zeroForOne ? delta.amount1() : delta.amount0();
-        uint256 quotePaid = quoteDelta < 0 ? uint256(uint128(-quoteDelta)) : 0;
-        uint256 tokenOut = tokenDelta > 0 ? uint256(uint128(tokenDelta)) : 0;
+        quotePaid = quoteDelta < 0 ? uint256(uint128(-quoteDelta)) : 0;
+        tokenOut = tokenDelta > 0 ? uint256(uint128(tokenDelta)) : 0;
         if (quotePaid > 0) st.quote.settle(poolManager, address(this), quotePaid, true);
-        if (tokenOut > 0) {
-            Currency.wrap(st.token).take(poolManager, address(this), tokenOut, false);
-            ILaunchToken(st.token).burn(tokenOut);
-        }
+        if (tokenOut > 0) Currency.wrap(st.token).take(poolManager, to, tokenOut, false);
+        ok = tokenOut > 0;
+    }
+
+    /// @dev Spend the 10% quote cut to buy the launched token and credit the $HKT holder vault.
+    function _hktDropBuy(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
+        if (!_hktDropReady()) return false;
+        (uint256 quotePaid, uint256 tokenOut, bool ok) = _swapQuoteForToken(key, st, quoteAmount, address(hktDropVault));
+        if (!ok) return false;
+        hktDropVault.creditInternal(st.token, tokenOut);
+        emit HktHolderDrop(key.toId(), quotePaid, tokenOut);
+        return true;
+    }
+
+    function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
+        (uint256 quotePaid, uint256 tokenOut, bool ok) = _swapQuoteForToken(key, st, quoteAmount, address(this));
+        if (tokenOut > 0) ILaunchToken(st.token).burn(tokenOut);
         emit AutoBurn(key.toId(), quotePaid, tokenOut);
-        return tokenOut > 0;
+        return ok;
     }
 
     function _deepenLp(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {

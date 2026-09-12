@@ -27,7 +27,7 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bits 129-144 deepenLpsBps (uint16) — % of hook tax pot
 ///      bit 145      HOLDER_AIRDROP_ENABLED
 ///      bits 146-161 holderAirdropBps (uint16) — % of hook pot
-///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 70% of base into the hook pot
+///      bit 162      CREATOR_SHARE_TO_HOOK — route creator's 60% of base into the hook pot
 ///      bits 163-194 buybackVestingDurationSeconds (uint32) — linear vest for creator proceeds
 ///      bits 195-210 dynamicFeeMinTotalBps (uint16) — min total swap fee when dynamic fees on
 ///      bit 211       DYNAMIC_FEE_RAMP_UP — legacy; depth ramp always rises with consumption
@@ -245,7 +245,7 @@ library BitmaskConfig {
         if (m.holderAirdrop) routed += m.holderAirdropBps;
         if (routed > ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteTooHigh();
         if (routed > 0 && routed != ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteIncomplete();
-        // Fee sinks need a funded hook pot: hook tax and/or creator's 70% of base.
+        // Fee sinks need a funded hook pot: hook tax and/or creator's 60% of base.
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) revert HookFundingRequired();
         if (m.creatorShareToHook && m.buybackVesting) revert CreatorShareConflict();
         if (m.buybackVesting) {

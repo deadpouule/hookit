@@ -252,8 +252,8 @@ export function BuilderTuner({
 
         {selected === "creatorShareToHook" ? (
           <p className="text-xs leading-relaxed text-zinc-600">
-            Your 70% of the base 1% joins the hook pot with hook tax (same module split). Protocol keeps
-            its 30%. Disable to claim creator fees from escrow instead.
+            Your 60% of the base 1% joins the hook pot with hook tax (same module split). Protocol keeps
+            its 30%. The 10% $HKT holder drop is unchanged. Disable to claim creator fees from escrow instead.
           </p>
         ) : null}
 
