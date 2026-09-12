@@ -3763,10 +3763,10 @@
 
   .token-hero-defined {
     display: block;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
-    border-radius: 7px;
+    border-radius: 6px;
     object-fit: cover;
   }
 
@@ -3794,9 +3794,9 @@
     }
 
     .token-hero-defined {
-      width: 36px;
-      height: 36px;
-      border-radius: 9px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
     }
 
     .token-hero-defined-label {
@@ -3841,15 +3841,15 @@
   .token-hero-link.token-hero-link--defined {
     width: auto;
     min-width: 0;
-    gap: 8px;
-    padding: 0 11px 0 13px;
+    gap: 6px;
+    padding: 0 10px 0 12px;
   }
 
   html[data-device="desktop"] {
     .token-hero-link.token-hero-link--defined {
       width: auto;
-      gap: 10px;
-      padding: 0 13px 0 16px;
+      gap: 7px;
+      padding: 0 12px 0 14px;
     }
   }
 

@@ -334,9 +334,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             )}
             <div className="token-hero-links token-hero-links--trade">
               <HeroLink href={definedUrl} label="Chart on Defined" className="token-hero-link--defined">
-                <span className="token-hero-defined-label">Chart</span>
+                <span className="token-hero-defined-label">Chart on</span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/brand/defined-mark.png" alt="" className="token-hero-defined" />
+                <img src="/brand/defined-mark.png" alt="Defined" className="token-hero-defined" />
               </HeroLink>
               <HeroLink href={explorerUrl} label="Explorer">
                 <ExternalLink className="token-hero-explorer" />
