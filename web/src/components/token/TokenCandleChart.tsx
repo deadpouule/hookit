@@ -232,8 +232,8 @@ export function TokenCandleChart({
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
             <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
               {marketLegs.map((leg, i) => (
@@ -292,16 +292,16 @@ export function TokenCandleChart({
               { id: "line", label: "Line" },
             ]}
           />
-          <button
-            type="button"
-            onClick={() => setFitNonce((n) => n + 1)}
-            className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:min-h-0"
-            title="Reset view"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Reset
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={() => setFitNonce((n) => n + 1)}
+          className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:min-h-0"
+          title="Reset view"
+        >
+          <RotateCcw className="h-3 w-3" />
+          Reset
+        </button>
       </div>
 
       <div

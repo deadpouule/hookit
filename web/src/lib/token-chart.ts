@@ -189,9 +189,20 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
+/** Visible window for price candles. Few prints sit in the middle; long series show recent history. */
+export function chartVisibleLogicalRange(barCount: number): { from: number; to: number } | null {
+  if (barCount <= 0) return null;
+  if (barCount <= 24) {
+    const pad = (24 - barCount) / 2;
+    return { from: -pad, to: barCount - 1 + pad };
+  }
+  const visible = Math.min(barCount, 90);
+  return { from: barCount - visible, to: barCount - 1 + 2 };
+}
+
 /**
  * Fill gaps between the first and last trade only.
- * Do not extend to `now` — that slides real candles to the left (Stonk keeps the last print on the right).
+ * Do not extend to `now` — empty future slots squash real candles.
  */
 export function fillEmptyBars(
   bars: ChartBar[],
