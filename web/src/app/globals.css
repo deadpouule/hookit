@@ -1651,7 +1651,7 @@
     flex-shrink: 0;
     align-items: center;
     margin-right: 0.2rem;
-    vertical-align: -2px;
+    vertical-align: -0.15em;
   }
 
   .token-hooks-quote-mark .pick-logo--sm,
@@ -1678,8 +1678,8 @@
   .token-hooks-chip--expanded {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.5rem 0.65rem;
+    gap: 0.45rem;
+    padding: 0.15rem 0;
   }
 
   .token-hooks-chip-top {
@@ -1694,8 +1694,19 @@
     gap: 0.35rem;
     min-width: 0;
     width: 100%;
-    padding-left: 1.45rem;
+    padding-left: 2.15rem;
     box-sizing: border-box;
+  }
+
+  .token-hooks-chip-extra {
+    min-width: 0;
+    width: 100%;
+    padding-left: 2.15rem;
+    box-sizing: border-box;
+  }
+
+  .token-hooks-chip-extra .token-hooks-chip-actions {
+    padding-left: 0;
   }
 
   .token-hooks-chip-actions--stack {

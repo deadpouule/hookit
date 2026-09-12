@@ -292,7 +292,7 @@ export function HolderAirdropInline({
 
   if (embedded) {
     return (
-      <div className="space-y-2">
+      <div className="token-hooks-chip-extra space-y-2">
         <p className="token-hooks-vault-copy text-[11px] leading-relaxed text-zinc-500">{status}</p>
         <V4ClaimsClaimAction
           quote={quote}
