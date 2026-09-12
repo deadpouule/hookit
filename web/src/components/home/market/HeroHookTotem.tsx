@@ -30,16 +30,27 @@ const TOTEM_HOOKS: BrowseHook[] = TOTEM_IDS.map((id) => {
   return hook;
 });
 
+const RING = 43;
 const ROTATE_MS = 2800;
+
+function nodePoint(index: number, count: number, radius = RING) {
+  const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: 50 + radius * Math.cos(angle),
+    y: 50 + radius * Math.sin(angle),
+  };
+}
 
 export function HeroHookTotem() {
   const reduceMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(1);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [cue, setCue] = useState(false);
-  const active = TOTEM_HOOKS[activeIndex] ?? TOTEM_HOOKS[0];
-  const accent = hookThemeAccentColor(active.theme);
-  const frozen = paused || !!reduceMotion;
+  const litIndex = hoverIndex ?? activeIndex;
+  const lit = TOTEM_HOOKS[litIndex] ?? TOTEM_HOOKS[0];
+  const accent = hookThemeAccentColor(lit.theme);
+  const frozen = paused || hoverIndex !== null || !!reduceMotion;
 
   useEffect(() => {
     if (frozen) return;
@@ -54,18 +65,50 @@ export function HeroHookTotem() {
     setCue(true);
     const timer = window.setTimeout(() => setCue(false), 220);
     return () => window.clearTimeout(timer);
-  }, [activeIndex, reduceMotion]);
+  }, [litIndex, reduceMotion]);
 
   return (
     <div
       className="hero-totem"
       style={{ "--hook-accent": accent } as CSSProperties}
       onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseLeave={() => {
+        setPaused(false);
+        setHoverIndex(null);
+      }}
     >
       <div className="hero-totem-stage">
         <span className="hero-totem-halo" aria-hidden />
         <WelcomeOwl className={cn("welcome-owl--totem", cue && "welcome-owl--cue")} />
+
+        {TOTEM_HOOKS.map((hook, index) => {
+          const point = nodePoint(index, TOTEM_HOOKS.length);
+          return (
+            <button
+              key={hook.id}
+              type="button"
+              className={cn(
+                "hero-totem-mark",
+                index === activeIndex && "is-on",
+                index === litIndex && "is-hot",
+              )}
+              style={
+                {
+                  left: `${point.x}%`,
+                  top: `${point.y}%`,
+                  "--hook-accent": hookThemeAccentColor(hook.theme),
+                } as CSSProperties
+              }
+              aria-label={hook.title}
+              aria-pressed={index === activeIndex}
+              onMouseEnter={() => setHoverIndex(index)}
+              onFocus={() => setHoverIndex(index)}
+              onClick={() => setActiveIndex(index)}
+            >
+              <HookLogo hookId={hook.id} theme={hook.theme} />
+            </button>
+          );
+        })}
       </div>
 
       <div className="hero-totem-dots" role="tablist" aria-label="Hooks">
@@ -74,10 +117,10 @@ export function HeroHookTotem() {
             key={hook.id}
             type="button"
             role="tab"
-            className={cn("hero-totem-dot", index === activeIndex && "is-on")}
+            className={cn("hero-totem-dot", index === litIndex && "is-on")}
             style={{ "--hook-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
             aria-label={hook.title}
-            aria-selected={index === activeIndex}
+            aria-selected={index === litIndex}
             onClick={() => setActiveIndex(index)}
           />
         ))}
@@ -85,10 +128,10 @@ export function HeroHookTotem() {
 
       <div className="hero-totem-caption" aria-live="polite">
         <p className="hero-totem-title">
-          <HookLogo hookId={active.id} theme={active.theme} />
-          <span>{active.title}</span>
+          <HookLogo hookId={lit.id} theme={lit.theme} />
+          <span>{lit.title}</span>
         </p>
-        <p className="hero-totem-copy">{active.description}</p>
+        <p className="hero-totem-copy">{lit.description}</p>
       </div>
     </div>
   );
