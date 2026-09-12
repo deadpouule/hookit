@@ -1,8 +1,7 @@
 import Link from "next/link";
 
 import { AnimatedGridBackground } from "@/components/home/market/AnimatedGridBackground";
-
-import { LaunchHookReel } from "./LaunchHookReel";
+import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 
 function ClassicAsciiCoin() {
   return (
@@ -45,8 +44,7 @@ export function LaunchModelPicker() {
 
           <Link href="/launch/custom" className="launch-model-card" aria-label="Master. Launch with Hookit Master modules">
             <div className="launch-model-stage" aria-hidden>
-              <AnimatedGridBackground className="launch-model-grid-bg" />
-              <LaunchHookReel />
+              <HeroHookTotem interactive={false} />
             </div>
             <div className="launch-model-copy">
               <h2 className="terminal-title font-mono text-3xl font-semibold tracking-tight text-white">Master.</h2>
