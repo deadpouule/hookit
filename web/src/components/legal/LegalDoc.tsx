@@ -1,27 +1,16 @@
 import Link from "next/link";
 
-import type { LegalSection } from "@/lib/legal";
-import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+import type { LegalPage } from "@/lib/legal";
+import { LEGAL_UPDATED, PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 
-export function LegalDoc({
-  kicker,
-  title,
-  updated,
-  sections,
-  other,
-}: {
-  kicker: string;
-  title: string;
-  updated: string;
-  sections: LegalSection[];
-  other: "terms" | "privacy";
-}) {
+export function LegalDoc({ page, other }: { page: LegalPage; other: "terms" | "privacy" }) {
   return (
     <article className="legal-doc">
-      <p className="legal-doc-kicker">{kicker}</p>
-      <h1 className="legal-doc-title">{title}</h1>
-      <p className="legal-doc-updated">Updated {updated}</p>
-      {sections.map((section) => (
+      <p className="legal-doc-kicker">{page.kicker}</p>
+      <h1 className="legal-doc-title">{page.title}</h1>
+      <p className="legal-doc-updated">Updated {LEGAL_UPDATED}</p>
+      <p className="legal-doc-lead">{page.lead}</p>
+      {page.sections.map((section) => (
         <section key={section.title} className="legal-doc-section">
           <h2>{section.title}</h2>
           {section.paragraphs.map((p) => (
@@ -32,9 +21,9 @@ export function LegalDoc({
       <p className="legal-doc-also">
         Also see the{" "}
         {other === "privacy" ? (
-          <Link href={PRIVACY_HREF}>Privacy notice</Link>
+          <Link href={PRIVACY_HREF}>privacy page</Link>
         ) : (
-          <Link href={TERMS_HREF}>Terms</Link>
+          <Link href={TERMS_HREF}>terms</Link>
         )}
         .
       </p>

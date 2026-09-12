@@ -1,21 +1,13 @@
 import type { Metadata } from "next";
 
 import { LegalDoc } from "@/components/legal/LegalDoc";
-import { PRIVACY_SECTIONS } from "@/lib/legal";
+import { PRIVACY_PAGE } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Privacy notice",
-  description: "How Hookit handles wallet addresses, onchain data, and site logs.",
+  title: "Privacy",
+  description: "What hook it can see: almost nothing off-chain. The ledger stays public.",
 };
 
 export default function PrivacyPage() {
-  return (
-    <LegalDoc
-      kicker="Privacy"
-      title="Privacy notice"
-      updated="12 Sep 2026"
-      sections={PRIVACY_SECTIONS}
-      other="terms"
-    />
-  );
+  return <LegalDoc page={PRIVACY_PAGE} other="terms" />;
 }
