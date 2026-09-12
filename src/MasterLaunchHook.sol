@@ -18,7 +18,6 @@ import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 
 interface IERC20Supply {
     function totalSupply() external view returns (uint256);
@@ -28,12 +27,14 @@ interface IERC20Supply {
 
 import {IMasterLaunchHook} from "./interfaces/IMasterLaunchHook.sol";
 import {ILaunchQuotes} from "./interfaces/ILaunchQuotes.sol";
-import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {BitmaskConfig} from "./libraries/BitmaskConfig.sol";
 import {DynamicFeeMath} from "./libraries/DynamicFeeMath.sol";
 import {FixedPointMath} from "./libraries/FixedPointMath.sol";
 import {McapVest} from "./libraries/McapVest.sol";
 import {LpDeepenLib} from "./libraries/LpDeepenLib.sol";
+import {QuoteBuyLib} from "./libraries/QuoteBuyLib.sol";
+import {SupplyCapLib} from "./libraries/SupplyCapLib.sol";
+import {FeeSplitLib} from "./libraries/FeeSplitLib.sol";
 import {ProtocolConstants} from "./libraries/ProtocolConstants.sol";
 import {CurrencySettler} from "./libraries/CurrencySettler.sol";
 import {FeeEscrow} from "./FeeEscrow.sol";
@@ -383,11 +384,22 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         }
 
         if (!arbSwap && packed.enabled(BitmaskConfig.MAX_TX_ENABLED)) {
-            _checkMaxTx(st, packed.maxTxBps(), specifiedAbs, isBuy, exactInput, sqrtPriceX96, totalFeeBps);
+            SupplyCapLib.checkMaxTx(
+                st.token,
+                st.tokenIsCurrency0,
+                packed.maxTxBps(),
+                specifiedAbs,
+                isBuy,
+                exactInput,
+                sqrtPriceX96,
+                totalFeeBps
+            );
         }
 
         if (!arbSwap && isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
-            _checkMaxWalletBeforeBuy(st, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps);
+            SupplyCapLib.checkMaxWalletBeforeBuy(
+                st.token, st.tokenIsCurrency0, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps
+            );
         }
 
         // Floor intercept: sell that is already at/below floor OR would cross the floor in this swap.
@@ -576,114 +588,35 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         bool fromPoolClaims,
         bool protocolTakesAll
     ) private {
-        if (protocolTakesAll) {
-            _fundQuote(st.quote, address(distributor), feeAmount, fromPoolClaims);
-            if (feeAmount > 0) distributor.notifyInternal(st.quote, feeAmount);
-            emit FeesDistributed(id, 0, feeAmount, 0, 0, 0, 0, 0);
-            return;
-        }
-
-        uint16 hookTaxBps_ = effectiveHookTaxBps;
-        uint256 totalBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(hookTaxBps_) + uint256(snipeBps);
-        if (totalBps == 0) return;
-
-        // Base (+ snipe) always computes 60/10/30. Hook tax is a separate pot for modules.
-        // Optional: creator can fold their 60% of base into that same hook pot.
-        uint256 hookTaxAmount = feeAmount * uint256(hookTaxBps_) / totalBps;
-        uint256 basePool = feeAmount - hookTaxAmount;
-
-        (uint256 creatorShare, uint256 hktShare, uint256 protocolFromBase) = ProtocolConstants.splitBaseFee(basePool);
-        if (!_hktDropReady()) {
-            protocolFromBase += hktShare;
-            hktShare = 0;
-        }
-
-        uint256 hookPot = hookTaxAmount;
-        uint256 creatorEscrowAmt = creatorShare;
-        uint256 buybackAmt;
-
-        if (packed.enabled(BitmaskConfig.CREATOR_SHARE_TO_HOOK_ENABLED)) {
-            hookPot += creatorShare;
-            creatorEscrowAmt = 0;
-        } else if (st.token == distributor.nativeToken() && distributor.nativeToken() != address(0)) {
-            buybackAmt = creatorEscrowAmt;
-            _fundQuote(st.quote, address(distributor), buybackAmt, fromPoolClaims);
-            if (buybackAmt > 0) distributor.notifyBuybackInternal(st.quote, buybackAmt);
-            creatorEscrowAmt = 0;
-        } else if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED) && creatorEscrowAmt > 0) {
-            buybackAmt = creatorEscrowAmt;
-            creatorEscrowAmt = 0;
-            _fundQuote(st.quote, address(buybacks), buybackAmt, fromPoolClaims);
-            if (buybackAmt > 0) {
-                buybacks.creditInternal(
-                    st.creator, st.token, st.quote, buybackAmt, packed.buybackVestingDurationSeconds()
-                );
-            }
-        } else {
-            _fundQuote(st.quote, address(escrow), creatorEscrowAmt, fromPoolClaims);
-            if (creatorEscrowAmt > 0) escrow.creditInternal(st.creator, st.quote, creatorEscrowAmt);
-        }
-
-        uint256 floorCut = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.floorAllocationBps())
-            : 0;
-        uint256 autoBurnCut = packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.autoBurnBps())
-            : 0;
-        uint256 deepenLpsCut = packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.deepenLpsBps())
-            : 0;
-        uint256 airdropCut = packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)
-            ? FixedPointMath.applyBps(hookPot, packed.holderAirdropBps())
-            : 0;
-        uint256 routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut;
-        if (routed > hookPot) {
-            airdropCut = 0;
-            routed = floorCut + autoBurnCut + deepenLpsCut;
-            if (routed > hookPot) {
-                deepenLpsCut = 0;
-                routed = floorCut + autoBurnCut;
-                if (routed > hookPot) {
-                    autoBurnCut = 0;
-                    routed = floorCut;
-                }
-            }
-        }
-        // Unallocated hook pot → protocol.
-        uint256 protocolShare = protocolFromBase + (hookPot - routed);
-
-        _fundQuote(st.quote, address(distributor), protocolShare, fromPoolClaims);
-        if (protocolShare > 0) distributor.notifyInternal(st.quote, protocolShare);
-
-        _fundQuote(st.quote, address(vault), floorCut, fromPoolClaims);
-        if (floorCut > 0) vault.depositInternal(st.token, st.quote, floorCut);
-
-        _fundQuote(st.quote, address(airdropVault), airdropCut, fromPoolClaims);
-        if (airdropCut > 0) airdropVault.depositInternal(st.token, st.quote, airdropCut);
-
-        pendingAutoBurn[id] += autoBurnCut;
-        pendingDeepenLps[id] += deepenLpsCut;
-        pendingHktDrop[id] += hktShare;
-
+        FeeSplitLib.Result memory r = FeeSplitLib.distribute(
+            poolManager,
+            st.quote,
+            st.token,
+            st.creator,
+            packed,
+            feeAmount,
+            snipeBps,
+            effectiveHookTaxBps,
+            fromPoolClaims,
+            protocolTakesAll,
+            _hktDropReady(),
+            FeeSplitLib.Targets({
+                distributor: distributor, escrow: escrow, vault: vault, buybacks: buybacks, airdropVault: airdropVault
+            })
+        );
+        pendingAutoBurn[id] += r.autoBurnCut;
+        pendingDeepenLps[id] += r.deepenLpsCut;
+        pendingHktDrop[id] += r.hktShare;
         emit FeesDistributed(
             id,
-            creatorEscrowAmt + buybackAmt,
-            protocolShare,
-            floorCut,
-            buybackAmt,
-            autoBurnCut,
-            deepenLpsCut,
-            airdropCut
+            r.creatorEscrowAmt + r.buybackAmt,
+            r.protocolShare,
+            r.floorCut,
+            r.buybackAmt,
+            r.autoBurnCut,
+            r.deepenLpsCut,
+            r.airdropCut
         );
-    }
-
-    function _fundQuote(Currency quote, address to, uint256 amount, bool fromPoolClaims) private {
-        if (amount == 0) return;
-        if (fromPoolClaims) {
-            poolManager.transfer(to, quote.toId(), amount);
-        } else {
-            quote.transfer(to, amount);
-        }
     }
 
     function _isArbSwap(address sender) private view returns (bool) {
@@ -701,119 +634,26 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         lastSwapPacked[id][origin] = (block.number << 8) | dir;
     }
 
-    function _checkMaxTx(
-        LaunchState storage st,
-        uint16 bps,
-        uint256 specifiedAbs,
-        bool isBuy,
-        bool exactInput,
-        uint160 sqrtPriceX96,
-        uint256 totalFeeBps
-    ) private view {
-        uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), bps);
-        if (cap == 0) return;
-
-        uint256 tokenAmt;
-        if (isBuy) {
-            if (exactInput) {
-                uint256 quoteNet = specifiedAbs - FixedPointMath.applyBps(specifiedAbs, totalFeeBps);
-                tokenAmt = FixedPointMath.tokenFromQuote(quoteNet, sqrtPriceX96, st.tokenIsCurrency0);
-            } else {
-                tokenAmt = specifiedAbs;
-            }
-        } else if (exactInput) {
-            tokenAmt = specifiedAbs;
-        } else {
-            tokenAmt = FixedPointMath.tokenFromQuote(specifiedAbs, sqrtPriceX96, st.tokenIsCurrency0);
-        }
-        if (tokenAmt > cap) revert MaxTxExceeded();
-    }
-
-    function _decodeRecipient(bytes calldata hookData) private pure returns (address recipient) {
-        if (hookData.length < 32) revert HookDataRequired();
-        recipient = abi.decode(hookData, (address));
-        if (recipient == address(0)) revert HookDataRequired();
-    }
-
-    /// @dev Enforce max-wallet on buys before tokens move (requires router `hookData` = recipient).
-    function _checkMaxWalletBeforeBuy(
-        LaunchState storage st,
-        uint256 packed,
-        bytes calldata hookData,
-        bool exactInput,
-        uint256 specifiedAbs,
-        uint160 sqrtPriceX96,
-        uint256 totalFeeBps
-    ) private view {
-        address recipient = _decodeRecipient(hookData);
-        uint256 cap = FixedPointMath.applyBps(IERC20Supply(st.token).totalSupply(), packed.maxWalletBps());
-        if (cap == 0) return;
-
-        uint256 tokenIn = exactInput
-            ? FixedPointMath.tokenFromQuote(
-                specifiedAbs - (specifiedAbs * totalFeeBps / ProtocolConstants.BPS_DENOMINATOR),
-                sqrtPriceX96,
-                st.tokenIsCurrency0
-            )
-            : specifiedAbs;
-        if (tokenIn == 0) return;
-
-        if (IERC20Supply(st.token).balanceOf(recipient) + tokenIn > cap) revert MaxWalletExceeded();
-    }
-
     function _hktDropReady() private view returns (bool) {
         return address(hktDropVault) != address(0) && hktDropVault.hkt() != address(0);
     }
 
-    /// @dev Inner quote→token buy (skips hook tax). Tokens are taken to `to`.
-    function _swapQuoteForToken(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount, address to)
-        private
-        returns (uint256 quotePaid, uint256 tokenOut, bool ok)
-    {
-        if (quoteAmount == 0 || to == address(0)) return (0, 0, false);
-        bool zeroForOne = !st.tokenIsCurrency0;
-        _setFeeAction(true);
-        BalanceDelta delta;
-        try poolManager.swap(
-            key,
-            SwapParams({
-                zeroForOne: zeroForOne,
-                amountSpecified: -int256(quoteAmount),
-                sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
-            }),
-            ""
-        ) returns (
-            BalanceDelta d
-        ) {
-            delta = d;
-        } catch {
-            _setFeeAction(false);
-            return (0, 0, false);
-        }
-        _setFeeAction(false);
-
-        int128 quoteDelta = zeroForOne ? delta.amount0() : delta.amount1();
-        int128 tokenDelta = zeroForOne ? delta.amount1() : delta.amount0();
-        quotePaid = quoteDelta < 0 ? uint256(uint128(-quoteDelta)) : 0;
-        tokenOut = tokenDelta > 0 ? uint256(uint128(tokenDelta)) : 0;
-        if (quotePaid > 0) st.quote.settle(poolManager, address(this), quotePaid, true);
-        if (tokenOut > 0) Currency.wrap(st.token).take(poolManager, to, tokenOut, false);
-        ok = tokenOut > 0;
-    }
-
     /// @dev Spend the 10% quote cut to buy the launched token and credit the $HKT holder vault.
     function _hktDropBuy(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
-        if (!_hktDropReady()) return false;
-        (uint256 quotePaid, uint256 tokenOut, bool ok) = _swapQuoteForToken(key, st, quoteAmount, address(hktDropVault));
+        _setFeeAction(true);
+        (uint256 quotePaid, uint256 tokenOut, bool ok) =
+            QuoteBuyLib.hktDropBuy(poolManager, key, st.quote, st.token, st.tokenIsCurrency0, quoteAmount, hktDropVault);
+        _setFeeAction(false);
         if (!ok) return false;
-        hktDropVault.creditInternal(st.token, tokenOut);
         emit HktHolderDrop(key.toId(), quotePaid, tokenOut);
         return true;
     }
 
     function _autoBurn(PoolKey calldata key, LaunchState storage st, uint256 quoteAmount) private returns (bool) {
-        (uint256 quotePaid, uint256 tokenOut, bool ok) = _swapQuoteForToken(key, st, quoteAmount, address(this));
-        if (tokenOut > 0) ILaunchToken(st.token).burn(tokenOut);
+        _setFeeAction(true);
+        (uint256 quotePaid, uint256 tokenOut, bool ok) =
+            QuoteBuyLib.autoBurn(poolManager, key, st.quote, st.token, st.tokenIsCurrency0, quoteAmount);
+        _setFeeAction(false);
         emit AutoBurn(key.toId(), quotePaid, tokenOut);
         return ok;
     }
