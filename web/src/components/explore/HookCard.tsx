@@ -44,9 +44,7 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
         </div>
 
         <div className="orb-stage my-2">
-          <div className="hook-arcade-screen">
-            <HookLogo hookId={hook.id} theme={hook.theme} className="hook-logo--stage" />
-          </div>
+          <HookLogo hookId={hook.id} theme={hook.theme} className="hook-logo--stage" />
         </div>
 
         <div className="orb-footer">
