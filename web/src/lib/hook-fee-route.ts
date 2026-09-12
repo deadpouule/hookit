@@ -1,3 +1,5 @@
+import { BASE_FEE_BPS, CREATOR_SHARE_BPS } from "@/lib/constants";
+import { resolveEffectiveHookTaxBps } from "@/lib/fee-range";
 import type { LaunchModules } from "@/lib/types";
 
 /** Percent fields that split the hook-tax pot (must sum to 100 when multiple are on). */
@@ -131,4 +133,23 @@ export function feeRouteSliderMax(modules: LaunchModules, key: FeeRouteKey): num
   if (enabled.length <= 1) return 100;
   const othersMin = (enabled.length - 1) * 1;
   return Math.max(1, 100 - othersMin);
+}
+
+/** Creator → Hook adds 70% of the 1% base fee (0.70%) to the same pot as hook tax. */
+export function creatorCutToHookBps(modules: LaunchModules): number {
+  if (!modules.creatorShareToHook) return 0;
+  return Math.round((BASE_FEE_BPS * CREATOR_SHARE_BPS) / 10_000);
+}
+
+export function hookPotBps(modules: LaunchModules, hookTaxBps: number): number {
+  return resolveEffectiveHookTaxBps(modules, hookTaxBps) + creatorCutToHookBps(modules);
+}
+
+/** How much of each swap (in bps) this module receives from the hook pot. */
+export function feeRouteSwapBps(
+  modules: LaunchModules,
+  hookTaxBps: number,
+  key: FeeRouteKey,
+): number {
+  return Math.round((hookPotBps(modules, hookTaxBps) * getFeeRouteValue(modules, key)) / 100);
 }

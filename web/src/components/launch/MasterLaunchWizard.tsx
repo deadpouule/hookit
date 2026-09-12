@@ -9,6 +9,7 @@ import { formatEther, zeroAddress } from "viem";
 import { CustomHookEditor } from "@/components/launch/CustomHookEditor";
 import { DevBuySection } from "@/components/launch/DevBuySection";
 import { HookArchitectureSection } from "@/components/launch/HookArchitectureSection";
+import { FeeSplitStep } from "@/components/launch/FeeSplitStep";
 import { HookModulePicker } from "@/components/launch/HookModulePicker";
 import { LaunchSummary, LaunchSummaryCta } from "@/components/launch/LaunchSummary";
 import { LaunchWizardNav } from "@/components/launch/LaunchWizardNav";
@@ -34,7 +35,7 @@ import { estimateFloorPrice } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
 import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
-import { rebalanceFeeRoutes } from "@/lib/hook-fee-route";
+import { feeRouteIsComplete, hookPotBps, listEnabledFeeRoutes, rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import {
   LAUNCH_WIZARD_HOOK_IDS,
   MASTER_LAUNCH_STEPS,
@@ -61,7 +62,7 @@ function validateTokenStep(form: LaunchFormState): string | null {
 export function MasterLaunchWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const reviewStep = 5;
+  const reviewStep = 6;
 
   // Always start at token/name — `?hook=` only preselects the module for its later step.
   const [step, setStep] = useState(1);
@@ -242,6 +243,16 @@ export function MasterLaunchWizard() {
       const validationError = validateTokenStep(form);
       if (validationError) {
         setError(validationError);
+        return;
+      }
+    }
+    if (step === 5) {
+      if (!feeRouteIsComplete(form.modules)) {
+        setError("Hook fee shares must add to 100%.");
+        return;
+      }
+      if (listEnabledFeeRoutes(form.modules).length > 0 && hookPotBps(form.modules, form.hookTaxBps) <= 0) {
+        setError("Add a hook tax or Creator → Hook so these modules have fees to split.");
         return;
       }
     }
@@ -560,6 +571,14 @@ export function MasterLaunchWizard() {
                   floorEst={floorEst}
                   multiMarket={form.markets.length > 1}
                   hookTaxBps={form.hookTaxBps}
+                />
+              )}
+
+              {step === 5 && (
+                <FeeSplitStep
+                  modules={form.modules}
+                  hookTaxBps={form.hookTaxBps}
+                  onUpdate={updateModules}
                 />
               )}
 
