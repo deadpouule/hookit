@@ -1,4 +1,4 @@
-export const LEGAL_ACK_KEY = "hookit:legal-ack:v1";
+export const LEGAL_ACK_KEY = "hookit:legal-ack:v2";
 
 export const TERMS_HREF = "/terms";
 export const PRIVACY_HREF = "/privacy";

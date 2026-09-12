@@ -4,7 +4,7 @@ import test from "node:test";
 import { LEGAL_ACK_KEY, PRIVACY_SECTIONS, TERMS_HREF, TERMS_SECTIONS } from "./legal";
 
 test("legal ack key is versioned so a copy change can re-prompt", () => {
-  assert.equal(LEGAL_ACK_KEY, "hookit:legal-ack:v1");
+  assert.equal(LEGAL_ACK_KEY, "hookit:legal-ack:v2");
   assert.equal(TERMS_HREF, "/terms");
 });
 
