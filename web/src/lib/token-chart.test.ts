@@ -136,7 +136,7 @@ test("ticksToBars buckets swaps into 1m OHLC", () => {
   assert.equal(bars[1]!.time, 1_080);
 });
 
-test("fillEmptyBars only fills gaps between trades, not out to now", () => {
+test("fillEmptyBars keeps real prints only — no invented flat candles", () => {
   const filled = fillEmptyBars(
     [
       { time: 960, open: 10, high: 11, low: 9, close: 12, volume: 4 },
@@ -145,12 +145,10 @@ test("fillEmptyBars only fills gaps between trades, not out to now", () => {
     60,
     1_800,
   );
-  assert.equal(filled.length, 4);
+  assert.equal(filled.length, 2);
   assert.equal(filled[0]!.time, 960);
-  assert.equal(filled[1]!.volume, 0);
-  assert.equal(filled[1]!.close, 12);
-  assert.equal(filled[3]!.time, 1_140);
-  assert.equal(filled[3]!.close, 12.5);
+  assert.equal(filled[1]!.time, 1_140);
+  assert.equal(filled[1]!.close, 12.5);
 });
 
 test("a single print stays one bar so it sits on the right", () => {
@@ -160,22 +158,22 @@ test("a single print stays one bar so it sits on the right", () => {
   assert.equal(filled[0]!.close, 5_000);
 });
 
-test("few candles sit in the middle of the visible window", () => {
+test("few candles start on the left and leave room to grow right", () => {
   const one = chartVisibleLogicalRange(1);
   assert.ok(one);
-  assert.equal(one.from, -11.5);
-  assert.equal(one.to, 11.5);
+  assert.equal(one.from, -0.5);
+  assert.equal(one.to, 23);
   const two = chartVisibleLogicalRange(2);
   assert.ok(two);
-  assert.equal(two.from, -11);
-  assert.equal(two.to, 12);
+  assert.equal(two.from, -0.5);
+  assert.equal(two.to, 23);
 });
 
 test("long series show recent history without inventing a 52-bar empty pad", () => {
   const range = chartVisibleLogicalRange(120);
   assert.ok(range);
   assert.equal(range.from, 30);
-  assert.equal(range.to, 121);
+  assert.equal(range.to, 122);
 });
 
 test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {

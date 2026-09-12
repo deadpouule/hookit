@@ -195,6 +195,10 @@ export function TokenCandleChart({
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    setFitNonce((n) => n + 1);
+  }, [interval]);
+
   const bars = useMemo(() => {
     const fromCandles = liveCandlesToBars(candles, nowSec, marketCap);
     const fromSwaps = ticksToBars(
@@ -360,6 +364,7 @@ export function TokenCandleChart({
               bars={bars}
               style={style}
               scale={scale}
+              interval={interval}
               lineColor={up ? "#10b981" : "#ef4444"}
               fitNonce={fitNonce}
               onHover={setHover}
