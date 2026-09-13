@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { fallbackStockUsd, marketCapUsdForPool } from "./quote-usd";
+import { fallbackStockUsd, isSaneUsd, marketCapUsdForPool } from "./quote-usd";
 
 const wNFLX = "0x7d87fD6A379714194a797c0bBB8B40c30D250856";
 const TOTAL_SUPPLY = 1_000_000_000;
 
 test("wNFLX fallback USD matches on-chain seed (81.94, not 819.4)", () => {
   assert.equal(fallbackStockUsd(wNFLX), 81.94);
+});
+
+test("isSaneUsd: reject blown Quotrons wNFLX tick (~$796 vs $82)", () => {
+  assert.equal(isSaneUsd(796.38, 81.94), false);
+  assert.equal(isSaneUsd(214.89, 211.32), true);
 });
 
 test("multi-pool RWA FDV uses on-chain spot (quote × supply × quoteUsd)", () => {

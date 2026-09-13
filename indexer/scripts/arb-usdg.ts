@@ -76,7 +76,63 @@ export type SweepOptions = {
   keepOnExecutor?: Address[];
   /** Never pull or swap these wStocks — cheap-leg fuel stays on executor/keeper. */
   excludeFromSweep?: Address[];
+  /** When set, only these wStocks are considered (e.g. quotes for one launch). */
+  onlyStocks?: Address[];
+  /**
+   * When stock→USDG fails, try rich wStock → launch token → cheap wStock on launch pools.
+   * `cheapQuote` must match `excludeFromSweep[0]` when set.
+   */
+  launchFallback?: {
+    token: Address;
+    cheapQuote: Address;
+    poolKeyForQuote: (quote: Address) => V4PoolKey | null;
+    convert: (
+      stock: Address,
+      amountIn: bigint,
+    ) => Promise<bigint>;
+  };
 };
+
+const QUOTRON_STOCK_LABELS = new Map<string, string>([
+  ["0x943bf64d566c32a2bcd41ac92fb63c111cc9de8f", "wAAPL"],
+  ["0x910cabde3eba7fc1ce64fd14bd680b9f60fa0f90", "wAMZN"],
+  ["0xf8c5308f80e459bb53d9ebe689854d9cbb2caa6f", "wGOOGL"],
+  ["0xc6639026a3a862cd4fcbae3f67cb2d25a2959d37", "wMCD"],
+  ["0x30987adf0b11dc698438a99ba04ec3a1ab2c7eab", "wMSTR"],
+  ["0x7d87fd6a379714194a797c0bbb8b40c30d250856", "wNFLX"],
+  ["0xa8ddb5cd96b5222afe198316e9a57caa642850d5", "wNVDA"],
+  ["0xe7e553cd128f0011777323a0b44a7b96ea1cb540", "wSPY"],
+  ["0xc3fdbe3a68ee5de461d30415a8165cf9aefe1171", "wTSLA"],
+]);
+
+export function quoteLabel(addr: Address): string {
+  return QUOTRON_STOCK_LABELS.get(addr.toLowerCase()) ?? addr;
+}
+
+/** Seed USD for 1 wStock (matches QuotronStockQuotes / frontend fallback). */
+const QUOTRON_FALLBACK_USD = new Map<string, number>([
+  ["0x943bf64d566c32a2bcd41ac92fb63c111cc9de8f", 309.775],
+  ["0x910cabde3eba7fc1ce64fd14bd680b9f60fa0f90", 263.75],
+  ["0xf8c5308f80e459bb53d9ebe689854d9cbb2caa6f", 349.4],
+  ["0xc6639026a3a862cd4fcbae3f67cb2d25a2959d37", 295],
+  ["0x30987adf0b11dc698438a99ba04ec3a1ab2c7eab", 121.57],
+  ["0x7d87fd6a379714194a797c0bbb8b40c30d250856", 81.94],
+  ["0xa8ddb5cd96b5222afe198316e9a57caa642850d5", 211.32],
+  ["0xe7e553cd128f0011777323a0b44a7b96ea1cb540", 767.582],
+  ["0xc3fdbe3a68ee5de461d30415a8165cf9aefe1171", 351.9],
+]);
+
+export function fallbackStockUsd(addr: Address): number {
+  return QUOTRON_FALLBACK_USD.get(addr.toLowerCase()) ?? 0;
+}
+
+/** wStocks in this launch that are not the current cheap-leg quote (candidates for sweep → USDG). */
+export function nonCheapLaunchStocks(launchQuotes: Address[], cheapQuote: Address): Address[] {
+  const cheap = cheapQuote.toLowerCase();
+  return launchQuotes.filter(
+    (q) => !isEthQuote(q) && isQuotronStock(q) && q.toLowerCase() !== cheap,
+  );
+}
 
 const STATE_VIEW_INK = "0x76Fd297e2D437cd7f76d50F01AfE6160f86e9990" as Address;
 
@@ -360,8 +416,9 @@ export async function sweepStocksToUsdg(
   const executor = options?.executor;
   const keep = options?.keepOnExecutor;
   const exclude = options?.excludeFromSweep;
+  const stocks = options?.onlyStocks ?? QUOTRON_STOCKS;
 
-  for (const stock of QUOTRON_STOCKS) {
+  for (const stock of stocks) {
     if (excludedFromSweep(stock, exclude)) continue;
 
     if (executor && !keepOnExecutor(stock, keep)) {
@@ -377,22 +434,22 @@ export async function sweepStocksToUsdg(
           keeper,
         );
         if (!pulled) {
-          console.log(`[arb-usdg] could not withdraw ${stock} from executor — skip swap`);
-          continue;
+          console.log(`[arb-usdg] could not withdraw ${quoteLabel(stock)} from executor — sweep keeper only`);
         }
       }
     }
 
-    const keeperBal = await readErc20Balance(publicClient, stock, keeper);
+    let keeperBal = await readErc20Balance(publicClient, stock, keeper);
     if (keeperBal === 0n) continue;
 
-    if (!(await canSwapStockToUsdg(publicClient, stock))) {
+    const tickOk = await canSwapStockToUsdg(publicClient, stock);
+    if (!tickOk) {
       console.log(
-        `[arb-usdg] retain ${stock} (${keeperBal} wei) as cheap-leg prefund inventory — stock→USDG tick bound`,
+        `[arb-usdg] ${quoteLabel(stock)} stock→USDG tick tight — trying swap anyway (${keeperBal} wei)`,
       );
-      continue;
     }
 
+    let swept = false;
     try {
       const usdgOut = await swapStockForUsdg(
         publicClient,
@@ -402,10 +459,30 @@ export async function sweepStocksToUsdg(
         keeperBal,
         keeper,
       );
-      console.log(`[arb-usdg] sweep ${stock} → ${usdgOut} USDG wei (keeper)`);
+      console.log(`[arb-usdg] sweep ${quoteLabel(stock)} → ${usdgOut} USDG wei (keeper)`);
+      swept = usdgOut > 0n;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.log(`[arb-usdg] sweep ${stock} failed (${keeperBal} wei): ${msg.split("\n")[0]}`);
+      console.log(`[arb-usdg] sweep ${quoteLabel(stock)} failed (${keeperBal} wei): ${msg.split("\n")[0]}`);
+    }
+
+    if (!swept && options?.launchFallback) {
+      keeperBal = await readErc20Balance(publicClient, stock, keeper);
+      if (keeperBal === 0n) continue;
+      if (stock.toLowerCase() === options.launchFallback.cheapQuote.toLowerCase()) continue;
+      try {
+        const cheapOut = await options.launchFallback.convert(stock, keeperBal);
+        if (cheapOut > 0n) {
+          console.log(
+            `[arb-usdg] launch-route recycle ${quoteLabel(stock)} → ${quoteLabel(options.launchFallback.cheapQuote)}`,
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(
+          `[arb-usdg] retain ${quoteLabel(stock)} (${keeperBal} wei) — USDG + launch route failed: ${msg.split("\n")[0]}`,
+        );
+      }
     }
   }
 }

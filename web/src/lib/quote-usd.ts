@@ -85,6 +85,12 @@ export async function stockUsdFromQuotronPool(
   return Number(usdgWei) / 1e6;
 }
 
+export function isSaneUsd(candidate: number, reference: number, maxRatio = 2.5): boolean {
+  if (!(candidate > 0) || !(reference > 0)) return false;
+  const ratio = candidate / reference;
+  return ratio <= maxRatio && ratio >= 1 / maxRatio;
+}
+
 /** Resolve USD price of one unit of the pool quote (1 ETH, 1 USDG, or 1 wStock). */
 export async function resolveQuoteUsdPrice(
   quoteAddress: Address | undefined,
@@ -93,29 +99,29 @@ export async function resolveQuoteUsdPrice(
   client?: PublicClient,
 ): Promise<number> {
   const kind = resolveQuoteKind(quoteAddress, quoteAsset);
-  // ETH/USD is the live aggregator passed in - factory storage can sit at the $4k seed
-  // until a redeploy that reads the feed in `quoteUsdPriceX18`.
   if (kind === "eth") return ethUsd;
-
-  if (client) {
-    const fromFactory = await readFactoryQuoteUsd(client, quoteAddress, kind);
-    if (fromFactory && fromFactory > 0) return fromFactory;
-  }
-
   if (kind === "stable") return 1;
 
   const listing = quotronStockByAddress(quoteAddress);
-  if (!listing) return fallbackStockUsd(quoteAddress) || 1;
+  const fallback = listing?.fallbackUsd ?? fallbackStockUsd(quoteAddress) ?? 0;
 
-  if (client) {
-    const live = await stockUsdFromQuotronPool(client, listing);
-    if (live && live > 0) return live;
-  }
-
-  const api = await fetchQuotronStockUsdPrice(listing);
+  // Equity/API USD first — same source aggregators like Defined use. Thin Quotrons
+  // wStock/USDG ticks (e.g. NFLX at $796 vs ~$77) must not drive memecoin FDV.
+  const api = listing ? await fetchQuotronStockUsdPrice(listing) : null;
   if (api && api > 0) return api;
 
-  return listing.fallbackUsd ?? 1;
+  if (client && listing) {
+    const live = await stockUsdFromQuotronPool(client, listing);
+    if (live && isSaneUsd(live, fallback || live)) return live;
+  }
+
+  if (client) {
+    const fromFactory = await readFactoryQuoteUsd(client, quoteAddress, kind);
+    if (fromFactory && isSaneUsd(fromFactory, fallback || fromFactory)) return fromFactory;
+  }
+
+  if (fallback > 0) return fallback;
+  return 1;
 }
 
 async function readFactoryQuoteUsd(

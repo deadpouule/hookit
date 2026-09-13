@@ -188,6 +188,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const isClassicDesk = pool.rail === "classic";
   const multi = isMultiPool(pool);
   const markets = useMemo(() => poolMarkets(pool), [pool]);
+  const activeLegLabel = multi ? marketLegLabel(markets[marketIndex] ?? markets[0]!) : null;
   const marketLegs = useMemo(
     () =>
       markets.map((m) => ({
@@ -401,7 +402,16 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
 
         <dl className="token-hero-stats">
-          <HeroStat className="token-hero-stat--desk" label="Market cap" value={formatCompactUsd(live.marketCap)}>
+          <HeroStat
+            className="token-hero-stat--desk"
+            label={activeLegLabel ? `Market cap · ${activeLegLabel}` : "Market cap"}
+            value={formatCompactUsd(live.marketCap)}
+            title={
+              activeLegLabel
+                ? `Spot FDV on the ${activeLegLabel} pool. Other quote tabs can differ until arb aligns them. Defined.fi uses the top pair (usually the richest).`
+                : undefined
+            }
+          >
             {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
           </HeroStat>
           <HeroStat

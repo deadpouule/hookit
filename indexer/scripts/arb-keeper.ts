@@ -33,19 +33,23 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
+import { convertLaunchQuoteToCheapQuote, executeLaunchArb } from "./arb-launch-swap";
+import { rankLaunchMarkets } from "./arb-sane-usd";
 import {
   canSwapUsdgForStock,
   isEthQuote,
   isQuotronStock,
   logKeeperUsdgBalance,
-  maxClipQuoteWei,
+  nonCheapLaunchStocks,
   poolQuoteAddress,
+  quoteLabel,
   readErc20Balance,
   routerAddr,
   sweepStocksToUsdg,
   swapUsdgForStock,
   transferErc20,
   usdgAddr,
+  withdrawExecutorErc20,
   type V4PoolKey,
 } from "./arb-usdg";
 import { resolveInkRpcUrl } from "./rpc-env";
@@ -214,109 +218,40 @@ async function readPoolKey(
   };
 }
 
-async function readQuoteUsdX18(
-  publicClient: ReturnType<typeof createPublicClient>,
-  factory: Address,
-  quote: Address,
-): Promise<{ quoteUsdX18: bigint; decimals: number } | null> {
-  if (isEthQuote(quote)) return null;
-  try {
-    const quoteUsdX18 = (await publicClient.readContract({
-      address: factory,
-      abi: launchFactoryAbi,
-      functionName: "quoteUsdPriceX18",
-      args: [quote],
-    })) as bigint;
-    const cfg = (await publicClient.readContract({
-      address: factory,
-      abi: launchFactoryAbi,
-      functionName: "quoteConfigs",
-      args: [quote],
-    })) as readonly [boolean, number, bigint, bigint];
-    const decimals = Number(cfg[1]) || 18;
-    if (quoteUsdX18 === 0n) return null;
-    return { quoteUsdX18, decimals };
-  } catch {
-    return null;
-  }
-}
-
-/** Top up executor cheap-quote fuel (leg 1 spends quote → buys launch token). Reuses keeper wStock first. */
-async function prefundExecutorCheapLeg(
-  publicClient: ReturnType<typeof createPublicClient>,
-  walletClient: ReturnType<typeof createWalletClient>,
-  opts: {
-    factory: Address;
-    executor: Address;
-    router: Address;
-    launchId: bigint;
-    cheapIndex: number;
-    maxClipUsdX18: bigint;
-    account: Address;
-  },
-): Promise<void> {
-  const { factory, executor, router, launchId, cheapIndex, maxClipUsdX18, account } = opts;
-  const usdg = usdgAddr();
-  const cheapQuote = await cheapQuoteForMarket(publicClient, factory, launchId, cheapIndex);
-
-  if (isEthQuote(cheapQuote)) {
-    console.log("[arb-keeper] cheap leg is ETH — prefund USDG not supported; fund executor with ETH");
-    return;
-  }
-  if (!isQuotronStock(cheapQuote)) {
-    console.log(`[arb-keeper] cheap quote ${cheapQuote} is not a Quotrons wStock — skip prefund`);
-    return;
-  }
-
-  const quoteMeta = await readQuoteUsdX18(publicClient, factory, cheapQuote);
-  if (!quoteMeta) {
-    console.log(`[arb-keeper] no USD price for cheap quote ${cheapQuote}`);
-    return;
-  }
-
-  const targetClip = maxClipQuoteWei(
-    maxClipUsdX18,
-    quoteMeta.quoteUsdX18,
-    quoteMeta.decimals,
-  );
-  const execBal = await readErc20Balance(publicClient, cheapQuote, executor);
-  if (targetClip > 0n && execBal >= targetClip) {
+/** Spend spendable USDG → cheap wStock. Skip when Quotrons USD is an outlier (would overpay 10x). */
+async function prefundCheapFromUsdg(
+  const { router, cheapQuote, usdgBuySane, account, sendTo } = opts;
+  if (!usdgBuySane) {
     console.log(
-      `[arb-keeper] executor has cheap fuel (${execBal} wei ≥ clip ${targetClip}) — skip USDG buy`,
+      `[arb-keeper] skip USDG→${quoteLabel(cheapQuote)} — Quotrons/factory USD is not sane vs listing seed`,
     );
-    return;
+    return 0n;
   }
+  if (isEthQuote(cheapQuote) || !isQuotronStock(cheapQuote)) return 0n;
 
   const usdgBuyOk = await canSwapUsdgForStock(publicClient, cheapQuote);
   if (!usdgBuyOk) {
-    console.log(`[arb-keeper] USDG→${cheapQuote} tick-bound — using on-hand cheap wStock only`);
-    return;
+    console.log(`[arb-keeper] USDG→${quoteLabel(cheapQuote)} tick-bound — using on-hand cheap wStock only`);
+    return 0n;
   }
 
+  const usdg = usdgAddr();
   const keeperUsdg = await readErc20Balance(publicClient, usdg, account);
-  const reserve = BigInt(process.env.MULTI_PAIR_ARB_USDG_RESERVE ?? "500000");
-  const spendableUsdg = keeperUsdg > reserve ? keeperUsdg - reserve : 0n;
-  if (spendableUsdg === 0n) {
-    console.log(`[arb-keeper] keeper USDG ${keeperUsdg} too low to top up cheap fuel`);
-    return;
+  const reserve = BigInt(process.env.MULTI_PAIR_ARB_USDG_RESERVE ?? "10000");
+  const budget = keeperUsdg > reserve ? keeperUsdg - reserve : 0n;
+  if (budget === 0n) {
+    console.log(`[arb-keeper] keeper USDG ${keeperUsdg} too low to buy ${quoteLabel(cheapQuote)}`);
+    return 0n;
   }
 
-  const deficitWei = targetClip > execBal ? targetClip - execBal : 0n;
-  const deficitUsdg =
-    deficitWei > 0n
-      ? (deficitWei * quoteMeta.quoteUsdX18) / 10n ** BigInt(quoteMeta.decimals) / 10n ** 12n
-      : 0n;
-  const maxUsdgClip = maxClipUsdX18 / 10n ** 12n;
-  let budget = deficitUsdg > 0n ? deficitUsdg : maxUsdgClip;
-  if (budget > maxUsdgClip) budget = maxUsdgClip;
-  if (budget > spendableUsdg) budget = spendableUsdg;
-  if (budget === 0n) return;
-
-  console.log(`[arb-keeper] USDG top-up launch ${launchId}: ${budget} wei → ${cheapQuote}`);
+  console.log(`[arb-keeper] USDG→${quoteLabel(cheapQuote)} spend ${budget} wei`);
   const stockOut = await swapUsdgForStock(publicClient, walletClient, router, cheapQuote, budget, account);
-  if (stockOut === 0n) return;
-  await transferErc20(walletClient, publicClient, cheapQuote, executor, stockOut);
-  console.log(`[arb-keeper] USDG top-up ok — sent ${stockOut} wei ${cheapQuote} to executor`);
+  if (stockOut === 0n) return 0n;
+  if (sendTo.toLowerCase() !== account.toLowerCase()) {
+    await transferErc20(walletClient, publicClient, cheapQuote, sendTo, stockOut);
+    console.log(`[arb-keeper] sent ${stockOut} wei ${quoteLabel(cheapQuote)} → ${sendTo}`);
+  }
+  return stockOut;
 }
 
 /** Push keeper wStock inventory onto the executor (arb clips are capped by executor balance). */
@@ -334,7 +269,7 @@ async function moveKeeperCheapStockToExecutor(
   await transferErc20(walletClient, publicClient, cheapQuote, executor, keeperStock);
   const send = keeperStock;
   console.log(
-    `[arb-keeper] direct prefund launch ${launchId}: sent ${send} wei ${cheapQuote} keeper → executor`,
+    `[arb-keeper] direct prefund launch ${launchId}: sent ${send} wei ${quoteLabel(cheapQuote)} keeper → executor`,
   );
   return send;
 }
@@ -354,6 +289,143 @@ async function cheapQuoteForMarket(
   const token = (launch as readonly [Address])[0];
   const cheapKey = await readPoolKey(publicClient, factory, launchId, marketIndex);
   return poolQuoteAddress(cheapKey, token);
+}
+
+async function launchMarketQuotes(
+  publicClient: ReturnType<typeof createPublicClient>,
+  factory: Address,
+  launchId: bigint,
+  marketCount: number,
+): Promise<Address[]> {
+  const quotes: Address[] = [];
+  for (let i = 0; i < marketCount; i++) {
+    quotes.push(await cheapQuoteForMarket(publicClient, factory, launchId, i));
+  }
+  return quotes;
+}
+
+async function logFuelBalances(
+  publicClient: ReturnType<typeof createPublicClient>,
+  executor: Address,
+  keeper: Address,
+  launchQuotes: Address[],
+  cheapQuote: Address,
+  prefix = "",
+): Promise<void> {
+  const cheap = cheapQuote.toLowerCase();
+  const parts: string[] = [];
+  for (const quote of launchQuotes) {
+    const eb = await readErc20Balance(publicClient, quote, executor);
+    const kb = await readErc20Balance(publicClient, quote, keeper);
+    if (eb === 0n && kb === 0n) continue;
+    const tag = quote.toLowerCase() === cheap ? "cheap" : "rich/other";
+    parts.push(`${quoteLabel(quote)}[${tag}] exec=${eb} keeper=${kb}`);
+  }
+  const usdgBal = await readErc20Balance(publicClient, usdgAddr(), keeper);
+  console.log(`${prefix}[arb-keeper] fuel ${parts.join(" ")} USDG=${usdgBal}`);
+}
+
+function logPreview(launchId: bigint, preview: ArbPreview, prefix = ""): void {
+  console.log(
+    `${prefix}[arb-keeper] launch ${launchId} markets=${preview.marketCount}` +
+      ` cheap=${preview.cheapIndex} rich=${preview.richIndex}` +
+      ` cheapUsd=${preview.cheapUsdX18} richUsd=${preview.richUsdX18}` +
+      ` devBps=${preview.deviationBps} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
+  );
+}
+
+/** Pull rich / stranded launch wStocks → USDG (or cheap via launch pools). Keep the true cheap-leg quote. */
+async function liquidateNonCheapLaunchStocks(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  opts: {
+    factory: Address;
+    executor: Address;
+    router: Address;
+    launchId: bigint;
+    token: Address;
+    cheapQuote: Address;
+    cheapIndex: number;
+    launchQuotes: Address[];
+    keeper: Address;
+  },
+): Promise<void> {
+  const { factory, executor, router, launchId, token, cheapQuote, cheapIndex, launchQuotes, keeper } = opts;
+  const toLiquidate = nonCheapLaunchStocks(launchQuotes, cheapQuote);
+  if (toLiquidate.length === 0) return;
+  console.log(
+    `[arb-keeper] liquidate non-cheap inventory → USDG: ${toLiquidate.map(quoteLabel).join(", ")}`,
+  );
+
+  for (const stock of toLiquidate) {
+    const execBal = await readErc20Balance(publicClient, stock, executor);
+    if (execBal === 0n) continue;
+    const pulled = await withdrawExecutorErc20(
+      publicClient,
+      walletClient,
+      executor,
+      stock,
+      keeper,
+      execBal,
+      keeper,
+    );
+    console.log(`[arb-keeper] pulled ${quoteLabel(stock)} ${execBal} wei from executor (ok=${pulled})`);
+  }
+
+  const cheapPoolKey = await readPoolKey(publicClient, factory, launchId, cheapIndex);
+  const poolKeyByQuote = new Map<string, V4PoolKey>();
+  for (let i = 0; i < launchQuotes.length; i++) {
+    poolKeyByQuote.set(launchQuotes[i]!.toLowerCase(), await readPoolKey(publicClient, factory, launchId, i));
+  }
+
+  await sweepStocksToUsdg(publicClient, walletClient, router, keeper, {
+    executor,
+    excludeFromSweep: [cheapQuote],
+    onlyStocks: toLiquidate,
+    launchFallback: {
+      token,
+      cheapQuote,
+      poolKeyForQuote: (quote) => poolKeyByQuote.get(quote.toLowerCase()) ?? null,
+      convert: async (fromQuote, amountIn) => {
+        const fromPoolKey = poolKeyByQuote.get(fromQuote.toLowerCase());
+        if (!fromPoolKey) return 0n;
+        return convertLaunchQuoteToCheapQuote(publicClient, walletClient, router, {
+          token,
+          fromQuote,
+          fromPoolKey,
+          cheapQuote,
+          cheapPoolKey,
+          amountIn,
+          account: keeper,
+        });
+      },
+    },
+  });
+}
+
+async function pullExecutorStock(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  executor: Address,
+  stock: Address,
+  keeper: Address,
+): Promise<bigint> {
+  const execBal = await readErc20Balance(publicClient, stock, executor);
+  if (execBal === 0n) return 0n;
+  const pulled = await withdrawExecutorErc20(
+    publicClient,
+    walletClient,
+    executor,
+    stock,
+    keeper,
+    execBal,
+    keeper,
+  );
+  if (pulled) {
+    console.log(`[arb-keeper] pulled ${quoteLabel(stock)} ${execBal} wei from executor`);
+    return execBal;
+  }
+  return 0n;
 }
 
 async function main() {
@@ -450,88 +522,194 @@ async function main() {
   }
 
   for (const launchId of launchIds) {
-    let preview = await readPreview(publicClient, executor, launchId);
-    console.log(
-      `[arb-keeper] launch ${launchId} markets=${preview.marketCount} cheap=${preview.cheapIndex} rich=${preview.richIndex}` +
-        ` cheapUsd=${preview.cheapUsdX18} richUsd=${preview.richUsdX18} devBps=${preview.deviationBps}` +
-        ` clip=${preview.clipQuoteWei} executable=${preview.executable}`,
-    );
+    const preview = await readPreview(publicClient, executor, launchId);
+    logPreview(launchId, preview);
+    if (preview.marketCount < 2) continue;
 
-    const skewed =
-      preview.marketCount >= 2 &&
-      preview.deviationBps >= Number(minDev) &&
-      preview.cheapUsdX18 > 0n &&
-      preview.cheapIndex !== preview.richIndex;
-
-    if (!skewed) continue;
-
-    const cheapQuote = await cheapQuoteForMarket(
-      publicClient,
-      factoryAddr,
-      launchId,
-      preview.cheapIndex,
-    );
-
-    if (sweepUsdg && router && !dryRun) {
-      await sweepStocksToUsdg(publicClient, walletClient, router, account.address, {
-        executor,
-        excludeFromSweep: [cheapQuote],
-      });
+    const launch = await publicClient.readContract({
+      address: factoryAddr,
+      abi: launchFactoryAbi,
+      functionName: "launches",
+      args: [launchId],
+    });
+    const token = (launch as readonly [Address])[0];
+    const launchQuotes = await launchMarketQuotes(publicClient, factoryAddr, launchId, preview.marketCount);
+    const poolKeys: V4PoolKey[] = [];
+    const factoryUsdByQuote = new Map<string, number>();
+    for (let i = 0; i < launchQuotes.length; i++) {
+      poolKeys.push(await readPoolKey(publicClient, factoryAddr, launchId, i));
+      const q = launchQuotes[i]!;
+      if (isEthQuote(q)) continue;
+      try {
+        const x18 = (await publicClient.readContract({
+          address: factoryAddr,
+          abi: launchFactoryAbi,
+          functionName: "quoteUsdPriceX18",
+          args: [q],
+        })) as bigint;
+        factoryUsdByQuote.set(q.toLowerCase(), Number(x18) / 1e18);
+      } catch {
+        factoryUsdByQuote.set(q.toLowerCase(), 0);
+      }
     }
 
-    if (!dryRun) {
-      await moveKeeperCheapStockToExecutor(
-        publicClient,
-        walletClient,
-        cheapQuote,
-        executor,
-        account.address,
-        launchId,
-      );
-      preview = await readPreview(publicClient, executor, launchId);
-      console.log(
-        `[arb-keeper] after cheap-fuel move clip=${preview.clipQuoteWei} executable=${preview.executable}`,
-      );
+    const sane = await rankLaunchMarkets(publicClient, {
+      token,
+      quotes: launchQuotes,
+      poolKeys,
+      factoryUsdByQuote,
+      onChainCheapIndex: preview.cheapIndex,
+      onChainRichIndex: preview.richIndex,
+    });
+    if (!sane) {
+      console.log(`[arb-keeper] launch ${launchId}: cannot rank markets`);
+      continue;
     }
 
-    if (!preview.executable && prefundUsdg && router && !dryRun) {
-      await prefundExecutorCheapLeg(publicClient, walletClient, {
+    const skewed = sane.deviationBps >= Number(minDev);
+    if (!dryRun && router && sweepUsdg) {
+      await liquidateNonCheapLaunchStocks(publicClient, walletClient, {
         factory: factoryAddr,
         executor,
         router,
         launchId,
-        cheapIndex: preview.cheapIndex,
-        maxClipUsdX18: maxClip,
-        account: account.address,
+        token,
+        cheapQuote: sane.cheapQuote,
+        cheapIndex: sane.cheapIndex,
+        launchQuotes,
+        keeper: account.address,
       });
-      preview = await readPreview(publicClient, executor, launchId);
     }
 
-    if (!preview.executable) {
-      console.log(`[arb-keeper] skip execute(${launchId}): clip=0 — move cheap wStock to executor`);
+    if (!skewed) {
+      console.log(`[arb-keeper] launch ${launchId} deviation ${sane.deviationBps} bps below min ${minDev}`);
+      if (!dryRun && router && sweepUsdg && sane.usdgBuySane) {
+        await sweepStocksToUsdg(publicClient, walletClient, router, account.address, {
+          executor,
+          onlyStocks: [sane.cheapQuote],
+        });
+      }
       continue;
     }
+
+    await logFuelBalances(
+      publicClient,
+      executor,
+      account.address,
+      launchQuotes,
+      sane.cheapQuote,
+      "[arb-keeper] pre-arb ",
+    );
+
     if (dryRun) {
-      console.log(`[arb-keeper] dry-run skip execute(${launchId})`);
+      console.log(
+        `[arb-keeper] dry-run would arb ${quoteLabel(sane.cheapQuote)} → token → ${quoteLabel(sane.richQuote)}` +
+          (sane.matchesOnChain ? " via executor" : " via router (on-chain oracle disagrees)"),
+      );
+      continue;
+    }
+    if (!router) {
+      console.log("[arb-keeper] no router — cannot prefund or router-arb");
       continue;
     }
 
-    const hash = (await walletClient.writeContract({
-      address: executor,
-      abi: executorAbi,
-      functionName: "execute",
-      args: [launchId],
-    })) as Hash;
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    if (receipt.status !== "success") throw new Error(`execute(${launchId}) reverted (${hash})`);
-    console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
+    if (!dryRun) {
+      await pullExecutorStock(publicClient, walletClient, executor, sane.cheapQuote, account.address);
+    }
 
-    if (sweepUsdg && router) {
-      await sweepStocksToUsdg(publicClient, walletClient, router, account.address, {
-        executor,
-        excludeFromSweep: [cheapQuote],
+    if (prefundUsdg) {
+      await prefundCheapFromUsdg(publicClient, walletClient, {
+        router,
+        cheapQuote: sane.cheapQuote,
+        usdgBuySane: sane.usdgBuySane,
+        account: account.address,
+        sendTo: sane.matchesOnChain ? executor : account.address,
       });
     }
+
+    if (sane.matchesOnChain) {
+      await moveKeeperCheapStockToExecutor(
+        publicClient,
+        walletClient,
+        sane.cheapQuote,
+        executor,
+        account.address,
+        launchId,
+      );
+      const funded = await readPreview(publicClient, executor, launchId);
+      logPreview(launchId, funded, "[arb-keeper] funded ");
+      if (!funded.executable) {
+        console.log(
+          `[arb-keeper] skip execute(${launchId}): need ${quoteLabel(sane.cheapQuote)} on executor`,
+        );
+      } else {
+        const hash = (await walletClient.writeContract({
+          address: executor,
+          abi: executorAbi,
+          functionName: "execute",
+          args: [launchId],
+        })) as Hash;
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        if (receipt.status !== "success") throw new Error(`execute(${launchId}) reverted (${hash})`);
+        console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
+      }
+    } else {
+      const cheapOnKeeper = await readErc20Balance(publicClient, sane.cheapQuote, account.address);
+      if (cheapOnKeeper === 0n) {
+        console.log(
+          `[arb-keeper] skip router arb: no ${quoteLabel(sane.cheapQuote)} (and USDG buy is ${sane.usdgBuySane ? "ok" : "blocked as insane oracle"})`,
+        );
+      } else {
+        const result = await executeLaunchArb(publicClient, walletClient, router, {
+          token,
+          cheapQuote: sane.cheapQuote,
+          cheapPoolKey: poolKeys[sane.cheapIndex]!,
+          richQuote: sane.richQuote,
+          richPoolKey: poolKeys[sane.richIndex]!,
+          cheapAmountIn: cheapOnKeeper,
+          account: account.address,
+        });
+        console.log(
+          `[arb-keeper] ok router arb launch ${launchId} tokenSold=${result.tokenSold} quoteOut=${result.quoteOut}`,
+        );
+      }
+    }
+
+    if (sweepUsdg) {
+      await liquidateNonCheapLaunchStocks(publicClient, walletClient, {
+        factory: factoryAddr,
+        executor,
+        router,
+        launchId,
+        token,
+        cheapQuote: sane.cheapQuote,
+        cheapIndex: sane.cheapIndex,
+        launchQuotes,
+        keeper: account.address,
+      });
+      if (sane.usdgBuySane) {
+        await sweepStocksToUsdg(publicClient, walletClient, router, account.address, {
+          executor,
+          onlyStocks: [sane.cheapQuote],
+        });
+      } else {
+        const leftoverCheap = await readErc20Balance(publicClient, sane.cheapQuote, account.address);
+        if (leftoverCheap > 0n) {
+          console.log(
+            `[arb-keeper] keep ${quoteLabel(sane.cheapQuote)} (${leftoverCheap} wei) — USDG buy not sane`,
+          );
+        }
+      }
+    }
+
+    await logFuelBalances(
+      publicClient,
+      executor,
+      account.address,
+      launchQuotes,
+      sane.cheapQuote,
+      "[arb-keeper] post-arb ",
+    );
   }
 
   if (!dryRun) {
