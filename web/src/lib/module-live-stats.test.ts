@@ -235,6 +235,26 @@ test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
     ),
     `1.5 ETH accrued · 1.5 ETH pending · first unlock $10M 20%`,
   );
+  assert.equal(
+    moduleLiveStatLine(
+      "buyback-vesting",
+      {
+        buybackVestingMcapUsd: 10_000_000,
+        buybackVestingUnlockMode: "steps",
+        buybackVestingStepPct: [20, 20, 15, 15, 15, 15],
+      } as LaunchModules,
+      {
+        ...empty,
+        buybackTotalHuman: 1.5,
+        buybackClaimedHuman: 0,
+        buybackClaimableHuman: 0.3,
+        buybackClaimableWei: 3n * 10n ** 17n,
+        buybackQuoteDecimals: 18,
+      },
+      { marketCap: 10_000_000 },
+    ),
+    `1.5 ETH accrued · 1.5 ETH pending · 20% unlocked · next $50M 20%`,
+  );
 });
 
 test("holder-airdrop chip shows total airdropped, pending, and FDV unlocks", () => {

@@ -181,9 +181,8 @@ export function moduleLiveStatLine(
           : `${formatAmount(live.buybackClaimableHuman ?? 0, live.quoteLabel)} claimable`
         : null;
       const pendingPart =
-        !claimablePart && pendingHuman > 0
-          ? `${formatAmount(pendingHuman, live.quoteLabel)} pending`
-          : null;
+        pendingHuman > 0 ? `${formatAmount(pendingHuman, live.quoteLabel)} pending` : null;
+      const showClaimable = Boolean(claimablePart) && mcapUsd <= 0;
       const fdvUsd = live.buybackHighWaterFdvUsd ?? pool.marketCap ?? null;
       const unlock =
         mcapUsd > 0
@@ -197,7 +196,7 @@ export function moduleLiveStatLine(
             })
           : remain;
       const attached = attachUnlock(pendingPart, unlock);
-      return joinChip(accruedPart, claimablePart, attached.pending, attached.unlock);
+      return joinChip(accruedPart, showClaimable ? claimablePart : null, attached.pending, attached.unlock);
     }
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
