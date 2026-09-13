@@ -1017,7 +1017,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Hook tax is queued to pendingDeepenLps[poolId] and minted in afterSwap.",
             "If the nested mint fails, the same amount is re-queued. Funds are not lost.",
-            "The token page can show pending deepen from pendingDeepenLps(poolId).",
+            "The token page sums LpDeepened(poolId, quoteAmount) as quote already minted into the LP, and still shows pendingDeepenLps(poolId) when the queue is non-zero.",
             "Share of the hook pot must sum to 100% with floor / burn / airdrop when any sink is on.",
           ],
         },

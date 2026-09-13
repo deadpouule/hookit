@@ -20,6 +20,8 @@ export type ModuleLiveStats = {
   airdropEpochSec: number | null;
   burnedPct: number | null;
   deepenLpsPendingHuman: number | null;
+  /** Quote already minted into the launch LP via Deepen LPs (`LpDeepened` sum). */
+  deepenLpsAddedHuman?: number | null;
   buybackTotalHuman: number | null;
   buybackClaimableHuman: number | null;
   buybackClaimedHuman: number | null;
@@ -187,8 +189,20 @@ export function moduleLiveStatLine(
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
     case "deepen-lps": {
-      const pending = formatAmount(live.deepenLpsPendingHuman, live.quoteLabel);
-      return `${modules.deepenLpsPct}% of hook fees · ${pending} queued to deepen LP`;
+      const added = live.deepenLpsAddedHuman;
+      const pending = live.deepenLpsPendingHuman;
+      const addedPart =
+        added == null ? null : `${formatAmount(added, live.quoteLabel)} added to LP`;
+      const queuedPart =
+        pending != null && pending > 0 ? `${formatAmount(pending, live.quoteLabel)} queued` : null;
+      if (addedPart && queuedPart) {
+        return `${modules.deepenLpsPct}% of hook fees · ${addedPart} · ${queuedPart}`;
+      }
+      if (addedPart) {
+        return `${modules.deepenLpsPct}% of hook fees · ${addedPart}`;
+      }
+      const pendingPart = formatAmount(pending, live.quoteLabel);
+      return `${modules.deepenLpsPct}% of hook fees · ${pendingPart} queued to deepen LP`;
     }
     case "holder-airdrop": {
       const potHuman = live.airdropPendingHuman;

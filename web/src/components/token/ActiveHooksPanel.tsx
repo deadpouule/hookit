@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatUnits, zeroAddress, type Address } from "viem";
-import { useReadContract } from "wagmi";
+import { usePublicClient, useReadContract } from "wagmi";
 
 import { useNowSeconds } from "@/hooks/useNowSeconds";
 
@@ -23,6 +23,7 @@ import {
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
+import { fetchDeepenLpsAdded } from "@/lib/deepen-lps-added";
 import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { quotePerTokenFromSqrtPrice, STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
 import { hookTaxSummary, totalFeePlain } from "@/lib/launch-module-summary";
@@ -179,6 +180,31 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!masterHook && !!poolId && needDeepenLps, refetchInterval: 15_000 },
   });
 
+  const publicClient = usePublicClient();
+  const [deepenLpsAddedHuman, setDeepenLpsAddedHuman] = useState<number | null>(null);
+  useEffect(() => {
+    if (!publicClient || !masterHook || !poolId || !needDeepenLps) {
+      setDeepenLpsAddedHuman(null);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      fetchDeepenLpsAdded(publicClient, masterHook, poolId, pool.launchedAt)
+        .then((wei) => {
+          if (!cancelled) setDeepenLpsAddedHuman(Number(formatUnits(wei, decimals)));
+        })
+        .catch(() => {
+          if (!cancelled) setDeepenLpsAddedHuman(null);
+        });
+    };
+    load();
+    const id = window.setInterval(load, 20_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [publicClient, masterHook, poolId, needDeepenLps, pool.launchedAt, decimals]);
+
   const { data: floorPriceX18 } = useReadContract({
     address: floorVault as Address | undefined,
     abi: floorVaultAbi,
@@ -332,6 +358,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       pendingDeepenLpsWei !== undefined
         ? Number(formatUnits(pendingDeepenLpsWei as bigint, decimals))
         : null,
+    deepenLpsAddedHuman,
     buybackTotalHuman,
     buybackClaimableHuman,
     buybackClaimedHuman,
@@ -376,7 +403,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                 tip={tip}
                 quoteLabel={live.quoteLabel}
                 mark={
-                  hook.id === "holder-airdrop" ? (
+                  hook.id === "holder-airdrop" || hook.id === "deepen-lps" ? (
                     <PoolQuoteMark quoteAddress={pool.quoteAddress} quoteAsset={pool.quoteAsset} />
                   ) : undefined
                 }

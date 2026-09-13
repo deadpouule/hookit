@@ -149,6 +149,57 @@ test("backed-floor chip includes premium vs DEX spot", () => {
   assert.equal(line, `40% · Vault 0.1 ETH · Floor ${formatCompactQuoteAmount(1e-9)} ETH · +900% prem`);
 });
 
+test("deepen-lps chip prefers quote added to LP over the pending queue", () => {
+  const modules = { deepenLpsPct: 30 } as LaunchModules;
+  const base = {
+    floorPriceHuman: null,
+    spotPriceHuman: null,
+    floorReserveHuman: null,
+    airdropPendingHuman: null,
+    airdropSecondsLeft: null,
+    airdropLastAtSec: null,
+    airdropEpochSec: null,
+    burnedPct: null,
+    deepenLpsPendingHuman: 1.25,
+    buybackTotalHuman: null,
+    buybackClaimableHuman: null,
+    buybackClaimedHuman: null,
+    buybackVestSecondsLeft: null,
+    quoteLabel: "WETH",
+  };
+  assert.equal(
+    moduleLiveStatLine("deepen-lps", modules, base, {}),
+    `30% of hook fees · ${formatCompactQuoteAmount(1.25)} WETH queued to deepen LP`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0, deepenLpsAddedHuman: 12.4, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    `30% of hook fees · ${formatCompactQuoteAmount(12.4)} wNVDAx added to LP`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0.5, deepenLpsAddedHuman: 12.4, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    `30% of hook fees · ${formatCompactQuoteAmount(12.4)} wNVDAx added to LP · ${formatCompactQuoteAmount(0.5)} wNVDAx queued`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0, deepenLpsAddedHuman: 0, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    "30% of hook fees · 0 wNVDAx added to LP",
+  );
+});
+
 test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
   const modules = { buybackVestingMcapUsd: 10_000_000 } as LaunchModules;
   const empty = {
