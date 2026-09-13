@@ -207,7 +207,7 @@ export async function withdrawExecutorErc20(
     functionName: "owner",
   })) as Address;
   if (owner.toLowerCase() !== account.toLowerCase()) {
-    console.log(`[arb-keeper] skip withdraw ${token}: keeper is not executor owner`);
+    console.log(`[arb-usdg] skip withdraw ${token}: keeper is not executor owner`);
     return false;
   }
   const hash = (await walletClient.writeContract({
@@ -218,6 +218,53 @@ export async function withdrawExecutorErc20(
   })) as Hash;
   await publicClient.waitForTransactionReceipt({ hash });
   return true;
+}
+
+/**
+ * Pull wStock from executor (if any), swap all keeper wStock → USDG on Quotrons.
+ * Arb output lands on the rich leg (often a different wStock than prefund) — always
+ * recycle to USDG so the keeper can prefund the next cheap leg.
+ */
+export async function sweepStocksToUsdg(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  router: Address,
+  keeper: Address,
+  executor?: Address,
+): Promise<void> {
+  for (const stock of QUOTRON_STOCKS) {
+    if (executor) {
+      const execBal = await readErc20Balance(publicClient, stock, executor);
+      if (execBal > 0n) {
+        const pulled = await withdrawExecutorErc20(
+          publicClient,
+          walletClient,
+          executor,
+          stock,
+          keeper,
+          execBal,
+          keeper,
+        );
+        if (!pulled) {
+          console.log(`[arb-usdg] could not withdraw ${stock} from executor — skip swap`);
+          continue;
+        }
+      }
+    }
+
+    const keeperBal = await readErc20Balance(publicClient, stock, keeper);
+    if (keeperBal === 0n) continue;
+
+    const usdgOut = await swapStockForUsdg(
+      publicClient,
+      walletClient,
+      router,
+      stock,
+      keeperBal,
+      keeper,
+    );
+    console.log(`[arb-usdg] sweep ${stock} → ${usdgOut} USDG wei (keeper)`);
+  }
 }
 
 export function usdgAddr(): Address {

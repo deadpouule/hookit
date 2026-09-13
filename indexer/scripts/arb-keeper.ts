@@ -15,7 +15,7 @@
  *   MULTI_PAIR_ARB_LAUNCH_IDS            optional comma filter (default: auto-scan)
  *   MULTI_PAIR_ARB_AUTO=true             auto-discover launchMulti ids
  *   MULTI_PAIR_ARB_PREFUND_USDG=true     swap keeper USDG → cheap wStock for executor
- *   MULTI_PAIR_ARB_SWEEP_USDG=true       sweep executor wStock → keeper USDG after arb
+ *   MULTI_PAIR_ARB_SWEEP_USDG=true       recycle executor/keeper wStock → USDG (default on)
  *   HOOKIT_SWAP_ROUTER                   HookitSwapRouter (required for USDG prefund)
  *   LAUNCH_FACTORY                       factory to scan (default: executor.factory())
  *   FEE_KEEPER_PRIVATE_KEY / PRIVATE_KEY keeper wallet (operator + ideally owner)
@@ -33,18 +33,16 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
-  QUOTRON_STOCKS,
   isEthQuote,
   isQuotronStock,
   poolQuoteAddress,
   prefundUsdgBudget,
   readErc20Balance,
   routerAddr,
-  swapStockForUsdg,
+  sweepStocksToUsdg,
   swapUsdgForStock,
   transferErc20,
   usdgAddr,
-  withdrawExecutorErc20,
   type V4PoolKey,
 } from "./arb-usdg";
 import { resolveInkRpcUrl } from "./rpc-env";
@@ -266,31 +264,6 @@ async function prefundExecutorCheapLeg(
   console.log(`[arb-keeper] prefund ok — sent ${stockOut} wei ${cheapQuote} to executor`);
 }
 
-async function sweepExecutorStocksToUsdg(
-  publicClient: ReturnType<typeof createPublicClient>,
-  walletClient: ReturnType<typeof createWalletClient>,
-  executor: Address,
-  router: Address,
-  account: Address,
-): Promise<void> {
-  for (const stock of QUOTRON_STOCKS) {
-    const bal = await readErc20Balance(publicClient, stock, executor);
-    if (bal === 0n) continue;
-    const pulled = await withdrawExecutorErc20(
-      publicClient,
-      walletClient,
-      executor,
-      stock,
-      account,
-      bal,
-      account,
-    );
-    if (!pulled) return;
-    const usdgOut = await swapStockForUsdg(publicClient, walletClient, router, stock, bal, account);
-    console.log(`[arb-keeper] sweep ${stock} → ${usdgOut} USDG wei`);
-  }
-}
-
 async function main() {
   const enabled = envBool("MULTI_PAIR_ARB", false);
   if (!enabled) {
@@ -365,6 +338,11 @@ async function main() {
     hasKeeperKey ? account.address : "not configured",
   );
 
+  // Recycle stranded wStock (wrong prefund leg or prior partial run) before scanning.
+  if (sweepUsdg && router && !dryRun) {
+    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
+  }
+
   let launchIds: bigint[];
   if (manualLaunchIds !== null) {
     launchIds = manualLaunchIds;
@@ -401,7 +379,7 @@ async function main() {
     if (!preview.executable && skewed && prefundUsdg && router && !dryRun) {
       // Wrong-leg wStock strands on the executor when cheap/rich flips — recycle to USDG first.
       if (sweepUsdg) {
-        await sweepExecutorStocksToUsdg(publicClient, walletClient, executor, router, account.address);
+        await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
       }
       const maxPrefundAttempts = 3;
       for (let attempt = 1; attempt <= maxPrefundAttempts; attempt++) {
@@ -422,7 +400,7 @@ async function main() {
         );
         if (preview.executable || preview.clipQuoteWei > 0n) break;
         if (attempt < maxPrefundAttempts && sweepUsdg) {
-          await sweepExecutorStocksToUsdg(publicClient, walletClient, executor, router, account.address);
+          await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
         }
       }
     } else if (!preview.executable && skewed && prefundUsdg && dryRun) {
@@ -446,8 +424,13 @@ async function main() {
     console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
 
     if (sweepUsdg && router) {
-      await sweepExecutorStocksToUsdg(publicClient, walletClient, executor, router, account.address);
+      await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
     }
+  }
+
+  // Rich-leg arb output is wStock — always end in USDG on the keeper for the next prefund.
+  if (sweepUsdg && router && !dryRun) {
+    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
   }
 
   console.log("[arb-keeper] ARB_KEEPER_OK");
