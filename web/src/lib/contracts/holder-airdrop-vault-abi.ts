@@ -49,6 +49,33 @@ export const holderAirdropVaultAbi = [
   },
   {
     type: "function",
+    name: "accrued",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "quoteId", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "released",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "quoteId", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "highWaterFdvUsd",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "holderCount",
     inputs: [{ name: "token", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],

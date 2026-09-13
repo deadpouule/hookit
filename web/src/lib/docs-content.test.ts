@@ -79,6 +79,8 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.equal(blob.includes("supplies the holder set from the indexer"), false);
   assert.match(blob, /holderTracker/);
   assert.match(blob, /LpDeepened/);
+  assert.match(blob, /already airdropped/);
+  assert.match(blob, /quote accrued into BuybackVault/);
   assert.match(blob, /Six wizard steps/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(sections.filter((section) => section.id === "floor").length, 1);
