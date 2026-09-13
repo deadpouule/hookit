@@ -11,7 +11,7 @@ import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPhoneRequest } from "@/lib/device";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, socialMetadata } from "@/lib/site-metadata";
+import { SITE_DESCRIPTION, SITE_FAVICON, SITE_NAME, SITE_URL, socialMetadata } from "@/lib/site-metadata";
 
 import "./globals.css";
 
@@ -51,9 +51,12 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   icons: {
-    icon: [{ url: "/brand/hookit-mark.png", type: "image/png" }],
-    apple: "/brand/hookit-mark.png",
-    shortcut: "/brand/hookit-mark.png",
+    icon: [
+      { url: SITE_FAVICON, type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", type: "image/x-icon", sizes: "48x48" },
+    ],
+    apple: SITE_FAVICON,
+    shortcut: SITE_FAVICON,
   },
   ...socialMetadata(SITE_NAME, SITE_DESCRIPTION),
 };
