@@ -8,6 +8,7 @@ import { zeroAddress } from "viem";
 import { useTokenStats } from "@/hooks/useTokenStats";
 import { copyToClipboard } from "@/lib/clipboard";
 import {
+  changeTone,
   formatAge,
   formatCompactUsd,
   formatPercent,
@@ -179,7 +180,11 @@ function ChangeChip({
       <span
         className={cn(
           "token-stats-change__value",
-          value >= 0 ? "text-[#10b981]" : "text-[#ef4444]",
+          changeTone(value) === "up"
+            ? "text-[#10b981]"
+            : changeTone(value) === "down"
+              ? "text-[#ef4444]"
+              : "text-zinc-500",
         )}
       >
         {formatPercent(value, true)}

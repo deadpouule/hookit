@@ -95,6 +95,23 @@ export function formatPercent(value: number, signed = false): string {
   return `${prefix}${value.toFixed(2)}%`;
 }
 
+/** Treat near-zero as flat so 0.00% is not painted green. */
+export const CHANGE_FLAT_EPS = 0.005;
+
+export type ChangeTone = "up" | "down" | "flat";
+
+export function changeTone(pct: number | null | undefined): ChangeTone {
+  if (pct == null || !Number.isFinite(pct) || Math.abs(pct) < CHANGE_FLAT_EPS) return "flat";
+  return pct > 0 ? "up" : "down";
+}
+
+export function changeToneTextClass(pct: number | null | undefined): string {
+  const tone = changeTone(pct);
+  if (tone === "up") return "text-emerald-400";
+  if (tone === "down") return "text-red-400";
+  return "text-zinc-500";
+}
+
 export function shortenAddress(address: string, chars = 4): string {
   if (address.length < 10) return address;
   return `${address.slice(0, 6)}...${address.slice(-chars)}`;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { formatPercent, formatUsd } from "@/lib/format";
+import { changeTone, formatPercent, formatUsd } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
@@ -23,7 +23,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
   const router = useRouter();
   const href = tokenHref(token.id);
   const spot = token.marketCap > 0 ? token.marketCap / TOTAL_SUPPLY : 0;
-  const up = token.change24h >= 0;
+  const tone = changeTone(token.change24h);
   const pair = token.pairings?.[0]?.name ?? token.quoteAsset ?? "ETH";
 
   return (
@@ -67,8 +67,15 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
 
       <div className="mobile-token-row-quote shrink-0 text-right">
         <p className="mobile-token-row-price">{formatSpotUsd(spot)}</p>
-        <p className={cn("mobile-token-row-chg", up ? "is-up" : "is-down")}>
-          {up ? "▲" : "▼"} {formatPercent(Math.abs(token.change24h))}
+        <p
+          className={cn(
+            "mobile-token-row-chg",
+            tone === "up" ? "is-up" : tone === "down" ? "is-down" : "is-flat",
+          )}
+        >
+          {tone === "flat"
+            ? formatPercent(0)
+            : `${tone === "up" ? "▲" : "▼"} ${formatPercent(Math.abs(token.change24h))}`}
         </p>
       </div>
 

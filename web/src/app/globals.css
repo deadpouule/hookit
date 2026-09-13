@@ -3560,6 +3560,10 @@
     color: #f43f5e;
   }
 
+  .token-hero-mcap-chg--flat {
+    color: #71717a;
+  }
+
   .token-hero-about-desc {
     display: none;
   }
@@ -5931,6 +5935,10 @@
     color: #f87171;
   }
 
+  .stonk-ticker-chg.flat {
+    color: #71717a;
+  }
+
   @keyframes stonk-marquee {
     from {
       transform: translateX(0);
@@ -6907,6 +6915,10 @@
     color: #fb7185;
   }
 
+  .trending-card-pct--flat {
+    color: #71717a;
+  }
+
   .token-copy-ca {
     position: relative;
     z-index: 20;
@@ -6975,6 +6987,10 @@
 
   .mobile-token-row-chg.is-down {
     color: #fb7185;
+  }
+
+  .mobile-token-row-chg.is-flat {
+    color: #71717a;
   }
 
   .mobile-token-row .token-copy-badge,
@@ -7119,6 +7135,10 @@
     color: #fb7185;
   }
 
+  .token-card-mcap-chg.flat {
+    color: #71717a;
+  }
+
   .token-card-meta {
     display: none;
     margin-top: 0.15rem;
@@ -7154,6 +7174,10 @@
 
   .token-card-stats .down {
     color: #ef4444;
+  }
+
+  .token-card-stats .flat {
+    color: #71717a;
   }
 
   @media (max-width: 767px) {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
-import { formatPercent, formatUsd } from "@/lib/format";
+import { changeTone, formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
   isBonded,
@@ -49,6 +49,7 @@ export function MarketTokenCard({
   const router = useRouter();
   const href = tokenHref(token.id);
   const age = tokenAgeLabel(token.launchedAt);
+  const tone = changeTone(token.change24h);
 
   const prefetchToken = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -96,7 +97,11 @@ export function MarketTokenCard({
           <span className="token-card-mcap-label"> MC</span>
           <span
             className={
-              token.change24h >= 0 ? "token-card-mcap-chg up" : "token-card-mcap-chg down"
+              tone === "up"
+                ? "token-card-mcap-chg up"
+                : tone === "down"
+                  ? "token-card-mcap-chg down"
+                  : "token-card-mcap-chg flat"
             }
           >
             {formatPercent(token.change24h, true)}
@@ -114,7 +119,7 @@ export function MarketTokenCard({
           </div>
           <div>
             <dt>24h</dt>
-            <dd className={token.change24h >= 0 ? "up" : "down"}>
+            <dd className={tone === "up" ? "up" : tone === "down" ? "down" : "flat"}>
               {formatPercent(token.change24h, true)}
             </dd>
           </div>

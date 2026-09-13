@@ -19,6 +19,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { isPhoneDocument } from "@/lib/device";
 import {
+  changeTone,
   formatAge,
   formatCompactUsd,
   formatPercent,
@@ -178,7 +179,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const [swapSheetSide, setSwapSheetSide] = useState<"buy" | "sell">("buy");
   const swapRef = useRef<HTMLDivElement>(null);
   const contractAddress = pool.contractAddress ?? pool.address;
-  const trending = live.change1h >= 0;
+  const trending = changeTone(live.change1h) === "up";
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
     ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
     : null;
@@ -361,7 +362,11 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         <span
           className={cn(
             "token-hero-mcap-chg",
-            live.change24h >= 0 ? "token-hero-mcap-chg--up" : "token-hero-mcap-chg--down",
+            changeTone(live.change24h) === "up"
+              ? "token-hero-mcap-chg--up"
+              : changeTone(live.change24h) === "down"
+                ? "token-hero-mcap-chg--down"
+                : "token-hero-mcap-chg--flat",
           )}
         >
           {formatPercent(live.change24h, true)} 24h

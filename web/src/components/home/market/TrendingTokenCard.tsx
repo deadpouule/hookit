@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
-import { formatPercent } from "@/lib/format";
+import { changeTone, formatPercent } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ type TrendingTokenCardProps = {
 export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCardProps) {
   const router = useRouter();
   const href = tokenHref(token.id);
-  const positive = token.change1h >= 0;
+  const tone = changeTone(token.change1h);
 
   const prefetchToken = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -44,7 +44,11 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
       <span
         className={cn(
           "trending-card-pct",
-          positive ? "trending-card-pct--up" : "trending-card-pct--down",
+          tone === "up"
+            ? "trending-card-pct--up"
+            : tone === "down"
+              ? "trending-card-pct--down"
+              : "trending-card-pct--flat",
         )}
       >
         {formatPercent(token.change1h, true)}

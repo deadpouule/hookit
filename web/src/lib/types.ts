@@ -124,6 +124,8 @@ export interface TokenPool {
   floorValue: number;
   liquidity: number;
   change24h: number;
+  /** Indexer 1h change when available — explore table, not a fake 24h fraction. */
+  change1h?: number;
   hooks: {
     antiSnipe: boolean;
     backedFloor: boolean;

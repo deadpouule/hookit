@@ -114,10 +114,20 @@ export type IndexerHealth = {
   tokens: number;
 };
 
-const base = () => "/api/indexer";
+function indexerBase(): string {
+  if (typeof window === "undefined") {
+    const direct = process.env.INDEXER_URL?.trim();
+    if (direct) return direct.replace(/\/$/, "");
+  }
+  return "/api/indexer";
+}
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${base()}${path}`);
+  const init: RequestInit = { cache: "no-store" };
+  if (typeof window === "undefined") {
+    init.signal = AbortSignal.timeout(8_000);
+  }
+  const res = await fetch(`${indexerBase()}${path}`, init);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { error?: string }).error ?? `indexer ${res.status}`);

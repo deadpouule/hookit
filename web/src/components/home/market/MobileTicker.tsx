@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { formatPercent } from "@/lib/format";
+import { changeTone, formatPercent } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ export function MobileTicker({ tokens }: { tokens: MarketToken[] }) {
     <div className="stonk-ticker phone:block hidden" aria-hidden>
       <div className="stonk-ticker-track">
         {loop.map((token, index) => {
-          const up = token.change24h >= 0;
+          const tone = changeTone(token.change24h);
           return (
             <Link
               key={`${token.id}-${index}`}
@@ -32,8 +32,15 @@ export function MobileTicker({ tokens }: { tokens: MarketToken[] }) {
                 glyphClassName="text-[8px]"
               />
               <span className="stonk-ticker-name">{token.ticker}</span>
-              <span className={cn("stonk-ticker-chg", up ? "up" : "down")}>
-                {up ? "▲" : "▼"} {formatPercent(Math.abs(token.change24h))}
+              <span
+                className={cn(
+                  "stonk-ticker-chg",
+                  tone === "up" ? "up" : tone === "down" ? "down" : "flat",
+                )}
+              >
+                {tone === "flat"
+                  ? formatPercent(0)
+                  : `${tone === "up" ? "▲" : "▼"} ${formatPercent(Math.abs(token.change24h))}`}
               </span>
             </Link>
           );

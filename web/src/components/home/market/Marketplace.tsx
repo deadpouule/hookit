@@ -8,7 +8,7 @@ import { HookitLogo } from "@/components/brand/HookitLogo";
 import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
-import { formatPercent, formatUsd } from "@/lib/format";
+import { changeToneTextClass, formatPercent, formatUsd } from "@/lib/format";
 import {
   buildDemoMarketTokens,
   poolToMarketToken,
@@ -460,7 +460,7 @@ function TokenTable({
               </td>
               <td className="px-4 py-3 text-zinc-100">{formatUsd(token.marketCap)}</td>
               <td className="px-4 py-3 text-zinc-300">{formatUsd(token.volume)}</td>
-              <td className={cn("px-4 py-3 font-medium", token.change1h >= 0 ? "text-emerald-400" : "text-red-400")}>
+              <td className={cn("px-4 py-3 font-medium", changeToneTextClass(token.change1h))}>
                 {formatPercent(token.change1h, true)}
               </td>
               <td className="px-4 py-3">

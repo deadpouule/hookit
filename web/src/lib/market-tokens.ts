@@ -410,7 +410,7 @@ export function poolToMarketToken(pool: import("@/lib/types").TokenPool): Market
     artAccent: "#e9d5ff",
     marketCap: pool.marketCap || 0,
     volume: pool.volume24h ?? 0,
-    change1h: pool.change24h * 0.25,
+    change1h: pool.change1h ?? 0,
     change24h: pool.change24h,
     creator: pool.creator ?? pool.address,
     kind: pool.hookType === "Custom" ? "sushi" : "pool",
