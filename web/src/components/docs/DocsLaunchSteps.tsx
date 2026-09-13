@@ -130,13 +130,13 @@ function StepScreen({ step }: { step: (typeof MASTER_LAUNCH_STEPS)[number]["id"]
         <WizardChrome step={5}>
           <p className="docs-wizard-shot-h">Fee split</p>
           <div className="docs-launch-split">
-            <span style={{ flex: 80 }}>
-              <HookLogo hookId="auto-burn" theme="crimson" />
+            <span className="docs-launch-split-seg docs-launch-split-seg--burn" style={{ flex: 80 }}>
+              <HookLogo hookId="auto-burn" theme="crimson" color="#fecaca" />
               Auto-Burn 80%
             </span>
-            <span style={{ flex: 20 }}>
-              <HookLogo hookId="deepen-lps" theme="nature" />
-              Deepen 20%
+            <span className="docs-launch-split-seg docs-launch-split-seg--deep" style={{ flex: 20 }}>
+              <HookLogo hookId="deepen-lps" theme="nature" color="#bbf7d0" />
+              Deepen LPs 20%
             </span>
           </div>
         </WizardChrome>
