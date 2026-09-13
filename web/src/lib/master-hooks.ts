@@ -13,6 +13,9 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { unpackLaunchBitmask } from "@/lib/bitmask";
+import type { LaunchModules, TokenPool } from "@/lib/types";
+
 export type MasterHookCategory = "trading-fees" | "protection" | "tokenomics" | "rewards";
 
 export type MasterHookId =
@@ -325,26 +328,80 @@ export function shortAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+export const HOOK_MODULE_FIELD: Record<MasterHookId, keyof LaunchModules> = {
+  "anti-snipe": "antiSnipe",
+  "backed-floor": "backedFloor",
+  "anti-mev": "antiMev",
+  "max-tx": "maxTx",
+  "max-wallet": "maxWallet",
+  "dynamic-fees": "dynamicFees",
+  "buyback-vesting": "buybackVesting",
+  "auto-burn": "autoBurn",
+  "deepen-lps": "deepenLps",
+  "holder-airdrop": "holderAirdrop",
+  "creator-share-to-hook": "creatorShareToHook",
+};
+
+const POOL_HOOK_BY_MASTER_ID: Record<MasterHookId, keyof TokenPool["hooks"]> = {
+  "anti-snipe": "antiSnipe",
+  "backed-floor": "backedFloor",
+  "anti-mev": "antiMev",
+  "max-tx": "maxTx",
+  "max-wallet": "maxWallet",
+  "dynamic-fees": "dynamicFees",
+  "buyback-vesting": "buybackVesting",
+  "auto-burn": "autoBurn",
+  "deepen-lps": "deepenLps",
+  "holder-airdrop": "holderAirdrop",
+  "creator-share-to-hook": "creatorShareToHook",
+};
+
+type HookUsagePool = {
+  hookType?: string;
+  bitmask?: string;
+  hookTaxBps?: number;
+  modules?: Partial<LaunchModules>;
+  hooks: {
+    antiSnipe?: boolean;
+    backedFloor?: boolean;
+    antiMev?: boolean;
+    maxTx?: boolean;
+    maxWallet?: boolean;
+    dynamicFees?: boolean;
+    buybackVesting?: boolean;
+    autoBurn?: boolean;
+    deepenLps?: boolean;
+    holderAirdrop?: boolean;
+    creatorShareToHook?: boolean;
+    customHook?: boolean;
+  };
+};
+
+function isClassicOrCustom(pool: HookUsagePool): boolean {
+  return pool.hookType === "Classic" || Boolean(pool.hooks.customHook);
+}
+
+function modulesFromBitmask(bitmask?: string): LaunchModules | null {
+  if (!bitmask) return null;
+  try {
+    return unpackLaunchBitmask(BigInt(bitmask)).modules;
+  } catch {
+    return null;
+  }
+}
+
+/** True when a Master pool enabled this module (flags, unpacked modules, or bitmask). */
+export function poolEnablesMasterHook(pool: HookUsagePool, hookId: MasterHookId): boolean {
+  if (isClassicOrCustom(pool)) return false;
+  const field = HOOK_MODULE_FIELD[hookId];
+  if (pool.modules && Boolean(pool.modules[field])) return true;
+  const hookKey = POOL_HOOK_BY_MASTER_ID[hookId];
+  if (pool.hooks[hookKey]) return true;
+  return Boolean(modulesFromBitmask(pool.bitmask)?.[field]);
+}
+
 /** Count how many listed pools enable each master hook module. */
-export function countHookUsage(
-  pools: Array<{
-    hooks: {
-      antiSnipe?: boolean;
-      backedFloor?: boolean;
-      antiMev?: boolean;
-      maxTx?: boolean;
-      maxWallet?: boolean;
-      dynamicFees?: boolean;
-      buybackVesting?: boolean;
-      autoBurn?: boolean;
-      deepenLps?: boolean;
-      holderAirdrop?: boolean;
-      creatorShareToHook?: boolean;
-      customHook?: boolean;
-    };
-    hookType?: string;
-  }>,
-): Record<MasterHookId, number> {
+export function countHookUsage(pools: HookUsagePool[]): Record<MasterHookId, number> {
   const counts: Record<MasterHookId, number> = {
     "anti-snipe": 0,
     "backed-floor": 0,
@@ -359,63 +416,26 @@ export function countHookUsage(
     "creator-share-to-hook": 0,
   };
   for (const pool of pools) {
-    if (pool.hookType === "Classic" || pool.hooks.customHook) continue;
-    if (pool.hooks.antiSnipe) counts["anti-snipe"] += 1;
-    if (pool.hooks.backedFloor) counts["backed-floor"] += 1;
-    if (pool.hooks.antiMev) counts["anti-mev"] += 1;
-    if (pool.hooks.maxTx) counts["max-tx"] += 1;
-    if (pool.hooks.maxWallet) counts["max-wallet"] += 1;
-    if (pool.hooks.dynamicFees) counts["dynamic-fees"] += 1;
-    if (pool.hooks.buybackVesting) counts["buyback-vesting"] += 1;
-    if (pool.hooks.autoBurn) counts["auto-burn"] += 1;
-    if (pool.hooks.deepenLps) counts["deepen-lps"] += 1;
-    if (pool.hooks.holderAirdrop) counts["holder-airdrop"] += 1;
-    if (pool.hooks.creatorShareToHook) counts["creator-share-to-hook"] += 1;
+    for (const hookId of Object.keys(counts) as MasterHookId[]) {
+      if (poolEnablesMasterHook(pool, hookId)) counts[hookId] += 1;
+    }
   }
   return counts;
 }
 
-const POOL_HOOK_BY_MASTER_ID: Partial<
-  Record<MasterHookId, keyof import("@/lib/types").TokenPool["hooks"]>
-> = {
-  "anti-snipe": "antiSnipe",
-  "backed-floor": "backedFloor",
-  "anti-mev": "antiMev",
-  "max-tx": "maxTx",
-  "max-wallet": "maxWallet",
-  "dynamic-fees": "dynamicFees",
-  "buyback-vesting": "buybackVesting",
-  "auto-burn": "autoBurn",
-  "deepen-lps": "deepenLps",
-  "holder-airdrop": "holderAirdrop",
-  "creator-share-to-hook": "creatorShareToHook",
-};
-
 /** Master pools that enabled a given hook module (same rules as countHookUsage). */
-export function poolsUsingMasterHook(
-  pools: import("@/lib/types").TokenPool[],
-  hookId: MasterHookId,
-): import("@/lib/types").TokenPool[] {
-  const hookKey = POOL_HOOK_BY_MASTER_ID[hookId];
-  if (!hookKey) return [];
-
-  return pools.filter((pool) => {
-    if (pool.hookType === "Classic" || pool.hooks.customHook) return false;
-    return Boolean(pool.hooks[hookKey]);
-  });
+export function poolsUsingMasterHook(pools: TokenPool[], hookId: MasterHookId): TokenPool[] {
+  return pools.filter((pool) => poolEnablesMasterHook(pool, hookId));
 }
 
 /** Pools that match any of the selected master hook modules. */
-export function poolsMatchingAnyMasterHooks(
-  pools: import("@/lib/types").TokenPool[],
-  hookIds: MasterHookId[],
-): import("@/lib/types").TokenPool[] {
+export function poolsMatchingAnyMasterHooks(pools: TokenPool[], hookIds: MasterHookId[]): TokenPool[] {
   if (hookIds.length === 0) {
-    return pools.filter((pool) => pool.hookType !== "Classic" && !pool.hooks.customHook);
+    return pools.filter((pool) => !isClassicOrCustom(pool));
   }
 
   const seen = new Set<string>();
-  const matched: import("@/lib/types").TokenPool[] = [];
+  const matched: TokenPool[] = [];
 
   for (const hookId of hookIds) {
     for (const pool of poolsUsingMasterHook(pools, hookId)) {
@@ -429,28 +449,11 @@ export function poolsMatchingAnyMasterHooks(
   return matched;
 }
 
-export function masterHookIdsForPool(pool: import("@/lib/types").TokenPool): MasterHookId[] {
-  return (Object.entries(POOL_HOOK_BY_MASTER_ID) as [MasterHookId, keyof import("@/lib/types").TokenPool["hooks"]][])
-    .filter(([, hookKey]) => Boolean(pool.hooks[hookKey]))
-    .map(([hookId]) => hookId);
+export function masterHookIdsForPool(pool: TokenPool): MasterHookId[] {
+  return (Object.keys(POOL_HOOK_BY_MASTER_ID) as MasterHookId[]).filter((hookId) =>
+    poolEnablesMasterHook(pool, hookId),
+  );
 }
-
-export const HOOK_MODULE_FIELD: Record<
-  MasterHookId,
-  keyof import("@/lib/types").LaunchModules
-> = {
-  "anti-snipe": "antiSnipe",
-  "backed-floor": "backedFloor",
-  "anti-mev": "antiMev",
-  "max-tx": "maxTx",
-  "max-wallet": "maxWallet",
-  "dynamic-fees": "dynamicFees",
-  "buyback-vesting": "buybackVesting",
-  "auto-burn": "autoBurn",
-  "deepen-lps": "deepenLps",
-  "holder-airdrop": "holderAirdrop",
-  "creator-share-to-hook": "creatorShareToHook",
-};
 
 export function isMasterHookId(value: string | null): value is MasterHookId {
   return !!value && value in HOOK_MODULE_FIELD;

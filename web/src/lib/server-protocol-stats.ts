@@ -33,7 +33,7 @@ import {
   launchToTokenPool,
 } from "@/lib/launches";
 import { buybackFromProtocolRevenueUsd, protocolRevenueFromVolumeUsd } from "@/lib/protocol-fees";
-import type { SeriesPoint, VolumeWindow } from "@/lib/protocol-stats";
+import { isStandInNativeSymbol, type SeriesPoint, type VolumeWindow } from "@/lib/protocol-stats";
 import type {
   LiveBurnFeed,
   LiveBuybackFeed,
@@ -242,10 +242,14 @@ async function fetchOnChainBuybacks(ethUsd: number, nativeDecimals = 18) {
         client.readContract({ address: nativeAddr, abi: erc20Abi, functionName: "totalSupply" }),
       ]);
       nativeToken = symbol as string;
-      const dec = Number(decimals);
-      const supply = totalSupply as bigint;
-      const burnedRaw = DEFAULT_TOTAL_SUPPLY > supply ? DEFAULT_TOTAL_SUPPLY - supply : 0n;
-      burnedTokens = Number(formatUnits(burnedRaw, dec));
+      if (isStandInNativeSymbol(symbol)) {
+        nativeToken = null;
+      } else {
+        const dec = Number(decimals);
+        const supply = totalSupply as bigint;
+        const burnedRaw = DEFAULT_TOTAL_SUPPLY > supply ? DEFAULT_TOTAL_SUPPLY - supply : 0n;
+        burnedTokens = Number(formatUnits(burnedRaw, dec));
+      }
     } catch {
       /* ignore */
     }

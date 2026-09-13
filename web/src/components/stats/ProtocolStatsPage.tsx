@@ -11,6 +11,7 @@ import {
   type VolumeWindow,
   VOLUME_WINDOWS,
   CHART_WINDOWS,
+  displayNativeSymbol,
 } from "@/lib/protocol-stats";
 import { useProtocolStats } from "@/hooks/useProtocolStats";
 
@@ -25,8 +26,7 @@ export function ProtocolStatsPage() {
 
   const volume = stats?.windows[volumeWindow];
   const overview = stats?.windows.all;
-  const nativeSymbol =
-    stats?.nativeToken && stats.nativeToken !== "HTST" ? stats.nativeToken : "protocol token";
+  const nativeSymbol = displayNativeSymbol(stats?.nativeToken);
 
   const barSeries = useMemo(() => {
     if (!stats) return [];

@@ -34,8 +34,11 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 gap-8 text-sm sm:grid-cols-3">
           <div className="flex flex-col gap-2">
             <span className="text-[11px] text-zinc-600 uppercase">Product</span>
-            <Link href="/explore" className="text-zinc-400 transition hover:text-zinc-200">
+            <Link href="/" className="text-zinc-400 transition hover:text-zinc-200">
               Explore
+            </Link>
+            <Link href="/explore" className="text-zinc-400 transition hover:text-zinc-200">
+              Hooks
             </Link>
             <Link href="/launch" className="text-zinc-400 transition hover:text-zinc-200">
               Create

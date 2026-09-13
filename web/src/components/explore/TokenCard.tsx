@@ -11,8 +11,9 @@ import { HookChip } from "@/components/hooks/HookMark";
 import { copyToClipboard } from "@/lib/clipboard";
 import { DEFAULT_LAUNCH_ETH_USD, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatUsd } from "@/lib/format";
+import type { HookId } from "@/lib/hook-marks";
 import { marketplaceHrefForHooks } from "@/lib/market-hook-filter";
-import { masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
+import { HOOK_MODULE_FIELD, masterHookIdsForPool, type MasterHookId } from "@/lib/master-hooks";
 import { marketCapUsdForPool } from "@/lib/quote-usd";
 import { tokenHref } from "@/lib/routes";
 import { resolveMediaUrl } from "@/lib/token-metadata";
@@ -173,35 +174,14 @@ export function TokenCard({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {pool.hooks.antiSnipe && (
-            <HookChip id="antiSnipe" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.backedFloor && (
-            <HookChip id="backedFloor" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.antiMev && <HookChip id="antiMev" modules={modules} hookTaxBps={hookTaxBps} />}
-          {pool.hooks.maxTx && <HookChip id="maxTx" modules={modules} hookTaxBps={hookTaxBps} />}
-          {pool.hooks.maxWallet && (
-            <HookChip id="maxWallet" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.dynamicFees && (
-            <HookChip id="dynamicFees" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.buybackVesting && (
-            <HookChip id="buybackVesting" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.autoBurn && (
-            <HookChip id="autoBurn" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.deepenLps && (
-            <HookChip id="deepenLps" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.holderAirdrop && (
-            <HookChip id="holderAirdrop" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
-          {pool.hooks.creatorShareToHook && (
-            <HookChip id="creatorShareToHook" modules={modules} hookTaxBps={hookTaxBps} />
-          )}
+          {poolHookIds.map((hookId) => (
+            <HookChip
+              key={hookId}
+              id={HOOK_MODULE_FIELD[hookId] as HookId}
+              modules={modules}
+              hookTaxBps={hookTaxBps}
+            />
+          ))}
           {pool.hooks.customHook && <HookChip id="custom" />}
         </div>
       </div>

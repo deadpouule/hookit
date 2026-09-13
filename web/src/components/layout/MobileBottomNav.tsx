@@ -20,7 +20,7 @@ const MENU_LINKS = [
 export function MobileBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const tokensActive = pathname === "/" || pathname.startsWith("/explore");
+  const tokensActive = pathname === "/" || pathname.startsWith("/token");
 
   return (
     <nav aria-label="Mobile" className="mobile-bottom-nav">

@@ -5,6 +5,19 @@ export const NATIVE_TOKEN = "HOOK";
 export const NATIVE_SUPPLY = 1_000_000_000;
 export const NATIVE_BURNED = 24_180_440;
 
+/** Ink still points the distributor at HOOKTEST until official $HKT launches. */
+const STAND_IN_NATIVE_SYMBOLS = new Set(["HTST", "HTEST", "HOOKTEST"]);
+
+export function isStandInNativeSymbol(symbol?: string | null): boolean {
+  if (!symbol) return true;
+  return STAND_IN_NATIVE_SYMBOLS.has(symbol.trim().toUpperCase());
+}
+
+export function displayNativeSymbol(symbol?: string | null, fallback = "protocol token"): string {
+  if (isStandInNativeSymbol(symbol)) return fallback;
+  return symbol!.trim();
+}
+
 export const VOLUME_WINDOWS = ["24h", "7d", "30d", "all"] as const;
 export type VolumeWindow = (typeof VOLUME_WINDOWS)[number];
 

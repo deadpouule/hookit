@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: process.env.NODE_ENV === "production",
+  async redirects() {
+    return [
+      { source: "/analytics", destination: "/stats", permanent: true },
+      { source: "/hooks", destination: "/explore", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

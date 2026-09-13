@@ -19,19 +19,21 @@ import type { TokenPool } from "@/lib/types";
 
 type HookFilter = "all" | MasterHookCategory;
 
-function ExplorePageContent() {
+function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
-  const { data: onChainPools } = useLaunches();
+  const { data: onChainPools, isFetched } = useLaunches(initialPools);
 
   const pools = useMemo((): TokenPool[] => {
-    if (shouldFetchLiveLaunches()) {
-      return (onChainPools ?? []).filter((pool) => pool.name && pool.ticker);
+    const source = onChainPools ?? initialPools;
+    if (shouldFetchLiveLaunches() || initialPools.length > 0) {
+      return source.filter((pool) => pool.name && pool.ticker);
     }
     return [];
-  }, [onChainPools]);
+  }, [onChainPools, initialPools]);
 
   const usage = useMemo(() => countHookUsage(pools), [pools]);
+  const usesPending = pools.length === 0 && !isFetched && initialPools.length === 0;
 
   const fixedFeeUses = useMemo(() => {
     return pools.filter((pool) => {
@@ -103,7 +105,7 @@ function ExplorePageContent() {
 
       <div className="hook-grid">
         {filtered.map((hook) => (
-          <HookCard key={hook.id} hook={hook} pools={pools} />
+          <HookCard key={hook.id} hook={hook} usesPending={usesPending} />
         ))}
       </div>
 
@@ -127,7 +129,7 @@ function ExplorePageContent() {
   );
 }
 
-export function ExplorePage() {
+export function ExplorePage({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   return (
     <Suspense
       fallback={
@@ -136,7 +138,7 @@ export function ExplorePage() {
         </div>
       }
     >
-      <ExplorePageContent />
+      <ExplorePageContent initialPools={initialPools} />
     </Suspense>
   );
 }

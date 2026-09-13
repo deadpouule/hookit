@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { ExplorePage } from "@/components/explore/ExplorePage";
 import { marketplaceHrefForHook, marketplaceHrefForHooks, parseHooksParam } from "@/lib/market-hook-filter";
 import { isMasterHookId } from "@/lib/master-hooks";
+import { loadLaunchesResponse } from "@/lib/server-launches";
+import type { TokenPool } from "@/lib/types";
 
 export const metadata = {
   title: "Hooks | hook it",
-  description: "One-click Master hook modules for Uniswap v4 launches on Base Sepolia.",
+  description: "One-click Master hook modules for Uniswap v4 launches on Ink.",
 };
 
 export default async function ExploreRoute({
@@ -26,5 +28,13 @@ export default async function ExploreRoute({
     );
   }
 
-  return <ExplorePage />;
+  let initialPools: TokenPool[] = [];
+  try {
+    const res = await loadLaunchesResponse();
+    initialPools = res.pools ?? [];
+  } catch {
+    /* client refetch via useLaunches */
+  }
+
+  return <ExplorePage initialPools={initialPools} />;
 }

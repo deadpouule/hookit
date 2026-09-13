@@ -10,7 +10,6 @@ import {
   launchWithHookHref,
   type BrowseHook,
 } from "@/lib/master-hooks";
-import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 function capitalizeDescription(text: string) {
@@ -18,7 +17,13 @@ function capitalizeDescription(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[] }) {
+export function HookCard({
+  hook,
+  usesPending = false,
+}: {
+  hook: BrowseHook;
+  usesPending?: boolean;
+}) {
   const router = useRouter();
 
   return (
@@ -49,7 +54,7 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
               className="orb-live-uses"
               onClick={(event) => event.stopPropagation()}
             >
-              {hook.uses} live {hook.uses === 1 ? "use" : "uses"}
+              {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
             </a>
           </div>
         </div>
