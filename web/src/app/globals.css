@@ -10110,18 +10110,19 @@ h2.docs-hook-heading {
   font-weight: 700;
 }
 
-.docs-launch-split span,
 .docs-launch-split-seg {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.28rem;
   min-width: 0;
 }
 
 .docs-launch-split .hook-logo {
   display: inline-flex;
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.25rem;
+  height: 1.25rem;
   flex-shrink: 0;
 }
 
@@ -10131,9 +10132,13 @@ h2.docs-hook-heading {
   height: 100%;
 }
 
-.docs-launch-split span:first-child,
+.docs-launch-split-seg b {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .docs-launch-split-seg--burn {
-  padding: 0.5rem 0.55rem;
+  padding: 0.55rem 0.6rem;
   background: #7f1d1d;
   color: #fecaca;
 }
@@ -10142,11 +10147,12 @@ h2.docs-hook-heading {
   color: #fecaca;
 }
 
-.docs-launch-split span:last-child,
 .docs-launch-split-seg--deep {
-  padding: 0.5rem 0.55rem;
+  align-items: flex-end;
+  padding: 0.55rem 0.55rem;
   background: #064e3b;
   color: #bbf7d0;
+  text-align: right;
 }
 
 .docs-launch-split-seg--deep .hook-logo {

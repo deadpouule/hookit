@@ -132,11 +132,11 @@ function StepScreen({ step }: { step: (typeof MASTER_LAUNCH_STEPS)[number]["id"]
           <div className="docs-launch-split">
             <span className="docs-launch-split-seg docs-launch-split-seg--burn" style={{ flex: 80 }}>
               <HookLogo hookId="auto-burn" theme="crimson" color="#fecaca" />
-              Auto-Burn 80%
+              <b>Auto-Burn 80%</b>
             </span>
             <span className="docs-launch-split-seg docs-launch-split-seg--deep" style={{ flex: 20 }}>
               <HookLogo hookId="deepen-lps" theme="nature" color="#bbf7d0" />
-              Deepen LPs 20%
+              <b>Deepen LPs 20%</b>
             </span>
           </div>
         </WizardChrome>
