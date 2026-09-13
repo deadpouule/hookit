@@ -5,8 +5,10 @@ import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 /** Ink produces ~1 block/s; pad the estimate so the launch block is never missed. */
 const INK_BLOCK_SECONDS = 1;
 const LAUNCH_BLOCK_MARGIN = 20_000n;
-const FALLBACK_CHUNK = 50_000n;
-const FALLBACK_MAX_CHUNKS = 12;
+/** Public Ink RPCs reject eth_getLogs ranges above 10k blocks. */
+const MAX_LOG_RANGE = 10_000n;
+const FALLBACK_CHUNK = 9_000n;
+const FALLBACK_MAX_CHUNKS = 48;
 const CACHE_TTL_MS = 45_000;
 
 const lpDeepenedEvent = masterLaunchHookAbi.find(
@@ -49,33 +51,39 @@ export async function fetchDeepenLpsAdded(
   const sum = (logs: { args: { quoteAmount?: bigint } }[]) =>
     logs.reduce((acc, log) => acc + (log.args.quoteAmount ?? 0n), 0n);
 
+  const fetchRange = async (start: bigint, end: bigint) =>
+    sum(
+      await client.getLogs({
+        address: hook,
+        event: lpDeepenedEvent,
+        args: { poolId },
+        fromBlock: start,
+        toBlock: end,
+      }),
+    );
+
   let total = 0n;
-  try {
-    const logs = await client.getLogs({
-      address: hook,
-      event: lpDeepenedEvent,
-      args: { poolId },
-      fromBlock,
-      toBlock: latest,
-    });
-    total = sum(logs);
-  } catch {
+  const span = latest >= fromBlock ? latest - fromBlock : 0n;
+  let singleShotOk = false;
+  if (span <= MAX_LOG_RANGE) {
+    try {
+      total = await fetchRange(fromBlock, latest);
+      singleShotOk = true;
+    } catch {
+      singleShotOk = false;
+    }
+  }
+  if (!singleShotOk) {
+    total = 0n;
     let end = latest;
     for (let i = 0; i < FALLBACK_MAX_CHUNKS && end >= fromBlock; i += 1) {
       const start = end > FALLBACK_CHUNK ? end - FALLBACK_CHUNK + 1n : 0n;
       try {
-        const logs = await client.getLogs({
-          address: hook,
-          event: lpDeepenedEvent,
-          args: { poolId },
-          fromBlock: start < fromBlock ? fromBlock : start,
-          toBlock: end,
-        });
-        total += sum(logs);
+        total += await fetchRange(start < fromBlock ? fromBlock : start, end);
       } catch {
         break;
       }
-      if (start === 0n) break;
+      if (start === 0n || start <= fromBlock) break;
       end = start - 1n;
     }
   }
