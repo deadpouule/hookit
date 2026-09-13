@@ -181,15 +181,15 @@ function FlywheelDiagram() {
           {nodes.map((node) => (
             <g key={node.label}>
               <rect
-                x={node.x - 46}
-                y={node.y - 18}
+                x={node.x-46}
+                y={node.y-18}
                 width="92"
                 height="36"
                 rx="10"
                 fill="#111"
                 stroke="rgb(255 255 255 / 0.14)"
               />
-              <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
+              <text x={node.x} y={node.y-2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
                 {node.label}
               </text>
               <text x={node.x} y={node.y + 12} textAnchor="middle" fill="#71717a" fontSize="9">
@@ -260,7 +260,7 @@ function SwapLifecycleDiagram() {
               <strong>{step.t}</strong>
               <p>{step.d}</p>
             </div>
-            {i < steps.length - 1 ? (
+            {i < steps.length-1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -343,91 +343,134 @@ function FloorLoopDiagram() {
   );
 }
 
+const HKT_POOL_HOOKS: { id: BrowseHookId; title: string; meta: string }[] = [
+  { id: "anti-mev", title: "Anti-MEV", meta: "one swap / block" },
+  { id: "anti-snipe", title: "Anti-Snipe", meta: "open window tax" },
+  { id: "creator-share-to-hook", title: "Creator → Hook", meta: "60% into the pot" },
+  { id: "auto-burn", title: "Auto-Burn", meta: "80% of the pot" },
+  { id: "deepen-lps", title: "Deepen LPs", meta: "20% of the pot" },
+];
+
+function hookFromId(id: BrowseHookId) {
+  const hook = EXPLORE_HOOKS.find((item) => item.id === id);
+  if (!hook) throw new Error(`missing hook ${id}`);
+  return hook;
+}
+
 function HktBurnDiagram() {
   return (
     <figure className="docs-schema">
-      <figcaption>Buyback burn flywheel</figcaption>
-      <svg className="docs-spark" viewBox="0 0 360 200" role="img" aria-label="Protocol fees buy and burn HKT. The HKT pool sends creator fees and hook tax into burn and deepen.">
-        <rect x="12" y="16" width="72" height="40" rx="10" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-        <text x="48" y="40" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700">
-          Swap
-        </text>
-        <rect x="100" y="16" width="84" height="40" rx="10" fill="#111" stroke="rgb(3 177 237 / 0.4)" />
-        <text x="142" y="40" textAnchor="middle" fill="#7dd3fc" fontSize="11" fontWeight="700">
-          1% base
-        </text>
-        <rect x="200" y="16" width="68" height="40" rx="10" fill="#111" stroke="rgb(149 20 209 / 0.4)" />
-        <text x="234" y="40" textAnchor="middle" fill="#d8b4fe" fontSize="11" fontWeight="700">
-          30% proto
-        </text>
-        <rect x="284" y="8" width="64" height="56" rx="10" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.45)" />
-        <text x="316" y="30" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700">
-          80% buy
-        </text>
-        <text x="316" y="46" textAnchor="middle" fill="#c4b5fd" fontSize="9">
-          burn $HKT
-        </text>
-        <path d="M84 36 H100" stroke="#52525b" strokeWidth="1.4" />
-        <path d="M184 36 H200" stroke="#52525b" strokeWidth="1.4" />
-        <path d="M268 36 H284" stroke="#52525b" strokeWidth="1.4" />
-        <text x="180" y="78" textAnchor="middle" fill="#71717a" fontSize="9">
-          20% of protocol stays ops
-        </text>
-        <rect x="16" y="96" width="328" height="88" rx="12" fill="#111" stroke="rgb(16 185 129 / 0.35)" />
-        <text x="180" y="118" textAnchor="middle" fill="#86efac" fontSize="11" fontWeight="700">
-          $HKT Uniswap v4 hook
-        </text>
-        <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="9">
-          Anti-MEV · Anti-Snipe · Creator → Hook
-        </text>
-        <text x="180" y="154" textAnchor="middle" fill="#fff" fontSize="10">
-          Creator 60% + hook tax → hook pot
-        </text>
-        <text x="180" y="170" textAnchor="middle" fill="#fff" fontSize="10">
-          80% Auto-Burn · 20% Deepen LPs
-        </text>
-      </svg>
+      <figcaption>$HKT pool: modules + fee burn</figcaption>
+      <div className="docs-hkt-pool">
+        <div className="docs-hkt-pool-core">
+          <span className="docs-hkt-pool-ticker">$HKT</span>
+          <small>Uniswap v4 Master hook</small>
+        </div>
+        <ul className="docs-hkt-pool-hooks">
+          {HKT_POOL_HOOKS.map((item) => {
+            const hook = hookFromId(item.id);
+            return (
+              <li key={item.id} className={`docs-hkt-pool-hook orb-card--${hook.theme}`}>
+                <HookLogo hookId={hook.id} theme={hook.theme} />
+                <div>
+                  <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
+                  <span>{item.meta}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <ol className="docs-hkt-pool-flow">
+          <li>
+            <em>1</em>
+            <p>
+              <strong>Swap</strong>
+              1% quote fee, same 60 / 10 / 30 base as every launch.
+            </p>
+          </li>
+          <li>
+            <em>2</em>
+            <p>
+              <strong>Creator → Hook</strong>
+              The 60% creator cut joins hook tax in the pot. Nothing to claim.
+            </p>
+          </li>
+          <li>
+            <em>3</em>
+            <p>
+              <strong>Pot split</strong>
+              80% Auto-Burn buys and burns $HKT. 20% Deepen LPs mints into this pool.
+            </p>
+          </li>
+          <li>
+            <em>4</em>
+            <p>
+              <strong>Every other launch</strong>
+              80% of the protocol 30% buys $HKT and burns it (HkitBuyback.execute).
+            </p>
+          </li>
+        </ol>
+      </div>
       <p className="docs-schema-note">
-        Protocol buyback is HkitBuyback.execute, then burn. On the $HKT pool itself, Creator → Hook
-        plus the hook pot burn the fees that token prints.
+        Fees taken on the $HKT pool burn $HKT. Protocol buyback from other pools burns $HKT too.
       </p>
     </figure>
   );
 }
 
 function HktLoopDiagram() {
+  const drops = [
+    { t: "$ARB", d: "that pool" },
+    { t: "$PEPE", d: "that pool" },
+    { t: "$HTEST", d: "that pool" },
+    { t: "…", d: "every launch" },
+  ];
   return (
     <figure className="docs-schema">
       <figcaption>Hold $HKT, get a slice of every launch</figcaption>
-      <svg className="docs-spark docs-hkt-map" viewBox="0 0 360 168" role="img" aria-label="Holding HKT claims a slice of every launched token">
-        <circle cx="180" cy="84" r="36" fill="rgb(3 177 237 / 0.16)" stroke="#03b1ed" strokeWidth="1.6" />
-        <text x="180" y="80" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
-          $HKT
-        </text>
-        <text x="180" y="96" textAnchor="middle" fill="#7dd3fc" fontSize="8">
-          your bag
-        </text>
-        {[
-          { x: 52, y: 36, t: "$ARB", d: "0.10%" },
-          { x: 308, y: 36, t: "$HTEST", d: "0.10%" },
-          { x: 52, y: 132, t: "$PEPE", d: "0.10%" },
-          { x: 308, y: 132, t: "…", d: "every pool" },
-        ].map((node) => (
-          <g key={`${node.x}-${node.t}`}>
-            <line x1="180" y1="84" x2={node.x} y2={node.y} stroke="rgb(3 177 237 / 0.35)" strokeWidth="1.2" />
-            <rect x={node.x - 40} y={node.y - 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-            <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
-              {node.t}
-            </text>
-            <text x={node.x} y={node.y + 11} textAnchor="middle" fill="#71717a" fontSize="8">
-              {node.d}
-            </text>
-          </g>
-        ))}
-      </svg>
+      <div className="docs-hkt-thesis">
+        <div className="docs-hkt-thesis-col">
+          <div className="docs-hkt-thesis-node docs-hkt-thesis-node--you">
+            <strong>$HKT</strong>
+            <span>your live balance</span>
+          </div>
+        </div>
+        <div className="docs-hkt-thesis-track" aria-hidden>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="docs-hkt-thesis-col">
+          <div className="docs-hkt-thesis-node">
+            <strong>Any hooked swap</strong>
+            <span>1% quote fee</span>
+          </div>
+          <div className="docs-hkt-thesis-node docs-hkt-thesis-node--cut">
+            <strong>0.10% of the trade</strong>
+            <span>10% of the 1%, mandatory</span>
+          </div>
+          <div className="docs-hkt-thesis-node">
+            <strong>Buy that ticker</strong>
+            <span>HktHolderDropVault</span>
+          </div>
+        </div>
+        <div className="docs-hkt-thesis-track" aria-hidden>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="docs-hkt-thesis-drops">
+          {drops.map((drop) => (
+            <div key={drop.t} className="docs-hkt-thesis-chip">
+              <strong>{drop.t}</strong>
+              <span>{drop.d}</span>
+            </div>
+          ))}
+        </div>
+      </div>
       <p className="docs-schema-note">
-        Mandatory. 10% of the 1% base buys that pool&apos;s token and epoch-pushes it to live $HKT
-        holders. More $HKT, larger slice. Not a module. LP and protocol sinks are excluded.
+        You do not receive $HKT from this flow. You receive the other tokens, pro-rata, each epoch.
+        More $HKT, larger slice. LP and protocol sinks are excluded.
       </p>
     </figure>
   );

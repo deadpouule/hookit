@@ -207,7 +207,7 @@ export function DocsPage() {
           <aside className="docs-sidebar">
             <nav className="docs-nav" aria-label="Documentation">
               {DOCS_NAV.map((group) => (
-                <div key={group.group} className="docs-nav-group">
+                <div key={`${group.group}-${group.items[0]?.id ?? "empty"}`} className="docs-nav-group">
                   <p className="docs-nav-label">{group.group}</p>
                   <ul>
                     {group.items.map((item) => (

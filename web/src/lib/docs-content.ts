@@ -146,7 +146,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     items: [
       { id: "overview", label: "Overview" },
       { id: "architecture", label: "Architecture" },
-      { id: "hkt", label: "$HKT" },
     ],
   },
   {
@@ -193,6 +192,10 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "risks", label: "Risks" },
       { id: "terms", label: "Terms" },
     ],
+  },
+  {
+    group: "Protocol",
+    items: [{ id: "hkt", label: "$HKT" }],
   },
 ];
 
@@ -264,172 +267,6 @@ export function buildDocsSections(): DocsSection[] {
           type: "diagram",
           id: "stack",
         },
-        {
-          type: "h3",
-          text: "What is immutable",
-        },
-        {
-          type: "ul",
-          items: [
-            "Module bitmask, hook tax, and fee-split percents are packed at launch. They cannot be edited later.",
-            "Master launch LP in the seeded tick range cannot be removed.",
-            "Classic LP after graduation sits in LiquidityLocker with no withdraw.",
-            "New protocol versions ship as new factory addresses. Old pools keep the bytecode they launched with.",
-          ],
-        },
-        {
-          type: "h3",
-          text: "What the site adds",
-        },
-        {
-          type: "ul",
-          items: [
-            "House indexer for candles, trades, and holders (not The Graph).",
-            "Defined.fi deep-link for an external chart when you want a second tape.",
-            "Quotrons wStock quotes (wAAPLx, wNVDAx, …) as launch pairs on Ink. See Quotrons.",
-            "Optional multi-pair markets on one token (1–5 quotes). Arb keeper is deployed paused until the next factory.",
-          ],
-        },
-        {
-          type: "h3",
-          text: "What the site does not have",
-        },
-        {
-          type: "ul",
-          items: [
-            "No custody wallet and no on-site portfolio page. Created / held tokens show on Explore and the token desk from the connected address.",
-          ],
-        },
-      ],
-    },
-    {
-      id: "hkt",
-      title: "$HKT",
-      group: "Introduction",
-      blocks: [
-        {
-          type: "p",
-          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit, not as a promise, as a mandatory on-chain split of the 1% base fee.`,
-        },
-        {
-          type: "diagram",
-          id: "hkt-loop",
-        },
-        {
-          type: "h3",
-          text: "The $HKT pool",
-        },
-        {
-          type: "p",
-          text: "$HKT is itself a Uniswap v4 hooked token on hookit. MasterLaunchHook runs Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn, and Deepen LPs. Creator → Hook sends the 60% creator cut of the 1% into the hook pot. The hook pot is 80% Auto-Burn and 20% Deepen LPs, so fees taken on $HKT swaps burn $HKT too. Separately, 80% of protocol fees from every launch buy $HKT and burn it.",
-        },
-        {
-          type: "diagram",
-          id: "hkt-burn",
-        },
-        {
-          type: "h3",
-          text: "The thesis",
-        },
-        {
-          type: "p",
-          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) is mandatory, not a module, not a toggle, not a special case. It buys the launched memecoin, the ticker on that pool, and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
-        },
-        {
-          type: "ul",
-          items: [
-            "You do not receive $HKT from this flow. You receive the other tokens.",
-            "Hold 1 $HKT and you get a slice of every launch that prints volume.",
-            "Hold more $HKT and your slice of every drop is larger.",
-            "Weights are live balances, not a launch-day snapshot.",
-            "LP, factory, and protocol sinks are excluded so they do not eat the drop.",
-          ],
-        },
-        {
-          type: "h3",
-          text: "Tokenomics",
-        },
-        {
-          type: "defs",
-          rows: [
-            {
-              term: "Role",
-              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%. Fees taken on the $HKT pool burn $HKT.",
-            },
-            {
-              term: "Holder cut",
-              text: `Mandatory. ${HKT_HOLDER_FEE_PCT}% of every 1% base fee, on every hooked pool. Not a module. Not optional. You cannot launch without it.`,
-            },
-            {
-              term: "Buyback",
-              text: `80% of the protocol’s ${PROTOCOL_FEE_PCT}% (24 bps of volume) routes to native-token buyback. ETH stays ETH. wStock → USDG on Quotrons first.`,
-            },
-            {
-              term: "Payout",
-              text: "Batched each epoch (default 15 minutes, 48 holders per push). Never paid inside the swap itself.",
-            },
-          ],
-        },
-        {
-          type: "formulas",
-          items: [
-            {
-              name: "drop",
-              math: "V · 1% · 10%",
-              note: "Quote volume of a pool × base fee × holder share. Spent on that pool’s token.",
-            },
-            {
-              name: "share_i",
-              math: "bal_i($HKT) / Σ bal($HKT)",
-              note: "After exclusions. Same weight applies to every launch token in the vault.",
-            },
-          ],
-        },
-        {
-          type: "h3",
-          text: "Not the Holder Airdrop module",
-        },
-        {
-          type: "table",
-          headers: ["", "$HKT drop (mandatory)", "Holder Airdrop (optional module)"],
-          rows: [
-            ["Who gets paid", "Live $HKT holders", "Holders of that launched token"],
-            ["What they get", "The launched token", "Quote (ETH / USDG / wStock)"],
-            ["Funded by", "10% of the 1% base", "A % of the hook-tax pot"],
-            ["Toggle", "None, baked into the 1% base", "Packed at launch"],
-          ],
-        },
-        {
-          type: "h3",
-          text: "How the drop actually fires",
-        },
-        {
-          type: "ul",
-          items: [
-            "The hook credits HktHolderDropVault on each swap (0.10% of quote, spent on that pool’s token).",
-            "tryPush runs on a later swap once the epoch is ready. Max 48 $HKT holders per batch.",
-            "Live $HKT (HTST on the early Ink stack) does not auto-list holders on transfer. A keeper syncs balances from Transfer logs / the indexer, then calls syncHolders + tryPush.",
-            "LP, factory, vault, and protocol sinks are excluded so they do not eat the drop.",
-            "Protocol 80% buyback is separate: ProtocolRevenueDistributor → HkitBuyback.execute, which buys $HKT and burns it. Not inside the swap.",
-          ],
-        },
-        {
-          type: "callout",
-          title: "Mandatory",
-          items: [
-            "The 10% $HKT slice is not optional and not a launch setting. Every hooked swap pays it.",
-          ],
-        },
-        {
-          type: "callout",
-          title: "Risk",
-          items: [
-            "Most launched tokens go to zero. A bag of airdropped memecoins can be worth nothing.",
-            "Thin $HKT float or excluded sinks changing later will change your share.",
-            "If the holder-sync keeper lags, the on-chain weight list can be stale until the next sync.",
-            "This is not a yield promise and not financial advice.",
-          ],
-        },
       ],
     },
     {
@@ -460,10 +297,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "h3",
           text: "Master (Launch Studio)",
-        },
-        {
-          type: "visual",
-          id: "master-studio",
         },
         {
           type: "p",
@@ -1787,6 +1620,156 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
             "Brand: hookit (hookit.fun).",
             "Do not imply partnership, listing, or audited status.",
             "On-chain data is public. You are responsible for how you use it.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "hkt",
+      title: "$HKT",
+      group: "Protocol",
+      blocks: [
+        {
+          type: "p",
+          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit, not as a promise, as a mandatory on-chain split of the 1% base fee.`,
+        },
+        {
+          type: "h3",
+          text: "The $HKT pool",
+        },
+        {
+          type: "p",
+          text: "$HKT is itself a Uniswap v4 hooked token on hookit. MasterLaunchHook runs Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn, and Deepen LPs. Creator → Hook sends the 60% creator cut of the 1% into the hook pot. The hook pot is 80% Auto-Burn and 20% Deepen LPs, so fees taken on $HKT swaps burn $HKT too. Separately, 80% of protocol fees from every launch buy $HKT and burn it.",
+        },
+        {
+          type: "diagram",
+          id: "hkt-burn",
+        },
+        {
+          type: "h3",
+          text: "The thesis",
+        },
+        {
+          type: "p",
+          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) is mandatory, not a module, not a toggle, not a special case. It buys the launched memecoin, the ticker on that pool, and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
+        },
+        {
+          type: "diagram",
+          id: "hkt-loop",
+        },
+        {
+          type: "ul",
+          items: [
+            "You do not receive $HKT from this flow. You receive the other tokens.",
+            "Hold 1 $HKT and you get a slice of every launch that prints volume.",
+            "Hold more $HKT and your slice of every drop is larger.",
+            "Weights are live balances, not a launch-day snapshot.",
+            "LP, factory, and protocol sinks are excluded so they do not eat the drop.",
+          ],
+        },
+        {
+          type: "h3",
+          text: "Token",
+        },
+        {
+          type: "table",
+          headers: ["Field", "Value"],
+          rows: [
+            ["Ticker", "$HKT"],
+            ["Status", "Not live yet"],
+            ["Network", network],
+            ["Chain ID", "57073"],
+            ["Supply", "1,000,000,000"],
+            ["Decimals", "18"],
+            ["Standard", "Uniswap v4 hooked Master"],
+            ["Token contract", "Not live yet"],
+            ["Pool", "Not live yet"],
+            ["Modules", "Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%"],
+          ],
+        },
+        {
+          type: "h3",
+          text: "Tokenomics",
+        },
+        {
+          type: "defs",
+          rows: [
+            {
+              term: "Role",
+              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%. Fees taken on the $HKT pool burn $HKT.",
+            },
+            {
+              term: "Holder cut",
+              text: `Mandatory. ${HKT_HOLDER_FEE_PCT}% of every 1% base fee, on every hooked pool. Not a module. Not optional. You cannot launch without it.`,
+            },
+            {
+              term: "Buyback",
+              text: `80% of the protocol’s ${PROTOCOL_FEE_PCT}% (24 bps of volume) routes to native-token buyback. ETH stays ETH. wStock → USDG on Quotrons first.`,
+            },
+            {
+              term: "Payout",
+              text: "Batched each epoch (default 15 minutes, 48 holders per push). Never paid inside the swap itself.",
+            },
+          ],
+        },
+        {
+          type: "formulas",
+          items: [
+            {
+              name: "drop",
+              math: "V · 1% · 10%",
+              note: "Quote volume of a pool × base fee × holder share. Spent on that pool’s token.",
+            },
+            {
+              name: "share_i",
+              math: "bal_i($HKT) / Σ bal($HKT)",
+              note: "After exclusions. Same weight applies to every launch token in the vault.",
+            },
+          ],
+        },
+        {
+          type: "h3",
+          text: "Not the Holder Airdrop module",
+        },
+        {
+          type: "table",
+          headers: ["", "$HKT drop (mandatory)", "Holder Airdrop (optional module)"],
+          rows: [
+            ["Who gets paid", "Live $HKT holders", "Holders of that launched token"],
+            ["What they get", "The launched token", "Quote (ETH / USDG / wStock)"],
+            ["Funded by", "10% of the 1% base", "A % of the hook-tax pot"],
+            ["Toggle", "None, baked into the 1% base", "Packed at launch"],
+          ],
+        },
+        {
+          type: "h3",
+          text: "How the drop actually fires",
+        },
+        {
+          type: "ul",
+          items: [
+            "The hook credits HktHolderDropVault on each swap (0.10% of quote, spent on that pool’s token).",
+            "tryPush runs on a later swap once the epoch is ready. Max 48 $HKT holders per batch.",
+            "Live $HKT (HTST on the early Ink stack) does not auto-list holders on transfer. A keeper syncs balances from Transfer logs / the indexer, then calls syncHolders + tryPush.",
+            "LP, factory, vault, and protocol sinks are excluded so they do not eat the drop.",
+            "Protocol 80% buyback is separate: ProtocolRevenueDistributor → HkitBuyback.execute, which buys $HKT and burns it. Not inside the swap.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Mandatory",
+          items: [
+            "The 10% $HKT slice is not optional and not a launch setting. Every hooked swap pays it.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Risk",
+          items: [
+            "Most launched tokens go to zero. A bag of airdropped memecoins can be worth nothing.",
+            "Thin $HKT float or excluded sinks changing later will change your share.",
+            "If the holder-sync keeper lags, the on-chain weight list can be stale until the next sync.",
+            "This is not a yield promise and not financial advice.",
           ],
         },
       ],

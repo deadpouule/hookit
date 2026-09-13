@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
+import { DocsCreatorEngine } from "@/components/docs/DocsCreatorEngine";
+import { DocsLaunchSteps } from "@/components/docs/DocsLaunchSteps";
 import { MasterHookGlyph, MultiPairGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 import { HookLogo } from "@/components/home/market/HookLogo";
@@ -46,7 +48,7 @@ function Pipe({
               <strong>{node.t}</strong>
               {node.d ? <p>{node.d}</p> : null}
             </div>
-            {i < nodes.length - 1 ? (
+            {i < nodes.length-1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -118,35 +120,9 @@ function Example({
 export function DocsVisual({ id }: { id: DocsVisualId }) {
   switch (id) {
     case "wizard":
-      return (
-        <Pipe
-          caption="How a launch is built"
-          note="Bitmask and vestPacked freeze at launch."
-          nodes={[
-            { t: "Token & pair", d: "Name, ticker, quote" },
-            { t: "Protection", d: "Snipe, MEV, caps" },
-            { t: "Tokenomics", d: "Floor, burn, deepen" },
-            { t: "Fees", d: "Dynamic or fixed" },
-            { t: "Split", d: "Hook pot 100%" },
-            { t: "Review", d: "Sign and deploy" },
-          ]}
-        />
-      );
+      return <DocsLaunchSteps />;
     case "creator-flow":
-      return (
-        <Pipe
-          caption="Creator path"
-          note="Same wallet. One (or two) transactions."
-          nodes={[
-            { t: "Connect", d: "Ink + launch fee" },
-            { t: "Token & pair", d: "Metadata on-chain" },
-            { t: "Protection", d: "Optional shields" },
-            { t: "Tokenomics", d: "Optional sinks" },
-            { t: "Fees", d: "Tax and split" },
-            { t: "Launch", d: "Token + locked LP" },
-          ]}
-        />
-      );
+      return <DocsCreatorEngine />;
     case "multi-pair":
       return (
         <Figure
@@ -602,7 +578,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
                 { x: 312, h: 18, l: "…" },
               ].map((bar) => (
                 <g key={bar.x}>
-                  <rect x={bar.x} y={108 - bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
+                  <rect x={bar.x} y={108-bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
                   <text x={bar.x + 14} y="122" textAnchor="middle" fill="#71717a" fontSize="8">
                     {bar.l}
                   </text>

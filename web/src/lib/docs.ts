@@ -60,14 +60,6 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     keywords: "stack router hook poolmanager quotrons indexer",
   },
   {
-    slug: "hkt",
-    href: "#hkt",
-    title: "$HKT",
-    description: "Hold $HKT and every launch airdrops you a slice of its token.",
-    group: "Introduction",
-    keywords: "hkt holder drop flywheel tokenomics thesis keeper",
-  },
-  {
     slug: "launches",
     href: "#launches",
     title: "How launches work",
@@ -306,6 +298,14 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "Software only. See /terms and /privacy.",
     group: "Reference",
     keywords: "terms privacy hookit",
+  },
+  {
+    slug: "hkt",
+    href: "#hkt",
+    title: "$HKT",
+    description: "Hold $HKT and every launch airdrops you a slice of its token.",
+    group: "Protocol",
+    keywords: "hkt holder drop flywheel tokenomics thesis keeper",
   },
 ];
 

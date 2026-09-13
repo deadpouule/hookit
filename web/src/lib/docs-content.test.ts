@@ -49,6 +49,10 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Creator → Hook/);
   assert.match(hkt, /fees taken on \$HKT swaps burn \$HKT/);
   assert.match(hkt, /hkt-burn/);
+  assert.match(hkt, /Not live yet/);
+  assert.match(hkt, /57073/);
+  assert.equal(sections.find((section) => section.id === "hkt")?.group, "Protocol");
+  assert.equal(ids.at(-1), "hkt");
   assert.equal(hkt.includes("$HKT drop (always on)"), false);
   assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);
   assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");
@@ -93,6 +97,10 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /Six wizard steps/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
+  assert.equal(blob.includes("What is immutable"), false);
+  assert.equal(blob.includes("What the site adds"), false);
+  assert.equal(blob.includes("What the site does not have"), false);
+  assert.equal(blob.includes("What's what"), false);
   assert.equal(blob.includes("Custom Solidity hooks vs Builder"), false);
   assert.equal(blob.includes("Limit and stop"), false);
   assert.equal(blob.includes("Pro-mode"), false);
@@ -113,6 +121,8 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /case "arb-keeper"/);
   assert.match(visuals, /docs-wizard-shot/);
   assert.match(visuals, /Create a hooked token/);
+  assert.match(visuals, /DocsLaunchSteps/);
+  assert.match(visuals, /DocsCreatorEngine/);
   assert.match(visuals, /docs-pipe/);
   assert.match(visuals, /docs-quotrons-stock/);
   assert.match(visuals, /case "router"/);
