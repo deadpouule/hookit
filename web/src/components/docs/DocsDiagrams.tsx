@@ -1,6 +1,5 @@
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
-import type { DocsDiagramId, DocsSectionId } from "@/lib/docs-content";
+import type { DocsDiagramId } from "@/lib/docs-content";
 import {
   EXPLORE_HOOKS,
   MASTER_HOOK_FILTERS,
@@ -9,28 +8,20 @@ import {
 } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
 
-const TOTEM_SECTION: Partial<Record<BrowseHookId, DocsSectionId>> = {
-  "anti-snipe": "hooks",
-  "anti-mev": "hooks",
-  "deepen-lps": "hooks",
-  "backed-floor": "floor",
-  "holder-airdrop": "hooks",
-  "buyback-vesting": "hooks",
-  "auto-burn": "hooks",
-  "dynamic-fees": "fees",
-};
-
-export function DocsTotem({ onSelectSection }: { onSelectSection: (id: DocsSectionId) => void }) {
+export function DocsHookHeading({
+  hookId,
+  as: Tag = "h3",
+}: {
+  hookId: BrowseHookId;
+  as?: "h2" | "h3";
+}) {
+  const hook = EXPLORE_HOOKS.find((item) => item.id === hookId);
+  if (!hook) return null;
   return (
-    <figure className="docs-totem">
-      <HeroHookTotem
-        kicker="hookit.fun docs"
-        onSelectHook={(hook) => {
-          const section = TOTEM_SECTION[hook.id];
-          if (section) onSelectSection(section);
-        }}
-      />
-    </figure>
+    <Tag className={cn("docs-hook-heading", `orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`)}>
+      <HookLogo hookId={hook.id} theme={hook.theme} className="docs-hook-heading-logo" />
+      {hook.title}
+    </Tag>
   );
 }
 
@@ -50,6 +41,8 @@ export function DocsDiagram({ id }: { id: DocsDiagramId }) {
       return <ClassicCurveDiagram />;
     case "floor-loop":
       return <FloorLoopDiagram />;
+    case "hkt-loop":
+      return <HktLoopDiagram />;
     default:
       return null;
   }
@@ -74,7 +67,7 @@ export function DocsHookCatalog() {
                 <article key={hook.id} className={cn("docs-hook-tile", `orb-card--${hook.theme}`)}>
                   <HookLogo hookId={hook.id} theme={hook.theme} className="docs-hook-logo" />
                   <div>
-                    <h4>{hook.title}</h4>
+                    <h4 className={cn("orb-hook-title-plain", `orb-hook-desc-badge--${hook.theme}`)}>{hook.title}</h4>
                     <p>{hook.description}</p>
                   </div>
                 </article>
@@ -321,6 +314,33 @@ function FloorLoopDiagram() {
           </li>
         ))}
       </ol>
+    </figure>
+  );
+}
+
+function HktLoopDiagram() {
+  const nodes = [
+    { t: "Any swap", d: "Every Master / graduated pool" },
+    { t: "0.10% of quote", d: "10% of the 1% base" },
+    { t: "Buy the meme", d: "Not $HKT — the launched token" },
+    { t: "$HKT holders", d: "Pro-rata live balance" },
+  ];
+  return (
+    <figure className="docs-schema">
+      <figcaption>Hold $HKT → every launch</figcaption>
+      <ol className="docs-lifecycle">
+        {nodes.map((node, i) => (
+          <li key={node.t}>
+            <span>{String(i + 1).padStart(2, "0")}</span>
+            <h4>{node.t}</h4>
+            <p>{node.d}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="docs-schema-note">
+        One bag of $HKT is a claim on a slice of every token that trades on the pad. More $HKT, larger
+        slice. LP and protocol sinks are excluded from the weight.
+      </p>
     </figure>
   );
 }

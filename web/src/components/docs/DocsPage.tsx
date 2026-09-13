@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
-import { DocsDiagram, DocsHookCatalog, DocsTotem } from "@/components/docs/DocsDiagrams";
+import { DocsDiagram, DocsHookCatalog, DocsHookHeading } from "@/components/docs/DocsDiagrams";
 import {
   buildDocsSections,
   DOCS_NAV,
@@ -14,13 +14,7 @@ import {
 import { getNetworkLabel } from "@/lib/chains";
 import { cn } from "@/lib/utils";
 
-function DocsBlockView({
-  block,
-  onSelectSection,
-}: {
-  block: DocsBlock;
-  onSelectSection: (id: DocsSectionId) => void;
-}) {
+function DocsBlockView({ block }: { block: DocsBlock }) {
   switch (block.type) {
     case "p":
       return <p className="docs-p">{block.text}</p>;
@@ -99,8 +93,8 @@ function DocsBlockView({
       return <DocsDiagram id={block.id} />;
     case "hooks":
       return <DocsHookCatalog />;
-    case "totem":
-      return <DocsTotem onSelectSection={onSelectSection} />;
+    case "hook-title":
+      return <DocsHookHeading hookId={block.hookId} />;
     case "formulas":
       return (
         <figure className="docs-formulas">
@@ -240,7 +234,9 @@ export function DocsPage() {
                   section.id === "integration" && "docs-section-integration",
                 )}
               >
-                {section.id === "integration" ? (
+                {section.hookId ? (
+                  <DocsHookHeading hookId={section.hookId} as="h2" />
+                ) : section.id === "integration" ? (
                   <>
                     <p className="docs-integration-kicker">Reference</p>
                     <h2 className="docs-section-title docs-section-title-lg">{section.title}</h2>
@@ -250,11 +246,7 @@ export function DocsPage() {
                 )}
                 <div className="docs-section-body">
                   {section.blocks.map((block, i) => (
-                    <DocsBlockView
-                      key={`${section.id}-${i}`}
-                      block={block}
-                      onSelectSection={scrollTo}
-                    />
+                    <DocsBlockView key={`${section.id}-${i}`} block={block} />
                   ))}
                 </div>
               </section>

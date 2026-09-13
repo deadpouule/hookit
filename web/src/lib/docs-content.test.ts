@@ -27,5 +27,27 @@ test("docs place Deepen LPs in Protection and include pro blocks", () => {
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "diagram")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "formulas")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "hooks")));
-  assert.equal(sections.find((section) => section.id === "overview")?.blocks[0]?.type, "totem");
+  assert.equal(
+    sections.find((section) => section.id === "overview")?.blocks.some((block) => block.type === "totem"),
+    false,
+  );
+});
+
+test("docs cover $HKT thesis and in-depth modules", () => {
+  const sections = buildDocsSections();
+  const ids = sections.map((section) => section.id);
+  assert.ok(ids.includes("hkt"));
+  assert.ok(ids.includes("dynamic-fees"));
+  assert.ok(ids.includes("buyback-vesting"));
+  assert.ok(ids.includes("holder-airdrop"));
+  const hkt = JSON.stringify(sections.find((section) => section.id === "hkt"));
+  assert.match(hkt, /Hold 1 \$HKT/);
+  assert.match(hkt, /Not the Holder Airdrop module/);
+  assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");
+  assert.equal(sections.find((section) => section.id === "floor")?.hookId, "backed-floor");
+  assert.ok(
+    sections
+      .find((section) => section.id === "hooks")
+      ?.blocks.some((block) => block.type === "hook-title" && block.hookId === "deepen-lps"),
+  );
 });

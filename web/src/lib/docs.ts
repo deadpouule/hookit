@@ -1,11 +1,15 @@
 export type DocsSlug =
   | "overview"
   | "architecture"
+  | "hkt"
   | "launches"
   | "trading"
   | "graduation"
   | "fees"
   | "hooks"
+  | "dynamic-fees"
+  | "buyback-vesting"
+  | "holder-airdrop"
   | "floor"
   | "math"
   | "integration"
@@ -43,6 +47,14 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "App, HookitSwapRouter, MasterLaunchHook, Uniswap v4 PoolManager, Ink.",
     group: "Introduction",
     keywords: "stack router hook poolmanager quotrons indexer",
+  },
+  {
+    slug: "hkt",
+    href: "#hkt",
+    title: "$HKT",
+    description: "Hold $HKT and every launch airdrops you a slice of its token.",
+    group: "Introduction",
+    keywords: "hkt holder drop flywheel tokenomics thesis",
   },
   {
     slug: "launches",
@@ -83,6 +95,30 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "Protection, tokenomics, rewards, trading fees — including Deepen LPs.",
     group: "Protocol",
     keywords: "anti-snipe floor deepen-lps dynamic fees airdrop",
+  },
+  {
+    slug: "dynamic-fees",
+    href: "#dynamic-fees",
+    title: "Dynamic Fees",
+    description: "Hook tax ramps with in-range LP depth. No oracle.",
+    group: "Protocol",
+    keywords: "dynamic fees depth saturation hook tax",
+  },
+  {
+    slug: "buyback-vesting",
+    href: "#buyback-vesting",
+    title: "Buyback Vesting",
+    description: "Creator 60% of base vests on time or FDV.",
+    group: "Protocol",
+    keywords: "buyback vesting escrow fdv cliff",
+  },
+  {
+    slug: "holder-airdrop",
+    href: "#holder-airdrop",
+    title: "Holder Airdrop",
+    description: "Hook-pot quote paid pro-rata to holders of that token.",
+    group: "Protocol",
+    keywords: "holder airdrop epoch quote vault",
   },
   {
     slug: "floor",

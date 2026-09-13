@@ -20,15 +20,20 @@ import {
   getProtocolDistributorAddress,
 } from "@/lib/contracts/config";
 import { getDefaultRpcUrl, getNetworkLabel, resolveHookitChainKey } from "@/lib/chains";
+import type { BrowseHookId } from "@/lib/master-hooks";
 
 export type DocsSectionId =
   | "overview"
   | "architecture"
+  | "hkt"
   | "launches"
   | "trading"
   | "graduation"
   | "fees"
   | "hooks"
+  | "dynamic-fees"
+  | "buyback-vesting"
+  | "holder-airdrop"
   | "floor"
   | "math"
   | "integration"
@@ -48,7 +53,8 @@ export type DocsDiagramId =
   | "fee-split"
   | "swap-lifecycle"
   | "classic-curve"
-  | "floor-loop";
+  | "floor-loop"
+  | "hkt-loop";
 
 export type DocsFormulaLine = {
   name: string;
@@ -70,11 +76,12 @@ export type DocsBlock =
   | { type: "hooks" }
   | { type: "formulas"; title?: string; items: DocsFormulaLine[] }
   | { type: "table"; headers: string[]; rows: string[][] }
-  | { type: "totem" };
+  | { type: "hook-title"; hookId: BrowseHookId };
 
 export type DocsSection = {
   id: DocsSectionId;
   title: string;
+  hookId?: BrowseHookId;
   group: "Introduction" | "Protocol" | "Reference";
   blocks: DocsBlock[];
 };
@@ -92,6 +99,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     items: [
       { id: "overview", label: "Overview" },
       { id: "architecture", label: "Architecture" },
+      { id: "hkt", label: "$HKT" },
     ],
   },
   {
@@ -102,6 +110,9 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "graduation", label: "Graduation" },
       { id: "fees", label: "Fees and flywheel" },
       { id: "hooks", label: "Hook modules" },
+      { id: "dynamic-fees", label: "Dynamic Fees" },
+      { id: "buyback-vesting", label: "Buyback Vesting" },
+      { id: "holder-airdrop", label: "Holder Airdrop" },
       { id: "floor", label: "Backed Floor" },
       { id: "math", label: "Formulas" },
     ],
@@ -142,7 +153,6 @@ export function buildDocsSections(): DocsSection[] {
       title: "Overview",
       group: "Introduction",
       blocks: [
-        { type: "totem" },
         {
           type: "p",
           text: `hookit is a permissionless Uniswap v4 launchpad on ${network}. Anyone can create a token, lock liquidity, and start trading from a wallet. The site never holds ETH, tokens, or keys.`,
@@ -216,6 +226,102 @@ export function buildDocsSections(): DocsSection[] {
             "Defined.fi deep-link for an external chart when you want a second tape.",
             "Quotrons wStock quotes (wAAPLx, wNVDAx, …) as launch pairs on Ink.",
             "Optional multi-pair markets on one token, with a keeper for inventory.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "hkt",
+      title: "$HKT",
+      group: "Introduction",
+      blocks: [
+        {
+          type: "p",
+          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit — not as a promise, as an on-chain split of the 1% base fee.`,
+        },
+        {
+          type: "diagram",
+          id: "hkt-loop",
+        },
+        {
+          type: "h3",
+          text: "The thesis",
+        },
+        {
+          type: "p",
+          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) buys the launched memecoin — the ticker on that pool — and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
+        },
+        {
+          type: "ul",
+          items: [
+            "You do not receive $HKT from this flow. You receive the other tokens.",
+            "Hold 1 $HKT and you get a slice of every launch that prints volume.",
+            "Hold more $HKT and your slice of every drop is larger.",
+            "Weights are live balances, not a launch-day snapshot.",
+            "LP, factory, and protocol sinks are excluded so they do not eat the drop.",
+          ],
+        },
+        {
+          type: "h3",
+          text: "Tokenomics",
+        },
+        {
+          type: "defs",
+          rows: [
+            {
+              term: "Role",
+              text: "Fair-launched native token of the pad (Ink may still show HOOKTEST / HTST on an early stack).",
+            },
+            {
+              term: "Holder cut",
+              text: `${HKT_HOLDER_FEE_PCT}% of every 1% base fee, on every hooked pool. Always on. Not a module you toggle.`,
+            },
+            {
+              term: "Buyback",
+              text: `80% of the protocol’s ${PROTOCOL_FEE_PCT}% (24 bps of volume) routes to native-token buyback. ETH stays ETH. wStock → USDG on Quotrons first.`,
+            },
+            {
+              term: "Payout",
+              text: "Batched each epoch (default 15 minutes, 48 holders per push). Never paid inside the swap itself.",
+            },
+          ],
+        },
+        {
+          type: "formulas",
+          items: [
+            {
+              name: "drop",
+              math: "V · 1% · 10%",
+              note: "Quote volume of a pool × base fee × holder share. Spent on that pool’s token.",
+            },
+            {
+              name: "share_i",
+              math: "bal_i($HKT) / Σ bal($HKT)",
+              note: "After exclusions. Same weight applies to every launch token in the vault.",
+            },
+          ],
+        },
+        {
+          type: "h3",
+          text: "Not the Holder Airdrop module",
+        },
+        {
+          type: "table",
+          headers: ["", "$HKT drop (always on)", "Holder Airdrop (optional module)"],
+          rows: [
+            ["Who gets paid", "Live $HKT holders", "Holders of that launched token"],
+            ["What they get", "The launched token", "Quote (ETH / USDG / wStock)"],
+            ["Funded by", "10% of the 1% base", "A % of the hook-tax pot"],
+            ["Toggle", "Cannot turn off", "Packed at launch"],
+          ],
+        },
+        {
+          type: "callout",
+          title: "Risk",
+          items: [
+            "Most launched tokens go to zero. A bag of airdropped memecoins can be worth nothing.",
+            "Thin $HKT float or excluded sinks changing later will change your share.",
+            "This is not a yield promise and not financial advice.",
           ],
         },
       ],
@@ -482,49 +588,81 @@ export function buildDocsSections(): DocsSection[] {
           type: "h3",
           text: "Protection",
         },
+        { type: "hook-title", hookId: "anti-snipe" },
         {
-          type: "ul",
-          items: [
-            "Anti-Snipe. High extra buy fee at open, linear decay to 0 over the window.",
-            "Anti-MEV. One swap per tx.origin per pool per block.",
-            "Max Tx / Max Wallet. 0.1%–2.5% of supply, fixed at launch.",
-            "Backed Floor. Quote vault + ratchet redeem price. See the floor section.",
-            "Deepen LPs. Hook-tax share minted back into the launch LP range as extra liquidity.",
-          ],
+          type: "p",
+          text: "High extra buy fee at open. Linear decay to 0 over the window you set. Snipers pay the most in the first seconds.",
+        },
+        { type: "hook-title", hookId: "anti-mev" },
+        {
+          type: "p",
+          text: "One swap per tx.origin per pool per block. Same-block buy→sell or sell→buy reverts. Not a private mempool.",
+        },
+        { type: "hook-title", hookId: "max-tx" },
+        {
+          type: "p",
+          text: "Caps a single swap at 0.1%–2.5% of supply. Fixed at launch. Oversized exact-input swaps revert.",
+        },
+        { type: "hook-title", hookId: "max-wallet" },
+        {
+          type: "p",
+          text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer.",
+        },
+        { type: "hook-title", hookId: "backed-floor" },
+        {
+          type: "p",
+          text: "Quote vault + ratchet redeem price. Deep dive in the Backed Floor section.",
+        },
+        { type: "hook-title", hookId: "deepen-lps" },
+        {
+          type: "p",
+          text: "Hook-tax share minted back into the launch LP range as extra liquidity. Thickens the book. Sits in Protection, not Rewards.",
         },
         {
           type: "h3",
           text: "Tokenomics",
         },
+        { type: "hook-title", hookId: "auto-burn" },
         {
-          type: "ul",
-          items: [
-            "Auto-Burn. Hook-tax share buys the token and burns it. Failed nested buy stays queued.",
-            "Buyback Vesting. Creator’s 60% of base goes to BuybackVault. Linear time vest or unlock-at-FDV ($10M–$10B).",
-          ],
+          type: "p",
+          text: "Hook-tax share buys the token from its own pool and burns it. Failed nested buy stays queued.",
+        },
+        { type: "hook-title", hookId: "buyback-vesting" },
+        {
+          type: "p",
+          text: `Creator’s ${CREATOR_FEE_PCT}% of the 1% base goes to BuybackVault. Time vest or unlock-at-FDV. Full write-up below.`,
         },
         {
           type: "h3",
           text: "Rewards",
         },
+        { type: "hook-title", hookId: "holder-airdrop" },
         {
-          type: "ul",
-          items: [
-            "Holder Airdrop. Hook pot → HolderAirdropVault in quote. Epoch or FDV target, pro-rata by token balance.",
-            "Creator → Hook. Routes the creator’s 60% of the 1% base into the hook pot instead of escrow.",
-            `$HKT holder drop is not a module. It is always on: ${HKT_HOLDER_FEE_PCT}% of the 1% base buys the launched token for live $HKT holders.`,
-          ],
+          type: "p",
+          text: "Hook pot → HolderAirdropVault in quote. Epoch or FDV target, pro-rata by that token’s balance. Full write-up below.",
+        },
+        { type: "hook-title", hookId: "creator-share-to-hook" },
+        {
+          type: "p",
+          text: `Routes the creator’s ${CREATOR_FEE_PCT}% of the 1% base into the hook pot instead of escrow. Cannot combine with Buyback Vesting.`,
+        },
+        {
+          type: "p",
+          text: `$HKT holder drop is not a module. It is always on. See the $HKT section.`,
         },
         {
           type: "h3",
           text: "Trading fees",
         },
+        { type: "hook-title", hookId: "fixed-fee" },
         {
-          type: "ul",
-          items: [
-            "Fixed Fees. Flat extra hook tax on every swap, quote-only.",
-            "Dynamic Fees. Hook tax ramps with how much in-range LP depth the swap consumes. No oracle.",
-          ],
+          type: "p",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees.",
+        },
+        { type: "hook-title", hookId: "dynamic-fees" },
+        {
+          type: "p",
+          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Full write-up below.",
         },
         {
           type: "callout",
@@ -539,8 +677,143 @@ export function buildDocsSections(): DocsSection[] {
       ],
     },
     {
+      id: "dynamic-fees",
+      title: "Dynamic Fees",
+      hookId: "dynamic-fees",
+      group: "Protocol",
+      blocks: [
+        {
+          type: "p",
+          text: "Optional Master fee mode. The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window — only current Uniswap v4 liquidity in the launch ticks.",
+        },
+        {
+          type: "formulas",
+          items: [
+            {
+              name: "c",
+              math: "n / d",
+              note: "Quote notional of this swap over in-range quote depth in the trade direction.",
+            },
+            {
+              name: "r",
+              math: "min(1, c / σ)",
+              note: "σ is the depth-saturation fraction set at launch (default 100% of in-range depth).",
+            },
+            {
+              name: "τ_hook",
+              math: "τ_min + (τ_max − τ_min) · r",
+              note: "Added on top of the 1% base. Empty depth stays at τ_min so a first buy does not 100% revert.",
+            },
+          ],
+        },
+        {
+          type: "ul",
+          items: [
+            "You set a min total fee and a max hook tax at launch. Base 1% + max hook tax ≤ 10%.",
+            "Cannot combine with Fixed Fees. One extra-tax mode per pool.",
+            "The 1% base still splits 60 / 10 / 30. Only the hook-tax slice ramps.",
+            "Whale-sized flow pays for the depth it consumes. Retail on a healthy book stays near the floor fee.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "buyback-vesting",
+      title: "Buyback Vesting",
+      hookId: "buyback-vesting",
+      group: "Protocol",
+      blocks: [
+        {
+          type: "p",
+          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch.`,
+        },
+        {
+          type: "defs",
+          rows: [
+            {
+              term: "Time vest",
+              text: "Linear unlock from 7 days to 5 years. Claim the unlocked slice on the token page.",
+            },
+            {
+              term: "Until FDV",
+              text: "Cliff presets $10M, $50M, $100M, $500M, $1B, $10B. All at the cliff, or by % at each rung (percents must sum to 100).",
+            },
+            {
+              term: "Ratchet",
+              text: "High-water FDV. A dump after the unlock does not relock fees already freed.",
+            },
+          ],
+        },
+        {
+          type: "ul",
+          items: [
+            `Cannot combine with Creator → Hook. Both spend the same ${CREATOR_FEE_PCT}% creator cut.`,
+            "The 10% $HKT drop and the 30% protocol cut are unchanged.",
+            "Buyers can see the vest on the token page. Instant creator dump of trading fees is off the table.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Name",
+          items: [
+            "“Buyback” here means the creator’s proceeds sit in BuybackVault, not that the hook market-buys $HKT for the creator.",
+            "Protocol $HKT buyback is a separate 80% of the protocol pot.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "holder-airdrop",
+      title: "Holder Airdrop",
+      hookId: "holder-airdrop",
+      group: "Protocol",
+      blocks: [
+        {
+          type: "p",
+          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid — not $HKT holders. That other flow is the $HKT section.",
+        },
+        {
+          type: "defs",
+          rows: [
+            {
+              term: "Time window",
+              text: "Default epoch 15 minutes. Min 60 seconds, max 7 days. The next swap after the epoch can push a batch.",
+            },
+            {
+              term: "Until FDV",
+              text: "Keep drops locked until FDV hits $5M–$10B. Unlock all at the cliff, or by % at each rung (must sum to 100).",
+            },
+            {
+              term: "Split",
+              text: "Pro-rata by live token balance. Pool, hook, and vault addresses are excluded. The holder list must cover circulating or the push reverts.",
+            },
+          ],
+        },
+        {
+          type: "ul",
+          items: [
+            "Needs hook tax > 0 (or Creator → Hook feeding the pot) so there is something to accrue.",
+            "Share of the hook pot must sum to 100% with floor / burn / Deepen LPs when any sink is on.",
+            "Permissionless. Anyone can trigger the push once the epoch is ready. The Hookit swap path supplies the holder set from the indexer.",
+            "Max 48 holders per batch so a swap stays inside the gas envelope.",
+          ],
+        },
+        {
+          type: "formulas",
+          items: [
+            {
+              name: "payout_i",
+              math: "pot · bal_i / Σ bal",
+              note: "Quote pot for this epoch × wallet balance of the launched token over circulating (exclusions applied).",
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: "floor",
       title: "Backed Floor",
+      hookId: "backed-floor",
       group: "Protocol",
       blocks: [
         {

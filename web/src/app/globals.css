@@ -9088,30 +9088,26 @@
   color: #71717a;
 }
 
-.docs-totem {
-  margin: 0.15rem 0 0.35rem;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 1rem;
-  background: #0c0c0c;
-  padding: 0.85rem 0.6rem 1rem;
+.docs-hook-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.35rem 0 0;
 }
 
-.docs-totem .hero-totem {
-  height: auto;
-  min-height: 22rem;
+h2.docs-hook-heading {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
 }
 
-.docs-totem .hero-totem-stage {
-  width: min(100%, 22rem);
+.docs-hook-heading-logo {
+  width: 1.55rem;
+  height: 1.55rem;
 }
 
-.hero-totem-kicker {
-  margin: 0 0 0.25rem;
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #d8b4fe;
+.docs-hook-tile h4.orb-hook-title-plain {
+  max-width: none;
+  font-size: 0.8rem;
 }
 
 .docs-layout {
@@ -9122,7 +9118,7 @@
 
 @media (min-width: 1024px) {
   .docs-layout {
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
     gap: 4rem;
   }
 }
