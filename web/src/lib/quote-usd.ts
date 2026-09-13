@@ -226,19 +226,6 @@ export function marketCapUsdFromLaunchAnchor(
   return (quoteMcapHuman / launchMcapQuoteHuman) * targetMcapUsd;
 }
 
-/** Master launch FDV never displays below the protocol $5k launch target. */
-export function floorMasterFdvUsd(mcap: number): number {
-  if (!Number.isFinite(mcap) || mcap <= 0) return TARGET_LAUNCH_MCAP_USD;
-  return Math.max(TARGET_LAUNCH_MCAP_USD, mcap);
-}
-
-function rwaFdvFromLaunchAnchor(
-  quotePerToken: number,
-  launchMcapQuoteHuman: number,
-): number {
-  return floorMasterFdvUsd(marketCapUsdFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman));
-}
-
 export function launchMcapQuoteFromMap(
   pool: Pick<TokenPool, "quoteAddress">,
   map: Map<string, number>,
@@ -287,13 +274,10 @@ export function marketCapUsdForPool(
   pool: Pick<TokenPool, "quoteAddress" | "quoteAsset" | "marketCount" | "markets">,
   ethUsd: number,
   quoteUsd?: number,
-  launchMcapQuoteHuman?: number,
+  _launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return marketCapUsd(quotePerToken, ethUsd);
-  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
-    return rwaFdvFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman);
-  }
   const qUsd =
     quoteUsd ??
     (pool.quoteAddress
@@ -325,13 +309,10 @@ export function candleFdvScale(
   pool: Pick<TokenPool, "quoteAddress" | "quoteAsset" | "marketCount" | "markets">,
   ethUsd: number,
   quoteUsd?: number,
-  launchMcapQuoteHuman?: number,
+  _launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return TOTAL_SUPPLY * ethUsd;
-  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
-    return (TOTAL_SUPPLY / launchMcapQuoteHuman) * TARGET_LAUNCH_MCAP_USD;
-  }
   const qUsd =
     quoteUsd ??
     (kind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);
