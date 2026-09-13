@@ -17,6 +17,14 @@ export const QUOTRONS_HOOK = "0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc" as Add
 export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const QUOTRONS_TICK_SPACING = 60;
 
+/** Uniswap v4 TickMath bounds — limit 0 reverts with PriceLimitAlreadyExceeded. */
+const MIN_SQRT_PRICE = 4295128739n;
+const MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342n;
+
+function sqrtPriceLimit(zeroForOne: boolean): bigint {
+  return zeroForOne ? MIN_SQRT_PRICE + 1n : MAX_SQRT_PRICE - 1n;
+}
+
 /** Matches QuotronStockQuotes.listings() on Ink. */
 export const QUOTRON_STOCKS: Address[] = [
   "0x943BF64D566c32A2Bcd41AC92FB63C111cC9De8f",
@@ -141,7 +149,7 @@ export async function swapUsdgForStock(
     address: router,
     abi: routerAbi,
     functionName: "swapExactIn",
-    args: [key, zeroForOne, usdgIn, 1n, 0n],
+    args: [key, zeroForOne, usdgIn, 1n, sqrtPriceLimit(zeroForOne)],
   })) as Hash;
   await publicClient.waitForTransactionReceipt({ hash });
   const stockAfter = await readErc20Balance(publicClient, stock, account);
@@ -166,7 +174,7 @@ export async function swapStockForUsdg(
     address: router,
     abi: routerAbi,
     functionName: "swapExactIn",
-    args: [key, zeroForOne, stockIn, 1n, 0n],
+    args: [key, zeroForOne, stockIn, 1n, sqrtPriceLimit(zeroForOne)],
   })) as Hash;
   await publicClient.waitForTransactionReceipt({ hash });
   const usdgAfter = await readErc20Balance(publicClient, USDG_INK, account);
@@ -255,15 +263,20 @@ export async function sweepStocksToUsdg(
     const keeperBal = await readErc20Balance(publicClient, stock, keeper);
     if (keeperBal === 0n) continue;
 
-    const usdgOut = await swapStockForUsdg(
-      publicClient,
-      walletClient,
-      router,
-      stock,
-      keeperBal,
-      keeper,
-    );
-    console.log(`[arb-usdg] sweep ${stock} → ${usdgOut} USDG wei (keeper)`);
+    try {
+      const usdgOut = await swapStockForUsdg(
+        publicClient,
+        walletClient,
+        router,
+        stock,
+        keeperBal,
+        keeper,
+      );
+      console.log(`[arb-usdg] sweep ${stock} → ${usdgOut} USDG wei (keeper)`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(`[arb-usdg] sweep ${stock} failed (${keeperBal} wei): ${msg.split("\n")[0]}`);
+    }
   }
 }
 
