@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-import { HookitLogo } from "@/components/brand/HookitLogo";
 import { changeTone, formatPercent, formatUsd } from "@/lib/format";
 import {
   bondProgress,
@@ -78,10 +77,7 @@ export function MarketTokenCard({
         <div className="token-card-head">
           <h3 className="token-card-name truncate">{token.name}</h3>
           <div className="token-card-ticker-row">
-            <p className="token-card-ticker truncate">
-              <HookitLogo size="xs" className="token-card-brand-logo" />
-              ${token.ticker}
-            </p>
+            <p className="token-card-ticker truncate">${token.ticker}</p>
             <CopyContractButton token={token} />
           </div>
         </div>

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { HookitLogo } from "@/components/brand/HookitLogo";
 import { useLaunches } from "@/hooks/useLaunches";
 import { isFactoryConfigured } from "@/lib/contracts/config";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
@@ -430,7 +429,6 @@ function TokenTable({
                   <div>
                     <p className="font-medium text-white">{token.name}</p>
                     <p className="flex items-center gap-1 font-mono text-[11px] text-zinc-500">
-                      <HookitLogo size="xs" />
                       ${token.ticker}
                     </p>
                     <TokenTypeBadges
