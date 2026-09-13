@@ -9,6 +9,7 @@ export function PickCard({
   onClick,
   children,
   variant = "default",
+  disabled = false,
 }: {
   selected: boolean;
   title: string;
@@ -16,12 +17,20 @@ export function PickCard({
   onClick: () => void;
   children: ReactNode;
   variant?: "default" | "pair";
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      className={cn("pick-card", variant === "pair" && "pick-card--pair", selected && "is-on")}
-      onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        "pick-card",
+        variant === "pair" && "pick-card--pair",
+        selected && "is-on",
+        disabled && "is-off",
+      )}
+      onClick={disabled ? undefined : onClick}
     >
       <div className="pick-card-mark">{children}</div>
       <p className={cn("pick-card-title", variant === "pair" && "pick-card-title--pair")}>{title}</p>

@@ -604,6 +604,11 @@
     border-color: rgb(149 20 209 / 0.45);
   }
 
+  .launch-shell .pick-card--pair.is-off:hover,
+  .launch-shell .pick-card--pair:disabled:hover {
+    border-color: rgb(255 255 255 / 0.08);
+  }
+
   .launch-shell .pick-card--pair.is-on {
     border-color: #9514d1 !important;
     box-shadow:
@@ -877,6 +882,23 @@
       0 0 0 1px #9514d1,
       0 0 22px rgb(149 20 209 / 0.42);
     transform: translateY(-4px) scale(1.03);
+  }
+
+  .pick-grid--pairs .pick-card.is-off,
+  .pick-grid--pairs .pick-card:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+    filter: grayscale(1);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .pick-grid--pairs .pick-card.is-off:hover,
+  .pick-grid--pairs .pick-card:disabled:hover {
+    z-index: 0;
+    border-color: rgb(255 255 255 / 0.08);
+    box-shadow: none;
+    transform: none;
   }
 
   .pick-grid--pairs .pick-card:hover .pick-card-title {

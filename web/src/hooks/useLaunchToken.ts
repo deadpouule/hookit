@@ -34,7 +34,7 @@ import { deployCustomHook } from "@/lib/deploy-custom-hook";
 import { hasDevBuyConfigured, resolveDevBuyQuoteWei } from "@/lib/dev-buy-launch";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { buildMinimalOnChainMetadataUri, resolveLaunchImageUri, resolveOnChainMetadataUri } from "@/lib/launch-metadata";
-import type { PairingTokenId } from "@/lib/pairing-tokens";
+import { isPairingDisabled, type PairingTokenId } from "@/lib/pairing-tokens";
 import { toast } from "@/lib/toast";
 import type { LaunchFormState } from "@/lib/types";
 import { requestLaunchVerification, type VerifyStatus } from "@/lib/verify-launch";
@@ -100,6 +100,9 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       const primaryMarket = form.markets[0];
       if (!primaryMarket) {
         throw new Error("Select at least one quote market");
+      }
+      if (form.markets.some((m) => isPairingDisabled(m.id))) {
+        throw new Error("Netflix (wNFLXx) is unavailable until Quotrons patch the pool.");
       }
       const quote = resolveLaunchQuote(primaryMarket.id);
       if (!quote) {

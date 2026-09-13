@@ -5,7 +5,9 @@ import { PairModeToggle } from "@/components/launch/PairModeToggle";
 import { PickCard } from "@/components/launch/PickCard";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import {
+  firstEnabledPairing,
   formatPairingTicker,
+  isPairingDisabled,
   pairingSubtitle,
   PAIRING_TOKENS,
   type PairingTokenId,
@@ -73,7 +75,7 @@ export function PairingPicker({
     }
     if (markets.length > 1) return;
     const primary = markets[0] ?? { id: "eth" as PairingTokenId, bps: BPS_TOTAL };
-    const second = PAIRING_TOKENS.find((t) => t.id !== primary.id);
+    const second = firstEnabledPairing(primary.id);
     if (!second) return;
     const split = equalSplit(2);
     onMarketsChange([
@@ -83,6 +85,7 @@ export function PairingPicker({
   };
 
   const toggle = (id: PairingTokenId) => {
+    if (isPairingDisabled(id)) return;
     if (classicOnly || !isMulti) {
       onMarketsChange([{ id, bps: BPS_TOTAL }]);
       onFloorQuoteIndexChange(0);
@@ -135,12 +138,15 @@ export function PairingPicker({
           <PickCard
             key={token.id}
             variant="pair"
-            selected={selectedIds.has(token.id)}
+            selected={selectedIds.has(token.id) && !token.disabled}
+            disabled={!!token.disabled}
             title={formatPairingTicker(token.id)}
             subtitle={
-              selectedIds.has(token.id) && isMulti
-                ? `${((markets.find((m) => m.id === token.id)?.bps ?? 0) / 100).toFixed(1)}% liq`
-                : pairingSubtitle(token.id)
+              token.disabled
+                ? token.subtitle
+                : selectedIds.has(token.id) && isMulti
+                  ? `${((markets.find((m) => m.id === token.id)?.bps ?? 0) / 100).toFixed(1)}% liq`
+                  : pairingSubtitle(token.id)
             }
             onClick={() => toggle(token.id)}
           >
