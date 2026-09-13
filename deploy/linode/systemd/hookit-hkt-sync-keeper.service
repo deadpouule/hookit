@@ -1,0 +1,17 @@
+[Unit]
+Description=Hookit HTST holder sync + HktHolderDropVault push (Ink)
+After=network-online.target hookit-indexer.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=hookit
+Group=hookit
+WorkingDirectory=/opt/hookit/indexer
+EnvironmentFile=/opt/hookit/.env
+ExecStart=/opt/hookit/deploy/linode/hkt-sync/run.sh
+Nice=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hookit-hkt-sync-keeper
+TimeoutStartSec=600
