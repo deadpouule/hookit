@@ -11,6 +11,7 @@ import {
   MCAP_VEST_PRESET_USD,
   applyVestPackedToModules,
   formatMcapPreset,
+  formatMcapUnlockChip,
   joinVestPacked,
   packAirdropVestSlice,
   packBuybackVestSlice,
@@ -151,6 +152,51 @@ test("time vest packs as zero", () => {
       holderAirdropMcapUsd: 0,
     }),
     0n,
+  );
+});
+
+test("formatMcapUnlockChip spells until-FDV and first by-% unlock", () => {
+  assert.equal(
+    formatMcapUnlockChip({
+      untilMcap: true,
+      mode: "all",
+      cliffUsd: 10_000_000,
+      stepUsd: BUYBACK_STEP_PRESET_USD,
+      stepPct: [...DEFAULT_MCAP_STEP_PCT],
+    }),
+    "until $10M FDV",
+  );
+  assert.equal(
+    formatMcapUnlockChip({
+      untilMcap: true,
+      mode: "all",
+      cliffUsd: 10_000_000,
+      stepUsd: BUYBACK_STEP_PRESET_USD,
+      stepPct: [...DEFAULT_MCAP_STEP_PCT],
+      fdvUsd: 5_000_000,
+    }),
+    "$5.00M / $10M FDV",
+  );
+  assert.equal(
+    formatMcapUnlockChip({
+      untilMcap: true,
+      mode: "steps",
+      cliffUsd: 10_000_000,
+      stepUsd: BUYBACK_STEP_PRESET_USD,
+      stepPct: [...DEFAULT_MCAP_STEP_PCT],
+    }),
+    "first unlock $10M 5%",
+  );
+  assert.equal(
+    formatMcapUnlockChip({
+      untilMcap: true,
+      mode: "steps",
+      cliffUsd: 10_000_000,
+      stepUsd: BUYBACK_STEP_PRESET_USD,
+      stepPct: [...DEFAULT_MCAP_STEP_PCT],
+      fdvUsd: 10_000_000,
+    }),
+    "5% unlocked · next $50M 5%",
   );
 });
 

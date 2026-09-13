@@ -24,6 +24,13 @@ export const buybackVaultAbi = [
   },
   {
     type: "function",
+    name: "highWaterFdvUsd",
+    inputs: [{ name: "launchToken", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "vestedOf",
     inputs: [
       { name: "account", type: "address" },

@@ -1,5 +1,12 @@
 import { CREATOR_SHARE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatCompactUsd } from "@/lib/format";
+import {
+  AIRDROP_STEP_PRESET_USD,
+  BUYBACK_STEP_PRESET_USD,
+  DEFAULT_MCAP_STEP_PCT,
+  formatMcapPreset,
+  mcapStepRungs,
+} from "@/lib/mcap-vest";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
@@ -55,9 +62,15 @@ export function moduleDetailLine(
       const mcapUsd = modules.buybackVestingMcapUsd ?? 0;
       if (mcapUsd > 0) {
         if (modules.buybackVestingUnlockMode === "steps") {
-          return `Unlocks by % as FDV climbs (last rung ${formatCompactUsd(mcapUsd)})`;
+          const first = mcapStepRungs(
+            BUYBACK_STEP_PRESET_USD,
+            modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+          )[0];
+          return first
+            ? `Unlocks by % — first ${formatMcapPreset(first.usd)} ${first.pct}%`
+            : `Unlocks by % as FDV climbs (last rung ${formatCompactUsd(mcapUsd)})`;
         }
-        return `Unlocks in full at ${formatCompactUsd(mcapUsd)} FDV`;
+        return `Unlocks in full at ${formatMcapPreset(mcapUsd)} FDV`;
       }
       const days = modules.buybackVestingDurationDays ?? 365 * 5;
       return days >= 365
@@ -72,9 +85,15 @@ export function moduleDetailLine(
       const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
       if (mcapUsd > 0) {
         if (modules.holderAirdropUnlockMode === "steps") {
-          return `${modules.holderAirdropPct}% of hook fees → holders, by % to ${formatCompactUsd(mcapUsd)}`;
+          const first = mcapStepRungs(
+            AIRDROP_STEP_PRESET_USD,
+            modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+          )[0];
+          return first
+            ? `${modules.holderAirdropPct}% of hook fees → holders · first unlock ${formatMcapPreset(first.usd)} ${first.pct}%`
+            : `${modules.holderAirdropPct}% of hook fees → holders, by %`;
         }
-        return `${modules.holderAirdropPct}% of hook fees → holders until ${formatCompactUsd(mcapUsd)} FDV`;
+        return `${modules.holderAirdropPct}% of hook fees → holders until ${formatMcapPreset(mcapUsd)} FDV`;
       }
       return `${modules.holderAirdropPct}% of hook fees → holder drops`;
     }

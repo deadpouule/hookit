@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { formatUnits, zeroAddress, type Address } from "viem";
-import { useReadContract } from "wagmi";
+import { usePublicClient, useReadContract } from "wagmi";
 
 import { useNowSeconds } from "@/hooks/useNowSeconds";
 
@@ -13,6 +13,7 @@ import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { buybackVaultAbi } from "@/lib/contracts/buyback-vault-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
+import { quoteToCurrencyId } from "@/lib/currency-id";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
@@ -23,6 +24,7 @@ import {
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
 import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
+import { fetchDeepenLpsAdded } from "@/lib/deepen-lps-added";
 import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { quotePerTokenFromSqrtPrice, STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
 import { hookTaxSummary, totalFeePlain } from "@/lib/launch-module-summary";
@@ -141,6 +143,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   const quote = (pool.quoteAddress ?? zeroAddress) as Address;
   const quoteLabel = poolQuoteLabel(pool);
   const decimals = quoteDecimals(quote);
+  const quoteId = quoteToCurrencyId(quote);
 
 
   const modules = resolved?.modules;
@@ -178,6 +181,31 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     args: poolId ? [poolId] : undefined,
     query: { enabled: !!masterHook && !!poolId && needDeepenLps, refetchInterval: 15_000 },
   });
+
+  const publicClient = usePublicClient();
+  const [deepenLpsAddedHuman, setDeepenLpsAddedHuman] = useState<number | null>(null);
+  useEffect(() => {
+    if (!publicClient || !masterHook || !poolId || !needDeepenLps) {
+      setDeepenLpsAddedHuman(null);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      fetchDeepenLpsAdded(publicClient, masterHook, poolId, pool.launchedAt)
+        .then((wei) => {
+          if (!cancelled) setDeepenLpsAddedHuman(Number(formatUnits(wei, decimals)));
+        })
+        .catch(() => {
+          if (!cancelled) setDeepenLpsAddedHuman(null);
+        });
+    };
+    load();
+    const id = window.setInterval(load, 20_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [publicClient, masterHook, poolId, needDeepenLps, pool.launchedAt, decimals]);
 
   const { data: floorPriceX18 } = useReadContract({
     address: floorVault as Address | undefined,
@@ -235,6 +263,25 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     query: { enabled: !!airdropVault && !!token && needAirdrop },
   });
 
+  const { data: airdropReleasedWei } = useReadContract({
+    address: airdropVault as Address | undefined,
+    abi: holderAirdropVaultAbi,
+    functionName: "released",
+    args: token ? [token, quoteId] : undefined,
+    query: { enabled: !!airdropVault && !!token && needAirdrop, refetchInterval: 15_000 },
+  });
+
+  const { data: airdropHighWaterFdv } = useReadContract({
+    address: airdropVault as Address | undefined,
+    abi: holderAirdropVaultAbi,
+    functionName: "highWaterFdvUsd",
+    args: token ? [token] : undefined,
+    query: {
+      enabled: !!airdropVault && !!token && needAirdrop && (modules?.holderAirdropMcapUsd ?? 0) > 0,
+      refetchInterval: 20_000,
+    },
+  });
+
   const vestNowSec = useNowSeconds(needBuyback);
 
   const { data: buybackStream, refetch: refetchBuybackStream } = useReadContract({
@@ -243,6 +290,25 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
     functionName: "streams",
     args: creator && token ? [creator, token] : undefined,
     query: { enabled: !!buybackVaultAddr && !!creator && !!token && needBuyback, refetchInterval: 15_000 },
+  });
+
+  const { data: buybackVestedWei } = useReadContract({
+    address: buybackVaultAddr as Address | undefined,
+    abi: buybackVaultAbi,
+    functionName: "vestedOf",
+    args: creator && token ? [creator, token] : undefined,
+    query: { enabled: !!buybackVaultAddr && !!creator && !!token && needBuyback, refetchInterval: 15_000 },
+  });
+
+  const { data: buybackHighWaterFdv } = useReadContract({
+    address: buybackVaultAddr as Address | undefined,
+    abi: buybackVaultAbi,
+    functionName: "highWaterFdvUsd",
+    args: token ? [token] : undefined,
+    query: {
+      enabled: !!buybackVaultAddr && !!token && needBuyback && (modules?.buybackVestingMcapUsd ?? 0) > 0,
+      refetchInterval: 20_000,
+    },
   });
 
   const { data: totalSupply } = useReadContract({
@@ -293,6 +359,9 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       durationSec,
       nowSec: vestNowSec,
     });
+    if (buybackVestedWei !== undefined) {
+      liveBuybackClaimableWei = buybackVestedWei as bigint;
+    }
     buybackTotalHuman = Number(formatUnits(amount, decimals));
     buybackClaimedHuman = Number(formatUnits(claimed, decimals));
     buybackClaimableHuman = Number(formatUnits(liveBuybackClaimableWei, decimals));
@@ -324,20 +393,29 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       airdropReserve !== undefined
         ? Number(formatUnits(airdropReserve as bigint, decimals))
         : null,
+    airdropReleasedHuman:
+      airdropReleasedWei !== undefined
+        ? Number(formatUnits(airdropReleasedWei as bigint, decimals))
+        : null,
     airdropSecondsLeft: airdropSeconds !== undefined ? Number(airdropSeconds) : null,
     airdropLastAtSec: airdropLastAt !== undefined ? Number(airdropLastAt) : null,
     airdropEpochSec: airdropEpochSec !== undefined ? Number(airdropEpochSec) : null,
+    airdropHighWaterFdvUsd:
+      airdropHighWaterFdv !== undefined ? Number(airdropHighWaterFdv as bigint) : null,
     burnedPct,
     deepenLpsPendingHuman:
       pendingDeepenLpsWei !== undefined
         ? Number(formatUnits(pendingDeepenLpsWei as bigint, decimals))
         : null,
+    deepenLpsAddedHuman,
     buybackTotalHuman,
     buybackClaimableHuman,
     buybackClaimedHuman,
     buybackClaimableWei: liveBuybackClaimableWei,
     buybackQuoteDecimals: decimals,
     buybackVestSecondsLeft,
+    buybackHighWaterFdvUsd:
+      buybackHighWaterFdv !== undefined ? Number(buybackHighWaterFdv as bigint) : null,
     quoteLabel,
   };
 
@@ -376,7 +454,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
                 tip={tip}
                 quoteLabel={live.quoteLabel}
                 mark={
-                  hook.id === "holder-airdrop" ? (
+                  hook.id === "holder-airdrop" || hook.id === "deepen-lps" || hook.id === "buyback-vesting" ? (
                     <PoolQuoteMark quoteAddress={pool.quoteAddress} quoteAsset={pool.quoteAsset} />
                   ) : undefined
                 }

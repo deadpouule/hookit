@@ -1,3 +1,5 @@
+import { formatCompactUsd } from "@/lib/format";
+
 /** On-chain `McapVest` packing — keep in sync with `src/libraries/McapVest.sol`. */
 
 export const MCAP_VEST_KIND_TIME = 0;
@@ -265,4 +267,53 @@ export function unlockedPctAtFdv(args: {
     if (args.fdvUsd >= (args.stepUsd[i] ?? 0)) acc += clampPct(args.stepPct[i] ?? 0);
   }
   return Math.min(100, acc);
+}
+
+export type McapStepRung = { usd: number; pct: number };
+
+export function mcapStepRungs(stepUsd: readonly number[], stepPct: number[]): McapStepRung[] {
+  const n = Math.min(stepUsd.length, stepPct.length, MCAP_VEST_MAX_STEPS);
+  const out: McapStepRung[] = [];
+  for (let i = 0; i < n; i++) {
+    const pct = clampPct(stepPct[i] ?? 0);
+    if (pct > 0) out.push({ usd: stepUsd[i] ?? 0, pct });
+  }
+  return out;
+}
+
+/** Live chip / tooltip: until-FDV cliff or first / next by-% rung. */
+export function formatMcapUnlockChip(args: {
+  untilMcap: boolean;
+  mode: McapUnlockMode;
+  cliffUsd: number;
+  stepUsd: readonly number[];
+  stepPct: number[];
+  fdvUsd?: number | null;
+}): string | null {
+  if (!args.untilMcap) return null;
+  const fdv = args.fdvUsd != null && args.fdvUsd > 0 ? args.fdvUsd : null;
+  if (args.mode === "all") {
+    if (args.cliffUsd <= 0) return null;
+    const goal = formatMcapPreset(args.cliffUsd);
+    if (fdv == null) return `until ${goal} FDV`;
+    if (fdv >= args.cliffUsd) return `hit ${goal} FDV`;
+    return `${formatCompactUsd(fdv)} / ${goal} FDV`;
+  }
+  const rungs = mcapStepRungs(args.stepUsd, args.stepPct);
+  const first = rungs[0];
+  if (!first) return "by %";
+  if (fdv == null) return `first unlock ${formatMcapPreset(first.usd)} ${first.pct}%`;
+  const unlocked = unlockedPctAtFdv({
+    untilMcap: true,
+    mode: "steps",
+    cliffUsd: args.cliffUsd,
+    stepUsd: args.stepUsd,
+    stepPct: args.stepPct,
+    fdvUsd: fdv,
+  });
+  const next = rungs.find((rung) => fdv < rung.usd);
+  if (unlocked >= 100) return "100% unlocked";
+  if (unlocked <= 0) return `first unlock ${formatMcapPreset(first.usd)} ${first.pct}%`;
+  if (next) return `${unlocked}% unlocked · next ${formatMcapPreset(next.usd)} ${next.pct}%`;
+  return `${unlocked}% unlocked`;
 }

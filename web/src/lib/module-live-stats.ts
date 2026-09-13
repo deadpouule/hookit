@@ -1,11 +1,12 @@
 import type { LaunchModules } from "@/lib/types";
 import type { MasterHookId } from "@/lib/master-hooks";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
-import { formatCompactQuoteAmount, formatCompactUsd, formatLiveQuoteWei } from "@/lib/format";
+import { formatCompactQuoteAmount, formatLiveQuoteWei } from "@/lib/format";
 import {
   AIRDROP_STEP_PRESET_USD,
   BUYBACK_STEP_PRESET_USD,
   DEFAULT_MCAP_STEP_PCT,
+  formatMcapUnlockChip,
   unlockedPctAtFdv,
 } from "@/lib/mcap-vest";
 
@@ -15,19 +16,39 @@ export type ModuleLiveStats = {
   spotPriceHuman: number | null;
   floorReserveHuman: number | null;
   airdropPendingHuman: number | null;
+  /** Quote already pushed to holders (`released` on HolderAirdropVault). */
+  airdropReleasedHuman?: number | null;
   airdropSecondsLeft: number | null;
   airdropLastAtSec: number | null;
   airdropEpochSec: number | null;
+  airdropHighWaterFdvUsd?: number | null;
   burnedPct: number | null;
   deepenLpsPendingHuman: number | null;
+  /** Quote already minted into the launch LP via Deepen LPs (`LpDeepened` sum). */
+  deepenLpsAddedHuman?: number | null;
   buybackTotalHuman: number | null;
   buybackClaimableHuman: number | null;
   buybackClaimedHuman: number | null;
   buybackClaimableWei?: bigint | null;
   buybackQuoteDecimals?: number;
   buybackVestSecondsLeft: number | null;
+  buybackHighWaterFdvUsd?: number | null;
   quoteLabel: string;
 };
+
+function joinChip(...parts: Array<string | null | undefined>): string {
+  return parts.filter((part): part is string => Boolean(part && part.length > 0)).join(" · ");
+}
+
+function attachUnlock(
+  pending: string | null,
+  unlock: string | null,
+): { pending: string | null; unlock: string | null } {
+  if (pending && unlock?.startsWith("until ")) {
+    return { pending: `${pending} ${unlock}`, unlock: null };
+  }
+  return { pending, unlock };
+}
 
 function formatAmount(value: number | null, quoteLabel: string): string {
   if (value == null) return "—";
@@ -146,85 +167,86 @@ export function moduleLiveStatLine(
           : days >= 365
             ? `${Math.round(days / 365)}y left`
             : `${days}d left`;
-      const claimable =
-        live.buybackClaimableWei != null && live.buybackQuoteDecimals != null
-          ? `${formatLiveQuoteWei(live.buybackClaimableWei, live.buybackQuoteDecimals)} ${live.quoteLabel}`
-          : formatAmount(live.buybackClaimableHuman ?? 0, live.quoteLabel);
-      const amountPart =
-        live.buybackTotalHuman == null || live.buybackTotalHuman <= 0
-          ? `0 ${live.quoteLabel}`
-          : claimable;
-      if (mcapUsd > 0) {
-        const mode = modules.buybackVestingUnlockMode === "steps" ? "steps" : "all";
-        const stepPct = modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT];
-        const liveMcap = pool.marketCap;
-        const unlocked =
-          liveMcap != null && liveMcap > 0
-            ? unlockedPctAtFdv({
-                untilMcap: true,
-                mode,
-                cliffUsd: mcapUsd,
-                stepUsd: BUYBACK_STEP_PRESET_USD,
-                stepPct,
-                fdvUsd: liveMcap,
-              })
-            : 0;
-        if (mode === "steps") {
-          if (liveMcap != null && liveMcap > 0) {
-            return `${amountPart} · ${unlocked}% unlocked · ${formatCompactUsd(liveMcap)} FDV`;
-          }
-          return `${amountPart} · by % to ${formatCompactUsd(mcapUsd)} FDV`;
-        }
-        const goal = formatCompactUsd(mcapUsd);
-        if (liveMcap != null && liveMcap > 0) {
-          if (liveMcap >= mcapUsd) return `${amountPart} · hit ${goal} FDV`;
-          return `${amountPart} · ${formatCompactUsd(liveMcap)} / ${goal} FDV`;
-        }
-        return `${amountPart} · until ${goal} FDV`;
-      }
-      return `${amountPart} · ${remain}`;
+      const total = live.buybackTotalHuman ?? 0;
+      const claimed = live.buybackClaimedHuman ?? 0;
+      const hasClaimable =
+        live.buybackClaimableWei != null
+          ? live.buybackClaimableWei > 0n
+          : (live.buybackClaimableHuman ?? 0) > 0;
+      const pendingHuman = Math.max(0, total - claimed);
+      const accruedPart = `${formatAmount(total, live.quoteLabel)} accrued`;
+      const claimablePart = hasClaimable
+        ? live.buybackClaimableWei != null && live.buybackQuoteDecimals != null
+          ? `${formatLiveQuoteWei(live.buybackClaimableWei, live.buybackQuoteDecimals)} ${live.quoteLabel} claimable`
+          : `${formatAmount(live.buybackClaimableHuman ?? 0, live.quoteLabel)} claimable`
+        : null;
+      const pendingPart =
+        pendingHuman > 0 ? `${formatAmount(pendingHuman, live.quoteLabel)} pending` : null;
+      const showClaimable = Boolean(claimablePart) && mcapUsd <= 0;
+      const fdvUsd = live.buybackHighWaterFdvUsd ?? pool.marketCap ?? null;
+      const unlock =
+        mcapUsd > 0
+          ? formatMcapUnlockChip({
+              untilMcap: true,
+              mode: modules.buybackVestingUnlockMode === "steps" ? "steps" : "all",
+              cliffUsd: mcapUsd,
+              stepUsd: BUYBACK_STEP_PRESET_USD,
+              stepPct: modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+              fdvUsd,
+            })
+          : remain;
+      const attached = attachUnlock(pendingPart, unlock);
+      return joinChip(accruedPart, showClaimable ? claimablePart : null, attached.pending, attached.unlock);
     }
     case "auto-burn":
       return `${(live.burnedPct ?? 0).toFixed(2)}% burned`;
     case "deepen-lps": {
-      const pending = formatAmount(live.deepenLpsPendingHuman, live.quoteLabel);
-      return `${modules.deepenLpsPct}% of hook fees · ${pending} queued to deepen LP`;
+      const added = live.deepenLpsAddedHuman;
+      const pending = live.deepenLpsPendingHuman;
+      const addedPart =
+        added == null ? null : `${formatAmount(added, live.quoteLabel)} added to LP`;
+      const queuedPart =
+        pending != null && pending > 0 ? `${formatAmount(pending, live.quoteLabel)} queued` : null;
+      if (addedPart && queuedPart) {
+        return `${modules.deepenLpsPct}% of hook fees · ${addedPart} · ${queuedPart}`;
+      }
+      if (addedPart) {
+        return `${modules.deepenLpsPct}% of hook fees · ${addedPart}`;
+      }
+      const pendingPart = formatAmount(pending, live.quoteLabel);
+      return `${modules.deepenLpsPct}% of hook fees · ${pendingPart} queued to deepen LP`;
     }
     case "holder-airdrop": {
       const potHuman = live.airdropPendingHuman;
+      const releasedHuman = live.airdropReleasedHuman;
       const mcapUsd = modules.holderAirdropMcapUsd ?? 0;
       const mode = modules.holderAirdropUnlockMode === "steps" ? "steps" : "all";
-      const mcapPart = (() => {
-        if (mcapUsd <= 0) return "";
-        const liveMcap = pool.marketCap;
-        if (mode === "steps") {
-          const unlocked =
-            liveMcap != null && liveMcap > 0
-              ? unlockedPctAtFdv({
-                  untilMcap: true,
-                  mode,
-                  cliffUsd: mcapUsd,
-                  stepUsd: AIRDROP_STEP_PRESET_USD,
-                  stepPct: modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
-                  fdvUsd: liveMcap,
-                })
-              : 0;
-          if (liveMcap != null && liveMcap > 0) return ` · ${unlocked}% unlocked`;
-          return ` · by % to ${formatCompactUsd(mcapUsd)}`;
-        }
-        if (liveMcap != null && liveMcap > 0) {
-          if (liveMcap >= mcapUsd) return ` · hit ${formatCompactUsd(mcapUsd)} FDV`;
-          return ` · ${formatCompactUsd(liveMcap)} / ${formatCompactUsd(mcapUsd)} FDV`;
-        }
-        return ` · until ${formatCompactUsd(mcapUsd)} FDV`;
-      })();
-      if (potHuman == null || potHuman <= 0) {
-        return `${modules.holderAirdropPct}% of fees → holders${mcapPart}`;
-      }
-      const pot = formatAmount(potHuman, live.quoteLabel);
-      if (live.airdropSecondsLeft == null) return `Pot ${pot}${mcapPart}`;
-      if (live.airdropSecondsLeft <= 0) return `Pot ${pot} · ready${mcapPart}`;
-      return `Pot ${pot} · in ${formatCountdown(live.airdropSecondsLeft)}${mcapPart}`;
+      const fdvUsd = live.airdropHighWaterFdvUsd ?? pool.marketCap ?? null;
+      const unlock = formatMcapUnlockChip({
+        untilMcap: mcapUsd > 0,
+        mode,
+        cliffUsd: mcapUsd,
+        stepUsd: AIRDROP_STEP_PRESET_USD,
+        stepPct: modules.holderAirdropStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
+        fdvUsd,
+      });
+      const feePart = `${modules.holderAirdropPct}% of hook fees`;
+      const releasedPart =
+        releasedHuman == null ? null : `${formatAmount(releasedHuman, live.quoteLabel)} airdropped`;
+      const pendingPart =
+        potHuman != null && potHuman > 0 ? `${formatAmount(potHuman, live.quoteLabel)} pending` : null;
+      const attached = attachUnlock(pendingPart, unlock);
+      const countdown =
+        mcapUsd > 0
+          ? null
+          : potHuman != null && potHuman > 0
+            ? live.airdropSecondsLeft == null
+              ? null
+              : live.airdropSecondsLeft <= 0
+                ? "ready"
+                : `in ${formatCountdown(live.airdropSecondsLeft)}`
+            : null;
+      return joinChip(feePart, releasedPart, attached.pending, attached.unlock, countdown);
     }
     case "creator-share-to-hook":
       return null;

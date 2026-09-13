@@ -1017,7 +1017,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Hook tax is queued to pendingDeepenLps[poolId] and minted in afterSwap.",
             "If the nested mint fails, the same amount is re-queued. Funds are not lost.",
-            "The token page can show pending deepen from pendingDeepenLps(poolId).",
+            "The token page sums LpDeepened(poolId, quoteAmount) as quote already minted into the LP, and still shows pendingDeepenLps(poolId) when the queue is non-zero.",
             "Share of the hook pot must sum to 100% with floor / burn / airdrop when any sink is on.",
           ],
         },
@@ -1076,6 +1076,7 @@ export function buildDocsSections(): DocsSection[] {
             `Cannot combine with Creator → Hook. Both spend the same ${CREATOR_FEE_PCT}% creator cut.`,
             "The 10% $HKT drop and the 30% protocol cut are unchanged.",
             "Buyers can see the vest on the token page. Instant creator dump of trading fees is off the table.",
+            "The token page shows quote accrued into BuybackVault, still pending / claimable, and the until-FDV cliff or first / next by-% rung.",
           ],
         },
         {
@@ -1125,6 +1126,7 @@ export function buildDocsSections(): DocsSection[] {
             "Needs hook tax > 0 (or Creator → Hook feeding the pot) so there is something to accrue.",
             "Share of the hook pot must sum to 100% with floor / burn / Deepen LPs when any sink is on.",
             "Permissionless. Anyone can trigger the push once the epoch is ready.",
+            "The token page reads released (already airdropped) and potOf (still pending), plus the until-FDV cliff or first / next by-% rung.",
             "Max 48 holders per batch so a swap stays inside the gas envelope.",
             "Pool, hook, and vault addresses are excluded. The holder list must cover circulating or the push reverts.",
           ],

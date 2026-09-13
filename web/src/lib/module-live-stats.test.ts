@@ -149,6 +149,57 @@ test("backed-floor chip includes premium vs DEX spot", () => {
   assert.equal(line, `40% · Vault 0.1 ETH · Floor ${formatCompactQuoteAmount(1e-9)} ETH · +900% prem`);
 });
 
+test("deepen-lps chip prefers quote added to LP over the pending queue", () => {
+  const modules = { deepenLpsPct: 30 } as LaunchModules;
+  const base = {
+    floorPriceHuman: null,
+    spotPriceHuman: null,
+    floorReserveHuman: null,
+    airdropPendingHuman: null,
+    airdropSecondsLeft: null,
+    airdropLastAtSec: null,
+    airdropEpochSec: null,
+    burnedPct: null,
+    deepenLpsPendingHuman: 1.25,
+    buybackTotalHuman: null,
+    buybackClaimableHuman: null,
+    buybackClaimedHuman: null,
+    buybackVestSecondsLeft: null,
+    quoteLabel: "WETH",
+  };
+  assert.equal(
+    moduleLiveStatLine("deepen-lps", modules, base, {}),
+    `30% of hook fees · ${formatCompactQuoteAmount(1.25)} WETH queued to deepen LP`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0, deepenLpsAddedHuman: 12.4, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    `30% of hook fees · ${formatCompactQuoteAmount(12.4)} wNVDAx added to LP`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0.5, deepenLpsAddedHuman: 12.4, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    `30% of hook fees · ${formatCompactQuoteAmount(12.4)} wNVDAx added to LP · ${formatCompactQuoteAmount(0.5)} wNVDAx queued`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "deepen-lps",
+      modules,
+      { ...base, deepenLpsPendingHuman: 0, deepenLpsAddedHuman: 0, quoteLabel: "wNVDAx" },
+      {},
+    ),
+    "30% of hook fees · 0 wNVDAx added to LP",
+  );
+});
+
 test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
   const modules = { buybackVestingMcapUsd: 10_000_000 } as LaunchModules;
   const empty = {
@@ -169,10 +220,86 @@ test("buyback-vesting chip shows FDV goal instead of leftover years", () => {
   };
   assert.equal(
     moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 5_000_000 }),
-    "0 ETH · $5.00M / $10.00M FDV",
+    "0 ETH accrued · $5.00M / $10M FDV",
   );
   assert.equal(
     moduleLiveStatLine("buyback-vesting", modules, empty, { marketCap: 12_000_000 }),
-    "0 ETH · hit $10.00M FDV",
+    "0 ETH accrued · hit $10M FDV",
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "buyback-vesting",
+      { buybackVestingMcapUsd: 10_000_000, buybackVestingUnlockMode: "steps", buybackVestingStepPct: [20, 20, 15, 15, 15, 15] } as LaunchModules,
+      { ...empty, buybackTotalHuman: 1.5, buybackClaimedHuman: 0 },
+      {},
+    ),
+    `1.5 ETH accrued · 1.5 ETH pending · first unlock $10M 20%`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "buyback-vesting",
+      {
+        buybackVestingMcapUsd: 10_000_000,
+        buybackVestingUnlockMode: "steps",
+        buybackVestingStepPct: [20, 20, 15, 15, 15, 15],
+      } as LaunchModules,
+      {
+        ...empty,
+        buybackTotalHuman: 1.5,
+        buybackClaimedHuman: 0,
+        buybackClaimableHuman: 0.3,
+        buybackClaimableWei: 3n * 10n ** 17n,
+        buybackQuoteDecimals: 18,
+      },
+      { marketCap: 10_000_000 },
+    ),
+    `1.5 ETH accrued · 1.5 ETH pending · 20% unlocked · next $50M 20%`,
+  );
+});
+
+test("holder-airdrop chip shows total airdropped, pending, and FDV unlocks", () => {
+  const live = {
+    floorPriceHuman: null,
+    spotPriceHuman: null,
+    floorReserveHuman: null,
+    airdropPendingHuman: 0.3,
+    airdropReleasedHuman: 1.2,
+    airdropSecondsLeft: 80,
+    airdropLastAtSec: null,
+    airdropEpochSec: 900,
+    burnedPct: null,
+    deepenLpsPendingHuman: null,
+    buybackTotalHuman: null,
+    buybackClaimableHuman: null,
+    buybackClaimedHuman: null,
+    buybackVestSecondsLeft: null,
+    quoteLabel: "ETH",
+  };
+  assert.equal(
+    moduleLiveStatLine("holder-airdrop", { holderAirdropPct: 50 } as LaunchModules, live, {}),
+    `50% of hook fees · ${formatCompactQuoteAmount(1.2)} ETH airdropped · ${formatCompactQuoteAmount(0.3)} ETH pending · in 1m 20s`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "holder-airdrop",
+      { holderAirdropPct: 40, holderAirdropMcapUsd: 10_000_000 } as LaunchModules,
+      { ...live, airdropReleasedHuman: 0, airdropSecondsLeft: null },
+      {},
+    ),
+    `40% of hook fees · 0 ETH airdropped · ${formatCompactQuoteAmount(0.3)} ETH pending until $10M FDV`,
+  );
+  assert.equal(
+    moduleLiveStatLine(
+      "holder-airdrop",
+      {
+        holderAirdropPct: 40,
+        holderAirdropMcapUsd: 10_000_000,
+        holderAirdropUnlockMode: "steps",
+        holderAirdropStepPct: [20, 20, 15, 15, 15, 15],
+      } as LaunchModules,
+      { ...live, airdropReleasedHuman: 0, airdropSecondsLeft: null },
+      {},
+    ),
+    `40% of hook fees · 0 ETH airdropped · ${formatCompactQuoteAmount(0.3)} ETH pending · first unlock $5M 20%`,
   );
 });

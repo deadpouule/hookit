@@ -49,6 +49,14 @@ export const masterLaunchHookAbi = [
     stateMutability: "view",
   },
   {
+    type: "event",
+    name: "LpDeepened",
+    inputs: [
+      { name: "poolId", type: "bytes32", indexed: true },
+      { name: "quoteAmount", type: "uint256", indexed: false },
+    ],
+  },
+  {
     type: "function",
     name: "launchState",
     inputs: [{ name: "poolId", type: "bytes32" }],
