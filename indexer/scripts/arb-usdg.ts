@@ -74,6 +74,8 @@ export type SweepOptions = {
   executor?: Address;
   /** Leave these quote tokens on the executor (cheap-leg prefund inventory). */
   keepOnExecutor?: Address[];
+  /** Never pull or swap these wStocks — cheap-leg fuel stays on executor/keeper. */
+  excludeFromSweep?: Address[];
 };
 
 const STATE_VIEW_INK = "0x76Fd297e2D437cd7f76d50F01AfE6160f86e9990" as Address;
@@ -336,6 +338,18 @@ function keepOnExecutor(stock: Address, keep?: Address[]): boolean {
   return keep.some((a) => a.toLowerCase() === key);
 }
 
+function excludedFromSweep(stock: Address, exclude?: Address[]): boolean {
+  if (!exclude?.length) return false;
+  const key = stock.toLowerCase();
+  return exclude.some((a) => a.toLowerCase() === key);
+}
+
+/** Max cheap-quote wei for a clip when executor balance is not the limit. */
+export function maxClipQuoteWei(maxClipUsdX18: bigint, quoteUsdX18: bigint, decimals = 18): bigint {
+  if (maxClipUsdX18 === 0n || quoteUsdX18 === 0n) return 0n;
+  return (maxClipUsdX18 * 10n ** BigInt(decimals)) / quoteUsdX18;
+}
+
 export async function sweepStocksToUsdg(
   publicClient: ReturnType<typeof createPublicClient>,
   walletClient: ReturnType<typeof createWalletClient>,
@@ -345,8 +359,11 @@ export async function sweepStocksToUsdg(
 ): Promise<void> {
   const executor = options?.executor;
   const keep = options?.keepOnExecutor;
+  const exclude = options?.excludeFromSweep;
 
   for (const stock of QUOTRON_STOCKS) {
+    if (excludedFromSweep(stock, exclude)) continue;
+
     if (executor && !keepOnExecutor(stock, keep)) {
       const execBal = await readErc20Balance(publicClient, stock, executor);
       if (execBal > 0n) {
