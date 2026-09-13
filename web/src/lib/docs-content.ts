@@ -73,6 +73,35 @@ export type DocsDiagramId =
   | "floor-loop"
   | "hkt-loop";
 
+export type DocsVisualId =
+  | "wizard"
+  | "multi-pair"
+  | "quotrons"
+  | "trading"
+  | "creator-fees"
+  | "anti-snipe-decay"
+  | "anti-mev"
+  | "max-tx"
+  | "max-wallet"
+  | "deepen-lps"
+  | "auto-burn"
+  | "buyback-vesting"
+  | "holder-airdrop"
+  | "creator-share"
+  | "fixed-fees"
+  | "dynamic-fees"
+  | "math-index"
+  | "analytics"
+  | "integration"
+  | "network"
+  | "contracts"
+  | "events"
+  | "reading"
+  | "pricing"
+  | "risks"
+  | "support"
+  | "terms";
+
 export type DocsFormulaLine = {
   name: string;
   math: string;
@@ -90,6 +119,7 @@ export type DocsBlock =
   | { type: "contract"; label: string; address: string; note?: string }
   | { type: "divider"; label: string }
   | { type: "diagram"; id: DocsDiagramId }
+  | { type: "visual"; id: DocsVisualId }
   | { type: "hooks" }
   | { type: "formulas"; title?: string; items: DocsFormulaLine[] }
   | { type: "table"; headers: string[]; rows: string[][] }
@@ -169,6 +199,16 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
 
 function addr(value: string | undefined, fallback = "not configured"): string {
   return value ?? fallback;
+}
+
+export function docsSectionHasArt(section: DocsSection): boolean {
+  return section.blocks.some(
+    (block) =>
+      block.type === "diagram" ||
+      block.type === "visual" ||
+      block.type === "hooks" ||
+      block.type === "formulas",
+  );
 }
 
 export function buildDocsSections(): DocsSection[] {
@@ -285,7 +325,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit — not as a promise, as an on-chain split of the 1% base fee.`,
+          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit — not as a promise, as a mandatory on-chain split of the 1% base fee.`,
         },
         {
           type: "diagram",
@@ -297,7 +337,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) buys the launched memecoin — the ticker on that pool — and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
+          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) is mandatory — not a module, not a toggle, not a special case. It buys the launched memecoin — the ticker on that pool — and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
         },
         {
           type: "ul",
@@ -322,7 +362,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Holder cut",
-              text: `${HKT_HOLDER_FEE_PCT}% of every 1% base fee, on every hooked pool. Always on. Not a module you toggle.`,
+              text: `Mandatory. ${HKT_HOLDER_FEE_PCT}% of every 1% base fee, on every hooked pool. Not a module. Not optional. You cannot launch without it.`,
             },
             {
               term: "Buyback",
@@ -355,12 +395,12 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "table",
-          headers: ["", "$HKT drop (always on)", "Holder Airdrop (optional module)"],
+          headers: ["", "$HKT drop (mandatory)", "Holder Airdrop (optional module)"],
           rows: [
             ["Who gets paid", "Live $HKT holders", "Holders of that launched token"],
             ["What they get", "The launched token", "Quote (ETH / USDG / wStock)"],
             ["Funded by", "10% of the 1% base", "A % of the hook-tax pot"],
-            ["Toggle", "Cannot turn off", "Packed at launch"],
+            ["Toggle", "None — baked into the 1% base", "Packed at launch"],
           ],
         },
         {
@@ -375,6 +415,13 @@ export function buildDocsSections(): DocsSection[] {
             "Live $HKT (HTST on the early Ink stack) does not auto-list holders on transfer. A keeper syncs balances from Transfer logs / the indexer, then calls syncHolders + tryPush.",
             "LP, factory, vault, and protocol sinks are excluded so they do not eat the drop.",
             "Protocol 80% buyback is separate: ProtocolRevenueDistributor → HkitBuyback.execute, which buys $HKT and burns it. Not inside the swap.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Mandatory",
+          items: [
+            "The 10% $HKT slice is not optional and not a launch setting. Every hooked swap pays it.",
           ],
         },
         {
@@ -397,6 +444,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "A launch is one (or two) wallet transactions. What you pick — Master or Classic — decides whether a pool exists from block 0 or after the curve fills.",
+        },
+        {
+          type: "visual",
+          id: "wizard",
         },
         {
           type: "h3",
@@ -496,6 +547,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "One token, up to five quote markets, launched in a single LaunchFactory.launchMulti. Each market is its own Uniswap v4 pool with the same MasterLaunchHook bitmask. Supply is split by the bps you set (must sum to 10_000).",
         },
         {
+          type: "visual",
+          id: "multi-pair",
+        },
+        {
           type: "ul",
           items: [
             "1–5 markets. Typical: ETH + USDG + one or more Quotrons wStocks.",
@@ -525,6 +580,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "On Ink you can pair a launch against wrapped equities from Quotrons (wAAPLx, wNVDAx, …) or USDG. Spot USD for FDV and graduation prefers the live Quotrons pool sqrtPriceX96; a seeded usdPriceX18 is fallback.",
         },
         {
+          type: "visual",
+          id: "quotrons",
+        },
+        {
           type: "table",
           headers: ["Ticker", "Name"],
           rows: INK_QUOTRON_STOCKS.map((stock) => [stock.symbol, stock.name]),
@@ -548,6 +607,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Buys and sells hit the live Uniswap pool (Master or graduated Classic) or the bonding curve (Classic pre-graduation). The price on screen is the on-chain spot — not a hookit quote.",
+        },
+        {
+          type: "visual",
+          id: "trading",
         },
         {
           type: "defs",
@@ -673,7 +736,7 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             {
               term: `Base (${BASE_FEE_PCT}%)`,
-              text: `Always on. Always ${CREATOR_FEE_PCT}% creator / ${HKT_HOLDER_FEE_PCT}% $HKT / ${PROTOCOL_FEE_PCT}% protocol.`,
+              text: `Mandatory. Always ${CREATOR_FEE_PCT}% creator / ${HKT_HOLDER_FEE_PCT}% $HKT / ${PROTOCOL_FEE_PCT}% protocol. The 10% $HKT slice cannot be removed or rerouted at launch.`,
             },
             {
               term: "Hook tax",
@@ -732,6 +795,10 @@ export function buildDocsSections(): DocsSection[] {
           text: `The creator’s ${CREATOR_FEE_PCT}% of every 1% base (and of the temporary snipe take) is not paid inside the swap. Where it sits depends on the modules you packed.`,
         },
         {
+          type: "visual",
+          id: "creator-fees",
+        },
+        {
           type: "defs",
           rows: [
             {
@@ -752,7 +819,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "Buyback Vesting and Creator → Hook cannot both be on.",
-            "The 10% $HKT drop and 30% protocol cut never go to the creator.",
+            "The 10% $HKT drop is mandatory. It and the 30% protocol cut never go to the creator.",
             "Read live vaults from the hook: feeEscrow(), buybackVault(). Do not trust a stale addresses.json.",
           ],
         },
@@ -834,7 +901,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `$HKT holder drop is not a module. It is always on. See the $HKT section.`,
+          text: `$HKT holder drop is not a module. It is mandatory on every hooked pool. See the $HKT section.`,
         },
         {
           type: "h3",
@@ -871,6 +938,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Buy-only extra tax at open. Linear decay to 0 over the window packed at launch. The take uses the same 60 / 10 / 30 split as the 1% base — it is not hook tax.",
+        },
+        {
+          type: "visual",
+          id: "anti-snipe-decay",
         },
         {
           type: "defs",
@@ -912,6 +983,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "Transient per-origin lock. One swap per tx.origin per pool per block. A same-block opposing swap (buy then sell, or sell then buy) reverts SandwichBlocked.",
         },
         {
+          type: "visual",
+          id: "anti-mev",
+        },
+        {
           type: "ul",
           items: [
             "This is not a private mempool and not a builder-only lane.",
@@ -931,6 +1006,10 @@ export function buildDocsSections(): DocsSection[] {
           type: "p",
           text: "Caps a single swap at 0.1%–2.5% of total supply (10–250 bps). Fixed at launch. Oversized exact-input swaps revert. The check includes the fee in the notional (SupplyCapLib.checkMaxTx).",
         },
+        {
+          type: "visual",
+          id: "max-tx",
+        },
       ],
     },
     {
@@ -942,6 +1021,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer on buys (checkMaxWalletBeforeBuy). Sells are not blocked by this cap.",
+        },
+        {
+          type: "visual",
+          id: "max-wallet",
         },
       ],
     },
@@ -1013,6 +1096,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "A share of the hook pot is minted back into the launch LP range as extra liquidity. Protection category — it thickens the book, it does not pay holders.",
         },
         {
+          type: "visual",
+          id: "deepen-lps",
+        },
+        {
           type: "ul",
           items: [
             "Hook tax is queued to pendingDeepenLps[poolId] and minted in afterSwap.",
@@ -1032,6 +1119,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "A share of the hook pot buys the launched token from its own pool after the swap and burns it (dead address).",
+        },
+        {
+          type: "visual",
+          id: "auto-burn",
         },
         {
           type: "ul",
@@ -1054,6 +1145,10 @@ export function buildDocsSections(): DocsSection[] {
           text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits) — not in the module bitmask.`,
         },
         {
+          type: "visual",
+          id: "buyback-vesting",
+        },
+        {
           type: "defs",
           rows: [
             {
@@ -1074,7 +1169,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             `Cannot combine with Creator → Hook. Both spend the same ${CREATOR_FEE_PCT}% creator cut.`,
-            "The 10% $HKT drop and the 30% protocol cut are unchanged.",
+            "The 10% $HKT drop is mandatory and unchanged. The 30% protocol cut is unchanged.",
             "Buyers can see the vest on the token page. Instant creator dump of trading fees is off the table.",
             "The token page shows quote accrued into BuybackVault, still pending / claimable, and the until-FDV cliff or first / next by-% rung.",
           ],
@@ -1097,7 +1192,11 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid — not $HKT holders. That other flow is the $HKT section.",
+          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid — not $HKT holders. That other flow is the mandatory $HKT drop in the $HKT section.",
+        },
+        {
+          type: "visual",
+          id: "holder-airdrop",
         },
         {
           type: "defs",
@@ -1154,6 +1253,10 @@ export function buildDocsSections(): DocsSection[] {
           text: `Routes the creator’s ${CREATOR_FEE_PCT}% of the 1% base into the hook pot instead of FeeEscrow. Same module split as hook tax (floor / burn / deepen / airdrop).`,
         },
         {
+          type: "visual",
+          id: "creator-share",
+        },
+        {
           type: "ul",
           items: [
             "Cannot combine with Buyback Vesting.",
@@ -1174,6 +1277,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Leftover hook tax (not routed to a sink) joins the protocol pot.",
         },
         {
+          type: "visual",
+          id: "fixed-fees",
+        },
+        {
           type: "ul",
           items: [
             "You set hook tax at launch. Base 1% + hook tax ≤ 10%.",
@@ -1191,6 +1298,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Optional Master fee mode. The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window — only current Uniswap v4 liquidity in the launch ticks.",
+        },
+        {
+          type: "visual",
+          id: "dynamic-fees",
         },
         {
           type: "formulas",
@@ -1233,6 +1344,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "The identities the contracts enforce. BPS_DENOMINATOR = 10_000. Amounts are integer wei.",
         },
         {
+          type: "visual",
+          id: "math-index",
+        },
+        {
           type: "formulas",
           title: "Swap fee",
           items: [
@@ -1249,7 +1364,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               name: "base split",
               math: "0.60 creator + 0.10 $HKT + 0.30 protocol",
-              note: "Applied to the 1% base and to the snipe take. Hook tax never uses this split.",
+              note: "Mandatory. Applied to the 1% base and to the snipe take. Hook tax never uses this split.",
             },
           ],
         },
@@ -1318,7 +1433,7 @@ export function buildDocsSections(): DocsSection[] {
             {
               name: "buy",
               math: "V · 1% · 10%",
-              note: "Quote volume × base fee × holder share. Buys the launched token, not $HKT.",
+              note: "Mandatory. Quote volume × base fee × holder share. Buys the launched token, not $HKT.",
             },
             {
               name: "share_i",
@@ -1355,6 +1470,10 @@ export function buildDocsSections(): DocsSection[] {
           text: "/stats is the public protocol dashboard. It is not a price feed and not a promise of revenue.",
         },
         {
+          type: "visual",
+          id: "analytics",
+        },
+        {
           type: "ul",
           items: [
             "Volume windows: 24h / 7d / 30d / all, from GET /v1/protocol/stats.",
@@ -1373,6 +1492,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Everything on the site can be rebuilt from public chain data. The indexer is a convenience layer and can lag. Prefer same-origin /api/indexer on hookit.fun so CORS stays on the server.",
+        },
+        {
+          type: "visual",
+          id: "integration",
         },
         {
           type: "h3",
@@ -1410,6 +1533,10 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
           text: `Production is Ink. Integration and CI still use Base Sepolia. Your wallet must match the app chain (${network}).`,
         },
         {
+          type: "visual",
+          id: "network",
+        },
+        {
           type: "defs",
           rows: [
             { term: "Network", text: network },
@@ -1437,6 +1564,10 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
         {
           type: "p",
           text: "Addresses the UI hardcodes for this build. They win over a stale deploy/ink/addresses.json. Vaults and the live MasterLaunchHook are not listed here — read them from the hook: floorVault(), feeEscrow(), buybackVault(), holderAirdropVault(), hktDropVault(). Old factories stay on-chain and are hidden from Explore.",
+        },
+        {
+          type: "visual",
+          id: "contracts",
         },
         {
           type: "contract",
@@ -1534,6 +1665,10 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
           text: "Index from the factory deploy block. Paginate getLogs — public RPCs time out on wide ranges.",
         },
         {
+          type: "visual",
+          id: "events",
+        },
+        {
           type: "ul",
           items: [
             "LaunchFactory.TokenLaunched — Master (or custom hook) launch.",
@@ -1576,6 +1711,10 @@ const launches = await client.getLogs({
         {
           type: "p",
           text: "Each launch has a numeric launchId. From there: token, pool, creator, bitmask, quote asset.",
+        },
+        {
+          type: "visual",
+          id: "reading",
         },
         {
           type: "code",
@@ -1639,6 +1778,10 @@ bits 228-259 holderAirdropEpochSeconds`,
           text: "Master / graduated spot is sqrtPriceX96. Classic pre-graduation is virtual reserves. USD multiplies by the chain feed.",
         },
         {
+          type: "visual",
+          id: "pricing",
+        },
+        {
           type: "code",
           title: "Read pool price from StateView",
           code: `const [sqrtPriceX96] = await client.readContract({
@@ -1667,6 +1810,10 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           text: "Tokens are user-created. hookit does not vet tickers, teams, or hook combinations.",
         },
         {
+          type: "visual",
+          id: "risks",
+        },
+        {
           type: "ul",
           items: [
             "You can lose everything. Prices are violent and many tokens go to zero.",
@@ -1691,6 +1838,10 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           text: `Bugs and integration questions: ${GITHUB_REPO_URL}. Include chain, token, tx hash, and wallet.`,
         },
         {
+          type: "visual",
+          id: "support",
+        },
+        {
           type: "p",
           text: "No support SLA. Software is early.",
         },
@@ -1704,6 +1855,10 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
         {
           type: "p",
           text: "Full terms and privacy live on /terms and /privacy. Short version: software only, no custody, no advice, no refunds.",
+        },
+        {
+          type: "visual",
+          id: "terms",
         },
         {
           type: "ul",

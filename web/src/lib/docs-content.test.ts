@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildDocsSections, DOCS_NAV, type DocsSectionId } from "./docs-content";
+import { buildDocsSections, docsSectionHasArt, DOCS_NAV, type DocsSectionId } from "./docs-content";
 import { DOCS_SECTION_IDS } from "./docs";
 
 test("docs nav ids match rendered sections and metadata", () => {
@@ -40,6 +40,10 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   const hkt = JSON.stringify(sections.find((section) => section.id === "hkt"));
   assert.match(hkt, /Hold 1 \$HKT/);
   assert.match(hkt, /Not the Holder Airdrop module/);
+  assert.match(hkt, /mandatory/);
+  assert.match(hkt, /\$HKT drop \(mandatory\)/);
+  assert.equal(hkt.includes("$HKT drop (always on)"), false);
+  assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);
   assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");
   assert.equal(sections.find((section) => section.id === "floor")?.hookId, "backed-floor");
   assert.match(JSON.stringify(sections.find((section) => section.id === "floor")), /More volume = higher floor/);
@@ -82,4 +86,15 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /Six wizard steps/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(sections.filter((section) => section.id === "floor").length, 1);
+});
+
+test("every docs section has a diagram, visual, hook catalog, or formula", () => {
+  const missing = buildDocsSections()
+    .filter((section) => !docsSectionHasArt(section))
+    .map((section) => section.id);
+  assert.deepEqual(missing, []);
+  const blob = JSON.stringify(buildDocsSections());
+  assert.match(blob, /"type":"visual","id":"quotrons"/);
+  assert.match(blob, /"type":"visual","id":"multi-pair"/);
+  assert.match(blob, /"type":"visual","id":"holder-airdrop"/);
 });

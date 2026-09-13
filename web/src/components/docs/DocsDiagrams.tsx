@@ -338,8 +338,8 @@ function HktLoopDiagram() {
         ))}
       </ol>
       <p className="docs-schema-note">
-        One bag of $HKT is a claim on a slice of every token that trades on the pad. More $HKT, larger
-        slice. LP and protocol sinks are excluded from the weight.
+        Mandatory. One bag of $HKT is a claim on a slice of every token that trades on the pad. More
+        $HKT, larger slice. Not a module. LP and protocol sinks are excluded from the weight.
       </p>
     </figure>
   );

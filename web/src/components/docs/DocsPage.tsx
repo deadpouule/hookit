@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { HookitLogo } from "@/components/brand/HookitLogo";
 import { DocsDiagram, DocsHookCatalog, DocsHookHeading } from "@/components/docs/DocsDiagrams";
+import { DocsVisual } from "@/components/docs/DocsVisuals";
 import {
   buildDocsSections,
   DOCS_NAV,
@@ -91,6 +92,8 @@ function DocsBlockView({ block }: { block: DocsBlock }) {
       );
     case "diagram":
       return <DocsDiagram id={block.id} />;
+    case "visual":
+      return <DocsVisual id={block.id} />;
     case "hooks":
       return <DocsHookCatalog />;
     case "hook-title":
