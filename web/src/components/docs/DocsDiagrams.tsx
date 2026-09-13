@@ -181,15 +181,15 @@ function FlywheelDiagram() {
           {nodes.map((node) => (
             <g key={node.label}>
               <rect
-                x={node.x, 46}
-                y={node.y, 18}
+                x={node.x - 46}
+                y={node.y - 18}
                 width="92"
                 height="36"
                 rx="10"
                 fill="#111"
                 stroke="rgb(255 255 255 / 0.14)"
               />
-              <text x={node.x} y={node.y, 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
+              <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
                 {node.label}
               </text>
               <text x={node.x} y={node.y + 12} textAnchor="middle" fill="#71717a" fontSize="9">
@@ -260,7 +260,7 @@ function SwapLifecycleDiagram() {
               <strong>{step.t}</strong>
               <p>{step.d}</p>
             </div>
-            {i < steps.length, 1 ? (
+            {i < steps.length - 1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -415,8 +415,8 @@ function HktLoopDiagram() {
         ].map((node) => (
           <g key={`${node.x}-${node.t}`}>
             <line x1="180" y1="84" x2={node.x} y2={node.y} stroke="rgb(3 177 237 / 0.35)" strokeWidth="1.2" />
-            <rect x={node.x, 40} y={node.y, 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-            <text x={node.x} y={node.y, 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
+            <rect x={node.x - 40} y={node.y - 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+            <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
               {node.t}
             </text>
             <text x={node.x} y={node.y + 11} textAnchor="middle" fill="#71717a" fontSize="8">
