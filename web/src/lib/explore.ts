@@ -190,11 +190,21 @@ export async function enrichPoolsWithSpotPrices(
       liquidityUsd = marketCap;
     }
 
+    const markets =
+      pool.markets?.map((m) => ({
+        ...m,
+        launchMcapQuoteHuman: launchMcapQuoteFromMap(
+          { quoteAddress: m.quoteAddress },
+          launchMcapQuoteMap,
+        ),
+      })) ?? pool.markets;
+
     return {
       ...pool,
       priceEth,
       quoteUsd,
       launchMcapQuoteHuman,
+      markets,
       marketCap,
       volume24h,
       change24h: stats?.change24h ?? pool.change24h,

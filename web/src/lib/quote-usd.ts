@@ -6,7 +6,6 @@ import { STABLE_QUOTE_ADDRESS, getChainDeployment, getLaunchFactoryAddress } fro
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { marketCapUsd, stateViewAbi } from "@/lib/pool-price";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
-import { isMultiPool } from "@/lib/pool-active-market";
 import { isRwaQuote } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 import {
@@ -227,6 +226,19 @@ export function marketCapUsdFromLaunchAnchor(
   return (quoteMcapHuman / launchMcapQuoteHuman) * targetMcapUsd;
 }
 
+/** Master launch FDV never displays below the protocol $5k launch target. */
+export function floorMasterFdvUsd(mcap: number): number {
+  if (!Number.isFinite(mcap) || mcap <= 0) return TARGET_LAUNCH_MCAP_USD;
+  return Math.max(TARGET_LAUNCH_MCAP_USD, mcap);
+}
+
+function rwaFdvFromLaunchAnchor(
+  quotePerToken: number,
+  launchMcapQuoteHuman: number,
+): number {
+  return floorMasterFdvUsd(marketCapUsdFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman));
+}
+
 export function launchMcapQuoteFromMap(
   pool: Pick<TokenPool, "quoteAddress">,
   map: Map<string, number>,
@@ -279,14 +291,8 @@ export function marketCapUsdForPool(
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return marketCapUsd(quotePerToken, ethUsd);
-  // Multi-pair: compare legs via factory oracle USD (same formula as MultiPairArbExecutor).
-  if (
-    kind === "rwa" &&
-    !isMultiPool(pool) &&
-    launchMcapQuoteHuman &&
-    launchMcapQuoteHuman > 0
-  ) {
-    return marketCapUsdFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman);
+  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
+    return rwaFdvFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman);
   }
   const qUsd =
     quoteUsd ??
@@ -323,12 +329,7 @@ export function candleFdvScale(
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return TOTAL_SUPPLY * ethUsd;
-  if (
-    kind === "rwa" &&
-    !isMultiPool(pool) &&
-    launchMcapQuoteHuman &&
-    launchMcapQuoteHuman > 0
-  ) {
+  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
     return (TOTAL_SUPPLY / launchMcapQuoteHuman) * TARGET_LAUNCH_MCAP_USD;
   }
   const qUsd =

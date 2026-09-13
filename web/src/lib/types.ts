@@ -107,6 +107,8 @@ export interface TokenPoolMarket {
   quoteAsset?: string;
   bps: number;
   poolId?: `0x${string}`;
+  /** Factory `mcapQuoteFor` for this quote leg — full-supply FDV sizing at launch. */
+  launchMcapQuoteHuman?: number;
 }
 
 export interface TokenPool {

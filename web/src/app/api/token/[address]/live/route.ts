@@ -14,7 +14,7 @@ import {
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { isMultiPool, poolMarkets, poolWithMarket } from "@/lib/pool-active-market";
-import { resolveQuoteUsdPrice } from "@/lib/quote-usd";
+import { launchMcapQuoteFromMap, readLaunchMcapQuoteHuman, resolveQuoteUsdPrice } from "@/lib/quote-usd";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { buildSparseLive, fetchOnChainLive } from "@/lib/token-onchain-live";
 import type { PublicClient } from "viem";
@@ -84,6 +84,19 @@ export async function GET(req: Request, ctx: Ctx) {
     }
 
     if (isMultiPool(pool)) {
+      const launchMcapQuoteMap = new Map<string, number>();
+      if (pool.markets?.length) {
+        await Promise.all(
+          pool.markets.map(async (m) => {
+            const human = await readLaunchMcapQuoteHuman(client, m.quoteAddress);
+            if (human && human > 0) launchMcapQuoteMap.set(m.quoteAddress.toLowerCase(), human);
+          }),
+        );
+      }
+      const activeLaunchMcap =
+        pool.launchMcapQuoteHuman ??
+        launchMcapQuoteFromMap({ quoteAddress: pool.quoteAddress }, launchMcapQuoteMap) ??
+        (pool.quoteAddress ? await readLaunchMcapQuoteHuman(client, pool.quoteAddress) : null);
       pool = {
         ...pool,
         quoteUsd: await resolveQuoteUsdPrice(
@@ -92,7 +105,14 @@ export async function GET(req: Request, ctx: Ctx) {
           ethUsd,
           client,
         ),
-        launchMcapQuoteHuman: undefined,
+        launchMcapQuoteHuman: activeLaunchMcap ?? undefined,
+        markets: pool.markets?.map((m) => ({
+          ...m,
+          launchMcapQuoteHuman: launchMcapQuoteFromMap(
+            { quoteAddress: m.quoteAddress },
+            launchMcapQuoteMap,
+          ),
+        })),
       };
     }
 

@@ -40,7 +40,7 @@ export function poolWithMarket(pool: TokenPool, marketIndex: number): TokenPool 
     tokenIsCurrency0,
     // Drop primary-leg spot fields so live/indexer paths re-resolve for this market.
     quoteUsd: undefined,
-    launchMcapQuoteHuman: undefined,
+    launchMcapQuoteHuman: market.launchMcapQuoteHuman ?? pool.launchMcapQuoteHuman,
     marketCap: 0,
     liquidity: 0,
     priceEth: undefined,
