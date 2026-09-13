@@ -91,10 +91,10 @@ const CREATOR = "0x5a52c8d3e91f00004aA2";
 
 export const MASTER_HOOK_FILTERS: { id: "all" | MasterHookCategory; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "trading-fees", label: "Trading Fees" },
   { id: "protection", label: "Protection" },
   { id: "tokenomics", label: "Tokenomics" },
   { id: "rewards", label: "Rewards" },
+  { id: "trading-fees", label: "Trading Fees" },
 ];
 
 export const MASTER_HOOKS: MasterHook[] = [
@@ -171,7 +171,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     number: 9,
     title: "Deepen LPs",
     description: "share of hook tax minted into the pool as extra liquidity. Deeper book for whales and traders",
-    category: "rewards",
+    category: "protection",
     icon: Coins,
     theme: "nature",
     keyword: "LP",
