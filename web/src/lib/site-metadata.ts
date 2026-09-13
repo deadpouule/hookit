@@ -5,7 +5,7 @@ export const SITE_NAME = "Hookit";
 export const SITE_DESCRIPTION =
   "Permissionless modular launchpad on Ink. Dual-rail Master + Classic bonding, Quotrons wStocks, locked LP, quote-only fees.";
 
-/** Browser tab / apple icon. Owl on black, not the old 3D infinity. */
+/** Browser tab / apple icon. Circular owl coin, not the old 3D infinity. */
 export const SITE_FAVICON = "/brand/hookit-owl-favicon.png";
 
 /** Homepage / generic link preview (WhatsApp / Telegram / X). Square, full black. */
