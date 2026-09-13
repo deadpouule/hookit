@@ -37,7 +37,7 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     id: "backedFloor",
     label: "Backed Floor",
     short: "Floor",
-    hint: "Ratcheting vault floor",
+    hint: "More volume, higher floor",
     color: "#f59e0b",
     glow: "rgba(245,158,11,0.4)",
   },

@@ -122,7 +122,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     id: "backed-floor",
     number: 2,
     title: "Backed Floor",
-    description: "Ratcheting redeemable floor",
+    description: "every swap the floor goes up — so the price can only go up. More volume = higher floor",
     category: "protection",
     icon: Layers,
     theme: "rose",

@@ -953,7 +953,19 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "A Master module. A launch-time share of the hook pot is deposited into FloorVault as quote collateral for that token only. Single-pair only — launchMulti reverts BackedFloorNotAllowedInMulti.",
+          text: "A Master module. Every swap lifts the floor: hook-tax quote goes into FloorVault, P_floor = vault ÷ circulating, and it only ratchets up — so the printed price cannot sit below it. More volume = higher floor. Single-pair only — launchMulti reverts BackedFloorNotAllowedInMulti.",
+        },
+        {
+          type: "table",
+          headers: ["Hook tax → floor", "$1M volume", "$10M volume"],
+          rows: [
+            ["2%", "~$20k floor", "~$200k floor"],
+            ["5%", "~$50k floor", "~$500k floor"],
+          ],
+        },
+        {
+          type: "p",
+          text: "Example assumes a ~$5k launch that sends 100% of hook tax to the vault. Starting floor is near zero until the first fees land. Split the pot with burn / Deepen LPs / airdrop and the floor grows slower.",
         },
         {
           type: "diagram",

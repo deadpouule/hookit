@@ -5027,7 +5027,7 @@
   }
 
   .hook-settings-tooltip {
-    max-width: min(22rem, calc(100vw - 2rem));
+    max-width: min(24rem, calc(100vw - 2rem));
   }
 
   .hook-settings-tooltip > svg {
@@ -5082,6 +5082,52 @@
     font-size: 0.6875rem;
     line-height: 1.45;
     color: #d4d4d8;
+  }
+
+  .hook-settings-example {
+    margin: 0.65rem 0 0;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .hook-settings-example > p {
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: #d4d4d8;
+  }
+
+  .hook-settings-example-kicker {
+    margin: 0 0 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #a1a1aa;
+  }
+
+  .hook-settings-example ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .hook-settings-example li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-family: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    color: #f4f4f5;
+  }
+
+  .hook-settings-example li span:last-child {
+    color: #fda4af;
   }
 
   .hook-settings-panel-meta--launch {

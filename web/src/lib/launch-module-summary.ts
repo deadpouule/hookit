@@ -1,4 +1,4 @@
-import { CREATOR_SHARE_BPS } from "@/lib/constants";
+import { CREATOR_SHARE_BPS, TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { formatCompactUsd } from "@/lib/format";
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
@@ -155,7 +155,7 @@ export function totalFeeTooltip(hookTaxBps: number): string {
 
 const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "anti-snipe": "Blocks snipers at launch",
-  "backed-floor": "Quote-backed price floor",
+  "backed-floor": "Floor only goes up",
   "anti-mev": "Blocks same-block bot trades",
   "max-tx": "Caps swap size vs supply",
   "max-wallet": "Caps wallet holdings",
@@ -174,7 +174,7 @@ export function hookPickTip(id: MasterHookId): string {
 
 const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "anti-snipe": "Launch sniper tax",
-  "backed-floor": "Quote price floor",
+  "backed-floor": "More volume, higher floor",
   "anti-mev": "Block bot trades",
   "max-tx": "Max swap size",
   "max-wallet": "Max wallet size",
@@ -195,7 +195,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "anti-snipe":
     "Adds a decaying tax on early buys during your launch window. Snipers pay the highest rate at open; the tax steps down over the duration you choose until it matches your base swap fee.",
   "backed-floor":
-    "Skims a share of hook fees into a FloorVault as quote collateral. Floor = vault ÷ supply and only ratchets up. Holders can redeem against the vault. Single-pair launches only.",
+    "Every swap lifts the floor. Quote from the hook tax goes into FloorVault, the redeem price only ratchets up, and spot cannot sit below it. More volume = higher floor. Holders can redeem. Single-pair only.",
   "anti-mev":
     "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
   "max-tx":
@@ -225,6 +225,36 @@ export function hookPickDetail(id: MasterHookId | "fixed-fee"): string {
   }
   return HOOK_PICK_DETAIL[id];
 }
+
+/** Vault quote added when 100% of hook tax is routed to the floor. */
+export function floorFromVolumeUsd(volumeUsd: number, hookTaxPct: number, allocPct = 100): number {
+  return volumeUsd * (hookTaxPct / 100) * (allocPct / 100);
+}
+
+function formatFloorExampleUsd(value: number): string {
+  if (value >= 1_000_000) return `~$${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (value >= 1_000) return `~$${(value / 1_000).toFixed(0)}k`;
+  return `~$${Math.round(value)}`;
+}
+
+export type FloorVolumeExampleGroup = {
+  taxPct: number;
+  rows: { volume: string; floor: string }[];
+};
+
+export const BACKED_FLOOR_VOLUME_EXAMPLE: {
+  intro: string;
+  groups: FloorVolumeExampleGroup[];
+} = {
+  intro: `A ~$${(TARGET_LAUNCH_MCAP_USD / 1_000).toFixed(0)}k launch that sends 100% of hook tax to the floor:`,
+  groups: [2, 5].map((taxPct) => ({
+    taxPct,
+    rows: [
+      { volume: "$1M", floor: formatFloorExampleUsd(floorFromVolumeUsd(1_000_000, taxPct)) },
+      { volume: "$10M", floor: formatFloorExampleUsd(floorFromVolumeUsd(10_000_000, taxPct)) },
+    ],
+  })),
+};
 
 const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "anti-snipe": "blocks snipers at launch",

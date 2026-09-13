@@ -45,6 +45,7 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Not the Holder Airdrop module/);
   assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");
   assert.equal(sections.find((section) => section.id === "floor")?.hookId, "backed-floor");
+  assert.match(JSON.stringify(sections.find((section) => section.id === "floor")), /More volume = higher floor/);
   assert.ok(
     sections
       .find((section) => section.id === "hooks")

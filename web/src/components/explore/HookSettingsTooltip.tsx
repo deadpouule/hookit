@@ -5,7 +5,7 @@ import { Info } from "lucide-react";
 import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getHookPresetDetails } from "@/lib/hook-presets";
-import { hookPickDetail, moduleDetailLine } from "@/lib/launch-module-summary";
+import { moduleDetailLine } from "@/lib/launch-module-summary";
 import type { BrowseHook, MasterHook } from "@/lib/master-hooks";
 import type { LaunchModules } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -51,28 +51,12 @@ export function HookSettingsTooltip({
         sideOffset={10}
         className="hook-settings-tooltip border-0 bg-transparent p-0 shadow-none"
       >
-        {modules ? (
-          <HookDetailPanel hook={hook} launchConfig={launchConfig} />
-        ) : (
-          <BrowseHookPanel hook={hook} presetSummary={preset.summary} />
-        )}
+        <HookDetailPanel
+          hook={hook}
+          launchConfig={launchConfig}
+          presetSummary={modules ? null : preset.summary}
+        />
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function BrowseHookPanel({
-  hook,
-  presetSummary,
-}: {
-  hook: BrowseHook | MasterHook;
-  presetSummary: string;
-}) {
-  return (
-    <div className="hook-settings-panel">
-      <p className="hook-settings-panel-title">{hook.title}</p>
-      <p className="hook-settings-panel-body">{hookPickDetail(hook.id)}</p>
-      <p className="hook-settings-panel-meta">{presetSummary}</p>
-    </div>
   );
 }

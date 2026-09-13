@@ -168,7 +168,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "floor",
     href: "#floor",
     title: "Backed Floor",
-    description: "Ratcheting redeemable floor. Single-pair only.",
+    description: "Every swap lifts the floor. More volume = higher floor. Single-pair only.",
     group: "Modules",
     keywords: "floor vault redeem ratchet premium",
   },
