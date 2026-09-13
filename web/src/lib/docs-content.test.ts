@@ -49,12 +49,15 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Creator → Hook/);
   assert.match(hkt, /fees taken on \$HKT swaps burn \$HKT/);
   assert.match(hkt, /hkt-burn/);
-  assert.match(hkt, /Not live yet/);
+  assert.match(hkt, /Live on Ink/);
   assert.match(hkt, /57073/);
+  assert.equal(hkt.includes("Not live yet"), false);
+  assert.equal(hkt.includes("HOOKTEST"), false);
+  assert.equal(hkt.includes("HTST"), false);
   assert.equal(sections.find((section) => section.id === "hkt")?.group, "Tokenomics");
   assert.equal(DOCS_NAV.some((group) => group.group === "Tokenomics"), true);
   assert.equal(ids.at(-1), "terms");
-  assert.equal(ids.indexOf("hkt"), ids.indexOf("analytics") - 1);
+  assert.equal(ids.indexOf("hkt"), ids.indexOf("integration") - 1);
   assert.ok(ids.indexOf("math") < ids.indexOf("hkt"));
   assert.equal(hkt.includes("$HKT drop (always on)"), false);
   assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);
@@ -83,7 +86,7 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
     "auto-burn",
     "creator-share",
     "fixed-fees",
-    "analytics",
+    "integration",
   ];
   for (const id of required) {
     assert.ok(ids.includes(id), `missing ${id}`);
@@ -136,8 +139,15 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /DocsBranchGraph/);
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
   assert.match(diagrams, /docs-hkt-schema/);
+  assert.match(diagrams, /docs-hkt-schema-join/);
   assert.match(diagrams, /DocsBranchGraph/);
   assert.match(diagrams, /hookit-owl-favicon/);
+  assert.match(diagrams, /Launch your programmable hooks with our modules: floor, burn, vesting/);
+  assert.equal(diagrams.includes("Owl totem"), false);
+  const launchSteps = readFileSync(new URL("../components/docs/DocsLaunchSteps.tsx", import.meta.url), "utf8");
+  assert.match(launchSteps, /Deepen LPs 20%/);
+  assert.match(launchSteps, /hookId="auto-burn"/);
+  assert.match(launchSteps, /hookId="deepen-lps"/);
   const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");
   assert.match(page, /docs-section-group/);
   assert.match(visuals, /docs-pipe/);
@@ -172,4 +182,19 @@ test("every docs section has a diagram, visual, hook catalog, or formula", () =>
   assert.match(blob, /"type":"visual","id":"quotrons"/);
   assert.match(blob, /"type":"visual","id":"multi-pair"/);
   assert.match(blob, /"type":"visual","id":"holder-airdrop"/);
+});
+
+test("docs read as live and drop Analytics / testnet language", () => {
+  const blob = JSON.stringify(buildDocsSections());
+  const ids = buildDocsSections().map((section) => section.id);
+  assert.equal(ids.includes("analytics"), false);
+  assert.equal(blob.includes("Not live yet"), false);
+  assert.equal(blob.includes("Base Sepolia"), false);
+  assert.equal(blob.includes("HOOKTEST"), false);
+  assert.equal(blob.includes("HTST"), false);
+  assert.equal(blob.includes("Owl totem"), false);
+  assert.equal(blob.toLowerCase().includes("paused"), false);
+  assert.equal(blob.toLowerCase().includes("coming soon"), false);
+  assert.equal(blob.toLowerCase().includes("testnet"), false);
+  assert.match(blob, /Live on Ink/);
 });

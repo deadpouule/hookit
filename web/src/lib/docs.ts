@@ -23,7 +23,6 @@ export type DocsSlug =
   | "fixed-fees"
   | "dynamic-fees"
   | "math"
-  | "analytics"
   | "integration"
   | "network"
   | "contracts"
@@ -71,7 +70,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "multi-pair",
     href: "#multi-pair",
     title: "Multi-pair",
-    description: "One token, up to five quote markets. Floor off. Arb keeper paused.",
+    description: "One token, up to five quote markets. Floor off. Arb keeper keeps USD legs in line.",
     group: "Protocol",
     keywords: "launchmulti markets bps arb keeper",
   },
@@ -236,14 +235,6 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     keywords: "hkt holder drop flywheel tokenomics thesis keeper",
   },
   {
-    slug: "analytics",
-    href: "#analytics",
-    title: "Analytics",
-    description: "/stats volume, protocol take, $HKT burn and holder drop.",
-    group: "Reference",
-    keywords: "stats protocol volume buyback",
-  },
-  {
     slug: "integration",
     href: "#integration",
     title: "Integration",
@@ -255,7 +246,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "network",
     href: "#network",
     title: "Network",
-    description: "Ink 57073 production. Base Sepolia for integration.",
+    description: "Ink 57073. ETH gas, USDG and Quotrons quotes.",
     group: "Reference",
     keywords: "ink 57073 rpc usdg",
   },

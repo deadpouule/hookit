@@ -42,15 +42,15 @@ export function LaunchModelPicker() {
             </div>
           </Link>
 
-          <Link href="/launch/custom" className="launch-model-card" aria-label="Master. Launch with Hookit Master modules">
+          <Link href="/launch/custom" className="launch-model-card" aria-label="Master. Pool from block 0. Launch your programmable hooks with our modules: floor, burn, vesting">
             <div className="launch-model-stage" aria-hidden>
               <HeroHookTotem interactive={false} />
             </div>
             <div className="launch-model-copy">
               <h2 className="terminal-title font-mono text-3xl font-semibold tracking-tight text-white">Master.</h2>
               <p>
-                Master modules. anti-snipe, floor, burn
-                <span aria-hidden>-&gt;</span>
+                Pool from block 0. Launch your programmable hooks with our modules: floor, burn, vesting
+                <span aria-hidden>→</span>
               </p>
             </div>
           </Link>

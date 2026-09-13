@@ -98,7 +98,7 @@ function RailsDiagram() {
           </div>
           <div className="launch-model-copy">
             <h4 className="terminal-title">Master.</h4>
-            <p>Pool from block 0. Owl totem, modules, locked LP.</p>
+            <p>Pool from block 0. Launch your programmable hooks with our modules: floor, burn, vesting →</p>
           </div>
         </div>
         <div className="docs-rail-vs" aria-hidden>
@@ -329,6 +329,7 @@ function HktBurnDiagram() {
           <i />
           <i />
           <b />
+          <em />
         </div>
         <div className="docs-hkt-schema-token">
           <img src="/brand/hookit-owl-favicon.png" alt="" width={88} height={88} />

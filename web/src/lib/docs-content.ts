@@ -47,7 +47,6 @@ export type DocsSectionId =
   | "fixed-fees"
   | "dynamic-fees"
   | "math"
-  | "analytics"
   | "integration"
   | "network"
   | "contracts"
@@ -91,7 +90,6 @@ export type DocsVisualId =
   | "fixed-fees"
   | "dynamic-fees"
   | "math-index"
-  | "analytics"
   | "integration"
   | "network"
   | "contracts"
@@ -185,7 +183,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
   {
     group: "Reference",
     items: [
-      { id: "analytics", label: "Analytics" },
       { id: "integration", label: "Integration" },
       { id: "network", label: "Network" },
       { id: "contracts", label: "Contracts" },
@@ -345,7 +342,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "MultiPairArbExecutor can buy the cheap USD leg and sell the rich one in one unlock. Defaults: 10% min deviation, max clip 0.50% of supply. The live Ink deploy is paused (maxClipUsdX18 = 0). Current MasterLaunchHook bytecode cannot take the arb path in place. That waits on a new factory.",
+          text: "MultiPairArbExecutor buys the cheap USD leg and sells the rich one in one unlock. Defaults: 10% min deviation, max clip 0.50% of supply.",
         },
         {
           type: "visual",
@@ -1218,30 +1215,6 @@ export function buildDocsSections(): DocsSection[] {
       ],
     },
     {
-      id: "analytics",
-      title: "Analytics",
-      group: "Reference",
-      blocks: [
-        {
-          type: "p",
-          text: "/stats is the public protocol dashboard. It is not a price feed and not a promise of revenue.",
-        },
-        {
-          type: "visual",
-          id: "analytics",
-        },
-        {
-          type: "ul",
-          items: [
-            "Volume windows: 24h / 7d / 30d / all, from GET /v1/protocol/stats.",
-            "Implied protocol take = volume × the 1% schedule (hook tax is extra and not in that KPI).",
-            "$HKT holder-drop estimate from volume, plus tokens sent / wallets from the indexer.",
-            "Pending buyback ETH on the distributor and burned $HKT from HkitBuyback BuybackBurned logs.",
-          ],
-        },
-      ],
-    },
-    {
       id: "integration",
       title: "For developers",
       group: "Reference",
@@ -1287,7 +1260,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
       blocks: [
         {
           type: "p",
-          text: `Production is Ink. Integration and CI still use Base Sepolia. Your wallet must match the app chain (${network}).`,
+          text: `hookit runs on Ink. Your wallet must match the app chain (${network}).`,
         },
         {
           type: "visual",
@@ -1306,7 +1279,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
             { term: "Classic graduate", text: `~${GRADUATION_ETH} ETH equivalent` },
             {
               term: "Quotes",
-              text: chainKey === "ink" ? "ETH, USDG, Quotrons wStocks" : "ETH and USDC on Base Sepolia",
+              text: chainKey === "ink" ? "ETH, USDG, Quotrons wStocks" : "ETH and USDC",
             },
             { term: "Site", text: "https://www.hookit.fun" },
           ],
@@ -1371,7 +1344,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
           type: "contract",
           label: "Native token",
           address: addr(native),
-          note: "Protocol $HKT / current Ink native",
+          note: "$HKT on Ink",
         },
         {
           type: "divider",
@@ -1576,7 +1549,7 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
             "You can lose everything. Prices are violent and many tokens go to zero.",
             "Copycat names, logos, and socials are normal. Check the contract every time.",
             "Contracts may have bugs. Not every configuration is audited.",
-            "Custom hooks (when enabled) can honeypot, tax, or block sells.",
+            "Custom hooks can honeypot, tax, or block sells.",
             "Low liquidity means the printed price is not an exit.",
             "RPC, wallet, and indexer outages show stale or empty UI.",
             "Explore flags original vs copycat tickers. A green OG badge is not a vet.",
@@ -1659,14 +1632,14 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           headers: ["Field", "Value"],
           rows: [
             ["Ticker", "$HKT"],
-            ["Status", "Not live yet"],
+            ["Status", "Live on Ink"],
             ["Network", network],
             ["Chain ID", "57073"],
             ["Supply", "1,000,000,000"],
             ["Decimals", "18"],
             ["Standard", "Uniswap v4 hooked Master"],
-            ["Token contract", "Not live yet"],
-            ["Pool", "Not live yet"],
+            ["Token contract", addr(native)],
+            ["Pool", "Uniswap v4 · MasterLaunchHook"],
             ["Modules", "Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%"],
           ],
         },
@@ -1679,7 +1652,7 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           rows: [
             {
               term: "Role",
-              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%. Fees taken on the $HKT pool burn $HKT.",
+              text: "Fair-launched Uniswap v4 hooked token of the pad. Modules: Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%. Fees taken on the $HKT pool burn $HKT.",
             },
             {
               term: "Holder cut",
@@ -1733,7 +1706,7 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           items: [
             "The hook credits HktHolderDropVault on each swap (0.10% of quote, spent on that pool’s token).",
             "tryPush runs on a later swap once the epoch is ready. Max 48 $HKT holders per batch.",
-            "Live $HKT (HTST on the early Ink stack) does not auto-list holders on transfer. A keeper syncs balances from Transfer logs / the indexer, then calls syncHolders + tryPush.",
+            "$HKT does not auto-list holders on transfer. A keeper syncs balances from Transfer logs / the indexer, then calls syncHolders + tryPush.",
             "LP, factory, vault, and protocol sinks are excluded so they do not eat the drop.",
             "Protocol 80% buyback is separate: ProtocolRevenueDistributor → HkitBuyback.execute, which buys $HKT and burns it. Not inside the swap.",
           ],

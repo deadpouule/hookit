@@ -182,8 +182,8 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
                 <div className="launch-model-copy">
                   <h4 className="terminal-title">Master.</h4>
                   <p>
-                    Master modules. anti-snipe, floor, burn
-                    <span aria-hidden> -&gt;</span>
+                    Pool from block 0. Launch your programmable hooks with our modules: floor, burn, vesting
+                    <span aria-hidden>→</span>
                   </p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       return (
         <Figure
           caption="Keeper closes the USD gap"
-          note="Live Ink is paused (maxClipUsdX18 = 0). Needs a factory that can take the arb path."
+          note="Buys the cheap USD leg and sells the rich one in one unlock."
         >
           <svg className="docs-spark" viewBox="0 0 360 168" role="img" aria-label="Arb keeper buys the cheap pool and sells the rich one">
             <rect x="12" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(56 189 248 / 0.45)" />
@@ -278,7 +278,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             rows={[
               { k: "Gap", v: "ETH leg 10% cheaper in USD than the wNVDA leg." },
               { k: "Clip", v: "Keeper buys ETH-quoted tokens, sells into wNVDA, max 0.50% of supply." },
-              { k: "Today", v: "Paused on Ink. No in-place path on current MasterLaunchHook." },
+              { k: "Unlock", v: "One keeper tx closes the gap across the token's quote markets." },
             ]}
           />
         </Figure>
@@ -698,29 +698,6 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             {["Swap fee", "Dynamic τ", "Uniswap spot", "Classic curve", "$HKT drop", "Protocol pot"].map((item) => (
               <span key={item}>{item}</span>
             ))}
-          </div>
-        </Figure>
-      );
-    case "analytics":
-      return (
-        <Figure caption="/stats tiles" note="Not a price feed. Implied take uses the 1% schedule, not hook tax.">
-          <div className="docs-stat-tiles">
-            <article>
-              <small>Volume</small>
-              <strong>24h / 7d / 30d</strong>
-            </article>
-            <article>
-              <small>Protocol take</small>
-              <strong>V · 1%</strong>
-            </article>
-            <article>
-              <small>$HKT drop</small>
-              <strong>V · 1% · 10%</strong>
-            </article>
-            <article>
-              <small>Buyback</small>
-              <strong>Burned $HKT</strong>
-            </article>
           </div>
         </Figure>
       );

@@ -1,4 +1,4 @@
-import type { BrowseHookId, HookTheme } from "@/lib/master-hooks";
+import { hookThemeAccentColor, type BrowseHookId, type HookTheme } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
 
 function Glyph({ id }: { id: BrowseHookId }) {
@@ -175,13 +175,19 @@ export function HookLogo({
   hookId,
   theme,
   className,
+  color,
 }: {
   hookId: BrowseHookId;
   theme: HookTheme;
   className?: string;
+  color?: string;
 }) {
   return (
-    <span className={cn("hook-logo", `hook-logo--${theme}`, className)} aria-hidden>
+    <span
+      className={cn("hook-logo", `hook-logo--${theme}`, className)}
+      style={{ color: color ?? hookThemeAccentColor(theme) }}
+      aria-hidden
+    >
       <Glyph id={hookId} />
     </span>
   );
