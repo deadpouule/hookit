@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
+import { statsFromIndexerTrades } from "@/lib/indexer-client";
 import { isMultiPool } from "@/lib/pool-active-market";
 import {
   candleFdvScale,
@@ -151,10 +152,15 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
           : live.marketCap;
     const priceUsd = mcap / TOTAL_SUPPLY;
 
+    const tradeStats = statsFromIndexerTrades(trades);
     const quoteVolRaw = summary.volume24h ? Number(summary.volume24h) : 0;
-    const quoteVolUsd = isEth
+    const summaryVolUsd = isEth
       ? (quoteVolRaw / 1e18) * eth
       : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
+    const quoteVolUsd =
+      tradeStats.volumeWei > 0n
+        ? quoteVolumeUsd(tradeStats.volumeWei, pool, eth, quoteUsd)
+        : summaryVolUsd;
 
     const candleScale = candleFdvScale(pool, eth, quoteUsd, pool.launchMcapQuoteHuman);
     const volumeUsdForTrade = (vQuote: string) => {
@@ -235,7 +241,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
       marketCap: mcap,
       volume24h: quoteVolUsd > 0 ? quoteVolUsd : pool.volume24h ?? 0,
       liquidity: pool.liquidity > 0 ? pool.liquidity : mcap,
-      change24h: summary.change24h ?? pool.change24h ?? 0,
+      change24h: tradeStats.change ?? summary.change24h ?? pool.change24h ?? 0,
       change5m: summary.change5m ?? 0,
       change1h: summary.change1h ?? 0,
       change6h: summary.change6h ?? 0,

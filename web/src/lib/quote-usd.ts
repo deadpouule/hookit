@@ -324,7 +324,7 @@ export function candleFdvScale(
   _launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
-  if (kind === "eth") return TOTAL_SUPPLY * ethUsd;
+  if (kind === "eth") return TOTAL_SUPPLY * (quoteUsd && quoteUsd > 0 ? quoteUsd : ethUsd);
   const qUsd =
     quoteUsd ??
     (kind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);

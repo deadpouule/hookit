@@ -15,7 +15,39 @@ export type IndexerTrade = {
   price: string;
   sqrtPriceX96: string;
   actor?: string;
+  poolId?: string;
 };
+
+const SEC_24H = 86_400;
+
+/** 24h change/volume from pool-scoped trades — indexer list still mixes multi-pair ticks. */
+export function statsFromIndexerTrades(
+  trades: IndexerTrade[],
+  windowSec = SEC_24H,
+  nowSec = Math.floor(Date.now() / 1000),
+): { change: number | null; volumeWei: bigint; trades: number } {
+  const cutoff = nowSec - windowSec;
+  const window = [...trades]
+    .filter((t) => t.timestamp >= cutoff && Number(t.price) > 0)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  let volumeWei = BigInt(0);
+  for (const trade of window) {
+    try {
+      volumeWei += BigInt(trade.quoteAmount || "0");
+    } catch {
+      /* skip */
+    }
+  }
+  if (window.length < 2) {
+    return { change: null, volumeWei, trades: window.length };
+  }
+  const first = Number(window[0]!.price);
+  const last = Number(window[window.length - 1]!.price);
+  if (!(first > 0) || !Number.isFinite(last)) {
+    return { change: null, volumeWei, trades: window.length };
+  }
+  return { change: ((last - first) / first) * 100, volumeWei, trades: window.length };
+}
 
 export type IndexerHolder = {
   address: string;

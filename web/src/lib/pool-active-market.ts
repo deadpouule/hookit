@@ -32,18 +32,24 @@ export function poolWithMarket(pool: TokenPool, marketIndex: number): TokenPool 
     /^0x[a-fA-F0-9]{40}$/.test(token) && /^0x[a-fA-F0-9]{40}$/.test(quote)
       ? BigInt(token) < BigInt(quote)
       : pool.tokenIsCurrency0;
+  const nextPoolId = market.poolId ?? pool.poolId;
+  const sameLeg =
+    !!nextPoolId &&
+    !!pool.poolId &&
+    nextPoolId.toLowerCase() === pool.poolId.toLowerCase() &&
+    quote.toLowerCase() === (pool.quoteAddress ?? zeroAddress).toLowerCase();
   return {
     ...pool,
     quoteAddress: quote,
     quoteAsset: market.quoteAsset ?? poolQuoteLabel({ quoteAddress: quote } as TokenPool),
-    poolId: market.poolId ?? pool.poolId,
+    poolId: nextPoolId,
     tokenIsCurrency0,
-    // Drop primary-leg spot fields so live/indexer paths re-resolve for this market.
-    quoteUsd: undefined,
+    // Keep spot on the already-priced leg (ETH HTEST). Other tabs drop it so live re-resolves.
+    quoteUsd: sameLeg ? pool.quoteUsd : undefined,
     launchMcapQuoteHuman: market.launchMcapQuoteHuman ?? pool.launchMcapQuoteHuman,
-    marketCap: 0,
-    liquidity: 0,
-    priceEth: undefined,
+    marketCap: sameLeg ? pool.marketCap : 0,
+    liquidity: sameLeg ? pool.liquidity : 0,
+    priceEth: sameLeg ? pool.priceEth : undefined,
     markets,
     marketCount: markets.length,
   };

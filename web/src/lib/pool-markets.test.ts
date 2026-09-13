@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { zeroAddress } from "viem";
 
-import type { IndexerTokenSummary } from "./indexer-client";
+import { statsFromIndexerTrades, type IndexerTokenSummary } from "./indexer-client";
 import { poolToMarketToken } from "./market-tokens";
 import { applyIndexerTokenToPool } from "./pool-markets";
+import { candleFdvScale } from "./quote-usd";
 import type { TokenPool } from "./types";
 
 function poolStub(overrides: Partial<TokenPool> = {}): TokenPool {
@@ -163,4 +164,55 @@ test("explore cards use indexer 1h, not a fake 24h fraction", () => {
   assert.equal(token.change24h, 8);
   assert.equal(token.change1h, -2);
   assert.equal(token.volume, 120);
+});
+
+test("statsFromIndexerTrades ignores mixed ticks outside the window", () => {
+  const now = 1_000_000;
+  const trades = [
+    {
+      id: "a",
+      txHash: "0x1" as `0x${string}`,
+      logIndex: 0,
+      blockNumber: 1,
+      timestamp: now - 90_000,
+      side: "buy" as const,
+      quoteAmount: "100",
+      tokenAmount: "1",
+      price: "10",
+      sqrtPriceX96: "0",
+    },
+    {
+      id: "b",
+      txHash: "0x2" as `0x${string}`,
+      logIndex: 0,
+      blockNumber: 2,
+      timestamp: now - 3_600,
+      side: "buy" as const,
+      quoteAmount: (10n ** 18n).toString(),
+      tokenAmount: "1",
+      price: "3.0e-8",
+      sqrtPriceX96: "0",
+    },
+    {
+      id: "c",
+      txHash: "0x3" as `0x${string}`,
+      logIndex: 0,
+      blockNumber: 3,
+      timestamp: now - 60,
+      side: "sell" as const,
+      quoteAmount: (2n * 10n ** 18n).toString(),
+      tokenAmount: "1",
+      price: "2.4e-8",
+      sqrtPriceX96: "0",
+    },
+  ];
+  const stats = statsFromIndexerTrades(trades, 86_400, now);
+  assert.equal(stats.trades, 2);
+  assert.ok(stats.change != null && Math.abs(stats.change - -20) < 0.01);
+  assert.equal(stats.volumeWei, 3n * 10n ** 18n);
+});
+
+test("ETH candle scale prefers factory quoteUsd over TWAP", () => {
+  const pool = poolStub({ quoteAddress: zeroAddress, quoteAsset: "ETH" });
+  assert.equal(candleFdvScale(pool, 4_000, 2_527.56), 1_000_000_000 * 2_527.56);
 });

@@ -168,7 +168,11 @@ interface TokenDetailViewProps {
 
 export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailViewProps) {
   const [marketIndex, setMarketIndex] = useState(0);
-  const activePool = useMemo(() => poolWithMarket(pool, marketIndex), [pool, marketIndex]);
+  const multi = isMultiPool(pool);
+  const activePool = useMemo(
+    () => (multi ? poolWithMarket(pool, marketIndex) : pool),
+    [multi, pool, marketIndex],
+  );
   const { live, isLoading: liveLoading } = useLiveToken(activePool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
@@ -186,7 +190,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const media = resolveMediaUrl(pool.image);
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
-  const multi = isMultiPool(pool);
   const markets = useMemo(() => poolMarkets(pool), [pool]);
   const activeLegLabel = multi ? marketLegLabel(markets[marketIndex] ?? markets[0]!) : null;
   const marketLegs = useMemo(

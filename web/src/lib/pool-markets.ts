@@ -1,4 +1,9 @@
-import { fetchIndexerTokens, type IndexerTokenSummary } from "@/lib/indexer-client";
+import {
+  fetchIndexerTokens,
+  fetchIndexerTrades,
+  statsFromIndexerTrades,
+  type IndexerTokenSummary,
+} from "@/lib/indexer-client";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { quoteVolumeUsd } from "@/lib/quote-usd";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
@@ -49,17 +54,43 @@ export function applyIndexerTokenToPool(pool: TokenPool, summary: IndexerTokenSu
   return next;
 }
 
+function scopeSummaryToPrimaryPool(
+  summary: IndexerTokenSummary,
+  trades: { quoteAmount: string; price: string; timestamp: number }[],
+): IndexerTokenSummary {
+  const stats = statsFromIndexerTrades(trades);
+  return {
+    ...summary,
+    change24h: stats.change ?? summary.change24h,
+    volume24h: stats.volumeWei > 0n ? stats.volumeWei.toString() : summary.volume24h,
+    trades24h: stats.trades > 0 ? stats.trades : summary.trades24h,
+  };
+}
+
 /** Merge indexer market legs and 24h stats when on-chain swap index is skipped. */
 export async function enrichPoolsWithIndexerMarkets(pools: TokenPool[]): Promise<TokenPool[]> {
   try {
     const { tokens } = await fetchIndexerTokens();
     const byAddress = new Map(tokens.map((token) => [token.address.toLowerCase(), token]));
 
-    return pools.map((pool) => {
-      const address = (pool.contractAddress ?? pool.id).toLowerCase();
-      const summary = byAddress.get(address);
-      return summary ? applyIndexerTokenToPool(pool, summary) : pool;
-    });
+    return Promise.all(
+      pools.map(async (pool) => {
+        const address = (pool.contractAddress ?? pool.id).toLowerCase();
+        const summary = byAddress.get(address);
+        if (!summary) return pool;
+        let scoped = summary;
+        const primaryPoolId = pool.poolId ?? summary.poolId;
+        if ((summary.marketCount ?? pool.marketCount ?? 1) > 1 && primaryPoolId) {
+          try {
+            const { trades } = await fetchIndexerTrades(summary.address, 2_000, 0, primaryPoolId);
+            scoped = scopeSummaryToPrimaryPool(summary, trades);
+          } catch {
+            scoped = summary;
+          }
+        }
+        return applyIndexerTokenToPool(pool, scoped);
+      }),
+    );
   } catch {
     return pools;
   }
