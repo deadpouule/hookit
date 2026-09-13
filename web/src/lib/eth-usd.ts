@@ -5,10 +5,10 @@ import { CHAINLINK_ETH_USD, chainlinkAggregatorAbi, getLaunchFactoryAddress } fr
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 
-/** ETH/USD stored on LaunchFactory — same oracle used to seed launch FDV (~$5k). */
+/** ETH/USD stored on LaunchFactory - same oracle used to seed launch FDV (~$5k). */
 export async function readLaunchEthUsd(client: PublicClient): Promise<number> {
   // Prefer live feed: factory ethUsdPriceX18 can sit at the $4000 deploy seed until
-  // someone calls syncEthUsdPrice() — that was showing ~1.6× inflated ETH quotes/FDV.
+  // someone calls syncEthUsdPrice() - that was showing ~1.6× inflated ETH quotes/FDV.
   const live = await readEthUsd(client);
   if (live > 0) return live;
 
@@ -29,7 +29,7 @@ export async function readLaunchEthUsd(client: PublicClient): Promise<number> {
   return DEFAULT_LAUNCH_ETH_USD;
 }
 
-/** Live ETH/USD (Chainlink) — for volumes / implied rates, not launch FDV display. */
+/** Live ETH/USD (Chainlink) - for volumes / implied rates, not launch FDV display. */
 export async function readEthUsd(client: PublicClient): Promise<number> {
   try {
     const result = (await client.readContract({

@@ -99,7 +99,7 @@ export function rebalanceFeeRoutes(modules: LaunchModules): Partial<LaunchModule
   return splitIntegerTotal(enabled, weights, 100);
 }
 
-/** User moved one slider — keep the total at 100% across enabled modules. */
+/** User moved one slider - keep the total at 100% across enabled modules. */
 export function setFeeRouteShare(
   modules: LaunchModules,
   changedKey: FeeRouteKey,

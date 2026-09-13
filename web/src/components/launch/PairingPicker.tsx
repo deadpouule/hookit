@@ -125,7 +125,7 @@ export function PairingPicker({
 
       {!compact ? (
         <p className="pick-kicker">
-          —{markets.length} market{markets.length === 1 ? "" : "s"} · pick 1–{isMulti ? MAX_MARKETS : 1} quote
+           - {markets.length} market{markets.length === 1 ? "" : "s"} · pick 1–{isMulti ? MAX_MARKETS : 1} quote
           {isMulti ? `s (${totalBps / 100}% allocated)` : ""}
         </p>
       ) : null}

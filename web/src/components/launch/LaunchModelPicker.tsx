@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AnimatedGridBackground } from "@/components/home/market/AnimatedGridBackground";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 
-function ClassicAsciiCoin() {
+export function ClassicAsciiCoin() {
   return (
     <pre className="launch-classic-ascii" aria-hidden>
       {`        .  .  .  .

@@ -28,7 +28,7 @@ test("docs place Deepen LPs in Protection and include pro blocks", () => {
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "diagram")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "formulas")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "hooks")));
-  assert.equal(JSON.stringify(sections.find((section) => section.id === "overview")).includes("totem"), false);
+  assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "diagram" && block.id === "rails")));
 });
 
 test("docs cover $HKT thesis and in-depth modules", () => {
@@ -94,11 +94,25 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /#f97316/);
   assert.match(visuals, /theme="ember"/);
   assert.match(visuals, /50 such buys/);
-  assert.match(visuals, /supply after burns/);
+  assert.match(visuals, /After burns/);
+  assert.equal(visuals.includes("supply after burns"), false);
+  assert.match(visuals, /docs-deepen-logo--deep/);
   assert.match(visuals, /Until FDV/);
   assert.match(visuals, /Retail 0\.2 ETH/);
+  assert.match(visuals, /case "arb-keeper"/);
+  assert.match(visuals, /docs-wizard-shot/);
+  assert.match(visuals, /Create a hooked token/);
   assert.equal(visuals.includes("pendingDeepenLps"), false);
   assert.equal(visuals.includes("Holders of $TICKER"), false);
+});
+
+test("docs copy has no em dashes", () => {
+  const sections = JSON.stringify(buildDocsSections());
+  assert.equal(sections.includes("\u2014"), false);
+  const visuals = readFileSync(new URL("../components/docs/DocsVisuals.tsx", import.meta.url), "utf8");
+  const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
+  assert.equal(visuals.includes("\u2014"), false);
+  assert.equal(diagrams.includes("\u2014"), false);
 });
 
 test("every docs section has a diagram, visual, hook catalog, or formula", () => {

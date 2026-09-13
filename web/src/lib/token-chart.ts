@@ -2,7 +2,7 @@ import { formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import type { LiveCandle } from "@/lib/token-live";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
 
-/** Native resolution is 1m — same as Sentry's subgraph resample. */
+/** Native resolution is 1m - same as Sentry's subgraph resample. */
 export const NATIVE_CANDLE_SEC = 60;
 
 export const CHART_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D", "ALL"] as const;
@@ -150,7 +150,7 @@ export function intervalBucketSec(interval: ChartInterval): number {
   return INTERVAL_BUCKET_SEC[interval];
 }
 
-/** Bucket every swap into OHLC — this is Sentry's subgraph path, not a spot placeholder. */
+/** Bucket every swap into OHLC - this is Sentry's subgraph path, not a spot placeholder. */
 export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): ChartBar[] {
   if (!(bucketSec > 0) || ticks.length === 0) return [];
   const sorted = ticks
@@ -180,7 +180,7 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
-/** Fixed candle pitch (px) — thin Stonk-style candles that never stretch to fill the pane. */
+/** Fixed candle pitch (px) - thin Stonk-style candles that never stretch to fill the pane. */
 export const CHART_BAR_SPACING = 9;
 /** Empty bars kept between the last candle and the right axis. */
 export const CHART_RIGHT_OFFSET = 5;
@@ -309,7 +309,7 @@ export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interva
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {
-  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (!Number.isFinite(value) || value <= 0) return " - ";
   if (scale === "mcap") return formatCompactUsd(value);
   if (value >= 1) return formatCompactUsd(value);
   if (value >= 0.01) return `$${value.toFixed(4)}`;
@@ -319,7 +319,7 @@ export function formatChartUsd(value: number, scale: ChartScale): string {
   return `$${trimmed}`;
 }
 
-/** Signed % from a single bar's open → close — Stonk OHLC legend. */
+/** Signed % from a single bar's open → close - Stonk OHLC legend. */
 export function barChangePct(bar: ChartBar): number {
   if (!(bar.open > 0) || !Number.isFinite(bar.close)) return 0;
   return ((bar.close - bar.open) / bar.open) * 100;

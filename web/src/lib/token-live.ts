@@ -10,7 +10,7 @@ export type SwapSide = "buy" | "sell";
 export interface LiveSwap {
   id: string;
   ageSec: number;
-  /** Unix seconds — present when the swap timestamp is known (indexer / on-chain block). */
+  /** Unix seconds - present when the swap timestamp is known (indexer / on-chain block). */
   t?: number;
   recipient: string;
   side: SwapSide;
@@ -30,7 +30,7 @@ export interface LiveCandle {
   h: number;
   l: number;
   c: number;
-  /** Unix seconds — present when sourced from indexer OHLC. */
+  /** Unix seconds - present when sourced from indexer OHLC. */
   t?: number;
   /** Quote volume in USD for the bucket (indexer). */
   v?: number;

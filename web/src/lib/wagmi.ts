@@ -41,7 +41,7 @@ const transports = {
   ),
 } as const;
 
-/** Dev: injected wallet only — skips WalletConnect Cloud (403 / allowlist errors on localhost). */
+/** Dev: injected wallet only - skips WalletConnect Cloud (403 / allowlist errors on localhost). */
 function createDevConfig() {
   return createConfig({
     chains: [primary, secondary],

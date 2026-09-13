@@ -13,7 +13,7 @@ const INK_BROWSER_RPC_URLS = [
   "https://rpc-qnd.inkonchain.com",
 ];
 
-/** Production mainnet — Uniswap v4 + Universal Router. */
+/** Production mainnet - Uniswap v4 + Universal Router. */
 export const ink = defineChain({
   id: 57_073,
   name: "Ink",
@@ -34,7 +34,7 @@ export const ink = defineChain({
   },
 });
 
-/** Integration testnet — v4 PoolManager + PoolSwapTest; no Ink Sepolia router. */
+/** Integration testnet - v4 PoolManager + PoolSwapTest; no Ink Sepolia router. */
 export const baseSepolia = defineChain({
   id: 84_532,
   name: "Base Sepolia",

@@ -661,7 +661,7 @@ export type BondingLaunchRow = {
   creator: Address;
   quote: Address;
   phase: number;
-  /** Deprecated on-chain field — Classic always stores 0. */
+  /** Deprecated on-chain field - Classic always stores 0. */
   creatorTaxBps: number;
   totalSupply: bigint;
   curveSupply: bigint;

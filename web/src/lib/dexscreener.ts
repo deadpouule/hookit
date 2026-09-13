@@ -2,7 +2,7 @@ import { getAddress, isAddress, type Address } from "viem";
 
 import { resolveHookitChainKey } from "@/lib/chains";
 
-/** DexScreener chain slug — not the same as EIP-155 chain id. */
+/** DexScreener chain slug - not the same as EIP-155 chain id. */
 export type DexScreenerChainSlug = "ink" | "base-sepolia";
 
 export type DexScreenerPair = {

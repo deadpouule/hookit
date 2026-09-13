@@ -16,9 +16,9 @@ export type V4PoolKey = {
   hooks: Address;
 };
 
-/** Resolve pool fee — dynamic launches must use 0x800000 or PoolId hashes diverge. */
+/** Resolve pool fee - dynamic launches must use 0x800000 or PoolId hashes diverge. */
 export function resolvePoolLpFee(pool: TokenPool): number {
-  // Prefer the dynamic flag whenever the module bit is set — never trust a stale
+  // Prefer the dynamic flag whenever the module bit is set - never trust a stale
   // static lpFee of 0 (indexer/UI hydration bug) which makes the quoter miss the pool.
   if (pool.hooks?.dynamicFees) return DYNAMIC_FEE_FLAG;
   if (pool.lpFee === DYNAMIC_FEE_FLAG) return DYNAMIC_FEE_FLAG;
@@ -35,7 +35,7 @@ export function poolKeyFromLaunch(
   if (!token || !hooks) return null;
 
   const quote = (quoteOverride ?? pool.quoteAddress ?? zeroAddress) as Address;
-  // Always derive from the currencies in this key — never reuse another leg's flag.
+  // Always derive from the currencies in this key - never reuse another leg's flag.
   const tokenIs0 = BigInt(token) < BigInt(quote);
 
   return {

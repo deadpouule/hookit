@@ -13,7 +13,7 @@ export const SEARCH_FIELD_PROPS = {
   "data-dashlane-ignored": "true",
 };
 
-/** Same extension guards for toolbar buttons — prevents Dashlane hydration mismatches. */
+/** Same extension guards for toolbar buttons - prevents Dashlane hydration mismatches. */
 export const TOOLBAR_BUTTON_PROPS = {
   suppressHydrationWarning: true,
   "data-1p-ignore": true,

@@ -1,4 +1,7 @@
+import { AnimatedGridBackground } from "@/components/home/market/AnimatedGridBackground";
+import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 import { HookLogo } from "@/components/home/market/HookLogo";
+import { ClassicAsciiCoin } from "@/components/launch/LaunchModelPicker";
 import type { DocsDiagramId } from "@/lib/docs-content";
 import {
   EXPLORE_HOOKS,
@@ -84,29 +87,30 @@ function RailsDiagram() {
   return (
     <figure className="docs-schema">
       <figcaption>Two launch rails</figcaption>
-      <div className="docs-rails">
-        <div className="docs-rail docs-rail--master">
+      <div className="docs-rails docs-rails--ui">
+        <div className="launch-model-card docs-rail docs-rail--master">
           <p className="docs-rail-kicker">Master</p>
-          <h4>Pool from block 0</h4>
-          <ol>
-            <li>LaunchFactory</li>
-            <li>LaunchToken + v4 pool</li>
-            <li>Locked in-range LP</li>
-            <li>MasterLaunchHook modules</li>
-          </ol>
+          <div className="docs-rail-stage launch-model-stage">
+            <HeroHookTotem interactive={false} />
+          </div>
+          <div className="launch-model-copy">
+            <h4 className="terminal-title">Master.</h4>
+            <p>Pool from block 0. Owl totem, modules, locked LP.</p>
+          </div>
         </div>
         <div className="docs-rail-vs" aria-hidden>
           or
         </div>
-        <div className="docs-rail docs-rail--classic">
+        <div className="launch-model-card docs-rail docs-rail--classic">
           <p className="docs-rail-kicker">Classic</p>
-          <h4>Bond, then graduate</h4>
-          <ol>
-            <li>BondingLaunchFactory</li>
-            <li>80% sold on CPMM curve</li>
-            <li>4.2 ETH-eq threshold</li>
-            <li>GraduatedFeeHook pool</li>
-          </ol>
+          <div className="docs-rail-stage launch-model-stage">
+            <AnimatedGridBackground className="launch-model-grid-bg" />
+            <ClassicAsciiCoin />
+          </div>
+          <div className="launch-model-copy">
+            <h4 className="terminal-title">Classic.</h4>
+            <p>Bond, then graduate at 4.2 ETH-eq.</p>
+          </div>
         </div>
       </div>
     </figure>
@@ -115,11 +119,11 @@ function RailsDiagram() {
 
 function StackDiagram() {
   const layers = [
-    { k: "App", v: "hookit.fun — marketplace, launch wizard, token desk" },
-    { k: "Router", v: "HookitSwapRouter — hooked swaps, composite quote legs" },
-    { k: "Hook", v: "MasterLaunchHook / GraduatedFeeHook — quote-only fees + modules" },
-    { k: "Pool", v: "Uniswap v4 PoolManager — fee tier 0, locked liquidity" },
-    { k: "Ink", v: "Chain 57073 — ETH gas, USDG + Quotrons wStocks as quotes" },
+    { k: "App", v: "hookit.fun: marketplace, launch wizard, token desk" },
+    { k: "Router", v: "HookitSwapRouter: hooked swaps, composite quote legs" },
+    { k: "Hook", v: "MasterLaunchHook / GraduatedFeeHook: quote-only fees + modules" },
+    { k: "Pool", v: "Uniswap v4 PoolManager: fee tier 0, locked liquidity" },
+    { k: "Ink", v: "Chain 57073. ETH gas, USDG + Quotrons wStocks as quotes" },
   ];
   return (
     <figure className="docs-schema">
@@ -204,7 +208,7 @@ function FlywheelDiagram() {
 function FeeSplitDiagram() {
   return (
     <figure className="docs-schema">
-      <figcaption>1% base fee — 60 / 10 / 30</figcaption>
+      <figcaption>1% base fee - 60 / 10 / 30</figcaption>
       <div className="docs-split-bar" role="img" aria-label="Creator 60 percent, HKT holders 10 percent, protocol 30 percent">
         <div className="docs-split-seg docs-split-seg--creator" style={{ flex: 60 }}>
           <span>60%</span>
@@ -321,7 +325,7 @@ function FloorLoopDiagram() {
         </text>
       </svg>
       <p className="docs-schema-note">
-        Vault quote ÷ circulating. Each swap can lift it. Redeem burns tokens and pays quote — remaining
+        Vault quote ÷ circulating. Each swap can lift it. Redeem burns tokens and pays quote. Remaining
         holders keep the new floor.
       </p>
     </figure>
@@ -329,27 +333,38 @@ function FloorLoopDiagram() {
 }
 
 function HktLoopDiagram() {
-  const nodes = [
-    { t: "Any swap", d: "Every Master / graduated pool" },
-    { t: "0.10% of quote", d: "10% of the 1% base" },
-    { t: "Buy the meme", d: "Not $HKT — the launched token" },
-    { t: "$HKT holders", d: "Pro-rata live balance" },
-  ];
   return (
     <figure className="docs-schema">
-      <figcaption>Hold $HKT → every launch</figcaption>
-      <ol className="docs-lifecycle">
-        {nodes.map((node, i) => (
-          <li key={node.t}>
-            <span>{String(i + 1).padStart(2, "0")}</span>
-            <h4>{node.t}</h4>
-            <p>{node.d}</p>
-          </li>
+      <figcaption>Hold $HKT, get a slice of every launch</figcaption>
+      <svg className="docs-spark docs-hkt-map" viewBox="0 0 360 168" role="img" aria-label="Holding HKT claims a slice of every launched token">
+        <circle cx="180" cy="84" r="36" fill="rgb(3 177 237 / 0.16)" stroke="#03b1ed" strokeWidth="1.6" />
+        <text x="180" y="80" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
+          $HKT
+        </text>
+        <text x="180" y="96" textAnchor="middle" fill="#7dd3fc" fontSize="8">
+          your bag
+        </text>
+        {[
+          { x: 52, y: 36, t: "$ARB", d: "0.10%" },
+          { x: 308, y: 36, t: "$HTEST", d: "0.10%" },
+          { x: 52, y: 132, t: "$PEPE", d: "0.10%" },
+          { x: 308, y: 132, t: "…", d: "every pool" },
+        ].map((node) => (
+          <g key={`${node.x}-${node.t}`}>
+            <line x1="180" y1="84" x2={node.x} y2={node.y} stroke="rgb(3 177 237 / 0.35)" strokeWidth="1.2" />
+            <rect x={node.x - 40} y={node.y - 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+            <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
+              {node.t}
+            </text>
+            <text x={node.x} y={node.y + 11} textAnchor="middle" fill="#71717a" fontSize="8">
+              {node.d}
+            </text>
+          </g>
         ))}
-      </ol>
+      </svg>
       <p className="docs-schema-note">
-        Mandatory. One bag of $HKT is a claim on a slice of every token that trades on the pad. More
-        $HKT, larger slice. Not a module. LP and protocol sinks are excluded from the weight.
+        Mandatory. 10% of the 1% base buys that pool&apos;s token and epoch-pushes it to live $HKT
+        holders. More $HKT, larger slice. Not a module. LP and protocol sinks are excluded.
       </p>
     </figure>
   );

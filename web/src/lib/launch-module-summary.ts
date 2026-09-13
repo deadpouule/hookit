@@ -67,7 +67,7 @@ export function moduleDetailLine(
             modules.buybackVestingStepPct ?? [...DEFAULT_MCAP_STEP_PCT],
           )[0];
           return first
-            ? `Unlocks by % — first ${formatMcapPreset(first.usd)} ${first.pct}%`
+            ? `Unlocks by % - first ${formatMcapPreset(first.usd)} ${first.pct}%`
             : `Unlocks by % as FDV climbs (last rung ${formatCompactUsd(mcapUsd)})`;
         }
         return `Unlocks in full at ${formatMcapPreset(mcapUsd)} FDV`;

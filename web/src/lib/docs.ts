@@ -128,7 +128,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "hooks",
     href: "#hooks",
     title: "Hook modules",
-    description: "Protection, tokenomics, rewards, trading fees — including Deepen LPs.",
+    description: "Protection, tokenomics, rewards, trading fees - including Deepen LPs.",
     group: "Protocol",
     keywords: "anti-snipe floor deepen-lps dynamic fees airdrop",
   },

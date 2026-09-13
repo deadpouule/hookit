@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
+import { MasterHookGlyph, MultiPairGlyph } from "@/components/home/market/CategoryGlyphs";
+import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { MultiPairGlyph } from "@/components/home/market/CategoryGlyphs";
 import { PairingMark } from "@/components/launch/PairingMark";
 import type { DocsVisualId } from "@/lib/docs-content";
 import type { BrowseHookId, HookTheme } from "@/lib/master-hooks";
@@ -58,14 +59,21 @@ function Spark({
   d: string;
   fill: string;
   stroke: string;
-  labels: { x: number; y: number; text: string }[];
+  labels: { x: number; y: number; text: string; anchor?: "start" | "middle" | "end" }[];
 }) {
   return (
     <svg className="docs-spark" viewBox="0 0 360 120" role="img">
       <path d={d} fill={fill} />
       <path d={d.replace(/Z$/, "")} fill="none" stroke={stroke} strokeWidth="2.2" />
       {labels.map((label) => (
-        <text key={label.text} x={label.x} y={label.y} fill="#a1a1aa" fontSize="10">
+        <text
+          key={label.text}
+          x={label.x}
+          y={label.y}
+          textAnchor={label.anchor ?? "start"}
+          fill="#a1a1aa"
+          fontSize="10"
+        >
           {label.text}
         </text>
       ))}
@@ -140,6 +148,123 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           </div>
         </Figure>
       );
+    case "master-studio":
+      return (
+        <Figure
+          caption="Master Launch Studio"
+          note="Same screens as /launch. Pick Master, then Token & pair."
+        >
+          <div className="docs-studio-shots">
+            <div className="docs-studio-shot">
+              <p className="docs-studio-shot-label">Choose a launch model</p>
+              <div className="launch-model-card docs-studio-model">
+                <div className="docs-rail-stage launch-model-stage">
+                  <HeroHookTotem interactive={false} />
+                </div>
+                <div className="launch-model-copy">
+                  <h4 className="terminal-title">Master.</h4>
+                  <p>
+                    Master modules. anti-snipe, floor, burn
+                    <span aria-hidden> -&gt;</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="docs-studio-shot">
+              <p className="docs-studio-shot-label">Token & pair</p>
+              <div className="docs-wizard-shot" aria-hidden>
+                <div className="docs-wizard-shot-head">
+                  <span className="token-type-badge token-type-badge--master token-hooks-count-badge launch-wizard-master-badge">
+                    <MasterHookGlyph className="token-type-badge-glyph" />
+                    Master launch
+                  </span>
+                  <strong>Create a hooked token</strong>
+                  <div className="docs-wizard-shot-dots">
+                    <i className="is-on" />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                    <span>1 / 6 Token & pair</span>
+                  </div>
+                </div>
+                <p className="docs-wizard-shot-h">Token details</p>
+                <div className="docs-wizard-shot-form">
+                  <div className="docs-wizard-shot-logo">Logo</div>
+                  <div className="docs-wizard-shot-fields">
+                    <label>
+                      Name
+                      <span>My Token</span>
+                    </label>
+                    <label>
+                      Symbol
+                      <span>TKN</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="docs-wizard-shot-pair">
+                  <PairingMark id="eth" size="sm" />
+                  <span>Pair · ETH</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Figure>
+      );
+    case "arb-keeper":
+      return (
+        <Figure
+          caption="Keeper closes the USD gap"
+          note="Live Ink is paused (maxClipUsdX18 = 0). Needs a factory that can take the arb path."
+        >
+          <svg className="docs-spark" viewBox="0 0 360 168" role="img" aria-label="Arb keeper buys the cheap pool and sells the rich one">
+            <rect x="12" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(56 189 248 / 0.45)" />
+            <text x="64" y="54" textAnchor="middle" fill="#7dd3fc" fontSize="12" fontWeight="700">
+              ETH pool
+            </text>
+            <text x="64" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+              cheap USD
+            </text>
+            <rect x="128" y="44" width="104" height="64" rx="12" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.5)" />
+            <text x="180" y="70" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
+              Keeper
+            </text>
+            <text x="180" y="88" textAnchor="middle" fill="#c4b5fd" fontSize="8">
+              one unlock
+            </text>
+            <rect x="244" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(244 63 94 / 0.45)" />
+            <text x="296" y="54" textAnchor="middle" fill="#fb7185" fontSize="12" fontWeight="700">
+              wNVDA pool
+            </text>
+            <text x="296" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+              rich USD
+            </text>
+            <path d="M116 60 L126 60" stroke="#7dd3fc" strokeWidth="1.6" />
+            <path d="M232 76 L244 60" stroke="#fb7185" strokeWidth="1.6" />
+            <text x="122" y="52" fill="#7dd3fc" fontSize="8">
+              buy
+            </text>
+            <text x="228" y="52" textAnchor="end" fill="#fb7185" fontSize="8">
+              sell
+            </text>
+            <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="10">
+              Buy cheap tokens, sell the rich leg.
+            </text>
+            <text x="180" y="152" textAnchor="middle" fill="#71717a" fontSize="9">
+              Min 10% USD gap. Clip 0.50% of supply.
+            </text>
+          </svg>
+          <Example
+            title="Example"
+            rows={[
+              { k: "Gap", v: "ETH leg 10% cheaper in USD than the wNVDA leg." },
+              { k: "Clip", v: "Keeper buys ETH-quoted tokens, sells into wNVDA, max 0.50% of supply." },
+              { k: "Today", v: "Paused on Ink. No in-place path on current MasterLaunchHook." },
+            ]}
+          />
+        </Figure>
+      );
     case "quotrons":
       return (
         <Figure
@@ -147,7 +272,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           note="wStock pools take USDG on the buy panel. HookitSwapRouter bridges on an allowed Quotrons pool."
         >
           <div className="docs-quotrons">
-            <PoweredByQuotronsBadge variant="hero" className="docs-quotrons-badge" />
+            <PoweredByQuotronsBadge variant="compact" className="docs-quotrons-badge" />
             <div className="docs-quotrons-row">
               {(["waaplx", "wnvdax", "wtslax", "wspyx", "usdg"] as const).map((id) => (
                 <PairingMark key={id} id={id} size="sm" />
@@ -162,7 +287,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           <Flow
             nodes={[
               { t: "Wallet", d: "Sign buy or sell" },
-              { t: "HookitSwapRouter", d: "Required — generic DEX UIs skip hook accounting" },
+              { t: "HookitSwapRouter", d: "Required - generic DEX UIs skip hook accounting" },
               { t: "v4 pool", d: "Fee tier 0. Spot is sqrtPriceX96" },
               { t: "MasterLaunchHook", d: "Quote fee, modules, then 60 / 10 / 30" },
             ]}
@@ -190,7 +315,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "anti-snipe-decay":
       return (
-        <Figure caption="Snipe tax decays to zero" note="Buy-only. Same 60 / 10 / 30 split as the 1% base — not hook tax.">
+        <Figure caption="Snipe tax decays to zero" note="Buy-only. Same 60 / 10 / 30 split as the 1% base - not hook tax.">
           <div className="docs-visual-hook-row">
             <HookMark hookId="anti-snipe" theme="fire" />
             <Spark
@@ -204,7 +329,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             />
           </div>
           <Example
-            title="Example — 1 ETH buy, 5s window, 98% open tax"
+            title="Example - 1 ETH buy, 5s window, 98% open tax"
             rows={[
               { k: "First second", v: "+0.98 ETH snipe on top of the 1% base. Sniper pays ~1.99 ETH in." },
               { k: "After 5s", v: "Snipe is 0. Same 1 ETH buy pays only 0.01 ETH base." },
@@ -221,18 +346,18 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <div className="docs-mev">
               <div className="docs-mev-ok">
                 <span>Block N</span>
-                <strong>tx.origin A — buy</strong>
+                <strong>tx.origin A - buy</strong>
                 <small>Allowed</small>
               </div>
               <div className="docs-mev-no">
                 <span>Same block</span>
-                <strong>tx.origin A — sell</strong>
+                <strong>tx.origin A - sell</strong>
                 <small>SandwichBlocked</small>
               </div>
             </div>
           </div>
           <Example
-            title="Example — Alice in one block"
+            title="Example - Alice in one block"
             rows={[
               { k: "Block 100, buy 1 ETH", v: "Allowed." },
               { k: "Block 100, sell", v: "Reverts SandwichBlocked." },
@@ -258,7 +383,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example — 1B supply, 1% max tx = 10M tokens"
+            title="Example - 1B supply, 1% max tx = 10M tokens"
             rows={[
               { k: "Buy 8M tokens", v: "Goes through." },
               { k: "Buy 12M tokens", v: "Reverts. One swap cannot eat more than the cap." },
@@ -283,10 +408,10 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example — 2.5% max wallet = 25M tokens"
+            title="Example - 2.5% max wallet = 25M tokens"
             rows={[
-              { k: "Wallet holds 20M, buys 4M", v: "24M after — allowed." },
-              { k: "Wallet holds 20M, buys 6M", v: "26M after — revert. Sells are never blocked by this cap." },
+              { k: "Wallet holds 20M, buys 4M", v: "24M after - allowed." },
+              { k: "Wallet holds 20M, buys 6M", v: "26M after - revert. Sells are never blocked by this cap." },
             ]}
           />
         </Figure>
@@ -298,28 +423,24 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           note="Hook-tax quote is minted back into the same launch ticks. Not paid to holders."
         >
           <div className="docs-visual-hook-row">
-            <HookMark hookId="deepen-lps" theme="nature" />
-            <svg className="docs-spark" viewBox="0 0 360 140" role="img" aria-label="Thin book becoming a thick book as swaps mint LP">
-              <text x="62" y="16" textAnchor="middle" fill="#71717a" fontSize="10">
-                At launch
-              </text>
-              <text x="270" y="16" textAnchor="middle" fill="#71717a" fontSize="10">
-                After volume
-              </text>
-              <polygon points="62,118 38,118 62,72 86,118" fill="rgb(16 185 129 / 0.22)" stroke="#10b981" strokeWidth="1.6" />
-              <polygon points="270,118 198,118 270,28 342,118" fill="rgb(16 185 129 / 0.35)" stroke="#10b981" strokeWidth="1.8" />
-              <path d="M118 78 L168 78" stroke="#a1a1aa" strokeWidth="1.4" />
-              <path d="M158 72 L170 78 L158 84" fill="none" stroke="#a1a1aa" strokeWidth="1.4" />
-              <text x="62" y="134" textAnchor="middle" fill="#52525b" fontSize="9">
-                thin range
-              </text>
-              <text x="270" y="134" textAnchor="middle" fill="#86efac" fontSize="9">
-                +2 ETH minted in
-              </text>
-            </svg>
+            <div className="docs-deepen-waves">
+              <div className="docs-deepen-col">
+                <span>At launch</span>
+                <HookLogo hookId="deepen-lps" theme="nature" className="docs-deepen-logo docs-deepen-logo--thin" />
+                <small>Thin waves</small>
+              </div>
+              <span className="docs-deepen-arrow" aria-hidden>
+                →
+              </span>
+              <div className="docs-deepen-col">
+                <span>After volume</span>
+                <HookLogo hookId="deepen-lps" theme="nature" className="docs-deepen-logo docs-deepen-logo--deep" />
+                <small>Deeper, larger</small>
+              </div>
+            </div>
           </div>
           <Example
-            title="Example — 2% hook tax, 100% to Deepen LPs"
+            title="Example - 2% hook tax, 100% to Deepen LPs"
             rows={[
               { k: "1 ETH buy", v: "0.02 ETH minted into the LP after the swap." },
               { k: "50 such buys", v: "+1 ETH of depth in the launch range." },
@@ -342,12 +463,12 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               stroke="#dc2626"
               labels={[
                 { x: 16, y: 16, text: "1B at launch" },
-                { x: 248, y: 104, text: "supply after burns" },
+                { x: 344, y: 86, text: "After burns", anchor: "end" },
               ]}
             />
           </div>
           <Example
-            title="Example — 2% hook tax, 80% to Auto-Burn"
+            title="Example - 2% hook tax, 80% to Auto-Burn"
             rows={[
               { k: "1 ETH buy", v: "0.016 ETH buys the token and burns it." },
               { k: "$100k volume", v: "~$1.6k of token bought and burned." },
@@ -394,7 +515,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example — $100k volume, 60% of the 1% base = $600 locked"
+            title="Example - $100k volume, 60% of the 1% base = $600 locked"
             rows={[
               { k: "30-day vest, day 15", v: "$300 claimable. Linear. Dump later does not relock it." },
               { k: "Until $10M FDV", v: "$0 until mcap prints $10M, then the full $600." },
@@ -436,11 +557,11 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </svg>
           </div>
           <Example
-            title="Example — 2% hook tax, 50% to airdrop, you hold 2% of supply"
+            title="Example - 2% hook tax, 50% to airdrop, you hold 2% of supply"
             rows={[
               { k: "1 ETH buy", v: "0.01 ETH into the vault this swap." },
               { k: "Your payout", v: "2% × 0.01 = 0.0002 ETH when the epoch pushes." },
-              { k: "$100k volume", v: "~$20 to you in quote. Not $HKT — the launched token's holders." },
+              { k: "$100k volume", v: "~$20 to you in quote. Not $HKT - the launched token's holders." },
             ]}
           />
         </Figure>
@@ -466,7 +587,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example — 1 ETH buy, no hook tax, Creator → Hook on"
+            title="Example - 1 ETH buy, no hook tax, Creator → Hook on"
             rows={[
               { k: "Base 1%", v: "0.006 ETH to floor / burn / deepen / airdrop instead of escrow." },
               { k: "$100k volume", v: "$600 extra in the pot. Creator claims $0." },
@@ -481,17 +602,17 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <HookMark hookId="fixed-fee" theme="cobalt" />
             <div className="docs-fee-bars">
               <div>
-                <span>Base 1% — every swap</span>
+                <span>Base 1% - every swap</span>
                 <b style={{ width: "20%" }} />
               </div>
               <div>
-                <span>Hook tax 2% — every swap</span>
+                <span>Hook tax 2% - every swap</span>
                 <b className="is-tax" style={{ width: "40%" }} />
               </div>
             </div>
           </div>
           <Example
-            title="Example — 2% fixed hook tax"
+            title="Example - 2% fixed hook tax"
             rows={[
               { k: "1 ETH buy", v: "Pays 0.01 ETH base + 0.02 ETH hook tax = 1.03 ETH in." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
@@ -519,7 +640,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             />
           </div>
           <Example
-            title="Example — 10 ETH in-range depth, extra tax 1% → 9%"
+            title="Example - 10 ETH in-range depth, extra tax 1% → 9%"
             rows={[
               { k: "Retail 0.2 ETH", v: "Uses 2% of the book. Extra ≈ 1.16%. Pays ~0.002 ETH hook tax + 0.002 ETH base." },
               { k: "Whale 5 ETH", v: "Uses 50% of the book. Extra = 5%. Pays 0.25 ETH hook tax + 0.05 ETH base." },

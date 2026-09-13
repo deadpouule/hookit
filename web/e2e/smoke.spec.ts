@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * UI smoke — no wallet required.
+ * UI smoke - no wallet required.
  *   SMOKE_BASE_URL=https://www.hookit.fun npm run smoke:ui
  *
  * For wallet flows: connect manually in headed mode:

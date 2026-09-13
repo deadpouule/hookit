@@ -24,17 +24,17 @@ export interface LaunchModules {
   maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
-  /** UI toggle — packed into Master bitmask. */
+  /** UI toggle - packed into Master bitmask. */
   dynamicFees?: boolean;
   /** Total fee at low activity when dynamic fees is on (bps, includes 1% base). */
   dynamicFeeMinBps?: number;
   /** Total fee cap when dynamic fees is on (bps, includes 1% base). Encoded as max hook tax on-chain. */
   dynamicFeeMaxBps?: number;
-  /** Legacy bitmask bit — depth ramp always rises with consumption. */
+  /** Legacy bitmask bit - depth ramp always rises with consumption. */
   dynamicFeeRampUp?: boolean;
-  /** In-range depth consumption (bps) that reaches max fee — default 10000 = 100%. */
+  /** In-range depth consumption (bps) that reaches max fee - default 10000 = 100%. */
   dynamicFeeDepthSaturationBps?: number;
-  /** UI toggle — packed into Master bitmask. */
+  /** UI toggle - packed into Master bitmask. */
   buybackVesting?: boolean;
   /** Linear vest duration when buyback vesting is on (days). */
   buybackVestingDurationDays?: number;
@@ -70,7 +70,7 @@ export interface LaunchModules {
 
 export interface LaunchMarketInput {
   id: PairingTokenId;
-  /** Basis points — must sum to 10_000 across selected markets. */
+  /** Basis points - must sum to 10_000 across selected markets. */
   bps: number;
 }
 
@@ -84,17 +84,17 @@ export interface LaunchFormState {
   github: string;
   imagePreview: string | null;
   hookMode: "master" | "custom";
-  /** Solidity source uploaded/pasted for custom hooks — deployed automatically at launch. */
+  /** Solidity source uploaded/pasted for custom hooks - deployed automatically at launch. */
   customHookSource: string;
   customHookFileName: string;
   modules: LaunchModules;
   hookTaxBps: number;
-  /** Dev buy input mode — % of total supply or fixed quote amount. */
+  /** Dev buy input mode - % of total supply or fixed quote amount. */
   devBuyMode: "supply" | "eth";
   /** 0–2.5 when devBuyMode is supply. */
   devBuySupplyPct: number;
   devBuyEth: string;
-  /** @deprecated use markets[0] — kept for classic / single-pool paths */
+  /** @deprecated use markets[0] - kept for classic / single-pool paths */
   quoteAsset: PairingTokenId;
   /** 1–5 canonical quote markets for Master multi-pool launch. */
   markets: LaunchMarketInput[];
@@ -126,7 +126,7 @@ export interface TokenPool {
   floorValue: number;
   liquidity: number;
   change24h: number;
-  /** Indexer 1h change when available — explore table, not a fake 24h fraction. */
+  /** Indexer 1h change when available - explore table, not a fake 24h fraction. */
   change1h?: number;
   hooks: {
     antiSnipe: boolean;
@@ -165,14 +165,14 @@ export interface TokenPool {
   quoteAddress?: `0x${string}`;
   /** USD price of one quote unit (1 ETH, 1 USDG, or 1 wStock). */
   quoteUsd?: number;
-  /** Factory `mcapQuoteFor` for this quote — full-supply FDV sizing at launch. */
+  /** Factory `mcapQuoteFor` for this quote - full-supply FDV sizing at launch. */
   launchMcapQuoteHuman?: number;
   tickSpacing?: number;
   lpFee?: number;
   /** Locked position range (Master / graduated Classic). */
   tickLower?: number;
   tickUpper?: number;
-  /** Raw Uniswap L (uint128) — not USD. */
+  /** Raw Uniswap L (uint128) - not USD. */
   liquidityRaw?: string;
   priceSeries?: number[];
   trades24h?: number;

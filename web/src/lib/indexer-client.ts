@@ -1,5 +1,5 @@
 /**
- * Typed client for the house indexer — wire TokenDetail charts / trades / holders here.
+ * Typed client for the house indexer - wire TokenDetail charts / trades / holders here.
  * Prefer same-origin `/api/indexer/...` so CORS and env stay on the server.
  */
 

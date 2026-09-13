@@ -82,14 +82,14 @@ export function HolderAirdropCard({ pool }: { pool: TokenPool }) {
             }
           >
             {pending === null
-              ? "—"
+              ? " - "
               : `${formatCompactQuoteAmount(pending)} ${quoteLabel}`}
           </dd>
         </div>
         <div>
           <dt className="text-[11px] text-zinc-600">Next window</dt>
           <dd className="mt-0.5 font-mono text-sm text-zinc-100">
-            {wait === null ? "—" : formatCountdown(wait)}
+            {wait === null ? " - " : formatCountdown(wait)}
           </dd>
         </div>
       </dl>

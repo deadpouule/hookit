@@ -153,7 +153,7 @@ export function ProtocolStatsPage() {
                 {view === "chart" ? (
                   <div className="stats-panel stats-panel-inset">
                     <p className="stats-tooltip">
-                      {barPoint?.label ?? "—"}. bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
+                      {barPoint?.label ?? " - "}. bought {formatFullUsd(barPoint?.buybackUsd ?? 0)} · burned{" "}
                       {formatFullUsd(barPoint?.burnUsd ?? 0)}
                     </p>
                     <StatsBarChart series={barSeries} active={barActive} onHover={setBarHover} />
@@ -287,7 +287,7 @@ function HktDropRank({
             </li>
           ) : (
             <li key={`empty-${index}`} className="is-empty">
-              <span>—</span>
+              <span> - </span>
               <span>0 wallets</span>
               <span>0 payouts</span>
             </li>

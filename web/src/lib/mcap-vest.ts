@@ -1,6 +1,6 @@
 import { formatCompactUsd } from "@/lib/format";
 
-/** On-chain `McapVest` packing — keep in sync with `src/libraries/McapVest.sol`. */
+/** On-chain `McapVest` packing - keep in sync with `src/libraries/McapVest.sol`. */
 
 export const MCAP_VEST_KIND_TIME = 0;
 export const MCAP_VEST_KIND_CLIFF = 1;

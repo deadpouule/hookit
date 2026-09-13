@@ -20,7 +20,7 @@ export const MAX_HOOK_TAX_BPS = 900;
 export const MAX_TOTAL_FEE_BPS = 1000;
 /** Default total fee cap when enabling dynamic fees (3%). */
 export const DYNAMIC_FEE_DEFAULT_MAX_BPS = 300;
-/** Default depth consumption (bps) for max dynamic fee — 100% of in-range quote depth. */
+/** Default depth consumption (bps) for max dynamic fee - 100% of in-range quote depth. */
 export const DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS = 10_000;
 export const DYNAMIC_FEE_MIN_DEPTH_SATURATION_PCT = 10;
 export const DYNAMIC_FEE_MAX_DEPTH_SATURATION_PCT = 100;
@@ -54,10 +54,10 @@ export function clampHolderAirdropMcapUsd(value: number): number {
 }
 export const SECONDS_PER_DAY = 86_400;
 
-/** Max % of total supply per swap / wallet — mirrors ProtocolConstants (10_000 bps = 100%). */
+/** Max % of total supply per swap / wallet - mirrors ProtocolConstants (10_000 bps = 100%). */
 export { MIN_SUPPLY_CAP_BPS, MAX_SUPPLY_CAP_BPS } from "@/lib/protocol-limits";
 
-/** Upload-your-own Solidity hooks — disabled for Ink soft launch; enable later via factory owner. */
+/** Upload-your-own Solidity hooks - disabled for Ink soft launch; enable later via factory owner. */
 export const CUSTOM_SOLIDITY_HOOKS_ENABLED = false;
 
 export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
@@ -150,7 +150,7 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
   },
 };
 
-/** Master wizard starts with no hooks — users opt in on each step. */
+/** Master wizard starts with no hooks - users opt in on each step. */
 export const DEFAULT_MASTER_WIZARD_STATE: LaunchFormState = {
   ...DEFAULT_LAUNCH_STATE,
   hookTaxBps: 0,

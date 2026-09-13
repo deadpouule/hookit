@@ -81,7 +81,7 @@ export function isRwaQuote(quoteAsset?: string, quoteAddress?: string): boolean 
 
 /**
  * Annotate tokens with OG / COPY flags.
- * OG only when another token shares the same ticker — first launch wins OG, later ones get COPY.
+ * OG only when another token shares the same ticker - first launch wins OG, later ones get COPY.
  * Unique tickers get no badge.
  */
 export function annotateCopyFlags(tokens: MarketToken[]): MarketToken[] {

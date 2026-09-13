@@ -1,5 +1,5 @@
 /**
- * Uniswap v4 position TVL helpers — convert raw L + ticks + sqrtPrice → USD.
+ * Uniswap v4 position TVL helpers - convert raw L + ticks + sqrtPrice → USD.
  */
 
 const Q96 = 2n ** 96n;

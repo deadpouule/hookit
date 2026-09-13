@@ -69,7 +69,7 @@ export function computeLiveProtocolKpis(
   };
 }
 
-/** Live volume windows — uses correct fee math (1% base × 30% protocol × 80% flywheel). */
+/** Live volume windows - uses correct fee math (1% base × 30% protocol × 80% flywheel). */
 export function volumeSnapshotForWindow(
   window: VolumeWindow,
   live: LiveProtocolKpis | null,

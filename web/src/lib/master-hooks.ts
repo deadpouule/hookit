@@ -110,7 +110,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     creator: CREATOR,
     uses: 0,
     royalty: "0% of hook fees",
-    savedAt: "Block —",
+    savedAt: "Block  - ",
     summary: "quote fee share • auto epoch airdrop",
     settings: [
       "+ ROUTE QUOTE FEES TO VAULT",
@@ -122,7 +122,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     id: "backed-floor",
     number: 2,
     title: "Backed Floor",
-    description: "every swap the floor goes up — so the price can only go up. More volume = higher floor",
+    description: "every swap the floor goes up - so the price can only go up. More volume = higher floor",
     category: "protection",
     icon: Layers,
     theme: "rose",
@@ -274,7 +274,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     creator: CREATOR,
     uses: 0,
     royalty: "0% of hook fees",
-    savedAt: "Block —",
+    savedAt: "Block  - ",
     summary: "creator base share → hook modules",
     settings: [
       "+ BASE FEE STILL 1%",
@@ -300,7 +300,7 @@ export const FIXED_FEE_HOOK: BrowseHook = {
   creator: CREATOR,
   uses: 0,
   royalty: "0% of hook fees",
-  savedAt: "Block —",
+  savedAt: "Block  - ",
   summary: "1% base + fixed hook tax on swaps",
   settings: [
     "+ FLAT HOOK TAX ON SWAPS",

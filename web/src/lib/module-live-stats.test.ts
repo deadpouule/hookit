@@ -67,7 +67,7 @@ test("formatLiveQuoteWei keeps enough digits to show a 1s tick", () => {
   assert.notEqual(a, b);
 });
 
-test("floorPremiumPct is (spot - floor) / floor — 1M vs 100k mcap is +900%", () => {
+test("floorPremiumPct is (spot - floor) / floor - 1M vs 100k mcap is +900%", () => {
   assert.equal(floorPremiumPct(10, 1), 900);
   assert.equal(floorPremiumPct(1, 1), 0);
   assert.equal(floorPremiumPct(9, 10), -10);

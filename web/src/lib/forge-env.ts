@@ -142,7 +142,7 @@ export async function forgeVerifyContract(opts: {
       if (/already verified/i.test(output)) return asResult(output);
       const hint = apiKey
         ? output
-        : `${output}\nSet INK_EXPLORER_API_KEY (Ink) or BASESCAN_API_KEY (Base Sepolia) in the repo root .env — Sourcify fallback also failed.`;
+        : `${output}\nSet INK_EXPLORER_API_KEY (Ink) or BASESCAN_API_KEY (Base Sepolia) in the repo root .env - Sourcify fallback also failed.`;
       throw new Error(hint.slice(0, 2000));
     }
   } finally {

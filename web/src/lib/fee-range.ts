@@ -1,7 +1,7 @@
 import { BASE_FEE_BPS, DYNAMIC_FEE_DEFAULT_MAX_BPS, MAX_TOTAL_FEE_BPS } from "@/lib/constants";
 import type { LaunchModules } from "@/lib/types";
 
-/** Total swap fee floor (1% base — protocol constant). */
+/** Total swap fee floor (1% base - protocol constant). */
 export const DYNAMIC_FEE_MIN_BPS = BASE_FEE_BPS;
 
 /** Total swap fee ceiling (base + max hook tax = 10%). */
@@ -14,7 +14,7 @@ export function totalFeeBps(modules: LaunchModules, hookTaxBps: number): number 
   return BASE_FEE_BPS + hookTaxBps;
 }
 
-/** Hook tax encoded on-chain — dynamic mode uses max of the chosen range. */
+/** Hook tax encoded on-chain - dynamic mode uses max of the chosen range. */
 export function resolveEffectiveHookTaxBps(modules: LaunchModules, hookTaxBps: number): number {
   if (!modules.dynamicFees) return hookTaxBps;
   const maxTotal = modules.dynamicFeeMaxBps ?? DYNAMIC_FEE_DEFAULT_MAX_BPS;

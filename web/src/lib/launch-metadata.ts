@@ -5,7 +5,7 @@ import type { LaunchFormState } from "@/lib/types";
 /** EIP-3860 init-code budget for LaunchToken CREATE2 (creation code + ctor args). */
 export const CREATE2_INIT_CODE_LIMIT = 49_152;
 
-/** Safe max chars for inline data: URIs — keeps ctor args well under the limit. */
+/** Safe max chars for inline data: URIs - keeps ctor args well under the limit. */
 export const MAX_ON_CHAIN_METADATA_URI = 8_192;
 
 export type BuildMetadataOptions = {
@@ -32,7 +32,7 @@ function attachBuybackVestingMcap(payload: MetadataPayload, form: LaunchFormStat
   }
 }
 
-/** JSON payload for IPFS / display — hook source is never embedded (too large for chain). */
+/** JSON payload for IPFS / display - hook source is never embedded (too large for chain). */
 export function buildMetadataPayload(
   form: LaunchFormState,
   opts: BuildMetadataOptions = {},

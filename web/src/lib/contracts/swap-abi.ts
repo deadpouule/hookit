@@ -208,7 +208,7 @@ export const feeEscrowAbi = [
   },
 ] as const;
 
-/** GraduatedFeeHook — Classic rail post-bonding. */
+/** GraduatedFeeHook - Classic rail post-bonding. */
 export const graduatedFeeHookAbi = [
   {
     type: "function",

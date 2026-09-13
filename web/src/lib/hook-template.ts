@@ -1,4 +1,4 @@
-/** Starter Uniswap v4 hook — edit permissions and hook logic, then launch. */
+/** Starter Uniswap v4 hook - edit permissions and hook logic, then launch. */
 export const CUSTOM_HOOK_TEMPLATE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
@@ -8,7 +8,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 /// @title MyCustomHook
-/// @notice Your swap logic lives here — Hookit deploys & mines the address at launch.
+/// @notice Your swap logic lives here - Hookit deploys & mines the address at launch.
 contract MyCustomHook is BaseHook {
     constructor(IPoolManager poolManager_) BaseHook(poolManager_) {}
 

@@ -1,4 +1,4 @@
-/** True for phones only — not tablets, not a resized desktop window. */
+/** True for phones only - not tablets, not a resized desktop window. */
 export function isPhoneUserAgent(ua: string): boolean {
   if (!ua) return false;
   if (/iPad|Tablet|PlayBook|Nexus 7|Silk/i.test(ua)) return false;

@@ -59,7 +59,7 @@ function seriesToCandles(series: { mcap: number; t?: number }[]): LiveCandle[] {
   return candles;
 }
 
-/** Spot-only live state — `pool.liquidity` must already be TVL USD when enriched. */
+/** Spot-only live state - `pool.liquidity` must already be TVL USD when enriched. */
 export function buildSparseLive(pool: TokenPool, ethUsd: number): LiveTokenState {
   const priceEth = pool.priceEth ?? 0;
   const quoteUsd = pool.quoteUsd;
@@ -269,7 +269,7 @@ export async function fetchOnChainLive(
       t: ts,
       recipient: args.sender
         ? `${args.sender.slice(0, 6)}…${args.sender.slice(-4)}`
-        : "—",
+        : " - ",
       side,
       amount: tokenAmt,
       totalUsd,

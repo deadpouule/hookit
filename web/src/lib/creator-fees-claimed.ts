@@ -59,7 +59,7 @@ export async function fetchCreatorClaimedTotal(
     });
     total = sum(logs);
   } catch {
-    // Wide range rejected — walk backwards in chunks over the most recent window.
+    // Wide range rejected - walk backwards in chunks over the most recent window.
     let end = latest;
     for (let i = 0; i < FALLBACK_MAX_CHUNKS && end >= fromBlock; i += 1) {
       const start = end > FALLBACK_CHUNK ? end - FALLBACK_CHUNK + 1n : 0n;

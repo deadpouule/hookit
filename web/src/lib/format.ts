@@ -79,7 +79,7 @@ export function formatAge(seconds: number): string {
   return `${Math.floor(days / 30)}mo`;
 }
 
-/** Unix seconds only — rejects launch ids / zero placeholders. */
+/** Unix seconds only - rejects launch ids / zero placeholders. */
 export function isValidLaunchTimestamp(ts?: number | null): ts is number {
   return typeof ts === "number" && Number.isFinite(ts) && ts > 1_000_000_000;
 }

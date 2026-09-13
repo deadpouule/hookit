@@ -88,7 +88,7 @@ export function marketQuoteSwapAsset(pool: TokenPool, quoteAddress: Address): Sw
 /**
  * Assets you can receive when selling this launch token.
  * Always includes ETH (when an ETH market exists or the pool isn't stock-only),
- * USDG, and every multi-pool quote leg — even with zero wallet balance.
+ * USDG, and every multi-pool quote leg - even with zero wallet balance.
  */
 export function sellReceiveAssets(pool: TokenPool): SwapAsset[] {
   const out: SwapAsset[] = [];
@@ -156,7 +156,7 @@ export function needsCompositeSell(pool: TokenPool, receive: SwapAsset): boolean
 }
 
 /**
- * Default swap pair for the desk — trade the selected pool quote directly
+ * Default swap pair for the desk - trade the selected pool quote directly
  * (ETH, USDG, or wStock such as wMCDx). USDG remains available in the picker
  * for composite hops on stock-quoted legs.
  */

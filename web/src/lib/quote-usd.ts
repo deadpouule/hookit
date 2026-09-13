@@ -93,7 +93,7 @@ export async function resolveQuoteUsdPrice(
   client?: PublicClient,
 ): Promise<number> {
   const kind = resolveQuoteKind(quoteAddress, quoteAsset);
-  // ETH/USD is the live aggregator passed in — factory storage can sit at the $4k seed
+  // ETH/USD is the live aggregator passed in - factory storage can sit at the $4k seed
   // until a redeploy that reads the feed in `quoteUsdPriceX18`.
   if (kind === "eth") return ethUsd;
 
@@ -214,7 +214,7 @@ export async function buildLaunchMcapQuoteMap(
   return map;
 }
 
-/** RWA FDV anchored to on-chain $5k launch sizing — immune to bad xStocks API quotes. */
+/** RWA FDV anchored to on-chain $5k launch sizing - immune to bad xStocks API quotes. */
 export function marketCapUsdFromLaunchAnchor(
   quotePerToken: number,
   launchMcapQuoteHuman: number,
@@ -260,7 +260,7 @@ export function marketCapFromQuotePrice(
   return quotePerToken * circulating * quoteUsd;
 }
 
-/** Circulating supply for FDV — excludes zero + dead burn sinks when balances known. */
+/** Circulating supply for FDV - excludes zero + dead burn sinks when balances known. */
 export function circulatingSupplyForFdv(
   totalSupply = TOTAL_SUPPLY,
   burnedToZero = 0,

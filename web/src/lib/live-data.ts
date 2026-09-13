@@ -6,7 +6,7 @@ export function isIndexerConfigured(): boolean {
 
 /**
  * Gate on-chain launch fetches.
- * Local dev uses the demo catalog — no RPC calls on localhost.
+ * Local dev uses the demo catalog - no RPC calls on localhost.
  * Production always hits `/api/launches` (server has factory env vars).
  */
 export function shouldFetchLiveLaunches(): boolean {

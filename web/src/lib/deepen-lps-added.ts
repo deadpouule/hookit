@@ -28,7 +28,7 @@ export function invalidateDeepenLpsAdded(hook: Address, poolId: `0x${string}`): 
 
 /**
  * Quote already minted into the launch LP range (sum of `LpDeepened`).
- * Not the pending queue — that sits in `pendingDeepenLps` until the next afterSwap.
+ * Not the pending queue - that sits in `pendingDeepenLps` until the next afterSwap.
  */
 export async function fetchDeepenLpsAdded(
   client: PublicClient,

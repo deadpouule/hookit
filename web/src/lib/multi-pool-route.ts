@@ -122,7 +122,7 @@ async function quoteExactInOnKey(
   }
 }
 
-/** Prefer on-chain PoolKeys from the factory — reconstructed keys often miss the fee flag. */
+/** Prefer on-chain PoolKeys from the factory - reconstructed keys often miss the fee flag. */
 async function loadMarketLegs(
   client: PublicClient,
   pool: TokenPool,

@@ -203,7 +203,7 @@ export function useSwapToken(pool: TokenPool) {
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
         }
-        // Aggregator found nothing — fall through to single-market sell path.
+        // Aggregator found nothing - fall through to single-market sell path.
       }
 
       // Multi-pool buy aggregator (+ optional split across pools).
@@ -273,7 +273,7 @@ export function useSwapToken(pool: TokenPool) {
           if (!lastHash) throw new Error("Buy aggregator produced no transactions");
           return lastHash;
         }
-        // Aggregator found nothing — fall through to single-market buy path.
+        // Aggregator found nothing - fall through to single-market buy path.
       }
 
       // Prefer the market matching payment (buy) or receive asset (sell) on multi launches.

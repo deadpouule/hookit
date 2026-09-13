@@ -23,7 +23,7 @@ export type HookModuleAccent = {
   icon: LucideIcon;
 };
 
-/** Vibrant degen palette — each module pops on ink black */
+/** Vibrant degen palette - each module pops on ink black */
 export const HOOK_MODULE_ACCENTS = {
   antiSnipe: {
     id: "anti-snipe",

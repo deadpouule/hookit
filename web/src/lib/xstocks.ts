@@ -1,6 +1,6 @@
 import type { Address } from "viem";
 
-/** Quotrons wrapped equities on Ink — https://quotrons.cash/integration/xstocks-manifest.json */
+/** Quotrons wrapped equities on Ink - https://quotrons.cash/integration/xstocks-manifest.json */
 export type QuotronStockListing = {
   symbol: string;
   name: string;
@@ -100,7 +100,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
 export const QUOTRONS_HOOK = "0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc" as Address;
 export const QUOTRONS_DYNAMIC_FEE = 0x800000;
 export const XSTOCKS_API = "https://api.xstocks.fi/api/v2";
-/** Official Quotrons Ink icons — https://www.quotrons.cash/stocks-ink/{SYM}.svg (TSLA uses /stocks/tsla.png). */
+/** Official Quotrons Ink icons - https://www.quotrons.cash/stocks-ink/{SYM}.svg (TSLA uses /stocks/tsla.png). */
 export const QUOTRONS_LOGO_BASE = "https://www.quotrons.cash/stocks-ink";
 
 /** Local copies of Quotrons icons under `public/pairing/` (synced from quotrons.cash). */

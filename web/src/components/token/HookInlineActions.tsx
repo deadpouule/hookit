@@ -97,7 +97,7 @@ export function FloorVaultInline({
   const priceLabel =
     floorPriceHuman != null
       ? `${formatCompactQuoteAmount(floorPriceHuman)} ${ticker}`
-      : "—";
+      : " - ";
 
   if (embedded) {
     return (
@@ -159,7 +159,7 @@ export function FloorVaultInline({
 }
 
 function formatAirdropWait(seconds: number | null): string {
-  if (seconds == null) return "—";
+  if (seconds == null) return " - ";
   if (seconds <= 0) return "Ready";
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;

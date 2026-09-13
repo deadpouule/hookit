@@ -1,6 +1,6 @@
 # hookit web
 
-Next.js App Router UI for [hookit.fun](https://www.hookit.fun) — marketplace, launch wizard, token desk, and `/docs`.
+Next.js App Router UI for [hookit.fun](https://www.hookit.fun) - marketplace, launch wizard, token desk, and `/docs`.
 
 ## Scripts
 

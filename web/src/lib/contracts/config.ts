@@ -4,7 +4,7 @@ import { resolveHookitChainKey } from "@/lib/chains";
 
 /**
  * Normalize env addresses for viem. Mixed-case strings with a wrong EIP-55 checksum
- * (common when copying forge/broadcast output) fail writeContract — lowercase then checksum.
+ * (common when copying forge/broadcast output) fail writeContract - lowercase then checksum.
  */
 function parseEnvAddress(raw: string | undefined): Address | undefined {
   const v = raw?.trim();
@@ -98,7 +98,7 @@ export const chainlinkAggregatorAbi = [
 ] as const;
 
 /**
- * Canonical Ink protocol — `deploy/ink/addresses.json`.
+ * Canonical Ink protocol - `deploy/ink/addresses.json`.
  * On Ink, these win over stale Vercel `NEXT_PUBLIC_LAUNCH_FACTORY` so new
  * launches cannot silently hit the pre-patch HolderAirdropVault.
  */
@@ -160,7 +160,7 @@ export function getHookitSwapRouterAddress(): Address | undefined {
   );
 }
 
-/** ProtocolRevenueDistributor — set after DeployHookitCore. */
+/** ProtocolRevenueDistributor - set after DeployHookitCore. */
 export function getProtocolDistributorAddress(): Address | undefined {
   if (resolveHookitChainKey() === "ink") return INK_PROTOCOL_DISTRIBUTOR;
   return (
@@ -169,13 +169,13 @@ export function getProtocolDistributorAddress(): Address | undefined {
   );
 }
 
-/** V4ClaimsRedeemer — redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
+/** V4ClaimsRedeemer - redeems PoolManager ERC-6909 airdrop claims. Set after DeployHookitCore. */
 export function getClaimsRedeemerAddress(): Address | undefined {
   if (resolveHookitChainKey() === "ink") return INK_CLAIMS_REDEEMER;
   return parseEnvAddress(process.env.NEXT_PUBLIC_CLAIMS_REDEEMER);
 }
 
-/** HkitBuyback keeper — set after DeployHookitCore. */
+/** HkitBuyback keeper - set after DeployHookitCore. */
 export function getHkitBuybackAddress(): Address | undefined {
   if (resolveHookitChainKey() === "ink") return INK_HKIT_BUYBACK;
   return (
@@ -197,7 +197,7 @@ export function getNativeTokenAddress(): Address | undefined {
  * Swap entrypoint for Hookit pools.
  * - Prefer HookitSwapRouter when set (required on Ink; needed for hooked fee accounting).
  * - Base Sepolia only: fall back to PoolSwapTest for local/integration without a router deploy.
- * Never fall back to Universal Router — hooked pools need HookitSwapRouter.
+ * Never fall back to Universal Router - hooked pools need HookitSwapRouter.
  */
 export function getSwapRouterAddress(): Address {
   const hookit = getHookitSwapRouterAddress();
@@ -233,7 +233,7 @@ export const DEFAULT_TOTAL_SUPPLY = BigInt("1000000000000000000000000000");
 export const DEFAULT_TICK_SPACING = 60;
 export const DEFAULT_STARTING_TICK = 0;
 
-/** Measured on Ink — single `launch` ~2.5M; `launchMulti` ~3.7M for 3 RWA markets. */
+/** Measured on Ink - single `launch` ~2.5M; `launchMulti` ~3.7M for 3 RWA markets. */
 export const LAUNCH_GAS_SINGLE = 3_000_000n;
 export const LAUNCH_GAS_MULTI_BASE = 2_800_000n;
 export const LAUNCH_GAS_PER_EXTRA_MARKET = 950_000n;

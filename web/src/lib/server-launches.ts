@@ -128,7 +128,7 @@ const getCachedLaunchesResponse = unstable_cache(
   { revalidate: LAUNCHES_REVALIDATE_SEC },
 );
 
-/** Full catalog — cached across requests (12s) and deduped within a render. */
+/** Full catalog - cached across requests (12s) and deduped within a render. */
 export const loadLaunchesResponse = cache(async (): Promise<LaunchesResponse> =>
   getCachedLaunchesResponse(),
 );
@@ -209,7 +209,7 @@ const getCachedLaunchPoolById = unstable_cache(
   { revalidate: LAUNCHES_REVALIDATE_SEC },
 );
 
-/** Single launch lookup — O(1) RPC instead of reloading the full catalog. */
+/** Single launch lookup - O(1) RPC instead of reloading the full catalog. */
 export async function loadLaunchPoolById(id: string): Promise<TokenPool | null> {
   return getCachedLaunchPoolById(id.trim().toLowerCase());
 }
