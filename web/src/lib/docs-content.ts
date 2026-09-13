@@ -71,6 +71,7 @@ export type DocsDiagramId =
 export type DocsVisualId =
   | "wizard"
   | "creator-flow"
+  | "classic-quotes"
   | "router"
   | "master-studio"
   | "multi-pair"
@@ -110,7 +111,7 @@ export type DocsBlock =
   | { type: "p"; text: string }
   | { type: "h3"; text: string }
   | { type: "ul"; items: string[] }
-  | { type: "callout"; title?: string; items: string[] }
+  | { type: "callout"; title?: string; items: string[]; links?: { href: string; label: string }[] }
   | { type: "steps"; steps: { num: string; title: string; text: string }[] }
   | { type: "defs"; rows: { term: string; text: string }[] }
   | { type: "code"; title?: string; code: string }
@@ -239,7 +240,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: `hookit is a permissionless Uniswap v4 launchpad on ${network}. Anyone can create a token, lock liquidity, and start trading from a wallet. The site never holds ETH, tokens, or keys.`,
+          text: "Anyone can create a token, lock liquidity, and start trading from a wallet. The site never holds ETH, tokens, or keys.",
         },
         {
           type: "p",
@@ -252,10 +253,14 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "callout",
           title: "Before you trade or launch",
+          links: [
+            { href: "/terms", label: "Terms" },
+            { href: "/privacy", label: "Privacy" },
+          ],
           items: [
             "Verify the token contract. Names and logos are copied constantly.",
-            `Master start FDV is about $${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")}. That is a starting print, not a valuation.`,
-            "Most tokens go to zero. Liquidity can vanish. Nothing here is advice.",
+            "hookit is not responsible for losses. This is not financial advice. Read the Terms and Privacy Policy.",
+            "Most tokens go to zero. Liquidity can vanish.",
           ],
         },
       ],
@@ -289,20 +294,16 @@ export function buildDocsSections(): DocsSection[] {
           id: "wizard",
         },
         {
-          type: "h3",
-          text: "Creator flow",
-        },
-        {
-          type: "visual",
-          id: "creator-flow",
-        },
-        {
           type: "diagram",
           id: "swap-lifecycle",
         },
         {
           type: "h3",
           text: "Classic",
+        },
+        {
+          type: "visual",
+          id: "classic-quotes",
         },
         {
           type: "ul",

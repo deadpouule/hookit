@@ -33,6 +33,15 @@ function DocsBlockView({ block }: { block: DocsBlock }) {
       return (
         <aside className="docs-callout">
           {block.title && <p className="docs-callout-title">{block.title}</p>}
+          {block.links && block.links.length > 0 ? (
+            <p className="docs-callout-links">
+              {block.links.map((link) => (
+                <Link key={link.href} href={link.href}>
+                  {link.label}
+                </Link>
+              ))}
+            </p>
+          ) : null}
           <ul>
             {block.items.map((item) => (
               <li key={item}>{item}</li>

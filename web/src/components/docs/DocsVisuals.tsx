@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
-import { DocsCreatorEngine } from "@/components/docs/DocsCreatorEngine";
+import { DocsBranchGraph } from "@/components/docs/DocsBranchGraph";
 import { DocsLaunchSteps } from "@/components/docs/DocsLaunchSteps";
 import { MasterHookGlyph, MultiPairGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
@@ -122,7 +122,20 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
     case "wizard":
       return <DocsLaunchSteps />;
     case "creator-flow":
-      return <DocsCreatorEngine />;
+      return null;
+    case "classic-quotes":
+      return (
+        <figure className="docs-schema">
+          <figcaption>Classic quote pairs</figcaption>
+          <ul className="docs-classic-quotes">
+            {(["eth", "usdg", "wnvdax", "waaplx", "wtslax"] as const).map((id) => (
+              <li key={id}>
+                <PairingMark id={id} size="sm" />
+              </li>
+            ))}
+          </ul>
+        </figure>
+      );
     case "multi-pair":
       return (
         <Figure
@@ -328,22 +341,21 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "creator-fees":
       return (
-        <Figure caption="Where the creator 60% sits" note="The 10% $HKT drop and 30% protocol cut never go to the creator.">
-          <div className="docs-three">
-            <article>
-              <h4>FeeEscrow</h4>
-              <p>Default. Claim quote on the token page.</p>
-            </article>
-            <article>
-              <h4>BuybackVault</h4>
-              <p>If vesting is on. Clock or FDV unlock.</p>
-            </article>
-            <article>
-              <h4>Hook pot</h4>
-              <p>If Creator → Hook. No creator claim.</p>
-            </article>
-          </div>
-        </Figure>
+        <DocsBranchGraph
+          caption="Where the creator 60% sits"
+          kicker="Every trade"
+          sources={[
+            { t: "1% base", d: "Quote only. Always on." },
+            { t: "Anti-Snipe take", d: "Same 60 / 10 / 30. Temporary." },
+          ]}
+          hub={{ t: "Creator 60%", d: "Packed at launch. One stream." }}
+          outputs={[
+            { t: "FeeEscrow", d: "Default. Claim quote on the token page." },
+            { t: "BuybackVault", d: "If vesting is on. Clock or FDV unlock." },
+            { t: "Hook pot", d: "If Creator → Hook. No creator claim." },
+          ]}
+          note="The 10% $HKT drop and 30% protocol cut never go to the creator."
+        />
       );
     case "anti-snipe-decay":
       return (
