@@ -9,7 +9,7 @@ User=hookit
 Group=hookit
 WorkingDirectory=/opt/hookit/indexer
 EnvironmentFile=/opt/hookit/.env
-ExecStart=/usr/bin/npm run arb-keeper
+ExecStart=/opt/hookit/deploy/linode/arb-keeper/run.sh
 Nice=10
 SyslogIdentifier=hookit-arb-keeper
 
