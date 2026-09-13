@@ -27,6 +27,13 @@ import type { TokenPool } from "@/lib/types";
 
 export const LAUNCHES_REVALIDATE_SEC = 12;
 
+/** Bump when factory addresses change so Vercel Data Cache cannot serve a prior deployment. */
+function launchesCacheKey(): string[] {
+  const factory = getLaunchFactoryAddress()?.toLowerCase() ?? "none";
+  const bonding = getBondingFactoryAddress()?.toLowerCase() ?? "none";
+  return ["hookit-launches", factory, bonding];
+}
+
 const API_TIMEOUT_MS = 25_000;
 
 export type LaunchesResponse = {
@@ -117,7 +124,7 @@ async function loadLaunchesResponseImpl(): Promise<LaunchesResponse> {
 
 const getCachedLaunchesResponse = unstable_cache(
   loadLaunchesResponseImpl,
-  ["hookit-launches"],
+  launchesCacheKey(),
   { revalidate: LAUNCHES_REVALIDATE_SEC },
 );
 
@@ -198,7 +205,7 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
 
 const getCachedLaunchPoolById = unstable_cache(
   loadLaunchPoolByIdImpl,
-  ["hookit-launch-pool"],
+  [...launchesCacheKey(), "pool"],
   { revalidate: LAUNCHES_REVALIDATE_SEC },
 );
 

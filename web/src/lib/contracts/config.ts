@@ -102,14 +102,14 @@ export const chainlinkAggregatorAbi = [
  * On Ink, these win over stale Vercel `NEXT_PUBLIC_LAUNCH_FACTORY` so new
  * launches cannot silently hit the pre-patch HolderAirdropVault.
  */
-export const INK_LAUNCH_FACTORY = "0xa0a7747976F96cac86D72194E59C82Fed56AAB75" as Address;
-export const INK_LAUNCH_FACTORY_QUERY = "0xb901971F71BE71E921B0509fbC4720cEbc7cb4a0" as Address;
-const INK_BONDING_FACTORY = "0x10E4AF269E373227301d4071C41E98b364097ac5" as Address;
-const INK_SWAP_ROUTER = "0xfC6B2f7F3a600497489Cb1614a70334eF420ffcF" as Address;
-const INK_CLAIMS_REDEEMER = "0xc34Ace71706Ce0095D42d1e7911d079837265967" as Address;
-const INK_PROTOCOL_DISTRIBUTOR = "0x52b48B4d4D159aDA83B5bA4A861acaC61696a237" as Address;
-const INK_HKIT_BUYBACK = "0x49156fE494908Bb08dcb6dD4264C7879BB818874" as Address;
-const INK_NATIVE_TOKEN = "0xD839eEEd6c1fC0d0A2a12641256ac14bBaE1D7d8" as Address;
+export const INK_LAUNCH_FACTORY = getAddress("0xdca9ccee27dc12256818deff316ba4b972b087a7");
+export const INK_LAUNCH_FACTORY_QUERY = getAddress("0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0");
+const INK_BONDING_FACTORY = getAddress("0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3");
+const INK_SWAP_ROUTER = getAddress("0x6889635f39c472802abde7db791f2ea48090091a");
+const INK_CLAIMS_REDEEMER = getAddress("0xb497aa20c231a234f24fe28f412b8637608661fb");
+const INK_PROTOCOL_DISTRIBUTOR = getAddress("0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179");
+const INK_HKIT_BUYBACK = getAddress("0xa52e86ee01695d9f4883c48eff2972cf4be1c941");
+const INK_NATIVE_TOKEN = getAddress("0x964ce443c5e111ea1b87a70166c6894af3eddb08");
 
 export type LaunchFactoryPair = {
   factory: Address;
