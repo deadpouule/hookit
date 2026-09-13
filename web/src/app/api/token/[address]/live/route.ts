@@ -14,7 +14,7 @@ import {
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
 import { isMultiPool, poolMarkets, poolWithMarket } from "@/lib/pool-active-market";
-import { launchMcapQuoteFromMap, readLaunchMcapQuoteHuman, resolveQuoteUsdPrice } from "@/lib/quote-usd";
+import { launchMcapQuoteFromMap, readLaunchMcapQuoteHuman, resolveQuoteKind, resolveQuoteUsdPrice } from "@/lib/quote-usd";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { buildSparseLive, fetchOnChainLive } from "@/lib/token-onchain-live";
 import type { PublicClient } from "viem";
@@ -116,7 +116,9 @@ export async function GET(req: Request, ctx: Ctx) {
       };
     }
 
-    const payload = await fetchOnChainLive(client, pool, ethUsd);
+    const fdvEthUsd =
+      resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) === "eth" ? launchEthUsd : ethUsd;
+    const payload = await fetchOnChainLive(client, pool, fdvEthUsd);
     return Response.json({
       ...payload,
       pool: {
@@ -130,7 +132,7 @@ export async function GET(req: Request, ctx: Ctx) {
         quoteAddress: pool.quoteAddress,
         tokenIsCurrency0: pool.tokenIsCurrency0,
       },
-      fallback: buildSparseLive(pool, ethUsd),
+      fallback: buildSparseLive(pool, fdvEthUsd),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "live fetch failed";

@@ -34,3 +34,17 @@ test("multi-pool RWA FDV uses on-chain spot (quote × supply × quoteUsd)", () =
   assert.ok(Math.abs(mcap - expected) < 1, `got ${mcap}, expected ~${expected}`);
   assert.ok(mcap < 1_000, `spot FDV ${mcap} should reflect misaligned pool, not $5k floor`);
 });
+
+test("ETH FDV prefers quoteUsd (factory) over the live TWAP argument", () => {
+  const quotePerToken = 1.982527344e-9;
+  const factoryEth = 2527.563059;
+  const twapEth = 2488;
+  const mcap = marketCapUsdForPool(
+    quotePerToken,
+    { quoteAddress: "0x0000000000000000000000000000000000000000", quoteAsset: "ETH" },
+    twapEth,
+    factoryEth,
+  );
+  const expected = quotePerToken * TOTAL_SUPPLY * factoryEth;
+  assert.ok(Math.abs(mcap - expected) < 1, `got ${mcap}, expected ~${expected}`);
+});

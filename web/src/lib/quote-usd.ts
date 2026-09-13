@@ -283,7 +283,10 @@ export function marketCapUsdForPool(
   _launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
-  if (kind === "eth") return marketCapUsd(quotePerToken, ethUsd);
+  if (kind === "eth") {
+    const usd = quoteUsd && quoteUsd > 0 ? quoteUsd : ethUsd;
+    return marketCapUsd(quotePerToken, usd);
+  }
   const qUsd =
     quoteUsd ??
     (pool.quoteAddress
@@ -303,7 +306,10 @@ export function quoteVolumeUsd(
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   const decimals = quoteDecimalsForKind(kind);
   const human = Number(volumeQuoteWei) / 10 ** decimals;
-  if (kind === "eth") return human * ethUsd;
+  if (kind === "eth") {
+    const usd = quoteUsd && quoteUsd > 0 ? quoteUsd : ethUsd;
+    return human * usd;
+  }
   const qUsd =
     quoteUsd ??
     (kind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);

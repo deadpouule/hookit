@@ -38,6 +38,19 @@ export function defaultDataDir(): string {
   return join(fileURLToPath(new URL("..", import.meta.url)), "data");
 }
 
+/** Multi-pair tokens: default stats to the primary pool so NFLX/NVDA ticks are not mixed. */
+export function scopeTradesToPool(
+  trades: IndexedTrade[],
+  primaryPoolId: string,
+  marketCount: number,
+  poolId?: string | null,
+): IndexedTrade[] {
+  const key = (poolId || (marketCount > 1 ? primaryPoolId : "")).toLowerCase();
+  if (!key) return trades;
+  const primary = primaryPoolId.toLowerCase();
+  return trades.filter((t) => (t.poolId ?? primaryPoolId).toLowerCase() === key);
+}
+
 function quoteDecimalsForTrade(row: TokenRow, poolId?: string): number {
   if (poolId && row.markets?.length) {
     const market = row.markets.find((m) => m.poolId.toLowerCase() === poolId.toLowerCase());
@@ -326,8 +339,8 @@ export class Store {
     }
   }
 
-  stats24h(token: Address) {
-    const stats = this.statsForWindow(token, SEC_24H);
+  stats24h(token: Address, poolId?: string | null) {
+    const stats = this.statsForWindow(token, SEC_24H, poolId);
     return {
       volume24h: stats.volumeQuote,
       trades24h: stats.txns,
@@ -335,7 +348,7 @@ export class Store {
     };
   }
 
-  statsForWindow(token: Address, windowSec: number) {
+  statsForWindow(token: Address, windowSec: number, poolId?: string | null) {
     const row = this.getToken(token);
     if (!row) {
       return {
@@ -344,11 +357,17 @@ export class Store {
         change: null as number | null,
       };
     }
+    const scoped = scopeTradesToPool(
+      row.trades,
+      row.poolId,
+      row.marketCount ?? row.markets?.length ?? 1,
+      poolId,
+    );
     const cutoff = Math.floor(Date.now() / 1000) - windowSec;
     let volume = 0n;
     let txns = 0;
     const recent: IndexedTrade[] = [];
-    for (const t of row.trades) {
+    for (const t of scoped) {
       if (t.timestamp >= cutoff) {
         volume += BigInt(t.quoteAmount);
         txns += 1;
@@ -364,11 +383,15 @@ export class Store {
     return { txns, volumeQuote: volume.toString(), change };
   }
 
-  activityStats24h(token: Address) {
-    return this.activityStatsForWindow(token, SEC_24H);
+  activityStats24h(token: Address, poolId?: string | null) {
+    return this.activityStatsForWindow(token, SEC_24H, poolId);
   }
 
-  activityStatsForWindow(token: Address, windowSec: number): ActivityWindowStats {
+  activityStatsForWindow(
+    token: Address,
+    windowSec: number,
+    poolId?: string | null,
+  ): ActivityWindowStats {
     const row = this.getToken(token);
     if (!row) {
       return {
@@ -381,12 +404,18 @@ export class Store {
         buyPct: 50,
       };
     }
+    const scoped = scopeTradesToPool(
+      row.trades,
+      row.poolId,
+      row.marketCount ?? row.markets?.length ?? 1,
+      poolId,
+    );
     const cutoff = Math.floor(Date.now() / 1000) - windowSec;
     let buyCount = 0;
     let sellCount = 0;
     let buyVolumeQuote = 0n;
     let sellVolumeQuote = 0n;
-    for (const t of row.trades) {
+    for (const t of scoped) {
       if (t.timestamp < cutoff) continue;
       if (t.side === "buy") {
         buyCount += 1;
@@ -410,12 +439,15 @@ export class Store {
     };
   }
 
-  activityByWindow(token: Address): Record<ActivityWindowKey, ActivityWindowStats> {
+  activityByWindow(
+    token: Address,
+    poolId?: string | null,
+  ): Record<ActivityWindowKey, ActivityWindowStats> {
     return {
-      "5m": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["5m"]),
-      "1h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["1h"]),
-      "6h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["6h"]),
-      "24h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["24h"]),
+      "5m": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["5m"], poolId),
+      "1h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["1h"], poolId),
+      "6h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["6h"], poolId),
+      "24h": this.activityStatsForWindow(token, ACTIVITY_WINDOWS["24h"], poolId),
     };
   }
 
@@ -436,21 +468,26 @@ export class Store {
     };
   }
 
-  priceChanges(token: Address) {
+  priceChanges(token: Address, poolId?: string | null) {
     const row = this.getToken(token);
-    if (!row || row.candles5m.length === 0) {
+    const key = poolId?.toLowerCase();
+    const candles =
+      key && row?.candles5mByPool?.[key]?.length
+        ? row.candles5mByPool[key]!
+        : row?.candles5m ?? [];
+    if (!row || candles.length === 0) {
       return { change5m: null as number | null, change1h: null, change6h: null, change24h: null };
     }
     const now = Math.floor(Date.now() / 1000);
-    const current = Number(row.candles5m[row.candles5m.length - 1]!.c);
+    const current = Number(candles[candles.length - 1]!.c);
     if (!(current > 0)) {
       return { change5m: null, change1h: null, change6h: null, change24h: null };
     }
 
     const pctAt = (secondsAgo: number) => {
       const target = now - secondsAgo;
-      let ref = row.candles5m[0]!;
-      for (const c of row.candles5m) {
+      let ref = candles[0]!;
+      for (const c of candles) {
         if (c.t <= target) ref = c;
         else break;
       }

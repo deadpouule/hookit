@@ -158,9 +158,11 @@ export async function fetchOnChainLive(
     );
   }
 
+  const fdvEthUsd = quoteIsEth && quoteUsd && quoteUsd > 0 ? quoteUsd : ethUsd;
+
   const marketCap =
     spotEth > 0
-      ? marketCapUsdForPool(spotEth, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
+      ? marketCapUsdForPool(spotEth, pool, fdvEthUsd, quoteUsd, launchMcapQuoteHuman)
       : base.marketCap;
   const priceUsd = marketCap / TOTAL_SUPPLY;
 
@@ -177,7 +179,7 @@ export async function fetchOnChainLive(
             tickUpper: pool.tickUpper,
             tokenIsCurrency0: tokenIs0,
             quoteIsEth,
-            ethUsd,
+            ethUsd: fdvEthUsd,
             quoteUsdPerUnit: quoteUsd,
             quoteDecimals: quoteDecimalsForKind(quoteKind),
           });
@@ -249,7 +251,7 @@ export async function fetchOnChainLive(
     );
     const mcap =
       price > 0
-        ? marketCapUsdForPool(price, pool, ethUsd, quoteUsd, launchMcapQuoteHuman)
+        ? marketCapUsdForPool(price, pool, fdvEthUsd, quoteUsd, launchMcapQuoteHuman)
         : marketCap;
 
     const bn = Number(log.blockNumber ?? 0);
@@ -259,7 +261,7 @@ export async function fetchOnChainLive(
     const side: "buy" | "sell" = quoteDelta > BigInt(0) ? "buy" : "sell";
     if (side === "buy") buys += 1;
 
-    const totalUsd = quoteVolumeUsd(abs(quoteDelta), pool, ethUsd, quoteUsd);
+    const totalUsd = quoteVolumeUsd(abs(quoteDelta), pool, fdvEthUsd, quoteUsd);
     const tokenAmt = Number(abs(tokenDelta)) / 1e18;
     const ageSec = ts != null ? Math.max(0, now - ts) : Math.max(0, Number(latest - BigInt(bn)));
 
@@ -285,7 +287,7 @@ export async function fetchOnChainLive(
         ? [{ t: pool.launchedAt, o: marketCap, h: marketCap, l: marketCap, c: marketCap }]
         : [];
 
-  const volume24h = quoteVolumeUsd(volumeQuoteWei, pool, ethUsd, quoteUsd);
+  const volume24h = quoteVolumeUsd(volumeQuoteWei, pool, fdvEthUsd, quoteUsd);
 
   const first = mcapSeries[0]?.mcap ?? marketCap;
   const last = mcapSeries[mcapSeries.length - 1]?.mcap ?? marketCap;

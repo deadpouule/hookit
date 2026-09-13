@@ -38,7 +38,7 @@ const cache: {
   byPool: new Map(),
 };
 
-const BLOCKS_PER_DAY = 43_200n; // ~2s Base blocks
+const BLOCKS_PER_DAY = 86_400n; // Ink ~1s blocks; Base ~2s still covers ≥12h
 const MAX_WINDOW = 50_000n;
 
 function abs(n: bigint): bigint {

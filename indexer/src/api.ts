@@ -5,7 +5,7 @@ import { getAddress, isAddress } from "viem";
 
 import type { IndexerConfig } from "./config.js";
 import { buildProtocolStats } from "./protocol-stats.js";
-import type { Store } from "./store.js";
+import { scopeTradesToPool, type Store } from "./store.js";
 
 function json(res: ServerResponse, status: number, body: unknown) {
   const payload = JSON.stringify(body, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
@@ -37,16 +37,19 @@ function summarize(store: Store, address: Address, poolId?: string | null) {
   const row = store.getToken(address);
   if (!row) return null;
   const poolKey = poolId?.toLowerCase();
-  const trades = poolKey
-    ? row.trades.filter((t) => t.poolId?.toLowerCase() === poolKey)
-    : row.trades;
+  const trades = scopeTradesToPool(
+    row.trades,
+    row.poolId,
+    row.marketCount ?? row.markets?.length ?? 1,
+    poolKey,
+  );
   const last = trades[trades.length - 1];
   const holders = Object.keys(row.holders).length;
-  const stats = store.stats24h(address);
-  const activity = store.activityStats24h(address);
-  const windows = store.activityByWindow(address);
+  const stats = store.stats24h(address, poolKey);
+  const activity = store.activityStats24h(address, poolKey);
+  const windows = store.activityByWindow(address, poolKey);
   const devBuy = store.devBuyInfo(address);
-  const changes = store.priceChanges(address);
+  const changes = store.priceChanges(address, poolKey);
   return {
     address: row.address,
     poolId: poolKey ?? row.poolId,

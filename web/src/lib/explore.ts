@@ -139,14 +139,16 @@ export async function enrichPoolsWithSpotPrices(
     const meta = metaByPoolId.get(pool.poolId);
     const priceEth = meta?.priceEth ?? pool.priceEth ?? 0;
     const stats = swapStats.get(pool.poolId.toLowerCase());
-    const quoteUsd = quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    let quoteUsd = quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
+    if (quoteKind === "eth") quoteUsd = launchEthUsd;
     const launchMcapQuoteHuman = launchMcapQuoteFromMap(pool, launchMcapQuoteMap);
     const marketCap = saneMarketCap(
       priceEth > 0
         ? marketCapUsdForPool(
             priceEth,
             pool,
-            resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) === "eth" ? launchEthUsd : ethUsd,
+            quoteKind === "eth" ? launchEthUsd : ethUsd,
             quoteUsd,
             launchMcapQuoteHuman,
           )
@@ -154,10 +156,9 @@ export async function enrichPoolsWithSpotPrices(
       0,
     );
     const volume24h = stats
-      ? quoteVolumeUsdForPool(stats.volumeQuoteWei, pool, ethUsd, quoteUsd)
+      ? quoteVolumeUsdForPool(stats.volumeQuoteWei, pool, quoteKind === "eth" ? launchEthUsd : ethUsd, quoteUsd)
       : 0;
 
-    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
     const quoteIsEth = quoteKind === "eth";
 
     let liquidityUsd = 0;
@@ -175,7 +176,7 @@ export async function enrichPoolsWithSpotPrices(
           tickUpper: pool.tickUpper,
           tokenIsCurrency0: pool.tokenIsCurrency0 ?? false,
           quoteIsEth,
-          ethUsd,
+          ethUsd: quoteIsEth ? quoteUsd : ethUsd,
           quoteUsdPerUnit: quoteUsd,
           quoteDecimals: quoteDecimalsForKind(quoteKind),
         });
