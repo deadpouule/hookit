@@ -1,5 +1,4 @@
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { HookitLogo } from "@/components/brand/HookitLogo";
 import type { DocsDiagramId } from "@/lib/docs-content";
 import {
   EXPLORE_HOOKS,
@@ -119,30 +118,60 @@ function StackDiagram() {
 
 function FlywheelDiagram() {
   const nodes = [
-    { id: "swap", label: "Swap", sub: "quote-only fee" },
-    { id: "base", label: "1% base", sub: "always on" },
-    { id: "split", label: "60 / 10 / 30", sub: "creator · $HKT · proto" },
-    { id: "hkt", label: "$HKT drop", sub: "buy launched token" },
-    { id: "proto", label: "Protocol", sub: "20% ops · 80% buyback" },
-    { id: "hook", label: "Hook pot", sub: "optional tax" },
-    { id: "mods", label: "Modules", sub: "floor · burn · LP · air" },
+    { x: 180, y: 36, label: "Swap", sub: "quote fee" },
+    { x: 300, y: 96, label: "1% base", sub: "always on" },
+    { x: 300, y: 196, label: "60 / 10 / 30", sub: "split" },
+    { x: 180, y: 256, label: "$HKT drop", sub: "buy token" },
+    { x: 60, y: 196, label: "Protocol", sub: "20 / 80" },
+    { x: 60, y: 96, label: "Hook pot", sub: "modules" },
   ];
   return (
     <figure className="docs-schema">
       <figcaption>Fee flywheel</figcaption>
       <div className="docs-flywheel">
-        <div className="docs-flywheel-core">
-          <HookitLogo size="sm" />
-          <span>hookit</span>
-        </div>
-        <ol>
-          {nodes.map((node, i) => (
-            <li key={node.id} style={{ ["--i" as string]: i }}>
-              <strong>{node.label}</strong>
-              <em>{node.sub}</em>
-            </li>
+        <svg viewBox="0 0 360 292" role="img" aria-label="Fee flywheel from swap to base split, HKT drop, protocol buyback, and hook modules">
+          <circle cx="180" cy="146" r="86" fill="none" stroke="rgb(149 20 209 / 0.35)" strokeWidth="1.5" />
+          <circle cx="180" cy="146" r="54" fill="rgb(149 20 209 / 0.1)" stroke="rgb(149 20 209 / 0.45)" strokeWidth="1.2" />
+          <text x="180" y="142" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700">
+            hookit
+          </text>
+          <text x="180" y="160" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+            quote-only
+          </text>
+          {nodes.map((node, i) => {
+            const next = nodes[(i + 1) % nodes.length]!;
+            return (
+              <line
+                key={`e-${node.label}`}
+                x1={node.x}
+                y1={node.y}
+                x2={next.x}
+                y2={next.y}
+                stroke="rgb(255 255 255 / 0.12)"
+                strokeWidth="1.2"
+              />
+            );
+          })}
+          {nodes.map((node) => (
+            <g key={node.label}>
+              <rect
+                x={node.x - 46}
+                y={node.y - 18}
+                width="92"
+                height="36"
+                rx="10"
+                fill="#111"
+                stroke="rgb(255 255 255 / 0.14)"
+              />
+              <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
+                {node.label}
+              </text>
+              <text x={node.x} y={node.y + 12} textAnchor="middle" fill="#71717a" fontSize="9">
+                {node.sub}
+              </text>
+            </g>
           ))}
-        </ol>
+        </svg>
       </div>
       <p className="docs-schema-note">
         Every swap feeds the same loop. Hook tax is extra and only funds modules. The 1% base never

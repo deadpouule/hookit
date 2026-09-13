@@ -9576,60 +9576,12 @@
   color: #a1a1aa;
 }
 
-.docs-flywheel {
-  position: relative;
-  min-height: 12rem;
-}
-
-.docs-flywheel-core {
-  display: flex;
-  width: max-content;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0 auto 0.85rem;
-  border: 1px solid rgb(149 20 209 / 0.4);
-  border-radius: 9999px;
-  background: rgb(149 20 209 / 0.12);
-  padding: 0.4rem 0.75rem;
-  color: #fff;
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 0.75rem;
-}
-
-.docs-flywheel ol {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 640px) {
-  .docs-flywheel ol {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.docs-flywheel li {
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 0.7rem;
-  background: #111;
-  padding: 0.65rem 0.7rem;
-}
-
-.docs-flywheel strong {
+.docs-flywheel svg {
   display: block;
-  font-size: 0.78rem;
-  color: #fff;
-}
-
-.docs-flywheel em {
-  display: block;
-  margin-top: 0.2rem;
-  font-size: 0.68rem;
-  font-style: normal;
-  color: #71717a;
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  margin: 0 auto;
 }
 
 .docs-split-bar {
