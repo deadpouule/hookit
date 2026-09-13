@@ -52,7 +52,9 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Not live yet/);
   assert.match(hkt, /57073/);
   assert.equal(sections.find((section) => section.id === "hkt")?.group, "Protocol");
-  assert.equal(ids.at(-1), "hkt");
+  assert.equal(ids.at(-1), "terms");
+  assert.equal(ids.indexOf("hkt"), ids.indexOf("analytics") - 1);
+  assert.ok(ids.indexOf("math") < ids.indexOf("hkt"));
   assert.equal(hkt.includes("$HKT drop (always on)"), false);
   assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);
   assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");

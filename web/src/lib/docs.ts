@@ -228,6 +228,14 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     keywords: "formulas dynamic fee bonding k sqrtPriceX96",
   },
   {
+    slug: "hkt",
+    href: "#hkt",
+    title: "$HKT",
+    description: "Hold $HKT and every launch airdrops you a slice of its token.",
+    group: "Protocol",
+    keywords: "hkt holder drop flywheel tokenomics thesis keeper",
+  },
+  {
     slug: "analytics",
     href: "#analytics",
     title: "Analytics",
@@ -298,14 +306,6 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "Software only. See /terms and /privacy.",
     group: "Reference",
     keywords: "terms privacy hookit",
-  },
-  {
-    slug: "hkt",
-    href: "#hkt",
-    title: "$HKT",
-    description: "Hold $HKT and every launch airdrops you a slice of its token.",
-    group: "Protocol",
-    keywords: "hkt holder drop flywheel tokenomics thesis keeper",
   },
 ];
 
