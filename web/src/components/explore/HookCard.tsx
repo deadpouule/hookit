@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
-import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
@@ -31,14 +30,8 @@ export function HookCard({ hook, pools }: { hook: BrowseHook; pools: TokenPool[]
         transition={{ duration: 0.2, ease: "easeOut" }}
       >
         <div className="orb-card-head">
-          <h2
-            className={cn(
-              "orb-hook-desc-badge orb-hook-title-badge",
-              `orb-hook-desc-badge--${hook.theme}`,
-            )}
-          >
-            <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-            <span>{hook.title}</span>
+          <h2 className={cn("orb-hook-title-plain", `orb-hook-desc-badge--${hook.theme}`)}>
+            {hook.title}
           </h2>
           <HookSettingsTooltip hook={hook} />
         </div>

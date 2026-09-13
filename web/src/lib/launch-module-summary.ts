@@ -195,7 +195,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "anti-snipe":
     "Adds a decaying tax on early buys during your launch window. Snipers pay the highest rate at open; the tax steps down over the duration you choose until it matches your base swap fee.",
   "backed-floor":
-    "Skims a share of hook fees into a FloorVault as quote collateral. Floor = vault ÷ supply and only ratchets up. It is a redeemable bid, not a peg to the DEX price, so the token can trade at a large premium to the floor. Holders can redeem against the vault. Single-pair launches only.",
+    "Skims a share of hook fees into a FloorVault as quote collateral. Floor = vault ÷ supply and only ratchets up. Holders can redeem against the vault. Single-pair launches only.",
   "anti-mev":
     "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
   "max-tx":
@@ -211,7 +211,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "deepen-lps":
     "Routes a share of hook fees into the launch liquidity range. Swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
-    "Accrues quote fees in a vault and pushes pro-rata drops to token holders on swap after each epoch. Optionally vest those drops until FDV hits a target (5M–10B), all at once or by %. Permissionless. Anyone can trigger the push.",
+    "Every swap accrues into a vault. All holders receive quote or stocks on a time window, or when FDV hits a target (5M–10B), all at once or by %. Permissionless. Anyone can trigger the push.",
   "creator-share-to-hook":
     `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "fixed-fee":
