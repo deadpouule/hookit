@@ -44,17 +44,30 @@ async function quotronSqrtPrice(
   }
 }
 
-/** Stock→USDG reverts when the Quotrons pool is already at the v4 min/max tick. */
+/** v4 swap reverts when the pool is already at the min/max tick for this direction. */
+export function quotronSwapFeasible(sqrt: bigint | null, zeroForOne: boolean): boolean {
+  if (sqrt == null) return true;
+  if (zeroForOne && sqrt <= MIN_SQRT_PRICE + 1n) return false;
+  if (!zeroForOne && sqrt >= MAX_SQRT_PRICE - 1n) return false;
+  return true;
+}
+
+/** Stock→USDG on the Quotrons bridge pool. */
 export async function canSwapStockToUsdg(
   publicClient: ReturnType<typeof createPublicClient>,
   stock: Address,
 ): Promise<boolean> {
   const sqrt = await quotronSqrtPrice(publicClient, stock);
-  if (sqrt == null) return true;
-  const zeroForOne = quotronZeroForOne(stock, stock);
-  if (zeroForOne && sqrt <= MIN_SQRT_PRICE + 1n) return false;
-  if (!zeroForOne && sqrt >= MAX_SQRT_PRICE - 1n) return false;
-  return true;
+  return quotronSwapFeasible(sqrt, quotronZeroForOne(stock, stock));
+}
+
+/** USDG→wStock on the Quotrons bridge pool (opposite direction from sweep). */
+export async function canSwapUsdgForStock(
+  publicClient: ReturnType<typeof createPublicClient>,
+  stock: Address,
+): Promise<boolean> {
+  const sqrt = await quotronSqrtPrice(publicClient, stock);
+  return quotronSwapFeasible(sqrt, quotronZeroForOne(stock, USDG_INK));
 }
 
 export type SweepOptions = {
@@ -358,7 +371,7 @@ export async function sweepStocksToUsdg(
 
     if (!(await canSwapStockToUsdg(publicClient, stock))) {
       console.log(
-        `[arb-usdg] skip sweep ${stock} (${keeperBal} wei): Quotrons pool at tick bound`,
+        `[arb-usdg] retain ${stock} (${keeperBal} wei) as cheap-leg prefund inventory — stock→USDG tick bound`,
       );
       continue;
     }
@@ -378,6 +391,16 @@ export async function sweepStocksToUsdg(
       console.log(`[arb-usdg] sweep ${stock} failed (${keeperBal} wei): ${msg.split("\n")[0]}`);
     }
   }
+}
+
+/** Log keeper USDG balance after recycle — arb capital should stay in USDG (+ optional cheap wStock dust). */
+export async function logKeeperUsdgBalance(
+  publicClient: ReturnType<typeof createPublicClient>,
+  keeper: Address,
+): Promise<bigint> {
+  const bal = await readErc20Balance(publicClient, usdgAddr(), keeper);
+  console.log(`[arb-usdg] keeper USDG ${bal} wei (${Number(bal) / 1e6} USDG)`);
+  return bal;
 }
 
 export function usdgAddr(): Address {

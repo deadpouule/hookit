@@ -34,9 +34,10 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
-  canSwapStockToUsdg,
+  canSwapUsdgForStock,
   isEthQuote,
   isQuotronStock,
+  logKeeperUsdgBalance,
   poolQuoteAddress,
   prefundUsdgBudget,
   readErc20Balance,
@@ -259,18 +260,11 @@ async function prefundExecutorCheapLeg(
     }
   }
 
-  const stockToUsdgOk = await canSwapStockToUsdg(publicClient, cheapQuote);
-  if (!stockToUsdgOk) {
-    const execBal = await readErc20Balance(publicClient, cheapQuote, executor);
-    if (execBal > 0n) {
-      console.log(
-        `[arb-keeper] skip USDG→${cheapQuote}: Quotrons sell leg at tick bound (executor has ${execBal} wei)`,
-      );
-    } else {
-      console.log(
-        `[arb-keeper] skip USDG→${cheapQuote}: Quotrons at tick bound and keeper has no ${cheapQuote} to transfer`,
-      );
-    }
+  const usdgBuyOk = await canSwapUsdgForStock(publicClient, cheapQuote);
+  if (!usdgBuyOk) {
+    console.log(
+      `[arb-keeper] USDG→${cheapQuote} blocked at Quotrons tick bound — rely on keeper wStock transfer`,
+    );
     return;
   }
 
@@ -515,6 +509,10 @@ async function main() {
   // Rich-leg arb output is wStock — always end in USDG on the keeper for the next prefund.
   if (sweepUsdg && router && !dryRun) {
     await sweepStocksToUsdg(publicClient, walletClient, router, account.address, { executor });
+  }
+
+  if (!dryRun) {
+    await logKeeperUsdgBalance(publicClient, account.address);
   }
 
   console.log("[arb-keeper] ARB_KEEPER_OK");
