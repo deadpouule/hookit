@@ -73,6 +73,28 @@ function Spark({
   );
 }
 
+function Example({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: { k: string; v: string }[];
+}) {
+  return (
+    <div className="docs-example">
+      <p className="docs-example-title">{title}</p>
+      <dl>
+        {rows.map((row) => (
+          <div key={row.k}>
+            <dt>{row.k}</dt>
+            <dd>{row.v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export function DocsVisual({ id }: { id: DocsVisualId }) {
   switch (id) {
     case "wizard":
@@ -176,11 +198,19 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               fill="rgb(239 68 68 / 0.18)"
               stroke="#ef4444"
               labels={[
-                { x: 16, y: 14, text: "τ0 (default 98%)" },
-                { x: 292, y: 104, text: "T → 0" },
+                { x: 16, y: 14, text: "τ0 98%" },
+                { x: 292, y: 104, text: "T = 5s → 0" },
               ]}
             />
           </div>
+          <Example
+            title="Example — 1 ETH buy, 5s window, 98% open tax"
+            rows={[
+              { k: "First second", v: "+0.98 ETH snipe on top of the 1% base. Sniper pays ~1.99 ETH in." },
+              { k: "After 5s", v: "Snipe is 0. Same 1 ETH buy pays only 0.01 ETH base." },
+              { k: "Where the 0.98 goes", v: "60% creator · 10% $HKT drop · 30% protocol." },
+            ]}
+          />
         </Figure>
       );
     case "anti-mev":
@@ -201,6 +231,14 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               </div>
             </div>
           </div>
+          <Example
+            title="Example — Alice in one block"
+            rows={[
+              { k: "Block 100, buy 1 ETH", v: "Allowed." },
+              { k: "Block 100, sell", v: "Reverts SandwichBlocked." },
+              { k: "Block 101, sell", v: "Allowed. Next block, new lock." },
+            ]}
+          />
         </Figure>
       );
     case "max-tx":
@@ -219,6 +257,13 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               </p>
             </div>
           </div>
+          <Example
+            title="Example — 1B supply, 1% max tx = 10M tokens"
+            rows={[
+              { k: "Buy 8M tokens", v: "Goes through." },
+              { k: "Buy 12M tokens", v: "Reverts. One swap cannot eat more than the cap." },
+            ]}
+          />
         </Figure>
       );
     case "max-wallet":
@@ -237,95 +282,196 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               </p>
             </div>
           </div>
+          <Example
+            title="Example — 2.5% max wallet = 25M tokens"
+            rows={[
+              { k: "Wallet holds 20M, buys 4M", v: "24M after — allowed." },
+              { k: "Wallet holds 20M, buys 6M", v: "26M after — revert. Sells are never blocked by this cap." },
+            ]}
+          />
         </Figure>
       );
     case "deepen-lps":
       return (
-        <Figure caption="Hook tax minted back into LP">
+        <Figure
+          caption="The book gets thicker"
+          note="Hook-tax quote is minted back into the same launch ticks. Not paid to holders."
+        >
           <div className="docs-visual-hook-row">
             <HookMark hookId="deepen-lps" theme="nature" />
-            <Flow
-              nodes={[
-                { t: "Hook pot", d: "Your deepen % of tax" },
-                { t: "Queue", d: "pendingDeepenLps" },
-                { t: "afterSwap mint", d: "Same launch tick range" },
-                { t: "Thicker book", d: "LpDeepened on the chip" },
-              ]}
-            />
+            <svg className="docs-spark" viewBox="0 0 360 140" role="img" aria-label="Thin book becoming a thick book as swaps mint LP">
+              <text x="62" y="16" textAnchor="middle" fill="#71717a" fontSize="10">
+                At launch
+              </text>
+              <text x="270" y="16" textAnchor="middle" fill="#71717a" fontSize="10">
+                After volume
+              </text>
+              <polygon points="62,118 38,118 62,72 86,118" fill="rgb(16 185 129 / 0.22)" stroke="#10b981" strokeWidth="1.6" />
+              <polygon points="270,118 198,118 270,28 342,118" fill="rgb(16 185 129 / 0.35)" stroke="#10b981" strokeWidth="1.8" />
+              <path d="M118 78 L168 78" stroke="#a1a1aa" strokeWidth="1.4" />
+              <path d="M158 72 L170 78 L158 84" fill="none" stroke="#a1a1aa" strokeWidth="1.4" />
+              <text x="62" y="134" textAnchor="middle" fill="#52525b" fontSize="9">
+                thin range
+              </text>
+              <text x="270" y="134" textAnchor="middle" fill="#86efac" fontSize="9">
+                +2 ETH minted in
+              </text>
+            </svg>
           </div>
+          <Example
+            title="Example — 2% hook tax, 100% to Deepen LPs"
+            rows={[
+              { k: "1 ETH buy", v: "0.02 ETH minted into the LP after the swap." },
+              { k: "50 such buys", v: "+1 ETH of depth in the launch range." },
+              { k: "100 such buys", v: "+2 ETH. Same size walk moves price less." },
+            ]}
+          />
         </Figure>
       );
     case "auto-burn":
       return (
-        <Figure caption="Hook tax buys and burns the meme">
+        <Figure
+          caption="Supply burns down"
+          note="Hook tax buys the meme from its own pool and sends it to the dead address. Not the $HKT buyback."
+        >
           <div className="docs-visual-hook-row">
             <HookMark hookId="auto-burn" theme="crimson" />
-            <Flow
-              nodes={[
-                { t: "Hook pot", d: "Your burn % of tax" },
-                { t: "Nested buy", d: "Same pool, afterSwap" },
-                { t: "Dead address", d: "Supply shrinks" },
-                { t: "Not $HKT", d: "Separate from protocol buyback" },
+            <Spark
+              d="M16 22 C 80 26, 140 38, 200 62 C 250 82, 300 98, 344 108 L 344 118 L 16 118 Z"
+              fill="rgb(220 38 38 / 0.18)"
+              stroke="#dc2626"
+              labels={[
+                { x: 16, y: 16, text: "1B at launch" },
+                { x: 248, y: 104, text: "supply after burns" },
               ]}
             />
           </div>
+          <Example
+            title="Example — 2% hook tax, 80% to Auto-Burn"
+            rows={[
+              { k: "1 ETH buy", v: "0.016 ETH buys the token and burns it." },
+              { k: "$100k volume", v: "~$1.6k of token bought and burned." },
+              { k: "$1M volume", v: "~$16k burned. Circulating supply is lower, FDV math uses what's left." },
+            ]}
+          />
         </Figure>
       );
     case "buyback-vesting":
       return (
-        <Figure caption="Creator 60% unlocks later" note="Cannot combine with Creator → Hook. $HKT 10% stays mandatory.">
+        <Figure
+          caption="Creator 60% unlocks later"
+          note="Cannot combine with Creator → Hook. The 10% $HKT drop stays mandatory."
+        >
           <div className="docs-visual-hook-row">
             <HookMark hookId="buyback-vesting" theme="void" />
-            <div className="docs-three">
-              <article>
-                <h4>Time vest</h4>
-                <p>Linear 7 days → 5 years.</p>
-              </article>
-              <article>
-                <h4>Until FDV</h4>
-                <p>Cliff from $10M, or by % rungs.</p>
-              </article>
-              <article>
-                <h4>Claim</h4>
-                <p>Creator-only, unlocked slice.</p>
-              </article>
+            <div className="docs-vest-charts">
+              <svg className="docs-spark" viewBox="0 0 170 120" role="img" aria-label="Linear unlock over 30 days">
+                <text x="8" y="14" fill="#a1a1aa" fontSize="10">
+                  Time vest
+                </text>
+                <path d="M16 100 L154 28" fill="none" stroke="#e879f9" strokeWidth="2.2" />
+                <path d="M16 100 L154 28 L154 108 L16 108 Z" fill="rgb(232 121 249 / 0.14)" />
+                <text x="16" y="118" fill="#52525b" fontSize="9">
+                  day 0
+                </text>
+                <text x="118" y="118" fill="#52525b" fontSize="9">
+                  day 30
+                </text>
+              </svg>
+              <svg className="docs-spark" viewBox="0 0 170 120" role="img" aria-label="Cliff unlock at 10 million FDV">
+                <text x="8" y="14" fill="#a1a1aa" fontSize="10">
+                  Until FDV
+                </text>
+                <path d="M16 100 L88 100 L88 28 L154 28" fill="none" stroke="#e879f9" strokeWidth="2.2" />
+                <path d="M16 100 L88 100 L88 28 L154 28 L154 108 L16 108 Z" fill="rgb(232 121 249 / 0.14)" />
+                <text x="16" y="118" fill="#52525b" fontSize="9">
+                  $0
+                </text>
+                <text x="78" y="22" fill="#e879f9" fontSize="9">
+                  $10M
+                </text>
+              </svg>
             </div>
           </div>
+          <Example
+            title="Example — $100k volume, 60% of the 1% base = $600 locked"
+            rows={[
+              { k: "30-day vest, day 15", v: "$300 claimable. Linear. Dump later does not relock it." },
+              { k: "Until $10M FDV", v: "$0 until mcap prints $10M, then the full $600." },
+              { k: "By % rungs", v: "e.g. 25% at $10M, 25% at $50M, 50% at $100M." },
+            ]}
+          />
         </Figure>
       );
     case "holder-airdrop":
       return (
         <Figure
-          caption="Quote to holders of that token"
+          caption="Quote split to holders of that token"
           note="Optional module. Not the mandatory $HKT drop. You receive ETH / USDG / wStock, not the meme."
         >
           <div className="docs-visual-hook-row">
             <HookMark hookId="holder-airdrop" theme="gold" />
-            <Flow
-              nodes={[
-                { t: "Hook pot", d: "Your airdrop % of tax" },
-                { t: "HolderAirdropVault", d: "Quote accrues" },
-                { t: "Epoch or FDV", d: "tryAutoAirdrop" },
-                { t: "Holders of $TICKER", d: "Pro-rata that token, not $HKT" },
-              ]}
-            />
+            <svg className="docs-spark" viewBox="0 0 360 130" role="img" aria-label="Vault pot split pro-rata to token holders">
+              <rect x="16" y="36" width="72" height="72" rx="12" fill="rgb(245 158 11 / 0.16)" stroke="#f59e0b" />
+              <text x="52" y="70" textAnchor="middle" fill="#fbbf24" fontSize="11" fontWeight="700">
+                pot
+              </text>
+              <text x="52" y="86" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+                0.01 ETH
+              </text>
+              <path d="M96 72 L132 72" stroke="#71717a" strokeWidth="1.3" />
+              {[
+                { x: 168, h: 64, l: "you 2%" },
+                { x: 216, h: 40, l: "2%" },
+                { x: 264, h: 28, l: "1%" },
+                { x: 312, h: 18, l: "…" },
+              ].map((bar) => (
+                <g key={bar.x}>
+                  <rect x={bar.x} y={108 - bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
+                  <text x={bar.x + 14} y="122" textAnchor="middle" fill="#71717a" fontSize="8">
+                    {bar.l}
+                  </text>
+                </g>
+              ))}
+            </svg>
           </div>
+          <Example
+            title="Example — 2% hook tax, 50% to airdrop, you hold 2% of supply"
+            rows={[
+              { k: "1 ETH buy", v: "0.01 ETH into the vault this swap." },
+              { k: "Your payout", v: "2% × 0.01 = 0.0002 ETH when the epoch pushes." },
+              { k: "$100k volume", v: "~$20 to you in quote. Not $HKT — the launched token's holders." },
+            ]}
+          />
         </Figure>
       );
     case "creator-share":
       return (
-        <Figure caption="Creator 60% feeds the hook pot">
+        <Figure caption="Creator 60% feeds the hook pot" note="Nothing to claim as creator fees. $HKT 10% is untouched.">
           <div className="docs-visual-hook-row">
             <HookMark hookId="creator-share-to-hook" theme="lime" />
-            <Flow
-              nodes={[
-                { t: "1% base", d: "Still 60 / 10 / 30" },
-                { t: "Creator 60%", d: "Redirected" },
-                { t: "Hook pot", d: "Floor / burn / deepen / airdrop" },
-                { t: "No escrow", d: "Nothing to claim as fees" },
-              ]}
-            />
+            <div className="docs-split-bar" role="img" aria-label="Creator 60 percent redirected into the hook pot">
+              <div className="docs-split-seg" style={{ flex: 60, background: "#84cc16", color: "#111" }}>
+                <span>60%</span>
+                <small>→ hook pot</small>
+              </div>
+              <div className="docs-split-seg docs-split-seg--hkt" style={{ flex: 10 }}>
+                <span>10%</span>
+                <small>$HKT</small>
+              </div>
+              <div className="docs-split-seg docs-split-seg--proto" style={{ flex: 30 }}>
+                <span>30%</span>
+                <small>Protocol</small>
+              </div>
+            </div>
           </div>
+          <Example
+            title="Example — 1 ETH buy, no hook tax, Creator → Hook on"
+            rows={[
+              { k: "Base 1%", v: "0.006 ETH to floor / burn / deepen / airdrop instead of escrow." },
+              { k: "$100k volume", v: "$600 extra in the pot. Creator claims $0." },
+            ]}
+          />
         </Figure>
       );
     case "fixed-fees":
@@ -335,32 +481,51 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <HookMark hookId="fixed-fee" theme="cobalt" />
             <div className="docs-fee-bars">
               <div>
-                <span>Base 1%</span>
+                <span>Base 1% — every swap</span>
                 <b style={{ width: "20%" }} />
               </div>
               <div>
-                <span>Hook tax</span>
+                <span>Hook tax 2% — every swap</span>
                 <b className="is-tax" style={{ width: "40%" }} />
               </div>
             </div>
           </div>
+          <Example
+            title="Example — 2% fixed hook tax"
+            rows={[
+              { k: "1 ETH buy", v: "Pays 0.01 ETH base + 0.02 ETH hook tax = 1.03 ETH in." },
+              { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
+              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, leftover → protocol." },
+            ]}
+          />
         </Figure>
       );
     case "dynamic-fees":
       return (
-        <Figure caption="Tax ramps with depth eaten" note="No oracle. Empty book stays at τ_min so the first buy does not revert.">
+        <Figure
+          caption="Tax ramps with depth eaten"
+          note="Same orange as the hook. No oracle. Empty book stays at τ_min so the first buy does not revert."
+        >
           <div className="docs-visual-hook-row">
-            <HookMark hookId="dynamic-fees" theme="teal" />
+            <HookMark hookId="dynamic-fees" theme="ember" />
             <Spark
               d="M16 96 L16 96 C 70 94, 120 88, 170 70 C 230 48, 280 28, 344 18 L 344 110 L 16 110 Z"
-              fill="rgb(45 212 191 / 0.16)"
-              stroke="#2dd4bf"
+              fill="rgb(249 115 22 / 0.18)"
+              stroke="#f97316"
               labels={[
-                { x: 16, y: 88, text: "τ_min" },
-                { x: 300, y: 16, text: "τ_max" },
+                { x: 16, y: 88, text: "τ_min 1%" },
+                { x: 288, y: 16, text: "τ_max 9%" },
               ]}
             />
           </div>
+          <Example
+            title="Example — 10 ETH in-range depth, extra tax 1% → 9%"
+            rows={[
+              { k: "Retail 0.2 ETH", v: "Uses 2% of the book. Extra ≈ 1.16%. Pays ~0.002 ETH hook tax + 0.002 ETH base." },
+              { k: "Whale 5 ETH", v: "Uses 50% of the book. Extra = 5%. Pays 0.25 ETH hook tax + 0.05 ETH base." },
+              { k: "Clip the whole book", v: "Extra = 9%. A 10 ETH buy pays 0.90 ETH hook tax + 0.10 ETH base." },
+            ]}
+          />
         </Figure>
       );
     case "math-index":

@@ -296,24 +296,34 @@ function ClassicCurveDiagram() {
 }
 
 function FloorLoopDiagram() {
-  const nodes = [
-    { t: "Hook tax", d: "Share of the hook pot" },
-    { t: "FloorVault", d: "Quote collateral only" },
-    { t: "P_floor", d: "V / S, ratchet up" },
-    { t: "Redeem", d: "Burn token, take quote" },
-  ];
   return (
     <figure className="docs-schema">
-      <figcaption>Backed floor loop</figcaption>
-      <ol className="docs-lifecycle">
-        {nodes.map((node, i) => (
-          <li key={node.t}>
-            <span>{String(i + 1).padStart(2, "0")}</span>
-            <h4>{node.t}</h4>
-            <p>{node.d}</p>
-          </li>
-        ))}
-      </ol>
+      <figcaption>Floor only ratchets up</figcaption>
+      <svg className="docs-spark" viewBox="0 0 360 120" role="img" aria-label="Floor price stepping up as volume fills the vault">
+        <path
+          d="M16 96 L70 96 L70 78 L140 78 L140 56 L220 56 L220 34 L344 34"
+          fill="none"
+          stroke="#f43f5e"
+          strokeWidth="2.2"
+        />
+        <path
+          d="M16 96 L70 96 L70 78 L140 78 L140 56 L220 56 L220 34 L344 34 L344 110 L16 110 Z"
+          fill="rgb(244 63 94 / 0.14)"
+        />
+        <text x="16" y="16" fill="#71717a" fontSize="10">
+          P_floor
+        </text>
+        <text x="16" y="118" fill="#52525b" fontSize="9">
+          volume
+        </text>
+        <text x="250" y="28" fill="#fb7185" fontSize="9">
+          never down
+        </text>
+      </svg>
+      <p className="docs-schema-note">
+        Vault quote ÷ circulating. Each swap can lift it. Redeem burns tokens and pays quote — remaining
+        holders keep the new floor.
+      </p>
     </figure>
   );
 }

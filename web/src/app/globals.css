@@ -10254,6 +10254,66 @@ h2.docs-hook-heading {
   color: #71717a;
 }
 
+.docs-example {
+  margin-top: 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 0.75rem;
+  background: #111;
+  padding: 0.7rem 0.8rem;
+}
+
+.docs-example-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d8b4fe;
+}
+
+.docs-example dl {
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.docs-example dl > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+@media (min-width: 640px) {
+  .docs-example dl > div {
+    grid-template-columns: 11rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+}
+
+.docs-example dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e4e4e7;
+}
+
+.docs-example dd {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.docs-vest-charts {
+  display: grid;
+  gap: 0.55rem;
+}
+
+@media (min-width: 640px) {
+  .docs-vest-charts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .docs-table-wrap {
   overflow-x: auto;
   border: 1px solid rgb(255 255 255 / 0.08);

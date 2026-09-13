@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildDocsSections, docsSectionHasArt, DOCS_NAV, type DocsSectionId } from "./docs-content";
@@ -86,6 +87,18 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /Six wizard steps/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(sections.filter((section) => section.id === "floor").length, 1);
+});
+
+test("hook figures use real diagrams plus worked examples, not 01-04 cards", () => {
+  const visuals = readFileSync(new URL("../components/docs/DocsVisuals.tsx", import.meta.url), "utf8");
+  assert.match(visuals, /#f97316/);
+  assert.match(visuals, /theme="ember"/);
+  assert.match(visuals, /50 such buys/);
+  assert.match(visuals, /supply after burns/);
+  assert.match(visuals, /Until FDV/);
+  assert.match(visuals, /Retail 0\.2 ETH/);
+  assert.equal(visuals.includes("pendingDeepenLps"), false);
+  assert.equal(visuals.includes("Holders of $TICKER"), false);
 });
 
 test("every docs section has a diagram, visual, hook catalog, or formula", () => {
