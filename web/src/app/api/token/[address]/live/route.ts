@@ -13,7 +13,8 @@ import {
   resolveMasterLaunch,
 } from "@/lib/launches";
 import { enrichPoolsWithSpotPrices } from "@/lib/explore";
-import { poolMarkets, poolWithMarket } from "@/lib/pool-active-market";
+import { isMultiPool, poolMarkets, poolWithMarket } from "@/lib/pool-active-market";
+import { resolveQuoteUsdPrice } from "@/lib/quote-usd";
 import { createServerPublicClient } from "@/lib/server-rpc";
 import { buildSparseLive, fetchOnChainLive } from "@/lib/token-onchain-live";
 import type { PublicClient } from "viem";
@@ -80,6 +81,19 @@ export async function GET(req: Request, ctx: Ctx) {
         (m) => (m.poolId ?? "").toLowerCase() === poolIdParam.toLowerCase(),
       );
       if (idx >= 0) pool = poolWithMarket(pool, idx);
+    }
+
+    if (isMultiPool(pool)) {
+      pool = {
+        ...pool,
+        quoteUsd: await resolveQuoteUsdPrice(
+          pool.quoteAddress,
+          pool.quoteAsset,
+          ethUsd,
+          client,
+        ),
+        launchMcapQuoteHuman: undefined,
+      };
     }
 
     const payload = await fetchOnChainLive(client, pool, ethUsd);

@@ -6,12 +6,10 @@ import { useEffect, useState } from "react";
 import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import { isMultiPool } from "@/lib/pool-active-market";
-import { marketCapUsd } from "@/lib/pool-price";
 import {
   candleFdvScale,
   fallbackStockUsd,
-  marketCapFromQuotePrice,
-  marketCapUsdFromLaunchAnchor,
+  marketCapUsdForPool,
   quoteVolumeUsd,
   resolveQuoteKind,
 } from "@/lib/quote-usd";
@@ -136,11 +134,7 @@ export function useLiveToken(pool: TokenPool) {
     const priceQuote = summary.price ? Number(summary.price) : 0;
     const mcapFromIndexer =
       priceQuote > 0
-        ? isEth
-          ? marketCapUsd(priceQuote, eth)
-          : pool.launchMcapQuoteHuman && pool.launchMcapQuoteHuman > 0
-            ? marketCapUsdFromLaunchAnchor(priceQuote, pool.launchMcapQuoteHuman)
-            : marketCapFromQuotePrice(priceQuote, quoteUsd ?? 1)
+        ? marketCapUsdForPool(priceQuote, pool, eth, quoteUsd, pool.launchMcapQuoteHuman)
         : 0;
     const mcap =
       mcapFromIndexer > 0

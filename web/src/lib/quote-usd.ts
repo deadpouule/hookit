@@ -6,6 +6,7 @@ import { STABLE_QUOTE_ADDRESS, getChainDeployment, getLaunchFactoryAddress } fro
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { marketCapUsd, stateViewAbi } from "@/lib/pool-price";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
+import { isMultiPool } from "@/lib/pool-active-market";
 import { isRwaQuote } from "@/lib/token-identity";
 import type { TokenPool } from "@/lib/types";
 import {
@@ -152,9 +153,15 @@ export async function buildQuoteUsdMap(
 
   const rwaListings = new Map<string, QuotronStockListing>();
   for (const pool of pools) {
-    if (resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) !== "rwa" || !pool.quoteAddress) continue;
-    const listing = quotronStockByAddress(pool.quoteAddress);
-    if (listing) rwaListings.set(listing.address.toLowerCase(), listing);
+    const quoteAddrs = [
+      pool.quoteAddress,
+      ...(pool.markets?.map((m) => m.quoteAddress) ?? []),
+    ];
+    for (const addr of quoteAddrs) {
+      if (!addr || resolveQuoteKind(addr, pool.quoteAsset) !== "rwa") continue;
+      const listing = quotronStockByAddress(addr);
+      if (listing) rwaListings.set(listing.address.toLowerCase(), listing);
+    }
   }
 
   await Promise.all(
@@ -265,14 +272,20 @@ export function circulatingSupplyForFdv(
 
 export function marketCapUsdForPool(
   quotePerToken: number,
-  pool: Pick<TokenPool, "quoteAddress" | "quoteAsset">,
+  pool: Pick<TokenPool, "quoteAddress" | "quoteAsset" | "marketCount" | "markets">,
   ethUsd: number,
   quoteUsd?: number,
   launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return marketCapUsd(quotePerToken, ethUsd);
-  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
+  // Multi-pair: compare legs via factory oracle USD (same formula as MultiPairArbExecutor).
+  if (
+    kind === "rwa" &&
+    !isMultiPool(pool) &&
+    launchMcapQuoteHuman &&
+    launchMcapQuoteHuman > 0
+  ) {
     return marketCapUsdFromLaunchAnchor(quotePerToken, launchMcapQuoteHuman);
   }
   const qUsd =
@@ -303,14 +316,19 @@ export function quoteVolumeUsd(
 
 /** Scale indexer candle prices (quote per token) to FDV USD. */
 export function candleFdvScale(
-  pool: Pick<TokenPool, "quoteAddress" | "quoteAsset">,
+  pool: Pick<TokenPool, "quoteAddress" | "quoteAsset" | "marketCount" | "markets">,
   ethUsd: number,
   quoteUsd?: number,
   launchMcapQuoteHuman?: number,
 ): number {
   const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
   if (kind === "eth") return TOTAL_SUPPLY * ethUsd;
-  if (kind === "rwa" && launchMcapQuoteHuman && launchMcapQuoteHuman > 0) {
+  if (
+    kind === "rwa" &&
+    !isMultiPool(pool) &&
+    launchMcapQuoteHuman &&
+    launchMcapQuoteHuman > 0
+  ) {
     return (TOTAL_SUPPLY / launchMcapQuoteHuman) * TARGET_LAUNCH_MCAP_USD;
   }
   const qUsd =

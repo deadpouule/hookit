@@ -399,19 +399,32 @@ async function main() {
       preview.cheapIndex !== preview.richIndex;
 
     if (!preview.executable && skewed && prefundUsdg && router && !dryRun) {
-      await prefundExecutorCheapLeg(publicClient, walletClient, {
-        factory: factoryAddr,
-        executor,
-        router,
-        launchId,
-        cheapIndex: preview.cheapIndex,
-        maxClipUsdX18: maxClip,
-        account: account.address,
-      });
-      preview = await readPreview(publicClient, executor, launchId);
-      console.log(
-        `[arb-keeper] after prefund launch ${launchId} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
-      );
+      // Wrong-leg wStock strands on the executor when cheap/rich flips — recycle to USDG first.
+      if (sweepUsdg) {
+        await sweepExecutorStocksToUsdg(publicClient, walletClient, executor, router, account.address);
+      }
+      const maxPrefundAttempts = 3;
+      for (let attempt = 1; attempt <= maxPrefundAttempts; attempt++) {
+        if (preview.executable) break;
+        await prefundExecutorCheapLeg(publicClient, walletClient, {
+          factory: factoryAddr,
+          executor,
+          router,
+          launchId,
+          cheapIndex: preview.cheapIndex,
+          maxClipUsdX18: maxClip,
+          account: account.address,
+        });
+        preview = await readPreview(publicClient, executor, launchId);
+        console.log(
+          `[arb-keeper] after prefund launch ${launchId} attempt=${attempt}/${maxPrefundAttempts}` +
+            ` cheap=${preview.cheapIndex} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
+        );
+        if (preview.executable || preview.clipQuoteWei > 0n) break;
+        if (attempt < maxPrefundAttempts && sweepUsdg) {
+          await sweepExecutorStocksToUsdg(publicClient, walletClient, executor, router, account.address);
+        }
+      }
     } else if (!preview.executable && skewed && prefundUsdg && dryRun) {
       console.log(`[arb-keeper] dry-run would prefund cheap leg from keeper USDG for launch ${launchId}`);
     }

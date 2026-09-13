@@ -38,6 +38,12 @@ export function poolWithMarket(pool: TokenPool, marketIndex: number): TokenPool 
     quoteAsset: market.quoteAsset ?? poolQuoteLabel({ quoteAddress: quote } as TokenPool),
     poolId: market.poolId ?? pool.poolId,
     tokenIsCurrency0,
+    // Drop primary-leg spot fields so live/indexer paths re-resolve for this market.
+    quoteUsd: undefined,
+    launchMcapQuoteHuman: undefined,
+    marketCap: 0,
+    liquidity: 0,
+    priceEth: undefined,
     markets,
     marketCount: markets.length,
   };
