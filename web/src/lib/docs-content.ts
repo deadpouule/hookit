@@ -180,6 +180,10 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     ],
   },
   {
+    group: "Protocol",
+    items: [{ id: "hkt", label: "$HKT" }],
+  },
+  {
     group: "Reference",
     items: [
       { id: "analytics", label: "Analytics" },
@@ -192,10 +196,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "risks", label: "Risks" },
       { id: "terms", label: "Terms" },
     ],
-  },
-  {
-    group: "Protocol",
-    items: [{ id: "hkt", label: "$HKT" }],
   },
 ];
 
@@ -225,7 +225,7 @@ export function buildDocsSections(): DocsSection[] {
   const native = getNativeTokenAddress();
   const claims = getClaimsRedeemerAddress();
 
-  return [
+  const sections: DocsSection[] = [
     {
       id: "overview",
       title: "Overview",
@@ -1775,4 +1775,13 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
       ],
     },
   ];
+
+  const order = DOCS_NAV.flatMap((group) => group.items.map((item) => item.id));
+  return order.map((id) => {
+    const section = sections.find((item) => item.id === id);
+    if (!section) {
+      throw new Error(`missing docs section ${id}`);
+    }
+    return section;
+  });
 }
