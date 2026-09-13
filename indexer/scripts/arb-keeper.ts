@@ -14,7 +14,8 @@
  *   MULTI_PAIR_ARB_EXECUTOR              executor address (required when enabled)
  *   MULTI_PAIR_ARB_LAUNCH_IDS            optional comma filter (default: auto-scan)
  *   MULTI_PAIR_ARB_AUTO=true             auto-discover launchMulti ids
- *   MULTI_PAIR_ARB_PREFUND_USDG=true     swap keeper USDG → cheap wStock for executor
+ *   MULTI_PAIR_ARB_PREFUND_USDG=true     prefund executor (keeper wStock transfer, else USDG→wStock)
+ *   MULTI_PAIR_ARB_KEEPER_STOCK_DUST=1000000000000000  wei left on keeper when transferring wStock
  *   MULTI_PAIR_ARB_SWEEP_USDG=true       recycle executor/keeper wStock → USDG (default on)
  *   HOOKIT_SWAP_ROUTER                   HookitSwapRouter (required for USDG prefund)
  *   LAUNCH_FACTORY                       factory to scan (default: executor.factory())
@@ -33,6 +34,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 import {
+  canSwapStockToUsdg,
   isEthQuote,
   isQuotronStock,
   poolQuoteAddress,
@@ -241,19 +243,46 @@ async function prefundExecutorCheapLeg(
     return;
   }
   if (!isQuotronStock(cheapQuote)) {
-    console.log(`[arb-keeper] cheap quote ${cheapQuote} is not a Quotrons wStock — skip USDG prefund`);
+    console.log(`[arb-keeper] cheap quote ${cheapQuote} is not a Quotrons wStock — skip prefund`);
+    return;
+  }
+
+  const keeperStock = await readErc20Balance(publicClient, cheapQuote, account);
+  if (keeperStock > 0n) {
+    const dust = BigInt(process.env.MULTI_PAIR_ARB_KEEPER_STOCK_DUST ?? "1000000000000000");
+    const send = keeperStock > dust ? keeperStock - dust : keeperStock;
+    if (send > 0n) {
+      await transferErc20(walletClient, publicClient, cheapQuote, executor, send);
+      console.log(
+        `[arb-keeper] direct prefund launch ${launchId}: sent ${send} wei ${cheapQuote} keeper → executor`,
+      );
+    }
+  }
+
+  const stockToUsdgOk = await canSwapStockToUsdg(publicClient, cheapQuote);
+  if (!stockToUsdgOk) {
+    const execBal = await readErc20Balance(publicClient, cheapQuote, executor);
+    if (execBal > 0n) {
+      console.log(
+        `[arb-keeper] skip USDG→${cheapQuote}: Quotrons sell leg at tick bound (executor has ${execBal} wei)`,
+      );
+    } else {
+      console.log(
+        `[arb-keeper] skip USDG→${cheapQuote}: Quotrons at tick bound and keeper has no ${cheapQuote} to transfer`,
+      );
+    }
     return;
   }
 
   const keeperUsdg = await readErc20Balance(publicClient, usdg, account);
   const budget = prefundUsdgBudget(keeperUsdg, maxClipUsdX18);
   if (budget === 0n) {
-    console.log(`[arb-keeper] keeper USDG balance ${keeperUsdg} too low to prefund`);
+    console.log(`[arb-keeper] keeper USDG balance ${keeperUsdg} too low for USDG prefund`);
     return;
   }
 
   console.log(
-    `[arb-keeper] prefund launch ${launchId}: swap ${budget} USDG wei → ${cheapQuote} for executor`,
+    `[arb-keeper] USDG prefund launch ${launchId}: swap ${budget} USDG wei → ${cheapQuote} for executor`,
   );
   const stockOut = await swapUsdgForStock(publicClient, walletClient, router, cheapQuote, budget, account);
   if (stockOut === 0n) {
@@ -261,7 +290,7 @@ async function prefundExecutorCheapLeg(
     return;
   }
   await transferErc20(walletClient, publicClient, cheapQuote, executor, stockOut);
-  console.log(`[arb-keeper] prefund ok — sent ${stockOut} wei ${cheapQuote} to executor`);
+  console.log(`[arb-keeper] USDG prefund ok — sent ${stockOut} wei ${cheapQuote} to executor`);
 }
 
 async function cheapQuoteForMarket(
@@ -312,22 +341,15 @@ async function ensureExecutorFunded(
       });
     }
 
-    const execBal = await readErc20Balance(publicClient, cheapQuote, opts.executor);
-    if (execBal === 0n) {
-      await prefundExecutorCheapLeg(publicClient, walletClient, {
-        factory: opts.factory,
-        executor: opts.executor,
-        router: opts.router,
-        launchId: opts.launchId,
-        cheapIndex: preview.cheapIndex,
-        maxClipUsdX18: opts.maxClipUsdX18,
-        account: opts.account,
-      });
-    } else {
-      console.log(
-        `[arb-keeper] executor already holds ${execBal} wei ${cheapQuote} for cheap leg ${preview.cheapIndex}`,
-      );
-    }
+    await prefundExecutorCheapLeg(publicClient, walletClient, {
+      factory: opts.factory,
+      executor: opts.executor,
+      router: opts.router,
+      launchId: opts.launchId,
+      cheapIndex: preview.cheapIndex,
+      maxClipUsdX18: opts.maxClipUsdX18,
+      account: opts.account,
+    });
 
     preview = await readPreview(publicClient, opts.executor, opts.launchId);
     const execBalAfter = await readErc20Balance(publicClient, cheapQuote, opts.executor);
