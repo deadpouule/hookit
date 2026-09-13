@@ -1,9 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Info } from "lucide-react";
 
 import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getHookPresetDetails } from "@/lib/hook-presets";
 import { moduleDetailLine } from "@/lib/launch-module-summary";
 import type { BrowseHook, MasterHook } from "@/lib/master-hooks";
@@ -23,6 +23,7 @@ export function HookSettingsTooltip({
   hookTaxBps = 0,
   className,
 }: HookSettingsTooltipProps) {
+  const [open, setOpen] = useState(false);
   const preset = getHookPresetDetails(hook);
   const launchConfig =
     modules && hook.id !== "fixed-fee"
@@ -30,33 +31,38 @@ export function HookSettingsTooltip({
       : null;
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={`${hook.title} rules and settings`}
-          className={cn("hook-settings-trigger", className)}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
-          onMouseDown={(event) => event.stopPropagation()}
-        >
-          <Info className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        align="start"
-        sideOffset={10}
-        className="hook-settings-tooltip border-0 bg-transparent p-0 shadow-none"
+    <div
+      className="hook-settings-anchor"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-label={`${hook.title} rules and settings`}
+        aria-expanded={open}
+        className={cn("hook-settings-trigger", className)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+        onMouseDown={(event) => event.stopPropagation()}
       >
-        <HookDetailPanel
-          hook={hook}
-          launchConfig={launchConfig}
-          presetSummary={modules ? null : preset.summary}
-        />
-      </TooltipContent>
-    </Tooltip>
+        <Info className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      {open ? (
+        <div
+          className="hook-settings-tooltip hook-settings-float"
+          role="tooltip"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <HookDetailPanel
+            hook={hook}
+            launchConfig={launchConfig}
+            presetSummary={modules ? null : preset.summary}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

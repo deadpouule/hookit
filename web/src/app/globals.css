@@ -5026,8 +5026,21 @@
     color: #fff;
   }
 
+  .hook-settings-anchor {
+    position: relative;
+    display: inline-flex;
+  }
+
   .hook-settings-tooltip {
     max-width: min(24rem, calc(100vw - 2rem));
+  }
+
+  .hook-settings-float {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    z-index: 40;
+    width: min(24rem, calc(100vw - 2rem));
   }
 
   .hook-settings-tooltip > svg {
