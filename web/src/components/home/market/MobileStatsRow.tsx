@@ -4,7 +4,7 @@ import { formatCompactUsd } from "@/lib/format";
 import { useProtocolStats } from "@/hooks/useProtocolStats";
 
 function compact(value: number | undefined) {
-  if (value == null || !Number.isFinite(value) || value <= 0) return " - ";
+  if (value == null || !Number.isFinite(value) || value <= 0) return "·";
   return formatCompactUsd(value);
 }
 

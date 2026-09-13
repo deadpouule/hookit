@@ -19,7 +19,7 @@ export function BondingProgress({ pool }: { pool: TokenPool }) {
 
   const quoteLabel = pool.quoteAsset ?? "ETH";
   const realFmt = Number(formatEther(real)).toFixed(4);
-  const goalFmt = goal > BigInt(0) ? Number(formatEther(goal)).toFixed(2) : " - ";
+  const goalFmt = goal > BigInt(0) ? Number(formatEther(goal)).toFixed(2) : "·";
 
   return (
     <div className="desk-card min-w-0 space-y-2 overflow-hidden p-4">

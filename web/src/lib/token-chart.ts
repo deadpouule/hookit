@@ -309,7 +309,7 @@ export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interva
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {
-  if (!Number.isFinite(value) || value <= 0) return " - ";
+  if (!Number.isFinite(value) || value <= 0) return "·";
   if (scale === "mcap") return formatCompactUsd(value);
   if (value >= 1) return formatCompactUsd(value);
   if (value >= 0.01) return `$${value.toFixed(4)}`;

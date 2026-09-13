@@ -269,7 +269,7 @@ export async function fetchOnChainLive(
       t: ts,
       recipient: args.sender
         ? `${args.sender.slice(0, 6)}…${args.sender.slice(-4)}`
-        : " - ",
+        : "·",
       side,
       amount: tokenAmt,
       totalUsd,

@@ -46,7 +46,7 @@ function Pipe({
               <strong>{node.t}</strong>
               {node.d ? <p>{node.d}</p> : null}
             </div>
-            {i < nodes.length - 1 ? (
+            {i < nodes.length, 1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -371,7 +371,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "anti-snipe-decay":
       return (
-        <Figure caption="Snipe tax decays to zero" note="Buy-only. Same 60 / 10 / 30 split as the 1% base - not hook tax.">
+        <Figure caption="Snipe tax decays to zero" note="Buy-only. Same 60 / 10 / 30 split as the 1% base, not hook tax.">
           <div className="docs-visual-hook-row">
             <HookMark hookId="anti-snipe" theme="fire" />
             <Spark
@@ -385,7 +385,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             />
           </div>
           <Example
-            title="Example - 1 ETH buy, 5s window, 98% open tax"
+            title="Example: 1 ETH buy, 5s window, 98% open tax"
             rows={[
               { k: "First second", v: "+0.98 ETH snipe on top of the 1% base. Sniper pays ~1.99 ETH in." },
               { k: "After 5s", v: "Snipe is 0. Same 1 ETH buy pays only 0.01 ETH base." },
@@ -402,18 +402,18 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <div className="docs-mev">
               <div className="docs-mev-ok">
                 <span>Block N</span>
-                <strong>tx.origin A - buy</strong>
+                <strong>tx.origin A, buy</strong>
                 <small>Allowed</small>
               </div>
               <div className="docs-mev-no">
                 <span>Same block</span>
-                <strong>tx.origin A - sell</strong>
+                <strong>tx.origin A, sell</strong>
                 <small>SandwichBlocked</small>
               </div>
             </div>
           </div>
           <Example
-            title="Example - Alice in one block"
+            title="Example: Alice in one block"
             rows={[
               { k: "Block 100, buy 1 ETH", v: "Allowed." },
               { k: "Block 100, sell", v: "Reverts SandwichBlocked." },
@@ -439,7 +439,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example - 1B supply, 1% max tx = 10M tokens"
+            title="Example: 1B supply, 1% max tx = 10M tokens"
             rows={[
               { k: "Buy 8M tokens", v: "Goes through." },
               { k: "Buy 12M tokens", v: "Reverts. One swap cannot eat more than the cap." },
@@ -464,10 +464,10 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example - 2.5% max wallet = 25M tokens"
+            title="Example: 2.5% max wallet = 25M tokens"
             rows={[
-              { k: "Wallet holds 20M, buys 4M", v: "24M after - allowed." },
-              { k: "Wallet holds 20M, buys 6M", v: "26M after - revert. Sells are never blocked by this cap." },
+              { k: "Wallet holds 20M, buys 4M", v: "24M after, allowed." },
+              { k: "Wallet holds 20M, buys 6M", v: "26M after, revert. Sells are never blocked by this cap." },
             ]}
           />
         </Figure>
@@ -494,7 +494,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               </div>
             </div>
           <Example
-            title="Example - 2% hook tax, 100% to Deepen LPs"
+            title="Example: 2% hook tax, 100% to Deepen LPs"
             rows={[
               { k: "1 ETH buy", v: "0.02 ETH minted into the LP after the swap." },
               { k: "50 such buys", v: "+1 ETH of depth in the launch range." },
@@ -522,7 +522,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             />
           </div>
           <Example
-            title="Example - 2% hook tax, 80% to Auto-Burn"
+            title="Example: 2% hook tax, 80% to Auto-Burn"
             rows={[
               { k: "1 ETH buy", v: "0.016 ETH buys the token and burns it." },
               { k: "$100k volume", v: "~$1.6k of token bought and burned." },
@@ -569,7 +569,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example - $100k volume, 60% of the 1% base = $600 locked"
+            title="Example: $100k volume, 60% of the 1% base = $600 locked"
             rows={[
               { k: "30-day vest, day 15", v: "$300 claimable. Linear. Dump later does not relock it." },
               { k: "Until $10M FDV", v: "$0 until mcap prints $10M, then the full $600." },
@@ -602,7 +602,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
                 { x: 312, h: 18, l: "…" },
               ].map((bar) => (
                 <g key={bar.x}>
-                  <rect x={bar.x} y={108 - bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
+                  <rect x={bar.x} y={108, bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
                   <text x={bar.x + 14} y="122" textAnchor="middle" fill="#71717a" fontSize="8">
                     {bar.l}
                   </text>
@@ -611,11 +611,11 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </svg>
           </div>
           <Example
-            title="Example - 2% hook tax, 50% to airdrop, you hold 2% of supply"
+            title="Example: 2% hook tax, 50% to airdrop, you hold 2% of supply"
             rows={[
               { k: "1 ETH buy", v: "0.01 ETH into the vault this swap." },
               { k: "Your payout", v: "2% × 0.01 = 0.0002 ETH when the epoch pushes." },
-              { k: "$100k volume", v: "~$20 to you in quote. Not $HKT - the launched token's holders." },
+              { k: "$100k volume", v: "~$20 to you in quote. Not $HKT, the launched token's holders." },
             ]}
           />
         </Figure>
@@ -641,7 +641,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
           </div>
           <Example
-            title="Example - 1 ETH buy, no hook tax, Creator → Hook on"
+            title="Example: 1 ETH buy, no hook tax, Creator → Hook on"
             rows={[
               { k: "Base 1%", v: "0.006 ETH to floor / burn / deepen / airdrop instead of escrow." },
               { k: "$100k volume", v: "$600 extra in the pot. Creator claims $0." },
@@ -656,17 +656,17 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <HookMark hookId="fixed-fee" theme="cobalt" />
             <div className="docs-fee-bars">
               <div>
-                <span>Base 1% - every swap</span>
+                <span>Base 1%, every swap</span>
                 <b style={{ width: "20%" }} />
               </div>
               <div>
-                <span>Hook tax 2% - every swap</span>
+                <span>Hook tax 2%, every swap</span>
                 <b className="is-tax" style={{ width: "40%" }} />
               </div>
             </div>
           </div>
           <Example
-            title="Example - 2% fixed hook tax"
+            title="Example: 2% fixed hook tax"
             rows={[
               { k: "1 ETH buy", v: "Pays 0.01 ETH base + 0.02 ETH hook tax = 1.03 ETH in." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
@@ -694,7 +694,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             />
           </div>
           <Example
-            title="Example - 10 ETH in-range depth, extra tax 1% → 9%"
+            title="Example: 10 ETH in-range depth, extra tax 1% → 9%"
             rows={[
               { k: "Retail 0.2 ETH", v: "Uses 2% of the book. Extra ≈ 1.16%. Pays ~0.002 ETH hook tax + 0.002 ETH base." },
               { k: "Whale 5 ETH", v: "Uses 50% of the book. Extra = 5%. Pays 0.25 ETH hook tax + 0.05 ETH base." },

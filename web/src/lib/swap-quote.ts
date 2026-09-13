@@ -152,7 +152,7 @@ export async function quotePoolSwapWithMeta(
   if (amountIn <= BigInt(0)) return null;
 
   let amountOut: bigint | null = null;
-  let route = " - ";
+  let route = "·";
   let estimated = false;
   const payment = paymentAssetById(paymentId);
   const payDecimals =

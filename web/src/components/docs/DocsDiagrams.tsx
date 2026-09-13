@@ -46,6 +46,8 @@ export function DocsDiagram({ id }: { id: DocsDiagramId }) {
       return <FloorLoopDiagram />;
     case "hkt-loop":
       return <HktLoopDiagram />;
+    case "hkt-burn":
+      return <HktBurnDiagram />;
     default:
       return null;
   }
@@ -179,15 +181,15 @@ function FlywheelDiagram() {
           {nodes.map((node) => (
             <g key={node.label}>
               <rect
-                x={node.x - 46}
-                y={node.y - 18}
+                x={node.x, 46}
+                y={node.y, 18}
                 width="92"
                 height="36"
                 rx="10"
                 fill="#111"
                 stroke="rgb(255 255 255 / 0.14)"
               />
-              <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
+              <text x={node.x} y={node.y, 2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
                 {node.label}
               </text>
               <text x={node.x} y={node.y + 12} textAnchor="middle" fill="#71717a" fontSize="9">
@@ -208,7 +210,7 @@ function FlywheelDiagram() {
 function FeeSplitDiagram() {
   return (
     <figure className="docs-schema">
-      <figcaption>1% base fee - 60 / 10 / 30</figcaption>
+      <figcaption>1% base fee, 60 / 10 / 30</figcaption>
       <div className="docs-split-bar" role="img" aria-label="Creator 60 percent, HKT holders 10 percent, protocol 30 percent">
         <div className="docs-split-seg docs-split-seg--creator" style={{ flex: 60 }}>
           <span>60%</span>
@@ -258,7 +260,7 @@ function SwapLifecycleDiagram() {
               <strong>{step.t}</strong>
               <p>{step.d}</p>
             </div>
-            {i < steps.length - 1 ? (
+            {i < steps.length, 1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -341,6 +343,55 @@ function FloorLoopDiagram() {
   );
 }
 
+function HktBurnDiagram() {
+  return (
+    <figure className="docs-schema">
+      <figcaption>Buyback burn flywheel</figcaption>
+      <svg className="docs-spark" viewBox="0 0 360 188" role="img" aria-label="Protocol fees buy and burn HKT. The HKT pool burns 80 percent and deepens 20 percent.">
+        <rect x="12" y="16" width="72" height="40" rx="10" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+        <text x="48" y="40" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700">
+          Swap
+        </text>
+        <rect x="100" y="16" width="84" height="40" rx="10" fill="#111" stroke="rgb(3 177 237 / 0.4)" />
+        <text x="142" y="40" textAnchor="middle" fill="#7dd3fc" fontSize="11" fontWeight="700">
+          1% base
+        </text>
+        <rect x="200" y="16" width="68" height="40" rx="10" fill="#111" stroke="rgb(149 20 209 / 0.4)" />
+        <text x="234" y="40" textAnchor="middle" fill="#d8b4fe" fontSize="11" fontWeight="700">
+          30% proto
+        </text>
+        <rect x="284" y="8" width="64" height="56" rx="10" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.45)" />
+        <text x="316" y="30" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700">
+          80% buy
+        </text>
+        <text x="316" y="46" textAnchor="middle" fill="#c4b5fd" fontSize="9">
+          burn $HKT
+        </text>
+        <path d="M84 36 H100" stroke="#52525b" strokeWidth="1.4" />
+        <path d="M184 36 H200" stroke="#52525b" strokeWidth="1.4" />
+        <path d="M268 36 H284" stroke="#52525b" strokeWidth="1.4" />
+        <text x="180" y="78" textAnchor="middle" fill="#71717a" fontSize="9">
+          20% of protocol stays ops
+        </text>
+        <rect x="16" y="96" width="328" height="76" rx="12" fill="#111" stroke="rgb(16 185 129 / 0.35)" />
+        <text x="180" y="118" textAnchor="middle" fill="#86efac" fontSize="11" fontWeight="700">
+          $HKT Uniswap v4 hook
+        </text>
+        <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+          Anti-MEV · Anti-Snipe
+        </text>
+        <text x="180" y="154" textAnchor="middle" fill="#fff" fontSize="10">
+          Hook pot 80% Auto-Burn · 20% Deepen LPs
+        </text>
+      </svg>
+      <p className="docs-schema-note">
+        Protocol buyback is HkitBuyback.execute, then burn. The 80 / 20 split on the $HKT pool is
+        that token&apos;s own hook pot, not the 1% base.
+      </p>
+    </figure>
+  );
+}
+
 function HktLoopDiagram() {
   return (
     <figure className="docs-schema">
@@ -361,8 +412,8 @@ function HktLoopDiagram() {
         ].map((node) => (
           <g key={`${node.x}-${node.t}`}>
             <line x1="180" y1="84" x2={node.x} y2={node.y} stroke="rgb(3 177 237 / 0.35)" strokeWidth="1.2" />
-            <rect x={node.x - 40} y={node.y - 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-            <text x={node.x} y={node.y - 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
+            <rect x={node.x, 40} y={node.y, 16} width="80" height="32" rx="8" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+            <text x={node.x} y={node.y, 2} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="600">
               {node.t}
             </text>
             <text x={node.x} y={node.y + 11} textAnchor="middle" fill="#71717a" fontSize="8">

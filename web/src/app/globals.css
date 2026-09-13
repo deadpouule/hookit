@@ -2446,8 +2446,8 @@
   }
 
   .launch-model-stage .hero-totem-dots {
-    margin: 0.02rem 0 0.04rem;
-    gap: 0.26rem;
+    margin: 0.55rem 0 0.5rem;
+    gap: 0.32rem;
   }
 
   .launch-model-stage .hero-totem-dot {
@@ -2463,11 +2463,14 @@
 
   .launch-model-stage .hero-totem-caption {
     width: min(100%, 16rem);
+    margin-top: 0.1rem;
     padding: 0 0.4rem;
+    gap: 0.28rem;
   }
 
   .launch-model-stage .hero-totem-title {
     font-size: 0.7rem;
+    gap: 0.4rem;
   }
 
   .launch-model-copy {
@@ -10041,7 +10044,7 @@ h2.docs-hook-heading {
 .docs-rail-stage {
   margin: 0 0 0.75rem;
   border-radius: 0.7rem;
-  height: 168px;
+  height: 210px;
 }
 
 .docs-studio {

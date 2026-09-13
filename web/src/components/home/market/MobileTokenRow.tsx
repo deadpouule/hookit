@@ -13,7 +13,7 @@ import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 
 function formatSpotUsd(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return " - ";
+  if (!Number.isFinite(value) || value <= 0) return "·";
   if (value >= 1) return `$${value.toFixed(2)}`;
   if (value >= 0.01) return `$${value.toFixed(4)}`;
   return `$${value.toPrecision(3)}`;

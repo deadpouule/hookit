@@ -189,7 +189,7 @@ export function TokenProSwap({
 
   const route = (() => {
     if (quoteMeta?.route) return quoteMeta.route;
-    if (!receiveAmount || Number(sellAmount) <= 0) return " - ";
+    if (!receiveAmount || Number(sellAmount) <= 0) return "·";
     if (needsCompositeSell(pool, buyAsset)) {
       return `${sellAsset.symbol} → ${poolQuoteSwapAsset(pool).symbol} → ${buyAsset.symbol}`;
     }
@@ -203,11 +203,11 @@ export function TokenProSwap({
     if (receiveAmount && Number(receiveAmount) > 0) {
       return `${formatTokenAmount(Number(receiveAmount) * (1 - slippagePct / 100))} ${buyAsset.symbol}`;
     }
-    return " - ";
+    return "·";
   })();
 
   const priceImpactLabel =
-    quoteMeta?.priceImpactPct != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : " - ";
+    quoteMeta?.priceImpactPct != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : "·";
 
   return (
     <div className="mt-3">
@@ -290,7 +290,7 @@ export function TokenProSwap({
           <span className="market-token-block__output">
             {receiveAmount && Number(receiveAmount) > 0
               ? formatTokenAmount(Number(receiveAmount))
-              : receiveAmount || " - "}
+              : receiveAmount || "·"}
           </span>
           <p className="market-token-block__usd">≈ {formatCompactUsd(receiveUsd)}</p>
         </div>

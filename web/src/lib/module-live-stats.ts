@@ -51,7 +51,7 @@ function attachUnlock(
 }
 
 function formatAmount(value: number | null, quoteLabel: string): string {
-  if (value == null) return " - ";
+  if (value == null) return "·";
   return `${formatCompactQuoteAmount(value)} ${quoteLabel}`;
 }
 

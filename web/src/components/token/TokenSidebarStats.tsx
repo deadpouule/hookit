@@ -116,7 +116,7 @@ export function TokenSidebarStats({
       </div>
 
       <dl className="token-stats-meta token-stats-meta--spaced">
-        <MetaRow label="Created" value={ageSeconds != null ? `${formatAge(ageSeconds)} ago` : " - "} />
+        <MetaRow label="Created" value={ageSeconds != null ? `${formatAge(ageSeconds)} ago` : "·"} />
         <div className="token-stats-meta__row">
           <dt>Chain</dt>
           <dd className="token-stats-chain">

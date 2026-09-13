@@ -300,12 +300,14 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         <MobileStatsRow />
       </div>
 
-      <section id="party" className="market-trending scroll-mt-24">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
-        </div>
-        <TrendingStrip tokens={trending} rankings={rankings} />
-      </section>
+      {trending.length > 0 ? (
+        <section id="party" className="market-trending scroll-mt-24">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
+          </div>
+          <TrendingStrip tokens={trending} rankings={rankings} />
+        </section>
+      ) : null}
 
       <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 desk:pb-48">
         <header className="stonk-tokens-head hidden phone:flex">

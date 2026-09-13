@@ -75,7 +75,7 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
 }
 
 function formatPriceUsd(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return " - ";
+  if (!Number.isFinite(value) || value <= 0) return "·";
   if (value >= 1) return formatCompactUsd(value);
   if (value >= 0.01) return `$${value.toFixed(4)}`;
   if (value >= 0.0001) return `$${value.toFixed(6)}`;
@@ -364,7 +364,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             liveLoading && "animate-pulse text-zinc-500",
           )}
         >
-          {liveLoading ? " - " : formatCompactUsd(live.marketCap)}
+          {liveLoading ? "·" : formatCompactUsd(live.marketCap)}
         </p>
         <span
           className={cn(
@@ -412,11 +412,11 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           />
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
-          <HeroStat className="token-hero-stat--desk" label="ATH" value={ath > 0 ? formatCompactUsd(ath) : " - "} />
+          <HeroStat className="token-hero-stat--desk" label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "·"} />
           <HeroStat
             className="token-hero-stat--mobile"
             label="Holders"
-            value={live.holders > 0 ? live.holders.toLocaleString() : " - "}
+            value={live.holders > 0 ? live.holders.toLocaleString() : "·"}
           />
         </dl>
       </div>

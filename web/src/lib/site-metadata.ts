@@ -15,11 +15,11 @@ export const SITE_OG_IMAGE = {
 
 export const TOKEN_OG_SIZE = { width: 1200, height: 1200 } as const;
 
-/** Pons-style share title: `vitalik ($BIT) - hookit`. */
+/** Pons-style share title: `vitalik ($BIT) · hookit`. */
 export function tokenShareTitle(name: string, ticker: string): string {
   const n = name.trim() || ticker.trim() || "Token";
   const t = ticker.trim() || n;
-  return `${n} ($${t}) - hookit`;
+  return `${n} ($${t}) · hookit`;
 }
 
 export function socialMetadata(

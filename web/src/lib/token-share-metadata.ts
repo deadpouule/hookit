@@ -31,7 +31,7 @@ export async function tokenShareMetadata(
   };
 
   if (!pool) {
-    const title = "Token - hookit";
+    const title = "Token · hookit";
     const description = "Trade on Uniswap v4 via Hookit.";
     return {
       title: { absolute: title },

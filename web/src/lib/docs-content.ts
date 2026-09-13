@@ -67,7 +67,8 @@ export type DocsDiagramId =
   | "swap-lifecycle"
   | "classic-curve"
   | "floor-loop"
-  | "hkt-loop";
+  | "hkt-loop"
+  | "hkt-burn";
 
 export type DocsVisualId =
   | "wizard"
@@ -257,7 +258,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "The app is a wallet interface over Uniswap v4. Fees, floors, burns, and airdrops live in the hook - not in a backend that can change the rules after launch.",
+          text: "The app is a wallet interface over Uniswap v4. Fees, floors, burns, and airdrops live in the hook, not in a backend that can change the rules after launch.",
         },
         {
           type: "diagram",
@@ -308,7 +309,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit - not as a promise, as a mandatory on-chain split of the 1% base fee.`,
+          text: `$HKT is the protocol token. Hold it and you are exposed to every token that trades on hookit, not as a promise, as a mandatory on-chain split of the 1% base fee.`,
         },
         {
           type: "diagram",
@@ -316,11 +317,23 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
+          text: "The $HKT pool",
+        },
+        {
+          type: "p",
+          text: "$HKT is itself a Uniswap v4 hooked token on hookit. MasterLaunchHook runs Anti-MEV, Anti-Snipe, Auto-Burn, and Deepen LPs. The hook pot is 80% Auto-Burn and 20% Deepen LPs. Separately, 80% of protocol fees buy $HKT and burn it.",
+        },
+        {
+          type: "diagram",
+          id: "hkt-burn",
+        },
+        {
+          type: "h3",
           text: "The thesis",
         },
         {
           type: "p",
-          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) is mandatory - not a module, not a toggle, not a special case. It buys the launched memecoin - the ticker on that pool - and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
+          text: `Every Master and graduated Classic swap pays a 1% quote fee. ${HKT_HOLDER_FEE_PCT}% of that 1% (0.10% of the trade) is mandatory, not a module, not a toggle, not a special case. It buys the launched memecoin, the ticker on that pool, and HktHolderDropVault epoch-pushes those tokens to live $HKT holders, pro-rata.`,
         },
         {
           type: "ul",
@@ -341,7 +354,7 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             {
               term: "Role",
-              text: "Fair-launched native token of the pad (Ink may still show HOOKTEST / HTST on an early stack).",
+              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Auto-Burn 80%, Deepen LPs 20%.",
             },
             {
               term: "Holder cut",
@@ -383,7 +396,7 @@ export function buildDocsSections(): DocsSection[] {
             ["Who gets paid", "Live $HKT holders", "Holders of that launched token"],
             ["What they get", "The launched token", "Quote (ETH / USDG / wStock)"],
             ["Funded by", "10% of the 1% base", "A % of the hook-tax pot"],
-            ["Toggle", "None - baked into the 1% base", "Packed at launch"],
+            ["Toggle", "None, baked into the 1% base", "Packed at launch"],
           ],
         },
         {
@@ -426,7 +439,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "A launch is one (or two) wallet transactions. What you pick - Master or Classic - decides whether a pool exists from block 0 or after the curve fills.",
+          text: "A launch is one (or two) wallet transactions. What you pick, Master or Classic, decides whether a pool exists from block 0 or after the curve fills.",
         },
         {
           type: "visual",
@@ -555,7 +568,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Buys and sells hit the live Uniswap pool (Master or graduated Classic) or the bonding curve (Classic pre-graduation). The price on screen is the on-chain spot - not a hookit quote.",
+          text: "Buys and sells hit the live Uniswap pool (Master or graduated Classic) or the bonding curve (Classic pre-graduation). The price on screen is the on-chain spot, not a hookit quote.",
         },
         {
           type: "visual",
@@ -601,9 +614,9 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "swapExactIn - single hooked pool, quote already in the pool currency.",
-            "swapExactInComposite - bridge leg (Quotrons / ETH↔USDG) then hooked launch leg, one unlock.",
-            "swapExactInCompositeSell - token → quote → stable.",
+            "swapExactIn, single hooked pool, quote already in the pool currency.",
+            "swapExactInComposite, bridge leg (Quotrons / ETH↔USDG) then hooked launch leg, one unlock.",
+            "swapExactInCompositeSell, token → quote → stable.",
             "wStock pools: pay USDG. ETH-quoted pools take ETH.",
           ],
         },
@@ -865,7 +878,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Buy-only extra tax at open. Linear decay to 0 over the window packed at launch. The take uses the same 60 / 10 / 30 split as the 1% base - it is not hook tax.",
+          text: "Buy-only extra tax at open. Linear decay to 0 over the window packed at launch. The take uses the same 60 / 10 / 30 split as the 1% base, it is not hook tax.",
         },
         {
           type: "visual",
@@ -964,7 +977,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "A Master module. Every swap lifts the floor: hook-tax quote goes into FloorVault, P_floor = vault ÷ circulating, and it only ratchets up - so the printed price cannot sit below it. More volume = higher floor. Single-pair only - launchMulti reverts BackedFloorNotAllowedInMulti.",
+          text: "A Master module. Every swap lifts the floor: hook-tax quote goes into FloorVault, P_floor = vault ÷ circulating, and it only ratchets up, so the printed price cannot sit below it. More volume = higher floor. Single-pair only, launchMulti reverts BackedFloorNotAllowedInMulti.",
         },
         {
           type: "table",
@@ -1021,7 +1034,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "A share of the hook pot is minted back into the launch LP range as extra liquidity. Protection category - it thickens the book, it does not pay holders.",
+          text: "A share of the hook pot is minted back into the launch LP range as extra liquidity. Protection category, it thickens the book, it does not pay holders.",
         },
         {
           type: "visual",
@@ -1070,7 +1083,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits) - not in the module bitmask.`,
+          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits), not in the module bitmask.`,
         },
         {
           type: "visual",
@@ -1120,7 +1133,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid - not $HKT holders. That other flow is the mandatory $HKT drop in the $HKT section.",
+          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid, not $HKT holders. That other flow is the mandatory $HKT drop in the $HKT section.",
         },
         {
           type: "visual",
@@ -1225,7 +1238,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Optional Master fee mode. The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window - only current Uniswap v4 liquidity in the launch ticks.",
+          text: "Optional Master fee mode. The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks.",
         },
         {
           type: "visual",
@@ -1491,7 +1504,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
       blocks: [
         {
           type: "p",
-          text: "Addresses the UI hardcodes for this build. They win over a stale deploy/ink/addresses.json. Vaults and the live MasterLaunchHook are not listed here - read them from the hook: floorVault(), feeEscrow(), buybackVault(), holderAirdropVault(), hktDropVault(). Old factories stay on-chain and are hidden from Explore.",
+          text: "Addresses the UI hardcodes for this build. They win over a stale deploy/ink/addresses.json. Vaults and the live MasterLaunchHook are not listed here, read them from the hook: floorVault(), feeEscrow(), buybackVault(), holderAirdropVault(), hktDropVault(). Old factories stay on-chain and are hidden from Explore.",
         },
         {
           type: "visual",
@@ -1590,7 +1603,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
       blocks: [
         {
           type: "p",
-          text: "Index from the factory deploy block. Paginate getLogs - public RPCs time out on wide ranges.",
+          text: "Index from the factory deploy block. Paginate getLogs, public RPCs time out on wide ranges.",
         },
         {
           type: "visual",
@@ -1599,15 +1612,15 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
         {
           type: "ul",
           items: [
-            "LaunchFactory.TokenLaunched - Master (or custom hook) launch.",
-            "LaunchFactory.MultiLaunchConfigured / MarketLaunched - multi-pair.",
+            "LaunchFactory.TokenLaunched, Master (or custom hook) launch.",
+            "LaunchFactory.MultiLaunchConfigured / MarketLaunched, multi-pair.",
             "BondingLaunchFactory.TokenLaunched / Bought / Sold / Graduated.",
-            "PoolManager.Swap - Master and graduated Classic trades.",
-            "HktHolderDropVault.Credited / Dropped - $HKT holder drop.",
-            "HkitBuyback.BuybackBurned - protocol $HKT burn.",
+            "PoolManager.Swap, Master and graduated Classic trades.",
+            "HktHolderDropVault.Credited / Dropped, $HKT holder drop.",
+            "HkitBuyback.BuybackBurned, protocol $HKT burn.",
             "FloorVault.Deposited / Redeemed.",
-            "GraduatedFeeHook.FeesAccrued / Swept - Classic creator fees.",
-            "FeeEscrow.Claimed - creator pull.",
+            "GraduatedFeeHook.FeesAccrued / Swept, Classic creator fees.",
+            "FeeEscrow.Claimed, creator pull.",
           ],
         },
         {

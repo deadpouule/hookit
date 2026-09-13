@@ -2,6 +2,7 @@
 
 import {
   Asterisk,
+  Flame,
   LayoutGrid,
   Search,
   Table2,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import type { SortKey } from "@/lib/market-rankings";
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +19,7 @@ import { MasterHookFilterMenu } from "./MasterHookFilterMenu";
 import { RwaFilterMenu } from "./RwaFilterMenu";
 import type { MasterHookId } from "@/lib/master-hooks";
 
-export type SortKey = "top" | "almostBonded" | "live";
+export type { SortKey };
 export type CategoryKey = "all" | "master" | "customs" | "rwa" | "multi";
 
 type MarketplaceToolbarProps = {
@@ -109,6 +111,7 @@ export function MarketplaceToolbar({
         <div className="market-toolbar-actions">
           <div className="market-toolbar-group market-toolbar-group--sort">
             <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
+            <FilterPill active={sort === "trend"} onClick={() => onSortChange("trend")} icon={Flame} label="Trend" />
             <FilterPill
               active={sort === "almostBonded"}
               onClick={() => onSortChange("almostBonded")}

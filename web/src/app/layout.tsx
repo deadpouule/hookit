@@ -51,8 +51,9 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   icons: {
-    icon: "/brand/hookit-mark.png",
+    icon: [{ url: "/brand/hookit-mark.png", type: "image/png" }],
     apple: "/brand/hookit-mark.png",
+    shortcut: "/brand/hookit-mark.png",
   },
   ...socialMetadata(SITE_NAME, SITE_DESCRIPTION),
 };

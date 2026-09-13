@@ -43,6 +43,10 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Not the Holder Airdrop module/);
   assert.match(hkt, /mandatory/);
   assert.match(hkt, /\$HKT drop \(mandatory\)/);
+  assert.match(hkt, /Uniswap v4 hooked token/);
+  assert.match(hkt, /80% Auto-Burn/);
+  assert.match(hkt, /20% Deepen LPs/);
+  assert.match(hkt, /hkt-burn/);
   assert.equal(hkt.includes("$HKT drop (always on)"), false);
   assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);
   assert.equal(sections.find((section) => section.id === "dynamic-fees")?.hookId, "dynamic-fees");
@@ -118,13 +122,16 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.equal(visuals.includes("Holders of $TICKER"), false);
 });
 
-test("docs copy has no em dashes", () => {
+test("docs copy has no em dashes or spaced hyphens", () => {
   const sections = JSON.stringify(buildDocsSections());
   assert.equal(sections.includes("\u2014"), false);
+  assert.equal(sections.includes(" - "), false);
   const visuals = readFileSync(new URL("../components/docs/DocsVisuals.tsx", import.meta.url), "utf8");
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
   assert.equal(visuals.includes("\u2014"), false);
   assert.equal(diagrams.includes("\u2014"), false);
+  assert.equal(visuals.includes(" - "), false);
+  assert.equal(diagrams.includes(" - "), false);
 });
 
 test("every docs section has a diagram, visual, hook catalog, or formula", () => {

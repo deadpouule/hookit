@@ -252,7 +252,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
           id: t.id ?? `${t.txHash}-${i}`,
           ageSec: Math.max(0, Math.floor(Date.now() / 1000) - t.timestamp),
           t: t.timestamp,
-          recipient: t.actor ? `${t.actor.slice(0, 6)}…${t.actor.slice(-4)}` : " - ",
+          recipient: t.actor ? `${t.actor.slice(0, 6)}…${t.actor.slice(-4)}` : "·",
           side: t.side,
           amount: Number(t.tokenAmount) / 1e18,
           totalUsd,
