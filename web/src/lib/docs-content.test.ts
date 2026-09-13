@@ -100,6 +100,11 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.equal(blob.includes("Master (Launch Studio)"), false);
   assert.match(blob, /2,304 programmable hook combinations/);
   assert.match(blob, /Hold 1 \$HKT and you are exposed to every token launched/);
+  assert.equal(blob.includes("hookit is a permissionless Uniswap v4 launchpad"), false);
+  assert.equal(blob.includes("Master start FDV is about"), false);
+  assert.equal(blob.includes("Creator flow"), false);
+  assert.match(blob, /not financial advice/);
+  assert.match(blob, /"href":"\/terms"/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
   assert.equal(blob.includes("What is immutable"), false);
@@ -127,10 +132,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /docs-wizard-shot/);
   assert.match(visuals, /Create a hooked token/);
   assert.match(visuals, /DocsLaunchSteps/);
-  assert.match(visuals, /DocsCreatorEngine/);
+  assert.match(visuals, /classic-quotes/);
+  assert.match(visuals, /DocsBranchGraph/);
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
   assert.match(diagrams, /docs-hkt-schema/);
-  assert.match(diagrams, /docs-hkt-thesis-loop/);
   assert.match(diagrams, /DocsBranchGraph/);
   assert.match(diagrams, /hookit-owl-favicon/);
   const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");

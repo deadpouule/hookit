@@ -15,12 +15,7 @@ import {
   type MarketToken,
 } from "@/lib/market-tokens";
 import { parseHooksParam, parseQuoteParam, serializeHooksParam } from "@/lib/market-hook-filter";
-import {
-  buildMarketRankings,
-  filterBySort,
-  selectTrendingTokens,
-  sortTokens,
-} from "@/lib/market-rankings";
+import { filterBySort, sortTokens } from "@/lib/market-rankings";
 import type { SortKey } from "@/lib/market-rankings";
 import { poolsMatchingAnyMasterHooks, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
 import { isMultiPairPool } from "@/lib/pairing-badge";
@@ -34,7 +29,6 @@ import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
 import { MobileLaunchHero } from "./MobileLaunchHero";
 import { MobileStatsRow } from "./MobileStatsRow";
-import { TrendingStrip } from "./TrendingStrip";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -175,10 +169,6 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     return [];
   }, [liveLaunches, onChainPools]);
 
-  const rankings = useMemo(() => buildMarketRankings(sourceTokens), [sourceTokens]);
-
-  const trending = useMemo(() => selectTrendingTokens(sourceTokens), [sourceTokens]);
-
   const tokens = useMemo(() => {
     const q = query.trim().toLowerCase();
 
@@ -299,15 +289,6 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         <MobileLaunchHero />
         <MobileStatsRow />
       </div>
-
-      {trending.length > 0 ? (
-        <section id="party" className="market-trending scroll-mt-24">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="terminal-title text-sm font-semibold text-white">Trending now</h2>
-          </div>
-          <TrendingStrip tokens={trending} rankings={rankings} />
-        </section>
-      ) : null}
 
       <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 desk:pb-48">
         <header className="stonk-tokens-head hidden phone:flex">

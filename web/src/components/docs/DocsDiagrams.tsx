@@ -312,7 +312,7 @@ function HktBurnDiagram() {
           {HKT_POOL_HOOKS.map((item) => {
             const hook = hookFromId(item.id);
             return (
-              <li key={item.id} className={`docs-hkt-schema-hook orb-card--${hook.theme}`}>
+              <li key={item.id} className="docs-hkt-schema-hook">
                 <HookLogo hookId={hook.id} theme={hook.theme} />
                 <div>
                   <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
@@ -332,7 +332,6 @@ function HktBurnDiagram() {
         </div>
         <div className="docs-hkt-schema-token">
           <img src="/brand/hookit-owl-favicon.png" alt="" width={88} height={88} />
-          <small>Uniswap v4 Master</small>
         </div>
       </div>
       <p className="docs-schema-note">
@@ -344,48 +343,22 @@ function HktBurnDiagram() {
 }
 
 function HktLoopDiagram() {
-  const drops = [
-    { t: "$ARB", d: "that pool" },
-    { t: "$PEPE", d: "that pool" },
-    { t: "$HTEST", d: "that pool" },
-    { t: "…", d: "every launch" },
-  ];
-  const stages = [
-    { k: "you", t: "$HKT bag", d: "live balance, pro-rata" },
-    { k: "swap", t: "Any hooked swap", d: "1% quote fee" },
-    { k: "cut", t: "0.10% of the trade", d: "10% of the 1%, mandatory" },
-    { k: "buy", t: "Buy that ticker", d: "HktHolderDropVault" },
-  ];
   return (
-    <figure className="docs-schema">
-      <figcaption>Hold $HKT, get a slice of every launch</figcaption>
-      <div className="docs-hkt-thesis">
-        <ol className="docs-hkt-thesis-loop">
-          {stages.map((stage, i) => (
-            <li key={stage.k} className={`docs-hkt-thesis-node docs-hkt-thesis-node--${stage.k}`}>
-              <strong>{stage.t}</strong>
-              <span>{stage.d}</span>
-              {i < stages.length-1 ? (
-                <span className="docs-hkt-thesis-rail" aria-hidden>
-                  <i />
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ol>
-        <div className="docs-hkt-thesis-drops">
-          {drops.map((drop) => (
-            <div key={drop.t} className="docs-hkt-thesis-chip">
-              <strong>{drop.t}</strong>
-              <span>{drop.d}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <p className="docs-schema-note">
-        You do not receive $HKT from this flow. You receive the other tokens, pro-rata, each epoch.
-        More $HKT, larger slice. LP and protocol sinks are excluded.
-      </p>
-    </figure>
+    <DocsBranchGraph
+      caption="Hold $HKT, get a slice of every launch"
+      kicker="Every trade"
+      sources={[
+        { t: "$HKT bag", d: "Your live balance. Pro-rata weight." },
+        { t: "Any hooked swap", d: "1% quote fee. Master or graduated Classic." },
+      ]}
+      hub={{ t: "0.10% of the trade", d: "10% of the 1%. Mandatory." }}
+      outputs={[
+        { t: "Buy that ticker", d: "HktHolderDropVault spends quote on the pool." },
+        { t: "Epoch push", d: "Live $HKT holders. Not a snapshot." },
+        { t: "Every launch", d: "$ARB, $PEPE, the next ticker. Same weight." },
+        { t: "Not more $HKT", d: "You receive the other tokens." },
+      ]}
+      note="LP and protocol sinks are excluded so they do not eat the drop. More $HKT, larger slice."
+    />
   );
 }

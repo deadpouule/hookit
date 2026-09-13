@@ -9373,6 +9373,35 @@ h2.docs-hook-heading {
   color: #d8b4fe;
 }
 
+.docs-callout-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: -0.15rem 0 0.65rem;
+}
+
+.docs-callout-links a {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e879f9;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.docs-classic-quotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.docs-classic-quotes .pick-logo {
+  width: 2rem;
+  height: 2rem;
+}
+
 .docs-callout ul {
   margin: 0;
   padding-left: 1.1rem;
@@ -9702,24 +9731,17 @@ h2.docs-hook-heading {
 .docs-hkt-schema-token {
   display: grid;
   justify-items: center;
-  gap: 0.4rem;
-  padding: 1.1rem 0.9rem;
-  border-radius: 1.1rem;
-  border: 1px solid rgb(149 20 209 / 0.45);
-  background:
-    radial-gradient(circle at 50% 35%, rgb(232 121 249 / 0.16), transparent 70%),
-    #111;
+  padding: 0.2rem;
+  background: none;
+  border: none;
 }
 
 .docs-hkt-schema-token img {
   width: 5.5rem;
   height: 5.5rem;
-  object-fit: contain;
-}
-
-.docs-hkt-schema-token small {
-  color: #c4b5fd;
-  font-size: 0.68rem;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #000;
 }
 
 .docs-branch-kicker {
@@ -9993,10 +10015,7 @@ h2.docs-hook-heading {
 .docs-launch-walk-kicker,
 .docs-launch-walk-copy h4 {
   margin: 0 0 0.25rem;
-  background: linear-gradient(90deg, #9514d1 0%, #e879f9 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #d8b4fe;
 }
 
 .docs-launch-walk-kicker {
@@ -10052,6 +10071,17 @@ h2.docs-hook-heading {
   border-radius: 0.6rem;
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+.docs-launch-split span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.docs-launch-split .hook-logo {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .docs-launch-split span:first-child {
