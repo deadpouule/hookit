@@ -1,21 +1,22 @@
-# Hookit
+# hookit
 
-Permissionless Uniswap v4 launchpad on **Ink mainnet (57073)** with two rails:
+Permissionless Uniswap v4 launchpad on **Ink (57073)**. Live app: [hookit.fun](https://www.hookit.fun). Full protocol write-up (schemas, flywheel, formulas, hook logos): **[/docs](https://www.hookit.fun/docs)**.
 
-1. **Master (Hookit)** — atomic launch into a v4 pool with `MasterLaunchHook` modules (anti-snipe, floor, anti-MEV, Deepen LPs, auto-burn, …).
-2. **Classic (bonding)** — constant-product curve → graduate at **4.2 ETH** (or USDG/wStock equivalent) into a fee=0 v4 pool + `GraduatedFeeHook` + permanent `LiquidityLocker`.
+Two rails:
 
-There is no Hookit-seeded ETH/USDG LP. Protocol fees keep **ETH as ETH** for the buyback pot; **wStock** fees convert to **USDG** on Quotrons and are sent to the buyback wallet (`distributeToBuyback`). See `QuotronsInk.sol` / `FeeEthRail.stockToUsdg`.
+1. **Master** — `LaunchFactory` + `MasterLaunchHook`. Token, v4 pool, and locked in-range LP in one tx. Optional modules (anti-snipe, floor, Deepen LPs, burns, airdrop, dynamic fees, …).
+2. **Classic** — `BondingLaunchFactory` CPMM until **4.2 ETH-eq**, then a fee=0 v4 pool + `GraduatedFeeHook` + permanent locker.
+
+Fees are **quote-only**. The 1% base always splits **60% creator / 10% $HKT holders / 30% protocol**. Optional hook tax (capped so base + tax ≤ 10%) funds modules only. Protocol’s 30% then splits 20% ops / 80% native-token buyback. ETH stays ETH; wStock fees convert to USDG on Quotrons.
 
 ## Design
 
-1. **Master atomic launch.** `LaunchFactory.launch` deploys `LaunchToken`, initializes a Uniswap v4 pool, mints a locked unilateral position. Buys are live from block 0.
-2. **Classic bonding → graduate.** `BondingLaunchFactory` sells on a CPMM until 4.2 ETH-equiv is raised (or curve supply sold), then seeds full-range LP into the locker. Steady fees match Master: 1% base + creator tax, hard-capped at **10%** total.
-3. **Permanent LP lock.** Master reverts remove of the launch range; Classic LP is held by `LiquidityLocker` with no withdraw.
-4. **Hybrid hooks.** Default Master pools use the mined singleton. Optional `customHook` (allowlist can be enabled by owner). Classic uses `GraduatedFeeHook` (fee take + sweep).
-5. **Quote-only fees / flywheel.** 60% creator / 10% $HKT holders / 30% protocol of the base pool; the 10% buys the launched token and epoch-pushes it pro-rata to live $HKT holders. Protocol 20% ops / 80% HKIT buyback. HKIT is fair-launched as launch #1.
-6. **Backed floor.** Vault-backed `P_floor`; sells that sit at or would **cross** the floor are filled from the vault.
-7. **Ink.** Chain ID 57073, native ETH, Uniswap v4 PoolManager — see [Ink docs](https://docs.inkonchain.com/).
+1. **Atomic Master launch.** Buys live from block 0. Launch LP cannot be removed.
+2. **Classic bonding → graduate.** 80% sold on the curve; 20% seeds full-range LP.
+3. **Hybrid hooks.** Shared `MasterLaunchHook` bitmask. Custom Solidity hooks are **off** for the Ink soft launch.
+4. **Flywheel.** 10% of the 1% base buys the launched token for live $HKT holders. Protocol 80% buybacks the native token.
+5. **Backed floor.** `P_floor = V_quote / S_circ`. Ratchet never decreases. Redeem burns tokens for quote.
+6. **Quotes.** ETH, USDG, and Quotrons wrapped xStocks. No Hookit-seeded ETH/USDG LP.
 
 ### Hook flags (Master)
 
@@ -32,128 +33,52 @@ forge install
 cp .env.example .env
 ```
 
-RPC defaults to `https://sepolia.base.org` for tests; set `INK_RPC_URL` for Ink deploys. EVM: **cancun** (TSTORE/TLOAD). Solc: **0.8.26**.
-
-### Tests
+RPC defaults to `https://sepolia.base.org` for tests; set `INK_RPC_URL` for Ink. EVM: **cancun**. Solc: **0.8.26**.
 
 ```bash
 forge test -vv
 FOUNDRY_PROFILE=intense forge test --match-contract BackedFloorInvariant
-forge snapshot --match-contract MasterLaunchHookTest --snap .forge-snapshots
+cd web && npm run test:unit
 ```
 
-Fork tests (`ForkBaseSepolia`) fork live Base Sepolia Uniswap v4 (`PoolManager` at `0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408`) and skip if the RPC is unreachable. `BackedFloorInvariant.testFuzz_ratchetNeverDecreases` is configured for 10,000 fuzz runs.
+Fork tests (`ForkBaseSepolia`) skip if the RPC is down.
 
-Swap-path gas (local v4-core deploy):
-
-| Path | Gas |
-| --- | --- |
-| Standard buy | ~1.73M |
-| Anti-snipe buy | ~1.76M |
-| Floor-fill sell | ~1.92M |
-
-### Mine + deploy
-
-**Base Sepolia (integration / CI)**
+**Ink mainnet deploy** (do not point prod at a dry-run):
 
 ```bash
 forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
-  --rpc-url $BASE_SEPOLIA_RPC_URL \
-  --broadcast \
-  --verify \
-  --etherscan-api-key $BASESCAN_API_KEY
-```
-
-**Ink mainnet (production)** — deploys Master + Classic (`BondingLaunchFactory` / `GraduatedFeeHook`) + fair-launches HKIT:
-
-```bash
-forge script script/DeployHookitCore.s.sol:DeployHookitCoreScript \
-  --rpc-url $INK_RPC_URL \
-  --broadcast \
-  --verify \
+  --rpc-url $INK_RPC_URL --broadcast --verify \
   --etherscan-api-key $INK_EXPLORER_API_KEY
 ```
 
-Fork dry-run (no broadcast to real Ink):
+Live UI factories are hardcoded in `web/src/lib/contracts/config.ts` so Vercel env cannot silently hit an old vault. Soft-launch runbook: `SOFT_LAUNCH_INK.md`. Last forge sync: `deploy/ink/addresses.json` (may trail the UI cutover).
 
-```bash
-forge script script/DryRunInk.s.sol:DryRunInkScript \
-  --fork-url $INK_RPC_URL \
-  --disable-code-size-limit -vv
-```
-
-Smoke launch + swap (Base Sepolia only):
-
-```bash
-forge script script/DeployBaseSepolia.s.sol:DeployBaseSepoliaScript \
-  --rpc-url $BASE_SEPOLIA_RPC_URL \
-  --broadcast
-```
-
-Uniswap v4 on **Ink mainnet**:
+Uniswap v4 on **Ink**:
 
 | Contract | Address |
 | --- | --- |
 | PoolManager | `0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32` |
 | PositionManager | `0x1b35d13a2E2528f192637F14B05f0Dc0e7dEB566` |
 | Universal Router | `0x112908daC86e20e7241B0927479Ea3Bf935d1fa0` |
-| USDG (stable quote) | `0xe343167631d89B6Ffc58B88d6b7fB0228795491D` |
-
-### Composite buy (deferred)
-
-Pools are quoted in **ETH**, **USDG**, or **Quotrons wrapped equities** (`wAAPLx`, `wNVDAx`, …). Composite buys (`swapExactInComposite`) route payment → quote on an allowed bridge (zero-hook **or** Quotrons stock hook), then quote → launch token on the Hookit pool.
-
-When paying USDG for a wStock-quoted launch, leg 1 uses the Quotrons wStock/USDG market (dynamic fee `0x800000`); leg 2 swaps on the Hookit pool.
-
-Protocol fees: **ETH** → 20% ops / 80% `buybackEth` (HKIT buyback). **wStock** → Quotrons swap to **USDG**, then 20% ops / 80% sent to `buybackExecutor` as USDG. Direct **USDG** fees split the same way. No USDG→ETH hop required.
-
-Production stock pairs use **[Quotrons wrapped xStocks](https://quotrons.cash/integration/xstocks-manifest.json)** on Ink (not raw Backed xStocks, not Coinbase B20). `DeployHookitCore` seeds 8 majors via `QuotronStockQuotes`. **wStock USD for FDV / graduation is read live from the Quotrons V4 pool `sqrtPriceX96`** (USDG ≈ $1); hardcoded / xStocks API snapshots are fallback only. ETH/USD still comes from Chainlink (`syncEthUsdPrice`). Base Sepolia tests use `MockQuoteToken` stand-ins (`DeploySepoliaStockQuotes.s.sol`).
-
-Uniswap v4 on **Base Sepolia** (testnet):
-
-| Contract | Address |
-| --- | --- |
-| PoolManager | `0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408` |
-| PositionManager | `0x4b2c77d209d3405f41a037ec6c77f7f5b8e2ca80` |
-| PoolSwapTest | `0x8b5bcc363dde2614281ad875bad385e0a785d3b9` |
+| USDG | `0xe343167631d89B6Ffc58B88d6b7fB0228795491D` |
 
 ## Layout
 
 ```
-src/          protocol contracts, interfaces, libraries
-web/          Next.js front-end (Launch Studio + Explore)
-script/       CREATE2 miner + chain-aware deploy (Ink / Base Sepolia)
-test/         unit, invariant (ΔP_floor ≥ 0), fork
+src/          protocol contracts
+web/          Next.js (marketplace, wizard, /docs)
+indexer/      house indexer (charts / trades / holders)
+script/       CREATE2 + Ink / Base Sepolia deploys
+test/         unit, invariant, fork
 ```
-
-### Front-end (`web/`)
 
 ```bash
 cd web && npm install && npm run dev
-```
-
-Pages: `/explore`, `/launch`, `/floor`. Stack: Next.js App Router, Tailwind v4, shadcn/ui, Framer Motion, Lucide.
-
-### Indexer (`indexer/`)
-
-House indexer (Pons-grade charts / recent trades / holders) — not The Graph. See `indexer/README.md`.
-
-```bash
 cd indexer && npm install && npm run serve
 ```
 
-Front proxies via `/api/indexer/*` when `INDEXER_URL` points at the service.
+Self-host: `deploy/linode/README.md`.
 
-### Self-host (Linode / VPS)
+## Security
 
-Web + indexer + server-side custom hook deploy (`forge`) on one box: **`deploy/linode/README.md`**.
-
-```bash
-./deploy/linode/bootstrap.sh   # once on Ubuntu
-cp deploy/linode/env.production.example /opt/hookit/.env
-./deploy/linode/deploy.sh
-```
-
-## Security notes
-
-This is unaudited reference implementation. Custom hooks are untrusted. Anti-MEV uses transient storage (same tx) plus a per-origin block guard. Floor fills currently trigger when *spot is already at or below* `P_floor`; a swap that *crosses* the floor in one tick still trades on the curve until the next swap.
+Unaudited reference implementation. Custom hooks (when enabled) are untrusted. Anti-MEV is same-tx TSTORE plus a per-origin block lock. Floor fills help when spot is already on the floor path — a single swap that crosses many ticks can still trade on the curve until the next one.

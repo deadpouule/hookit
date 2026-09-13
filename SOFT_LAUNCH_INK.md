@@ -1,7 +1,9 @@
 # Soft launch prep — Ink mainnet (57073)
 
-Canonical addresses: [`deploy/ink/addresses.json`](deploy/ink/addresses.json).  
-Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
+Canonical **UI** addresses live in [`web/src/lib/contracts/config.ts`](web/src/lib/contracts/config.ts) (they win over stale Vercel env).  
+Last forge sync dump: [`deploy/ink/addresses.json`](deploy/ink/addresses.json) — may trail a newer factory cutover.  
+Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).  
+Protocol docs: [hookit.fun/docs](https://www.hookit.fun/docs).
 
 ## Status
 
@@ -16,21 +18,22 @@ Script env template: [`deploy/ink/env.ink.example`](deploy/ink/env.ink.example).
 | Hosted indexer | Linode — `https://indexer.hookit.fun` |
 | WalletConnect project ID | Required before public UI |
 
-## Live addresses (57073)
+## Live addresses the UI uses (57073)
+
+From `web/src/lib/contracts/config.ts`:
 
 | Contract | Address |
 | --- | --- |
-| **LaunchFactory** | `0x480bfb88985fb94f4345ed4bb2ec267db9ab9626` |
-| **BondingLaunchFactory** | `0x13d6216a92b013daacd36e4f6d78ad9264af1a0c` |
-| **HookitSwapRouter** | `0x145a1e9960f309991de920dde8fc2e4902f33325` |
-| **MasterLaunchHook** | `0x2d936fcc92cbc7c33eebba0c9787f9256274eac8` |
-| **GraduatedFeeHook** | `0x9558f74e81377ee0be24fbad660377b100266088` |
-| **Native token (HOOKTEST / HTST)** | `0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8` |
-| **ProtocolRevenueDistributor** | `0x4149509d2293a61cb199e17227740eebfadd30c6` |
-| **HkitBuyback** | `0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb` |
-| **BuybackVault** (hook immutable) | `0x067f28dac32aa69362ef8c70fa3de76541f50bf6` |
-| **HolderAirdropVault** (hook immutable) | `0x80c83d9761bca8693ad350f3347ab109103a104c` |
-| **FeeEthRail** (distributor.feeRail) | `0xd9d24028a3a2dc0874b5d4f10c2770150a719acb` |
+| **LaunchFactory** | `0xdca9ccee27dc12256818deff316ba4b972b087a7` |
+| **LaunchFactoryQuery** | `0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0` |
+| **BondingLaunchFactory** | `0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3` |
+| **HookitSwapRouter** | `0x6889635f39c472802abde7db791f2ea48090091a` |
+| **V4ClaimsRedeemer** | `0xb497aa20c231a234f24fe28f412b8637608661fb` |
+| **ProtocolRevenueDistributor** | `0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179` |
+| **HkitBuyback** | `0xa52e86ee01695d9f4883c48eff2972cf4be1c941` |
+| **Native token** | `0x964ce443c5e111ea1b87a70166c6894af3eddb08` |
+
+Previous factory generations stay on-chain for historical tokens. `deploy/ink/addresses.json` lists older stacks. Do not point new launches at them.
 
 `INDEXER_START_BLOCK=55204587`
 
@@ -59,27 +62,30 @@ forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-
 
 ## Flip Vercel / Linode env
 
-**Vercel (UI):** https://hookit.fun / https://hookit-five.vercel.app/
+**Vercel (UI):** https://www.hookit.fun
+
+On Ink the UI **ignores** stale `NEXT_PUBLIC_LAUNCH_FACTORY` and uses `web/src/lib/contracts/config.ts`. Still set these so other tools stay aligned:
 
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
 NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
-NEXT_PUBLIC_LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626
-NEXT_PUBLIC_BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c
-NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x145a1e9960f309991de920dde8fc2e4902f33325
-NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x4149509d2293a61cb199e17227740eebfadd30c6
-NEXT_PUBLIC_HKIT_BUYBACK=0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb
-NEXT_PUBLIC_NATIVE_TOKEN=0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8
+NEXT_PUBLIC_LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7
+NEXT_PUBLIC_LAUNCH_FACTORY_QUERY=0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0
+NEXT_PUBLIC_BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3
+NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a
+NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179
+NEXT_PUBLIC_HKIT_BUYBACK=0xa52e86ee01695d9f4883c48eff2972cf4be1c941
+NEXT_PUBLIC_NATIVE_TOKEN=0x964ce443c5e111ea1b87a70166c6894af3eddb08
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
 INDEXER_URL=https://indexer.hookit.fun
 ```
 
-**Linode `/opt/hookit/.env`:**
+**Linode `/opt/hookit/.env`:** keep historical factories in the indexer store. Point *new* polls at the current pair:
 
 ```
-LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626
-BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c
-INDEXER_START_BLOCK=55204587
+LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7
+BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3
+INDEXER_START_BLOCK=55566276
 INK_RPC_URL=https://rpc-gel.inkonchain.com
 INDEXER_DATA_DIR=/var/lib/hookit-indexer
 ```
@@ -91,12 +97,12 @@ After changing factory addresses, retain the existing `hookit-57073.json` store 
 
 ```bash
 # Classic bonding
-BONDING_FACTORY=0x13d6216a92b013daacd36e4f6d78ad9264af1a0c \
+BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3 \
   forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # Master + modules matrix
-LAUNCH_FACTORY=0x480bfb88985fb94f4345ed4bb2ec267db9ab9626 \
-  HOOKIT_SWAP_ROUTER=0x145a1e9960f309991de920dde8fc2e4902f33325 \
+LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
+  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
   forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 ```
 

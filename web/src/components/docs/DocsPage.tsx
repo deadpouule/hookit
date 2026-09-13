@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { HookitLogo } from "@/components/brand/HookitLogo";
+import { DocsDiagram, DocsHookCatalog } from "@/components/docs/DocsDiagrams";
 import {
   buildDocsSections,
   DOCS_NAV,
@@ -87,6 +89,48 @@ function DocsBlockView({ block }: { block: DocsBlock }) {
           <span>{block.label}</span>
         </div>
       );
+    case "diagram":
+      return <DocsDiagram id={block.id} />;
+    case "hooks":
+      return <DocsHookCatalog />;
+    case "formulas":
+      return (
+        <figure className="docs-formulas">
+          {block.title && <figcaption>{block.title}</figcaption>}
+          <ul>
+            {block.items.map((item) => (
+              <li key={item.name}>
+                <code className="docs-formula-name">{item.name}</code>
+                <code className="docs-formula-math">{item.math}</code>
+                {item.note && <p>{item.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </figure>
+      );
+    case "table":
+      return (
+        <div className="docs-table-wrap">
+          <table className="docs-table">
+            <thead>
+              <tr>
+                {block.headers.map((header) => (
+                  <th key={header}>{header}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row) => (
+                <tr key={row.join("|")}>
+                  {row.map((cell) => (
+                    <td key={cell}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     default:
       return null;
   }
@@ -128,12 +172,29 @@ export function DocsPage() {
     <div className="docs-page">
       <div className="market-shell docs-shell">
         <header className="docs-hero">
-          <p className="docs-eyebrow">hook it docs</p>
-          <h1 className="docs-hero-title">Everything about hook it, in one place.</h1>
+          <p className="docs-eyebrow">
+            <HookitLogo size="sm" />
+            hookit docs
+          </p>
+          <h1 className="docs-hero-title">Protocol, flywheel, and formulas.</h1>
           <p className="docs-hero-lede">
-            How to launch, trade, and stay safe on {network}. Plain language. no custody, no hidden steps.
+            Dual-rail Uniswap v4 launchpad on {network}. Quote-only fees, locked LP, modular hooks.
+            No custody. No hidden steps.
           </p>
         </header>
+
+        <nav className="docs-toc-mobile" aria-label="Documentation sections">
+          {DOCS_NAV.flatMap((group) => group.items).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => scrollTo(item.id)}
+              className={cn(active === item.id && "is-active")}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
         <div className="docs-layout">
           <aside className="docs-sidebar">
