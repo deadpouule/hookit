@@ -7,8 +7,10 @@ ENV_FILE="${HOOKIT_ENV:-${ROOT}/.env}"
 
 if [[ -f "${ENV_FILE}" ]]; then
   set -a
+  set +u
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
+  set -u
   set +a
 fi
 

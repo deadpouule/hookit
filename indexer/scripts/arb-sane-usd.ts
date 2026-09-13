@@ -108,13 +108,19 @@ export async function rankLaunchMarkets(
     const quote = quotes[i]!;
     const key = poolKeys[i]!;
     const tokenIs0 = key.currency0.toLowerCase() === token.toLowerCase();
-    const slot = await publicClient.readContract({
-      address: STATE_VIEW_INK,
-      abi: stateViewAbi,
-      functionName: "getSlot0",
-      args: [poolIdFromKey(key)],
-    });
-    const sqrt = (slot as readonly [bigint])[0];
+    let sqrt = 0n;
+    try {
+      const slot = await publicClient.readContract({
+        address: STATE_VIEW_INK,
+        abi: stateViewAbi,
+        functionName: "getSlot0",
+        args: [poolIdFromKey(key)],
+      });
+      sqrt = (slot as readonly [bigint])[0];
+    } catch (err) {
+      console.error(`[arb-sane] getSlot0 failed market ${i} ${quoteLabel(quote)}`, err);
+      continue;
+    }
     const quoteWei = quoteFromTokenWei(10n ** 18n, sqrt, tokenIs0);
     const quoteHuman = Number(quoteWei) / 1e18;
     const factoryUsd = factoryUsdByQuote.get(quote.toLowerCase()) ?? 0;
@@ -123,6 +129,8 @@ export async function rankLaunchMarkets(
     const fdvUsd = quoteHuman * TOTAL_SUPPLY * usd;
     markets.push({ index: i, quote, fdvUsd, factoryUsd, saneUsd: usd });
   }
+
+  if (markets.length < 2) return null;
 
   let cheap = markets[0]!;
   let rich = markets[0]!;

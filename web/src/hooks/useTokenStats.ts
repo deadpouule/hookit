@@ -44,6 +44,14 @@ export type TokenDeskStats = {
 };
 
 function resolveEthUsd(pool: TokenPool): number {
+  if (
+    (!pool.quoteAddress || pool.quoteAddress === zeroAddress || pool.quoteAsset === "ETH") &&
+    pool.quoteUsd &&
+    pool.quoteUsd > 100 &&
+    pool.quoteUsd < 1_000_000
+  ) {
+    return pool.quoteUsd;
+  }
   if (pool.priceEth && pool.priceEth > 0 && pool.marketCap > 0) {
     const implied = pool.marketCap / (pool.priceEth * TOTAL_SUPPLY);
     if (implied > 100 && implied < 1_000_000) return implied;

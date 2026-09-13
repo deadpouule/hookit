@@ -220,6 +220,16 @@ async function readPoolKey(
 
 /** Spend spendable USDG → cheap wStock. Skip when Quotrons USD is an outlier (would overpay 10x). */
 async function prefundCheapFromUsdg(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  opts: {
+    router: Address;
+    cheapQuote: Address;
+    usdgBuySane: boolean;
+    account: Address;
+    sendTo: Address;
+  },
+): Promise<bigint> {
   const { router, cheapQuote, usdgBuySane, account, sendTo } = opts;
   if (!usdgBuySane) {
     console.log(
@@ -522,6 +532,7 @@ async function main() {
   }
 
   for (const launchId of launchIds) {
+    try {
     const preview = await readPreview(publicClient, executor, launchId);
     logPreview(launchId, preview);
     if (preview.marketCount < 2) continue;
@@ -650,8 +661,11 @@ async function main() {
           args: [launchId],
         })) as Hash;
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
-        if (receipt.status !== "success") throw new Error(`execute(${launchId}) reverted (${hash})`);
-        console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
+        if (receipt.status !== "success") {
+          console.error(`[arb-keeper] execute(${launchId}) reverted (${hash})`);
+        } else {
+          console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
+        }
       }
     } else {
       const cheapOnKeeper = await readErc20Balance(publicClient, sane.cheapQuote, account.address);
@@ -710,6 +724,9 @@ async function main() {
       sane.cheapQuote,
       "[arb-keeper] post-arb ",
     );
+    } catch (err) {
+      console.error(`[arb-keeper] launch ${launchId} FAILED`, err);
+    }
   }
 
   if (!dryRun) {

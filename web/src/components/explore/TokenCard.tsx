@@ -46,7 +46,12 @@ export function TokenCard({
     pool.marketCap > 0
       ? pool.marketCap
       : pool.priceEth && pool.priceEth > 0
-        ? marketCapUsdForPool(pool.priceEth, pool, DEFAULT_LAUNCH_ETH_USD, pool.quoteUsd)
+        ? marketCapUsdForPool(
+            pool.priceEth,
+            pool,
+            pool.quoteUsd && pool.quoteUsd > 0 ? pool.quoteUsd : DEFAULT_LAUNCH_ETH_USD,
+            pool.quoteUsd,
+          )
         : TARGET_LAUNCH_MCAP_USD;
 
   const copyAddress = async (e: React.MouseEvent) => {
