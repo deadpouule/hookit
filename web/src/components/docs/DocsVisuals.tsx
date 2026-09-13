@@ -244,11 +244,11 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <text x="64" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
               cheap USD
             </text>
-            <rect x="128" y="44" width="104" height="64" rx="12" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.5)" />
-            <text x="180" y="70" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
+            <rect x="128" y="28" width="104" height="64" rx="12" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.5)" />
+            <text x="180" y="54" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
               Keeper
             </text>
-            <text x="180" y="88" textAnchor="middle" fill="#c4b5fd" fontSize="8">
+            <text x="180" y="72" textAnchor="middle" fill="#c4b5fd" fontSize="8">
               one unlock
             </text>
             <rect x="244" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(244 63 94 / 0.45)" />
@@ -258,12 +258,12 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <text x="296" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
               rich USD
             </text>
-            <path d="M116 60 L126 60" stroke="#7dd3fc" strokeWidth="1.6" />
-            <path d="M232 76 L244 60" stroke="#fb7185" strokeWidth="1.6" />
+            <path d="M116 60 L128 60" stroke="#7dd3fc" strokeWidth="1.6" />
+            <path d="M232 60 L244 60" stroke="#fb7185" strokeWidth="1.6" />
             <text x="122" y="52" fill="#7dd3fc" fontSize="8">
               buy
             </text>
-            <text x="228" y="52" textAnchor="end" fill="#fb7185" fontSize="8">
+            <text x="238" y="52" textAnchor="end" fill="#fb7185" fontSize="8">
               sell
             </text>
             <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="10">
@@ -368,7 +368,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               stroke="#ef4444"
               labels={[
                 { x: 16, y: 14, text: "τ0 98%" },
-                { x: 292, y: 104, text: "T = 5s → 0" },
+                { x: 344, y: 88, text: "T = 5s → 0", anchor: "end" },
               ]}
             />
           </div>

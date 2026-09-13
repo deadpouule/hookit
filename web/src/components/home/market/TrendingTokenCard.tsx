@@ -5,7 +5,6 @@ import { Flame, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
-import { HookitLogo } from "@/components/brand/HookitLogo";
 import { changeTone, formatPercent } from "@/lib/format";
 import type { MarketToken } from "@/lib/market-tokens";
 import { tokenHref } from "@/lib/routes";
@@ -79,10 +78,7 @@ export function TrendingTokenCard({ token, isTop, isTrending }: TrendingTokenCar
             )}
           </div>
           <div className="trending-card-ticker-row">
-            <p className="trending-card-ticker">
-              <HookitLogo size="xs" className="trending-card-brand-logo" />
-              ${token.ticker}
-            </p>
+            <p className="trending-card-ticker">${token.ticker}</p>
             <CopyContractButton token={token} />
           </div>
           <TokenTypeBadges token={token} />

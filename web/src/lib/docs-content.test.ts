@@ -102,6 +102,8 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /quote accrued into BuybackVault/);
   assert.equal(blob.includes("Master (Launch Studio)"), false);
   assert.match(blob, /2,304 programmable hook combinations/);
+  assert.match(blob, /Hookit is the first Uniswap v4 launchpad/);
+  assert.equal(blob.includes("hookit is the first"), false);
   assert.match(blob, /Hold 1 \$HKT and you are exposed to every token launched/);
   assert.equal(blob.includes("hookit is a permissionless Uniswap v4 launchpad"), false);
   assert.equal(blob.includes("Master start FDV is about"), false);
@@ -132,6 +134,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /Until FDV/);
   assert.match(visuals, /Retail 0\.2 ETH/);
   assert.match(visuals, /case "arb-keeper"/);
+  assert.match(visuals, /<rect x="128" y="28"/);
+  assert.equal(visuals.includes('<rect x="128" y="44"'), false);
+  assert.match(visuals, /T = 5s → 0/);
+  assert.equal(visuals.includes("y: 104, text: \"T = 5s"), false);
   assert.match(visuals, /docs-wizard-shot/);
   assert.match(visuals, /Create a hooked token/);
   assert.match(visuals, /DocsLaunchSteps/);
