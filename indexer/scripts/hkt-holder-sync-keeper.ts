@@ -32,8 +32,18 @@ const vaultAbi = parseAbi([
   "function hkt() view returns (address)",
   "function holderCount() view returns (uint256)",
   "function potOf(address token) view returns (uint256)",
+  "function excluded(address account) view returns (bool)",
   "function syncHolders(address[] accounts)",
   "function tryPush(address token) returns (bool)",
+]);
+
+const erc20Abi = parseAbi(["function balanceOf(address account) view returns (uint256)"]);
+
+/** Protocol sinks that must never receive HTST-weighted drops (LP, factory, vaults). */
+const DEFAULT_EXCLUDED = new Set([
+  "0x360e68faccca8ca495c1b759fd9eee466db9fb32", // PoolManager (v4 LP)
+  "0x0000000000000000000000000000000000000000",
+  "0x000000000000000000000000000000000000dead",
 ]);
 
 const transferEvent = parseAbiItem(
@@ -62,6 +72,41 @@ function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+}
+
+function excludedSet(): Set<string> {
+  const out = new Set(DEFAULT_EXCLUDED);
+  const raw = process.env.HKT_SYNC_EXCLUDE?.trim();
+  if (!raw) return out;
+  for (const part of raw.split(",")) {
+    const a = part.trim().toLowerCase();
+    if (a && isAddress(a)) out.add(a);
+  }
+  return out;
+}
+
+async function filterEligibleHolders(
+  publicClient: ReturnType<typeof createPublicClient>,
+  htst: Address,
+  vault: Address,
+  candidates: Address[],
+): Promise<Address[]> {
+  const skip = excludedSet();
+  const eligible: Address[] = [];
+
+  for (const account of candidates) {
+    const key = account.toLowerCase();
+    if (skip.has(key)) continue;
+
+    const [excluded, balance] = await Promise.all([
+      publicClient.readContract({ address: vault, abi: vaultAbi, functionName: "excluded", args: [account] }),
+      publicClient.readContract({ address: htst, abi: erc20Abi, functionName: "balanceOf", args: [account] }),
+    ]);
+    if (excluded || balance === 0n) continue;
+    eligible.push(account);
+  }
+
+  return eligible;
 }
 
 async function fetchIndexerHolders(htst: Address, baseUrl: string): Promise<Address[]> {
@@ -140,7 +185,9 @@ async function main() {
   }
 
   holders = [...new Set(holders.map((a) => a.toLowerCase()))].map((a) => a as Address);
-  console.log(`[hkt-sync] ${holders.length} HTST holder candidate(s)`);
+  const before = holders.length;
+  holders = await filterEligibleHolders(publicClient, htst, vault, holders);
+  console.log(`[hkt-sync] ${holders.length} eligible wallet holder(s) (${before} transfer touch(es) before filter)`);
 
   const keyRaw = keeperKeyRaw();
   const account = keyRaw
