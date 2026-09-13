@@ -264,6 +264,84 @@ async function prefundExecutorCheapLeg(
   console.log(`[arb-keeper] prefund ok — sent ${stockOut} wei ${cheapQuote} to executor`);
 }
 
+async function cheapQuoteForMarket(
+  publicClient: ReturnType<typeof createPublicClient>,
+  factory: Address,
+  launchId: bigint,
+  marketIndex: number,
+): Promise<Address> {
+  const launch = await publicClient.readContract({
+    address: factory,
+    abi: launchFactoryAbi,
+    functionName: "launches",
+    args: [launchId],
+  });
+  const token = (launch as readonly [Address])[0];
+  const cheapKey = await readPoolKey(publicClient, factory, launchId, marketIndex);
+  return poolQuoteAddress(cheapKey, token);
+}
+
+async function ensureExecutorFunded(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  opts: {
+    factory: Address;
+    executor: Address;
+    router: Address;
+    launchId: bigint;
+    maxClipUsdX18: bigint;
+    account: Address;
+    sweepUsdg: boolean;
+    preview: ArbPreview;
+  },
+): Promise<ArbPreview> {
+  let preview = opts.preview;
+
+  for (let round = 0; round < 2; round++) {
+    const cheapQuote = await cheapQuoteForMarket(
+      publicClient,
+      opts.factory,
+      opts.launchId,
+      preview.cheapIndex,
+    );
+
+    if (opts.sweepUsdg) {
+      await sweepStocksToUsdg(publicClient, walletClient, opts.router, opts.account, {
+        executor: opts.executor,
+        keepOnExecutor: [cheapQuote],
+      });
+    }
+
+    const execBal = await readErc20Balance(publicClient, cheapQuote, opts.executor);
+    if (execBal === 0n) {
+      await prefundExecutorCheapLeg(publicClient, walletClient, {
+        factory: opts.factory,
+        executor: opts.executor,
+        router: opts.router,
+        launchId: opts.launchId,
+        cheapIndex: preview.cheapIndex,
+        maxClipUsdX18: opts.maxClipUsdX18,
+        account: opts.account,
+      });
+    } else {
+      console.log(
+        `[arb-keeper] executor already holds ${execBal} wei ${cheapQuote} for cheap leg ${preview.cheapIndex}`,
+      );
+    }
+
+    preview = await readPreview(publicClient, opts.executor, opts.launchId);
+    const execBalAfter = await readErc20Balance(publicClient, cheapQuote, opts.executor);
+    console.log(
+      `[arb-keeper] fund round ${round + 1}/2 cheap=${preview.cheapIndex}` +
+        ` execBal=${execBalAfter} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
+    );
+
+    if (preview.executable || preview.clipQuoteWei > 0n) break;
+  }
+
+  return preview;
+}
+
 async function main() {
   const enabled = envBool("MULTI_PAIR_ARB", false);
   if (!enabled) {
@@ -338,9 +416,9 @@ async function main() {
     hasKeeperKey ? account.address : "not configured",
   );
 
-  // Recycle stranded wStock (wrong prefund leg or prior partial run) before scanning.
+  // Recycle keeper / executor wStock → USDG (skip tick-bound pools e.g. wNFLX dust).
   if (sweepUsdg && router && !dryRun) {
-    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
+    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, { executor });
   }
 
   let launchIds: bigint[];
@@ -377,32 +455,16 @@ async function main() {
       preview.cheapIndex !== preview.richIndex;
 
     if (!preview.executable && skewed && prefundUsdg && router && !dryRun) {
-      // Wrong-leg wStock strands on the executor when cheap/rich flips — recycle to USDG first.
-      if (sweepUsdg) {
-        await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
-      }
-      const maxPrefundAttempts = 3;
-      for (let attempt = 1; attempt <= maxPrefundAttempts; attempt++) {
-        if (preview.executable) break;
-        await prefundExecutorCheapLeg(publicClient, walletClient, {
-          factory: factoryAddr,
-          executor,
-          router,
-          launchId,
-          cheapIndex: preview.cheapIndex,
-          maxClipUsdX18: maxClip,
-          account: account.address,
-        });
-        preview = await readPreview(publicClient, executor, launchId);
-        console.log(
-          `[arb-keeper] after prefund launch ${launchId} attempt=${attempt}/${maxPrefundAttempts}` +
-            ` cheap=${preview.cheapIndex} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
-        );
-        if (preview.executable || preview.clipQuoteWei > 0n) break;
-        if (attempt < maxPrefundAttempts && sweepUsdg) {
-          await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
-        }
-      }
+      preview = await ensureExecutorFunded(publicClient, walletClient, {
+        factory: factoryAddr,
+        executor,
+        router,
+        launchId,
+        maxClipUsdX18: maxClip,
+        account: account.address,
+        sweepUsdg,
+        preview,
+      });
     } else if (!preview.executable && skewed && prefundUsdg && dryRun) {
       console.log(`[arb-keeper] dry-run would prefund cheap leg from keeper USDG for launch ${launchId}`);
     }
@@ -424,13 +486,13 @@ async function main() {
     console.log(`[arb-keeper] ok execute ${launchId} ${hash}`);
 
     if (sweepUsdg && router) {
-      await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
+      await sweepStocksToUsdg(publicClient, walletClient, router, account.address, { executor });
     }
   }
 
   // Rich-leg arb output is wStock — always end in USDG on the keeper for the next prefund.
   if (sweepUsdg && router && !dryRun) {
-    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, executor);
+    await sweepStocksToUsdg(publicClient, walletClient, router, account.address, { executor });
   }
 
   console.log("[arb-keeper] ARB_KEEPER_OK");

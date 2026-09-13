@@ -25,6 +25,90 @@ function sqrtPriceLimit(zeroForOne: boolean): bigint {
   return zeroForOne ? MIN_SQRT_PRICE + 1n : MAX_SQRT_PRICE - 1n;
 }
 
+async function quotronSqrtPrice(
+  publicClient: ReturnType<typeof createPublicClient>,
+  stock: Address,
+): Promise<bigint | null> {
+  const poolId = QUOTRON_POOL_BY_STOCK.get(stock.toLowerCase());
+  if (!poolId) return null;
+  try {
+    const slot = await publicClient.readContract({
+      address: STATE_VIEW_INK,
+      abi: stateViewAbi,
+      functionName: "getSlot0",
+      args: [poolId],
+    });
+    return (slot as readonly [bigint])[0];
+  } catch {
+    return null;
+  }
+}
+
+/** Stock→USDG reverts when the Quotrons pool is already at the v4 min/max tick. */
+export async function canSwapStockToUsdg(
+  publicClient: ReturnType<typeof createPublicClient>,
+  stock: Address,
+): Promise<boolean> {
+  const sqrt = await quotronSqrtPrice(publicClient, stock);
+  if (sqrt == null) return true;
+  const zeroForOne = quotronZeroForOne(stock, stock);
+  if (zeroForOne && sqrt <= MIN_SQRT_PRICE + 1n) return false;
+  if (!zeroForOne && sqrt >= MAX_SQRT_PRICE - 1n) return false;
+  return true;
+}
+
+export type SweepOptions = {
+  executor?: Address;
+  /** Leave these quote tokens on the executor (cheap-leg prefund inventory). */
+  keepOnExecutor?: Address[];
+};
+
+const STATE_VIEW_INK = "0x76Fd297e2D437cd7f76d50F01AfE6160f86e9990" as Address;
+
+/** wStock address (lower) → Quotrons wStock/USDG pool id. */
+const QUOTRON_POOL_BY_STOCK = new Map<string, Hex>([
+  [
+    "0x943bf64d566c32a2bcd41ac92fb63c111cc9de8f",
+    "0x0ef0fe35389f4104afef27864010022976ed1b924e8837b30f308255d07d3092",
+  ],
+  [
+    "0x910cabde3eba7fc1ce64fd14bd680b9f60fa0f90",
+    "0xc113916ee057276dfd79b4ff4a29be5e98703e410923e4a61e95ccf459223a38",
+  ],
+  [
+    "0xf8c5308f80e459bb53d9ebe689854d9cbb2caa6f",
+    "0x5ec6f9fc8178f8b3a9c09b56d073a4503a5ea3f127ece3e8a8d1579c0cf9c3b2",
+  ],
+  [
+    "0xc6639026a3a862cd4fcbae3f67cb2d25a2959d37",
+    "0x020595993f159c9865966f8762ebdba88c2cf465bb4af72b512eb3559f430254",
+  ],
+  [
+    "0x30987adf0b11dc698438a99ba04ec3a1ab2c7eab",
+    "0xb7add80f794d65c978346f9e929971d2f12b4f862c89f4c14201872819a39a7d",
+  ],
+  [
+    "0x7d87fd6a379714194a797c0bbb8b40c30d250856",
+    "0x9f11034d6b2a7bfea38a0c39548c590e4aabd215ffa2b6bbe9bacd29e40238b6",
+  ],
+  [
+    "0xa8ddb5cd96b5222afe198316e9a57caa642850d5",
+    "0xebe5d3cc94d87cf07cf06c969ca82a67760697535c57800350e210df8547cd11",
+  ],
+  [
+    "0xe7e553cd128f0011777323a0b44a7b96ea1cb540",
+    "0x84b421dc355c6c003fcf4f8100691eddaa0319deb894acb7e9bbf633621694a7",
+  ],
+  [
+    "0xc3fdbe3a68ee5de461d30415a8165cf9aefe1171",
+    "0x131ebb0eb148451d7225a52e94a8257b69976e780ebce1615aadf47d8e2aaf19",
+  ],
+]);
+
+const stateViewAbi = parseAbi([
+  "function getSlot0(bytes32 id) view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)",
+]);
+
 /** Matches QuotronStockQuotes.listings() on Ink. */
 export const QUOTRON_STOCKS: Address[] = [
   "0x943BF64D566c32A2Bcd41AC92FB63C111cC9De8f",
@@ -233,15 +317,24 @@ export async function withdrawExecutorErc20(
  * Arb output lands on the rich leg (often a different wStock than prefund) — always
  * recycle to USDG so the keeper can prefund the next cheap leg.
  */
+function keepOnExecutor(stock: Address, keep?: Address[]): boolean {
+  if (!keep?.length) return false;
+  const key = stock.toLowerCase();
+  return keep.some((a) => a.toLowerCase() === key);
+}
+
 export async function sweepStocksToUsdg(
   publicClient: ReturnType<typeof createPublicClient>,
   walletClient: ReturnType<typeof createWalletClient>,
   router: Address,
   keeper: Address,
-  executor?: Address,
+  options?: SweepOptions,
 ): Promise<void> {
+  const executor = options?.executor;
+  const keep = options?.keepOnExecutor;
+
   for (const stock of QUOTRON_STOCKS) {
-    if (executor) {
+    if (executor && !keepOnExecutor(stock, keep)) {
       const execBal = await readErc20Balance(publicClient, stock, executor);
       if (execBal > 0n) {
         const pulled = await withdrawExecutorErc20(
@@ -262,6 +355,13 @@ export async function sweepStocksToUsdg(
 
     const keeperBal = await readErc20Balance(publicClient, stock, keeper);
     if (keeperBal === 0n) continue;
+
+    if (!(await canSwapStockToUsdg(publicClient, stock))) {
+      console.log(
+        `[arb-usdg] skip sweep ${stock} (${keeperBal} wei): Quotrons pool at tick bound`,
+      );
+      continue;
+    }
 
     try {
       const usdgOut = await swapStockForUsdg(
