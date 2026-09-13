@@ -21,6 +21,12 @@ import {
 import { buildSparseLive } from "@/lib/token-onchain-live";
 import type { TokenPool } from "@/lib/types";
 
+export type LiveTokenResult = {
+  live: LiveTokenState;
+  /** True while switching pools or waiting for indexer/on-chain for the active leg. */
+  isLoading: boolean;
+};
+
 function isLikelyAddress(id: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(id);
 }
@@ -46,6 +52,15 @@ function candlesLookBroken(candles: LiveCandle[], mcap: number): boolean {
   return false;
 }
 
+function summaryMatchesPool(
+  summaryPoolId: string | null | undefined,
+  poolId: string | null | undefined,
+): boolean {
+  if (!poolId) return true;
+  if (!summaryPoolId) return true;
+  return summaryPoolId.toLowerCase() === poolId.toLowerCase();
+}
+
 async function fetchOnChainLiveApi(
   address: string,
   poolId?: string | null,
@@ -57,7 +72,7 @@ async function fetchOnChainLiveApi(
   return body.live ?? null;
 }
 
-export function useLiveToken(pool: TokenPool) {
+export function useLiveToken(pool: TokenPool): LiveTokenResult {
   const address = pool.contractAddress ?? (isLikelyAddress(pool.id) ? pool.id : null);
   const ethUsd = resolveEthUsd(pool);
   const multi = isMultiPool(pool);
@@ -67,38 +82,25 @@ export function useLiveToken(pool: TokenPool) {
   useEffect(() => {
     setSource("sparse");
     setLive(buildSparseLive(pool, ethUsd));
-  }, [pool.poolId, pool.id, ethUsd]);
+  }, [pool.poolId, pool.id, pool.quoteAddress, ethUsd]);
 
   useEffect(() => {
-    setLive((prev) => {
-      if (source !== "sparse") {
-        return {
-          ...prev,
-          marketCap: pool.marketCap > 0 ? pool.marketCap : prev.marketCap,
-          volume24h: pool.volume24h && pool.volume24h > 0 ? pool.volume24h : prev.volume24h,
-          change24h: pool.change24h ?? prev.change24h,
-          liquidity: pool.liquidity > 0 ? pool.liquidity : prev.liquidity,
-          priceUsd:
-            pool.marketCap > 0 ? pool.marketCap / TOTAL_SUPPLY : prev.priceUsd,
-        };
-      }
-      return {
-        ...buildSparseLive(pool, ethUsd),
-        candles: prev.candles.length > 1 ? prev.candles : buildSparseLive(pool, ethUsd).candles,
-        swaps: prev.swaps,
-      };
-    });
+    if (source === "sparse" || pool.marketCap <= 0) return;
+    setLive((prev) => ({
+      ...prev,
+      marketCap: pool.marketCap,
+      volume24h: pool.volume24h && pool.volume24h > 0 ? pool.volume24h : prev.volume24h,
+      change24h: pool.change24h ?? prev.change24h,
+      liquidity: pool.liquidity > 0 ? pool.liquidity : prev.liquidity,
+      priceUsd: pool.marketCap / TOTAL_SUPPLY,
+    }));
   }, [
     pool.marketCap,
     pool.volume24h,
-    pool.priceEth,
     pool.change24h,
     pool.liquidity,
     pool.id,
-    pool.poolId,
-    pool.quoteAddress,
     source,
-    ethUsd,
   ]);
 
   const indexerQuery = useTokenIndexerData(address, {
@@ -123,8 +125,10 @@ export function useLiveToken(pool: TokenPool) {
 
   useEffect(() => {
     const data = indexerQuery.data;
-    if (!data?.summary) return;
-    const { summary, trades, holders, candles } = data;
+    const summary = data?.summary;
+    if (!summary || !summaryMatchesPool(summary.poolId, pool.poolId)) return;
+
+    const { trades, holders, candles } = data;
     const eth = resolveEthUsd(pool);
     const isEth = quoteIsEth(pool);
     const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
@@ -286,5 +290,10 @@ export function useLiveToken(pool: TokenPool) {
     });
   }, [onchainQuery.dataUpdatedAt, onchainQuery.data, indexerQuery.data?.summary, pool]);
 
-  return live;
+  const isLoading =
+    !!address &&
+    source === "sparse" &&
+    (indexerQuery.isPending || indexerQuery.isFetching || onchainQuery.isFetching);
+
+  return { live, isLoading };
 }

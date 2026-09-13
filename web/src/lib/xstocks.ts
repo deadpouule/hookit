@@ -66,7 +66,7 @@ export const INK_QUOTRON_STOCKS: QuotronStockListing[] = [
     decimals: 18,
     priceSymbol: "NFLXx",
     quotronPoolId: "0x9f11034d6b2a7bfea38a0c39548c590e4aabd215ffa2b6bbe9bacd29e40238b6",
-    fallbackUsd: 819.4,
+    fallbackUsd: 81.94,
   },
   {
     symbol: "wNVDAx",

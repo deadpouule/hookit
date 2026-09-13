@@ -169,7 +169,7 @@ interface TokenDetailViewProps {
 export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailViewProps) {
   const [marketIndex, setMarketIndex] = useState(0);
   const activePool = useMemo(() => poolWithMarket(pool, marketIndex), [pool, marketIndex]);
-  const live = useLiveToken(activePool);
+  const { live, isLoading: liveLoading } = useLiveToken(activePool);
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
   const [interval, setInterval] = useState<ChartInterval | null>(null);
@@ -358,7 +358,14 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       </header>
 
       <div className="token-hero-mcap">
-        <p className="token-hero-mcap-value">{formatCompactUsd(live.marketCap)}</p>
+        <p
+          className={cn(
+            "token-hero-mcap-value",
+            liveLoading && "animate-pulse text-zinc-500",
+          )}
+        >
+          {liveLoading ? "—" : formatCompactUsd(live.marketCap)}
+        </p>
         <span
           className={cn(
             "token-hero-mcap-chg",
@@ -440,6 +447,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <TokenCandleChart
             candles={live.candles}
             swaps={live.swaps}
+            isLoading={liveLoading}
             interval={chartInterval}
             onInterval={setInterval}
             marketCap={live.marketCap}

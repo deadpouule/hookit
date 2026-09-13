@@ -140,6 +140,7 @@ function Segmented<T extends string>({
 export function TokenCandleChart({
   candles,
   swaps = [],
+  isLoading = false,
   interval,
   onInterval,
   marketCap,
@@ -160,6 +161,7 @@ export function TokenCandleChart({
 }: {
   candles: LiveCandle[];
   swaps?: LiveSwap[];
+  isLoading?: boolean;
   interval: ChartInterval;
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
@@ -319,7 +321,12 @@ export function TokenCandleChart({
               : "h-[240px] sm:h-[340px] md:h-[420px]",
         )}
       >
-        {!hasData ? (
+        {isLoading ? (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6">
+            <div className="h-[55%] w-[88%] animate-pulse rounded-md bg-zinc-800/50" />
+            <p className="font-mono text-[11px] text-muted-foreground">Loading chart…</p>
+          </div>
+        ) : !hasData ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center">
             <div>
               <p className="text-sm text-foreground">No trades yet</p>
