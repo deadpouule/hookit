@@ -3,6 +3,7 @@ import {
   fetchIndexerTrades,
   statsFromIndexerTrades,
   type IndexerTokenSummary,
+  type IndexerTrade,
 } from "@/lib/indexer-client";
 import { poolQuoteLabel } from "@/lib/payment-assets";
 import { quoteVolumeUsd } from "@/lib/quote-usd";
@@ -56,7 +57,7 @@ export function applyIndexerTokenToPool(pool: TokenPool, summary: IndexerTokenSu
 
 function scopeSummaryToPrimaryPool(
   summary: IndexerTokenSummary,
-  trades: { quoteAmount: string; price: string; timestamp: number }[],
+  trades: IndexerTrade[],
 ): IndexerTokenSummary {
   const stats = statsFromIndexerTrades(trades);
   return {
