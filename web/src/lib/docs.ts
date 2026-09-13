@@ -38,7 +38,7 @@ export interface DocsPageMeta {
   href: string;
   title: string;
   description: string;
-  group: "Introduction" | "Protocol" | "Modules" | "Reference";
+  group: "Introduction" | "Protocol" | "Modules" | "Tokenomics" | "Reference";
   keywords: string;
 }
 
@@ -47,9 +47,9 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "overview",
     href: "#overview",
     title: "Overview",
-    description: "Permissionless Uniswap v4 launchpad on Ink. Dual rail, no custody.",
+    description: "First Uniswap v4 launchpad with 2,304 programmable hook combinations. Hold $HKT, get every launch.",
     group: "Introduction",
-    keywords: "hookit launchpad overview ink uniswap v4 master classic",
+    keywords: "hookit launchpad overview ink uniswap v4 master classic hkt combinations",
   },
   {
     slug: "architecture",
@@ -232,7 +232,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     href: "#hkt",
     title: "$HKT",
     description: "Hold $HKT and every launch airdrops you a slice of its token.",
-    group: "Protocol",
+    group: "Tokenomics",
     keywords: "hkt holder drop flywheel tokenomics thesis keeper",
   },
   {
@@ -309,7 +309,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   },
 ];
 
-export const DOCS_GROUPS = ["Introduction", "Protocol", "Modules", "Reference"] as const;
+export const DOCS_GROUPS = ["Introduction", "Protocol", "Modules", "Tokenomics", "Reference"] as const;
 export const DOCS_SECTION_IDS = DOCS_PAGES.map((page) => page.slug);
 
 export function getDocsPage(slug: string): DocsPageMeta | undefined {

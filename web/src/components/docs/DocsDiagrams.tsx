@@ -1,3 +1,4 @@
+import { DocsBranchGraph } from "@/components/docs/DocsBranchGraph";
 import { AnimatedGridBackground } from "@/components/home/market/AnimatedGridBackground";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 import { HookLogo } from "@/components/home/market/HookLogo";
@@ -143,67 +144,23 @@ function StackDiagram() {
 }
 
 function FlywheelDiagram() {
-  const nodes = [
-    { x: 180, y: 36, label: "Swap", sub: "quote fee" },
-    { x: 300, y: 96, label: "1% base", sub: "always on" },
-    { x: 300, y: 196, label: "60 / 10 / 30", sub: "split" },
-    { x: 180, y: 256, label: "$HKT drop", sub: "buy token" },
-    { x: 60, y: 196, label: "Protocol", sub: "20 / 80" },
-    { x: 60, y: 96, label: "Hook pot", sub: "modules" },
-  ];
   return (
-    <figure className="docs-schema">
-      <figcaption>Fee flywheel</figcaption>
-      <div className="docs-flywheel">
-        <svg viewBox="0 0 360 292" role="img" aria-label="Fee flywheel from swap to base split, HKT drop, protocol buyback, and hook modules">
-          <circle cx="180" cy="146" r="86" fill="none" stroke="rgb(149 20 209 / 0.35)" strokeWidth="1.5" />
-          <circle cx="180" cy="146" r="54" fill="rgb(149 20 209 / 0.1)" stroke="rgb(149 20 209 / 0.45)" strokeWidth="1.2" />
-          <text x="180" y="142" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700">
-            hookit
-          </text>
-          <text x="180" y="160" textAnchor="middle" fill="#a1a1aa" fontSize="9">
-            quote-only
-          </text>
-          {nodes.map((node, i) => {
-            const next = nodes[(i + 1) % nodes.length]!;
-            return (
-              <line
-                key={`e-${node.label}`}
-                x1={node.x}
-                y1={node.y}
-                x2={next.x}
-                y2={next.y}
-                stroke="rgb(255 255 255 / 0.12)"
-                strokeWidth="1.2"
-              />
-            );
-          })}
-          {nodes.map((node) => (
-            <g key={node.label}>
-              <rect
-                x={node.x-46}
-                y={node.y-18}
-                width="92"
-                height="36"
-                rx="10"
-                fill="#111"
-                stroke="rgb(255 255 255 / 0.14)"
-              />
-              <text x={node.x} y={node.y-2} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">
-                {node.label}
-              </text>
-              <text x={node.x} y={node.y + 12} textAnchor="middle" fill="#71717a" fontSize="9">
-                {node.sub}
-              </text>
-            </g>
-          ))}
-        </svg>
-      </div>
-      <p className="docs-schema-note">
-        Every swap feeds the same loop. Hook tax is extra and only funds modules. The 1% base never
-        changes its 60 / 10 / 30 split.
-      </p>
-    </figure>
+    <DocsBranchGraph
+      caption="Where every swap goes"
+      kicker="Every trade"
+      sources={[
+        { t: "1% base", d: "Mandatory. Quote only." },
+        { t: "Hook tax", d: "Optional Master extra, 0 to 9%." },
+      ]}
+      hub={{ t: "MasterLaunchHook", d: "One take. Shares set at launch." }}
+      outputs={[
+        { t: "Creator 60%", d: "FeeEscrow, Buyback Vesting, or Creator → Hook." },
+        { t: "$HKT drop 10%", d: "Buys that pool's ticker for live $HKT holders." },
+        { t: "Protocol 30%", d: "20% ops. 80% buys $HKT and burns it." },
+        { t: "Hook pot", d: "Tax (plus creator 60% if routed). Burn, floor, deepen, airdrop." },
+      ]}
+      note="The 1% always splits 60 / 10 / 30. Hook tax never uses that split. It fills the pot, then modules."
+    />
   );
 }
 
@@ -244,34 +201,23 @@ function FeeSplitDiagram() {
 }
 
 function SwapLifecycleDiagram() {
-  const steps = [
-    { t: "beforeSwap", d: "MEV, caps, 1% + tax" },
-    { t: "Take quote", d: "Quote leg only" },
-    { t: "Route", d: "60 / 10 / 30 + pot" },
-    { t: "afterSwap", d: "Burn + deepen mint" },
-  ];
   return (
-    <figure className="docs-schema">
-      <figcaption>Master swap lifecycle</figcaption>
-      <ol className="docs-pipe">
-        {steps.map((step, i) => (
-          <li key={step.t}>
-            <div className="docs-pipe-box">
-              <strong>{step.t}</strong>
-              <p>{step.d}</p>
-            </div>
-            {i < steps.length-1 ? (
-              <span className="docs-pipe-arrow" aria-hidden>
-                →
-              </span>
-            ) : null}
-          </li>
-        ))}
-      </ol>
-      <p className="docs-schema-note">
-        Fee is never a memecoin tax. Hook pot funds modules. Base 1% is always 60 / 10 / 30.
-      </p>
-    </figure>
+    <DocsBranchGraph
+      caption="Master swap lifecycle"
+      kicker="One unlock"
+      sources={[
+        { t: "beforeSwap", d: "Anti-MEV, Anti-Snipe, Max Tx, Max Wallet." },
+        { t: "Take quote", d: "1% base plus hook tax. Quote leg only." },
+      ]}
+      hub={{ t: "Route", d: "60 / 10 / 30 on the 1%. Tax into the pot." }}
+      outputs={[
+        { t: "Creator 60%", d: "Escrow, vest, or hook pot." },
+        { t: "$HKT drop 10%", d: "Buy this ticker. Push next epoch." },
+        { t: "Protocol 30%", d: "Ops 20%. Native buyback and burn 80%." },
+        { t: "afterSwap", d: "Auto-Burn, Deepen LPs, floor credit, airdrop accrue." },
+      ]}
+      note="Fee is never a memecoin tax. Modules spend the pot in afterSwap. The 1% split never changes."
+    />
   );
 }
 
@@ -360,66 +306,38 @@ function hookFromId(id: BrowseHookId) {
 function HktBurnDiagram() {
   return (
     <figure className="docs-schema">
-      <figcaption>$HKT pool: modules + fee burn</figcaption>
-      <div className="docs-hkt-pool">
-        <div className="docs-hkt-orbit" role="img" aria-label="$HKT pool surrounded by its five hook modules">
-          <div className="docs-hkt-ring" aria-hidden />
-          <div className="docs-hkt-sun">
-            <span className="docs-hkt-pool-ticker">$HKT</span>
-            <small>Uniswap v4 Master</small>
-          </div>
-          <ul className="docs-hkt-sats">
-            {HKT_POOL_HOOKS.map((item, i) => {
-              const hook = hookFromId(item.id);
-              return (
-                <li
-                  key={item.id}
-                  className={`docs-hkt-sat orb-card--${hook.theme}`}
-                  style={{ ["--a" as string]: `${-90+i*72}deg` }}
-                >
-                  <HookLogo hookId={hook.id} theme={hook.theme} />
-                  <div>
-                    <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
-                    <span>{item.meta}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+      <figcaption>$HKT pool: hooks into the token</figcaption>
+      <div className="docs-hkt-schema" role="img" aria-label="Hook modules feeding the $HKT token">
+        <ul className="docs-hkt-schema-hooks">
+          {HKT_POOL_HOOKS.map((item) => {
+            const hook = hookFromId(item.id);
+            return (
+              <li key={item.id} className={`docs-hkt-schema-hook orb-card--${hook.theme}`}>
+                <HookLogo hookId={hook.id} theme={hook.theme} />
+                <div>
+                  <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
+                  <span>{item.meta}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="docs-hkt-schema-join" aria-hidden>
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+          <b />
         </div>
-        <ol className="docs-hkt-pool-flow">
-          <li>
-            <em>1</em>
-            <p>
-              <strong>Swap</strong>
-              1% quote fee, same 60 / 10 / 30 base as every launch.
-            </p>
-          </li>
-          <li>
-            <em>2</em>
-            <p>
-              <strong>Creator → Hook</strong>
-              The 60% creator cut joins hook tax in the pot. Nothing to claim.
-            </p>
-          </li>
-          <li>
-            <em>3</em>
-            <p>
-              <strong>Pot split</strong>
-              80% Auto-Burn buys and burns $HKT. 20% Deepen LPs mints into this pool.
-            </p>
-          </li>
-          <li>
-            <em>4</em>
-            <p>
-              <strong>Every other launch</strong>
-              80% of the protocol 30% buys $HKT and burns it (HkitBuyback.execute).
-            </p>
-          </li>
-        </ol>
+        <div className="docs-hkt-schema-token">
+          <img src="/brand/hookit-owl-favicon.png" alt="" width={88} height={88} />
+          <small>Uniswap v4 Master</small>
+        </div>
       </div>
       <p className="docs-schema-note">
-        Fees taken on the $HKT pool burn $HKT. Protocol buyback from other pools burns $HKT too.
+        Anti-MEV and Anti-Snipe guard the book. Creator → Hook plus Auto-Burn 80% and Deepen LPs 20%
+        spend the pot into this token. Protocol buyback from every other launch burns $HKT too.
       </p>
     </figure>
   );
@@ -449,8 +367,6 @@ function HktLoopDiagram() {
               <span>{stage.d}</span>
               {i < stages.length-1 ? (
                 <span className="docs-hkt-thesis-rail" aria-hidden>
-                  <i />
-                  <i />
                   <i />
                 </span>
               ) : null}
