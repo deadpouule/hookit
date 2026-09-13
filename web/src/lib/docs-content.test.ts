@@ -51,3 +51,33 @@ test("docs cover $HKT thesis and in-depth modules", () => {
       ?.blocks.some((block) => block.type === "hook-title" && block.hookId === "deepen-lps"),
   );
 });
+
+test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () => {
+  const sections = buildDocsSections();
+  const ids = sections.map((section) => section.id);
+  for (const id of [
+    "multi-pair",
+    "quotrons",
+    "creator-fees",
+    "anti-snipe",
+    "anti-mev",
+    "max-tx",
+    "max-wallet",
+    "deepen-lps",
+    "auto-burn",
+    "creator-share",
+    "fixed-fees",
+    "analytics",
+  ]) {
+    assert.ok(ids.includes(id), `missing ${id}`);
+  }
+  const blob = JSON.stringify(sections);
+  assert.match(blob, /BackedFloorNotAllowedInMulti/);
+  assert.match(blob, /swapExactInComposite/);
+  assert.match(blob, /V4ClaimsRedeemer/);
+  assert.equal(blob.includes("supplies the holder set from the indexer"), false);
+  assert.match(blob, /holderTracker/);
+  assert.match(blob, /Six wizard steps/);
+  assert.equal(blob.includes("Portfolio. Tokens you created"), false);
+  assert.equal(sections.filter((section) => section.id === "floor").length, 1);
+});

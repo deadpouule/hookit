@@ -3,15 +3,27 @@ export type DocsSlug =
   | "architecture"
   | "hkt"
   | "launches"
+  | "multi-pair"
+  | "quotrons"
   | "trading"
   | "graduation"
   | "fees"
+  | "creator-fees"
   | "hooks"
-  | "dynamic-fees"
+  | "anti-snipe"
+  | "anti-mev"
+  | "max-tx"
+  | "max-wallet"
+  | "floor"
+  | "deepen-lps"
+  | "auto-burn"
   | "buyback-vesting"
   | "holder-airdrop"
-  | "floor"
+  | "creator-share"
+  | "fixed-fees"
+  | "dynamic-fees"
   | "math"
+  | "analytics"
   | "integration"
   | "network"
   | "contracts"
@@ -27,7 +39,7 @@ export interface DocsPageMeta {
   href: string;
   title: string;
   description: string;
-  group: "Introduction" | "Protocol" | "Reference";
+  group: "Introduction" | "Protocol" | "Modules" | "Reference";
   keywords: string;
 }
 
@@ -54,23 +66,39 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     title: "$HKT",
     description: "Hold $HKT and every launch airdrops you a slice of its token.",
     group: "Introduction",
-    keywords: "hkt holder drop flywheel tokenomics thesis",
+    keywords: "hkt holder drop flywheel tokenomics thesis keeper",
   },
   {
     slug: "launches",
     href: "#launches",
     title: "How launches work",
-    description: "Master wizard and Classic bonding. Locked LP, 1B supply.",
+    description: "Six-step Master wizard and Classic bonding. Locked LP, 1B supply, 2.5% dev buy.",
     group: "Protocol",
-    keywords: "launch factory bitmask locked lp wizard",
+    keywords: "launch factory bitmask locked lp wizard builder",
+  },
+  {
+    slug: "multi-pair",
+    href: "#multi-pair",
+    title: "Multi-pair",
+    description: "One token, up to five quote markets. Floor off. Arb keeper paused.",
+    group: "Protocol",
+    keywords: "launchmulti markets bps arb keeper",
+  },
+  {
+    slug: "quotrons",
+    href: "#quotrons",
+    title: "Quotrons",
+    description: "wStock launch pairs on Ink. USDG composite buys.",
+    group: "Protocol",
+    keywords: "quotrons wapple wnvidia usdg rwa",
   },
   {
     slug: "trading",
     href: "#trading",
     title: "Trading",
-    description: "Hooked swaps through HookitSwapRouter. Quote-only fees.",
+    description: "Hooked swaps through HookitSwapRouter. Composite quote legs.",
     group: "Protocol",
-    keywords: "swap router slippage composite quotrons",
+    keywords: "swap router slippage composite quotrons bonding",
   },
   {
     slug: "graduation",
@@ -78,7 +106,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     title: "Graduation",
     description: "Classic curve graduates at 4.2 ETH-equivalent into a v4 pool.",
     group: "Protocol",
-    keywords: "bonding curve graduate 4.2 eth",
+    keywords: "bonding curve graduate 4.2 eth sweepquote",
   },
   {
     slug: "fees",
@@ -89,6 +117,14 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     keywords: "fee 60 10 30 flywheel hook tax hkt buyback",
   },
   {
+    slug: "creator-fees",
+    href: "#creator-fees",
+    title: "Creator fees",
+    description: "FeeEscrow, BuybackVault, or hook pot. Classic sweepQuote.",
+    group: "Protocol",
+    keywords: "feescrow claim sweepquote creator",
+  },
+  {
     slug: "hooks",
     href: "#hooks",
     title: "Hook modules",
@@ -97,52 +133,124 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     keywords: "anti-snipe floor deepen-lps dynamic fees airdrop",
   },
   {
-    slug: "dynamic-fees",
-    href: "#dynamic-fees",
-    title: "Dynamic Fees",
-    description: "Hook tax ramps with in-range LP depth. No oracle.",
-    group: "Protocol",
-    keywords: "dynamic fees depth saturation hook tax",
+    slug: "anti-snipe",
+    href: "#anti-snipe",
+    title: "Anti-Snipe",
+    description: "Buy-only decay tax at open. Default 98% over 5s.",
+    group: "Modules",
+    keywords: "anti-snipe decay tax launch window",
+  },
+  {
+    slug: "anti-mev",
+    href: "#anti-mev",
+    title: "Anti-MEV",
+    description: "One swap per origin per pool per block. SandwichBlocked.",
+    group: "Modules",
+    keywords: "anti-mev sandwich blocked origin",
+  },
+  {
+    slug: "max-tx",
+    href: "#max-tx",
+    title: "Max Tx",
+    description: "0.1%–2.5% of supply per swap, fee-inclusive.",
+    group: "Modules",
+    keywords: "max tx supply cap",
+  },
+  {
+    slug: "max-wallet",
+    href: "#max-wallet",
+    title: "Max Wallet",
+    description: "0.1%–2.5% of supply per address after a buy.",
+    group: "Modules",
+    keywords: "max wallet supply cap",
+  },
+  {
+    slug: "floor",
+    href: "#floor",
+    title: "Backed Floor",
+    description: "Ratcheting redeemable floor. Single-pair only.",
+    group: "Modules",
+    keywords: "floor vault redeem ratchet premium",
+  },
+  {
+    slug: "deepen-lps",
+    href: "#deepen-lps",
+    title: "Deepen LPs",
+    description: "Hook-tax share minted back into launch LP range.",
+    group: "Modules",
+    keywords: "deepen lps pending liquidity",
+  },
+  {
+    slug: "auto-burn",
+    href: "#auto-burn",
+    title: "Auto-Burn",
+    description: "Hook pot buys the token and burns it after each swap.",
+    group: "Modules",
+    keywords: "auto-burn pending buyback dead",
   },
   {
     slug: "buyback-vesting",
     href: "#buyback-vesting",
     title: "Buyback Vesting",
     description: "Creator 60% of base vests on time or FDV.",
-    group: "Protocol",
-    keywords: "buyback vesting escrow fdv cliff",
+    group: "Modules",
+    keywords: "buyback vesting escrow fdv cliff vestpacked",
   },
   {
     slug: "holder-airdrop",
     href: "#holder-airdrop",
     title: "Holder Airdrop",
-    description: "Hook-pot quote paid pro-rata to holders of that token.",
-    group: "Protocol",
-    keywords: "holder airdrop epoch quote vault",
+    description: "Hook-pot quote paid pro-rata via ERC-6909 claims.",
+    group: "Modules",
+    keywords: "holder airdrop epoch quote vault claims",
   },
   {
-    slug: "floor",
-    href: "#floor",
-    title: "Backed Floor",
-    description: "Ratcheting redeemable floor: P_floor = V_quote / S_circ.",
-    group: "Protocol",
-    keywords: "floor vault redeem ratchet premium",
+    slug: "creator-share",
+    href: "#creator-share",
+    title: "Creator → Hook",
+    description: "Creator 60% of the 1% joins the hook pot.",
+    group: "Modules",
+    keywords: "creator share to hook pot",
+  },
+  {
+    slug: "fixed-fees",
+    href: "#fixed-fees",
+    title: "Fixed Fees",
+    description: "Flat extra hook tax. Exclusive with Dynamic Fees.",
+    group: "Modules",
+    keywords: "fixed fees hook tax",
+  },
+  {
+    slug: "dynamic-fees",
+    href: "#dynamic-fees",
+    title: "Dynamic Fees",
+    description: "Hook tax ramps with in-range LP depth. No oracle.",
+    group: "Modules",
+    keywords: "dynamic fees depth saturation hook tax",
   },
   {
     slug: "math",
     href: "#math",
     title: "Formulas",
     description: "Snipe decay, dynamic depth fee, CPMM curve, $HKT drop, protocol 20/80.",
-    group: "Protocol",
+    group: "Modules",
     keywords: "formulas dynamic fee bonding k sqrtPriceX96",
+  },
+  {
+    slug: "analytics",
+    href: "#analytics",
+    title: "Analytics",
+    description: "/stats volume, protocol take, $HKT burn and holder drop.",
+    group: "Reference",
+    keywords: "stats protocol volume buyback",
   },
   {
     slug: "integration",
     href: "#integration",
     title: "Integration",
-    description: "Events, indexer HTTP, and on-chain reads.",
+    description: "Indexer HTTP, events, and on-chain reads.",
     group: "Reference",
-    keywords: "indexer events viem",
+    keywords: "indexer events viem health candles",
   },
   {
     slug: "network",
@@ -156,33 +264,33 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "contracts",
     href: "#contracts",
     title: "Contracts",
-    description: "Live factory, router, and Uniswap v4 core addresses.",
+    description: "Live factory, router, claims redeemer, and Uniswap v4 core.",
     group: "Reference",
-    keywords: "launchfactory hookitswaprouter poolmanager",
+    keywords: "launchfactory hookitswaprouter v4claimsredeemer",
   },
   {
     slug: "events",
     href: "#events",
     title: "Onchain events",
-    description: "TokenLaunched, bonding lifecycle, PoolManager Swap.",
+    description: "TokenLaunched, multi-pair, vault, buyback, and Swap logs.",
     group: "Reference",
-    keywords: "tokenlaunched swap logs",
+    keywords: "tokenlaunched swap dropped redeemed",
   },
   {
     slug: "reading",
     href: "#reading",
     title: "Reading state",
-    description: "getLaunchPage, bitmasks, metadataURI.",
+    description: "getLaunchPage, bitmask, vestPacked, metadataURI.",
     group: "Reference",
-    keywords: "getLaunchPage bitmask metadata",
+    keywords: "getLaunchPage bitmask vestpacked metadata",
   },
   {
     slug: "pricing",
     href: "#pricing",
     title: "Pricing",
-    description: "sqrtPriceX96 spot and FloorVault.floorPriceX18.",
+    description: "sqrtPriceX96 spot, FloorVault.floorPriceX18, 30m TWAP.",
     group: "Reference",
-    keywords: "sqrtPriceX96 floorPriceX18 tvl",
+    keywords: "sqrtPriceX96 floorPriceX18 twap",
   },
   {
     slug: "risks",
@@ -210,7 +318,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   },
 ];
 
-export const DOCS_GROUPS = ["Introduction", "Protocol", "Reference"] as const;
+export const DOCS_GROUPS = ["Introduction", "Protocol", "Modules", "Reference"] as const;
 export const DOCS_SECTION_IDS = DOCS_PAGES.map((page) => page.slug);
 
 export function getDocsPage(slug: string): DocsPageMeta | undefined {
