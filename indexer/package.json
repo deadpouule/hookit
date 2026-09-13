@@ -11,6 +11,7 @@
     "probe": "tsx src/main.ts probe",
     "fee-keeper": "tsx scripts/fee-keeper.ts",
     "arb-keeper": "tsx scripts/arb-keeper.ts",
+    "hkt-holder-sync": "tsx scripts/hkt-holder-sync-keeper.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

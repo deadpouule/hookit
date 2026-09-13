@@ -62,6 +62,9 @@ install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-fee-keeper.timer" /et
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-oracle-keeper.service" /etc/systemd/system/hookit-oracle-keeper.service
 install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-oracle-keeper.timer" /etc/systemd/system/hookit-oracle-keeper.timer
 chmod +x "${HOOKIT_DIR}/deploy/linode/fee-keeper/run.sh"
+chmod +x "${HOOKIT_DIR}/deploy/linode/hkt-sync/run.sh" 2>/dev/null || true
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-hkt-sync-keeper.service" /etc/systemd/system/hookit-hkt-sync-keeper.service 2>/dev/null || true
+install -m 644 "${HOOKIT_DIR}/deploy/linode/systemd/hookit-hkt-sync-keeper.timer" /etc/systemd/system/hookit-hkt-sync-keeper.timer 2>/dev/null || true
 systemctl daemon-reload
 
 cat <<EOF
@@ -80,7 +83,9 @@ Next:
      # daily 00:20 UTC: distribute pending fees + TWAP HTST buyback
   6. systemctl enable --now hookit-oracle-keeper.timer
      # every 15 min: refresh Master + Classic ETH/USD fallbacks when feed is fresh
-  7. nginx + certbot — see deploy/linode/indexer-only/README.md
+  7. systemctl enable --now hookit-hkt-sync-keeper.timer
+     # hourly: sync HTST holders → HktHolderDropVault + tryPush
+  8. nginx + certbot — see deploy/linode/indexer-only/README.md
      fee keeper — see deploy/linode/fee-keeper/README.md
 
 EOF

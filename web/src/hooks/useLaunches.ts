@@ -30,8 +30,11 @@ export function useLaunches(initialPools?: TokenPool[]) {
   const live = shouldFetchLiveLaunches();
   const queryClient = useQueryClient();
 
+  const factory = getLaunchFactoryAddress();
+  const bonding = getBondingFactoryAddress();
+
   return useQuery({
-    queryKey: ["launches"],
+    queryKey: ["launches", factory, bonding],
     enabled: live,
     initialData: initialPools?.length ? initialPools : undefined,
     placeholderData: keepPreviousData,
