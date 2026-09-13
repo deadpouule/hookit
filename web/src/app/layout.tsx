@@ -1,7 +1,7 @@
 import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono, Bricolage_Grotesque, Audiowide } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque, Audiowide, IBM_Plex_Mono } from "next/font/google";
 
 import { TermsGate } from "@/components/legal/TermsGate";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -37,6 +37,12 @@ const arcade = Audiowide({
   weight: "400",
 });
 
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["500", "700"],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -66,7 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="en"
       data-device={isPhone ? "phone" : "desktop"}
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${arcade.variable} dark min-h-dvh antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${arcade.variable} ${ibmPlexMono.variable} dark min-h-dvh antialiased`}
       suppressHydrationWarning
     >
       <body

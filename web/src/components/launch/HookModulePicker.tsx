@@ -5,7 +5,6 @@ import { Info } from "lucide-react";
 
 import { HookDetailPanel } from "@/components/explore/HookDetailPanel";
 import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
-import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import { McapUnlockPicker } from "@/components/launch/McapUnlockPicker";
@@ -189,14 +188,8 @@ function FixedFeePickCard({
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId="fixed-fee" theme={FIXED_FEE_THEME} />
       </div>
-      <h2
-        className={cn(
-          "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
-          `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
-        )}
-      >
-        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-        <span>Fixed Fees</span>
+      <h2 className={cn("orb-hook-title-plain pick-card-hook-title", `orb-hook-desc-badge--${FIXED_FEE_THEME}`)}>
+        Fixed Fees
       </h2>
       <p className="pick-card-sub pick-card-sub--hook">Flat hook tax</p>
     </button>
@@ -219,14 +212,8 @@ function FixedFeeConfigPanel({
       <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
         <div className="pick-config-head-copy">
           <div className="pick-config-head-row">
-            <h2
-              className={cn(
-                "orb-hook-desc-badge orb-hook-title-badge pick-config-badge",
-                `orb-hook-desc-badge--${FIXED_FEE_THEME}`,
-              )}
-            >
-              <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-              <span>Fixed Fees</span>
+            <h2 className={cn("orb-hook-title-plain pick-config-badge", `orb-hook-desc-badge--${FIXED_FEE_THEME}`)}>
+              Fixed Fees
             </h2>
           </div>
         </div>
@@ -326,14 +313,8 @@ function HookPickCard({
       <div className="pick-card-mark pick-ascii">
         <HookLogo hookId={hook.id} theme={hook.theme} />
       </div>
-      <h2
-        className={cn(
-          "orb-hook-desc-badge orb-hook-title-badge pick-card-hook-title",
-          `orb-hook-desc-badge--${hook.theme}`,
-        )}
-      >
-        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-        <span>{hook.title}</span>
+      <h2 className={cn("orb-hook-title-plain pick-card-hook-title", `orb-hook-desc-badge--${hook.theme}`)}>
+        {hook.title}
       </h2>
       <p className="pick-card-sub pick-card-sub--hook">
         {disabled && disabledHint ? disabledHint : hookPickTagline(hook.id)}
@@ -784,14 +765,8 @@ function HookConfigHeader({
     <div className={cn("pick-config-head", active && "pick-config-head--focused")}>
       <div className="pick-config-head-copy">
         <div className="pick-config-head-row">
-          <h2
-            className={cn(
-              "orb-hook-desc-badge orb-hook-title-badge pick-config-badge",
-              `orb-hook-desc-badge--${hook.theme}`,
-            )}
-          >
-            <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-            <span>{hook.title}</span>
+          <h2 className={cn("orb-hook-title-plain pick-config-badge", `orb-hook-desc-badge--${hook.theme}`)}>
+            {hook.title}
           </h2>
           <HookSettingsTooltip hook={hook} modules={modules} hookTaxBps={hookTaxBps} />
         </div>

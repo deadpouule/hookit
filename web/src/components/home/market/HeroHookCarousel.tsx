@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { MasterHookGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import {
   EXPLORE_HOOKS,
@@ -45,14 +44,8 @@ function MiniHookCard({
   const active = offset === 0;
   const body = (
     <>
-      <h3
-        className={cn(
-          "orb-hook-desc-badge orb-hook-title-badge hero-hook-title-badge",
-          `orb-hook-desc-badge--${hook.theme}`,
-        )}
-      >
-        <MasterHookGlyph className="orb-hook-desc-badge-glyph" />
-        <span>{hook.title}</span>
+      <h3 className={cn("orb-hook-title-plain hero-hook-title-badge", `orb-hook-desc-badge--${hook.theme}`)}>
+        {hook.title}
       </h3>
       <div className="hero-hook-logo">
         <HookLogo hookId={hook.id} theme={hook.theme} />
