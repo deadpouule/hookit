@@ -123,6 +123,11 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /Create a hooked token/);
   assert.match(visuals, /DocsLaunchSteps/);
   assert.match(visuals, /DocsCreatorEngine/);
+  const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
+  assert.match(diagrams, /docs-hkt-orbit/);
+  assert.match(diagrams, /docs-hkt-thesis-loop/);
+  const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");
+  assert.match(page, /docs-section-group/);
   assert.match(visuals, /docs-pipe/);
   assert.match(visuals, /docs-quotrons-stock/);
   assert.match(visuals, /case "router"/);
