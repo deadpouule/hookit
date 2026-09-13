@@ -467,10 +467,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             tokenAddress={contractAddress}
             ticker={pool.ticker}
             launchedAt={pool.launchedAt}
-            change5m={live.change5m}
-            change1h={live.change1h}
-            change6h={live.change6h}
-            change24h={live.change24h}
+            quoteAddress={activePool.quoteAddress}
             marketLegs={multi ? marketLegs : undefined}
             activeMarketIndex={marketIndex}
             onMarketIndex={multi ? setMarketIndex : undefined}

@@ -97,10 +97,16 @@ function tokenId(network: string, token: string): string {
   return `${network}_${token.toLowerCase()}`;
 }
 
-export function pickGeckoPoolForToken(payload: unknown, network: string, token: string): GtPoolPick | null {
+export function pickGeckoPoolForToken(
+  payload: unknown,
+  network: string,
+  token: string,
+  quoteAddress?: string | null,
+): GtPoolPick | null {
   const root = asRecord(payload);
   const rows = root && Array.isArray(root.data) ? root.data : [];
   const want = tokenId(network, token);
+  const quoteWant = quoteAddress && isAddress(quoteAddress) ? tokenId(network, quoteAddress) : null;
   let best: GtPoolPick | null = null;
 
   for (const row of rows) {
@@ -114,6 +120,10 @@ export function pickGeckoPoolForToken(payload: unknown, network: string, token: 
     const tokenSide: "base" | "quote" | null =
       baseId === want ? "base" : quoteId === want ? "quote" : null;
     if (!tokenSide) continue;
+    if (quoteWant) {
+      const other = tokenSide === "base" ? quoteId : baseId;
+      if (other !== quoteWant) continue;
+    }
     const reserveUsd = finiteNum(attrs?.reserve_in_usd) ?? 0;
     if (!best || reserveUsd > best.reserveUsd) {
       best = { address: getAddress(address), tokenSide, reserveUsd };
@@ -132,6 +142,7 @@ async function gtGet(path: string): Promise<Response> {
 export async function fetchGeckoTerminalBars(
   tokenAddress: string,
   interval: ChartInterval,
+  quoteAddress?: string | null,
 ): Promise<{ bars: ChartBar[]; pool: string | null }> {
   const network = getGeckoTerminalNetwork();
   const path = geckoOhlcvPath(interval);
@@ -148,7 +159,7 @@ export async function fetchGeckoTerminalBars(
   }
   if (!poolsRes.ok) return { bars: [], pool: null };
 
-  const pick = pickGeckoPoolForToken(await poolsRes.json(), network, token);
+  const pick = pickGeckoPoolForToken(await poolsRes.json(), network, token, quoteAddress);
   if (!pick) return { bars: [], pool: null };
 
   const qs = new URLSearchParams({

@@ -1,4 +1,5 @@
 import { MOCK_POOLS } from "./constants";
+import { allowDemoCatalog } from "./live-data";
 import { MARKET_TOKENS } from "./market-tokens";
 import type { TokenPool } from "./types";
 
@@ -17,6 +18,7 @@ const FULL_ADDRESSES: Record<string, string> = {
 };
 
 export function getPoolById(id: string): TokenPool | undefined {
+  if (!allowDemoCatalog()) return undefined;
   const pool = MOCK_POOLS.find((p) => p.id === id);
   if (!pool) return undefined;
   if (pool.priceEth !== undefined) return pool;
@@ -31,10 +33,12 @@ export function getPoolById(id: string): TokenPool | undefined {
 }
 
 export function getAllPoolIds(): string[] {
+  if (!allowDemoCatalog()) return [];
   return [...MOCK_POOLS.map((p) => p.id), ...MARKET_TOKENS.map((t) => t.id)];
 }
 
 export function getDetailPool(id: string): TokenPool | undefined {
+  if (!allowDemoCatalog()) return undefined;
   const pool = getPoolById(id);
   if (pool) return pool;
   const token = MARKET_TOKENS.find((item) => item.id === id);

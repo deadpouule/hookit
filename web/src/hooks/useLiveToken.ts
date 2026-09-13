@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { useLaunchEthUsd } from "@/hooks/useEthUsd";
 import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import { statsFromIndexerTrades } from "@/lib/indexer-client";
@@ -36,10 +37,11 @@ function quoteIsEth(pool: TokenPool) {
   return resolveQuoteKind(pool.quoteAddress, pool.quoteAsset) === "eth";
 }
 
-function resolveEthUsd(pool: TokenPool): number {
+function resolveEthUsd(pool: TokenPool, launchEthUsd?: number): number {
   if (quoteIsEth(pool) && pool.quoteUsd && pool.quoteUsd > 100 && pool.quoteUsd < 1_000_000) {
     return pool.quoteUsd;
   }
+  if (launchEthUsd && launchEthUsd > 100 && launchEthUsd < 1_000_000) return launchEthUsd;
   if (pool.priceEth && pool.priceEth > 0 && pool.marketCap > 0) {
     const implied = pool.marketCap / (pool.priceEth * TOTAL_SUPPLY);
     if (implied > 100 && implied < 1_000_000) return implied;
@@ -78,7 +80,8 @@ async function fetchOnChainLiveApi(
 
 export function useLiveToken(pool: TokenPool): LiveTokenResult {
   const address = pool.contractAddress ?? (isLikelyAddress(pool.id) ? pool.id : null);
-  const ethUsd = resolveEthUsd(pool);
+  const launchEthUsd = useLaunchEthUsd();
+  const ethUsd = resolveEthUsd(pool, launchEthUsd);
   const multi = isMultiPool(pool);
   const [live, setLive] = useState<LiveTokenState>(() => buildSparseLive(pool, ethUsd));
   const [source, setSource] = useState<"sparse" | "indexer" | "onchain">("sparse");
@@ -133,7 +136,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
     if (!summary || !summaryMatchesPool(summary.poolId, pool.poolId)) return;
 
     const { trades, holders, candles } = data;
-    const eth = resolveEthUsd(pool);
+    const eth = resolveEthUsd(pool, launchEthUsd);
     const isEth = quoteIsEth(pool);
     const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
     const quoteUsd =
@@ -285,6 +288,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
     pool.quoteAsset,
     pool.quoteUsd,
     pool.poolId,
+    launchEthUsd,
   ]);
 
   useEffect(() => {

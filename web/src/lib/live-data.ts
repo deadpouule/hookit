@@ -12,3 +12,8 @@ export function isIndexerConfigured(): boolean {
 export function shouldFetchLiveLaunches(): boolean {
   return process.env.NODE_ENV !== "development";
 }
+
+/** Fake Horse / DebtReliefBot catalog - local studio only, never production URLs. */
+export function allowDemoCatalog(): boolean {
+  return process.env.NODE_ENV === "development";
+}

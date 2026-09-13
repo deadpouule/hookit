@@ -10,6 +10,7 @@ import {
   chartVisibleLogicalRange,
   formatChartAxis,
   hasChartVolume,
+  isSyntheticBar,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -17,13 +18,16 @@ import {
 } from "@/lib/token-chart";
 import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 
-const UP = "#10b981";
-const DOWN = "#ef4444";
-const UP_VOLUME = "rgba(16,185,129,0.32)";
-const DOWN_VOLUME = "rgba(239,68,68,0.32)";
-const SURFACE = "#0a0a0a";
-const GRID = "rgba(255,255,255,0.045)";
-const AXIS = "#8b8b95";
+const UP = "#22c55e";
+const DOWN = "#f43f5e";
+const UP_VOLUME = "rgba(34,197,94,0.42)";
+const DOWN_VOLUME = "rgba(244,63,94,0.38)";
+const SURFACE = "#111111";
+const GRID = "rgba(255,255,255,0.055)";
+const AXIS = "#71717a";
+const CROSS = "rgba(255,255,255,0.22)";
+const CROSS_LABEL = "#27272a";
+const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
@@ -44,7 +48,7 @@ type ChartHandle = {
   style: ChartStyle;
 };
 
-/** Candles live in the lower part of the pane with headroom above (Stonk layout). */
+/** Candles fill the pane with a little pad for the last-value label. */
 const padPriceRange: AutoscaleInfoProvider = (original) => {
   const res = original();
   if (!res?.priceRange) return res;
@@ -84,6 +88,8 @@ async function attachPriceSeries(
       lineWidth: 2,
       priceLineVisible: true,
       lastValueVisible: true,
+      crosshairMarkerVisible: true,
+      crosshairMarkerRadius: 4,
       priceLineColor: lineColor,
       priceLineWidth: 1,
       priceLineStyle: tv.LineStyle.Dashed,
@@ -97,7 +103,9 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: false,
+    borderVisible: true,
+    borderUpColor: UP,
+    borderDownColor: DOWN,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -136,10 +144,12 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => {
-        // A flat print (open = close = high = low) still needs a visible body.
+        if (isSyntheticBar(b)) {
+          return { time: b.time as UTCTimestamp };
+        }
         const mid = b.close || b.open;
         const span = Math.max(b.high - b.low, 0);
-        const minSpan = mid > 0 ? mid * 0.01 : 0;
+        const minSpan = mid > 0 ? mid * 0.002 : 0;
         const high = span >= minSpan ? b.high : mid + minSpan / 2;
         const low = span >= minSpan ? b.low : Math.max(mid - minSpan / 2, 0);
         return {
@@ -155,15 +165,19 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
 
   const showVolume = hasChartVolume(next);
   handle.price.priceScale().applyOptions({
-    scaleMargins: { top: 0.04, bottom: showVolume ? 0.13 : 0.04 },
+    scaleMargins: { top: 0.08, bottom: showVolume ? 0.2 : 0.08 },
   });
   handle.volume.setData(
     showVolume
-      ? next.map((b) => ({
-          time: b.time as UTCTimestamp,
-          value: b.volume,
-          color: b.close >= b.open ? UP_VOLUME : DOWN_VOLUME,
-        }))
+      ? next.map((b) =>
+          b.volume > 0
+            ? {
+                time: b.time as UTCTimestamp,
+                value: b.volume,
+                color: b.close >= b.open ? UP_VOLUME : DOWN_VOLUME,
+              }
+            : { time: b.time as UTCTimestamp },
+        )
       : [],
   );
   if (refit) fitChartView(handle.chart, next.length);
@@ -208,17 +222,19 @@ export function TokenLightweightPlot({
         layout: {
           background: { type: tv.ColorType.Solid, color: SURFACE },
           textColor: AXIS,
-          attributionLogo: true,
+          fontFamily: FONT,
+          fontSize: 11,
+          attributionLogo: false,
         },
         grid: {
-          vertLines: { visible: false },
+          vertLines: { color: GRID, style: tv.LineStyle.SparseDotted, visible: true },
           horzLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
         },
         rightPriceScale: {
           borderVisible: false,
           ticksVisible: false,
           entireTextOnly: true,
-          minimumWidth: 96,
+          minimumWidth: 72,
         },
         timeScale: {
           borderVisible: false,
@@ -226,8 +242,8 @@ export function TokenLightweightPlot({
           secondsVisible: false,
           rightOffset: CHART_RIGHT_OFFSET,
           barSpacing: CHART_BAR_SPACING,
-          minBarSpacing: 3,
-          maxBarSpacing: 24,
+          minBarSpacing: 4,
+          maxBarSpacing: 28,
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
@@ -237,8 +253,18 @@ export function TokenLightweightPlot({
         },
         crosshair: {
           mode: tv.CrosshairMode.Normal,
-          vertLine: { color: "rgba(255,255,255,0.18)", labelBackgroundColor: "#27272a" },
-          horzLine: { color: "rgba(255,255,255,0.18)", labelBackgroundColor: "#27272a" },
+          vertLine: {
+            color: CROSS,
+            width: 1,
+            style: tv.LineStyle.Dashed,
+            labelBackgroundColor: CROSS_LABEL,
+          },
+          horzLine: {
+            color: CROSS,
+            width: 1,
+            style: tv.LineStyle.Dashed,
+            labelBackgroundColor: CROSS_LABEL,
+          },
         },
       });
 
@@ -251,7 +277,7 @@ export function TokenLightweightPlot({
       });
       // Volume is a thin strip along the bottom edge, never competing with candles.
       chart.priceScale("volume").applyOptions({
-        scaleMargins: { top: 0.95, bottom: 0 },
+        scaleMargins: { top: 0.84, bottom: 0 },
         visible: false,
       });
 
@@ -329,5 +355,5 @@ export function TokenLightweightPlot({
     if (handle) fitChartView(handle.chart, pendingBarsRef.current.length);
   }, [fitNonce]);
 
-  return <div ref={hostRef} className="absolute inset-0 z-[2]" />;
+  return <div ref={hostRef} className="token-chart-engine absolute inset-0 z-[2]" />;
 }

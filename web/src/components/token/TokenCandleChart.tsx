@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
+import { zeroAddress } from "viem";
 
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
@@ -11,6 +12,7 @@ import {
   CHART_TIMEFRAMES,
   barChangePct,
   barsForInterval,
+  chartHudBar,
   fillEmptyBars,
   formatChartUsd,
   intervalBucketSec,
@@ -64,19 +66,8 @@ function writeStored(key: string, value: string) {
   }
 }
 
-function changeForInterval(
-  interval: ChartInterval,
-  changes: { change5m?: number; change1h?: number; change6h?: number; change24h?: number },
-  open: number,
-  close: number,
-): number {
-  if ((interval === "1m" || interval === "5m" || interval === "15m") && changes.change5m != null) {
-    return changes.change5m;
-  }
-  if (interval === "1h" && changes.change1h != null) return changes.change1h;
-  if (interval === "4h" && changes.change6h != null) return changes.change6h;
-  if ((interval === "1D" || interval === "ALL") && changes.change24h != null) return changes.change24h;
-  return open > 0 ? ((close - open) / open) * 100 : 0;
+function changeForInterval(open: number, close: number): number {
+  return open > 0 && Number.isFinite(close) ? ((close - open) / open) * 100 : 0;
 }
 
 function formatDayClock(ts: number): string {
@@ -126,8 +117,8 @@ function Segmented<T extends string>({
           aria-pressed={value === opt.id}
           onClick={() => onChange(opt.id)}
           className={cn(
-            "min-h-9 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
-            value === opt.id ? "bg-zinc-700 text-foreground" : "text-muted-foreground hover:text-foreground",
+            "min-h-8 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+            value === opt.id ? "bg-zinc-800 text-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {opt.label}
@@ -146,10 +137,7 @@ export function TokenCandleChart({
   marketCap,
   tokenAddress,
   launchedAt,
-  change5m,
-  change1h,
-  change6h,
-  change24h,
+  quoteAddress,
   marketLegs,
   activeMarketIndex = 0,
   onMarketIndex,
@@ -168,10 +156,7 @@ export function TokenCandleChart({
   tokenAddress?: string;
   ticker?: string;
   launchedAt?: number;
-  change5m?: number;
-  change1h?: number;
-  change6h?: number;
-  change24h?: number;
+  quoteAddress?: string;
   marketLegs?: { label: string; share: string; quoteAddress?: string; quoteAsset?: string }[];
   activeMarketIndex?: number;
   onMarketIndex?: (index: number) => void;
@@ -185,7 +170,11 @@ export function TokenCandleChart({
   const [style, setStyle] = useState<ChartStyle>("candles");
   const [fitNonce, setFitNonce] = useState(0);
   const [hover, setHover] = useState<ChartBar | null>(null);
-  const gecko = useGeckoTerminalBars(tokenAddress, interval);
+  const geckoQuote = (() => {
+    const candidates = [quoteAddress, marketLegs?.[activeMarketIndex]?.quoteAddress];
+    return candidates.find((addr) => addr && addr.toLowerCase() !== zeroAddress);
+  })();
+  const gecko = useGeckoTerminalBars(tokenAddress, interval, geckoQuote);
 
   useEffect(() => {
     setScale(readStored(SCALE_KEY, ["mcap", "price"] as const, "price"));
@@ -199,7 +188,7 @@ export function TokenCandleChart({
 
   useEffect(() => {
     setFitNonce((n) => n + 1);
-  }, [interval]);
+  }, [interval, activeMarketIndex]);
 
   const bars = useMemo(() => {
     const fromCandles = liveCandlesToBars(candles, nowSec);
@@ -222,9 +211,9 @@ export function TokenCandleChart({
   const hasData = bars.length > 0;
   const open = bars[0]?.open ?? 0;
   const close = bars.length ? bars[bars.length - 1]!.close : 0;
-  const pct = changeForInterval(interval, { change5m, change1h, change6h, change24h }, open, close);
+  const pct = changeForInterval(open, close);
   const up = pct >= 0;
-  const hud = hover ?? (bars.length ? bars[bars.length - 1]! : null);
+  const hud = chartHudBar(bars, hover);
   const hudPct = hud ? barChangePct(hud) : 0;
   const hudUp = hudPct >= 0;
 
@@ -239,8 +228,8 @@ export function TokenCandleChart({
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-3 py-2.5 sm:px-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <div className="token-chart-toolbar">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
             <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
               {marketLegs.map((leg, i) => (
@@ -251,7 +240,7 @@ export function TokenCandleChart({
                   aria-selected={activeMarketIndex === i}
                   onClick={() => onMarketIndex(i)}
                   className={cn(
-                    "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-[11px] transition sm:min-h-0",
+                    "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0",
                     activeMarketIndex === i
                       ? "bg-[#9514d1] text-white"
                       : "text-muted-foreground hover:text-foreground",
@@ -259,7 +248,7 @@ export function TokenCandleChart({
                 >
                   <PoolQuoteMark quoteAddress={leg.quoteAddress} quoteAsset={leg.quoteAsset} />
                   {leg.label}
-                  <span className="ml-1 opacity-70">{leg.share}</span>
+                  <span className="ml-0.5 opacity-70">{leg.share}</span>
                 </button>
               ))}
             </div>
@@ -271,9 +260,9 @@ export function TokenCandleChart({
                 type="button"
                 onClick={() => onInterval(tf)}
                 className={cn(
-                  "min-h-9 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0",
+                  "min-h-8 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0",
                   interval === tf
-                    ? "bg-zinc-700 text-foreground"
+                    ? "bg-zinc-800 text-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -281,13 +270,15 @@ export function TokenCandleChart({
               </button>
             ))}
           </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
           <Segmented
             value={scale}
             onChange={setChartScale}
             ariaLabel="Chart scale"
             options={[
               { id: "price", label: "Price" },
-              { id: "mcap", label: "Market cap" },
+              { id: "mcap", label: "Mcap" },
             ]}
           />
           <Segmented
@@ -299,21 +290,52 @@ export function TokenCandleChart({
               { id: "line", label: "Line" },
             ]}
           />
+          <button
+            type="button"
+            onClick={() => setFitNonce((n) => n + 1)}
+            className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-md px-2 py-1 text-muted-foreground transition hover:text-foreground sm:min-h-0"
+            title="Reset view"
+            aria-label="Reset view"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setFitNonce((n) => n + 1)}
-          className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:min-h-0"
-          title="Reset view"
-        >
-          <RotateCcw className="h-3 w-3" />
-          Reset
-        </button>
       </div>
+
+      {hasData ? (
+        <div className="token-chart-legend">
+          <span className="token-chart-legend-id">
+            {ticker ? `${ticker}` : "Token"}
+            <span className="text-zinc-500"> · {TF_LABEL[interval]}</span>
+          </span>
+          {hud ? (
+            <>
+              <span>
+                <span className="token-chart-legend-k">O</span> {formatChartUsd(hud.open, scale)}
+              </span>
+              <span>
+                <span className="token-chart-legend-k">H</span> {formatChartUsd(hud.high, scale)}
+              </span>
+              <span>
+                <span className="token-chart-legend-k">L</span> {formatChartUsd(hud.low, scale)}
+              </span>
+              <span>
+                <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
+              </span>
+              <span className={hudUp ? "text-[#22c55e]" : "text-[#f43f5e]"}>{formatPercent(hudPct, true)}</span>
+              <span>
+                <span className="token-chart-legend-k">Vol</span>{" "}
+                {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
+              </span>
+              {hover ? <span className="text-zinc-500">{formatDayClock(hover.time)}</span> : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       <div
         className={cn(
-          "relative bg-chart-bg",
+          "token-chart-plot relative",
           expanded
             ? "h-[280px] sm:h-[460px] md:h-[560px]"
             : compact
@@ -345,39 +367,15 @@ export function TokenCandleChart({
             ) : null}
           </div>
         ) : (
-          <>
-            <div className="pointer-events-none absolute top-2.5 left-3 z-20 max-w-[calc(100%-5.5rem)] sm:top-3 sm:left-4">
-              <p className="font-mono text-[11px] leading-5 text-zinc-300 sm:text-[12px]">
-                {ticker ? `${ticker} · ` : ""}
-                {TF_LABEL[interval]}
-                {hud ? (
-                  <>
-                    {" "}
-                    <span className="text-zinc-500">O</span> {formatChartUsd(hud.open, scale)}{" "}
-                    <span className="text-zinc-500">H</span> {formatChartUsd(hud.high, scale)}{" "}
-                    <span className="text-zinc-500">L</span> {formatChartUsd(hud.low, scale)}{" "}
-                    <span className="text-zinc-500">C</span> {formatChartUsd(hud.close, scale)}{" "}
-                    <span className={hudUp ? "text-[#10b981]" : "text-[#ef4444]"}>
-                      {formatPercent(hudPct, true)}
-                    </span>{" "}
-                    <span className="text-zinc-500">Vol</span> {formatCompactUsd(hud.volume)}
-                  </>
-                ) : null}
-              </p>
-              {hover ? (
-                <p className="mt-0.5 font-mono text-[10px] text-zinc-500">{formatDayClock(hover.time)}</p>
-              ) : null}
-            </div>
-            <TokenLightweightPlot
-              bars={bars}
-              style={style}
-              scale={scale}
-              interval={interval}
-              lineColor={up ? "#10b981" : "#ef4444"}
-              fitNonce={fitNonce}
-              onHover={setHover}
-            />
-          </>
+          <TokenLightweightPlot
+            bars={bars}
+            style={style}
+            scale={scale}
+            interval={interval}
+            lineColor={up ? "#22c55e" : "#f43f5e"}
+            fitNonce={fitNonce}
+            onHover={setHover}
+          />
         )}
       </div>
     </div>

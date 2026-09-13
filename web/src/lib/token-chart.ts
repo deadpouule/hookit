@@ -136,14 +136,52 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
   }));
 }
 
+export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
+  const houseReal = house.filter((b) => b.volume > 0 || b.high !== b.low).length;
+  if (house.length >= 8 || houseReal >= 4) return house;
+  if (geckoMcap.length >= 8) return geckoMcap;
+  if (house.length > 0) return house;
+  return geckoMcap;
+}
+
+/** Carry-forward gap fills have no volume and a flat OHLC. */
+export function isSyntheticBar(bar: ChartBar): boolean {
+  return !(bar.volume > 0) && bar.open === bar.close && bar.high === bar.close && bar.low === bar.close;
+}
+
 export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   if (!(liveMcap && liveMcap > 0) || bars.length === 0) return bars;
   const next = bars.map((b) => ({ ...b }));
-  const last = next[next.length - 1]!;
-  last.close = liveMcap;
-  last.high = Math.max(last.high, liveMcap);
-  last.low = Math.min(last.low, liveMcap);
+  let pinAt = next.length - 1;
+  for (let i = next.length - 1; i >= 0; i--) {
+    if (!isSyntheticBar(next[i]!)) {
+      pinAt = i;
+      break;
+    }
+  }
+  const target = next[pinAt]!;
+  target.close = liveMcap;
+  target.high = Math.max(target.high, liveMcap);
+  target.low = Math.min(target.low, liveMcap);
+  for (let i = pinAt + 1; i < next.length; i++) {
+    next[i] = {
+      ...next[i]!,
+      open: liveMcap,
+      high: liveMcap,
+      low: liveMcap,
+      close: liveMcap,
+      volume: 0,
+    };
+  }
   return next;
+}
+
+export function chartHudBar(bars: ChartBar[], hover: ChartBar | null): ChartBar | null {
+  if (hover) return hover;
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (!isSyntheticBar(bars[i]!)) return bars[i]!;
+  }
+  return bars[bars.length - 1] ?? null;
 }
 
 export function intervalBucketSec(interval: ChartInterval): number {
@@ -203,8 +241,8 @@ export function chartVisibleLogicalRange(
 }
 
 /**
- * Price pane geometry. Candles sit in the bottom part of the pane with empty
- * headroom above (Stonk layout) and a flat print still gets a readable band.
+ * Price pane geometry. Modest padding so candles fill the plot (Defined / TV)
+ * instead of hugging the bottom under empty headroom.
  */
 export function chartPriceBand(
   minValue: number,
@@ -221,8 +259,8 @@ export function chartPriceBand(
   const hi = span >= minSpan ? hi0 : mid + minSpan / 2;
   const height = hi - lo;
   return {
-    minValue: Math.max(lo - height * 0.1, 0),
-    maxValue: hi + height * 1.3,
+    minValue: Math.max(lo - height * 0.12, 0),
+    maxValue: hi + height * 0.16,
   };
 }
 
@@ -298,14 +336,6 @@ export function seedLaunchBars(launchedAt: number | undefined, marketCap: number
       volume: 0,
     },
   ];
-}
-
-export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
-  if (geckoMcap.length >= 8 && geckoMcap.length > house.length) {
-    return mergeChartSeries(geckoMcap, house);
-  }
-  if (house.length > 0) return house;
-  return geckoMcap;
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {

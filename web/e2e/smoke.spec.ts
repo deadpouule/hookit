@@ -71,17 +71,36 @@ test.describe("Hookit UI smoke", () => {
   });
 
   test("Token desk chart scrubs and creator fees are public", async ({ page }) => {
-    await page.goto("/token/1");
+    await page.goto("/");
+    const card = page.locator(".market-card").first();
+    await expect(card).toBeVisible({ timeout: 45_000 });
+    await card.click();
     await expect(page).toHaveURL(/\/token\//, { timeout: 20_000 });
 
-    const plot = page.locator(".bg-chart-bg").first();
+    const plot = page.locator(".token-chart-plot").first();
     await expect(plot).toBeVisible({ timeout: 30_000 });
     const box = await plot.boundingBox();
     expect(box).toBeTruthy();
     await page.mouse.move(box!.x + box!.width * 0.45, box!.y + box!.height * 0.5);
     await expect(page.getByText(/Market cap/i).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole("button", { name: "Price" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Market cap" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mcap" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Candles" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Line" })).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(page.getByText(/Creator fees/i).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: /^Claim$/i })).toHaveCount(0);
+  });
+
+    const plot = page.locator(".token-chart-plot").first();
+    await expect(plot).toBeVisible({ timeout: 30_000 });
+    const box = await plot.boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.move(box!.x + box!.width * 0.45, box!.y + box!.height * 0.5);
+    await expect(page.getByText(/Market cap/i).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole("button", { name: "Price" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mcap" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Candles" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Line" })).toBeVisible();
 
@@ -107,6 +126,8 @@ test.describe("Hookit UI smoke", () => {
     const body = await res.json();
     expect(body.ethUsd).toBeGreaterThan(500);
     expect(body.ethUsd).toBeLessThan(20_000);
+    expect(body.launchEthUsd).toBeGreaterThan(500);
+    expect(body.launchEthUsd).toBeLessThan(20_000);
     // Should not be stuck on the $4000 factory seed forever once feed works
     expect(Math.abs(body.ethUsd - 4000) > 50 || body.ethUsd !== 4000).toBeTruthy();
   });

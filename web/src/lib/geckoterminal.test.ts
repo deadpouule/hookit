@@ -56,3 +56,30 @@ test("pickGeckoPoolForToken keeps the deepest pool and token side", () => {
   assert.equal(pick?.address, "0x2222222222222222222222222222222222222222");
   assert.equal(pick?.tokenSide, "quote");
 });
+
+test("pickGeckoPoolForToken matches the requested quote and does not fall back", () => {
+  const token = "0x0200c29006150606b650577bbe7b6248f58470c1";
+  const nvda = "0x1111111111111111111111111111111111111111";
+  const nflx = "0x2222222222222222222222222222222222222222";
+  const payload = {
+    data: [
+      {
+        attributes: { address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", reserve_in_usd: "10" },
+        relationships: {
+          base_token: { data: { id: `ink_${token}` } },
+          quote_token: { data: { id: `ink_${nvda}` } },
+        },
+      },
+      {
+        attributes: { address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", reserve_in_usd: "99" },
+        relationships: {
+          base_token: { data: { id: `ink_${token}` } },
+          quote_token: { data: { id: `ink_${nflx}` } },
+        },
+      },
+    ],
+  };
+  const nvdaPick = pickGeckoPoolForToken(payload, "ink", token, nvda);
+  assert.equal(nvdaPick?.address, "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa");
+  assert.equal(pickGeckoPoolForToken(payload, "ink", token, "0x3333333333333333333333333333333333333333"), null);
+});

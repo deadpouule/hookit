@@ -13,7 +13,10 @@ import {
   formatChartAxis,
   formatChartUsd,
   liveCandlesToBars,
+  chartHudBar,
+  isSyntheticBar,
   pickChartBars,
+  pinLiveMcap,
   priceBarsToMcap,
   scaleBars,
   seedLaunchBars,
@@ -108,7 +111,7 @@ test("priceBarsToMcap converts GeckoTerminal USD price into FDV", () => {
   assert.equal(mcap[0]!.volume, 50);
 });
 
-test("pickChartBars uses the denser Gecko series when house only has a few prints", () => {
+test("pickChartBars does not splice Gecko onto a house tape", () => {
   const indexer = [{ time: 1, open: 1, high: 1, low: 1, close: 1, volume: 0 }];
   const gecko = Array.from({ length: 8 }, (_, i) => ({
     time: i,
@@ -118,7 +121,9 @@ test("pickChartBars uses the denser Gecko series when house only has a few print
     close: 2,
     volume: 1,
   }));
-  assert.ok(pickChartBars(indexer, gecko, "5m").length >= 8);
+  const fromGecko = pickChartBars(indexer, gecko, "5m");
+  assert.equal(fromGecko.length, 8);
+  assert.ok(fromGecko.every((b) => b.close === 2));
   assert.equal(pickChartBars([], gecko, "ALL")[0]!.close, 2);
   const houseTape = Array.from({ length: 12 }, (_, i) => ({
     time: i,
@@ -128,7 +133,33 @@ test("pickChartBars uses the denser Gecko series when house only has a few print
     close: 1,
     volume: 0,
   }));
-  assert.equal(pickChartBars(houseTape, gecko, "5m")[0]!.close, 1);
+  const houseOnly = pickChartBars(houseTape, gecko, "5m");
+  assert.equal(houseOnly.length, 12);
+  assert.ok(houseOnly.every((b) => b.close === 1));
+});
+
+test("pinLiveMcap pins the last real bar and carries synthetics", () => {
+  const bars = [
+    { time: 1, open: 10, high: 12, low: 9, close: 11, volume: 4 },
+    { time: 2, open: 11, high: 11, low: 11, close: 11, volume: 0 },
+    { time: 3, open: 11, high: 11, low: 11, close: 11, volume: 0 },
+  ];
+  assert.equal(isSyntheticBar(bars[1]!), true);
+  const pinned = pinLiveMcap(bars, 15);
+  assert.equal(pinned[0]!.close, 15);
+  assert.equal(pinned[0]!.high, 15);
+  assert.equal(pinned[1]!.close, 15);
+  assert.equal(pinned[1]!.volume, 0);
+  assert.equal(pinned[2]!.close, 15);
+});
+
+test("chartHudBar prefers the last traded bar over a trailing fill", () => {
+  const bars = [
+    { time: 1, open: 10, high: 12, low: 9, close: 11, volume: 40 },
+    { time: 2, open: 11, high: 11, low: 11, close: 11, volume: 0 },
+  ];
+  assert.equal(chartHudBar(bars, null)?.volume, 40);
+  assert.equal(chartHudBar(bars, bars[1]!)?.time, 2);
 });
 
 test("ticksToBars buckets swaps into 1m OHLC", () => {
@@ -190,16 +221,15 @@ test("candles pin to the right axis at a fixed 9px pitch", () => {
   assert.equal(chartVisibleLogicalRange(0), null);
 });
 
-test("chartPriceBand keeps candles low with headroom above and pads a flat print", () => {
+test("chartPriceBand pads a live range and a flat print without empty headroom", () => {
   const band = chartPriceBand(100, 120);
   assert.ok(band);
-  assert.equal(band.minValue, 98);
-  assert.equal(band.maxValue, 146);
+  assert.equal(band.minValue, 97.6);
+  assert.equal(band.maxValue, 123.2);
   const flat = chartPriceBand(0.000003, 0.000003);
   assert.ok(flat);
   assert.ok(flat.minValue < 0.000003);
   assert.ok(flat.maxValue > 0.000003);
-  assert.ok((0.000003 - flat.minValue) * 2 < flat.maxValue - 0.000003);
   assert.equal(chartPriceBand(0, 0), null);
 });
 

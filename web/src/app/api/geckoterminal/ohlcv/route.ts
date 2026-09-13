@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const tokenAddress = normalizeTokenAddress(url.searchParams.get("token") ?? undefined);
   const interval = url.searchParams.get("interval");
+  const quote = url.searchParams.get("quote");
 
   if (!tokenAddress) {
     return NextResponse.json({ error: "Invalid token address" }, { status: 400 });
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await fetchGeckoTerminalBars(tokenAddress, interval);
+    const result = await fetchGeckoTerminalBars(tokenAddress, interval, quote);
     return NextResponse.json(result);
   } catch (error) {
     const status = (error as { status?: number }).status;
