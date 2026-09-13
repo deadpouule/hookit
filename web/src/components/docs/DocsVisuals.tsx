@@ -46,7 +46,7 @@ function Pipe({
               <strong>{node.t}</strong>
               {node.d ? <p>{node.d}</p> : null}
             </div>
-            {i < nodes.length, 1 ? (
+            {i < nodes.length - 1 ? (
               <span className="docs-pipe-arrow" aria-hidden>
                 →
               </span>
@@ -602,7 +602,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
                 { x: 312, h: 18, l: "…" },
               ].map((bar) => (
                 <g key={bar.x}>
-                  <rect x={bar.x} y={108, bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
+                  <rect x={bar.x} y={108 - bar.h} width="28" height={bar.h} rx="5" fill="rgb(245 158 11 / 0.35)" />
                   <text x={bar.x + 14} y="122" textAnchor="middle" fill="#71717a" fontSize="8">
                     {bar.l}
                   </text>
