@@ -31,7 +31,6 @@ export type DocsSlug =
   | "reading"
   | "pricing"
   | "risks"
-  | "support"
   | "terms";
 
 export interface DocsPageMeta {
@@ -299,14 +298,6 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "Unaudited software. Tokens can go to zero.",
     group: "Reference",
     keywords: "risk unaudited copycat liquidity",
-  },
-  {
-    slug: "support",
-    href: "#support",
-    title: "Support",
-    description: "GitHub issues. No SLA.",
-    group: "Reference",
-    keywords: "github support",
   },
   {
     slug: "terms",

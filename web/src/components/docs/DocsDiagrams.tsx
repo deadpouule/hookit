@@ -243,23 +243,32 @@ function FeeSplitDiagram() {
 
 function SwapLifecycleDiagram() {
   const steps = [
-    { n: "01", t: "beforeSwap", d: "Anti-MEV, max-tx, max-wallet. Compute 1% + hook tax + snipe." },
-    { n: "02", t: "Take quote", d: "Fee is pulled from the quote leg only. Never a memecoin tax." },
-    { n: "03", t: "Route", d: "Hook pot → modules. Base 1% → 60 / 10 / 30." },
-    { n: "04", t: "afterSwap", d: "Pending auto-burn buy+burn and Deepen LPs mint." },
+    { t: "beforeSwap", d: "MEV, caps, 1% + tax" },
+    { t: "Take quote", d: "Quote leg only" },
+    { t: "Route", d: "60 / 10 / 30 + pot" },
+    { t: "afterSwap", d: "Burn + deepen mint" },
   ];
   return (
     <figure className="docs-schema">
       <figcaption>Master swap lifecycle</figcaption>
-      <ol className="docs-lifecycle">
-        {steps.map((step) => (
-          <li key={step.n}>
-            <span>{step.n}</span>
-            <h4>{step.t}</h4>
-            <p>{step.d}</p>
+      <ol className="docs-pipe">
+        {steps.map((step, i) => (
+          <li key={step.t}>
+            <div className="docs-pipe-box">
+              <strong>{step.t}</strong>
+              <p>{step.d}</p>
+            </div>
+            {i < steps.length - 1 ? (
+              <span className="docs-pipe-arrow" aria-hidden>
+                →
+              </span>
+            ) : null}
           </li>
         ))}
       </ol>
+      <p className="docs-schema-note">
+        Fee is never a memecoin tax. Hook pot funds modules. Base 1% is always 60 / 10 / 30.
+      </p>
     </figure>
   );
 }

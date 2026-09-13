@@ -1,9 +1,7 @@
 import {
   BASE_FEE_BPS,
   CREATOR_SHARE_BPS,
-  CUSTOM_SOLIDITY_HOOKS_ENABLED,
   DEFAULT_LAUNCH_ETH_USD,
-  GITHUB_REPO_URL,
   GRADUATION_ETH,
   HKT_HOLDER_SHARE_BPS,
   LAUNCH_FEE_ETH,
@@ -25,7 +23,6 @@ import {
 import { getDefaultRpcUrl, getNetworkLabel, resolveHookitChainKey } from "@/lib/chains";
 import type { BrowseHookId } from "@/lib/master-hooks";
 import { MAX_DEV_BUY_BPS } from "@/lib/protocol-limits";
-import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 export type DocsSectionId =
   | "overview"
@@ -60,7 +57,6 @@ export type DocsSectionId =
   | "reading"
   | "pricing"
   | "risks"
-  | "support"
   | "terms";
 
 export type DocsDiagramId =
@@ -75,6 +71,8 @@ export type DocsDiagramId =
 
 export type DocsVisualId =
   | "wizard"
+  | "creator-flow"
+  | "router"
   | "master-studio"
   | "multi-pair"
   | "arb-keeper"
@@ -101,7 +99,6 @@ export type DocsVisualId =
   | "reading"
   | "pricing"
   | "risks"
-  | "support"
   | "terms";
 
 export type DocsFormulaLine = {
@@ -193,7 +190,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "reading", label: "Reading state" },
       { id: "pricing", label: "Pricing" },
       { id: "risks", label: "Risks" },
-      { id: "support", label: "Support" },
       { id: "terms", label: "Terms" },
     ],
   },
@@ -242,20 +238,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "diagram",
           id: "rails",
-        },
-        {
-          type: "h3",
-          text: "What you can do",
-        },
-        {
-          type: "ul",
-          items: [
-            "Explore. Browse launches. Filter by hook (All → Protection → Tokenomics → Rewards → Trading Fees), RWA / Quotrons pair, or multi-pair. OG vs copycat ticker badges.",
-            "Hooks. Marketplace of modules with live-use counts.",
-            "Launch. Master wizard (token & pair → protection → tokenomics → trading fees → fee split → review) or Classic bonding. /builder is the same modules as a draft, then deep-links to launch.",
-            "Trade. Market swap on the token page through HookitSwapRouter so hook rules stay applied.",
-            "Analytics. /stats - volume, protocol revenue, $HKT buyback/burn, holder-drop estimates.",
-          ],
         },
         {
           type: "callout",
@@ -315,7 +297,6 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "No custody wallet and no on-site portfolio page. Created / held tokens show on Explore and the token desk from the connected address.",
-            "No resting on-chain limit book. Pro-mode alerts are browser toasts.",
           ],
         },
       ],
@@ -456,39 +437,12 @@ export function buildDocsSections(): DocsSection[] {
           text: "Creator flow",
         },
         {
-          type: "steps",
-          steps: [
-            {
-              num: "01",
-              title: "Connect",
-              text: `Use ${network}. You need gas plus the ${LAUNCH_FEE_ETH} ETH launch fee.`,
-            },
-            {
-              num: "02",
-              title: "Token & pair",
-              text: "Name, ticker, image, links, quote (ETH, USDG, or a Quotrons wStock). Optional extra markets. Metadata URI is on-chain; images pin via /api/ipfs/upload + /api/ipfs/metadata.",
-            },
-            {
-              num: "03",
-              title: "Protection",
-              text: "Anti-MEV, Anti-Snipe, Max Tx, Max Wallet.",
-            },
-            {
-              num: "04",
-              title: "Tokenomics",
-              text: "Holder Airdrop, Auto-Burn, Backed Floor, Buyback Vesting, Deepen LPs.",
-            },
-            {
-              num: "05",
-              title: "Trading fees + split",
-              text: "Dynamic Fees or Fixed Fees, optional Creator → Hook, then the hook-pot 100% split.",
-            },
-            {
-              num: "06",
-              title: "Review & launch",
-              text: "Master deploys token + pool + locked LP. Classic opens the curve. Optional same-tx dev buy, capped at 2.5% of supply.",
-            },
-          ],
+          type: "visual",
+          id: "creator-flow",
+        },
+        {
+          type: "p",
+          text: `Connect on ${network} with gas plus the ${LAUNCH_FEE_ETH} ETH launch fee. Name, ticker, image, links, and quote (ETH, USDG, or a Quotrons wStock) pin on-chain via /api/ipfs/upload + /api/ipfs/metadata.`,
         },
         {
           type: "h3",
@@ -529,16 +483,6 @@ export function buildDocsSections(): DocsSection[] {
             `Curve graduates at ~${GRADUATION_ETH} ETH (or USDG / wStock equivalent).`,
             "After graduation, leftover tokens + collected quote seed a full-range v4 pool.",
             "GraduatedFeeHook keeps the same 1% quote-only base. No Master hook tax.",
-          ],
-        },
-        {
-          type: "callout",
-          title: "Custom Solidity hooks vs Builder",
-          items: [
-            CUSTOM_SOLIDITY_HOOKS_ENABLED
-              ? "You can paste your own v4 hook. hookit mines CREATE2 flags and deploys from your wallet. Unreviewed."
-              : "Custom Solidity hooks are off for the Ink soft launch. The UI and factory allowlist stay closed until an audit.",
-            "/builder composes the same Master modules. It is not a custom Solidity hook.",
           ],
         },
       ],
@@ -592,11 +536,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "visual",
           id: "quotrons",
-        },
-        {
-          type: "table",
-          headers: ["Ticker", "Name"],
-          rows: INK_QUOTRON_STOCKS.map((stock) => [stock.symbol, stock.name]),
         },
         {
           type: "ul",
@@ -656,37 +595,16 @@ export function buildDocsSections(): DocsSection[] {
           text: "Master and graduated pools need HookitSwapRouter so fee take, floor fills, burns, and airdrop pushes run. A generic DEX UI can skip hook accounting or revert.",
         },
         {
+          type: "visual",
+          id: "router",
+        },
+        {
           type: "ul",
           items: [
             "swapExactIn - single hooked pool, quote already in the pool currency.",
             "swapExactInComposite - bridge leg (Quotrons / ETH↔USDG) then hooked launch leg, one unlock.",
             "swapExactInCompositeSell - token → quote → stable.",
             "wStock pools: pay USDG. ETH-quoted pools take ETH.",
-          ],
-        },
-        {
-          type: "h3",
-          text: "Classic pre-graduation",
-        },
-        {
-          type: "p",
-          text: "Trades hit BondingLaunchFactory.buy / sell on the virtual CPMM, not the v4 router. The token page shows realQuote / graduationQuote. After graduation, use HookitSwapRouter on the GraduatedFeeHook pool (1% base only, no modules).",
-        },
-        {
-          type: "h3",
-          text: "Charts",
-        },
-        {
-          type: "p",
-          text: "Primary tape is house indexer candles (mcap-based, 5m default, 1m available). Fallback is GeckoTerminal OHLCV. Defined.fi is a deep-link second tape, not the in-app chart.",
-        },
-        {
-          type: "callout",
-          title: "Limit and stop",
-          items: [
-            "Pro-mode limit/stop tabs are browser alerts, not resting on-chain orders.",
-            "They toast when spot crosses the target. You still sign a market swap.",
-            "Alerts live in local storage. Close the tab and they do not fire.",
           ],
         },
       ],
@@ -1832,28 +1750,8 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
             "Custom hooks (when enabled) can honeypot, tax, or block sells.",
             "Low liquidity means the printed price is not an exit.",
             "RPC, wallet, and indexer outages show stale or empty UI.",
-            "Limit/stop alerts need your browser open.",
             "Explore flags original vs copycat tickers. A green OG badge is not a vet.",
           ],
-        },
-      ],
-    },
-    {
-      id: "support",
-      title: "Support",
-      group: "Reference",
-      blocks: [
-        {
-          type: "p",
-          text: `Bugs and integration questions: ${GITHUB_REPO_URL}. Include chain, token, tx hash, and wallet.`,
-        },
-        {
-          type: "visual",
-          id: "support",
-        },
-        {
-          type: "p",
-          text: "No support SLA. Software is early.",
         },
       ],
     },

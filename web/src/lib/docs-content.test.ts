@@ -86,6 +86,11 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /quote accrued into BuybackVault/);
   assert.match(blob, /Six wizard steps/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
+  assert.equal(blob.includes("What you can do"), false);
+  assert.equal(blob.includes("Custom Solidity hooks vs Builder"), false);
+  assert.equal(blob.includes("Limit and stop"), false);
+  assert.equal(blob.includes("Pro-mode"), false);
+  assert.equal(ids.includes("support"), false);
   assert.equal(sections.filter((section) => section.id === "floor").length, 1);
 });
 
@@ -102,6 +107,13 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /case "arb-keeper"/);
   assert.match(visuals, /docs-wizard-shot/);
   assert.match(visuals, /Create a hooked token/);
+  assert.match(visuals, /docs-pipe/);
+  assert.match(visuals, /docs-quotrons-stock/);
+  assert.match(visuals, /case "router"/);
+  assert.match(visuals, /case "creator-flow"/);
+  assert.equal(visuals.includes('className="docs-wizard"'), false);
+  const deepenBlock = visuals.split('case "deepen-lps"')[1]?.split("case \"")[0] ?? "";
+  assert.equal(deepenBlock.includes("docs-visual-hook-row"), false);
   assert.equal(visuals.includes("pendingDeepenLps"), false);
   assert.equal(visuals.includes("Holders of $TICKER"), false);
 });

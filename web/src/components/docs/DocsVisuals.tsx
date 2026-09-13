@@ -7,7 +7,8 @@ import { HookLogo } from "@/components/home/market/HookLogo";
 import { PairingMark } from "@/components/launch/PairingMark";
 import type { DocsVisualId } from "@/lib/docs-content";
 import type { BrowseHookId, HookTheme } from "@/lib/master-hooks";
-import { GITHUB_REPO_URL } from "@/lib/constants";
+import type { PairingTokenId } from "@/lib/pairing-tokens";
+import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 function Figure({
   caption,
@@ -27,22 +28,33 @@ function Figure({
   );
 }
 
-function Flow({
+function Pipe({
+  caption,
+  note,
   nodes,
 }: {
-  nodes: { t: string; d: string; icon?: ReactNode }[];
+  caption: string;
+  note?: string;
+  nodes: { t: string; d?: string }[];
 }) {
   return (
-    <ol className="docs-lifecycle">
-      {nodes.map((node, i) => (
-        <li key={node.t}>
-          <span>{String(i + 1).padStart(2, "0")}</span>
-          {node.icon ? <div className="docs-visual-icon">{node.icon}</div> : null}
-          <h4>{node.t}</h4>
-          <p>{node.d}</p>
-        </li>
-      ))}
-    </ol>
+    <Figure caption={caption} note={note}>
+      <ol className="docs-pipe">
+        {nodes.map((node, i) => (
+          <li key={node.t}>
+            <div className="docs-pipe-box">
+              <strong>{node.t}</strong>
+              {node.d ? <p>{node.d}</p> : null}
+            </div>
+            {i < nodes.length - 1 ? (
+              <span className="docs-pipe-arrow" aria-hidden>
+                →
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </Figure>
   );
 }
 
@@ -107,16 +119,33 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
   switch (id) {
     case "wizard":
       return (
-        <Figure caption="Master launch wizard" note="Six steps. Bitmask and vestPacked freeze at launch.">
-          <ol className="docs-wizard">
-            {["Token & pair", "Protection", "Tokenomics", "Trading fees", "Fee split", "Review"].map((step, i) => (
-              <li key={step}>
-                <span>{String(i + 1).padStart(2, "0")}</span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </Figure>
+        <Pipe
+          caption="How a launch is built"
+          note="Bitmask and vestPacked freeze at launch."
+          nodes={[
+            { t: "Token & pair", d: "Name, ticker, quote" },
+            { t: "Protection", d: "Snipe, MEV, caps" },
+            { t: "Tokenomics", d: "Floor, burn, deepen" },
+            { t: "Fees", d: "Dynamic or fixed" },
+            { t: "Split", d: "Hook pot 100%" },
+            { t: "Review", d: "Sign and deploy" },
+          ]}
+        />
+      );
+    case "creator-flow":
+      return (
+        <Pipe
+          caption="Creator path"
+          note="Same wallet. One (or two) transactions."
+          nodes={[
+            { t: "Connect", d: "Ink + launch fee" },
+            { t: "Token & pair", d: "Metadata on-chain" },
+            { t: "Protection", d: "Optional shields" },
+            { t: "Tokenomics", d: "Optional sinks" },
+            { t: "Fees", d: "Tax and split" },
+            { t: "Launch", d: "Token + locked LP" },
+          ]}
+        />
       );
     case "multi-pair":
       return (
@@ -273,9 +302,13 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
         >
           <div className="docs-quotrons">
             <PoweredByQuotronsBadge variant="compact" className="docs-quotrons-badge" />
-            <div className="docs-quotrons-row">
-              {(["waaplx", "wnvdax", "wtslax", "wspyx", "usdg"] as const).map((id) => (
-                <PairingMark key={id} id={id} size="sm" />
+            <div className="docs-quotrons-list">
+              {INK_QUOTRON_STOCKS.map((stock) => (
+                <div key={stock.symbol} className="docs-quotrons-stock">
+                  <PairingMark id={stock.symbol.toLowerCase() as PairingTokenId} size="sm" />
+                  <strong>{stock.symbol}</strong>
+                  <span>{stock.name}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -283,15 +316,38 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "trading":
       return (
-        <Figure caption="Hooked swap path">
-          <Flow
-            nodes={[
-              { t: "Wallet", d: "Sign buy or sell" },
-              { t: "HookitSwapRouter", d: "Required - generic DEX UIs skip hook accounting" },
-              { t: "v4 pool", d: "Fee tier 0. Spot is sqrtPriceX96" },
-              { t: "MasterLaunchHook", d: "Quote fee, modules, then 60 / 10 / 30" },
-            ]}
-          />
+        <Pipe
+          caption="Hooked swap path"
+          nodes={[
+            { t: "Wallet", d: "Sign buy or sell" },
+            { t: "HookitSwapRouter", d: "Keeps hook accounting" },
+            { t: "v4 pool", d: "Fee tier 0" },
+            { t: "MasterLaunchHook", d: "Quote fee → 60 / 10 / 30" },
+          ]}
+        />
+      );
+    case "router":
+      return (
+        <Figure
+          caption="Why the hookit router"
+          note="Generic DEX UIs can skip hook accounting or revert."
+        >
+          <div className="docs-router">
+            <div className="docs-router-row docs-router-row--bad">
+              <span>Wallet</span>
+              <i aria-hidden>→</i>
+              <span>Generic DEX</span>
+              <i aria-hidden>→</i>
+              <strong>Skip / revert</strong>
+            </div>
+            <div className="docs-router-row docs-router-row--ok">
+              <span>Wallet</span>
+              <i aria-hidden>→</i>
+              <span>HookitSwapRouter</span>
+              <i aria-hidden>→</i>
+              <strong>Fees + modules</strong>
+            </div>
+          </div>
         </Figure>
       );
     case "creator-fees":
@@ -422,8 +478,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           caption="The book gets thicker"
           note="Hook-tax quote is minted back into the same launch ticks. Not paid to holders."
         >
-          <div className="docs-visual-hook-row">
-            <div className="docs-deepen-waves">
+          <div className="docs-deepen-waves">
               <div className="docs-deepen-col">
                 <span>At launch</span>
                 <HookLogo hookId="deepen-lps" theme="nature" className="docs-deepen-logo docs-deepen-logo--thin" />
@@ -438,7 +493,6 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
                 <small>Deeper, larger</small>
               </div>
             </div>
-          </div>
           <Example
             title="Example - 2% hook tax, 100% to Deepen LPs"
             rows={[
@@ -772,16 +826,17 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "pricing":
       return (
-        <Figure caption="Spot → FDV">
-          <Flow
-            nodes={[
-              { t: "sqrtPriceX96", d: "StateView.getSlot0" },
-              { t: "P quote/token", d: "(√P / 2⁹⁶)²" },
-              { t: "× 1B", d: "Fixed supply" },
-              { t: "× FX", d: "ETH/USD or wStock/USDG" },
-            ]}
-          />
-        </Figure>
+        <Pipe
+          caption="Spot to FDV"
+          note="Classic on the curve uses virtual reserves instead of sqrtPriceX96."
+          nodes={[
+            { t: "sqrtPriceX96", d: "StateView.getSlot0" },
+            { t: "P quote / token", d: "(√P / 2⁹⁶)²" },
+            { t: "× 1B", d: "Fixed supply" },
+            { t: "× FX", d: "ETH/USD or wStock" },
+            { t: "FDV", d: "USD print" },
+          ]}
+        />
       );
     case "risks":
       return (
@@ -800,17 +855,6 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               <p>Printed price is not an exit.</p>
             </article>
           </div>
-        </Figure>
-      );
-    case "support":
-      return (
-        <Figure caption="Where to file">
-          <p className="docs-support-link">
-            <a href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">
-              {GITHUB_REPO_URL.replace("https://", "")}
-            </a>
-            <small>Chain · token · tx hash · wallet. No SLA.</small>
-          </p>
         </Figure>
       );
     case "terms":
