@@ -176,7 +176,9 @@ export function DocsPage() {
             <HookitLogo size="sm" />
             hookit docs
           </p>
-          <h1 className="docs-hero-title">Protocol, flywheel, and formulas.</h1>
+          <h1 className="docs-hero-title">
+            Everything about <span className="docs-hero-brand">hookit.fun</span>, in one place.
+          </h1>
           <p className="docs-hero-lede">
             Dual-rail Uniswap v4 launchpad on {network}. Quote-only fees, locked LP, modular hooks.
             No custody. No hidden steps.
