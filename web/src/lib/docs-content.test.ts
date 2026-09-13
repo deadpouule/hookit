@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildDocsSections, DOCS_NAV } from "./docs-content";
+import { buildDocsSections, DOCS_NAV, type DocsSectionId } from "./docs-content";
 import { DOCS_SECTION_IDS } from "./docs";
 
 test("docs nav ids match rendered sections and metadata", () => {
@@ -27,10 +27,7 @@ test("docs place Deepen LPs in Protection and include pro blocks", () => {
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "diagram")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "formulas")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "hooks")));
-  assert.equal(
-    sections.find((section) => section.id === "overview")?.blocks.some((block) => block.type === "totem"),
-    false,
-  );
+  assert.equal(JSON.stringify(sections.find((section) => section.id === "overview")).includes("totem"), false);
 });
 
 test("docs cover $HKT thesis and in-depth modules", () => {
@@ -56,7 +53,7 @@ test("docs cover $HKT thesis and in-depth modules", () => {
 test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () => {
   const sections = buildDocsSections();
   const ids = sections.map((section) => section.id);
-  for (const id of [
+  const required: DocsSectionId[] = [
     "multi-pair",
     "quotrons",
     "creator-fees",
@@ -69,7 +66,8 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
     "creator-share",
     "fixed-fees",
     "analytics",
-  ]) {
+  ];
+  for (const id of required) {
     assert.ok(ids.includes(id), `missing ${id}`);
   }
   const blob = JSON.stringify(sections);
