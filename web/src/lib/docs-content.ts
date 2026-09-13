@@ -321,7 +321,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "$HKT is itself a Uniswap v4 hooked token on hookit. MasterLaunchHook runs Anti-MEV, Anti-Snipe, Auto-Burn, and Deepen LPs. The hook pot is 80% Auto-Burn and 20% Deepen LPs. Separately, 80% of protocol fees buy $HKT and burn it.",
+          text: "$HKT is itself a Uniswap v4 hooked token on hookit. MasterLaunchHook runs Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn, and Deepen LPs. Creator → Hook sends the 60% creator cut of the 1% into the hook pot. The hook pot is 80% Auto-Burn and 20% Deepen LPs, so fees taken on $HKT swaps burn $HKT too. Separately, 80% of protocol fees from every launch buy $HKT and burn it.",
         },
         {
           type: "diagram",
@@ -354,7 +354,7 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             {
               term: "Role",
-              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Auto-Burn 80%, Deepen LPs 20%.",
+              text: "Fair-launched Uniswap v4 hooked token of the pad (Ink may still show HOOKTEST / HTST on an early stack). Modules: Anti-MEV, Anti-Snipe, Creator → Hook, Auto-Burn 80%, Deepen LPs 20%. Fees taken on the $HKT pool burn $HKT.",
             },
             {
               term: "Holder cut",

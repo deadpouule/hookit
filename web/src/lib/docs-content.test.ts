@@ -46,6 +46,8 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /Uniswap v4 hooked token/);
   assert.match(hkt, /80% Auto-Burn/);
   assert.match(hkt, /20% Deepen LPs/);
+  assert.match(hkt, /Creator → Hook/);
+  assert.match(hkt, /fees taken on \$HKT swaps burn \$HKT/);
   assert.match(hkt, /hkt-burn/);
   assert.equal(hkt.includes("$HKT drop (always on)"), false);
   assert.match(JSON.stringify(sections.find((section) => section.id === "fees")), /cannot be removed or rerouted/);

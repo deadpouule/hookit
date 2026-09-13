@@ -347,7 +347,7 @@ function HktBurnDiagram() {
   return (
     <figure className="docs-schema">
       <figcaption>Buyback burn flywheel</figcaption>
-      <svg className="docs-spark" viewBox="0 0 360 188" role="img" aria-label="Protocol fees buy and burn HKT. The HKT pool burns 80 percent and deepens 20 percent.">
+      <svg className="docs-spark" viewBox="0 0 360 200" role="img" aria-label="Protocol fees buy and burn HKT. The HKT pool sends creator fees and hook tax into burn and deepen.">
         <rect x="12" y="16" width="72" height="40" rx="10" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
         <text x="48" y="40" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700">
           Swap
@@ -373,20 +373,23 @@ function HktBurnDiagram() {
         <text x="180" y="78" textAnchor="middle" fill="#71717a" fontSize="9">
           20% of protocol stays ops
         </text>
-        <rect x="16" y="96" width="328" height="76" rx="12" fill="#111" stroke="rgb(16 185 129 / 0.35)" />
+        <rect x="16" y="96" width="328" height="88" rx="12" fill="#111" stroke="rgb(16 185 129 / 0.35)" />
         <text x="180" y="118" textAnchor="middle" fill="#86efac" fontSize="11" fontWeight="700">
           $HKT Uniswap v4 hook
         </text>
         <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="9">
-          Anti-MEV · Anti-Snipe
+          Anti-MEV · Anti-Snipe · Creator → Hook
         </text>
         <text x="180" y="154" textAnchor="middle" fill="#fff" fontSize="10">
-          Hook pot 80% Auto-Burn · 20% Deepen LPs
+          Creator 60% + hook tax → hook pot
+        </text>
+        <text x="180" y="170" textAnchor="middle" fill="#fff" fontSize="10">
+          80% Auto-Burn · 20% Deepen LPs
         </text>
       </svg>
       <p className="docs-schema-note">
-        Protocol buyback is HkitBuyback.execute, then burn. The 80 / 20 split on the $HKT pool is
-        that token&apos;s own hook pot, not the 1% base.
+        Protocol buyback is HkitBuyback.execute, then burn. On the $HKT pool itself, Creator → Hook
+        plus the hook pot burn the fees that token prints.
       </p>
     </figure>
   );
