@@ -248,17 +248,14 @@ async function prefundExecutorCheapLeg(
     return;
   }
 
-  const keeperStock = await readErc20Balance(publicClient, cheapQuote, account);
-  if (keeperStock > 0n) {
-    const dust = BigInt(process.env.MULTI_PAIR_ARB_KEEPER_STOCK_DUST ?? "1000000000000000");
-    const send = keeperStock > dust ? keeperStock - dust : keeperStock;
-    if (send > 0n) {
-      await transferErc20(walletClient, publicClient, cheapQuote, executor, send);
-      console.log(
-        `[arb-keeper] direct prefund launch ${launchId}: sent ${send} wei ${cheapQuote} keeper → executor`,
-      );
-    }
-  }
+  await moveKeeperCheapStockToExecutor(
+    publicClient,
+    walletClient,
+    cheapQuote,
+    executor,
+    account,
+    launchId,
+  );
 
   const usdgBuyOk = await canSwapUsdgForStock(publicClient, cheapQuote);
   if (!usdgBuyOk) {
@@ -285,6 +282,29 @@ async function prefundExecutorCheapLeg(
   }
   await transferErc20(walletClient, publicClient, cheapQuote, executor, stockOut);
   console.log(`[arb-keeper] USDG prefund ok — sent ${stockOut} wei ${cheapQuote} to executor`);
+}
+
+/** Push keeper wStock inventory onto the executor (arb clips are capped by executor balance). */
+async function moveKeeperCheapStockToExecutor(
+  publicClient: ReturnType<typeof createPublicClient>,
+  walletClient: ReturnType<typeof createWalletClient>,
+  cheapQuote: Address,
+  executor: Address,
+  account: Address,
+  launchId: bigint,
+): Promise<bigint> {
+  const keeperStock = await readErc20Balance(publicClient, cheapQuote, account);
+  if (keeperStock === 0n) return 0n;
+
+  const dust = BigInt(process.env.MULTI_PAIR_ARB_KEEPER_STOCK_DUST ?? "1000000000000000");
+  const send = keeperStock <= dust * 2n ? keeperStock : keeperStock - dust;
+  if (send === 0n) return 0n;
+
+  await transferErc20(walletClient, publicClient, cheapQuote, executor, send);
+  console.log(
+    `[arb-keeper] direct prefund launch ${launchId}: sent ${send} wei ${cheapQuote} keeper → executor`,
+  );
+  return send;
 }
 
 async function cheapQuoteForMarket(
@@ -319,13 +339,14 @@ async function ensureExecutorFunded(
   },
 ): Promise<ArbPreview> {
   let preview = opts.preview;
+  const cheapIndex = preview.cheapIndex;
 
   for (let round = 0; round < 2; round++) {
     const cheapQuote = await cheapQuoteForMarket(
       publicClient,
       opts.factory,
       opts.launchId,
-      preview.cheapIndex,
+      cheapIndex,
     );
 
     if (opts.sweepUsdg) {
@@ -340,7 +361,7 @@ async function ensureExecutorFunded(
       executor: opts.executor,
       router: opts.router,
       launchId: opts.launchId,
-      cheapIndex: preview.cheapIndex,
+      cheapIndex,
       maxClipUsdX18: opts.maxClipUsdX18,
       account: opts.account,
     });
@@ -348,7 +369,7 @@ async function ensureExecutorFunded(
     preview = await readPreview(publicClient, opts.executor, opts.launchId);
     const execBalAfter = await readErc20Balance(publicClient, cheapQuote, opts.executor);
     console.log(
-      `[arb-keeper] fund round ${round + 1}/2 cheap=${preview.cheapIndex}` +
+      `[arb-keeper] fund round ${round + 1}/2 cheap=${cheapIndex}` +
         ` execBal=${execBalAfter} clip=${preview.clipQuoteWei} executable=${preview.executable}`,
     );
 
@@ -485,7 +506,37 @@ async function main() {
       console.log(`[arb-keeper] dry-run would prefund cheap leg from keeper USDG for launch ${launchId}`);
     }
 
-    if (!preview.executable) continue;
+    if (!preview.executable && skewed && !dryRun) {
+      const cheapQuote = await cheapQuoteForMarket(
+        publicClient,
+        factoryAddr,
+        launchId,
+        preview.cheapIndex,
+      );
+      const moved = await moveKeeperCheapStockToExecutor(
+        publicClient,
+        walletClient,
+        cheapQuote,
+        executor,
+        account.address,
+        launchId,
+      );
+      if (moved > 0n) {
+        preview = await readPreview(publicClient, executor, launchId);
+        console.log(
+          `[arb-keeper] after cheap-stock flush clip=${preview.clipQuoteWei} executable=${preview.executable}`,
+        );
+      }
+    }
+
+    if (!preview.executable) {
+      if (skewed) {
+        console.log(
+          `[arb-keeper] skip execute(${launchId}): clip=0 — fund executor cheap quote or add keeper USDG`,
+        );
+      }
+      continue;
+    }
     if (dryRun) {
       console.log(`[arb-keeper] dry-run skip execute(${launchId})`);
       continue;
