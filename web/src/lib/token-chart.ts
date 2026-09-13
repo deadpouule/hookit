@@ -55,7 +55,7 @@ function mergeBars(bars: ChartBar[]): ChartBar[] {
   return deduped;
 }
 
-export function liveCandlesToBars(candles: LiveCandle[], _nowSec?: number, liveMcap?: number): ChartBar[] {
+export function liveCandlesToBars(candles: LiveCandle[], _nowSec?: number, _liveMcap?: number): ChartBar[] {
   const timed = withCandleTimes(candles)
     .filter((c) => finitePos(c.c) || finitePos(c.o))
     .map((c) => {
@@ -74,16 +74,7 @@ export function liveCandlesToBars(candles: LiveCandle[], _nowSec?: number, liveM
     })
     .sort((a, b) => a.time - b.time);
 
-  const deduped = mergeBars(timed);
-
-  if (liveMcap && liveMcap > 0 && deduped.length > 0) {
-    const last = deduped[deduped.length - 1]!;
-    last.close = liveMcap;
-    last.high = Math.max(last.high, liveMcap);
-    last.low = Math.min(last.low, liveMcap);
-  }
-
-  return deduped;
+  return mergeBars(timed);
 }
 
 export function aggregateBars(bars: ChartBar[], bucketSec: number): ChartBar[] {
@@ -249,22 +240,46 @@ export function formatChartAxis(value: number, scale: ChartScale): string {
 }
 
 /**
- * Keep real prints only. Inventing flat OHLC in empty buckets draws a dotted
- * line across the pane and breaks timeframe switches.
+ * Carry the last close across empty time buckets so a few swaps still draw a
+ * full tape (DexScreener / Defined style) instead of one lonely spike.
  */
 export function fillEmptyBars(
   bars: ChartBar[],
   bucketSec: number,
   nowSec?: number,
-  _maxBars = 2_000,
+  maxBars = 2_000,
 ): ChartBar[] {
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
-  void nowSec;
-  return mergeBars(
+  const sorted = mergeBars(
     [...bars]
       .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec }))
       .sort((a, b) => a.time - b.time),
   );
+  const last = sorted[sorted.length - 1]!;
+  const end = Math.floor((nowSec && nowSec > last.time ? nowSec : last.time) / bucketSec) * bucketSec;
+  const span = Math.floor((end - sorted[0]!.time) / bucketSec) + 1;
+  const start =
+    span > maxBars ? end - (Math.max(maxBars, 1) - 1) * bucketSec : sorted[0]!.time;
+  const byTime = new Map(sorted.map((bar) => [bar.time, bar]));
+  const out: ChartBar[] = [];
+  let prev = sorted.find((bar) => bar.time <= start) ?? sorted[0]!;
+  for (let time = start; time <= end; time += bucketSec) {
+    const real = byTime.get(time);
+    if (real) {
+      out.push({ ...real });
+      prev = real;
+      continue;
+    }
+    out.push({
+      time,
+      open: prev.close,
+      high: prev.close,
+      low: prev.close,
+      close: prev.close,
+      volume: 0,
+    });
+  }
+  return out;
 }
 
 export function mergeChartSeries(left: ChartBar[], right: ChartBar[]): ChartBar[] {
@@ -286,6 +301,9 @@ export function seedLaunchBars(launchedAt: number | undefined, marketCap: number
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
+  if (geckoMcap.length >= 8 && geckoMcap.length > house.length) {
+    return mergeChartSeries(geckoMcap, house);
+  }
   if (house.length > 0) return house;
   return geckoMcap;
 }

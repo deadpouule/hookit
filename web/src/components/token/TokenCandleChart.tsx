@@ -200,7 +200,7 @@ export function TokenCandleChart({
   }, [interval]);
 
   const bars = useMemo(() => {
-    const fromCandles = liveCandlesToBars(candles, nowSec, marketCap);
+    const fromCandles = liveCandlesToBars(candles, nowSec);
     const fromSwaps = ticksToBars(
       swaps
         .filter((s) => s.t != null && s.t > 0 && s.marketCap > 0)
@@ -208,12 +208,13 @@ export function TokenCandleChart({
     );
     const house = mergeChartSeries(fromCandles, fromSwaps);
     const seeded = house.length ? house : seedLaunchBars(launchedAt, marketCap ?? 0);
-    const geckoMcap = pinLiveMcap(priceBarsToMcap(gecko.data?.bars ?? []), marketCap);
+    const geckoMcap = priceBarsToMcap(gecko.data?.bars ?? []);
     const source = pickChartBars(seeded, geckoMcap);
-    const withTicks = applySwapTicks(source, swaps);
     const bucket = intervalBucketSec(interval);
-    const display = barsForInterval(withTicks, interval);
-    return scaleBars(fillEmptyBars(display, bucket, nowSec), scale);
+    const display = barsForInterval(source, interval);
+    const filled = fillEmptyBars(display, bucket, nowSec);
+    const withTicks = applySwapTicks(filled, swaps);
+    return scaleBars(pinLiveMcap(withTicks, marketCap), scale);
   }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars, launchedAt]);
 
   const hasData = bars.length > 0;
