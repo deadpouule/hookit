@@ -362,24 +362,31 @@ function HktBurnDiagram() {
     <figure className="docs-schema">
       <figcaption>$HKT pool: modules + fee burn</figcaption>
       <div className="docs-hkt-pool">
-        <div className="docs-hkt-pool-core">
-          <span className="docs-hkt-pool-ticker">$HKT</span>
-          <small>Uniswap v4 Master hook</small>
+        <div className="docs-hkt-orbit" role="img" aria-label="$HKT pool surrounded by its five hook modules">
+          <div className="docs-hkt-ring" aria-hidden />
+          <div className="docs-hkt-sun">
+            <span className="docs-hkt-pool-ticker">$HKT</span>
+            <small>Uniswap v4 Master</small>
+          </div>
+          <ul className="docs-hkt-sats">
+            {HKT_POOL_HOOKS.map((item, i) => {
+              const hook = hookFromId(item.id);
+              return (
+                <li
+                  key={item.id}
+                  className={`docs-hkt-sat orb-card--${hook.theme}`}
+                  style={{ ["--a" as string]: `${-90+i*72}deg` }}
+                >
+                  <HookLogo hookId={hook.id} theme={hook.theme} />
+                  <div>
+                    <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
+                    <span>{item.meta}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-        <ul className="docs-hkt-pool-hooks">
-          {HKT_POOL_HOOKS.map((item) => {
-            const hook = hookFromId(item.id);
-            return (
-              <li key={item.id} className={`docs-hkt-pool-hook orb-card--${hook.theme}`}>
-                <HookLogo hookId={hook.id} theme={hook.theme} />
-                <div>
-                  <strong className={`orb-hook-title-plain orb-hook-desc-badge--${hook.theme}`}>{item.title}</strong>
-                  <span>{item.meta}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
         <ol className="docs-hkt-pool-flow">
           <li>
             <em>1</em>
@@ -425,40 +432,31 @@ function HktLoopDiagram() {
     { t: "$HTEST", d: "that pool" },
     { t: "…", d: "every launch" },
   ];
+  const stages = [
+    { k: "you", t: "$HKT bag", d: "live balance, pro-rata" },
+    { k: "swap", t: "Any hooked swap", d: "1% quote fee" },
+    { k: "cut", t: "0.10% of the trade", d: "10% of the 1%, mandatory" },
+    { k: "buy", t: "Buy that ticker", d: "HktHolderDropVault" },
+  ];
   return (
     <figure className="docs-schema">
       <figcaption>Hold $HKT, get a slice of every launch</figcaption>
       <div className="docs-hkt-thesis">
-        <div className="docs-hkt-thesis-col">
-          <div className="docs-hkt-thesis-node docs-hkt-thesis-node--you">
-            <strong>$HKT</strong>
-            <span>your live balance</span>
-          </div>
-        </div>
-        <div className="docs-hkt-thesis-track" aria-hidden>
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="docs-hkt-thesis-col">
-          <div className="docs-hkt-thesis-node">
-            <strong>Any hooked swap</strong>
-            <span>1% quote fee</span>
-          </div>
-          <div className="docs-hkt-thesis-node docs-hkt-thesis-node--cut">
-            <strong>0.10% of the trade</strong>
-            <span>10% of the 1%, mandatory</span>
-          </div>
-          <div className="docs-hkt-thesis-node">
-            <strong>Buy that ticker</strong>
-            <span>HktHolderDropVault</span>
-          </div>
-        </div>
-        <div className="docs-hkt-thesis-track" aria-hidden>
-          <i />
-          <i />
-          <i />
-        </div>
+        <ol className="docs-hkt-thesis-loop">
+          {stages.map((stage, i) => (
+            <li key={stage.k} className={`docs-hkt-thesis-node docs-hkt-thesis-node--${stage.k}`}>
+              <strong>{stage.t}</strong>
+              <span>{stage.d}</span>
+              {i < stages.length-1 ? (
+                <span className="docs-hkt-thesis-rail" aria-hidden>
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
         <div className="docs-hkt-thesis-drops">
           {drops.map((drop) => (
             <div key={drop.t} className="docs-hkt-thesis-chip">

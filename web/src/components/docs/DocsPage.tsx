@@ -228,7 +228,10 @@ export function DocsPage() {
           </aside>
 
           <main className="docs-main">
-            {sections.map((section) => (
+            {sections.map((section, index) => {
+              const prev = sections[index-1];
+              const showGroup = !prev || prev.group !== section.group;
+              return (
               <section
                 key={section.id}
                 id={section.id}
@@ -237,15 +240,13 @@ export function DocsPage() {
                   section.id === "integration" && "docs-section-integration",
                 )}
               >
+                {showGroup ? <p className="docs-section-group">{section.group}</p> : null}
                 {section.hookId ? (
                   <DocsHookHeading hookId={section.hookId} as="h2" />
-                ) : section.id === "integration" ? (
-                  <>
-                    <p className="docs-integration-kicker">Reference</p>
-                    <h2 className="docs-section-title docs-section-title-lg">{section.title}</h2>
-                  </>
                 ) : (
-                  <h2 className="docs-section-title">{section.title}</h2>
+                  <h2 className={cn("docs-section-title", section.id === "integration" && "docs-section-title-lg")}>
+                    {section.title}
+                  </h2>
                 )}
                 <div className="docs-section-body">
                   {section.blocks.map((block, i) => (
@@ -253,7 +254,8 @@ export function DocsPage() {
                   ))}
                 </div>
               </section>
-            ))}
+              );
+            })}
 
             <footer className="docs-footer">
               <p>
