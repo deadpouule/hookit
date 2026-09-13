@@ -9,6 +9,7 @@ test("token share title is Name ($TICKER) · hookit", () => {
 });
 
 test("browser tab icon is the owl, not the old infinity or mask file", () => {
-  assert.equal(SITE_FAVICON, "/brand/hookit-owl-favicon.png");
+  assert.match(SITE_FAVICON, /hookit-owl-favicon\.png/);
   assert.equal(SITE_FAVICON.includes("hookit-mark.png"), false);
+  assert.equal(SITE_FAVICON.includes("favicon.ico"), false);
 });

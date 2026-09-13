@@ -11,7 +11,15 @@ import { AppToaster } from "@/components/providers/AppToaster";
 import { Telemetry } from "@/components/providers/Telemetry";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isPhoneRequest } from "@/lib/device";
-import { SITE_DESCRIPTION, SITE_FAVICON, SITE_NAME, SITE_URL, socialMetadata } from "@/lib/site-metadata";
+import {
+  SITE_DESCRIPTION,
+  SITE_FAVICON,
+  SITE_FAVICON_32,
+  SITE_FAVICON_SVG,
+  SITE_NAME,
+  SITE_URL,
+  socialMetadata,
+} from "@/lib/site-metadata";
 
 import "./globals.css";
 
@@ -52,11 +60,12 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   icons: {
     icon: [
+      { url: SITE_FAVICON_SVG, type: "image/svg+xml" },
+      { url: SITE_FAVICON_32, type: "image/png", sizes: "32x32" },
       { url: SITE_FAVICON, type: "image/png", sizes: "512x512" },
-      { url: "/favicon.ico", type: "image/x-icon", sizes: "48x48" },
     ],
     apple: SITE_FAVICON,
-    shortcut: SITE_FAVICON,
+    shortcut: SITE_FAVICON_32,
   },
   ...socialMetadata(SITE_NAME, SITE_DESCRIPTION),
 };
