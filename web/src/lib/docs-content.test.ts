@@ -51,7 +51,8 @@ test("docs cover $HKT thesis and in-depth modules", () => {
   assert.match(hkt, /hkt-burn/);
   assert.match(hkt, /Not live yet/);
   assert.match(hkt, /57073/);
-  assert.equal(sections.find((section) => section.id === "hkt")?.group, "Protocol");
+  assert.equal(sections.find((section) => section.id === "hkt")?.group, "Tokenomics");
+  assert.equal(DOCS_NAV.some((group) => group.group === "Tokenomics"), true);
   assert.equal(ids.at(-1), "terms");
   assert.equal(ids.indexOf("hkt"), ids.indexOf("analytics") - 1);
   assert.ok(ids.indexOf("math") < ids.indexOf("hkt"));
@@ -96,7 +97,9 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /LpDeepened/);
   assert.match(blob, /already airdropped/);
   assert.match(blob, /quote accrued into BuybackVault/);
-  assert.match(blob, /Six wizard steps/);
+  assert.equal(blob.includes("Master (Launch Studio)"), false);
+  assert.match(blob, /2,304 programmable hook combinations/);
+  assert.match(blob, /Hold 1 \$HKT and you are exposed to every token launched/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
   assert.equal(blob.includes("What is immutable"), false);
@@ -126,8 +129,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /DocsLaunchSteps/);
   assert.match(visuals, /DocsCreatorEngine/);
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
-  assert.match(diagrams, /docs-hkt-orbit/);
+  assert.match(diagrams, /docs-hkt-schema/);
   assert.match(diagrams, /docs-hkt-thesis-loop/);
+  assert.match(diagrams, /DocsBranchGraph/);
+  assert.match(diagrams, /hookit-owl-favicon/);
   const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");
   assert.match(page, /docs-section-group/);
   assert.match(visuals, /docs-pipe/);

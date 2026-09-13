@@ -1,7 +1,6 @@
 import {
   BASE_FEE_BPS,
   CREATOR_SHARE_BPS,
-  DEFAULT_LAUNCH_ETH_USD,
   GRADUATION_ETH,
   HKT_HOLDER_SHARE_BPS,
   LAUNCH_FEE_ETH,
@@ -22,7 +21,6 @@ import {
 } from "@/lib/contracts/config";
 import { getDefaultRpcUrl, getNetworkLabel, resolveHookitChainKey } from "@/lib/chains";
 import type { BrowseHookId } from "@/lib/master-hooks";
-import { MAX_DEV_BUY_BPS } from "@/lib/protocol-limits";
 
 export type DocsSectionId =
   | "overview"
@@ -129,7 +127,7 @@ export type DocsSection = {
   id: DocsSectionId;
   title: string;
   hookId?: BrowseHookId;
-  group: "Introduction" | "Protocol" | "Modules" | "Reference";
+  group: "Introduction" | "Protocol" | "Modules" | "Tokenomics" | "Reference";
   blocks: DocsBlock[];
 };
 
@@ -180,7 +178,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     ],
   },
   {
-    group: "Protocol",
+    group: "Tokenomics",
     items: [{ id: "hkt", label: "$HKT" }],
   },
   {
@@ -231,6 +229,14 @@ export function buildDocsSections(): DocsSection[] {
       title: "Overview",
       group: "Introduction",
       blocks: [
+        {
+          type: "p",
+          text: "hookit is the first Uniswap v4 launchpad with 2,304 programmable hook combinations. Every token is a hooked pool: pick protection, tokenomics, and fee modules, then freeze them at launch.",
+        },
+        {
+          type: "p",
+          text: "Hold 1 $HKT and you are exposed to every token launched on the dapp. 10% of the 1% base fee buys that ticker and epoch-pushes it to live $HKT holders. More $HKT, larger slice of every launch.",
+        },
         {
           type: "p",
           text: `hookit is a permissionless Uniswap v4 launchpad on ${network}. Anyone can create a token, lock liquidity, and start trading from a wallet. The site never holds ETH, tokens, or keys.`,
@@ -289,30 +295,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "visual",
           id: "creator-flow",
-        },
-        {
-          type: "p",
-          text: `Connect on ${network} with gas plus the ${LAUNCH_FEE_ETH} ETH launch fee. Name, ticker, image, links, and quote (ETH, USDG, or a Quotrons wStock) pin on-chain via /api/ipfs/upload + /api/ipfs/metadata.`,
-        },
-        {
-          type: "h3",
-          text: "Master (Launch Studio)",
-        },
-        {
-          type: "p",
-          text: "Six wizard steps: Token & pair → Protection → Tokenomics → Trading fees → Fee split → Review & launch. /builder is the same module draft without the pair step, then deep-links here. On-chain this is LaunchFactory + MasterLaunchHook.",
-        },
-        {
-          type: "ul",
-          items: [
-            "1,000,000,000 tokens, 18 decimals, fixed supply.",
-            `Start price targets ~$${TARGET_LAUNCH_MCAP_USD.toLocaleString("en-US")} FDV in the chosen quote (ETH/USD TWAP seed $${DEFAULT_LAUNCH_ETH_USD.toLocaleString("en-US")}).`,
-            "Uniswap v4 pool fee tier is 0%. Tick spacing 60. The hook charges instead, quote-only.",
-            "LP is minted one-sided from the launch tick toward the usable range and locked. The creator cannot pull that LP.",
-            "Trading is live in the same transaction.",
-            "Optional modules pack into a uint256 bitmask. FDV vest plans pack separately as vestPacked. Both frozen after launch.",
-            `Dev buy: same-tx, max ${MAX_DEV_BUY_BPS / 100}% of supply, as % of supply or a fixed quote amount.`,
-          ],
         },
         {
           type: "diagram",
@@ -1627,7 +1609,7 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
     {
       id: "hkt",
       title: "$HKT",
-      group: "Protocol",
+      group: "Tokenomics",
       blocks: [
         {
           type: "p",
