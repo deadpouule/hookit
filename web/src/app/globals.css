@@ -9088,6 +9088,32 @@
   color: #71717a;
 }
 
+.docs-totem {
+  margin: 0.15rem 0 0.35rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1rem;
+  background: #0c0c0c;
+  padding: 0.85rem 0.6rem 1rem;
+}
+
+.docs-totem .hero-totem {
+  height: auto;
+  min-height: 22rem;
+}
+
+.docs-totem .hero-totem-stage {
+  width: min(100%, 22rem);
+}
+
+.hero-totem-kicker {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d8b4fe;
+}
+
 .docs-layout {
   display: grid;
   gap: 2.5rem;

@@ -1,11 +1,38 @@
 import { HookLogo } from "@/components/home/market/HookLogo";
-import type { DocsDiagramId } from "@/lib/docs-content";
+import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
+import type { DocsDiagramId, DocsSectionId } from "@/lib/docs-content";
 import {
   EXPLORE_HOOKS,
   MASTER_HOOK_FILTERS,
+  type BrowseHookId,
   type MasterHookCategory,
 } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
+
+const TOTEM_SECTION: Partial<Record<BrowseHookId, DocsSectionId>> = {
+  "anti-snipe": "hooks",
+  "anti-mev": "hooks",
+  "deepen-lps": "hooks",
+  "backed-floor": "floor",
+  "holder-airdrop": "hooks",
+  "buyback-vesting": "hooks",
+  "auto-burn": "hooks",
+  "dynamic-fees": "fees",
+};
+
+export function DocsTotem({ onSelectSection }: { onSelectSection: (id: DocsSectionId) => void }) {
+  return (
+    <figure className="docs-totem">
+      <HeroHookTotem
+        kicker="hookit.fun docs"
+        onSelectHook={(hook) => {
+          const section = TOTEM_SECTION[hook.id];
+          if (section) onSelectSection(section);
+        }}
+      />
+    </figure>
+  );
+}
 
 export function DocsDiagram({ id }: { id: DocsDiagramId }) {
   switch (id) {

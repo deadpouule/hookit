@@ -27,4 +27,5 @@ test("docs place Deepen LPs in Protection and include pro blocks", () => {
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "diagram")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "formulas")));
   assert.ok(sections.some((section) => section.blocks.some((block) => block.type === "hooks")));
+  assert.equal(sections.find((section) => section.id === "overview")?.blocks[0]?.type, "totem");
 });

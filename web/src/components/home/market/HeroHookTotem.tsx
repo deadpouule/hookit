@@ -44,9 +44,16 @@ function nodePoint(index: number, count: number, radius = RING) {
 type HeroHookTotemProps = {
   interactive?: boolean;
   className?: string;
+  kicker?: string;
+  onSelectHook?: (hook: BrowseHook) => void;
 };
 
-export function HeroHookTotem({ interactive = true, className }: HeroHookTotemProps) {
+export function HeroHookTotem({
+  interactive = true,
+  className,
+  kicker,
+  onSelectHook,
+}: HeroHookTotemProps) {
   const reduceMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(1);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -132,7 +139,10 @@ export function HeroHookTotem({ interactive = true, className }: HeroHookTotemPr
               aria-pressed={index === activeIndex}
               onMouseEnter={() => setHoverIndex(index)}
               onFocus={() => setHoverIndex(index)}
-              onClick={() => setActiveIndex(index)}
+              onClick={() => {
+                setActiveIndex(index);
+                onSelectHook?.(hook);
+              }}
             >
               <HookLogo hookId={hook.id} theme={hook.theme} />
             </button>
@@ -168,6 +178,7 @@ export function HeroHookTotem({ interactive = true, className }: HeroHookTotemPr
       )}
 
       <div className="hero-totem-caption" aria-live={interactive ? "polite" : undefined}>
+        {kicker ? <p className="hero-totem-kicker">{kicker}</p> : null}
         <p className="hero-totem-title">
           <HookLogo hookId={lit.id} theme={lit.theme} />
           <span>{lit.title}</span>

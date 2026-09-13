@@ -69,7 +69,8 @@ export type DocsBlock =
   | { type: "diagram"; id: DocsDiagramId }
   | { type: "hooks" }
   | { type: "formulas"; title?: string; items: DocsFormulaLine[] }
-  | { type: "table"; headers: string[]; rows: string[][] };
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "totem" };
 
 export type DocsSection = {
   id: DocsSectionId;
@@ -141,6 +142,7 @@ export function buildDocsSections(): DocsSection[] {
       title: "Overview",
       group: "Introduction",
       blocks: [
+        { type: "totem" },
         {
           type: "p",
           text: `hookit is a permissionless Uniswap v4 launchpad on ${network}. Anyone can create a token, lock liquidity, and start trading from a wallet. The site never holds ETH, tokens, or keys.`,
