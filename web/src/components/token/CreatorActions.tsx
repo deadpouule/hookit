@@ -269,7 +269,15 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
       <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden">
         <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="text-xs text-zinc-500">{isCreator ? "Available to claim" : "Unclaimed"}</p>
+          <p className="text-xs text-zinc-500">
+            {isCreator ? "Available to claim" : "Unclaimed"}
+            <span
+              className="ml-1 text-zinc-600"
+              title={`The escrow pools fees per creator and quote: this is the creator's ${quoteLabel} balance across all their ${quoteLabel}-paired launches, not just this token.`}
+            >
+              · all {quoteLabel} launches
+            </span>
+          </p>
           <p
             className="min-w-0 font-mono text-base text-foreground"
             title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}
