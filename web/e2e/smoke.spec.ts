@@ -93,22 +93,6 @@ test.describe("Hookit UI smoke", () => {
     await expect(page.getByRole("button", { name: /^Claim$/i })).toHaveCount(0);
   });
 
-    const plot = page.locator(".token-chart-plot").first();
-    await expect(plot).toBeVisible({ timeout: 30_000 });
-    const box = await plot.boundingBox();
-    expect(box).toBeTruthy();
-    await page.mouse.move(box!.x + box!.width * 0.45, box!.y + box!.height * 0.5);
-    await expect(page.getByText(/Market cap/i).first()).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole("button", { name: "Price" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mcap" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Candles" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Line" })).toBeVisible();
-
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await expect(page.getByText(/Creator fees/i).first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("button", { name: /^Claim$/i })).toHaveCount(0);
-  });
-
   test("Privileged API routes stay locked", async ({ request }) => {
     const deploy = await request.post("/api/hooks/deploy", { data: { source: "contract X {}" } });
     expect([401, 503]).toContain(deploy.status());
