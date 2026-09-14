@@ -141,7 +141,8 @@ receipt so a public RPC never rejects the next nonce.
 | Small circle / no big announce | Public marketing |
 | Deployer or multisig as owner | Timelock handoff |
 | Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after audit |
-| Unaudited disclaimer in UI | External audit |
+| Unaudited disclaimer in UI | External audit — start from [`audit/INTERNAL_SECURITY_REVIEW.md`](audit/INTERNAL_SECURITY_REVIEW.md) |
+| Live stack predates the internal review fixes (vault snapshot, oracle band, dev-buy tax, …) | Redeploy hook + factories + vaults per section 9 of the review |
 | Daily fee keeper on Linode (`hookit-fee-keeper.timer`) | Same; tune TWAP / Gelato later |
 
 ### Bytecode note
