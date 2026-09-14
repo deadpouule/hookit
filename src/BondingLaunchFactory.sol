@@ -96,6 +96,8 @@ contract BondingLaunchFactory is Owned {
     uint256 public launchCount;
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
     address public ethUsdFeed;
+    /// Timestamp of the last `ethUsdPriceX18` write; bounds how long a reverting feed can fall back on it.
+    uint64 public ethUsdSyncedAt;
 
     mapping(uint256 => Launch) public launches;
     mapping(address => uint256) public tokenLaunchId;
@@ -142,6 +144,7 @@ contract BondingLaunchFactory is Owned {
         poolManager = manager_;
         feeHook = feeHook_;
         escrow = escrow_;
+        ethUsdSyncedAt = uint64(block.timestamp);
         distributor = distributor_;
         treasury = treasury_;
         locker = new LiquidityLocker(manager_, address(this));
@@ -165,6 +168,7 @@ contract BondingLaunchFactory is Owned {
     function setEthUsdPrice(uint256 priceX18, address feed) external onlyOwner {
         if (feed == address(0) && priceX18 == 0) revert InvalidQuote();
         ethUsdPriceX18 = priceX18;
+        ethUsdSyncedAt = uint64(block.timestamp);
         ethUsdFeed = feed;
         emit EthUsdPriceSet(priceX18, feed);
     }
@@ -185,6 +189,7 @@ contract BondingLaunchFactory is Owned {
     function syncEthUsdPrice() external {
         if (ethUsdFeed == address(0)) revert InvalidQuote();
         ethUsdPriceX18 = _usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE);
+        ethUsdSyncedAt = uint64(block.timestamp);
         emit EthUsdPriceSet(ethUsdPriceX18, ethUsdFeed);
     }
 
@@ -217,6 +222,9 @@ contract BondingLaunchFactory is Owned {
         try LaunchFactoryLib.usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) returns (uint256 live) {
             if (live != 0) return live;
         } catch {}
+        if (ethUsdSyncedAt != 0 && block.timestamp > uint256(ethUsdSyncedAt) + ProtocolConstants.USD_SNAPSHOT_MAX_AGE) {
+            revert StalePrice();
+        }
         return ethUsdPriceX18;
     }
 
@@ -224,7 +232,8 @@ contract BondingLaunchFactory is Owned {
     function _quoteUsdX18(address token, QuoteConfig memory q) internal view returns (uint256) {
         if (QuotronBridge.isQuotronStock(token)) {
             uint256 live = QuotronBridge.usdPriceX18(poolManager, token);
-            if (live != 0) return live;
+            if (live != 0 && LaunchFactoryLib.spotWithinBand(live, q.usdPriceX18)) return live;
+            if (live != 0 && q.usdPriceX18 != 0) return q.usdPriceX18;
         }
         if (q.usdFeed != address(0)) {
             return _usdFromFeed(q.usdFeed, ProtocolConstants.ORACLE_MAX_AGE);
@@ -301,7 +310,7 @@ contract BondingLaunchFactory is Owned {
         emit TokenLaunched(launchId, token, msg.sender, Currency.unwrap(params.quote), graduationQuote);
 
         if (devBuy > 0) {
-            _executeBuy(launchId, msg.sender, devBuy, params.minDevBuyTokensOut, nativeQuote);
+            _executeBuy(launchId, msg.sender, devBuy, params.minDevBuyTokensOut, true);
         }
     }
 
@@ -323,7 +332,8 @@ contract BondingLaunchFactory is Owned {
         if (l.phase != Phase.Bonding) revert NotBonding();
         if (l.tokensSold >= l.curveSupply) revert CurveSoldOut();
 
-        uint256 paid = devBuyFromLaunch && l.quote == address(0) ? quoteIn : _pullQuote(l.quote, quoteIn);
+        // launch() has already collected the dev buy (ETH via msg.value, ERC-20 via transferFrom).
+        uint256 paid = devBuyFromLaunch ? quoteIn : _pullQuote(l.quote, quoteIn);
         if (paid == 0) revert ZeroAmount();
 
         uint256 maxDevTokens = FixedPointMath.applyBps(l.totalSupply, ProtocolConstants.MAX_DEV_BUY_BPS);

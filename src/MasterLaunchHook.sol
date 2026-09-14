@@ -121,6 +121,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     error UnknownPool();
     error FloorFillInvalid();
     error ZeroAddress();
+    error ExactOutputDuringSnipe();
 
     modifier onlyFactory() {
         if (msg.sender != factory) revert OnlyFactory();
@@ -289,6 +290,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             airdropVault.setExcluded(st.token, address(escrow), true);
             airdropVault.setExcluded(st.token, address(buybacks), true);
             airdropVault.setExcluded(st.token, address(0), true);
+            // The $HKT drop vault receives launched tokens from `_hktDropBuy` and cannot spend quote
+            // claims: listing it would leak a slice of every epoch.
+            if (address(hktDropVault) != address(0)) airdropVault.setExcluded(st.token, address(hktDropVault), true);
             airdropVault.configureEpoch(st.token, configs[id].holderAirdropEpochSeconds());
         }
         return this.beforeInitialize.selector;
@@ -377,6 +381,10 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             snipeBps = FixedPointMath.snipeTaxBps(
                 packed.initialSnipeTaxBps(), st.launchTimestamp, packed.antiSnipeDurationSeconds(), block.timestamp
             );
+            // Fees are charged on the pre-swap spot notional. An exact-output buy that moves the price
+            // would pay the sniper tax on a fraction of the quote it really spends, so while the tax is
+            // live only exact-input buys are accepted.
+            if (snipeBps != 0 && !exactInput) revert ExactOutputDuringSnipe();
         }
 
         uint256 totalFeeBps = uint256(ProtocolConstants.BASE_FEE_BPS) + uint256(effectiveHookTax) + uint256(snipeBps);
@@ -492,7 +500,14 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 supply = IERC20Supply(st.token).totalSupply();
         uint256 quoteFdv = FixedPointMath.quoteFromToken(supply, sqrtPriceX96, st.tokenIsCurrency0);
         address quote = Currency.unwrap(st.quote);
-        uint256 usdX18 = ILaunchQuotes(factory).quoteUsdPriceX18(quote);
+        // FDV observation is telemetry for the vest plans: a stale or reverting quote feed must
+        // never block trading (sells included).
+        uint256 usdX18;
+        try ILaunchQuotes(factory).quoteUsdPriceX18(quote) returns (uint256 px) {
+            usdX18 = px;
+        } catch {
+            return;
+        }
         uint8 dec = 18;
         if (quote != address(0)) {
             (, dec,,) = ILaunchQuotes(factory).quoteConfigs(quote);

@@ -38,6 +38,7 @@ contract FeeEthRail is Owned, IUnlockCallback {
     error UnauthorizedBridgeHook();
     error TransferFailed();
     error NativeNotAccepted();
+    error PayerMismatch();
 
     event EthBridgeSet(
         Currency currency0, Currency currency1, uint24 fee, int24 tickSpacing, address hooks, address wethToken
@@ -82,6 +83,7 @@ contract FeeEthRail is Owned, IUnlockCallback {
         external
         returns (uint256 amountOut)
     {
+        if (payer != msg.sender) revert PayerMismatch();
         if (!QuotronBridge.isQuotronStock(stock)) revert QuotronBridge.UnknownStock();
         PoolKey memory key = QuotronBridge.poolKey(stock);
         bool zfo = Currency.unwrap(key.currency0) == stock;
@@ -94,6 +96,7 @@ contract FeeEthRail is Owned, IUnlockCallback {
         external
         returns (uint256 amountOut)
     {
+        if (payer != msg.sender) revert PayerMismatch();
         if (!ethBridgeSet) revert BridgeNotSet();
         PoolKey memory key = ethBridgeKey;
         bool zfo = Currency.unwrap(key.currency0) == usdg;

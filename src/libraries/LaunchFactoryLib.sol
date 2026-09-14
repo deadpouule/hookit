@@ -77,12 +77,21 @@ library LaunchFactoryLib {
     {
         if (QuotronBridge.isQuotronStock(token)) {
             uint256 live = QuotronBridge.usdPriceX18(poolManager, token);
-            if (live != 0) return live;
+            if (live != 0 && spotWithinBand(live, q.usdPriceX18)) return live;
+            if (live != 0 && q.usdPriceX18 != 0) return q.usdPriceX18;
         }
         if (q.usdFeed != address(0)) {
             return _usdFromFeed(q.usdFeed, ProtocolConstants.ORACLE_MAX_AGE);
         }
         return q.usdPriceX18;
+    }
+
+    /// @dev A live spot is trusted only when it sits within the deviation band of the listing
+    ///      snapshot (or when there is no snapshot to compare against).
+    function spotWithinBand(uint256 live, uint256 snapshot) public pure returns (bool) {
+        if (snapshot == 0) return true;
+        uint256 band = snapshot * ProtocolConstants.QUOTRON_SPOT_MAX_DEVIATION_BPS / ProtocolConstants.BPS_DENOMINATOR;
+        return live + band >= snapshot && live <= snapshot + band;
     }
 
     function mcapQuoteWei(uint256 targetMcapUsdX18, uint256 usdX18, uint8 decimals) external pure returns (uint256) {
