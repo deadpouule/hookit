@@ -39,10 +39,10 @@ const INK = {
   rpcUrls: { default: { http: [process.env.INK_RPC_URL ?? "https://rpc-gel.inkonchain.com"] } },
 } as const;
 
-const DEFAULT_DISTRIBUTOR = "0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179" as Address;
-const DEFAULT_BUYBACK = "0xa52e86ee01695d9f4883c48eff2972cf4be1c941" as Address;
-const DEFAULT_LAUNCH_FACTORY = "0xdca9ccee27dc12256818deff316ba4b972b087a7" as Address;
-const DEFAULT_BONDING_FACTORY = "0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3" as Address;
+const DEFAULT_DISTRIBUTOR = "0xCc6F74989f8400751Eb77421E0bDCC280b58A608" as Address;
+const DEFAULT_BUYBACK = "0xa3820E552D6C61650cE8B9b76306385271fDC736" as Address;
+const DEFAULT_LAUNCH_FACTORY = "0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0" as Address;
+const DEFAULT_BONDING_FACTORY = "0xa629619D516BE82308dbdB12A4ca324c44ea9c67" as Address;
 
 /** Quotrons wStocks that may accrue protocol pending on multi / stock-quoted launches. */
 const QUOTRON_STOCKS: Address[] = [

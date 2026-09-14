@@ -73,12 +73,12 @@ the public catalogue from the current Ink deployment:
 ```bash
 systemctl stop hookit-indexer
 cp /var/lib/hookit-indexer/hookit-57073.json \
-  /root/hookit-57073.before-55412348.json
+  /root/hookit-57073.before-55929992.json
 
 # Keep only these current factories in /opt/hookit/.env:
-# LAUNCH_FACTORY=0x4ac6815a8628576078474025407b6d0317c919a7
-# BONDING_FACTORY=0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42
-# INDEXER_START_BLOCK=55412348
+# LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0
+# BONDING_FACTORY=0xa629619D516BE82308dbdB12A4ca324c44ea9c67
+# INDEXER_START_BLOCK=55929992
 
 rm -f /var/lib/hookit-indexer/hookit-57073.json \
   /var/lib/hookit-indexer/hookit-57073.json.tmp

@@ -37,23 +37,23 @@ contract ForkInkLiveAuditTest is Test {
     using CurrencyLibrary for Currency;
     using BitmaskConfig for uint256;
 
-    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0xDCa9Ccee27Dc12256818dEFf316BA4B972b087a7));
-    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0xa506Ed2D09a164E5d12993B34F4Eb1D01ad46ac8));
+    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0));
+    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0x1D721a40b28Bb4B01f6A327Ba698CA247e902AC8));
     BondingLaunchFactory internal constant BONDING =
-        BondingLaunchFactory(payable(0xFEECD83d9ad44F6db03c531e78f1Bc6D807315d3));
+        BondingLaunchFactory(payable(0xa629619D516BE82308dbdB12A4ca324c44ea9c67));
     GraduatedFeeHook internal constant GRADUATED =
-        GraduatedFeeHook(payable(0x503419f19C6232Ecd08f4728Ee4d18A1E0362088));
-    FloorVault internal constant VAULT = FloorVault(payable(0x6906e9C43AeF6601D3F0e5B870aab9668322B044));
-    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0xEf22d9998ff7AB160Ba062773b22220AC27018aB));
+        GraduatedFeeHook(payable(0x9aF5AA686071f623033FaBE232d33c263a73a088));
+    FloorVault internal constant VAULT = FloorVault(payable(0x21decA4E088e4368E867fa775c6099Ca23B5643B));
+    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0xD3E82504CB2A65a5Af4dF8Aca38b21a79F7b2B7a));
     ProtocolRevenueDistributor internal constant DIST =
-        ProtocolRevenueDistributor(payable(0x2F904D2C2dC5dc536F41Cf99BCF0Ac6034187179));
-    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0xdB72EF45e7e4aB1Efa187561210aD50AEF1F10f5));
+        ProtocolRevenueDistributor(payable(0xCc6F74989f8400751Eb77421E0bDCC280b58A608));
+    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0x8784607077a387B490262D598159A406230eB111));
     HolderAirdropVault internal constant AIRDROPS =
-        HolderAirdropVault(payable(0x4e9ed7aBC11A6eF71f1CA433E30918e2919e41e8));
-    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x6889635F39c472802AbdE7Db791f2Ea48090091A));
-    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0xa52e86ee01695d9F4883C48efF2972cf4be1C941));
+        HolderAirdropVault(payable(0x366c7D252f89AC57c9415B947b203d81136bA455));
+    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x718dAb9d61eEEE18c11399598254F2CC59f95dA9));
+    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0xa3820E552D6C61650cE8B9b76306385271fDC736));
     address internal constant NATIVE = 0x964cE443c5E111Ea1b87a70166c6894aF3EddB08;
-    address internal constant FEE_RAIL = 0x0F7DF6F28358F2ca1E24B18358FE528c7c840dff;
+    address internal constant FEE_RAIL = 0x6de73f59D5b7061Da18fcEDE527F995A4Ca7bBA7;
     address internal constant USDG_WHALE = 0x3e17f00A166C278F357A9aaB4e2148b9c3CFd8E4;
 
     IPoolManager internal manager;

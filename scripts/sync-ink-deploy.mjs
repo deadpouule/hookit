@@ -49,6 +49,7 @@ const CONTRACT_KEYS = [
   "ProtocolRevenueDistributor",
   "BuybackVault",
   "HolderAirdropVault",
+  "HktHolderDropVault",
   "MasterLaunchHook",
   "LaunchFactory",
   "LaunchFactoryQuery",
@@ -75,6 +76,7 @@ const ENV_MAP = {
   PROTOCOL_DISTRIBUTOR: "ProtocolRevenueDistributor",
   BUYBACK_VAULT: "BuybackVault",
   HOLDER_AIRDROP_VAULT: "HolderAirdropVault",
+  HKT_HOLDER_DROP_VAULT: "HktHolderDropVault",
   FEE_ETH_RAIL: "FeeEthRail",
   HKIT_BUYBACK: "HkitBuyback",
   MULTI_PAIR_ARB_EXECUTOR: "MultiPairArbExecutor",
@@ -218,21 +220,33 @@ function loadBroadcast(path) {
     previousContracts,
     prevOracle,
     path,
+    timestamp: raw.timestamp,
   };
 }
 
 /** Libs may be reused across redeploys (no CREATE in this broadcast) — carry from prior addresses.json. */
-const OPTIONAL_CARRY = new Set(["LaunchFactoryLib", "LaunchDevBuyLib", "LaunchTokenDeployLib"]);
+const OPTIONAL_CARRY = new Set([
+  "LaunchFactoryLib",
+  "LaunchDevBuyLib",
+  "LaunchTokenDeployLib",
+  "HktHolderDropVault",
+]);
 
 /** Later scripts (DeployRouterInk) replace the Redeploy CREATE of the same name. */
 const COMPANION_BROADCASTS = [
   join(ROOT, "broadcast/DeployRouterInk.s.sol/57073/run-latest.json"),
 ];
 
-function overlayCompanionCreates(creates) {
+function overlayCompanionCreates(creates, primaryTimestamp) {
+  const primaryTs = Number(primaryTimestamp) || 0;
   for (const path of COMPANION_BROADCASTS) {
     if (!existsSync(path)) continue;
     const raw = JSON.parse(readFileSync(path, "utf8"));
+    const companionTs = Number(raw.timestamp) || 0;
+    if (primaryTs && companionTs && companionTs < primaryTs) {
+      console.log(`skip overlay ${path} (older than primary broadcast)`);
+      continue;
+    }
     for (const tx of raw.transactions ?? []) {
       if (tx.transactionType !== "CREATE" && tx.transactionType !== "CREATE2") continue;
       if (!tx.contractName || !tx.contractAddress) continue;
@@ -383,8 +397,9 @@ function main() {
     previousContracts,
     prevOracle,
     path,
+    timestamp,
   } = loadBroadcast(opts.broadcast);
-  overlayCompanionCreates(creates);
+  overlayCompanionCreates(creates, timestamp);
   requireContracts(creates);
 
   if (factoryCreateBlock == null) {
@@ -404,6 +419,8 @@ function main() {
     prevOracle,
   );
   const { server, next } = buildEnvBundle(creates, indexerStartBlock);
+  const prevFactory = previousContracts?.LaunchFactories?.[0];
+  if (prevFactory) server.PREVIOUS_LAUNCH_FACTORY = prevFactory;
   const indexerFactoryList = server.LAUNCH_FACTORY;
 
   console.log(`broadcast: ${path}`);
@@ -436,15 +453,15 @@ function main() {
   {
     const p = join(ROOT, "indexer/.env.example");
     const base = existsSync(p) ? readFileSync(p, "utf8") : "HOOKIT_CHAIN=ink\n";
-    writeText(
-      p,
-      upsertEnvLines(base, {
-        LAUNCH_FACTORY: indexerFactoryList,
-        BONDING_FACTORY: server.BONDING_FACTORY,
-        INDEXER_START_BLOCK: server.INDEXER_START_BLOCK,
-      }),
-      opts.dryRun,
-    );
+      writeText(
+        p,
+        upsertEnvLines(base, {
+          ...server,
+          ...next,
+          LAUNCH_FACTORY: indexerFactoryList,
+        }),
+        opts.dryRun,
+      );
   }
 
   // web/.env.example
@@ -492,7 +509,7 @@ function main() {
       const isWeb = p.includes(`${join("web", "")}`) || p.includes("web/");
       const isIndexer = p.includes(`${join("indexer", "")}`) || p.includes("indexer/");
       const updates = isWeb
-        ? { ...next, INDEXER_START_BLOCK: server.INDEXER_START_BLOCK }
+        ? { ...server, ...next, INDEXER_START_BLOCK: server.INDEXER_START_BLOCK }
         : {
             ...server,
             ...next,

@@ -10,8 +10,8 @@ Protocol docs: [hookit.fun/docs](https://www.hookit.fun/docs).
 | Check | Status |
 | --- | --- |
 | Ink public RPC (`INK_RPC_URL`) | `https://rpc-gel.inkonchain.com` |
-| `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `55311109` |
-| `VerifyInkDeploy.s.sol` | Run after syncing `.env` from `deploy/ink/env.ink.example` |
+| `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `55929992` |
+| `VerifyInkDeploy.s.sol` | **VERIFY_INK_OK** on factory `0x5709Aa29…` (block `55929992`) |
 | Custom hook allowlist on factory | Run **`HardenInkSoftLaunch.s.sol`** once if `customHookAllowlistEnabled` is false |
 | FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
 | HookitSwapRouter required in web | Set `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
@@ -24,21 +24,18 @@ From `web/src/lib/contracts/config.ts`:
 
 | Contract | Address |
 | --- | --- |
-| **LaunchFactory** | `0xdca9ccee27dc12256818deff316ba4b972b087a7` |
-| **LaunchFactoryQuery** | `0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0` |
-| **BondingLaunchFactory** | `0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3` |
-| **HookitSwapRouter** | `0x6889635f39c472802abde7db791f2ea48090091a` |
-| **V4ClaimsRedeemer** | `0xb497aa20c231a234f24fe28f412b8637608661fb` |
-| **ProtocolRevenueDistributor** | `0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179` |
-| **HkitBuyback** | `0xa52e86ee01695d9f4883c48eff2972cf4be1c941` |
+| **LaunchFactory** | `0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0` |
+| **LaunchFactoryQuery** | `0x58B038697b27aE16efaEbb200c6bA86D28fa42D9` |
+| **BondingLaunchFactory** | `0xa629619D516BE82308dbdB12A4ca324c44ea9c67` |
+| **HookitSwapRouter** | `0x718dAb9d61eEEE18c11399598254F2CC59f95dA9` |
+| **V4ClaimsRedeemer** | `0xd95458005acd7AA90823543F43b30f3a4B7aF057` |
+| **ProtocolRevenueDistributor** | `0xCc6F74989f8400751Eb77421E0bDCC280b58A608` |
+| **HkitBuyback** | `0xa3820E552D6C61650cE8B9b76306385271fDC736` |
 | **Native token** | `0x964ce443c5e111ea1b87a70166c6894af3eddb08` |
 
-Previous factory generations stay on-chain for historical tokens. `deploy/ink/addresses.json` lists older stacks. Do not point new launches at them.
+Previous factory generations stay on-chain. `deploy/ink/addresses.json` lists older stacks. Do not point new launches at them. This cutover **wipes** the hosted indexer so the public catalogue starts empty on factory `0x5709Aa29…`.
 
-`INDEXER_START_BLOCK=55204587`
-
-Previous factory generations remain indexed for historical tokens. The complete list is in
-`deploy/ink/addresses.json`; the UI uses the current addresses above for new launches.
+`INDEXER_START_BLOCK=55929992`
 
 ## Post-deploy checklist
 
@@ -69,54 +66,69 @@ On Ink the UI **ignores** stale `NEXT_PUBLIC_LAUNCH_FACTORY` and uses `web/src/l
 ```
 NEXT_PUBLIC_HOOKIT_CHAIN=ink
 NEXT_PUBLIC_INK_RPC_URL=https://rpc-gel.inkonchain.com
-NEXT_PUBLIC_LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7
-NEXT_PUBLIC_LAUNCH_FACTORY_QUERY=0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0
-NEXT_PUBLIC_BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3
-NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a
-NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179
-NEXT_PUBLIC_HKIT_BUYBACK=0xa52e86ee01695d9f4883c48eff2972cf4be1c941
+NEXT_PUBLIC_LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0
+NEXT_PUBLIC_LAUNCH_FACTORY_QUERY=0x58B038697b27aE16efaEbb200c6bA86D28fa42D9
+NEXT_PUBLIC_BONDING_FACTORY=0xa629619D516BE82308dbdB12A4ca324c44ea9c67
+NEXT_PUBLIC_HOOKIT_SWAP_ROUTER=0x718dAb9d61eEEE18c11399598254F2CC59f95dA9
+NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0xCc6F74989f8400751Eb77421E0bDCC280b58A608
+NEXT_PUBLIC_HKIT_BUYBACK=0xa3820E552D6C61650cE8B9b76306385271fDC736
 NEXT_PUBLIC_NATIVE_TOKEN=0x964ce443c5e111ea1b87a70166c6894af3eddb08
+NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
 INDEXER_URL=https://indexer.hookit.fun
 ```
 
-**Linode `/opt/hookit/.env`:** keep historical factories in the indexer store. Point *new* polls at the current pair:
+**Linode `/opt/hookit/.env`:** watch only the current pair, then **wipe** the store so Explore starts empty:
 
 ```
-LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7
-BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3
-INDEXER_START_BLOCK=55566276
+LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0
+BONDING_FACTORY=0xa629619D516BE82308dbdB12A4ca324c44ea9c67
+DISTRIBUTOR=0xCc6F74989f8400751Eb77421E0bDCC280b58A608
+HKIT_BUYBACK=0xa3820E552D6C61650cE8B9b76306385271fDC736
+HOOKIT_SWAP_ROUTER=0x718dAb9d61eEEE18c11399598254F2CC59f95dA9
+MULTI_PAIR_ARB_EXECUTOR=0x3B726f9F906E225CbDdBa777844317a5793eC0d5
+INDEXER_START_BLOCK=55929992
 INK_RPC_URL=https://rpc-gel.inkonchain.com
 INDEXER_DATA_DIR=/var/lib/hookit-indexer
 ```
 
-After changing factory addresses, retain the existing `hookit-57073.json` store and restart
-`hookit-indexer`; deleting it would discard historical generations.
+Wipe (backup first, then delete — do **not** keep `hookit-57073.json` if the site must start from zero):
+
+```bash
+systemctl stop hookit-indexer
+cp /var/lib/hookit-indexer/hookit-57073.json /root/hookit-57073.before-55929992.json
+rm -f /var/lib/hookit-indexer/hookit-57073.json \
+  /var/lib/hookit-indexer/hookit-57073.json.tmp
+systemctl start hookit-indexer
+curl -s https://indexer.hookit.fun/health | jq .
+```
+
+`/health` should show `tokens: 0`, `launchFactory: 0x5709aa29…`, `startBlock: 55929992`.
 
 ## Smoke (private)
 
 ```bash
 # Classic bonding
-BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3 \
+BONDING_FACTORY=0xa629619D516BE82308dbdB12A4ca324c44ea9c67 \
   forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
 # Master + modules matrix (launch + first buy)
-LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
-  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0 \
+  HOOKIT_SWAP_ROUTER=0x718dAb9d61eEEE18c11399598254F2CC59f95dA9 \
   forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow
 
 # Sell everything bought above (ids printed by the launch phase)
 MATRIX_PHASE=sell MATRIX_LAUNCH_IDS=5,6,7,8,9 \
-  LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
-  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+  LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0 \
+  HOOKIT_SWAP_ROUTER=0x718dAb9d61eEEE18c11399598254F2CC59f95dA9 \
   forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow \
   --gas-estimate-multiplier 250
 ```
 
 ```bash
 # Master launch carrying a dev buy in the launch tx (emits DevBuyExecuted), then sell it back
-LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
-  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0 \
+  HOOKIT_SWAP_ROUTER=0x718dAb9d61eEEE18c11399598254F2CC59f95dA9 \
   forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow
 DEVBUY_PHASE=sell DEVBUY_LAUNCH_ID=<id> LAUNCH_FACTORY=... HOOKIT_SWAP_ROUTER=... \
   forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow \
@@ -142,12 +154,12 @@ receipt so a public RPC never rejects the next nonce.
 | Deployer or multisig as owner | Timelock handoff |
 | Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after audit |
 | Unaudited disclaimer in UI | External audit — start from [`audit/INTERNAL_SECURITY_REVIEW.md`](audit/INTERNAL_SECURITY_REVIEW.md) |
-| Live stack predates the internal review fixes (vault snapshot, oracle band, dev-buy tax, Classic curve re-sized to open the LP at the terminal price, Max Wallet removed, raw floor-fill settlement) | Redeploy hook + factories + vaults per section 9 of the review |
+| Live stack includes the internal review bytecode (C-5 / C-9 / C-11, vault snapshot, Max Wallet removed) | External audit + timelock before a loud public launch |
 | Daily fee keeper on Linode (`hookit-fee-keeper.timer`) | Same; tune TWAP / Gelato later |
 
 ### Bytecode note
 
-Live stack is `RedeployHookitInk` (block `55311109`): custom-hook allowlist on, custom hooks off. It includes:
+Live stack is `RedeployHookitInk` (block `55929992`): custom-hook allowlist on, custom hooks off. It includes:
 
 - `MasterLaunchHook` uses `getLiquidity()` (not `getSlot0` protocolFee) for depth / dynamic fees / floor.
 - `LaunchFactory.launch()` writes `poolLaunchId` / `poolMarketIndex`.
@@ -176,4 +188,4 @@ SKIP_FAIR_LAUNCH=true forge script script/RedeployHookitInk.s.sol:RedeployHookit
   --etherscan-api-key $INK_EXPLORER_API_KEY
 ```
 
-Run `scripts/sync-ink-deploy.mjs`, update Vercel/Linode env, retain the historical indexer store, and restart services.
+Run `scripts/sync-ink-deploy.mjs`, update Vercel/Linode env, wipe the indexer store for a clean catalogue, and restart services.

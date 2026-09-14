@@ -21,6 +21,7 @@ import {FeeEscrow} from "../src/FeeEscrow.sol";
 import {ProtocolRevenueDistributor} from "../src/ProtocolRevenueDistributor.sol";
 import {BuybackVault} from "../src/BuybackVault.sol";
 import {HolderAirdropVault} from "../src/HolderAirdropVault.sol";
+import {HktHolderDropVault} from "../src/HktHolderDropVault.sol";
 import {V4ClaimsRedeemer} from "../src/V4ClaimsRedeemer.sol";
 import {LaunchFactoryQuery} from "../src/LaunchFactoryQuery.sol";
 import {UniswapV4Deployments} from "../src/libraries/UniswapV4Deployments.sol";
@@ -68,6 +69,7 @@ contract RedeployHookitInkScript is Script {
         ProtocolRevenueDistributor distributor = new ProtocolRevenueDistributor(deployer, ops, manager);
         BuybackVault buybacks = new BuybackVault(deployer, manager);
         HolderAirdropVault airdrops = new HolderAirdropVault(deployer, manager);
+        HktHolderDropVault hktDrop = new HktHolderDropVault(deployer);
 
         uint160 masterFlags = uint160(
             Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
@@ -114,6 +116,12 @@ contract RedeployHookitInkScript is Script {
         distributor.setOperator(address(graduated), true);
         buybacks.setOperator(address(hook), true);
         airdrops.setOperator(address(hook), true);
+        hook.setHktDropVault(hktDrop);
+        bonding.setHktDropVault(hktDrop);
+        graduated.setHktDropVault(hktDrop);
+        hktDrop.setOperator(address(hook), true);
+        hktDrop.setOperator(address(bonding), true);
+        hktDrop.setOperator(address(graduated), true);
         distributor.setFeeRail(feeRail);
         EthUsdgBridgeLib.tryWireBest(manager, feeRail);
 
@@ -122,6 +130,7 @@ contract RedeployHookitInkScript is Script {
             (uint256 launchId, address token, PoolId poolId, PoolKey memory key) =
                 HkitLaunchLib.fairLaunch(factory, distributor, hkitBuyback, nativeName, nativeSymbol, nativeUri);
             nativeToken = token;
+            hktDrop.setHkt(nativeToken);
             console.log("NativeToken launchId", launchId);
             console.logBytes32(PoolId.unwrap(poolId));
             console.log("NativeToken pool fee", key.fee);
@@ -138,6 +147,7 @@ contract RedeployHookitInkScript is Script {
             distributor.setFlywheelMode(ProtocolRevenueDistributor.FlywheelMode.BuybackBurn);
             hkitBuyback.configure(nativeToken, nativeKey);
             distributor.setBuybackExecutor(address(hkitBuyback));
+            hktDrop.setHkt(nativeToken);
             console.log("Existing NativeToken launchId", nativeLaunchId);
         }
 
@@ -149,6 +159,7 @@ contract RedeployHookitInkScript is Script {
         console.log("Distributor", address(distributor));
         console.log("BuybackVault", address(buybacks));
         console.log("HolderAirdropVault", address(airdrops));
+        console.log("HktHolderDropVault", address(hktDrop));
         console.log("MasterLaunchHook", address(hook));
         console.log("LaunchFactory", address(factory));
         console.log("GraduatedFeeHook", address(graduated));
