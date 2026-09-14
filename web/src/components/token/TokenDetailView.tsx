@@ -467,6 +467,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             marketCap={live.marketCap}
             tokenAddress={contractAddress}
             ticker={pool.ticker}
+            name={pool.name}
             launchedAt={pool.launchedAt}
             quoteAddress={activePool.quoteAddress}
             marketLegs={multi ? marketLegs : undefined}

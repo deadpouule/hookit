@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { zeroAddress } from "viem";
 
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
+import { TokenTradingViewChart, type TvChartStatus } from "@/components/token/TokenTradingViewChart";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatCompactUsd, formatPercent } from "@/lib/format";
+import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   barChangePct,
@@ -143,6 +145,7 @@ export function TokenCandleChart({
   onMarketIndex,
   onBeFirstBuy,
   ticker,
+  name,
   expanded = false,
   compact = false,
   className,
@@ -155,6 +158,7 @@ export function TokenCandleChart({
   marketCap?: number;
   tokenAddress?: string;
   ticker?: string;
+  name?: string;
   launchedAt?: number;
   quoteAddress?: string;
   marketLegs?: { label: string; share: string; quoteAddress?: string; quoteAsset?: string }[];
@@ -170,6 +174,7 @@ export function TokenCandleChart({
   const [style, setStyle] = useState<ChartStyle>("candles");
   const [fitNonce, setFitNonce] = useState(0);
   const [hover, setHover] = useState<ChartBar | null>(null);
+  const [tvStatus, setTvStatus] = useState<TvChartStatus>("loading");
   const geckoQuote = (() => {
     const candidates = [quoteAddress, marketLegs?.[activeMarketIndex]?.quoteAddress];
     return candidates.find((addr) => addr && addr.toLowerCase() !== zeroAddress);
@@ -190,7 +195,8 @@ export function TokenCandleChart({
     setFitNonce((n) => n + 1);
   }, [interval, activeMarketIndex]);
 
-  const bars = useMemo(() => {
+  /** Native market-cap bars before any interval bucketing. */
+  const source = useMemo(() => {
     const fromCandles = liveCandlesToBars(candles, nowSec);
     const fromSwaps = ticksToBars(
       swaps
@@ -200,15 +206,25 @@ export function TokenCandleChart({
     const house = mergeChartSeries(fromCandles, fromSwaps);
     const seeded = house.length ? house : seedLaunchBars(launchedAt, marketCap ?? 0);
     const geckoMcap = priceBarsToMcap(gecko.data?.bars ?? []);
-    const source = pickChartBars(seeded, geckoMcap);
-    const bucket = intervalBucketSec(interval);
-    const display = barsForInterval(source, interval);
-    const filled = fillEmptyBars(display, bucket, nowSec);
-    const withTicks = applySwapTicks(filled, swaps);
-    return scaleBars(pinLiveMcap(withTicks, marketCap), scale);
-  }, [candles, swaps, nowSec, marketCap, interval, scale, gecko.data?.bars, launchedAt]);
+    return pickChartBars(seeded, geckoMcap);
+  }, [candles, swaps, nowSec, marketCap, gecko.data?.bars, launchedAt]);
+
+  const buildBars = useCallback(
+    (iv: ChartInterval, sc: ChartScale) => {
+      const bucket = intervalBucketSec(iv);
+      const display = barsForInterval(source, iv);
+      const filled = fillEmptyBars(display, bucket, nowSec);
+      const withTicks = applySwapTicks(filled, swaps);
+      return scaleBars(pinLiveMcap(withTicks, marketCap), sc);
+    },
+    [source, nowSec, swaps, marketCap],
+  );
+
+  const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);
+  const tvBarsFor = useCallback((iv: ChartInterval) => buildBars(iv, "price"), [buildBars]);
 
   const hasData = bars.length > 0;
+  const useTradingView = tvStatus !== "unavailable";
   const open = bars[0]?.open ?? 0;
   const close = bars.length ? bars[bars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
@@ -225,6 +241,79 @@ export function TokenCandleChart({
     setStyle(next);
     writeStored(STYLE_KEY, next);
   };
+
+  if (useTradingView) {
+    const legs =
+      marketLegs && marketLegs.length > 1 && onMarketIndex ? (
+        <div className="token-chart-toolbar token-chart-toolbar--legs">
+          <div className="flex items-center gap-0.5 rounded-lg bg-zinc-900/80 p-0.5" role="tablist" aria-label="Quote pools">
+            {marketLegs.map((leg, i) => (
+              <button
+                key={`${leg.label}-${i}`}
+                type="button"
+                role="tab"
+                aria-selected={activeMarketIndex === i}
+                onClick={() => onMarketIndex(i)}
+                className={cn(
+                  "inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[11px] transition sm:min-h-0",
+                  activeMarketIndex === i ? "bg-[#9514d1] text-white" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <PoolQuoteMark quoteAddress={leg.quoteAddress} quoteAsset={leg.quoteAsset} />
+                {leg.label}
+                <span className="ml-0.5 opacity-70">{leg.share}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null;
+
+    return (
+      <div className={cn("desk-card token-chart-card--tv overflow-hidden", className)}>
+        {legs}
+        <div
+          className={cn(
+            "token-chart-tv-frame relative",
+            expanded ? "token-chart-tv-frame--expanded" : compact ? "token-chart-tv-frame--compact" : null,
+          )}
+        >
+          <TokenTradingViewChart
+            key={`${tokenAddress ?? ticker ?? "token"}-${activeMarketIndex}`}
+            ticker={ticker ?? "TOKEN"}
+            name={name ?? ticker ?? "Token"}
+            interval={interval}
+            onInterval={onInterval}
+            sinceSec={launchedAt}
+            barsFor={tvBarsFor}
+            onStatus={setTvStatus}
+          />
+          {tvStatus === "loading" ? (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6">
+              <div className="h-[55%] w-[88%] animate-pulse rounded-md bg-zinc-800/50" />
+              <p className="font-mono text-[11px] text-muted-foreground">Loading chart…</p>
+            </div>
+          ) : null}
+          {tvStatus === "ready" && !isLoading && !hasData ? (
+            <div className="token-chart-tv-empty absolute inset-x-0 bottom-3 z-10 flex justify-center px-6 text-center">
+              <div className="rounded-lg border border-white/10 bg-black/70 px-4 py-2.5 backdrop-blur-sm">
+                <p className="text-sm text-foreground">No trades yet</p>
+                <p className="mt-0.5 text-xs text-muted-foreground/80">Be the first buy. the chart fills from on-chain swaps</p>
+                {onBeFirstBuy ? (
+                  <button
+                    type="button"
+                    onClick={onBeFirstBuy}
+                    className="mt-2 rounded-lg bg-[#9514d1] px-4 py-1.5 text-[13px] font-medium text-white transition hover:bg-[#a82be0]"
+                  >
+                    Be first buy
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("desk-card overflow-hidden", className)}>
@@ -322,7 +411,7 @@ export function TokenCandleChart({
               <span>
                 <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
               </span>
-              <span className={hudUp ? "text-[#22c55e]" : "text-[#f43f5e]"}>{formatPercent(hudPct, true)}</span>
+              <span style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}>{formatPercent(hudPct, true)}</span>
               <span>
                 <span className="token-chart-legend-k">Vol</span>{" "}
                 {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
@@ -372,7 +461,7 @@ export function TokenCandleChart({
             style={style}
             scale={scale}
             interval={interval}
-            lineColor={up ? "#22c55e" : "#f43f5e"}
+            lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
             fitNonce={fitNonce}
             onHover={setHover}
           />

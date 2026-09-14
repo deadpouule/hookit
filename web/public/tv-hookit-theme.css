@@ -1,0 +1,67 @@
+/*
+ * Hookit theme for TradingView Advanced Charts.
+ *
+ * Loaded by the widget via `custom_css_url` and served into the chart's
+ * iframe; the page stylesheet cannot cross that boundary. The library's dark
+ * theme paints #131722 on its own surfaces while our cards are #111111, so
+ * every ground is restated here with literal values (no :root vars in scope).
+ *
+ *   #111111  card surface (the chart's ground)
+ *   #141416  raised: popups, menus
+ *   #1b1b1f  hover
+ *   #232327  pressed, dividers, grid
+ *   #fafafa / #a1a1aa  text
+ *   #9514d1  accent
+ */
+
+:root {
+  --tv-color-platform-background: #111111;
+  --tv-color-pane-background: #111111;
+
+  --tv-color-toolbar-button-background-hover: #1b1b1f;
+  --tv-color-toolbar-button-background-expanded: #1b1b1f;
+  --tv-color-toolbar-button-background-clicked: #232327;
+  --tv-color-toolbar-button-text: #a1a1aa;
+  --tv-color-toolbar-button-text-hover: #fafafa;
+  --tv-color-toolbar-button-text-active: #b04ae8;
+  --tv-color-toolbar-button-text-active-hover: #c56ff2;
+  --tv-color-toolbar-button-text-clicked: #fafafa;
+  --tv-color-toolbar-divider-background: #232327;
+  --tv-color-toolbar-toggle-button-background-active: #9514d1;
+  --tv-color-toolbar-toggle-button-background-active-hover: #a82be0;
+  --tv-color-toolbar-save-layout-loader: #9514d1;
+
+  --tv-color-popup-background: #141416;
+  --tv-color-popup-element-text: #fafafa;
+  --tv-color-popup-element-secondary-text: #a1a1aa;
+  --tv-color-popup-element-hint-text: #71717a;
+  --tv-color-popup-element-text-hover: #fafafa;
+  --tv-color-popup-element-background-hover: #1b1b1f;
+  --tv-color-popup-element-text-active: #ffffff;
+  --tv-color-popup-element-background-active: #9514d1;
+  --tv-color-popup-element-divider-background: #232327;
+  --tv-color-popup-element-toolbox-text: #a1a1aa;
+  --tv-color-popup-element-toolbox-text-hover: #fafafa;
+  --tv-color-popup-element-toolbox-text-active-hover: #fafafa;
+  --tv-color-popup-element-toolbox-background-hover: #1b1b1f;
+  --tv-color-popup-element-toolbox-background-active-hover: #232327;
+
+  --tv-color-item-active-text: #b04ae8;
+  --tv-color-scrollbar-thumb-background: #232327;
+  --tv-color-dialog-header-text: #fafafa;
+  --tv-color-dialog-header-separator: #232327;
+}
+
+/* Floating zoom / scroll pills at the bottom-right of the pane. */
+html.theme-dark .control-bar__btn {
+  background-color: #1b1b1f;
+  color: #a1a1aa;
+}
+html.theme-dark .control-bar__btn:hover {
+  background-color: #232327;
+  color: #fafafa;
+}
+html.theme-dark .control-bar__btn:active {
+  background-color: #9514d1;
+  color: #ffffff;
+}
