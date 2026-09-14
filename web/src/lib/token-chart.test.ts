@@ -5,10 +5,13 @@ import {
   aggregateBars,
   barChangePct,
   barsForInterval,
-  CHART_BAR_SPACING,
+  CHART_MAX_BAR_SPACING,
+  CHART_MIN_WINDOW_BARS,
   CHART_RIGHT_OFFSET,
+  CHART_WINDOW_BARS,
   chartPriceBand,
   chartVisibleLogicalRange,
+  chartWindowBars,
   fillEmptyBars,
   formatChartAxis,
   formatChartUsd,
@@ -208,28 +211,39 @@ test("a single print grows into a tape up to now", () => {
   assert.equal(filled[filled.length - 1]!.close, 5_000);
 });
 
-test("candles pin to the right axis at a fixed 9px pitch", () => {
-  const one = chartVisibleLogicalRange(1, 720);
-  assert.ok(one);
-  assert.equal(one.to, 0 + CHART_RIGHT_OFFSET + 0.5);
-  assert.equal(one.to - one.from, 80);
-  assert.equal((one.to - one.from) * CHART_BAR_SPACING, 720);
-  const many = chartVisibleLogicalRange(120, 720);
-  assert.ok(many);
-  assert.equal(many.to, 119 + CHART_RIGHT_OFFSET + 0.5);
-  assert.equal(many.to - many.from, 80);
+test("opening window is 72 bars, the token's age when younger, never under 20", () => {
+  const now = 1_800_000_000;
+  assert.equal(chartWindowBars(300, undefined, now), CHART_WINDOW_BARS);
+  assert.equal(chartWindowBars(300, now - 14, now), CHART_MIN_WINDOW_BARS);
+  assert.equal(chartWindowBars(300, now - 40 * 300, now), 40);
+  assert.equal(chartWindowBars(300, now - 10_000 * 300, now), CHART_WINDOW_BARS);
+});
+
+test("candles pin to the right axis with the window stretched across the pane", () => {
+  const fresh = chartVisibleLogicalRange(1, 364, CHART_MIN_WINDOW_BARS);
+  assert.ok(fresh);
+  assert.equal(fresh.to, 0 + CHART_RIGHT_OFFSET + 0.5);
+  assert.equal(fresh.barSpacing, 364 / 25);
+  assert.equal(fresh.to - fresh.from, 25);
+  const desk = chartVisibleLogicalRange(120, 1038, CHART_WINDOW_BARS);
+  assert.ok(desk);
+  assert.equal(desk.to, 119 + CHART_RIGHT_OFFSET + 0.5);
+  assert.equal(desk.barSpacing, 1038 / 77);
+  assert.equal(desk.to - desk.from, Math.floor(1038 / (1038 / 77)));
+  const wide = chartVisibleLogicalRange(1, 1400, CHART_MIN_WINDOW_BARS);
+  assert.ok(wide);
+  assert.equal(wide.barSpacing, CHART_MAX_BAR_SPACING);
   assert.equal(chartVisibleLogicalRange(0), null);
 });
 
-test("chartPriceBand pads a live range and a flat print without empty headroom", () => {
-  const band = chartPriceBand(100, 120);
-  assert.ok(band);
-  assert.equal(band.minValue, 97.6);
-  assert.equal(band.maxValue, 123.2);
+test("chartPriceBand hugs the visible range so one trade fills the pane", () => {
+  assert.deepEqual(chartPriceBand(100, 120), { minValue: 100, maxValue: 120 });
+  assert.deepEqual(chartPriceBand(0.0000051, 0.0000051235), { minValue: 0.0000051, maxValue: 0.0000051235 });
   const flat = chartPriceBand(0.000003, 0.000003);
   assert.ok(flat);
   assert.ok(flat.minValue < 0.000003);
   assert.ok(flat.maxValue > 0.000003);
+  assert.ok(flat.maxValue - flat.minValue < 0.000003 * 0.005);
   assert.equal(chartPriceBand(0, 0), null);
 });
 

@@ -219,31 +219,54 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
-/** Fixed candle pitch (px) - thin Stonk-style candles that never stretch to fill the pane. */
-export const CHART_BAR_SPACING = 9;
+/** TradingView `timeframe`: the opening window is 72 bars … */
+export const CHART_WINDOW_BARS = 72;
+/** … or the token's whole life when younger, never fewer than 20 bars. */
+export const CHART_MIN_WINDOW_BARS = 20;
 /** Empty bars kept between the last candle and the right axis. */
 export const CHART_RIGHT_OFFSET = 5;
+export const CHART_MIN_BAR_SPACING = 4;
+export const CHART_MAX_BAR_SPACING = 40;
 
 /**
- * Visible window. Candles sit against the right axis at a fixed pixel pitch
- * (Stonk / TradingView): one print stays a thin candle, a long series scrolls.
+ * Bars in the opening window, same rule as the Advanced Charts desk: 72, or
+ * the token's age when it is younger than that, floored at 20 so a first buy
+ * on a fresh token draws one wide candle instead of a sliver.
+ */
+export function chartWindowBars(bucketSec: number, launchedAt?: number, nowSec = Math.floor(Date.now() / 1000)): number {
+  if (!(bucketSec > 0) || !isValidLaunchTimestamp(launchedAt)) return CHART_WINDOW_BARS;
+  const ageBars = Math.ceil((nowSec - launchedAt) / bucketSec);
+  if (ageBars <= 0 || ageBars >= CHART_WINDOW_BARS) return CHART_WINDOW_BARS;
+  return Math.max(ageBars, CHART_MIN_WINDOW_BARS);
+}
+
+/**
+ * Visible window. The opening window is stretched across the pane (TradingView
+ * `timeframe`), so candle pitch follows the window, not a fixed pixel count.
  */
 export function chartVisibleLogicalRange(
   barCount: number,
   paneWidthPx = 720,
-  barSpacing = CHART_BAR_SPACING,
+  windowBars = CHART_WINDOW_BARS,
   rightOffset = CHART_RIGHT_OFFSET,
-): { from: number; to: number } | null {
+): { from: number; to: number; barSpacing: number } | null {
   if (barCount <= 0) return null;
-  const width = Math.max(paneWidthPx, barSpacing * 12);
+  const width = Math.max(paneWidthPx, CHART_MIN_BAR_SPACING * 12);
+  const slots = Math.max(windowBars, 1) + rightOffset;
+  const barSpacing = Math.min(Math.max(width / slots, CHART_MIN_BAR_SPACING), CHART_MAX_BAR_SPACING);
   const visible = Math.max(Math.floor(width / barSpacing), 12);
   const to = barCount - 1 + rightOffset + 0.5;
-  return { from: to - visible, to };
+  return { from: to - visible, to, barSpacing };
 }
 
+/** TradingView pane margins: 10% above the high, 8% below the low. */
+export const CHART_SCALE_MARGIN_TOP = 0.1;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.08;
+
 /**
- * Price pane geometry. Modest padding so candles fill the plot (Defined / TV)
- * instead of hugging the bottom under empty headroom.
+ * Price pane geometry: hug the visible high/low so one trade fills the pane
+ * (the pane margins above add the only breathing room). A flat window gets a
+ * small floor so the candle stays visible without inventing a trend.
  */
 export function chartPriceBand(
   minValue: number,
@@ -254,15 +277,10 @@ export function chartPriceBand(
   const hi0 = Math.max(minValue, maxValue);
   const mid = (lo0 + hi0) / 2;
   if (!(mid > 0)) return null;
-  const minSpan = mid * 0.04;
+  const floorSpan = mid * 0.004;
   const span = hi0 - lo0;
-  const lo = span >= minSpan ? lo0 : mid - minSpan / 2;
-  const hi = span >= minSpan ? hi0 : mid + minSpan / 2;
-  const height = hi - lo;
-  return {
-    minValue: Math.max(lo - height * 0.12, 0),
-    maxValue: hi + height * 0.16,
-  };
+  if (span >= floorSpan) return { minValue: lo0, maxValue: hi0 };
+  return { minValue: Math.max(mid - floorSpan / 2, 0), maxValue: mid + floorSpan / 2 };
 }
 
 /**
