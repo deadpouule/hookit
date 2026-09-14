@@ -162,8 +162,10 @@ function FixedFeePickCard({
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
+          {/* span, not button: the card itself is a <button> and nested buttons are invalid HTML (hydration error). */}
+          <span
+            role="button"
+            tabIndex={0}
             aria-label="About fixed fees"
             className="hook-pick-tooltip-trigger"
             onClick={(event) => {
@@ -173,7 +175,7 @@ function FixedFeePickCard({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <Info className="h-3 w-3" aria-hidden />
-          </button>
+          </span>
         </TooltipTrigger>
         <TooltipContent
           side="top"
@@ -253,8 +255,10 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
+        {/* span, not button: HookPickCard is a <button> and nested buttons are invalid HTML (hydration error). */}
+        <span
+          role="button"
+          tabIndex={0}
           aria-label={`About ${hook.title}`}
           className="hook-pick-tooltip-trigger"
           onClick={(event) => {
@@ -264,7 +268,7 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
           onMouseDown={(event) => event.stopPropagation()}
         >
           <Info className="h-3 w-3" aria-hidden />
-        </button>
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="top"
