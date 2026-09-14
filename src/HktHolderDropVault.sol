@@ -23,6 +23,8 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
         uint256 cursor;
         uint256 paid;
         uint256 listed;
+        /// Epoch generation this payout belongs to (see `_snapEpoch`).
+        uint64 epoch;
     }
 
     address public override hkt;
@@ -35,6 +37,18 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
     address[] private _holders;
     mapping(address => uint256) private _holderIndex;
     mapping(address => PendingDrop) private _pending;
+    /// Last $HKT balance seen for each listed holder and their running sum, so an epoch starts in
+    /// O(1) instead of reading every holder's balance inside `beforeSwap` of every Master pool.
+    mapping(address => uint256) private _trackedBal;
+    uint256 public listedTotal;
+    /// Epoch generation plus the number of token payouts currently in flight; overlapping payouts
+    /// share one generation so their snapshots stay consistent.
+    uint64 public epochGeneration;
+    uint256 private _activePayouts;
+    /// Lazy snapshot: the first time a holder's balance moves during a live epoch, the pre-move
+    /// balance is frozen. Payouts use min(live, frozen) so $HKT moved between batches is not paid twice.
+    mapping(address => uint64) private _snapEpoch;
+    mapping(address => uint256) private _snapBal;
     uint256 private _locked = 1;
 
     event OperatorSet(address indexed operator, bool allowed);
@@ -150,12 +164,16 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
 
         PendingDrop storage pending = _pending[token];
         if (pending.pot == 0) {
+            uint256 total = listedTotal;
+            if (total == 0) return false;
             pending.pot = potNow;
-            pending.totalHkt = _sumListedHkt();
-            if (pending.totalHkt == 0) return false;
+            pending.totalHkt = total;
             pending.cursor = 0;
             pending.listed = _holders.length;
             pending.paid = 0;
+            if (_activePayouts == 0) ++epochGeneration;
+            ++_activePayouts;
+            pending.epoch = epochGeneration;
         }
 
         uint256 listed = pending.listed;
@@ -181,7 +199,7 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
                 break;
             }
             address account = _holders[i];
-            uint256 bal = IERC20Balance(hkt).balanceOf(account);
+            uint256 bal = _payableBalance(account, pending.epoch);
             if (bal == 0) continue;
             uint256 share = pending.pot * bal / pending.totalHkt;
             if (share == 0) continue;
@@ -201,12 +219,42 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
 
         if (pending.cursor < listed && remainingPot > 0) return false;
         if (pending.paid == 0) {
-            delete _pending[token];
+            _dropPending(token);
             return false;
         }
 
         _finishEpoch(token, pending);
         return true;
+    }
+
+    /// @notice Recover balances that are not part of any pot (e.g. tokens sent here by mistake).
+    function sweep(address token, address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) revert ZeroAddress();
+        uint256 free = IERC20Balance(token).balanceOf(address(this)) - reserve[token];
+        if (amount == 0 || amount > free) revert InsufficientBalance();
+        _safeTransfer(token, to, amount);
+    }
+
+    function _dropPending(address token) private {
+        if (_pending[token].epoch != 0) --_activePayouts;
+        delete _pending[token];
+    }
+
+    function _track(address account, uint256 bal) private {
+        uint256 prev = _trackedBal[account];
+        if (bal == prev) return;
+        if (_activePayouts != 0 && _snapEpoch[account] != epochGeneration) {
+            _snapEpoch[account] = epochGeneration;
+            _snapBal[account] = prev;
+        }
+        listedTotal = listedTotal - prev + bal;
+        _trackedBal[account] = bal;
+    }
+
+    function _payableBalance(address account, uint64 gen) private view returns (uint256 bal) {
+        bal = IERC20Balance(hkt).balanceOf(account);
+        uint256 cap = _snapEpoch[account] == gen ? _snapBal[account] : _trackedBal[account];
+        if (cap < bal) bal = cap;
     }
 
     function _sync(address account) private {
@@ -224,7 +272,9 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
             emit HolderSynced(account, true);
         } else if (bal == 0 && idx > 0) {
             _removeHolder(account);
+            return;
         }
+        _track(account, bal);
     }
 
     function _removeHolder(address account) private {
@@ -239,19 +289,13 @@ contract HktHolderDropVault is Owned, IHolderAirdropSync, IHktHolderDropVault {
         }
         _holders.pop();
         _holderIndex[account] = 0;
+        _track(account, 0);
         emit HolderSynced(account, false);
-    }
-
-    function _sumListedHkt() private view returns (uint256 total) {
-        address token = hkt;
-        for (uint256 i; i < _holders.length; ++i) {
-            total += IERC20Balance(token).balanceOf(_holders[i]);
-        }
     }
 
     function _finishEpoch(address token, PendingDrop storage pending) private {
         emit Dropped(token, pending.pot, pending.paid, _holders.length, msg.sender);
-        delete _pending[token];
+        _dropPending(token);
         lastDropAt[token] = uint64(block.timestamp);
     }
 

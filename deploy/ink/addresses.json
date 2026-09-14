@@ -59,7 +59,7 @@
   },
   "nativeToken": {
     "name": "HOOKTEST",
-    "symbol": "HTST",
+    "symbol": "HTEST",
     "address": "0x964ce443c5e111ea1b87a70166c6894af3eddb08"
   },
   "indexer": {

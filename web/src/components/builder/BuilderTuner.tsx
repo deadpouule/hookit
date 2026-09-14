@@ -201,24 +201,6 @@ export function BuilderTuner({
           </div>
         ) : null}
 
-        {selected === "maxWallet" ? (
-          <div>
-            <SliderRow
-              label="Per wallet"
-              valueLabel={`${formatSupplyCap(modules.maxWalletBps)} supply`}
-              color={def.accent.color}
-              value={bpsToSupplyPct(modules.maxWalletBps)}
-              min={MIN_SUPPLY_CAP_SLIDER_PCT}
-              max={MAX_SUPPLY_CAP_SLIDER_PCT}
-              step={0.1}
-              onChange={(v) => onModulesChange({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
-            />
-            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply.
-            </p>
-          </div>
-        ) : null}
-
         {selected === "maxTx" ? (
           <div>
             <SliderRow

@@ -44,11 +44,16 @@ library ProtocolConstants {
 
     /// @dev Max Chainlink age for launch FDV / bonding graduation pricing.
     uint256 internal constant ORACLE_MAX_AGE = 1 hours;
-    /// @dev Max tx / max wallet (% of total supply). Launcher picks between min and max at launch.
+    /// @dev When the live ETH/USD feed is unavailable the factories fall back to the last synced
+    ///      snapshot, but only while it is younger than this (a reverting feed must not let a caller
+    ///      pick between an arbitrarily old snapshot and the live price).
+    uint256 internal constant USD_SNAPSHOT_MAX_AGE = 24 hours;
+    /// @dev Quotrons wStock spot comes from a thin pool that can be moved inside the launch tx. When
+    ///      it strays further than this from the listing snapshot the snapshot is used instead.
+    uint16 internal constant QUOTRON_SPOT_MAX_DEVIATION_BPS = 2_000;
+    /// @dev Max tx (% of total supply per swap). Launcher picks between min and max at launch.
     uint16 internal constant MIN_TX_BPS = 10;
     uint16 internal constant MAX_TX_BPS = 250;
-    uint16 internal constant MIN_WALLET_BPS = 10;
-    uint16 internal constant MAX_WALLET_BPS = 250;
     uint24 internal constant MAX_FLOOR_ALLOCATION_BPS = 10_000;
     uint16 internal constant MAX_AUTO_BURN_BPS = 10_000;
     uint16 internal constant MAX_DEEPEN_LPS_BPS = 10_000;

@@ -12,8 +12,6 @@ function modules(over: Partial<LaunchModules> = {}): LaunchModules {
     backedFloor: false,
     floorAllocation: 10,
     antiMev: false,
-    maxWallet: false,
-    maxWalletBps: 200,
     maxTx: false,
     maxTxBps: 100,
     autoBurn: false,

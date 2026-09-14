@@ -12,13 +12,13 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bit 1        BACKED_FLOOR_ENABLED
 ///      bit 2        ANTI_MEV_COOLDOWN_ENABLED
 ///      bit 3        MAX_TX_ENABLED
-///      bit 4        MAX_WALLET_ENABLED
+///      bit 4        reserved (former MAX_WALLET_ENABLED, module removed — must be 0)
 ///      bit 5        DYNAMIC_FEES_ENABLED
 ///      bit 6        BUYBACK_VESTING_ENABLED
 ///      bits 7-22    hookTaxBps (uint16) — extra fee for hook modules (not creator)
 ///      bits 23-38   antiSnipeDurationSeconds (uint16)
 ///      bits 39-54   maxTxBps (uint16)
-///      bits 55-70   maxWalletBps (uint16)
+///      bits 55-70   reserved (former maxWalletBps, module removed — must be 0)
 ///      bits 71-94   floorAllocationBps (uint24) — % of hook tax pot
 ///      bits 95-110  initialSnipeTaxBps (uint16)
 ///      bit 111      AUTO_BURN_ENABLED
@@ -38,7 +38,6 @@ library BitmaskConfig {
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
     uint256 internal constant ANTI_MEV_COOLDOWN_ENABLED = 1 << 2;
     uint256 internal constant MAX_TX_ENABLED = 1 << 3;
-    uint256 internal constant MAX_WALLET_ENABLED = 1 << 4;
     uint256 internal constant DYNAMIC_FEES_ENABLED = 1 << 5;
     uint256 internal constant BUYBACK_VESTING_ENABLED = 1 << 6;
     uint256 internal constant AUTO_BURN_ENABLED = 1 << 111;
@@ -49,7 +48,6 @@ library BitmaskConfig {
     uint256 internal constant HOOK_TAX_SHIFT = 7;
     uint256 internal constant SNIPE_DURATION_SHIFT = 23;
     uint256 internal constant MAX_TX_SHIFT = 39;
-    uint256 internal constant MAX_WALLET_SHIFT = 55;
     uint256 internal constant FLOOR_ALLOC_SHIFT = 71;
     uint256 internal constant INITIAL_SNIPE_TAX_SHIFT = 95;
     uint256 internal constant AUTO_BURN_BPS_SHIFT = 113;
@@ -61,6 +59,11 @@ library BitmaskConfig {
     uint256 internal constant DYNAMIC_FEE_TRADE_TARGET_SHIFT = 212;
     uint256 internal constant HOLDER_AIRDROP_EPOCH_SHIFT = 228;
 
+    /// @dev Bits of the removed max-wallet module (flag bit 4 + bps bits 55-70). Kept out of the
+    ///      layout so older packed values decode unchanged; `pack` never sets them and the factory
+    ///      rejects launches that do.
+    uint256 internal constant RESERVED_MAX_WALLET_MASK = (1 << 4) | (uint256(0xFFFF) << 55);
+
     uint256 internal constant UINT16_MASK = 0xFFFF;
     uint256 internal constant UINT32_MASK = 0xFFFFFFFF;
     uint256 internal constant UINT24_MASK = 0xFFFFFF;
@@ -70,7 +73,6 @@ library BitmaskConfig {
         bool backedFloor;
         bool antiMev;
         bool maxTx;
-        bool maxWallet;
         bool dynamicFees;
         bool buybackVesting;
         bool autoBurn;
@@ -80,7 +82,6 @@ library BitmaskConfig {
         uint16 hookTaxBps;
         uint16 antiSnipeDurationSeconds;
         uint16 maxTxBps;
-        uint16 maxWalletBps;
         uint24 floorAllocationBps;
         uint16 initialSnipeTaxBps;
         uint16 autoBurnBps;
@@ -97,12 +98,12 @@ library BitmaskConfig {
         _validate(m);
         packed = (m.antiSnipe ? ANTI_SNIPE_ENABLED : 0) | (m.backedFloor ? BACKED_FLOOR_ENABLED : 0)
             | (m.antiMev ? ANTI_MEV_COOLDOWN_ENABLED : 0) | (m.maxTx ? MAX_TX_ENABLED : 0)
-            | (m.maxWallet ? MAX_WALLET_ENABLED : 0) | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0)
-            | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0) | (m.autoBurn ? AUTO_BURN_ENABLED : 0)
-            | (m.deepenLps ? DEEPEN_LPS_ENABLED : 0) | (m.holderAirdrop ? HOLDER_AIRDROP_ENABLED : 0)
+            | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0) | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0)
+            | (m.autoBurn ? AUTO_BURN_ENABLED : 0) | (m.deepenLps ? DEEPEN_LPS_ENABLED : 0)
+            | (m.holderAirdrop ? HOLDER_AIRDROP_ENABLED : 0)
             | (m.creatorShareToHook ? CREATOR_SHARE_TO_HOOK_ENABLED : 0) | (uint256(m.hookTaxBps) << HOOK_TAX_SHIFT)
             | (uint256(m.antiSnipeDurationSeconds) << SNIPE_DURATION_SHIFT) | (uint256(m.maxTxBps) << MAX_TX_SHIFT)
-            | (uint256(m.maxWalletBps) << MAX_WALLET_SHIFT) | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
+            | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
             | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
             | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT) | (uint256(m.deepenLpsBps) << DEEPEN_LPS_BPS_SHIFT)
             | (uint256(m.holderAirdropBps) << HOLDER_AIRDROP_BPS_SHIFT)
@@ -118,7 +119,6 @@ library BitmaskConfig {
         m.backedFloor = packed & BACKED_FLOOR_ENABLED != 0;
         m.antiMev = packed & ANTI_MEV_COOLDOWN_ENABLED != 0;
         m.maxTx = packed & MAX_TX_ENABLED != 0;
-        m.maxWallet = packed & MAX_WALLET_ENABLED != 0;
         m.dynamicFees = packed & DYNAMIC_FEES_ENABLED != 0;
         m.buybackVesting = packed & BUYBACK_VESTING_ENABLED != 0;
         m.autoBurn = packed & AUTO_BURN_ENABLED != 0;
@@ -128,7 +128,6 @@ library BitmaskConfig {
         m.hookTaxBps = uint16((packed >> HOOK_TAX_SHIFT) & UINT16_MASK);
         m.antiSnipeDurationSeconds = uint16((packed >> SNIPE_DURATION_SHIFT) & UINT16_MASK);
         m.maxTxBps = uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
-        m.maxWalletBps = uint16((packed >> MAX_WALLET_SHIFT) & UINT16_MASK);
         m.floorAllocationBps = uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
         m.initialSnipeTaxBps = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         m.autoBurnBps = uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
@@ -155,10 +154,6 @@ library BitmaskConfig {
 
     function maxTxBps(uint256 packed) internal pure returns (uint16) {
         return uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
-    }
-
-    function maxWalletBps(uint256 packed) internal pure returns (uint16) {
-        return uint16((packed >> MAX_WALLET_SHIFT) & UINT16_MASK);
     }
 
     function floorAllocationBps(uint256 packed) internal pure returns (uint24) {
@@ -221,9 +216,7 @@ library BitmaskConfig {
         if (m.hookTaxBps > ProtocolConstants.MAX_HOOK_TAX_BPS) revert HookTaxTooHigh();
         if (m.initialSnipeTaxBps > ProtocolConstants.MAX_SNIPE_TAX_BPS) revert SnipeTaxTooHigh();
         if (m.maxTxBps > ProtocolConstants.MAX_TX_BPS) revert MaxTxTooHigh();
-        if (m.maxWalletBps > ProtocolConstants.MAX_WALLET_BPS) revert MaxWalletTooHigh();
         if (m.maxTx && m.maxTxBps < ProtocolConstants.MIN_TX_BPS) revert MaxTxTooLow();
-        if (m.maxWallet && m.maxWalletBps < ProtocolConstants.MIN_WALLET_BPS) revert MaxWalletTooLow();
         if (m.floorAllocationBps > ProtocolConstants.MAX_FLOOR_ALLOCATION_BPS) revert FloorAllocTooHigh();
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
         if (m.deepenLpsBps > ProtocolConstants.MAX_DEEPEN_LPS_BPS) revert DeepenLpsTooHigh();
@@ -275,8 +268,6 @@ library BitmaskConfig {
     error SnipeTaxTooHigh();
     error MaxTxTooHigh();
     error MaxTxTooLow();
-    error MaxWalletTooHigh();
-    error MaxWalletTooLow();
     error FloorAllocTooHigh();
     error AutoBurnTooHigh();
     error DeepenLpsTooHigh();

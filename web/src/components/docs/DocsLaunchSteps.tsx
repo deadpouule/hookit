@@ -13,7 +13,7 @@ const STEP_COPY: Record<(typeof MASTER_LAUNCH_STEPS)[number]["id"], { title: str
   },
   2: {
     title: "Optional shields that freeze at launch.",
-    note: "Anti-MEV, Anti-Snipe, Max Tx, Max Wallet. Off by default. You cannot edit them after the tx.",
+    note: "Anti-MEV, Anti-Snipe, Max Tx. Off by default. You cannot edit them after the tx.",
   },
   3: {
     title: "Where hook-tax value goes over the life of the token.",

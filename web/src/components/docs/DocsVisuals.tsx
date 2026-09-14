@@ -447,31 +447,6 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           />
         </Figure>
       );
-    case "max-wallet":
-      return (
-        <Figure caption="Post-buy wallet cap" note="Same 0.1%–2.5% range. Sells are not blocked by this cap.">
-          <div className="docs-visual-hook-row">
-            <HookMark hookId="max-wallet" theme="ice" />
-            <div className="docs-cap">
-              <div className="docs-cap-track">
-                <span className="docs-cap-fill docs-cap-fill--ice" style={{ width: "88%" }} />
-                <i style={{ left: "100%" }} />
-              </div>
-              <p>
-                Wallet after buy <b>2.20%</b>
-                <span>Cap 2.50%</span>
-              </p>
-            </div>
-          </div>
-          <Example
-            title="Example: 2.5% max wallet = 25M tokens"
-            rows={[
-              { k: "Wallet holds 20M, buys 4M", v: "24M after, allowed." },
-              { k: "Wallet holds 20M, buys 6M", v: "26M after, revert. Sells are never blocked by this cap." },
-            ]}
-          />
-        </Figure>
-      );
     case "deepen-lps":
       return (
         <Figure

@@ -47,7 +47,6 @@ contract FeeDistributionTest is Test {
             backedFloor: true,
             antiMev: true,
             maxTx: true,
-            maxWallet: true,
             dynamicFees: true,
             buybackVesting: true,
             autoBurn: true,
@@ -57,7 +56,6 @@ contract FeeDistributionTest is Test {
             hookTaxBps: 250,
             antiSnipeDurationSeconds: 3600,
             maxTxBps: 100,
-            maxWalletBps: 200,
             floorAllocationBps: 2_500,
             initialSnipeTaxBps: 4_000,
             autoBurnBps: 2_500,
@@ -79,7 +77,6 @@ contract FeeDistributionTest is Test {
         assertEq(out.hookTaxBps, 250);
         assertEq(out.antiSnipeDurationSeconds, 3600);
         assertEq(out.maxTxBps, 100);
-        assertEq(out.maxWalletBps, 200);
         assertEq(out.floorAllocationBps, 2_500);
         assertEq(out.initialSnipeTaxBps, 4_000);
         assertEq(out.autoBurnBps, 2_500);

@@ -162,8 +162,10 @@ function FixedFeePickCard({
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
+          {/* span, not button: the card itself is a <button> and nested buttons are invalid HTML (hydration error). */}
+          <span
+            role="button"
+            tabIndex={0}
             aria-label="About fixed fees"
             className="hook-pick-tooltip-trigger"
             onClick={(event) => {
@@ -173,7 +175,7 @@ function FixedFeePickCard({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <Info className="h-3 w-3" aria-hidden />
-          </button>
+          </span>
         </TooltipTrigger>
         <TooltipContent
           side="top"
@@ -253,8 +255,10 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
+        {/* span, not button: HookPickCard is a <button> and nested buttons are invalid HTML (hydration error). */}
+        <span
+          role="button"
+          tabIndex={0}
           aria-label={`About ${hook.title}`}
           className="hook-pick-tooltip-trigger"
           onClick={(event) => {
@@ -264,7 +268,7 @@ function HookPickTooltip({ hook }: { hook: MasterHook }) {
           onMouseDown={(event) => event.stopPropagation()}
         >
           <Info className="h-3 w-3" aria-hidden />
-        </button>
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="top"
@@ -872,39 +876,6 @@ function HookSettings({
         {multiMarket && (
           <ConfigHint>Backed floor is single-pair only. Switch to one market to enable</ConfigHint>
         )}
-      </div>
-    );
-  }
-
-  if (hook.id === "max-wallet") {
-    return (
-      <div>
-        <PickConfigControl
-          theme={theme}
-          label="Per wallet"
-          value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
-          presets={SUPPLY_CAP_PRESETS}
-          edit={{
-            numericValue: bpsToSupplyPct(modules.maxWalletBps),
-            min: MIN_SUPPLY_CAP_SLIDER_PCT,
-            max: MAX_SUPPLY_CAP_SLIDER_PCT,
-            step: 0.1,
-            suffix: "%",
-            onCommit: (pct) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(pct)) }),
-          }}
-        >
-          <AccentSlider
-            accentColor={accent}
-            value={[bpsToSupplyPct(modules.maxWalletBps)]}
-            onValueChange={([v]) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
-            min={MIN_SUPPLY_CAP_SLIDER_PCT}
-            max={MAX_SUPPLY_CAP_SLIDER_PCT}
-            step={0.1}
-          />
-        </PickConfigControl>
-        <ConfigHint>
-          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
-        </ConfigHint>
       </div>
     );
   }

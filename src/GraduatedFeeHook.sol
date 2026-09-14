@@ -250,7 +250,8 @@ contract GraduatedFeeHook is BaseHook, Owned, IUnlockCallback {
     }
 
     /// @notice Buy the launched token with the accrued 10% quote cut and credit the $HKT vault.
-    function sweepHktDrop(PoolKey calldata key, uint256 minTokensOut) external {
+    /// @dev Operator-only: the caller picks `minTokensOut`, so an open call could be sandwiched.
+    function sweepHktDrop(PoolKey calldata key, uint256 minTokensOut) external onlyOperator {
         PoolId id = key.toId();
         LaunchConfig storage cfg = launches[id];
         if (!cfg.registered) revert NotRegistered();

@@ -32,7 +32,6 @@ export const MAX_DEV_BUY_SUPPLY_PCT = 2.5;
 const BPS = 10_000n;
 const CURVE_SUPPLY_BPS = 8_000n;
 const GRADUATION_ETH_WEI = parseEther(String(GRADUATION_ETH));
-const VIRTUAL_QUOTE_START_ETH = parseEther("1");
 
 export type DevBuyMode = "supply" | "eth";
 
@@ -69,14 +68,18 @@ export function devBuyTokensForSupplyPct(supplyPct: number): bigint {
   return (DEFAULT_TOTAL_SUPPLY * bps) / 10_000n;
 }
 
+/**
+ * Mirrors BondingMath.virtualReserves: the curve sells exactly the curve supply once the graduation
+ * quote is collected and the LP opens at the terminal curve price.
+ */
 export function initialBondingVirtualState(graduationQuoteWei: bigint) {
   const curveSupply = (DEFAULT_TOTAL_SUPPLY * CURVE_SUPPLY_BPS) / BPS;
-  let virtualQuote =
-    graduationQuoteWei > 0n
-      ? (graduationQuoteWei * VIRTUAL_QUOTE_START_ETH) / GRADUATION_ETH_WEI
-      : 1n;
+  const lpSupply = DEFAULT_TOTAL_SUPPLY - curveSupply;
+  const graduation = graduationQuoteWei > 0n ? graduationQuoteWei : GRADUATION_ETH_WEI;
+  let virtualQuote = (graduation * lpSupply) / (curveSupply - lpSupply);
   if (virtualQuote <= 0n) virtualQuote = 1n;
-  return { virtualQuote, virtualToken: curveSupply, curveSupply };
+  const virtualToken = curveSupply + (virtualQuote * curveSupply) / graduation;
+  return { virtualQuote, virtualToken, curveSupply };
 }
 
 /** Estimate gross quote for a classic bonding dev buy (% of total supply). */
@@ -123,6 +126,28 @@ export function maxDevBuyEthHint(mcapQuoteWei: bigint): number {
   return eth > 0 ? eth : TARGET_LAUNCH_MCAP_USD * 0.025 / DEFAULT_LAUNCH_ETH_USD;
 }
 
+/**
+ * Master dev buy ceiling as % of supply. The hook enforces Max Tx on the launch-time dev buy too
+ * (it is a normal swap from the hook's point of view), so a dev buy above the cap reverts the whole
+ * launch tx. Clamp the UI to the active cap.
+ */
+export function masterDevBuyCapPct(
+  modules: Pick<LaunchFormState["modules"], "maxTx" | "maxTxBps">,
+): number {
+  let cap = MAX_DEV_BUY_SUPPLY_PCT;
+  if (modules.maxTx && modules.maxTxBps > 0) cap = Math.min(cap, modules.maxTxBps / 100);
+  return cap;
+}
+
+/**
+ * Hook deployments before the dev-buy fix tax the creator's own launch-time buy with the anti-snipe
+ * rate. Set NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1 once the patched MasterLaunchHook is live.
+ */
+export function devBuyPaysSnipeTax(modules: Pick<LaunchFormState["modules"], "antiSnipe">): boolean {
+  if (!modules.antiSnipe) return false;
+  return process.env.NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT?.trim() !== "1";
+}
+
 export function hasDevBuyConfigured(form: LaunchFormState): boolean {
   if (form.devBuyMode === "supply") {
     return form.devBuySupplyPct > 0;
@@ -146,8 +171,11 @@ export function resolveDevBuyQuoteWei(
     opts.graduationQuoteWei ?? fallbackGraduationQuoteWei(opts.quote);
   const mcap = opts.mcapQuoteWei ?? fallbackMcapQuoteWei(opts.quote);
 
+  const capPct =
+    opts.rail === "classic" ? MAX_DEV_BUY_SUPPLY_PCT : masterDevBuyCapPct(form.modules);
+
   if (form.devBuyMode === "supply") {
-    const pct = Math.min(MAX_DEV_BUY_SUPPLY_PCT, Math.max(0, form.devBuySupplyPct));
+    const pct = Math.min(capPct, Math.max(0, form.devBuySupplyPct));
     if (pct <= 0) return null;
     return opts.rail === "classic"
       ? estimateClassicDevBuyQuoteWei(pct, graduation)
@@ -169,8 +197,8 @@ export function resolveDevBuyQuoteWei(
 
   const maxWei =
     opts.rail === "classic"
-      ? estimateClassicDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, graduation)
-      : estimateMasterDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, mcap);
+      ? estimateClassicDevBuyQuoteWei(capPct, graduation)
+      : estimateMasterDevBuyQuoteWei(capPct, mcap);
   if (maxWei > 0n && amount > maxWei) amount = maxWei;
   return amount;
 }

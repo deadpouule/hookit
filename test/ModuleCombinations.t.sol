@@ -10,10 +10,12 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
 import {LaunchpadTestBase, LaunchTokenLike} from "./utils/LaunchpadTestBase.sol";
 import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
+import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 
@@ -85,7 +87,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
             assertTrue(key.fee & LPFeeLibrary.DYNAMIC_FEE_FLAG != 0);
         }
 
-        uint256 buyEth = (m.maxTx || m.maxWallet) ? 0.001 ether : 0.05 ether;
+        uint256 buyEth = m.maxTx ? 0.001 ether : 0.05 ether;
         _buyAs(buyer, key, buyEth);
         uint256 bal = LaunchTokenLike(token).balanceOf(buyer);
         assertGt(bal, 0);
@@ -157,10 +159,6 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _launchBuySellSmoke(ModuleMatrix.BIT_MAX_TX);
     }
 
-    function testSingleModule_MaxWallet() public {
-        _launchBuySellSmoke(ModuleMatrix.BIT_MAX_WALLET);
-    }
-
     function testSingleModule_DynamicFees() public {
         _launchBuySellSmoke(ModuleMatrix.BIT_DYNAMIC_FEES);
     }
@@ -179,30 +177,46 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
     // ─── Behavioral edge cases ────────────────────────────────────────────────
 
-    function testMaxWallet_RevertsWhenBalanceExceedsCap() public {
-        BitmaskConfig.Modules memory m = defaultModules();
-        m.maxWallet = true;
-        m.maxWalletBps = 200; // 2%
-        (uint256 launchId,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
-        key = factory.poolKeyOf(launchId);
-
-        _buyAs(buyer, key, 0.00001 ether);
-        vm.expectRevert();
-        _buyAs(buyer, key, 0.05 ether);
+    /// Max wallet was removed (it only ever checked the router-supplied recipient): a launch that
+    /// still sets its legacy bits is rejected instead of silently ignored.
+    function testLegacyMaxWalletBitsRejected() public {
+        uint256 packed = BitmaskConfig.pack(defaultModules());
+        uint256[2] memory legacy = [packed | (1 << 4), packed | (uint256(200) << 55)];
+        for (uint256 i; i < legacy.length; ++i) {
+            vm.expectRevert(LaunchFactory.ModuleRemoved.selector);
+            factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+                LaunchFactory.LaunchParams({
+                    name: "MW",
+                    symbol: "MW",
+                    metadataURI: "ipfs://mw",
+                    totalSupply: 1_000_000e18,
+                    quote: Currency.wrap(address(0)),
+                    tickSpacing: 60,
+                    startingTick: 0,
+                    bitmask: legacy[i],
+                    customHook: IHooks(address(0)),
+                    devBuyQuoteIn: 0,
+                    minDevBuyTokensOut: 0,
+                    vestPacked: 0
+                })
+            );
+        }
     }
 
-    function testMaxWallet_RevertsWithoutHookData() public {
+    /// Buys without hookData work: nothing in the hook reads a recipient any more.
+    function testBuyWithoutHookDataSucceeds() public {
         BitmaskConfig.Modules memory m = defaultModules();
-        m.maxWallet = true;
-        m.maxWalletBps = 200;
+        m.maxTx = true;
+        m.maxTxBps = 200;
         (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000e18);
 
         vm.prank(buyer);
-        vm.expectRevert();
-        swapRouter.swap{value: 0.01 ether}(
+        swapRouter.swap{value: 0.00001 ether}(
             key,
             SwapParams({
-                zeroForOne: true, amountSpecified: -int256(0.01 ether), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+                zeroForOne: true,
+                amountSpecified: -int256(0.00001 ether),
+                sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             ""

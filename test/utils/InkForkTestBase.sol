@@ -187,7 +187,6 @@ abstract contract InkForkTestBase is Test {
             backedFloor: false,
             antiMev: false,
             maxTx: false,
-            maxWallet: false,
             dynamicFees: false,
             buybackVesting: false,
             autoBurn: false,
@@ -197,7 +196,6 @@ abstract contract InkForkTestBase is Test {
             hookTaxBps: 0,
             antiSnipeDurationSeconds: 0,
             maxTxBps: 0,
-            maxWalletBps: 0,
             floorAllocationBps: 0,
             initialSnipeTaxBps: 0,
             autoBurnBps: 0,
@@ -354,19 +352,16 @@ abstract contract InkForkTestBase is Test {
         return FixedPointMath.applyBps(IERC20(token).totalSupply(), m.maxTxBps);
     }
 
-    /// @dev Buy size that respects max-tx / max-wallet while exercising fee-route modules on fork.
+    /// @dev Buy size that respects max-tx while exercising fee-route modules on fork.
     function _smokeBuyAmountForQuote(BitmaskConfig.Modules memory m, Currency quote) internal view returns (uint256) {
         bool needsVolume = m.backedFloor || m.autoBurn || m.deepenLps || m.buybackVesting || m.holderAirdrop;
         if (quote.isAddressZero()) {
-            if (m.maxWallet) return 0.008 ether;
             if (m.maxTx) return needsVolume ? 0.002 ether : 0.001 ether;
             return needsVolume ? 0.5 ether : 0.05 ether;
         }
         if (quote == usdg) {
-            if (m.maxWallet) return 30e6;
             return m.maxTx ? 30e6 : (needsVolume ? 500e6 : 100e6);
         }
-        if (m.maxWallet) return 0.005e18;
         return m.maxTx ? 0.002e18 : (needsVolume ? 0.1e18 : 0.01e18);
     }
 
@@ -395,8 +390,8 @@ abstract contract InkForkTestBase is Test {
         uint256 supplyBefore,
         uint128 seedLiq
     ) internal view {
-        // Max-wallet / anti-MEV caps swap patterns — skip volume-heavy module checks.
-        if (m.maxWallet || m.antiMev) return;
+        // Anti-MEV caps swap patterns — skip volume-heavy module checks.
+        if (m.antiMev) return;
 
         if (m.backedFloor) assertGt(vault.reserve(l.token), 0, "floor reserve");
         if (m.buybackVesting) {
@@ -427,7 +422,7 @@ abstract contract InkForkTestBase is Test {
         _routerBuy(trader, l.key, l.token, buyIn);
         assertGt(_tokenBalance(l.token, trader), 0);
 
-        if (m.maxTx && !m.maxWallet && !m.antiMev && needsVolume) {
+        if (m.maxTx && !m.antiMev && needsVolume) {
             for (uint256 i; i < 3; ++i) {
                 vm.roll(block.number + 1);
                 _routerBuy(trader, l.key, l.token, buyIn);

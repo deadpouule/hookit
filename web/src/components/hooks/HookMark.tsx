@@ -43,14 +43,6 @@ function Glyph({ id }: { id: HookId }) {
           />
         </svg>
       );
-    case "maxWallet":
-      return (
-        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <rect x="3.5" y="7" width="17" height="12" rx="2.2" stroke={stroke} strokeWidth="1.7" />
-          <path d="M3.5 10h17" stroke={stroke} strokeWidth="1.7" />
-          <circle cx="16.2" cy="14.2" r="1.3" fill={stroke} />
-        </svg>
-      );
     case "maxTx":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">

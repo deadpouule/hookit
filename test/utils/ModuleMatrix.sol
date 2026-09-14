@@ -16,7 +16,7 @@ library ModuleMatrix {
     uint16 internal constant BIT_BACKED_FLOOR = 1 << 1;
     uint16 internal constant BIT_ANTI_MEV = 1 << 2;
     uint16 internal constant BIT_MAX_TX = 1 << 3;
-    uint16 internal constant BIT_MAX_WALLET = 1 << 4;
+    // bit 4 was max wallet (module removed) — left unused so the mask space stays stable.
     uint16 internal constant BIT_DYNAMIC_FEES = 1 << 5;
     uint16 internal constant BIT_BUYBACK_VESTING = 1 << 6;
     uint16 internal constant BIT_AUTO_BURN = 1 << 7;
@@ -51,7 +51,6 @@ library ModuleMatrix {
         m.backedFloor = mask & BIT_BACKED_FLOOR != 0;
         m.antiMev = mask & BIT_ANTI_MEV != 0;
         m.maxTx = mask & BIT_MAX_TX != 0;
-        m.maxWallet = mask & BIT_MAX_WALLET != 0;
         m.dynamicFees = mask & BIT_DYNAMIC_FEES != 0;
         m.buybackVesting = mask & BIT_BUYBACK_VESTING != 0;
         m.autoBurn = mask & BIT_AUTO_BURN != 0;
@@ -62,7 +61,6 @@ library ModuleMatrix {
             m.initialSnipeTaxBps = 1_500;
         }
         if (m.maxTx) m.maxTxBps = 100;
-        if (m.maxWallet) m.maxWalletBps = 200;
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.deepenLps) m.deepenLpsBps = 1_000;

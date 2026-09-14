@@ -100,11 +100,34 @@ After changing factory addresses, retain the existing `hookit-57073.json` store 
 BONDING_FACTORY=0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3 \
   forge script script/SmokeClassicInk.s.sol --rpc-url $INK_RPC_URL --broadcast
 
-# Master + modules matrix
+# Master + modules matrix (launch + first buy)
 LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
   HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
-  forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast
+  forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow
+
+# Sell everything bought above (ids printed by the launch phase)
+MATRIX_PHASE=sell MATRIX_LAUNCH_IDS=5,6,7,8,9 \
+  LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
+  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+  forge script script/ModuleMatrixInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow \
+  --gas-estimate-multiplier 250
 ```
+
+```bash
+# Master launch carrying a dev buy in the launch tx (emits DevBuyExecuted), then sell it back
+LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
+  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+  forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow
+DEVBUY_PHASE=sell DEVBUY_LAUNCH_ID=<id> LAUNCH_FACTORY=... HOOKIT_SWAP_ROUTER=... \
+  forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow \
+  --gas-estimate-multiplier 250
+```
+
+Keep `--gas-estimate-multiplier 250` on the sell phases: forge simulates the whole script in one
+warm EVM, so its per-tx estimate misses the cold-storage cost of `afterSwap` (floor defense,
+burn, airdrop). The default 130 % limit ran out of gas on-chain on every module sell
+(452k limit vs 386k–524k actually used) while the dry run passed. `--slow` waits for each
+receipt so a public RPC never rejects the next nonce.
 
 1. Launch Master (ETH) → swap via HookitSwapRouter.
 2. Launch Classic → buy on curve.
@@ -118,7 +141,8 @@ LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
 | Small circle / no big announce | Public marketing |
 | Deployer or multisig as owner | Timelock handoff |
 | Custom Solidity hooks **off** (UI + allowlist) | `setCustomHooksEnabled(true)` after audit |
-| Unaudited disclaimer in UI | External audit |
+| Unaudited disclaimer in UI | External audit — start from [`audit/INTERNAL_SECURITY_REVIEW.md`](audit/INTERNAL_SECURITY_REVIEW.md) |
+| Live stack predates the internal review fixes (vault snapshot, oracle band, dev-buy tax, Classic curve re-sized to open the LP at the terminal price, Max Wallet removed, raw floor-fill settlement) | Redeploy hook + factories + vaults per section 9 of the review |
 | Daily fee keeper on Linode (`hookit-fee-keeper.timer`) | Same; tune TWAP / Gelato later |
 
 ### Bytecode note

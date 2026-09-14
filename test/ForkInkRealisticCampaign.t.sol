@@ -92,8 +92,6 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
             // every fee-route side effect to be asserted after meaningful volume.
             m.maxTx = false;
             m.maxTxBps = 0;
-            m.maxWallet = false;
-            m.maxWalletBps = 0;
             m.antiMev = false;
 
             LaunchResult memory l =

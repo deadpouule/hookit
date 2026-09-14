@@ -15,7 +15,8 @@ import {ILaunchToken} from "./interfaces/ILaunchToken.sol";
 import {IHkitBuybackSource} from "./interfaces/IHkitBuybackSource.sol";
 
 /// @title HkitBuyback
-/// @notice Permissionless keeper: pulls accumulated ETH from the distributor, buys HKIT, burns it.
+/// @notice Keeper: pulls accumulated ETH from the distributor, buys HKIT, burns it.
+/// @dev Operator-gated: the caller chooses `minTokensOut`, so an open call could be sandwiched.
 contract HkitBuyback is Owned, IUnlockCallback {
     using CurrencyLibrary for Currency;
     using CurrencySettler for Currency;
@@ -27,14 +28,17 @@ contract HkitBuyback is Owned, IUnlockCallback {
     address public hkit;
     PoolKey public poolKey;
     bool public configured;
+    mapping(address => bool) public operators;
 
     error NotPoolManager();
+    error NotOperator();
     error NotConfigured();
     error ZeroAmount();
     error InsufficientOutput();
     error BadPool();
 
     event Configured(address indexed hkit, PoolKey key);
+    event OperatorSet(address indexed operator, bool allowed);
     event BuybackBurned(uint256 ethIn, uint256 tokensBurned, address indexed caller);
 
     struct SwapCall {
@@ -49,6 +53,19 @@ contract HkitBuyback is Owned, IUnlockCallback {
     }
 
     receive() external payable {}
+
+    function setOperator(address operator, bool allowed) external onlyOwner {
+        operators[operator] = allowed;
+        emit OperatorSet(operator, allowed);
+    }
+
+    /// @notice Recover protocol fees that land here in a currency this contract cannot swap
+    ///         (the distributor forwards ERC-20 flywheel fees, e.g. USDG, to the buyback executor).
+    function sweep(Currency currency, address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) revert BadPool();
+        if (amount == 0) revert ZeroAmount();
+        currency.transfer(to, amount);
+    }
 
     function configure(address hkit_, PoolKey calldata key) external onlyOwner {
         address c0 = Currency.unwrap(key.currency0);
@@ -65,6 +82,7 @@ contract HkitBuyback is Owned, IUnlockCallback {
 
     /// @notice Spend up to `ethAmount` of distributor buyback ETH to buy + burn HKIT.
     function execute(uint256 ethAmount, uint256 minTokensOut) external returns (uint256 tokensBurned) {
+        if (!operators[msg.sender] && msg.sender != owner) revert NotOperator();
         if (!configured) revert NotConfigured();
         if (ethAmount == 0) revert ZeroAmount();
 

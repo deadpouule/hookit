@@ -237,6 +237,8 @@ export type TokenRow = {
   launchId: number;
   /** Emitting LaunchFactory (master) or BondingLaunchFactory (classic). */
   factory?: Address;
+  /** v4 hook attached to the launch pool; its own swaps (fee routing) are not user trades. */
+  hooks?: Address;
   rail: "master" | "classic";
   metadataURI?: string;
   hookModules?: string;

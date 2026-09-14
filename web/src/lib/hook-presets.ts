@@ -67,11 +67,6 @@ const PRESET_LINES: Record<MasterHookId, string[]> = {
     "REVERTS OVERSIZE TX",
     "LAUNCHER CHOOSES CAP · 0.1%–2.5% · FIXED AT LAUNCH",
   ],
-  "max-wallet": [
-    `DEFAULT CAP ${bpsToPct(LAUNCH.maxWalletBps)} OF SUPPLY PER WALLET`,
-    "CHECKED AFTER BUYS",
-    "LAUNCHER CHOOSES CAP · 0.1%–2.5% · FIXED AT LAUNCH",
-  ],
   "dynamic-fees": [
     "FEE RAMPS WITH IN-RANGE LP DEPTH CONSUMED",
     "LARGER TRADES VS SHALLOW POOL → HIGHER FEE",

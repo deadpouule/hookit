@@ -3,7 +3,7 @@
  * Launchers pick values in these ranges; config is fixed in the bitmask at launch.
  */
 
-/** Max tx / max wallet: 0.1%–2.5% of total supply (10–250 bps). */
+/** Max tx: 0.1%–2.5% of total supply per swap (10–250 bps). */
 export const MIN_SUPPLY_CAP_BPS = 10;
 export const MAX_SUPPLY_CAP_BPS = 250;
 export const MIN_SUPPLY_CAP_SLIDER_PCT = 0.1;

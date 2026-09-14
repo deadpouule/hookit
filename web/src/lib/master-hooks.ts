@@ -10,7 +10,6 @@ import {
   Percent,
   Shield,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 
 import { unpackLaunchBitmask } from "@/lib/bitmask";
@@ -23,7 +22,6 @@ export type MasterHookId =
   | "backed-floor"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "dynamic-fees"
   | "buyback-vesting"
   | "auto-burn"
@@ -218,22 +216,6 @@ export const MASTER_HOOKS: MasterHook[] = [
     settings: ["+ SAME-BLOCK OPPOSING SWAP COOLDOWN", "+ TRANSIENT STORAGE GUARD", "+ PER-ORIGIN BLOCK LOCK"],
   },
   {
-    id: "max-wallet",
-    number: 6,
-    title: "Max Wallet",
-    description: "caps each wallet between 0.1% and 2.5% of total supply. Fixed at launch",
-    category: "protection",
-    icon: Wallet,
-    theme: "ice",
-    keyword: "WALLET",
-    creator: CREATOR,
-    uses: 6,
-    royalty: "0% of hook fees",
-    savedAt: "Block 25,799,488",
-    summary: "1 active hook block • per-wallet supply cap",
-    settings: ["+ MAX WALLET BPS ON", "+ CAP PER WALLET VS SUPPLY", "+ CHECKED AFTER BUYS"],
-  },
-  {
     id: "max-tx",
     number: 5,
     title: "Max Tx",
@@ -333,7 +315,6 @@ export const HOOK_MODULE_FIELD: Record<MasterHookId, keyof LaunchModules> = {
   "backed-floor": "backedFloor",
   "anti-mev": "antiMev",
   "max-tx": "maxTx",
-  "max-wallet": "maxWallet",
   "dynamic-fees": "dynamicFees",
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
@@ -347,7 +328,6 @@ const POOL_HOOK_BY_MASTER_ID: Record<MasterHookId, keyof TokenPool["hooks"]> = {
   "backed-floor": "backedFloor",
   "anti-mev": "antiMev",
   "max-tx": "maxTx",
-  "max-wallet": "maxWallet",
   "dynamic-fees": "dynamicFees",
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
@@ -366,7 +346,6 @@ type HookUsagePool = {
     backedFloor?: boolean;
     antiMev?: boolean;
     maxTx?: boolean;
-    maxWallet?: boolean;
     dynamicFees?: boolean;
     buybackVesting?: boolean;
     autoBurn?: boolean;
@@ -407,7 +386,6 @@ export function countHookUsage(pools: HookUsagePool[]): Record<MasterHookId, num
     "backed-floor": 0,
     "anti-mev": 0,
     "max-tx": 0,
-    "max-wallet": 0,
     "dynamic-fees": 0,
     "buyback-vesting": 0,
     "auto-burn": 0,

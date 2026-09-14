@@ -1,5 +1,4 @@
 import type { PublicClient } from "viem";
-import { zeroAddress } from "viem";
 
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
 import { getChainDeployment } from "@/lib/contracts/config";
@@ -41,18 +40,34 @@ export async function enrichPoolsWithSpotPrices(
     buildQuoteUsdMap(publicClient, pools, launchEthUsd),
     buildLaunchMcapQuoteMap(publicClient, pools),
   ]);
+  const isBonding = (pool: TokenPool) => pool.rail === "classic" && pool.bondingPhase === 0;
+
+  // Classic bonding (no v4 pool yet): price from the curve, mcap = price × supply,
+  // liquidity = quote raised, all in USD so explore/token pages read them like Master pools.
+  const enrichBonding = (pool: TokenPool): TokenPool => {
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    const quoteUsd =
+      quoteKind === "eth" ? launchEthUsd : quoteUsdFromMap(pool, ethUsd, quoteUsdMap);
+    const quoteDecimals = quoteDecimalsForKind(quoteKind);
+    const raisedHuman = pool.realQuote
+      ? Number(BigInt(pool.realQuote)) / 10 ** quoteDecimals
+      : pool.liquidity;
+    const priceEth = pool.priceEth ?? 0;
+    const marketCap = saneMarketCap(
+      priceEth > 0 ? marketCapUsdForPool(priceEth, pool, launchEthUsd, quoteUsd) : pool.marketCap,
+      0,
+    );
+    return {
+      ...pool,
+      quoteUsd,
+      marketCap,
+      liquidity: raisedHuman * quoteUsd,
+    };
+  };
+
   const withPool = pools.filter((p) => p.poolId);
   if (withPool.length === 0) {
-    // Bonding-only: convert realQuote ETH → USD liquidity.
-    return pools.map((pool) => {
-      if (pool.rail !== "classic" || pool.bondingPhase !== 0) return pool;
-      const quoteEth = pool.liquidity; // currently stored as ETH from realQuote/1e18
-      const quoteIsEth = !pool.quoteAddress || pool.quoteAddress === zeroAddress;
-      return {
-        ...pool,
-        liquidity: quoteIsEth ? quoteEth * ethUsd : quoteEth,
-      };
-    });
+    return pools.map((pool) => (isBonding(pool) ? enrichBonding(pool) : pool));
   }
 
   const stateView = getChainDeployment().stateView;
@@ -125,15 +140,7 @@ export async function enrichPoolsWithSpotPrices(
   }
 
   return pools.map((pool) => {
-    // Classic bonding (no pool yet): liquidity = quote raised in USD.
-    if (pool.rail === "classic" && pool.bondingPhase === 0) {
-      const quoteIsEth = !pool.quoteAddress || pool.quoteAddress === zeroAddress;
-      const quoteHuman = pool.realQuote ? Number(BigInt(pool.realQuote)) / 1e18 : pool.liquidity;
-      return {
-        ...pool,
-        liquidity: quoteIsEth ? quoteHuman * ethUsd : quoteHuman,
-      };
-    }
+    if (isBonding(pool)) return enrichBonding(pool);
 
     if (!pool.poolId) return pool;
     const meta = metaByPoolId.get(pool.poolId);

@@ -150,35 +150,6 @@ test("selects a 60/40 split when it beats every full-size route", async () => {
   assert.match(plan.routeLabel, /Split 60\/40%/);
 });
 
-test("does not split a buy when maxWallet makes sequential legs unsafe", async () => {
-  const pool = poolFor([STOCK_A, STOCK_B]);
-  pool.hooks.maxWallet = true;
-  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
-    if (isQuotronBridge(key)) return amount;
-    const quote = quoteSide(key);
-    if (quote.toLowerCase() === STOCK_A.toLowerCase()) {
-      return amount <= 600n ? amount * 3n : amount;
-    }
-    if (quote.toLowerCase() === STOCK_B.toLowerCase()) {
-      return amount <= 400n ? amount * 3n : amount;
-    }
-    return null;
-  });
-
-  const plan = await quoteBestBuyPlan(
-    client,
-    pool,
-    paymentAssetById("USDC"),
-    1_000n,
-    TOKEN,
-  );
-
-  assert.ok(plan);
-  assert.equal(plan.legs.length, 1);
-  assert.equal(plan.amountOut, 1_000n);
-  assert.doesNotMatch(plan.routeLabel, /Split/);
-});
-
 test("ignores a reverting market and keeps the executable buy leg", async () => {
   const pool = poolFor([STOCK_A, STOCK_B]);
   const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {

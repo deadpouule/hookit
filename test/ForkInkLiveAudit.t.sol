@@ -37,23 +37,23 @@ contract ForkInkLiveAuditTest is Test {
     using CurrencyLibrary for Currency;
     using BitmaskConfig for uint256;
 
-    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0xdca9ccee27dc12256818deff316ba4b972b087a7));
-    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0xa506ed2d09a164e5d12993b34f4eb1d01ad46ac8));
+    LaunchFactory internal constant FACTORY = LaunchFactory(payable(0xDCa9Ccee27Dc12256818dEFf316BA4B972b087a7));
+    MasterLaunchHook internal constant HOOK = MasterLaunchHook(payable(0xa506Ed2D09a164E5d12993B34F4Eb1D01ad46ac8));
     BondingLaunchFactory internal constant BONDING =
-        BondingLaunchFactory(payable(0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3));
+        BondingLaunchFactory(payable(0xFEECD83d9ad44F6db03c531e78f1Bc6D807315d3));
     GraduatedFeeHook internal constant GRADUATED =
-        GraduatedFeeHook(payable(0x503419f19c6232ecd08f4728ee4d18a1e0362088));
-    FloorVault internal constant VAULT = FloorVault(payable(0x6906e9c43aef6601d3f0e5b870aab9668322b044));
-    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0xef22d9998ff7ab160ba062773b22220ac27018ab));
+        GraduatedFeeHook(payable(0x503419f19C6232Ecd08f4728Ee4d18A1E0362088));
+    FloorVault internal constant VAULT = FloorVault(payable(0x6906e9C43AeF6601D3F0e5B870aab9668322B044));
+    FeeEscrow internal constant ESCROW = FeeEscrow(payable(0xEf22d9998ff7AB160Ba062773b22220AC27018aB));
     ProtocolRevenueDistributor internal constant DIST =
-        ProtocolRevenueDistributor(payable(0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179));
-    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0xdb72ef45e7e4ab1efa187561210ad50aef1f10f5));
+        ProtocolRevenueDistributor(payable(0x2F904D2C2dC5dc536F41Cf99BCF0Ac6034187179));
+    BuybackVault internal constant BUYBACKS = BuybackVault(payable(0xdB72EF45e7e4aB1Efa187561210aD50AEF1F10f5));
     HolderAirdropVault internal constant AIRDROPS =
-        HolderAirdropVault(payable(0x4e9ed7abc11a6ef71f1ca433e30918e2919e41e8));
-    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x6889635f39c472802abde7db791f2ea48090091a));
-    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0xa52e86ee01695d9f4883c48eff2972cf4be1c941));
-    address internal constant NATIVE = 0x964ce443c5e111ea1b87a70166c6894af3eddb08;
-    address internal constant FEE_RAIL = 0x0f7df6f28358f2ca1e24b18358fe528c7c840dff;
+        HolderAirdropVault(payable(0x4e9ed7aBC11A6eF71f1CA433E30918e2919e41e8));
+    HookitSwapRouter internal constant ROUTER = HookitSwapRouter(payable(0x6889635F39c472802AbdE7Db791f2Ea48090091A));
+    HkitBuyback internal constant HKIT_BUYBACK = HkitBuyback(payable(0xa52e86ee01695d9F4883C48efF2972cf4be1C941));
+    address internal constant NATIVE = 0x964cE443c5E111Ea1b87a70166c6894aF3EddB08;
+    address internal constant FEE_RAIL = 0x0F7DF6F28358F2ca1E24B18358FE528c7c840dff;
     address internal constant USDG_WHALE = 0x3e17f00A166C278F357A9aaB4e2148b9c3CFd8E4;
 
     IPoolManager internal manager;
@@ -352,7 +352,6 @@ contract ForkInkLiveAuditTest is Test {
         if (m.backedFloor) console.log("  backedFloor");
         if (m.antiMev) console.log("  antiMev");
         if (m.maxTx) console.log("  maxTx bps", uint256(m.maxTxBps));
-        if (m.maxWallet) console.log("  maxWallet bps", uint256(m.maxWalletBps));
         if (m.dynamicFees) console.log("  dynamicFees");
         if (m.buybackVesting) console.log("  buybackVesting");
         if (m.autoBurn) console.log("  autoBurn");
@@ -365,7 +364,7 @@ contract ForkInkLiveAuditTest is Test {
     function _buyLive(PoolKey memory key, address token, Currency quote, BitmaskConfig.Modules memory mods) internal {
         bool zeroForOne = Currency.unwrap(key.currency1) == token;
         uint256 amountIn;
-        bool tight = mods.maxWallet || mods.maxTx;
+        bool tight = mods.maxTx;
         if (quote.isAddressZero()) {
             amountIn = tight ? 0.00005 ether : 0.01 ether;
         } else if (quote == usdg) {
@@ -411,9 +410,7 @@ contract ForkInkLiveAuditTest is Test {
                 sel := mload(add(reason, 32))
             }
         }
-        if (sel == MasterLaunchHook.MaxWalletExceeded.selector) console.log("  revert MaxWalletExceeded");
-        else if (sel == MasterLaunchHook.MaxTxExceeded.selector) console.log("  revert MaxTxExceeded");
-        else if (sel == MasterLaunchHook.HookDataRequired.selector) console.log("  revert HookDataRequired");
+        if (sel == MasterLaunchHook.MaxTxExceeded.selector) console.log("  revert MaxTxExceeded");
         else if (sel == MasterLaunchHook.SandwichBlocked.selector) console.log("  revert SandwichBlocked");
         else console.logBytes(reason);
     }

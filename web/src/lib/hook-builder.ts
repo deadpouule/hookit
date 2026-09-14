@@ -21,8 +21,7 @@ export type LiveBlockId =
   | "autoBurn"
   | "deepenLps"
   | "holderAirdrop"
-  | "creatorShareToHook"
-  | "maxWallet";
+  | "creatorShareToHook";
 
 export type SoonBlockId = "surgeFees" | "nthBuy" | "royalty";
 
@@ -40,8 +39,6 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   backedFloor: false,
   floorAllocation: 10,
   antiMev: false,
-  maxWallet: false,
-  maxWalletBps: 200,
   maxTx: false,
   maxTxBps: 100,
   autoBurn: false,
@@ -78,7 +75,6 @@ export const EXECUTION_ORDER: LiveBlockId[] = [
   "deepenLps",
   "holderAirdrop",
   "creatorShareToHook",
-  "maxWallet",
 ];
 
 export type BuilderBlockDef = {
@@ -162,14 +158,6 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     accent: HOOK_MODULE_ACCENTS.antiMev,
   },
   {
-    id: "maxWallet",
-    live: true,
-    label: "Max Wallet",
-    short: "holding cap",
-    description: "Reverts if the recipient would hold more than a % of supply.",
-    accent: HOOK_MODULE_ACCENTS.maxWallet,
-  },
-  {
     id: "maxTx",
     live: true,
     label: "Max Tx",
@@ -246,8 +234,6 @@ export function isBlockEnabled(
       return modules.holderAirdrop;
     case "creatorShareToHook":
       return modules.creatorShareToHook;
-    case "maxWallet":
-      return modules.maxWallet;
   }
 }
 

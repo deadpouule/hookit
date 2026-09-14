@@ -31,7 +31,7 @@ export const MASTER_WIZARD_STEP_INTRO =
 
 /** Hook groups per wizard step (Master launch). */
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
-  2: ["anti-mev", "anti-snipe", "max-tx", "max-wallet"],
+  2: ["anti-mev", "anti-snipe", "max-tx"],
   3: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps"],
   4: ["dynamic-fees", "creator-share-to-hook"],
 };

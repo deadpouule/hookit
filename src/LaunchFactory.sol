@@ -39,6 +39,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
 
     /// @notice ETH/USD price with 18 decimals — used to convert the fixed $5k FDV into ETH at launch.
     uint256 public ethUsdPriceX18 = ProtocolConstants.DEFAULT_LAUNCH_ETH_USD_X18;
+    /// Timestamp of the last `ethUsdPriceX18` write; bounds how long a reverting feed can fall back on it.
+    uint64 public ethUsdSyncedAt;
     /// @notice Chainlink-compatible on-chain ETH/USD feed; anyone may `syncEthUsdPrice`.
     address public ethUsdFeed;
 
@@ -178,6 +180,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error CustomHookNotAllowed();
     error CustomHooksDisabled();
     error ModulesNotSupportedWithCustomHook();
+    error ModuleRemoved();
     error InvalidMarketCount();
     error InvalidMarketBps();
     error DuplicateQuote();
@@ -192,6 +195,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         treasury = treasury_;
         customHookAllowlistEnabled = true;
         customHooksEnabled = false;
+        ethUsdSyncedAt = uint64(block.timestamp);
     }
 
     receive() external payable {}
@@ -224,6 +228,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     function setEthUsdPrice(uint256 ethUsdPriceX18_) external onlyOwner {
         if (ethUsdPriceX18_ == 0) revert InvalidQuote();
         ethUsdPriceX18 = ethUsdPriceX18_;
+        ethUsdSyncedAt = uint64(block.timestamp);
         emit EthUsdPriceSet(ethUsdPriceX18_);
     }
 
@@ -261,6 +266,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     function syncEthUsdPrice() public {
         if (ethUsdFeed == address(0)) revert InvalidFeed();
         ethUsdPriceX18 = LaunchFactoryLib.usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE);
+        ethUsdSyncedAt = uint64(block.timestamp);
         emit EthUsdPriceSet(ethUsdPriceX18);
     }
 
@@ -274,6 +280,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
         try LaunchFactoryLib.usdFromFeed(ethUsdFeed, ProtocolConstants.ORACLE_MAX_AGE) returns (uint256 live) {
             if (live != 0) return live;
         } catch {}
+        if (ethUsdSyncedAt != 0 && block.timestamp > uint256(ethUsdSyncedAt) + ProtocolConstants.USD_SNAPSHOT_MAX_AGE) {
+            revert StalePrice();
+        }
         return ethUsdPriceX18;
     }
 
@@ -406,7 +415,16 @@ contract LaunchFactory is Owned, IUnlockCallback {
             revert BackedFloorNotAllowedInMulti();
         }
 
-        LaunchFactoryLib.collectLaunchFee(treasury, launchFee, hasNative, params.devBuyQuoteIn, msg.value, msg.sender);
+        // The dev buy is executed against markets[0]; only require its ETH when that market is native,
+        // otherwise the ERC-20 is pulled and any ETH sent for it would be stranded here.
+        LaunchFactoryLib.collectLaunchFee(
+            treasury,
+            launchFee,
+            hasNative,
+            params.markets[0].quote.isAddressZero() ? params.devBuyQuoteIn : 0,
+            msg.value,
+            msg.sender
+        );
 
         token = LaunchTokenDeployLib.deploy(
             address(this),
@@ -560,6 +578,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         }
         hooks = useCustom ? customHook : IHooks(address(masterHook));
 
+        if (bitmask & BitmaskConfig.RESERVED_MAX_WALLET_MASK != 0) revert ModuleRemoved();
         packed = bitmask;
         BitmaskConfig.Modules memory modules = BitmaskConfig.unpack(packed);
         packed = BitmaskConfig.pack(modules);

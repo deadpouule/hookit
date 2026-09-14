@@ -124,8 +124,17 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
     query: { enabled: !!escrow && !!creator, refetchInterval: 12_000 },
   });
 
-  const [claimedTotal, setClaimedTotal] = useState<bigint | null>(null);
+  const [claimedTotalRaw, setClaimedTotal] = useState<bigint | null>(null);
   const [claimedNonce, setClaimedNonce] = useState(0);
+  // Public RPCs lag a few blocks behind the receipt: show the claim as done right away and drop the
+  // override once the Claimed logs catch up.
+  const [lastClaim, setLastClaim] = useState<{ amount: bigint; baseTotal: bigint } | null>(null);
+  const pendingClaim =
+    lastClaim && (claimedTotalRaw == null || claimedTotalRaw <= lastClaim.baseTotal) ? lastClaim : null;
+  const claimedTotal =
+    claimedTotalRaw == null
+      ? pendingClaim?.amount ?? null
+      : claimedTotalRaw + (pendingClaim?.amount ?? BigInt(0));
   useEffect(() => {
     if (!publicClient || !escrow || !creator) return;
     let cancelled = false;
@@ -150,7 +159,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
   const feesVesting = !isClassic && !!pool.hooks.buybackVesting;
 
   const pendingWei = (pendingOnHook as bigint | undefined) ?? BigInt(0);
-  const claimWei = claimable ?? BigInt(0);
+  const claimWei = pendingClaim ? BigInt(0) : claimable ?? BigInt(0);
   const needsSweep = isGraduatedClassic && pendingWei > BigInt(0);
   const afterClaim = () => {
     if (escrow && creator) invalidateCreatorClaimed(escrow, creator, quote);
@@ -189,6 +198,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
         args: [quote],
       });
       await publicClient?.waitForTransactionReceipt({ hash });
+      setLastClaim({ amount: claimWei, baseTotal: claimedTotalRaw ?? BigInt(0) });
       await refetchClaimable();
       afterClaim();
       setMessage("Fees claimed");
@@ -259,7 +269,15 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
 
       <div className="flex min-w-0 items-center justify-between gap-3 overflow-hidden">
         <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="text-xs text-zinc-500">{isCreator ? "Available to claim" : "Unclaimed"}</p>
+          <p className="text-xs text-zinc-500">
+            {isCreator ? "Available to claim" : "Unclaimed"}
+            <span
+              className="ml-1 text-zinc-600"
+              title={`The escrow pools fees per creator and quote: this is the creator's ${quoteLabel} balance across all their ${quoteLabel}-paired launches, not just this token.`}
+            >
+              · all {quoteLabel} launches
+            </span>
+          </p>
           <p
             className="min-w-0 font-mono text-base text-foreground"
             title={`${formatUnits(claimWei, decimals)} ${quoteLabel}`}

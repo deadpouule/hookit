@@ -37,7 +37,6 @@ export type DocsSectionId =
   | "anti-snipe"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "floor"
   | "deepen-lps"
   | "auto-burn"
@@ -81,7 +80,6 @@ export type DocsVisualId =
   | "anti-snipe-decay"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "deepen-lps"
   | "auto-burn"
   | "buyback-vesting"
@@ -164,7 +162,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "anti-snipe", label: "Anti-Snipe" },
       { id: "anti-mev", label: "Anti-MEV" },
       { id: "max-tx", label: "Max Tx" },
-      { id: "max-wallet", label: "Max Wallet" },
       { id: "floor", label: "Backed Floor" },
       { id: "deepen-lps", label: "Deepen LPs" },
       { id: "auto-burn", label: "Auto-Burn" },
@@ -457,6 +454,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Trading moves from BondingLaunchFactory to a Uniswap v4 pool.",
             "20% of supply + collected quote become locked full-range LP.",
+            "The pool opens at the last curve price: the virtual reserves are sized so the curve sells out exactly at the target and the LP starts where the curve ended, no discount for the first pool buyers.",
             `Fees stay the 1% base, split ${CREATOR_FEE_PCT}% / ${HKT_HOLDER_FEE_PCT}% / ${PROTOCOL_FEE_PCT}% creator / $HKT / protocol.`,
             "Graduation is a funding threshold, not a quality stamp.",
             "Creator fees after graduation sit on GraduatedFeeHook.pendingCreatorTax. sweepQuote(poolId) moves them into FeeEscrow, then claim.",
@@ -610,11 +608,6 @@ export function buildDocsSections(): DocsSection[] {
           type: "p",
           text: "Caps a single swap at 0.1%–2.5% of supply. Fixed at launch. Oversized exact-input swaps revert.",
         },
-        { type: "hook-title", hookId: "max-wallet" },
-        {
-          type: "p",
-          text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer.",
-        },
         { type: "hook-title", hookId: "backed-floor" },
         {
           type: "p",
@@ -712,6 +705,10 @@ export function buildDocsSections(): DocsSection[] {
               term: "Cap",
               text: "Base 1% + hook tax + snipe ≤ 100% at open. Steady fee (after decay) still 1% + hook tax ≤ 10%.",
             },
+            {
+              term: "Exact-output buys",
+              text: "Rejected while the snipe tax is above 0 (ExactOutputDuringSnipe). Fees are taken on the pre-swap notional, so an exact-output buy would under-pay the tax. Exact-input buys, and all sells, are unaffected. The creator’s launch-time dev buy is exempt from the tax.",
+            },
           ],
         },
         {
@@ -763,22 +760,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "visual",
           id: "max-tx",
-        },
-      ],
-    },
-    {
-      id: "max-wallet",
-      title: "Max Wallet",
-      hookId: "max-wallet",
-      group: "Modules",
-      blocks: [
-        {
-          type: "p",
-          text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer on buys (checkMaxWalletBeforeBuy). Sells are not blocked by this cap.",
-        },
-        {
-          type: "visual",
-          id: "max-wallet",
         },
       ],
     },
@@ -1475,13 +1456,13 @@ const [page, bitmasks, timestamps, total] = await client.readContract({
 bit 1        BACKED_FLOOR
 bit 2        ANTI_MEV
 bit 3        MAX_TX
-bit 4        MAX_WALLET
+bit 4        reserved (former MAX_WALLET, removed)
 bit 5        DYNAMIC_FEES
 bit 6        BUYBACK_VESTING
 bits 7-22    hookTaxBps
 bits 23-38   antiSnipeDurationSeconds
 bits 39-54   maxTxBps
-bits 55-70   maxWalletBps
+bits 55-70   reserved (former maxWalletBps, removed)
 bits 71-94   floorAllocationBps
 bits 95-110  initialSnipeTaxBps
 bit 111      AUTO_BURN

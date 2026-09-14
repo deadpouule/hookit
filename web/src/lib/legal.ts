@@ -45,7 +45,7 @@ export const TERMS_PAGE: LegalPage = {
       title: "No audit sticker, no rescue button",
       paragraphs: [
         "The factories, the master hook, the routers, and this interface are offered as is. Parts may be unaudited. Bugs can lock, leak, or mis-account funds. Networks, RPCs, and Uniswap itself can fail or change. To the extent the law allows, we are not liable for losses from using the software.",
-        "A hook module is a setting, not a guarantee. Backed floor, anti-snipe, max wallet, buybacks, airdrops, and the rest do what the bytecode says, including when that bytecode is wrong. If a creator configured something ugly, we cannot reach in and fix their pool.",
+        "A hook module is a setting, not a guarantee. Backed floor, anti-snipe, max tx, buybacks, airdrops, and the rest do what the bytecode says, including when that bytecode is wrong. If a creator configured something ugly, we cannot reach in and fix their pool.",
       ],
     },
     {
