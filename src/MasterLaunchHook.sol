@@ -371,7 +371,9 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
             );
 
         uint16 snipeBps;
-        if (!arbSwap && isBuy && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
+        // The launch-time dev buy is routed by the factory inside launch(): it is the creator's own
+        // first trade, not a snipe, so it must not pay the sniper tax it configured.
+        if (!arbSwap && isBuy && sender != factory && packed.enabled(BitmaskConfig.ANTI_SNIPE_ENABLED)) {
             snipeBps = FixedPointMath.snipeTaxBps(
                 packed.initialSnipeTaxBps(), st.launchTimestamp, packed.antiSnipeDurationSeconds(), block.timestamp
             );
