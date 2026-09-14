@@ -23,10 +23,10 @@ export default defineConfig({
     {
       name: "mobile",
       use: {
-        ...devices["Desktop Chrome"],
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
+        ...devices["iPhone 13"],
+        extraHTTPHeaders: {
+          "sec-ch-ua-mobile": "?1",
+        },
       },
     },
   ],

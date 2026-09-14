@@ -49,7 +49,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold text-white">{token.name}</p>
+        <p className="truncate text-[16px] font-semibold text-white">{token.name}</p>
         <p className="mt-0.5 truncate font-mono text-[12px] text-zinc-500">
           ${token.ticker}
           <span className="mx-1.5 text-zinc-700">·</span>
@@ -58,7 +58,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
         <div className="mobile-token-row-badges">
           <TokenTypeBadges token={token} />
         </div>
-        <p className="mt-1 text-[11px] text-zinc-500">
+        <p className="mt-1 text-[12px] text-zinc-500">
           MC <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
           <span className="mx-1.5 text-zinc-700">·</span>
           Vol <span className="text-zinc-300">{formatUsd(token.volume)}</span>
