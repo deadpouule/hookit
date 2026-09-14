@@ -9,7 +9,6 @@ import {
   Shield,
   ShieldAlert,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 
 export type HookModuleAccent = {
@@ -54,16 +53,6 @@ export const HOOK_MODULE_ACCENTS = {
     border: "border-[#c77dff]/40",
     text: "text-[#ddb3ff]",
     icon: Shield,
-  },
-  maxWallet: {
-    id: "max-wallet",
-    label: "Max Wallet",
-    color: "#4cc9ff",
-    glow: "rgba(76, 201, 255, 0.5)",
-    bg: "bg-[#4cc9ff]/10",
-    border: "border-[#4cc9ff]/40",
-    text: "text-[#7dd8ff]",
-    icon: Wallet,
   },
   maxTx: {
     id: "max-tx",
@@ -131,7 +120,6 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Anti-Snipe": HOOK_MODULE_ACCENTS.antiSnipe,
   "Backed Floor": HOOK_MODULE_ACCENTS.backedFloor,
   "Anti-MEV": HOOK_MODULE_ACCENTS.antiMev,
-  "Max Wallet": HOOK_MODULE_ACCENTS.maxWallet,
   "Max Tx": HOOK_MODULE_ACCENTS.maxTx,
   "Max TX": HOOK_MODULE_ACCENTS.maxTx,
   "Hook Tax": HOOK_MODULE_ACCENTS.hookTax,

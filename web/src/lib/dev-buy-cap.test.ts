@@ -6,21 +6,18 @@ import { DEFAULT_LAUNCH_STATE } from "./constants";
 
 const zero = "0x0000000000000000000000000000000000000000" as const;
 
-test("dev buy cap is 2.5% without supply caps", () => {
-  assert.equal(
-    masterDevBuyCapPct({ maxTx: false, maxTxBps: 100, maxWallet: false, maxWalletBps: 200 }),
-    MAX_DEV_BUY_SUPPLY_PCT,
-  );
+test("dev buy cap is 2.5% without a max-tx cap", () => {
+  assert.equal(masterDevBuyCapPct({ maxTx: false, maxTxBps: 100 }), MAX_DEV_BUY_SUPPLY_PCT);
 });
 
-test("dev buy cap follows the tightest active supply cap", () => {
-  assert.equal(masterDevBuyCapPct({ maxTx: true, maxTxBps: 100, maxWallet: false, maxWalletBps: 200 }), 1);
-  assert.equal(masterDevBuyCapPct({ maxTx: false, maxTxBps: 100, maxWallet: true, maxWalletBps: 200 }), 2);
-  assert.equal(masterDevBuyCapPct({ maxTx: true, maxTxBps: 100, maxWallet: true, maxWalletBps: 50 }), 0.5);
+test("dev buy cap follows the active max-tx cap", () => {
+  assert.equal(masterDevBuyCapPct({ maxTx: true, maxTxBps: 100 }), 1);
+  assert.equal(masterDevBuyCapPct({ maxTx: true, maxTxBps: 50 }), 0.5);
+  assert.equal(masterDevBuyCapPct({ maxTx: true, maxTxBps: 250 }), MAX_DEV_BUY_SUPPLY_PCT);
 });
 
 test("master dev buy wei is clamped to the max-tx cap in both input modes", () => {
-  const modules = { ...DEFAULT_LAUNCH_STATE.modules, maxTx: true, maxTxBps: 100, maxWallet: false };
+  const modules = { ...DEFAULT_LAUNCH_STATE.modules, maxTx: true, maxTxBps: 100 };
   const bySupply = resolveDevBuyQuoteWei(
     { ...DEFAULT_LAUNCH_STATE, modules, devBuyMode: "supply", devBuySupplyPct: 2.5 },
     { rail: "master", quote: zero },

@@ -206,7 +206,7 @@ function SwapLifecycleDiagram() {
       caption="Master swap lifecycle"
       kicker="One unlock"
       sources={[
-        { t: "beforeSwap", d: "Anti-MEV, Anti-Snipe, Max Tx, Max Wallet." },
+        { t: "beforeSwap", d: "Anti-MEV, Anti-Snipe, Max Tx." },
         { t: "Take quote", d: "1% base plus hook tax. Quote leg only." },
       ]}
       hub={{ t: "Route", d: "60 / 10 / 30 on the 1%. Tax into the pot." }}

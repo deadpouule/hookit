@@ -17,7 +17,7 @@ import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { getBondingFactoryAddress } from "@/lib/contracts/config";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import { formatTokenAmount, isValidLaunchTimestamp } from "@/lib/format";
+import { isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
 import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
 import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
@@ -34,7 +34,6 @@ import {
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
-import { TOTAL_SUPPLY } from "@/lib/token-live";
 import type { TokenPool, TokenPoolMarket } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -177,7 +176,6 @@ export function TokenSwapCard({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rawBalances, setRawBalances] = useState<RawBalances>(ZERO_BALANCES);
-  const tokenBal = Number(formatUnits(rawBalances.token, 18));
 
   const refreshBalances = useCallback(async () => {
     if (!walletReady) {
@@ -305,23 +303,6 @@ export function TokenSwapCard({
 
   const hasAmount = !!amount && Number(amount) > 0;
 
-  const maxWalletWarn = useMemo(() => {
-    if (side !== "buy" || !modules?.modules.maxWallet || !quotedReceive) return null;
-    const bps = modules.modules.maxWalletBps ?? 0;
-    if (bps <= 0) return null;
-    const capTokens = (TOTAL_SUPPLY * bps) / 10_000;
-    const nextBal = tokenBal + Number(quotedReceive);
-    if (nextBal <= capTokens) return null;
-    const room = Math.max(0, capTokens - tokenBal);
-    return {
-      capPct: bps / 100,
-      room,
-      hint: room > 0
-        ? `Max wallet is ${bps / 100}% of supply (~${formatTokenAmount(room)} ${ticker} left for you).`
-        : `You already hold the max wallet (${bps / 100}% of supply).`,
-    };
-  }, [side, modules, quotedReceive, tokenBal, ticker]);
-
   const maxTxWarn = useMemo(() => {
     if (!modules?.modules.maxTx) return null;
     const bps = modules.modules.maxTxBps ?? 0;
@@ -344,8 +325,8 @@ export function TokenSwapCard({
   }, [side, modules, pool.launchedAt]);
 
   const canTrade = useMemo(
-    () => walletReady && !!pool.contractAddress && hasAmount && !maxWalletWarn,
-    [walletReady, pool.contractAddress, hasAmount, maxWalletWarn],
+    () => walletReady && !!pool.contractAddress && hasAmount,
+    [walletReady, pool.contractAddress, hasAmount],
   );
 
   const marketSellBalanceRaw = sellAsset.isNative
@@ -475,13 +456,11 @@ export function TokenSwapCard({
 
   const ctaLabel = !hasAmount
     ? "Enter amount"
-    : maxWalletWarn
-      ? "Exceeds max wallet"
-      : writing || swap.isPending
-        ? "Confirm in wallet…"
-        : side === "buy"
-          ? `Buy ${ticker}`
-          : `Sell ${ticker}`;
+    : writing || swap.isPending
+      ? "Confirm in wallet…"
+      : side === "buy"
+        ? `Buy ${ticker}`
+        : `Sell ${ticker}`;
 
   const routeLabel = (() => {
     if (swapQuoteMeta?.route) return swapQuoteMeta.route;
@@ -559,17 +538,12 @@ export function TokenSwapCard({
         quoteMeta={swapQuoteMeta}
       />
 
-      {maxWalletWarn && (
-        <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-          {maxWalletWarn.hint}
-        </p>
-      )}
       {snipeWarn && (
         <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[12px] text-amber-100/90">
           {snipeWarn}
         </p>
       )}
-      {!maxWalletWarn && maxTxWarn && (
+      {maxTxWarn && (
         <p className="mt-2 text-[11px] text-zinc-500">{maxTxWarn}</p>
       )}
 
@@ -583,7 +557,7 @@ export function TokenSwapCard({
             type="button"
             disabled={!canTrade || writing || swap.isPending}
             onClick={() => void submit()}
-            className={cn("swap-cta", hasAmount && !maxWalletWarn ? "swap-cta--ready" : "swap-cta--idle")}
+            className={cn("swap-cta", hasAmount ? "swap-cta--ready" : "swap-cta--idle")}
           >
             {ctaLabel}
           </button>

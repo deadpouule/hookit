@@ -81,7 +81,6 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
     "anti-snipe",
     "anti-mev",
     "max-tx",
-    "max-wallet",
     "deepen-lps",
     "auto-burn",
     "creator-share",

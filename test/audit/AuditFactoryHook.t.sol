@@ -217,32 +217,43 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // M-0 (known limitation): the max-wallet recipient comes from caller-controlled hookData, so the
-    //      module only binds well-behaved routers. Documented; enforcing it needs a token-level cap.
+    // M-0 (fixed by removal): the max-wallet recipient came from caller-controlled hookData, so the
+    //      module only bound well-behaved routers. The module is gone; its legacy bits are rejected.
     // ─────────────────────────────────────────────────────────────────────────
-    function test_Known_M0_MaxWalletBypassViaHookDataRecipient() public {
-        BitmaskConfig.Modules memory m = defaultModules();
-        m.maxWallet = true;
-        m.maxWalletBps = 10; // 0.1% of supply
-        (, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
-        uint256 cap = FixedPointMath.applyBps(LaunchTokenLike(token).totalSupply(), 10);
+    function test_Fixed_M0_MaxWalletModuleRemoved() public {
+        uint256 packed = BitmaskConfig.pack(defaultModules());
+        assertEq(packed & BitmaskConfig.RESERVED_MAX_WALLET_MASK, 0, "pack never sets the reserved bits");
 
-        // ~0.001 ETH buys ~0.08% of supply at launch: under the per-trade cap, so honest hookData passes once...
-        _buyWithRecipient(key, 0.001 ether, address(this));
-        assertLe(LaunchTokenLike(token).balanceOf(address(this)), cap);
+        vm.expectRevert(LaunchFactory.ModuleRemoved.selector);
+        factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchParams({
+                name: "MW",
+                symbol: "MW",
+                metadataURI: "ipfs://mw",
+                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+                quote: Currency.wrap(address(0)),
+                tickSpacing: 60,
+                startingTick: 0,
+                bitmask: packed | (1 << 4),
+                customHook: IHooks(address(0)),
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
+            })
+        );
 
-        // ...and a second honest buy that would push this wallet over the cap reverts.
-        vm.expectRevert();
-        _buyWithRecipient(key, 0.001 ether, address(this));
-
-        // Same buys with hookData pointing at empty addresses: all pass, tokens still land on msg.sender.
-        for (uint256 i = 1; i <= 12; ++i) {
-            _buyWithRecipient(key, 0.001 ether, address(uint160(0xDEAD00 + i)));
-        }
-        uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
-        emit log_named_uint("max wallet cap", cap);
-        emit log_named_uint("balance after bypass", bal);
-        assertGt(bal, cap * 5, "single wallet holds >5x the max-wallet cap");
+        // The hook no longer reads a recipient from hookData: buys with empty hookData go through.
+        (, address token,, PoolKey memory key) =
+            launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        swapRouter.swap{value: 0.001 ether}(
+            key,
+            SwapParams({
+                zeroForOne: true, amountSpecified: -0.001 ether, sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+        assertGt(LaunchTokenLike(token).balanceOf(address(this)), 0);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -464,17 +475,6 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
     }
 
     // ─── helpers ────────────────────────────────────────────────────────────
-
-    function _buyWithRecipient(PoolKey memory key, uint256 ethIn, address recipient) internal {
-        swapRouter.swap{value: ethIn}(
-            key,
-            SwapParams({
-                zeroForOne: true, amountSpecified: -int256(ethIn), sqrtPriceLimitX96: TickMath.MIN_SQRT_PRICE + 1
-            }),
-            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
-            abi.encode(recipient)
-        );
-    }
 
     function _feesCollected() internal view returns (uint256) {
         return escrow.balanceOf(address(this), ETH) + distributor.pending(ETH);

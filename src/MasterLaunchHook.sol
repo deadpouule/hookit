@@ -116,8 +116,6 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
     error LaunchPositionLocked();
     error SandwichBlocked();
     error MaxTxExceeded();
-    error MaxWalletExceeded();
-    error HookDataRequired();
     error UnknownPool();
     error FloorFillInvalid();
     error ZeroAddress();
@@ -328,7 +326,7 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         return this.beforeRemoveLiquidity.selector;
     }
 
-    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata hookData)
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata params, bytes calldata)
         internal
         override
         returns (bytes4, BeforeSwapDelta, uint24)
@@ -403,12 +401,6 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
                 exactInput,
                 sqrtPriceX96,
                 totalFeeBps
-            );
-        }
-
-        if (!arbSwap && isBuy && packed.enabled(BitmaskConfig.MAX_WALLET_ENABLED)) {
-            SupplyCapLib.checkMaxWalletBeforeBuy(
-                st.token, st.tokenIsCurrency0, packed, hookData, exactInput, specifiedAbs, sqrtPriceX96, totalFeeBps
             );
         }
 

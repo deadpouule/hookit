@@ -58,14 +58,6 @@ function Glyph({ id }: { id: BrowseHookId }) {
           <rect x="16.1" y="18.15" width="2.6" height="3.9" rx="0.45" fill={stroke} />
         </svg>
       );
-    case "max-wallet":
-      return (
-        <svg viewBox="0 0 24 24" fill="none">
-          <rect x="3.5" y="7" width="17" height="12" rx="2.2" stroke={stroke} strokeWidth="1.8" />
-          <path d="M3.5 10h17" stroke={stroke} strokeWidth="1.8" />
-          <circle cx="16.2" cy="14.2" r="1.35" fill={stroke} />
-        </svg>
-      );
     case "dynamic-fees":
       return (
         <svg viewBox="0 0 24 24" fill="none">

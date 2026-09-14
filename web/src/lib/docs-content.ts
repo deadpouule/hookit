@@ -37,7 +37,6 @@ export type DocsSectionId =
   | "anti-snipe"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "floor"
   | "deepen-lps"
   | "auto-burn"
@@ -81,7 +80,6 @@ export type DocsVisualId =
   | "anti-snipe-decay"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "deepen-lps"
   | "auto-burn"
   | "buyback-vesting"
@@ -164,7 +162,6 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "anti-snipe", label: "Anti-Snipe" },
       { id: "anti-mev", label: "Anti-MEV" },
       { id: "max-tx", label: "Max Tx" },
-      { id: "max-wallet", label: "Max Wallet" },
       { id: "floor", label: "Backed Floor" },
       { id: "deepen-lps", label: "Deepen LPs" },
       { id: "auto-burn", label: "Auto-Burn" },
@@ -611,11 +608,6 @@ export function buildDocsSections(): DocsSection[] {
           type: "p",
           text: "Caps a single swap at 0.1%–2.5% of supply. Fixed at launch. Oversized exact-input swaps revert.",
         },
-        { type: "hook-title", hookId: "max-wallet" },
-        {
-          type: "p",
-          text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer.",
-        },
         { type: "hook-title", hookId: "backed-floor" },
         {
           type: "p",
@@ -768,22 +760,6 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "visual",
           id: "max-tx",
-        },
-      ],
-    },
-    {
-      id: "max-wallet",
-      title: "Max Wallet",
-      hookId: "max-wallet",
-      group: "Modules",
-      blocks: [
-        {
-          type: "p",
-          text: "Caps how much one address can hold after a buy, same 0.1%–2.5% range. Checked post-transfer on buys (checkMaxWalletBeforeBuy). Sells are not blocked by this cap.",
-        },
-        {
-          type: "visual",
-          id: "max-wallet",
         },
       ],
     },
@@ -1480,13 +1456,13 @@ const [page, bitmasks, timestamps, total] = await client.readContract({
 bit 1        BACKED_FLOOR
 bit 2        ANTI_MEV
 bit 3        MAX_TX
-bit 4        MAX_WALLET
+bit 4        reserved (former MAX_WALLET, removed)
 bit 5        DYNAMIC_FEES
 bit 6        BUYBACK_VESTING
 bits 7-22    hookTaxBps
 bits 23-38   antiSnipeDurationSeconds
 bits 39-54   maxTxBps
-bits 55-70   maxWalletBps
+bits 55-70   reserved (former maxWalletBps, removed)
 bits 71-94   floorAllocationBps
 bits 95-110  initialSnipeTaxBps
 bit 111      AUTO_BURN

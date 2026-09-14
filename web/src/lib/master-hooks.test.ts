@@ -11,7 +11,6 @@ const OFF_MODULES: LaunchModules = {
   antiSnipe: false,
   backedFloor: false,
   antiMev: false,
-  maxWallet: false,
   maxTx: false,
   autoBurn: false,
   deepenLps: false,
@@ -59,7 +58,7 @@ test("countHookUsage reads modules when hook flags are empty", () => {
 
 test("poolEnablesMasterHook unpacks bitmask when flags were stripped", () => {
   const bitmask = packLaunchBitmask(
-    { ...OFF_MODULES, holderAirdrop: true, holderAirdropPct: 100, maxWallet: true, dynamicFees: true },
+    { ...OFF_MODULES, holderAirdrop: true, holderAirdropPct: 100, maxTx: true, dynamicFees: true },
     200,
   ).toString();
   const row = pool({
@@ -68,8 +67,8 @@ test("poolEnablesMasterHook unpacks bitmask when flags were stripped", () => {
     bitmask,
   });
   assert.equal(poolEnablesMasterHook(row, "holder-airdrop"), true);
-  assert.equal(poolEnablesMasterHook(row, "max-wallet"), true);
+  assert.equal(poolEnablesMasterHook(row, "max-tx"), true);
   assert.equal(poolEnablesMasterHook(row, "dynamic-fees"), true);
   assert.equal(poolEnablesMasterHook(row, "auto-burn"), false);
-  assert.deepEqual(masterHookIdsForPool(row).sort(), ["dynamic-fees", "holder-airdrop", "max-wallet"]);
+  assert.deepEqual(masterHookIdsForPool(row).sort(), ["dynamic-fees", "holder-airdrop", "max-tx"]);
 });

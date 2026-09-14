@@ -11,7 +11,7 @@ const FLAG_ANTI_SNIPE = BigInt(1) << BigInt(0);
 const FLAG_BACKED_FLOOR = BigInt(1) << BigInt(1);
 const FLAG_ANTI_MEV = BigInt(1) << BigInt(2);
 const FLAG_MAX_TX = BigInt(1) << BigInt(3);
-const FLAG_MAX_WALLET = BigInt(1) << BigInt(4);
+// bit 4 + bits 55-70: former max wallet (module removed). Never set; the factory rejects them.
 const FLAG_DYNAMIC_FEES = BigInt(1) << BigInt(5);
 const FLAG_BUYBACK_VESTING = BigInt(1) << BigInt(6);
 const FLAG_AUTO_BURN = BigInt(1) << BigInt(111);
@@ -22,7 +22,6 @@ const FLAG_CREATOR_SHARE_TO_HOOK = BigInt(1) << BigInt(162);
 const SHIFT_HOOK_TAX = BigInt(7);
 const SHIFT_SNIPE_DURATION = BigInt(23);
 const SHIFT_MAX_TX = BigInt(39);
-const SHIFT_MAX_WALLET = BigInt(55);
 const SHIFT_FLOOR_ALLOC = BigInt(71);
 const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
@@ -75,11 +74,6 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.maxTx && (modules.maxTxBps < MIN_SUPPLY_CAP_BPS || modules.maxTxBps > MAX_SUPPLY_CAP_BPS)) {
     throw new Error(`Max tx must be between ${MIN_SUPPLY_CAP_SLIDER_PCT}% and ${MAX_SUPPLY_CAP_SLIDER_PCT}% of supply`);
   }
-  if (modules.maxWallet && (modules.maxWalletBps < MIN_SUPPLY_CAP_BPS || modules.maxWalletBps > MAX_SUPPLY_CAP_BPS)) {
-    throw new Error(
-      `Max wallet must be between ${MIN_SUPPLY_CAP_SLIDER_PCT}% and ${MAX_SUPPLY_CAP_SLIDER_PCT}% of supply`,
-    );
-  }
 
   if (modules.holderAirdrop) {
     const epochSec = modules.holderAirdropEpochSeconds ?? 15 * 60;
@@ -127,7 +121,6 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.backedFloor) packed |= FLAG_BACKED_FLOOR;
   if (modules.antiMev) packed |= FLAG_ANTI_MEV;
   if (modules.maxTx) packed |= FLAG_MAX_TX;
-  if (modules.maxWallet) packed |= FLAG_MAX_WALLET;
   if (modules.dynamicFees) packed |= FLAG_DYNAMIC_FEES;
   if (modules.buybackVesting) packed |= FLAG_BUYBACK_VESTING;
   if (modules.autoBurn) packed |= FLAG_AUTO_BURN;
@@ -138,7 +131,6 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   packed |= BigInt(effectiveHookTax) << SHIFT_HOOK_TAX;
   packed |= BigInt(modules.antiSnipeDuration) << SHIFT_SNIPE_DURATION;
   packed |= BigInt(modules.maxTxBps) << SHIFT_MAX_TX;
-  packed |= BigInt(modules.maxWalletBps) << SHIFT_MAX_WALLET;
   packed |= floorAllocationBps << SHIFT_FLOOR_ALLOC;
   packed |= initialSnipeTaxBps << SHIFT_INITIAL_SNIPE_TAX;
   packed |= autoBurnBps << SHIFT_AUTO_BURN_BPS;
@@ -179,7 +171,6 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const backedFloor = (packed & FLAG_BACKED_FLOOR) !== BigInt(0);
   const antiMev = (packed & FLAG_ANTI_MEV) !== BigInt(0);
   const maxTx = (packed & FLAG_MAX_TX) !== BigInt(0);
-  const maxWallet = (packed & FLAG_MAX_WALLET) !== BigInt(0);
   const dynamicFees = (packed & FLAG_DYNAMIC_FEES) !== BigInt(0);
   const buybackVesting = (packed & FLAG_BUYBACK_VESTING) !== BigInt(0);
   const autoBurn = (packed & FLAG_AUTO_BURN) !== BigInt(0);
@@ -190,7 +181,6 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const hookTaxBps = Number((packed >> SHIFT_HOOK_TAX) & UINT16_MASK);
   const antiSnipeDuration = Number((packed >> SHIFT_SNIPE_DURATION) & UINT16_MASK);
   const maxTxBps = Number((packed >> SHIFT_MAX_TX) & UINT16_MASK);
-  const maxWalletBps = Number((packed >> SHIFT_MAX_WALLET) & UINT16_MASK);
   const floorAllocationBps = Number((packed >> SHIFT_FLOOR_ALLOC) & UINT24_MASK);
   let initialSnipeTaxBps = Number((packed >> SHIFT_INITIAL_SNIPE_TAX) & UINT16_MASK);
   if (initialSnipeTaxBps === 0 && antiSnipe) initialSnipeTaxBps = 5000;
@@ -216,8 +206,6 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
       backedFloor,
       floorAllocation: Math.round(floorAllocationBps / 100),
       antiMev,
-      maxWallet,
-      maxWalletBps,
       maxTx,
       maxTxBps,
       dynamicFees,

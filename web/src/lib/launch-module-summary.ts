@@ -54,8 +54,6 @@ export function moduleDetailLine(
       return "Blocks same-block bot trades";
     case "max-tx":
       return `Max ${(modules.maxTxBps / 100).toFixed(1)}% of supply per swap`;
-    case "max-wallet":
-      return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
     case "dynamic-fees":
       return formatDynamicFeeRange(modules, hookTaxBps);
     case "buyback-vesting": {
@@ -177,7 +175,6 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "backed-floor": "Floor only goes up",
   "anti-mev": "Blocks same-block bot trades",
   "max-tx": "Caps swap size vs supply",
-  "max-wallet": "Caps wallet holdings",
   "dynamic-fees": "Fees scale with LP depth used",
   "buyback-vesting": "Creator fees vest over time or until a mcap target",
   "auto-burn": "Burns tokens on swaps",
@@ -196,7 +193,6 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "backed-floor": "More volume, higher floor",
   "anti-mev": "Block bot trades",
   "max-tx": "Max swap size",
-  "max-wallet": "Max wallet size",
   "dynamic-fees": "Depth-relative fees",
   "buyback-vesting": "Creator fee vest",
   "auto-burn": "Burn on swap",
@@ -219,8 +215,6 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
     "Blocks buy-then-sell (and sell-then-buy) in the same block from the same wallet. Uses a per-origin cooldown so sandwich bots and same-block flippers get reverted.",
   "max-tx":
     "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert. Useful against whale dumps or bot-sized trades.",
-  "max-wallet":
-    "Caps how much of the supply any one wallet can hold after a buy. Checked post-transfer so no wallet can accumulate beyond your chosen percentage.",
   "dynamic-fees":
     "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle.",
   "buyback-vesting":
@@ -280,7 +274,6 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "backed-floor": "has a price floor",
   "anti-mev": "blocks bot trades",
   "max-tx": "limits trade size",
-  "max-wallet": "limits wallet size",
   "dynamic-fees": "fee vs in-range LP depth",
   "buyback-vesting": "locks creator fees until time or mcap",
   "auto-burn": "burns tokens on swaps",

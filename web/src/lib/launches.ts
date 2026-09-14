@@ -144,7 +144,6 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       backedFloor: modules.backedFloor,
       antiMev: modules.antiMev,
       maxTx: modules.maxTx,
-      maxWallet: modules.maxWallet,
       dynamicFees: modules.dynamicFees,
       buybackVesting: modules.buybackVesting,
       autoBurn: modules.autoBurn,

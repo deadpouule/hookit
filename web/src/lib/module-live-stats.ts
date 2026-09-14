@@ -154,8 +154,6 @@ export function moduleLiveStatLine(
       return null;
     case "max-tx":
       return `Max ${(modules.maxTxBps / 100).toFixed(1)}% of supply per trade`;
-    case "max-wallet":
-      return `Max ${(modules.maxWalletBps / 100).toFixed(1)}% of supply per wallet`;
     case "dynamic-fees":
       return formatDynamicFeeRange(modules, _hookTaxBps);
     case "buyback-vesting": {

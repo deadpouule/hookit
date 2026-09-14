@@ -42,10 +42,6 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_TX);
     }
 
-    function testFork_Single_MaxWallet() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_WALLET);
-    }
-
     function testFork_Single_DynamicFees() public onlyFork {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_DYNAMIC_FEES);
     }
@@ -80,10 +76,6 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_AUTO_BURN | ModuleMatrix.BIT_DEEPEN_LPS);
     }
 
-    function testFork_Pair_MaxTxMaxWallet() public onlyFork {
-        _smokeLaunchAndSwap(ModuleMatrix.BIT_MAX_TX | ModuleMatrix.BIT_MAX_WALLET);
-    }
-
     function testFork_Pair_TaxAndBuyback() public onlyFork {
         _smokeLaunchAndSwap(ModuleMatrix.BIT_BUYBACK_VESTING | ModuleMatrix.BIT_ANTI_SNIPE);
     }
@@ -100,18 +92,6 @@ contract ForkInkModuleMatrixTest is InkForkTestBase {
     }
 
     // ─── Behavioral on fork ───────────────────────────────────────────────────
-
-    function testFork_MaxWallet_RevertsOnExcess() public onlyFork {
-        BitmaskConfig.Modules memory m = _defaultModules();
-        m.maxWallet = true;
-        m.maxWalletBps = 10;
-        InkForkTestBase.LaunchResult memory l =
-            _launch(creator, Currency.wrap(address(0)), m, 60, 1_000_000_000e18, "MW", "MW");
-
-        _routerBuy(trader, l.key, l.token, 0.001 ether);
-        vm.expectRevert();
-        _routerBuy(trader, l.key, l.token, 2 ether);
-    }
 
     function testFork_BuybackVesting_CreditsVault() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();

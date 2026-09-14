@@ -45,12 +45,7 @@ export function DevBuySection({ form, variant, onChange }: Props) {
   const mcap = fallbackMcapQuoteWei(quote);
 
   const capPct = rail === "classic" ? MAX_DEV_BUY_SUPPLY_PCT : masterDevBuyCapPct(form.modules);
-  const capReason =
-    rail === "master" && capPct < MAX_DEV_BUY_SUPPLY_PCT
-      ? form.modules.maxTx && form.modules.maxTxBps / 100 === capPct
-        ? "Max Tx"
-        : "Max Wallet"
-      : null;
+  const capReason = rail === "master" && capPct < MAX_DEV_BUY_SUPPLY_PCT ? "Max Tx" : null;
   const paysSnipeTax = rail === "master" && devBuyPaysSnipeTax(form.modules);
 
   const maxQuoteWei = useMemo(

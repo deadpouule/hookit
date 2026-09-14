@@ -127,16 +127,15 @@ export function maxDevBuyEthHint(mcapQuoteWei: bigint): number {
 }
 
 /**
- * Master dev buy ceiling as % of supply. The hook enforces Max Tx / Max Wallet on the launch-time
- * dev buy too (it is a normal swap from the hook's point of view), so a dev buy above either cap
- * reverts the whole launch tx. Clamp the UI to the tightest active cap.
+ * Master dev buy ceiling as % of supply. The hook enforces Max Tx on the launch-time dev buy too
+ * (it is a normal swap from the hook's point of view), so a dev buy above the cap reverts the whole
+ * launch tx. Clamp the UI to the active cap.
  */
 export function masterDevBuyCapPct(
-  modules: Pick<LaunchFormState["modules"], "maxTx" | "maxTxBps" | "maxWallet" | "maxWalletBps">,
+  modules: Pick<LaunchFormState["modules"], "maxTx" | "maxTxBps">,
 ): number {
   let cap = MAX_DEV_BUY_SUPPLY_PCT;
   if (modules.maxTx && modules.maxTxBps > 0) cap = Math.min(cap, modules.maxTxBps / 100);
-  if (modules.maxWallet && modules.maxWalletBps > 0) cap = Math.min(cap, modules.maxWalletBps / 100);
   return cap;
 }
 

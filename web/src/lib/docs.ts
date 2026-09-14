@@ -13,7 +13,6 @@ export type DocsSlug =
   | "anti-snipe"
   | "anti-mev"
   | "max-tx"
-  | "max-wallet"
   | "floor"
   | "deepen-lps"
   | "auto-burn"
@@ -145,14 +144,6 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "0.1%–2.5% of supply per swap, fee-inclusive.",
     group: "Modules",
     keywords: "max tx supply cap",
-  },
-  {
-    slug: "max-wallet",
-    href: "#max-wallet",
-    title: "Max Wallet",
-    description: "0.1%–2.5% of supply per address after a buy.",
-    group: "Modules",
-    keywords: "max wallet supply cap",
   },
   {
     slug: "floor",

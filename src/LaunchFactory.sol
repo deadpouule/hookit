@@ -180,6 +180,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error CustomHookNotAllowed();
     error CustomHooksDisabled();
     error ModulesNotSupportedWithCustomHook();
+    error ModuleRemoved();
     error InvalidMarketCount();
     error InvalidMarketBps();
     error DuplicateQuote();
@@ -577,6 +578,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
         }
         hooks = useCustom ? customHook : IHooks(address(masterHook));
 
+        if (bitmask & BitmaskConfig.RESERVED_MAX_WALLET_MASK != 0) revert ModuleRemoved();
         packed = bitmask;
         BitmaskConfig.Modules memory modules = BitmaskConfig.unpack(packed);
         packed = BitmaskConfig.pack(modules);

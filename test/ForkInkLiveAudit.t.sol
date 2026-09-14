@@ -352,7 +352,6 @@ contract ForkInkLiveAuditTest is Test {
         if (m.backedFloor) console.log("  backedFloor");
         if (m.antiMev) console.log("  antiMev");
         if (m.maxTx) console.log("  maxTx bps", uint256(m.maxTxBps));
-        if (m.maxWallet) console.log("  maxWallet bps", uint256(m.maxWalletBps));
         if (m.dynamicFees) console.log("  dynamicFees");
         if (m.buybackVesting) console.log("  buybackVesting");
         if (m.autoBurn) console.log("  autoBurn");
@@ -365,7 +364,7 @@ contract ForkInkLiveAuditTest is Test {
     function _buyLive(PoolKey memory key, address token, Currency quote, BitmaskConfig.Modules memory mods) internal {
         bool zeroForOne = Currency.unwrap(key.currency1) == token;
         uint256 amountIn;
-        bool tight = mods.maxWallet || mods.maxTx;
+        bool tight = mods.maxTx;
         if (quote.isAddressZero()) {
             amountIn = tight ? 0.00005 ether : 0.01 ether;
         } else if (quote == usdg) {
@@ -411,9 +410,7 @@ contract ForkInkLiveAuditTest is Test {
                 sel := mload(add(reason, 32))
             }
         }
-        if (sel == MasterLaunchHook.MaxWalletExceeded.selector) console.log("  revert MaxWalletExceeded");
-        else if (sel == MasterLaunchHook.MaxTxExceeded.selector) console.log("  revert MaxTxExceeded");
-        else if (sel == MasterLaunchHook.HookDataRequired.selector) console.log("  revert HookDataRequired");
+        if (sel == MasterLaunchHook.MaxTxExceeded.selector) console.log("  revert MaxTxExceeded");
         else if (sel == MasterLaunchHook.SandwichBlocked.selector) console.log("  revert SandwichBlocked");
         else console.logBytes(reason);
     }

@@ -880,39 +880,6 @@ function HookSettings({
     );
   }
 
-  if (hook.id === "max-wallet") {
-    return (
-      <div>
-        <PickConfigControl
-          theme={theme}
-          label="Per wallet"
-          value={`${formatSupplyCap(modules.maxWalletBps)} of supply`}
-          presets={SUPPLY_CAP_PRESETS}
-          edit={{
-            numericValue: bpsToSupplyPct(modules.maxWalletBps),
-            min: MIN_SUPPLY_CAP_SLIDER_PCT,
-            max: MAX_SUPPLY_CAP_SLIDER_PCT,
-            step: 0.1,
-            suffix: "%",
-            onCommit: (pct) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(pct)) }),
-          }}
-        >
-          <AccentSlider
-            accentColor={accent}
-            value={[bpsToSupplyPct(modules.maxWalletBps)]}
-            onValueChange={([v]) => onUpdate({ maxWalletBps: clampSupplyCapBps(supplyPctToBps(v)) })}
-            min={MIN_SUPPLY_CAP_SLIDER_PCT}
-            max={MAX_SUPPLY_CAP_SLIDER_PCT}
-            step={0.1}
-          />
-        </PickConfigControl>
-        <ConfigHint>
-          Fixed at launch · choose between {MIN_SUPPLY_CAP_SLIDER_PCT}% and {MAX_SUPPLY_CAP_SLIDER_PCT}% of supply
-        </ConfigHint>
-      </div>
-    );
-  }
-
   if (hook.id === "max-tx") {
     return (
       <div>

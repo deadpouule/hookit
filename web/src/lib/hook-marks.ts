@@ -4,7 +4,6 @@ export type HookId =
   | "antiSnipe"
   | "backedFloor"
   | "antiMev"
-  | "maxWallet"
   | "maxTx"
   | "holderAirdrop"
   | "dynamicFees"
@@ -48,14 +47,6 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     hint: "Same-block cooldown",
     color: "#6366f1",
     glow: "rgba(99,102,241,0.45)",
-  },
-  maxWallet: {
-    id: "maxWallet",
-    label: "Max Wallet",
-    short: "Wallet",
-    hint: "Per-wallet supply cap",
-    color: "#38bdf8",
-    glow: "rgba(56,189,248,0.4)",
   },
   maxTx: {
     id: "maxTx",
@@ -135,7 +126,6 @@ export const MASTER_HOOK_IDS: HookId[] = [
   "antiSnipe",
   "backedFloor",
   "antiMev",
-  "maxWallet",
   "maxTx",
   "holderAirdrop",
   "dynamicFees",
@@ -158,7 +148,6 @@ export const HOOK_MARK_TO_MASTER: Partial<Record<HookId, MasterHookId>> = {
   antiSnipe: "anti-snipe",
   backedFloor: "backed-floor",
   antiMev: "anti-mev",
-  maxWallet: "max-wallet",
   maxTx: "max-tx",
   holderAirdrop: "holder-airdrop",
   dynamicFees: "dynamic-fees",
@@ -174,7 +163,6 @@ export const MASTER_TO_HOOK_MARK: Record<MasterHookId, HookId> = {
   "anti-snipe": "antiSnipe",
   "backed-floor": "backedFloor",
   "anti-mev": "antiMev",
-  "max-wallet": "maxWallet",
   "max-tx": "maxTx",
   "holder-airdrop": "holderAirdrop",
   "dynamic-fees": "dynamicFees",

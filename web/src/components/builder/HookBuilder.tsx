@@ -148,14 +148,10 @@ export function HookBuilder({ modules, hookTaxBps, onChange }: Props) {
         <ul className="mt-3 list-disc space-y-2 pl-4 text-xs leading-relaxed text-zinc-500">
           <li>
             Block order in the circuit is cosmetic. The hook always runs anti-MEV → max tx →
-            snipe tax → quote fee split (floor / auto-burn / Deepen LPs) → max wallet.
+            snipe tax → quote fee split (floor / auto-burn / Deepen LPs).
           </li>
           <li>
             Anti-MEV is per-origin TSTORE in the same block, not private-mempool protection.
-          </li>
-          <li>
-            Max wallet requires <code className="text-zinc-400">hookData</code> = recipient on buys
-            (Hookit router sets this automatically).
           </li>
           <li>
             Floor fill does not catch a single-tick cross of P_floor. Allocation is a split of

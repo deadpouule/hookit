@@ -20,8 +20,6 @@ export interface LaunchModules {
   backedFloor: boolean;
   floorAllocation: number;
   antiMev: boolean;
-  maxWallet: boolean;
-  maxWalletBps: number;
   maxTx: boolean;
   maxTxBps: number;
   /** UI toggle - packed into Master bitmask. */
@@ -133,7 +131,6 @@ export interface TokenPool {
     backedFloor: boolean;
     antiMev: boolean;
     maxTx?: boolean;
-    maxWallet?: boolean;
     dynamicFees?: boolean;
     buybackVesting?: boolean;
     autoBurn?: boolean;
