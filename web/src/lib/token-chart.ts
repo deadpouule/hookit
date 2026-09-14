@@ -336,8 +336,27 @@ export function fillEmptyBars(
   return out;
 }
 
+/**
+ * Union two series that describe the same trades (indexer candles + recent swap ticks).
+ * Same-time bars widen high/low and keep the larger volume instead of summing it, so a
+ * trade present in both sources is not counted twice.
+ */
 export function mergeChartSeries(left: ChartBar[], right: ChartBar[]): ChartBar[] {
-  return mergeBars([...left, ...right].sort((a, b) => a.time - b.time));
+  const byTime = new Map<number, ChartBar>();
+  for (const bar of mergeBars([...left].sort((a, b) => a.time - b.time))) {
+    byTime.set(bar.time, { ...bar });
+  }
+  for (const bar of mergeBars([...right].sort((a, b) => a.time - b.time))) {
+    const prev = byTime.get(bar.time);
+    if (!prev) {
+      byTime.set(bar.time, { ...bar });
+      continue;
+    }
+    prev.high = Math.max(prev.high, bar.high);
+    prev.low = Math.min(prev.low, bar.low);
+    prev.volume = Math.max(prev.volume, bar.volume);
+  }
+  return [...byTime.values()].sort((a, b) => a.time - b.time);
 }
 
 export function seedLaunchBars(launchedAt: number | undefined, marketCap: number): ChartBar[] {

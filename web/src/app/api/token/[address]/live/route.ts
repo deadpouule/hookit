@@ -67,7 +67,15 @@ export async function GET(req: Request, ctx: Ctx) {
         args: [address],
       })) as bigint;
       if (launchId > BigInt(0)) {
-        pool = await fetchBondingLaunchById(client, bonding, launchId);
+        const bondingPool = await fetchBondingLaunchById(client, bonding, launchId);
+        if (bondingPool) {
+          // Curve price → mcap, raised quote → USD liquidity (same path as /api/launches).
+          const [enriched] = await enrichPoolsWithSpotPrices(client, [bondingPool], ethUsd, {
+            skipSwapIndex: true,
+            launchEthUsd,
+          });
+          pool = enriched ?? bondingPool;
+        }
       }
     }
 

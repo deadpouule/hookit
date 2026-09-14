@@ -148,6 +148,13 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
   const launchEthUsd = await withTimeout(readLaunchEthUsd(client), API_TIMEOUT_MS, "readLaunchEthUsd");
   const enrichOpts = { skipSwapIndex: isIndexerConfigured(), launchEthUsd };
 
+  // Master and Classic (bonding or graduated) all go through the same spot/curve enrichment.
+  const enrich = async (candidate: TokenPool | null): Promise<TokenPool | null> => {
+    if (!candidate) return null;
+    const [enriched] = await enrichPoolsWithSpotPrices(client, [candidate], ethUsd, enrichOpts);
+    return enriched ?? candidate;
+  };
+
   let pool: TokenPool | null = null;
 
   if (isAddress(needle)) {
@@ -155,15 +162,7 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
     const resolved = await resolveMasterLaunch(client, token);
     if (resolved) {
       const launch = await fetchLaunchById(client, resolved.factory, resolved.launchId);
-      if (launch) {
-        const [enriched] = await enrichPoolsWithSpotPrices(
-          client,
-          [launchToTokenPool(launch)],
-          ethUsd,
-          enrichOpts,
-        );
-        pool = enriched ?? null;
-      }
+      if (launch) pool = await enrich(launchToTokenPool(launch));
     }
     if (!pool && bonding) {
       const launchId = (await client.readContract({
@@ -173,23 +172,15 @@ async function loadLaunchPoolByIdImpl(id: string): Promise<TokenPool | null> {
         args: [token],
       })) as bigint;
       if (launchId > BigInt(0)) {
-        pool = await fetchBondingLaunchById(client, bonding, launchId);
+        pool = await enrich(await fetchBondingLaunchById(client, bonding, launchId));
       }
     }
   } else if (/^\d+$/.test(needle)) {
     const launchId = BigInt(needle);
     const launch = await fetchLaunchByNumericId(client, launchId);
-    if (launch) {
-      const [enriched] = await enrichPoolsWithSpotPrices(
-        client,
-        [launchToTokenPool(launch)],
-        ethUsd,
-        enrichOpts,
-      );
-      pool = enriched ?? null;
-    }
+    if (launch) pool = await enrich(launchToTokenPool(launch));
     if (!pool && bonding) {
-      pool = await fetchBondingLaunchById(client, bonding, launchId);
+      pool = await enrich(await fetchBondingLaunchById(client, bonding, launchId));
     }
   }
 

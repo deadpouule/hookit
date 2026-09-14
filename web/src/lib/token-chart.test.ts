@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  mergeChartSeries,
   aggregateBars,
   barChangePct,
   barsForInterval,
@@ -267,4 +268,19 @@ test("barChangePct is the candle open-to-close move", () => {
     barChangePct({ time: 1, open: 100, high: 110, low: 90, close: 103.49, volume: 1 }).toFixed(2),
     "3.49",
   );
+});
+
+test("mergeChartSeries does not double count a trade present in both candles and swaps", () => {
+  const candles = [{ time: 600, open: 100, high: 110, low: 95, close: 105, volume: 2.5 }];
+  const swaps = [
+    { time: 600, open: 105, high: 112, low: 105, close: 105, volume: 2.5 },
+    { time: 660, open: 105, high: 108, low: 104, close: 108, volume: 1 },
+  ];
+  const merged = mergeChartSeries(candles, swaps);
+  assert.equal(merged.length, 2);
+  assert.equal(merged[0]!.volume, 2.5);
+  assert.equal(merged[0]!.high, 112);
+  assert.equal(merged[0]!.low, 95);
+  assert.equal(merged[0]!.close, 105);
+  assert.equal(merged[1]!.volume, 1);
 });
