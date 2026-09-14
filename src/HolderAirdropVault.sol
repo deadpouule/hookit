@@ -29,6 +29,8 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         uint256 cursor;
         uint256 paid;
         uint256 listed;
+        /// Epoch generation this payout belongs to (see `_snapEpoch`).
+        uint64 epoch;
     }
 
     mapping(address => bool) public operators;
@@ -43,6 +45,19 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
     mapping(address => address[]) private _holders;
     mapping(address => mapping(address => uint256)) private _holderIndex;
     mapping(address => mapping(uint256 => PendingAirdrop)) private _pending;
+    /// Last balance seen for each listed holder; `listedTotal` is their running sum, so an epoch can
+    /// start in O(1) instead of iterating every holder inside `beforeSwap`.
+    mapping(address => mapping(address => uint256)) private _trackedBal;
+    mapping(address => uint256) public listedTotal;
+    /// Epoch generation counter per token plus the number of quote payouts currently in flight.
+    /// All payouts that overlap share one generation so their snapshots are consistent.
+    mapping(address => uint64) public epochGeneration;
+    mapping(address => uint256) private _activePayouts;
+    /// Lazy balance snapshot: the first time a holder's balance moves during a live epoch, the
+    /// pre-move balance is frozen. Payouts use min(live, frozen) so tokens moved between batches
+    /// cannot be paid twice.
+    mapping(address => mapping(address => uint64)) private _snapEpoch;
+    mapping(address => mapping(address => uint256)) private _snapBal;
     mapping(address => uint128) public vestSlice;
     mapping(address => uint256) public highWaterFdvUsd;
     mapping(address => mapping(uint256 => uint256)) public accrued;
@@ -154,7 +169,31 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
             emit HolderSynced(token, account, true);
         } else if (bal == 0 && idx > 0) {
             _removeHolder(token, account);
+            return;
         }
+        _track(token, account, bal);
+    }
+
+    function _track(address token, address account, uint256 bal) private {
+        uint256 prev = _trackedBal[token][account];
+        if (bal == prev) return;
+        if (_activePayouts[token] != 0) {
+            uint64 gen = epochGeneration[token];
+            if (_snapEpoch[token][account] != gen) {
+                _snapEpoch[token][account] = gen;
+                _snapBal[token][account] = prev;
+            }
+        }
+        listedTotal[token] = listedTotal[token] - prev + bal;
+        _trackedBal[token][account] = bal;
+    }
+
+    /// @dev Balance a holder is paid on during the pending epoch: never more than what they held
+    ///      when the epoch started (lazy snapshot) and never more than they hold now.
+    function _payableBalance(address token, address account, uint64 gen) private view returns (uint256 bal) {
+        bal = IERC20Balance(token).balanceOf(account);
+        uint256 cap = _snapEpoch[token][account] == gen ? _snapBal[token][account] : _trackedBal[token][account];
+        if (cap < bal) bal = cap;
     }
 
     function configureEpoch(address token, uint32 seconds_) external onlyOperator {
@@ -237,12 +276,16 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
 
         PendingAirdrop storage pending = _pending[token][quoteId];
         if (pending.pot == 0) {
+            uint256 total = listedTotal[token];
+            if (total == 0) return false;
             pending.pot = potNow;
-            pending.totalBal = _sumListedBalances(token, holders);
-            if (pending.totalBal == 0) return false;
+            pending.totalBal = total;
             pending.cursor = 0;
             pending.listed = holders.length;
             pending.paid = 0;
+            if (_activePayouts[token] == 0) ++epochGeneration[token];
+            ++_activePayouts[token];
+            pending.epoch = epochGeneration[token];
         }
 
         uint256 listed = pending.listed;
@@ -272,7 +315,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
                 break;
             }
             address account = holders[i];
-            uint256 bal = IERC20Balance(token).balanceOf(account);
+            uint256 bal = _payableBalance(token, account, pending.epoch);
             if (bal == 0) continue;
             uint256 share = pending.pot * bal / pending.totalBal;
             if (share == 0) continue;
@@ -308,12 +351,17 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         if (pending.cursor < listed && remainingPot > 0) return false;
 
         if (pending.paid == 0) {
-            delete _pending[token][quote.toId()];
+            _dropPending(token, quoteId);
             return false;
         }
 
         _finishEpoch(token, quote, pending, holders.length);
         return true;
+    }
+
+    function _dropPending(address token, uint256 quoteId) private {
+        if (_pending[token][quoteId].epoch != 0) --_activePayouts[token];
+        delete _pending[token][quoteId];
     }
 
     /// @notice Manual full-list airdrop (legacy / emergency). Prefer automatic `tryAutoAirdrop`.
@@ -344,7 +392,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         }
 
         _subPot(token, quote, paid);
-        delete _pending[token][quote.toId()];
+        _dropPending(token, quote.toId());
         lastAirdropAtQuote[token][quote.toId()] = uint64(block.timestamp);
         lastAirdropAt[token] = uint64(block.timestamp);
         distributed = paid;
@@ -388,13 +436,8 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
         }
         list.pop();
         _holderIndex[token][account] = 0;
+        _track(token, account, 0);
         emit HolderSynced(token, account, false);
-    }
-
-    function _sumListedBalances(address token, address[] storage holders) private view returns (uint256 total) {
-        for (uint256 i; i < holders.length; ++i) {
-            total += IERC20Balance(token).balanceOf(holders[i]);
-        }
     }
 
     function _circulatingSupply(address token) private view returns (uint256 circulating) {
@@ -496,7 +539,7 @@ contract HolderAirdropVault is Owned, UnlockTaker, IHolderAirdropSync {
 
     function _finishEpoch(address token, Currency quote, PendingAirdrop storage pending, uint256 holdersLen) private {
         emit Airdropped(token, quote, pending.pot, pending.paid, holdersLen, msg.sender);
-        delete _pending[token][quote.toId()];
+        _dropPending(token, quote.toId());
         lastAirdropAtQuote[token][quote.toId()] = uint64(block.timestamp);
         if (Currency.unwrap(quoteOf[token]) == Currency.unwrap(quote)) {
             lastAirdropAt[token] = uint64(block.timestamp);
