@@ -123,6 +123,29 @@ export function maxDevBuyEthHint(mcapQuoteWei: bigint): number {
   return eth > 0 ? eth : TARGET_LAUNCH_MCAP_USD * 0.025 / DEFAULT_LAUNCH_ETH_USD;
 }
 
+/**
+ * Master dev buy ceiling as % of supply. The hook enforces Max Tx / Max Wallet on the launch-time
+ * dev buy too (it is a normal swap from the hook's point of view), so a dev buy above either cap
+ * reverts the whole launch tx. Clamp the UI to the tightest active cap.
+ */
+export function masterDevBuyCapPct(
+  modules: Pick<LaunchFormState["modules"], "maxTx" | "maxTxBps" | "maxWallet" | "maxWalletBps">,
+): number {
+  let cap = MAX_DEV_BUY_SUPPLY_PCT;
+  if (modules.maxTx && modules.maxTxBps > 0) cap = Math.min(cap, modules.maxTxBps / 100);
+  if (modules.maxWallet && modules.maxWalletBps > 0) cap = Math.min(cap, modules.maxWalletBps / 100);
+  return cap;
+}
+
+/**
+ * Hook deployments before the dev-buy fix tax the creator's own launch-time buy with the anti-snipe
+ * rate. Set NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1 once the patched MasterLaunchHook is live.
+ */
+export function devBuyPaysSnipeTax(modules: Pick<LaunchFormState["modules"], "antiSnipe">): boolean {
+  if (!modules.antiSnipe) return false;
+  return process.env.NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT?.trim() !== "1";
+}
+
 export function hasDevBuyConfigured(form: LaunchFormState): boolean {
   if (form.devBuyMode === "supply") {
     return form.devBuySupplyPct > 0;
@@ -146,8 +169,11 @@ export function resolveDevBuyQuoteWei(
     opts.graduationQuoteWei ?? fallbackGraduationQuoteWei(opts.quote);
   const mcap = opts.mcapQuoteWei ?? fallbackMcapQuoteWei(opts.quote);
 
+  const capPct =
+    opts.rail === "classic" ? MAX_DEV_BUY_SUPPLY_PCT : masterDevBuyCapPct(form.modules);
+
   if (form.devBuyMode === "supply") {
-    const pct = Math.min(MAX_DEV_BUY_SUPPLY_PCT, Math.max(0, form.devBuySupplyPct));
+    const pct = Math.min(capPct, Math.max(0, form.devBuySupplyPct));
     if (pct <= 0) return null;
     return opts.rail === "classic"
       ? estimateClassicDevBuyQuoteWei(pct, graduation)
@@ -169,8 +195,8 @@ export function resolveDevBuyQuoteWei(
 
   const maxWei =
     opts.rail === "classic"
-      ? estimateClassicDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, graduation)
-      : estimateMasterDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, mcap);
+      ? estimateClassicDevBuyQuoteWei(capPct, graduation)
+      : estimateMasterDevBuyQuoteWei(capPct, mcap);
   if (maxWei > 0n && amount > maxWei) amount = maxWei;
   return amount;
 }

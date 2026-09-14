@@ -7,11 +7,13 @@ import { AccentSlider } from "@/components/launch/AccentSlider";
 import { Label } from "@/components/ui/label";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import {
+  devBuyPaysSnipeTax,
   estimateClassicDevBuyQuoteWei,
   estimateMasterDevBuyQuoteWei,
   fallbackGraduationQuoteWei,
   fallbackMcapQuoteWei,
   formatDevBuyQuoteHint,
+  masterDevBuyCapPct,
   MAX_DEV_BUY_SUPPLY_PCT,
   resolveDevBuyQuoteWei,
 } from "@/lib/dev-buy-launch";
@@ -42,12 +44,21 @@ export function DevBuySection({ form, variant, onChange }: Props) {
   const graduation = fallbackGraduationQuoteWei(quote);
   const mcap = fallbackMcapQuoteWei(quote);
 
+  const capPct = rail === "classic" ? MAX_DEV_BUY_SUPPLY_PCT : masterDevBuyCapPct(form.modules);
+  const capReason =
+    rail === "master" && capPct < MAX_DEV_BUY_SUPPLY_PCT
+      ? form.modules.maxTx && form.modules.maxTxBps / 100 === capPct
+        ? "Max Tx"
+        : "Max Wallet"
+      : null;
+  const paysSnipeTax = rail === "master" && devBuyPaysSnipeTax(form.modules);
+
   const maxQuoteWei = useMemo(
     () =>
       rail === "classic"
-        ? estimateClassicDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, graduation)
-        : estimateMasterDevBuyQuoteWei(MAX_DEV_BUY_SUPPLY_PCT, mcap),
-    [graduation, mcap, rail],
+        ? estimateClassicDevBuyQuoteWei(capPct, graduation)
+        : estimateMasterDevBuyQuoteWei(capPct, mcap),
+    [capPct, graduation, mcap, rail],
   );
 
   const supplyQuoteWei = useMemo(
@@ -99,26 +110,38 @@ export function DevBuySection({ form, variant, onChange }: Props) {
       </div>
 
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-        Buy up to {MAX_DEV_BUY_SUPPLY_PCT}% of the supply as the pool&apos;s very first trade. bundled
+        Buy up to {capPct}% of the supply as the pool&apos;s very first trade. bundled
         atomically with launch so nothing can trade before you. Paid in {payLabel} with the launch fee;
         the tokens land in your wallet the moment the pool is live.
       </p>
+      {capReason && (
+        <p className="mt-2 text-xs leading-relaxed text-amber-300/90">
+          Capped at {capPct}% by your {capReason} hook: the dev buy is a regular swap for the hook, a
+          bigger one would revert the launch.
+        </p>
+      )}
+      {paysSnipeTax && (
+        <p className="mt-2 text-xs leading-relaxed text-amber-300/90">
+          Anti-Snipe is on: the dev buy pays your own {form.modules.antiSnipeInitialTax}% sniper tax on
+          this deployment. Turn Anti-Snipe off or skip the dev buy.
+        </p>
+      )}
 
       {form.devBuyMode === "supply" ? (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
             <span>0%</span>
             <span className="font-mono text-zinc-300">
-              {form.devBuySupplyPct > 0 ? `${form.devBuySupplyPct.toFixed(2)}%` : "Off"}
+              {form.devBuySupplyPct > 0 ? `${Math.min(form.devBuySupplyPct, capPct).toFixed(2)}%` : "Off"}
             </span>
-            <span>{MAX_DEV_BUY_SUPPLY_PCT}%</span>
+            <span>{capPct}%</span>
           </div>
           <AccentSlider
             accentColor={LAUNCH_VIOLET}
-            value={[form.devBuySupplyPct]}
+            value={[Math.min(form.devBuySupplyPct, capPct)]}
             onValueChange={([v]) => onChange({ devBuySupplyPct: v })}
             min={0}
-            max={MAX_DEV_BUY_SUPPLY_PCT}
+            max={capPct}
             step={0.05}
           />
           {form.devBuySupplyPct > 0 && supplyQuoteWei && supplyQuoteWei > 0n && (
