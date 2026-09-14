@@ -16,6 +16,9 @@ const Q96 = 2n ** 96n;
 const Q192 = 2n ** 192n;
 const TOTAL_SUPPLY = 1_000_000_000;
 
+/** Empty / USDG dust pools print as $0 FDV but still win "cheapest" if we allow tiny positives. */
+export const MIN_ARB_FDV_USD = 10;
+
 export const USD_SANITY_MAX_RATIO = 2.5;
 
 export function isSaneUsd(candidate: number, reference: number, maxRatio = USD_SANITY_MAX_RATIO): boolean {
@@ -139,12 +142,15 @@ export function previewFromMarkets(
   onChainCheapIndex: number,
   onChainRichIndex: number,
 ): SanePreview | null {
-  if (markets.length < 2) return null;
+  const usable = markets.filter(
+    (m) => Number.isFinite(m.fdvUsd) && m.fdvUsd >= MIN_ARB_FDV_USD && !isEthQuote(m.quote),
+  );
+  if (usable.length < 2) return null;
 
-  let cheap = markets[0]!;
-  let rich = markets[0]!;
-  for (const m of markets) {
-    if (m.fdvUsd > 0 && (cheap.fdvUsd === 0 || m.fdvUsd < cheap.fdvUsd)) cheap = m;
+  let cheap = usable[0]!;
+  let rich = usable[0]!;
+  for (const m of usable) {
+    if (m.fdvUsd < cheap.fdvUsd) cheap = m;
     if (m.fdvUsd >= rich.fdvUsd) rich = m;
   }
   if (cheap.fdvUsd <= 0 || cheap.index === rich.index) return null;
@@ -169,6 +175,6 @@ export function previewFromMarkets(
     deviationBps,
     matchesOnChain: cheap.index === onChainCheapIndex && rich.index === onChainRichIndex,
     usdgBuySane,
-    markets,
+    markets: usable,
   };
 }

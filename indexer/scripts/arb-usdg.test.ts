@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { fallbackStockUsd, nonCheapLaunchStocks, quotronSwapFeasible, quoteLabel } from "./arb-usdg.ts";
+import { fallbackStockUsd, nonCheapLaunchStocks, quotronSwapFeasible, quoteLabel, USDG_INK } from "./arb-usdg.ts";
 import { isSaneUsd, previewFromMarkets, saneStockUsd, type RankedMarket } from "./arb-sane-usd.ts";
 
 const MIN = 4295128739n;
@@ -75,4 +75,18 @@ test("previewFromMarkets: two markets, drop one → null", () => {
   const all = previewFromMarkets(markets, 1, 0);
   const rest = markets.filter((m) => m.index !== all!.cheapIndex);
   assert.equal(previewFromMarkets(rest, 1, 0), null);
+});
+
+test("previewFromMarkets: ignores USDG dust and ETH so kitchen-sink ranks stocks", () => {
+  const eth = "0x0000000000000000000000000000000000000000" as const;
+  const markets: RankedMarket[] = [
+    { index: 0, quote: wNVDA, fdvUsd: 4_950, factoryUsd: 211.32, saneUsd: 211.32 },
+    { index: 1, quote: "0x910cabde3eba7fc1ce64fd14bd680b9f60fa0f90", fdvUsd: 5_031, factoryUsd: 263.75, saneUsd: 263.75 },
+    { index: 3, quote: USDG_INK, fdvUsd: 0.0005, factoryUsd: 1, saneUsd: 1 },
+    { index: 4, quote: eth, fdvUsd: 0, factoryUsd: 0, saneUsd: 0 },
+  ];
+  const ranked = previewFromMarkets(markets, 0, 4);
+  assert.equal(ranked?.cheapQuote.toLowerCase(), wNVDA.toLowerCase());
+  assert.ok(ranked && ranked.deviationBps < 500);
+  assert.equal(ranked?.markets.some((m) => m.quote.toLowerCase() === USDG_INK.toLowerCase()), false);
 });

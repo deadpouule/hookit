@@ -254,6 +254,7 @@ export async function readErc20Balance(
   token: Address,
   account: Address,
 ): Promise<bigint> {
+  if (isEthQuote(token)) return 0n;
   return publicClient.readContract({
     address: token,
     abi: erc20Abi,

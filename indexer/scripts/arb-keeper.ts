@@ -325,6 +325,7 @@ async function logFuelBalances(
   const cheap = cheapQuote.toLowerCase();
   const parts: string[] = [];
   for (const quote of launchQuotes) {
+    if (isEthQuote(quote)) continue;
     const eb = await readErc20Balance(publicClient, quote, executor);
     const kb = await readErc20Balance(publicClient, quote, keeper);
     if (eb === 0n && kb === 0n) continue;
@@ -361,6 +362,12 @@ async function liquidateNonCheapLaunchStocks(
   },
 ): Promise<void> {
   const { factory, executor, router, launchId, token, cheapQuote, cheapIndex, launchQuotes, keeper } = opts;
+  if (!isQuotronStock(cheapQuote)) {
+    console.log(
+      `[arb-keeper] skip liquidate — cheap ${quoteLabel(cheapQuote)} is not a wStock market`,
+    );
+    return;
+  }
   const toLiquidate = nonCheapLaunchStocks(launchQuotes, cheapQuote);
   if (toLiquidate.length === 0) return;
   console.log(
