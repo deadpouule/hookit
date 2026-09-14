@@ -26,15 +26,15 @@ Out of scope: Uniswap v4 core, Quotrons contracts, the WalletConnect / wagmi sta
 | --- | --- | --- | --- |
 | C-1 | High | Holder-airdrop / HKT-drop epoch start iterates every listed holder inside `beforeSwap` (permissionless gas griefing, drop stalls) | **Fixed** `cc67b7e` |
 | C-2 | High | Batched airdrop payouts use live balances against a total fixed at epoch start (same tokens paid twice, later holders starved) | **Fixed** `cc67b7e` |
-| C-3 | High | Mcap-vest high-water mark is a post-swap spot snapshot (same-block pump/dump unlocks vested streams) | **Documented** — needs TWAP / time-in-range design |
+| C-3 | High | Mcap-vest high-water mark is a post-swap spot snapshot (same-block pump/dump unlocks vested streams) | **Accepted** (product decision) — UI must present mcap vesting as a soft target |
 | C-4 | High | Quotrons wStock spot from a thin pool is the USD oracle for wStock-quoted launches (fake graduation target / launch mcap) | **Fixed (bounded)** `fcc5ead` |
-| C-5 | High | Classic graduation opens the pool ~60–65% below the last curve price (sell-before / rebuy-after incentive) | **Documented** — tokenomics decision |
+| C-5 | High | Classic graduation opens the pool ~60–65% below the last curve price (sell-before / rebuy-after incentive) | **Fixed** `26bedcf` — virtual reserves derived from the 80/20 split |
 | C-6 | High | ERC-20 protocol fees (USDG, wStock) pushed to `HkitBuyback` were unrecoverable | **Fixed** `fcc5ead` |
 | C-7 | Medium | Launch-time dev buy paid the creator's own anti-snipe tax (99.5% of a live dev buy lost) | **Fixed** `12beca8` |
-| C-8 | Medium | Dev buy above Max Tx / Max Wallet reverts the whole launch; UI let users configure it | **Fixed (UI clamp + warning)** `5b957fa` |
-| C-9 | Medium | Max-wallet check trusts the recipient in caller-supplied `hookData` | **Documented** — enforceable only at token level |
+| C-8 | Medium | Dev buy above Max Tx reverts the whole launch; UI let users configure it | **Fixed (UI clamp + warning)** `5b957fa` |
+| C-9 | Medium | Max-wallet check trusts the recipient in caller-supplied `hookData` | **Fixed (module removed)** `0ae1dc1` |
 | C-10 | Medium | Exact-output buys taxed on pre-swap notional: sniper tax under-collected on large buys | **Fixed (mitigated)** `fcc5ead` |
-| C-11 | Medium | Floor fill paid in raw quote + auto-burn / HKT drop / deepen credits claim-denominated pots → sell reverts | **Documented** + ops rule |
+| C-11 | Medium | Floor fill paid in raw quote + auto-burn / HKT drop / deepen credits claim-denominated pots → sell reverts | **Fixed** `aa4eb00` — raw fee converted to claims |
 | C-12 | Medium | `launchMulti` demanded dev-buy ETH even when the dev buy is paid in `markets[0]`'s ERC-20 (ETH stranded) | **Fixed** `fcc5ead` |
 | C-13 | Medium | Stale / reverting ERC-20 quote feed reverted every swap (sells included) on pools with an mcap vest | **Fixed** `fcc5ead` |
 | C-14 | Medium | Classic ERC-20 dev buy reverted with a launch fee, or pulled the quote twice without one | **Fixed** `fcc5ead` |
@@ -75,11 +75,11 @@ Fix: lazy epoch snapshot. The first time a listed holder's balance changes durin
 
 Tests: `test_V1_HktDrop_NoDoubleCountAcrossBatches`, `test_V1_HktDrop_SnapshotSemantics`, `test_V1b_HolderAirdrop_NoDoubleCountAcrossBatches`.
 
-### C-3 — Mcap-vest high-water mark is a spot snapshot (High, documented)
+### C-3 — Mcap-vest high-water mark is a spot snapshot (High, accepted)
 
 `MasterLaunchHook._observeFdv` runs in `afterSwap`, reads the post-swap `sqrtPriceX96`, converts `totalSupply × price` to USD and writes a **monotonic** high-water mark into `BuybackVault` and `HolderAirdropVault`. Cliff / step unlocks depend only on that mark. PoC: a creator with a `$10M` cliff buys 80 ETH exact-in in one swap (mark → `$21.6M`, stream 100% vested), sells back the next block with exact-output sells and claims. Net cost 1.04 ETH, mostly the 1% base fee of which 60% returns to the creator. `LaunchFactory.setEthUsdPrice` (owner) and the vaults' `observeFdv` (operator) can set the mark directly.
 
-Why not fixed here: a robust fix changes the module's semantics (observe the pre-swap price, require N consecutive observations above the threshold separated by a minimum time, or gate on a TWAP). That is a product decision about what "vest until $X mcap" promises. Until then the UI must not present mcap vesting as a hard guarantee to buyers.
+Product decision (2026-09-14): kept as is. A robust fix changes the module's semantics (observe the pre-swap price, require N consecutive observations above the threshold separated by a minimum time, or gate on a TWAP), and the creator paying ~1 ETH of fees to unlock their own stream early was judged an acceptable trade-off for a creator-side module. The UI must keep presenting mcap vesting as a soft target, not a guarantee to buyers.
 
 Recommendation: (1) observe in `beforeSwap` (pre-trade price) and require the mark to hold across ≥ N observations at least T seconds apart before it becomes effective; (2) remove `setEthUsdPrice`'s effect on existing marks or cap per-observation growth; (3) surface `highWaterFdvUsd` and its age in the UI.
 
@@ -95,13 +95,13 @@ Residual: the ±20% band is still gameable in the attacker's favour by up to 20%
 
 Test: `test_Fixed_B4_QuotronSpotOnlyTrustedInsideBand`.
 
-### C-5 — Graduation price discontinuity (High, documented)
+### C-5 — Graduation price discontinuity (High, fixed)
 
-With the current virtual reserves (`VIRTUAL_QUOTE_START_ETH` = 1 ETH, virtual token = curve supply) the last curve buyers pay ~`(1 + 4.2) / 154M` while the seeded v4 pool opens at `4.2 / 354M`, i.e. ~35–40% of the curve price. PoC: a holder who sells on the curve right before graduation and re-buys in the pool more than doubles the position; every late curve buyer is instantly underwater.
+With the original virtual reserves (`VIRTUAL_QUOTE_START_ETH` = 1 ETH, virtual token = curve supply) the last curve buyers paid ~`(1 + 4.2) / 154M` while the seeded v4 pool opens at `4.2 / 354M`, i.e. ~35–40% of the curve price. PoC: a holder who sells on the curve right before graduation and re-buys in the pool more than doubles the position; every late curve buyer is instantly underwater.
 
-Why not fixed here: matching the terminal curve price to the LP price requires changing the virtual reserves (and therefore the "80% on the curve / 4.2 ETH raise" story). With curve supply `S_c`, total `S`, virtual quote `V`, virtual token `T ≥ S_c`, raise `R`: tokens sold at graduation `x = T·R / (V + R)`, terminal price `(V + R)² / (V·T)`, LP price `R / (S − x)`. Solve for `T` (pump.fun-style oversized virtual token reserve) or seed the LP at the terminal price and burn the excess tokens. Either changes what buyers see in the wizard, so it is a product decision.
+Fix (`26bedcf`): `BondingMath.virtualReserves` derives both reserves from the 80/20 split and the raise `R` so that the curve sells exactly `S_c` when `R` has been collected **and** the terminal curve price equals the LP price. With `S_l = S − S_c`: `V = R·S_l / (2S_c − S)`, `T = S_c·(1 + V/R)`; for the 80/20 split that is `V = R/3` (1.4 ETH) and `T = 4/3·S_c`. Terminal price `(V+R)/(T−S_c) = R/S_l` exactly; the pool now opens within the last trade's price impact of the curve (1.5% on a 0.1 ETH closing buy in the test), the LP receives exactly 20% of supply + the raise, and the sell-before / rebuy-after round trip loses fees instead of doubling. Start price moves from `1.25/S` to `1.3125/S` ETH per token, the curve multiple from 27× to 16×. The wizard's curve mirror (`web/src/lib/dev-buy-launch.ts:initialBondingVirtualState`) and the graduation docs were updated.
 
-Tests: `test_Known_B1_*`.
+Tests: `test_Fixed_B1_PoolOpensAtTerminalCurvePrice`, `test_Fixed_B1_CurveSellsExactlyEightyPercentAtTarget`, `test_Fixed_B1_SellBeforeGraduationRebuyAfterDoesNotProfit`, `web/src/lib/bonding-curve.test.ts`.
 
 ### C-6 — ERC-20 flywheel fees stuck in `HkitBuyback` (High, fixed)
 
@@ -109,19 +109,19 @@ Tests: `test_Known_B1_*`.
 
 ### C-7 / C-8 — Launch-time dev buy vs protection modules (Medium, fixed)
 
-Found live: a 0.0003 ETH dev buy on an anti-snipe launch returned 761 tokens instead of ~150k because the factory-routed dev buy paid the creator's own 98% sniper tax. `MasterLaunchHook` now exempts `sender == factory` from the snipe tax (`12beca8`, `test/LaunchDevBuy.t.sol`). Max Tx / Max Wallet still bind the dev buy (it is a normal swap for the hook) and a dev buy above either cap reverts the whole launch; the wizard now clamps the dev buy to the tightest active cap and warns (`5b957fa`, `web/src/lib/dev-buy-launch.ts`). Set `NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1` once the patched hook is the live one so the UI stops warning about the tax.
+Found live: a 0.0003 ETH dev buy on an anti-snipe launch returned 761 tokens instead of ~150k because the factory-routed dev buy paid the creator's own 98% sniper tax. `MasterLaunchHook` now exempts `sender == factory` from the snipe tax (`12beca8`, `test/LaunchDevBuy.t.sol`). Max Tx still binds the dev buy (it is a normal swap for the hook) and a dev buy above the cap reverts the whole launch; the wizard now clamps the dev buy to the active cap and warns (`5b957fa`, `web/src/lib/dev-buy-launch.ts`). Set `NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1` once the patched hook is the live one so the UI stops warning about the tax.
 
-### C-9 — Max wallet trusts `hookData` (Medium, documented)
+### C-9 — Max wallet trusts `hookData` (Medium, fixed by removal)
 
-`SupplyCapLib.checkMaxWalletBeforeBuy` reads the recipient from caller-supplied `hookData`. Any router or direct `PoolManager` call can pass an empty address and receive tokens on `msg.sender`; PoC ends with one wallet at 10× the cap. Transfers between wallets are also unrestricted. The module is therefore a courtesy check for well-behaved routers (the Hookit UI), not a guarantee. A real per-wallet cap can only live in `LaunchToken.transfer/transferFrom` (with exemptions for the pool manager, hook and vaults). Recommendation: either implement it there or relabel the module as "max buy per trade" (which `checkMaxTx` already provides). Test: `test_Known_M0_MaxWalletBypassViaHookDataRecipient`.
+`SupplyCapLib.checkMaxWalletBeforeBuy` reads the recipient from caller-supplied `hookData`. Any router or direct `PoolManager` call can pass an empty address and receive tokens on `msg.sender`; PoC ends with one wallet at 10× the cap. Transfers between wallets are also unrestricted. The module was therefore a courtesy check for well-behaved routers (the Hookit UI), not a guarantee, and a real per-wallet cap could only live in `LaunchToken.transfer/transferFrom` (making the token non-standard). Product decision (2026-09-14): remove the module (`0ae1dc1`). `SupplyCapLib` keeps Max Tx only, the hook no longer reads a recipient from `hookData`, bit 4 and bits 55–70 of the bitmask stay reserved so older packed values decode unchanged, and `LaunchFactory` reverts `ModuleRemoved` on launches that still set them. Wizard, builder, badges, docs, swap card and the explorer filters no longer know the module; the per-trade cap is Max Tx. Test: `test_Fixed_M0_MaxWalletModuleRemoved`, `testLegacyMaxWalletBitsRejected`, `testBuyWithoutHookDataSucceeds`.
 
 ### C-10 — Exact-output buys under-taxed during the snipe window (Medium, mitigated)
 
 Fees are computed on the pre-swap spot notional. An exact-output buy that moves the price pays the sniper tax on a fraction of the quote it really spends: PoC 51% configured → 23.4% effective on a 40%-of-supply exact-output buy. Fix: while `snipeBps > 0`, exact-output buys revert `ExactOutputDuringSnipe`. The UI only sends exact-input buys, so nothing user-facing changes; the docs mention the restriction. The same pre-swap-notional property applies to the dynamic hook tax (bounded by `maxTaxBps`, much smaller magnitude) and slightly overcharges exact-input sells; a fee computed from the realised `BalanceDelta` in `afterSwap` would remove both. Test: `test_Fixed_M1_ExactOutputBuysRejectedWhileSnipeTaxIsLive`.
 
-### C-11 — Floor fill paid in raw quote + claim-denominated module pots (Medium, documented)
+### C-11 — Floor fill paid in raw quote + claim-denominated module pots (Medium, fixed)
 
-When `FloorVault` holds raw quote (operator `deposit`) `drawForFloor` pays the hook raw ETH; `FeeSplitLib` routes the cuts raw but still credits `pendingAutoBurn` / `pendingHktDrop` / `pendingDeepenLps`, and `_afterSwap` then settles ERC-6909 claims the hook does not hold → the user's sell reverts. Only reachable when an operator tops the vault up with raw quote on a pool that packs auto-burn, HKT drop or deepen LPs. Operating rule until fixed: **do not `deposit` raw quote into `FloorVault` for such pools**; the permissionless `FloorVault.redeemFloor` exit is unaffected. Recommended fix: in `_floorFill`, when `feeClaims == false`, either sync/settle the raw cuts into claims before crediting the pots, or route those cuts raw to their vaults instead of crediting `pending*`. Test: `test_Known_M2_FloorFillRawPathRevertsWithAutoBurn`.
+When `FloorVault` holds raw quote (operator `deposit`) `drawForFloor` pays the hook raw ETH; `FeeSplitLib` routes the cuts raw but still credits `pendingAutoBurn` / `pendingHktDrop` / `pendingDeepenLps`, and `_afterSwap` then settles ERC-6909 claims the hook does not hold → the user's sell reverts. Only reachable when an operator tops the vault up with raw quote on a pool that packs auto-burn, HKT drop or deepen LPs. Fix (`aa4eb00`): `_floorFill` now measures the claims the vault paid and, when they do not cover the fee, settles the raw shortfall into the `PoolManager` and mints the equivalent ERC-6909 claims to the hook (`settle` + `mint`, net-zero delta inside the unlock), then always splits the fee from claims. The module pots are thus backed by claims on every path and the seller is still paid the remainder raw. `FloorVault.deposit` with raw quote is a supported operator path again. Test: `test_Fixed_M2_FloorFillRawPathSettlesAutoBurn`.
 
 ### C-12 — `launchMulti` ETH strand (Medium, fixed)
 
@@ -189,7 +189,7 @@ Medium classes (`unused-return` 72, `incorrect-equality` 26, `uninitialized-loca
 | Role | Where | Powers | Notes |
 | --- | --- | --- | --- |
 | `LaunchFactory` owner | `Owned` | `setLaunchFee`, `setTreasury`, custom-hook toggles / allowlist, `setEthUsdPrice` / `setEthUsdFeed`, `setQuote` (allow quotes, decimals, snapshot price, feed) | `setEthUsdPrice` moves FDV for every vest plan (C-3). Cannot touch liquidity or user tokens. |
-| `MasterLaunchHook` owner | `Owned` | `setFactory`, `setAirdropVault`, `setHktDropVault`, `setArbExecutor` + `setArbActive` | The arb executor's swaps bypass anti-MEV, anti-snipe, hook tax, max-tx, max-wallet and the floor intercept: a fee-free privileged trader on every pool. Keep it a dedicated, monitored key. |
+| `MasterLaunchHook` owner | `Owned` | `setFactory`, `setAirdropVault`, `setHktDropVault`, `setArbExecutor` + `setArbActive` | The arb executor's swaps bypass anti-MEV, anti-snipe, hook tax, max-tx and the floor intercept: a fee-free privileged trader on every pool. Keep it a dedicated, monitored key. |
 | Vault operators (`FloorVault`, `FeeEscrow`, `BuybackVault`, `HolderAirdropVault`, `HktHolderDropVault`, distributor) | `setOperator` by each owner | `FloorVault.deposit/drawForFloor/setQuote`, `observeFdv` (sets the vest mark directly), `configurePlan`, `configureEpoch`, `setExcluded`, `FeeEscrow.credit*`, `notify*`, `sweep` | The hook is the intended operator. Adding an EOA gives it C-3 and fee-routing power. |
 | `HkitBuyback` owner / operators | new `setOperator`, `sweep` | Run buybacks, recover ERC-20 fees | |
 | `GraduatedFeeHook` operators | `setOperator` | `sweepWithConversion`, `sweepHktDrop` (now gated) | |
@@ -209,8 +209,8 @@ Rug vectors: no owner path removes seed LP (`LiquidityLocker` holds it, hook blo
 - Pool key / poolId collisions: fresh CREATE2 token per launch, `configs[id]` written once under `onlyFactory`, factory reverts on an existing poolId.
 - `LaunchToken`: fixed supply, no mint / owner, holder tracking is best-effort and cannot block transfers.
 - `LiquidityLocker`: no withdraw; hook additionally blocks removal of the seed range.
-- Bonding math: `buyQuoteIn` / `quoteInForTokensOut` are consistent (`virtualToken == curveSupply − tokensSold`), partial fills refund the unused quote, graduation seeds the pool inside the same tx so nobody trades between curve close and pool open.
-- `HookitSwapRouter`: exact-in only, slippage limit honoured, native refunds, `hookData` carries the true recipient (which is what the hook's max-wallet check reads, C-9).
+- Bonding math: `buyQuoteIn` / `quoteInForTokensOut` are consistent (`virtualToken − tokensSold` tracks the curve, `virtualReserves` pins the sell-out point to the raise), partial fills refund the unused quote, graduation seeds the pool inside the same tx so nobody trades between curve close and pool open.
+- `HookitSwapRouter`: exact-in only, slippage limit honoured, native refunds, `hookData` carries the recipient (no longer read by the hook since C-9's removal; harmless).
 - Web: `/api/rpc/ink` method allowlist, 128 kB body and 25-item batch limits; `/api/hooks/*` and `/api/verify` gated by `HOOKIT_ADMIN_KEY`; IPFS upload size-limited and JWT-server-side; CSP / HSTS / frame headers set in `next.config.ts`.
 
 ## 8. Web / backend notes
@@ -232,7 +232,7 @@ After the redeploy:
 4. Update `web/src/lib/contracts/config.ts`, `deploy/ink/addresses.json`, `deploy/ink/env.ink.example`, `SOFT_LAUNCH_INK.md`, and re-run `VerifyInkDeploy.s.sol` + `web/scripts/smoke-onchain.mjs`.
 5. Existing tokens stay on the previous generation; the UI keeps reading them.
 
-Operating rules while C-3, C-5, C-9 and C-11 stay open: no raw `FloorVault.deposit` on pools with auto-burn / HKT drop / deepen; present mcap vesting and max wallet as soft protections in the UI; keep the Classic graduation gap visible (or fix the virtual reserves) before marketing Classic launches.
+Operating rule while C-3 stays accepted: present mcap vesting as a soft target in the UI and docs, never as a buyer guarantee. C-5, C-9 and C-11 are closed in this branch (`26bedcf`, `0ae1dc1`, `aa4eb00`); the Classic curve, the module list and the floor-fill path all changed bytecode, so they are part of the same redeploy.
 
 ## 10. Recommended scope for the external audit
 
