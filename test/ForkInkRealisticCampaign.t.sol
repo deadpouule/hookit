@@ -83,6 +83,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
     }
 
     /// @notice Every live quote with all compatible modules enabled together.
+    ///         wNFLXx is skipped like the launch picker (Quotrons pool still blown).
     function testFork_KitchenSink_AllElevenQuotes() public onlyFork {
         Currency[] memory quotes = _allQuotes();
         for (uint256 i; i < quotes.length; ++i) {
@@ -143,7 +144,7 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
     }
 
     /// @notice Classic launch, bonding, graduation, post-graduation buy/sell and
-    ///         fee sweep for ETH, USDG and all nine wrapped equities.
+    ///         fee sweep for ETH, USDG and launchable wrapped equities (not wNFLXx).
     function testFork_ClassicFullLifecycle_AllElevenQuotes() public onlyFork {
         Currency[] memory quotes = _allQuotes();
         for (uint256 i; i < quotes.length; ++i) {
@@ -166,11 +167,12 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
         }
     }
 
-    /// @notice Real user route for every wrapped equity: USDG -> wStock -> launch
+    /// @notice Real user route for every launchable wrapped equity: USDG -> wStock -> launch
     ///         token, then launch token -> wStock -> USDG, atomically via v4.
     function testFork_CompositeUsdg_AllNineStocks_BuyAndSell() public onlyFork {
         QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
         for (uint256 i; i < stocks.length; ++i) {
+            if (stocks[i].token == QuotronStockQuotes.wNFLXx) continue;
             Currency stock = Currency.wrap(stocks[i].token);
             LaunchResult memory l = _launch(
                 creator, stock, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "CompositeAll", "CPA"
@@ -201,7 +203,6 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
         Currency[] memory quotes = _allQuotes();
         _runMultiGroup(quotes, 0, 5, 2);
         _runMultiGroup(quotes, 5, 5, 3);
-        _runMultiGroup(quotes, 10, 1, 1);
     }
 
     /// @notice Master launches with small, medium and maximum-sized atomic creator buys.
@@ -348,11 +349,18 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
 
     function _allQuotes() internal view returns (Currency[] memory quotes) {
         QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
-        quotes = new Currency[](stocks.length + 2);
+        uint256 n;
+        for (uint256 i; i < stocks.length; ++i) {
+            if (stocks[i].token != QuotronStockQuotes.wNFLXx) ++n;
+        }
+        quotes = new Currency[](n + 2);
         quotes[0] = Currency.wrap(address(0));
         quotes[1] = usdg;
+        uint256 w;
         for (uint256 i; i < stocks.length; ++i) {
-            quotes[i + 2] = Currency.wrap(stocks[i].token);
+            if (stocks[i].token == QuotronStockQuotes.wNFLXx) continue;
+            quotes[w + 2] = Currency.wrap(stocks[i].token);
+            ++w;
         }
     }
 

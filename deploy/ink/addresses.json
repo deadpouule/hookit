@@ -80,6 +80,7 @@
   },
   "notes": [
     "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-14.",
+    "HookitSwapRouter is the later DeployRouterInk CREATE, not the Redeploy CREATE.",
     "Existing native token carried forward; fair launch was skipped for this redeploy.",
     "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
     "customHookAllowlistEnabled expected true after harden.",

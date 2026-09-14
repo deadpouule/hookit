@@ -22,14 +22,14 @@ if (!rpc) {
 
 const client = createPublicClient({ transport: http(rpc) });
 
-const CURRENT_FACTORY = getAddress("0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626");
+const CURRENT_FACTORY = getAddress("0xdca9ccee27dc12256818deff316ba4b972b087a7");
 const ENV_FACTORY = process.env.NEXT_PUBLIC_LAUNCH_FACTORY
   ? getAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY)
   : null;
-const DIST = getAddress("0x4149509d2293a61cb199E17227740eEBFADd30c6");
-const MASTER_HOOK = getAddress("0x2D936FCC92Cbc7c33EEBbA0C9787f9256274eAc8");
-const GRAD_HOOK = getAddress("0x9558F74E81377EE0bE24fBAD660377b100266088");
-const BONDING = getAddress("0x13d6216A92B013dAAcD36E4f6D78Ad9264Af1a0C");
+const DIST = getAddress("0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179");
+const MASTER_HOOK = getAddress("0xa506ed2d09a164e5d12993b34f4eb1d01ad46ac8");
+const GRAD_HOOK = getAddress("0x503419f19c6232ecd08f4728ee4d18a1e0362088");
+const BONDING = getAddress("0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3");
 const DYNAMIC_FEE_FLAG = 0x800000;
 const FLAG_DYNAMIC_FEES = 1n << 5n;
 
@@ -57,7 +57,7 @@ const queryAbi = parseAbi([
 ]);
 
 // LaunchFactoryQuery address from deploy
-const CURRENT_QUERY = getAddress("0x2b335D8dBafD55e2c6f93816A8449Fc810De1F90");
+const CURRENT_QUERY = getAddress("0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0");
 
 const distAbi = parseAbi([
   "function pending(address token) view returns (uint256)",
