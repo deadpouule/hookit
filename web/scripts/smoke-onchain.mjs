@@ -16,6 +16,7 @@ import {
   formatEther,
   formatUnits,
   parseEther,
+  encodeAbiParameters,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -25,25 +26,24 @@ const rpc =
   process.env.INK_RPC_URL_BACKUP ||
   "https://rpc-gel.inkonchain.com";
 
-const CURRENT_FACTORY = getAddress("0x480bFB88985fb94f4345ED4BB2Ec267DB9Ab9626");
+const CURRENT_FACTORY = getAddress("0xdca9ccee27dc12256818deff316ba4b972b087a7");
 const ENV_FACTORY = process.env.NEXT_PUBLIC_LAUNCH_FACTORY
   ? getAddress(process.env.NEXT_PUBLIC_LAUNCH_FACTORY)
   : null;
-const FACTORY =
-  process.env.SMOKE_FACTORY
-    ? getAddress(process.env.SMOKE_FACTORY)
-    : ENV_FACTORY || CURRENT_FACTORY;
+const FACTORY = process.env.SMOKE_FACTORY
+  ? getAddress(process.env.SMOKE_FACTORY)
+  : CURRENT_FACTORY;
 const FACTORY_QUERY = getAddress(
   process.env.NEXT_PUBLIC_LAUNCH_FACTORY_QUERY ||
-    "0x2b335D8dBafD55e2c6f93816A8449Fc810De1F90",
+    "0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0",
 );
 const DIST = getAddress(
   process.env.NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR ||
-    "0x4149509d2293a61cb199E17227740eEBFADd30c6",
+    "0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179",
 );
 const QUOTER = getAddress("0x3972C00f7ed4885e145823eb7C655375d275A1C5");
 const STATE_VIEW = getAddress("0x76Fd297e2D437cd7f76d50F01AfE6160f86e9990");
-const ETH_USD_FEED = getAddress("0xe5867B1d421f0b52697F16e2ac437e87d66D5fbF");
+const ETH_USD_FEED = getAddress("0x4b286359a4e5739d414ad00d6a320f93ff2b6092");
 const DYNAMIC_FEE_FLAG = 0x800000;
 const FLAG_DYNAMIC_FEES = 1n << 5n;
 
@@ -139,6 +139,7 @@ function asKey(raw) {
 
 async function quoteBuy(key, amountIn = parseEther("0.001")) {
   const zeroForOne = key.currency0.toLowerCase() === zeroAddress;
+  const recipient = "0x0000000000000000000000000000000000000001";
   const sim = await client.simulateContract({
     address: QUOTER,
     abi: quoterAbi,
@@ -148,10 +149,10 @@ async function quoteBuy(key, amountIn = parseEther("0.001")) {
         poolKey: key,
         zeroForOne,
         exactAmount: amountIn,
-        hookData: "0x",
+        hookData: encodeAbiParameters([{ type: "address" }], [recipient]),
       },
     ],
-    account: "0x0000000000000000000000000000000000000001",
+    account: recipient,
   });
   return sim.result[0];
 }

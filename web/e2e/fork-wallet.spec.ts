@@ -8,6 +8,8 @@ import {
   type Address,
 } from "viem";
 
+import { LEGAL_ACK_KEY } from "../src/lib/legal";
+
 const enabled = process.env.FORK_E2E === "1";
 const rpcUrl = process.env.FORK_RPC_URL ?? "http://127.0.0.1:8545";
 const indexerUrl = process.env.FORK_INDEXER_URL ?? "http://127.0.0.1:8787";
@@ -49,7 +51,12 @@ test.describe("Hookit Ink fork wallet E2E", () => {
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
 
     await page.addInitScript(
-      ({ account: injectedAccount, rpc }) => {
+      ({ account: injectedAccount, rpc, legalAckKey }) => {
+        try {
+          window.localStorage.setItem(legalAckKey, "1");
+        } catch {
+          /* ignore */
+        }
         let requestId = 1;
         const listeners = new Map<string, Array<(value: unknown) => void>>();
         const emit = (event: string, value: unknown) => {
@@ -138,7 +145,7 @@ test.describe("Hookit Ink fork wallet E2E", () => {
         window.addEventListener("eip6963:requestProvider", announce);
         queueMicrotask(announce);
       },
-      { account: account.toLowerCase(), rpc: rpcUrl },
+      { account: account.toLowerCase(), rpc: rpcUrl, legalAckKey: LEGAL_ACK_KEY },
     );
 
     const opsBefore = await client.getBalance({ address: opsTreasury });

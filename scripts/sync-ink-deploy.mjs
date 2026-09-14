@@ -9,6 +9,10 @@
  *   node scripts/sync-ink-deploy.mjs --reset-indexer
  *   node scripts/sync-ink-deploy.mjs --broadcast broadcast/RedeployHookitInk.s.sol/57073/run-latest.json
  *
+ * Foundry's Redeploy `run-latest.json` can lag the live stack. Pass the
+ * Redeploy run that created the current LaunchFactory. DeployRouterInk is
+ * overlaid afterwards so the UI router is not the Redeploy CREATE.
+ *
  * Writes:
  *   - deploy/ink/addresses.json   (canonical)
  *   - deploy/ink/env.ink.example
@@ -220,6 +224,27 @@ function loadBroadcast(path) {
 /** Libs may be reused across redeploys (no CREATE in this broadcast) — carry from prior addresses.json. */
 const OPTIONAL_CARRY = new Set(["LaunchFactoryLib", "LaunchDevBuyLib", "LaunchTokenDeployLib"]);
 
+/** Later scripts (DeployRouterInk) replace the Redeploy CREATE of the same name. */
+const COMPANION_BROADCASTS = [
+  join(ROOT, "broadcast/DeployRouterInk.s.sol/57073/run-latest.json"),
+];
+
+function overlayCompanionCreates(creates) {
+  for (const path of COMPANION_BROADCASTS) {
+    if (!existsSync(path)) continue;
+    const raw = JSON.parse(readFileSync(path, "utf8"));
+    for (const tx of raw.transactions ?? []) {
+      if (tx.transactionType !== "CREATE" && tx.transactionType !== "CREATE2") continue;
+      if (!tx.contractName || !tx.contractAddress) continue;
+      if (!creates.has(tx.contractName)) continue;
+      const next = lower(tx.contractAddress);
+      if (creates.get(tx.contractName) === next) continue;
+      console.log(`overlay ${tx.contractName}: ${creates.get(tx.contractName)} → ${next} (${path})`);
+      creates.set(tx.contractName, next);
+    }
+  }
+}
+
 function requireContracts(creates) {
   const prevPath = join(ROOT, "deploy/ink/addresses.json");
   if (existsSync(prevPath)) {
@@ -359,6 +384,7 @@ function main() {
     prevOracle,
     path,
   } = loadBroadcast(opts.broadcast);
+  overlayCompanionCreates(creates);
   requireContracts(creates);
 
   if (factoryCreateBlock == null) {
@@ -384,6 +410,7 @@ function main() {
   console.log(`LaunchFactory: ${creates.get("LaunchFactory")} @ block ${factoryCreateBlock}`);
   console.log(`FeeEthRail:    ${creates.get("FeeEthRail")}`);
   if (creates.get("NativeToken")) console.log(`NativeToken:   ${creates.get("NativeToken")} (carried from previous addresses.json)`);
+  console.log(`SwapRouter:    ${creates.get("HookitSwapRouter")}`);
 
   writeText(
     join(ROOT, "deploy/ink/addresses.json"),

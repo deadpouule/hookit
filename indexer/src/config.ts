@@ -128,7 +128,7 @@ function uniqAddrs(addrs: Address[]): Address[] {
 
 /** Active Ink Master factory — `deploy/ink/addresses.json`. Legacy via LAUNCH_FACTORY only. */
 const INK_LAUNCH_FACTORIES = [
-  "0xa0a7747976f96cac86d72194e59c82fed56aab75",
+  "0xdca9ccee27dc12256818deff316ba4b972b087a7",
 ] as Address[];
 
 export function loadConfig(): IndexerConfig {
