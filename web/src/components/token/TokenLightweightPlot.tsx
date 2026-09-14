@@ -16,15 +16,16 @@ import {
   type ChartScale,
   type ChartStyle,
 } from "@/lib/token-chart";
+import { TV_CANDLE_DOWN, TV_CANDLE_UP, TV_CHART_BG, TV_CHART_GRID, TV_CHART_SCALE_TEXT } from "@/lib/tv-chart";
 import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 
-const UP = "#22c55e";
-const DOWN = "#f43f5e";
-const UP_VOLUME = "rgba(34,197,94,0.42)";
-const DOWN_VOLUME = "rgba(244,63,94,0.38)";
-const SURFACE = "#111111";
-const GRID = "rgba(255,255,255,0.055)";
-const AXIS = "#71717a";
+const UP = TV_CANDLE_UP;
+const DOWN = TV_CANDLE_DOWN;
+const UP_VOLUME = "rgba(47,158,127,0.42)";
+const DOWN_VOLUME = "rgba(242,90,65,0.38)";
+const SURFACE = TV_CHART_BG;
+const GRID = TV_CHART_GRID;
+const AXIS = TV_CHART_SCALE_TEXT;
 const CROSS = "rgba(255,255,255,0.22)";
 const CROSS_LABEL = "#27272a";
 const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -227,7 +228,7 @@ export function TokenLightweightPlot({
           attributionLogo: false,
         },
         grid: {
-          vertLines: { color: GRID, style: tv.LineStyle.SparseDotted, visible: true },
+          vertLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
           horzLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
         },
         rightPriceScale: {
