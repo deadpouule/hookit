@@ -97,14 +97,13 @@ async function loadLaunchesResponseImpl(): Promise<LaunchesResponse> {
     { skipSwapIndex: isIndexerConfigured(), launchEthUsd },
   );
 
-  const classicGraduated = classicPools.filter((p) => !!p.poolId);
-  const classicBonding = classicPools.filter((p) => !p.poolId);
-  const classicWithSpot = await enrichPoolsWithSpotPrices(client, classicGraduated, ethUsd, {
+  // Graduated Classic pools get v4 spot prices; bonding ones get curve price / mcap / raised USD.
+  const classicWithSpot = await enrichPoolsWithSpotPrices(client, classicPools, ethUsd, {
     skipSwapIndex: isIndexerConfigured(),
     launchEthUsd,
   });
 
-  const pools = [...masterPools, ...classicWithSpot, ...classicBonding].sort(
+  const pools = [...masterPools, ...classicWithSpot].sort(
     (a, b) => (b.launchedAt ?? 0) - (a.launchedAt ?? 0),
   );
 

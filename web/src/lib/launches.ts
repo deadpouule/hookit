@@ -9,6 +9,7 @@ import {
 } from "@/lib/contracts/config";
 import { bondingFactoryAbi } from "@/lib/contracts/bonding-factory-abi";
 import { poolQuoteLabel } from "@/lib/payment-assets";
+import { quoteDecimalsForKind, resolveQuoteKind } from "@/lib/quote-usd";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
@@ -730,6 +731,18 @@ export function bondingRowFromResult(result: unknown): BondingLaunchRow | null {
   };
 }
 
+/** Curve spot price (quote per token) from the constant-product virtual reserves. */
+export function bondingCurvePrice(
+  row: Pick<BondingLaunchRow, "virtualQuote" | "virtualToken">,
+  quoteDecimals: number,
+): number {
+  if (row.virtualToken <= BigInt(0) || row.virtualQuote <= BigInt(0)) return 0;
+  const quoteHuman = Number(row.virtualQuote) / 10 ** quoteDecimals;
+  const tokenHuman = Number(row.virtualToken) / 1e18;
+  const price = quoteHuman / tokenHuman;
+  return Number.isFinite(price) && price > 0 ? price : 0;
+}
+
 /** Classic pools use GraduatedFeeHook with fee=0 / tickSpacing=60 (BondingConstants). */
 export function bondingToTokenPool(
   launchId: bigint,
@@ -752,6 +765,9 @@ export function bondingToTokenPool(
   const zeroPool =
     row.poolId === "0x0000000000000000000000000000000000000000000000000000000000000000";
   const graduated = row.phase !== 0;
+  const curvePrice = graduated
+    ? 0
+    : bondingCurvePrice(row, quoteDecimalsForKind(resolveQuoteKind(quote, quoteLabel)));
 
   return {
     id: token,
@@ -781,7 +797,8 @@ export function bondingToTokenPool(
     contractAddress: row.token,
     poolId: zeroPool ? undefined : row.poolId,
     tokenIsCurrency0,
-    priceEth: 0,
+    // Bonding: curve spot price; graduated pools get their v4 spot from enrichPoolsWithSpotPrices.
+    priceEth: curvePrice,
     volume24h: 0,
     creator: row.creator,
     launchId: Number(launchId),
