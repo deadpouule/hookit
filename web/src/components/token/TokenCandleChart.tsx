@@ -15,6 +15,7 @@ import {
   barChangePct,
   barsForInterval,
   chartHudBar,
+  chartWindowBars,
   fillEmptyBars,
   formatChartUsd,
   intervalBucketSec,
@@ -225,6 +226,7 @@ export function TokenCandleChart({
 
   const hasData = bars.length > 0;
   const useTradingView = tvStatus !== "unavailable";
+  const windowBars = chartWindowBars(intervalBucketSec(interval), launchedAt, nowSec);
   const open = bars[0]?.open ?? 0;
   const close = bars.length ? bars[bars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
@@ -461,6 +463,7 @@ export function TokenCandleChart({
             style={style}
             scale={scale}
             interval={interval}
+            windowBars={windowBars}
             lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
             fitNonce={fitNonce}
             onHover={setHover}

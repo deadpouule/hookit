@@ -3,13 +3,16 @@
 import { useEffect, useRef } from "react";
 
 import {
-  CHART_BAR_SPACING,
+  CHART_MAX_BAR_SPACING,
+  CHART_MIN_BAR_SPACING,
   CHART_RIGHT_OFFSET,
+  CHART_SCALE_MARGIN_BOTTOM,
+  CHART_SCALE_MARGIN_TOP,
+  CHART_WINDOW_BARS,
   chartPriceBand,
   chartRangeSignature,
   chartVisibleLogicalRange,
   formatChartAxis,
-  hasChartVolume,
   isSyntheticBar,
   type ChartBar,
   type ChartInterval,
@@ -21,8 +24,6 @@ import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from 
 
 const UP = TV_CANDLE_UP;
 const DOWN = TV_CANDLE_DOWN;
-const UP_VOLUME = "rgba(47,158,127,0.42)";
-const DOWN_VOLUME = "rgba(242,90,65,0.38)";
 const SURFACE = TV_CHART_BG;
 const GRID = TV_CHART_GRID;
 const AXIS = TV_CHART_SCALE_TEXT;
@@ -35,6 +36,8 @@ type TokenLightweightPlotProps = {
   style: ChartStyle;
   scale: ChartScale;
   interval?: ChartInterval;
+  /** Bars stretched across the pane on (re)fit - TradingView `timeframe`. */
+  windowBars?: number;
   lineColor?: string;
   fitNonce?: number;
   onHover: (bar: ChartBar | null) => void;
@@ -45,7 +48,6 @@ type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
 type ChartHandle = {
   chart: IChartApi;
   price: PriceSeries;
-  volume: ISeriesApi<"Histogram">;
   style: ChartStyle;
 };
 
@@ -116,17 +118,17 @@ async function attachPriceSeries(
   });
 }
 
-/** Pin the newest candle against the right axis at the fixed Stonk pitch. */
-function fitChartView(chart: IChartApi, barCount: number) {
+/** Pin the newest candle against the right axis with the opening window across the pane. */
+function fitChartView(chart: IChartApi, barCount: number, windowBars: number) {
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const range = chartVisibleLogicalRange(barCount, width > 0 ? width : undefined);
+  const range = chartVisibleLogicalRange(barCount, width > 0 ? width : undefined, windowBars);
   if (!range) return;
-  timeScale.applyOptions({ barSpacing: CHART_BAR_SPACING, rightOffset: CHART_RIGHT_OFFSET });
-  timeScale.setVisibleLogicalRange(range);
+  timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
+  timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
-function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, refit = true) {
+function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, windowBars: number, refit = true) {
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
 
@@ -164,24 +166,11 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, ref
     );
   }
 
-  const showVolume = hasChartVolume(next);
+  // No volume study on the pane (Advanced Charts desk default); volume lives in the legend.
   handle.price.priceScale().applyOptions({
-    scaleMargins: { top: 0.08, bottom: showVolume ? 0.2 : 0.08 },
+    scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
   });
-  handle.volume.setData(
-    showVolume
-      ? next.map((b) =>
-          b.volume > 0
-            ? {
-                time: b.time as UTCTimestamp,
-                value: b.volume,
-                color: b.close >= b.open ? UP_VOLUME : DOWN_VOLUME,
-              }
-            : { time: b.time as UTCTimestamp },
-        )
-      : [],
-  );
-  if (refit) fitChartView(handle.chart, next.length);
+  if (refit) fitChartView(handle.chart, next.length, windowBars);
 }
 
 export function TokenLightweightPlot({
@@ -189,6 +178,7 @@ export function TokenLightweightPlot({
   style,
   scale,
   interval,
+  windowBars = CHART_WINDOW_BARS,
   lineColor = UP,
   fitNonce = 0,
   onHover,
@@ -205,6 +195,10 @@ export function TokenLightweightPlot({
   scaleRef.current = scale;
   const lineColorRef = useRef(lineColor);
   lineColorRef.current = lineColor;
+  const windowBarsRef = useRef(windowBars);
+  useEffect(() => {
+    windowBarsRef.current = windowBars;
+  }, [windowBars]);
   const rangeSigRef = useRef("");
   const tvRef = useRef<typeof import("lightweight-charts") | null>(null);
 
@@ -242,9 +236,8 @@ export function TokenLightweightPlot({
           timeVisible: true,
           secondsVisible: false,
           rightOffset: CHART_RIGHT_OFFSET,
-          barSpacing: CHART_BAR_SPACING,
-          minBarSpacing: 4,
-          maxBarSpacing: 28,
+          minBarSpacing: CHART_MIN_BAR_SPACING,
+          maxBarSpacing: CHART_MAX_BAR_SPACING,
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
@@ -270,23 +263,12 @@ export function TokenLightweightPlot({
       });
 
       const price = await attachPriceSeries(chart, tv, styleRef.current, scaleRef.current, lineColorRef.current);
-      const volume = chart.addSeries(tv.HistogramSeries, {
-        priceScaleId: "volume",
-        priceLineVisible: false,
-        lastValueVisible: false,
-        priceFormat: { type: "volume" },
-      });
-      // Volume is a thin strip along the bottom edge, never competing with candles.
-      chart.priceScale("volume").applyOptions({
-        scaleMargins: { top: 0.84, bottom: 0 },
-        visible: false,
-      });
 
-      const handle: ChartHandle = { chart, price, volume, style: styleRef.current };
+      const handle: ChartHandle = { chart, price, style: styleRef.current };
       handleRef.current = handle;
       const next = pendingBarsRef.current;
       rangeSigRef.current = chartRangeSignature(next, interval);
-      applyBars(handle, next, lineColorRef.current);
+      applyBars(handle, next, lineColorRef.current, windowBarsRef.current);
 
       chart.subscribeCrosshairMove((param) => {
         if (!param.time || !param.seriesData.size) {
@@ -321,7 +303,7 @@ export function TokenLightweightPlot({
       if (handleRef.current !== handle) return;
       handle.price = price;
       handle.style = style;
-      applyBars(handle, pendingBarsRef.current, lineColor);
+      applyBars(handle, pendingBarsRef.current, lineColor, windowBarsRef.current);
     });
   }, [style, scale, lineColor]);
 
@@ -347,13 +329,13 @@ export function TokenLightweightPlot({
     const signature = chartRangeSignature(bars, interval);
     const refit = rangeSigRef.current !== signature;
     rangeSigRef.current = signature;
-    applyBars(handle, bars, lineColor, refit);
-  }, [bars, lineColor, interval]);
+    applyBars(handle, bars, lineColor, windowBars, refit);
+  }, [bars, lineColor, interval, windowBars]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
     const handle = handleRef.current;
-    if (handle) fitChartView(handle.chart, pendingBarsRef.current.length);
+    if (handle) fitChartView(handle.chart, pendingBarsRef.current.length, windowBarsRef.current);
   }, [fitNonce]);
 
   return <div ref={hostRef} className="token-chart-engine absolute inset-0 z-[2]" />;
