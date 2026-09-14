@@ -1,33 +1,34 @@
 {
   "chainId": 57073,
   "network": "Ink mainnet",
-  "deployedAt": "2026-09-10",
-  "deployBlock": 55566276,
+  "deployedAt": "2026-09-14",
+  "deployBlock": 55752579,
   "deployer": "0x67b436693b7f8ebad6b1b1caf88c2e197d961614",
   "contracts": {
     "LaunchFactoryLib": "0x7ab8d5b15b2192d18b24f92d340a38915ab44a3a",
     "LaunchDevBuyLib": "0x2de8b6093411b033a2e9935bed6a3230c2413117",
     "LaunchTokenDeployLib": "0xdb426240397507fe2666d3dc1dcf80b8f5a47831",
-    "FloorVault": "0x5e8c52d4f137fcf8dcdd066fd3edd0ab78ea945b",
-    "FeeEscrow": "0xdc8e753918748e889b2773d44a6adcabd51ab784",
-    "ProtocolRevenueDistributor": "0x52b48b4d4d159ada83b5ba4a861acac61696a237",
-    "BuybackVault": "0x2311131ebfbda7b98bfdc906597522f569239753",
-    "HolderAirdropVault": "0xba64eaf9c797e8da2e2b7c6d98540ba70449b7e3",
-    "MasterLaunchHook": "0x9f0834cc829fd789782f7afc76de67e3dedb2ac8",
-    "LaunchFactory": "0xa0a7747976f96cac86d72194e59c82fed56aab75",
-    "LaunchFactoryQuery": "0xb901971f71be71e921b0509fbc4720cebc7cb4a0",
-    "GraduatedFeeHook": "0xe2748f1379b41505ed7498d0829d982581642088",
-    "BondingLaunchFactory": "0x10e4af269e373227301d4071c41e98b364097ac5",
-    "HookitSwapRouter": "0xfc6b2f7f3a600497489cb1614a70334ef420ffcf",
-    "V4ClaimsRedeemer": "0xc34ace71706ce0095d42d1e7911d079837265967",
-    "FeeEthRail": "0x6f5ab9285403f2149a723790fafc9817ba5e467d",
-    "HkitBuyback": "0x49156fe494908bb08dcb6dd4264c7879bb818874",
-    "MultiPairArbExecutor": "0x349d0aca1a44452773af90593332a1421ee2a417",
+    "FloorVault": "0x6906e9c43aef6601d3f0e5b870aab9668322b044",
+    "FeeEscrow": "0xef22d9998ff7ab160ba062773b22220ac27018ab",
+    "ProtocolRevenueDistributor": "0x2f904d2c2dc5dc536f41cf99bcf0ac6034187179",
+    "BuybackVault": "0xdb72ef45e7e4ab1efa187561210ad50aef1f10f5",
+    "HolderAirdropVault": "0x4e9ed7abc11a6ef71f1ca433e30918e2919e41e8",
+    "MasterLaunchHook": "0xa506ed2d09a164e5d12993b34f4eb1d01ad46ac8",
+    "LaunchFactory": "0xdca9ccee27dc12256818deff316ba4b972b087a7",
+    "LaunchFactoryQuery": "0xeb76e32818331fc4cbaf1033d4949c9ee1d851f0",
+    "GraduatedFeeHook": "0x503419f19c6232ecd08f4728ee4d18a1e0362088",
+    "BondingLaunchFactory": "0xfeecd83d9ad44f6db03c531e78f1bc6d807315d3",
+    "HookitSwapRouter": "0x6889635f39c472802abde7db791f2ea48090091a",
+    "V4ClaimsRedeemer": "0xb497aa20c231a234f24fe28f412b8637608661fb",
+    "FeeEthRail": "0x0f7df6f28358f2ca1e24b18358fe528c7c840dff",
+    "HkitBuyback": "0xa52e86ee01695d9f4883c48eff2972cf4be1c941",
+    "MultiPairArbExecutor": "0x2ecb783d25815378d157812ce32b5754b8a934a6",
     "UniswapV3EthUsdTwapFeed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",
-    "NativeToken": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
+    "NativeToken": "0x964ce443c5e111ea1b87a70166c6894af3eddb08"
   },
   "previousContracts": {
     "LaunchFactories": [
+      "0xa0a7747976f96cac86d72194e59c82fed56aab75",
       "0xc4ba4e6c5233ded0fdeba344508688d796c2cde7",
       "0x4ac6815a8628576078474025407b6d0317c919a7",
       "0x480bfb88985fb94f4345ed4bb2ec267db9ab9626",
@@ -35,18 +36,21 @@
       "0xbadb0cbffc80b107082babab9e488bc6bef8f425"
     ],
     "BondingLaunchFactories": [
+      "0x10e4af269e373227301d4071c41e98b364097ac5",
       "0x376a629742ad7a76df57eda1df7cd000363c1529",
       "0x04d6b9ca57b6f655bf3e2d4a4fa1d51a88f1ee42",
       "0x13d6216a92b013daacd36e4f6d78ad9264af1a0c",
       "0x44dd5e6fbd3594f7c784b76f8362d6e68b16af98"
     ],
     "ProtocolRevenueDistributors": [
+      "0x52b48b4d4d159ada83b5ba4a861acac61696a237",
       "0xec00cf313cd2dacb7159d827c13463a214050db0",
       "0xc724b1dadb0215a601c143fdec53152d8e61867f",
       "0x4149509d2293a61cb199e17227740eebfadd30c6",
       "0x10d0350b143b40509c7c5461d66ba28c5ad4b24f"
     ],
     "HkitBuybacks": [
+      "0x49156fe494908bb08dcb6dd4264c7879bb818874",
       "0x5bdb903a24ecfb65092496d89cf2805eadce54b8",
       "0x64ce593c8678512097cd0d53f737c3621fb66e5d",
       "0x3d68cc2c71f3b146295c8d9c1a82b3591f24fccb",
@@ -55,11 +59,11 @@
   },
   "nativeToken": {
     "name": "HOOKTEST",
-    "symbol": "HTST",
-    "address": "0xd839eeed6c1fc0d0a2a12641256ac14bbae1d7d8"
+    "symbol": "HTEST",
+    "address": "0x964ce443c5e111ea1b87a70166c6894af3eddb08"
   },
   "indexer": {
-    "startBlock": 55566276,
+    "startBlock": 55752579,
     "url": "https://indexer.hookit.fun"
   },
   "oracle": {
@@ -75,7 +79,7 @@
     "minimumStableReserve": "250000000000"
   },
   "notes": [
-    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-10.",
+    "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-14.",
     "Existing native token carried forward; fair launch was skipped for this redeploy.",
     "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
     "customHookAllowlistEnabled expected true after harden.",
