@@ -547,9 +547,17 @@ contract MasterLaunchHook is BaseHook, Owned, IMasterLaunchHook {
         uint256 claimsGot = poolManager.balanceOf(address(this), claimId) - claimsBefore;
 
         if (feeAmount > 0) {
-            bool feeClaims = claimsGot >= feeAmount;
-            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, feeClaims, false);
-            if (feeClaims) claimsGot -= feeAmount;
+            if (claimsGot < feeAmount) {
+                // The vault paid (part of) the fee in raw quote (operator `deposit`). The module pots
+                // settled in afterSwap (auto-burn, HKT drop, deepen) are claim-denominated, so turn the
+                // raw shortfall into ERC-6909 claims first and split the fee from claims only.
+                uint256 shortfall = feeAmount - claimsGot;
+                st.quote.settle(poolManager, address(this), shortfall, false);
+                poolManager.mint(address(this), claimId, shortfall);
+                claimsGot = feeAmount;
+            }
+            _distributeFees(id, st, packed, feeAmount, snipeBps, effectiveHookTax, true, false);
+            claimsGot -= feeAmount;
         }
 
         uint256 userQuote = quoteOut - feeAmount;

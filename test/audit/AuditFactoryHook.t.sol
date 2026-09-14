@@ -315,12 +315,11 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // M-2 (known limitation): a floor fill paid in raw quote (operator `deposit`) with auto-burn on
-    //      credits pendingAutoBurn without claims, and the afterSwap burn reverts the sell. Documented:
-    //      never top the FloorVault up with raw quote on auto-burn / HKT-drop / deepen pools; the
-    //      permissionless `FloorVault.redeemFloor` exit is unaffected.
+    // M-2 (fixed): a floor fill paid in raw quote (operator `deposit`) with auto-burn / HKT drop /
+    //      deepen on credited claim-denominated pots the hook could not settle, so the sell reverted.
+    //      The hook now converts the raw fee shortfall into ERC-6909 claims before splitting.
     // ─────────────────────────────────────────────────────────────────────────
-    function test_Known_M2_FloorFillRawPathRevertsWithAutoBurn() public {
+    function test_Fixed_M2_FloorFillRawPathSettlesAutoBurn() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         m.backedFloor = true;
@@ -335,13 +334,12 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
         buyExactIn(key, 0.01 ether);
         vm.roll(block.number + 1);
         uint256 bal = LaunchTokenLike(token).balanceOf(address(this));
+        uint256 supplyBefore = LaunchTokenLike(token).totalSupply();
+        uint256 ethBefore = address(this).balance;
         assertEq(hook.pendingAutoBurn(poolId), 0);
 
-        // Spot is far above floor but the sell would cross it → floor fill. Vault pays mostly raw ETH,
-        // FeeSplitLib routes raw, pendingAutoBurn is credited, then _autoBurn tries to burn claims it
-        // does not have → the whole sell reverts. Floor exits through the pool are unusable.
+        // Spot is far above floor but the sell would cross it → floor fill paid mostly in raw ETH.
         LaunchTokenLike(token).approve(address(swapRouter), bal);
-        vm.expectRevert();
         swapRouter.swap(
             key,
             SwapParams({
@@ -350,7 +348,17 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );
-        // Sanity: the same config without auto-burn (existing test path) succeeds, so the floor path itself works.
+
+        assertGt(address(this).balance, ethBefore, "seller paid out of the floor");
+        assertEq(LaunchTokenLike(token).balanceOf(address(this)), bal - bal / 2, "tokens sold");
+        // The auto-burn cut was either burnt in the same afterSwap or is queued as claims the hook holds.
+        uint256 pending = hook.pendingAutoBurn(poolId);
+        assertTrue(
+            LaunchTokenLike(token).totalSupply() < supplyBefore || pending > 0, "auto-burn neither burnt nor queued"
+        );
+        assertGe(manager.balanceOf(address(hook), 0), pending, "queued burn must be backed by claims");
+        // No raw ETH left stranded on the hook.
+        assertEq(address(hook).balance, 0, "raw quote stranded on the hook");
     }
 
     // ─────────────────────────────────────────────────────────────────────────
