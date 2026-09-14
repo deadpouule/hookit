@@ -712,6 +712,10 @@ export function buildDocsSections(): DocsSection[] {
               term: "Cap",
               text: "Base 1% + hook tax + snipe ≤ 100% at open. Steady fee (after decay) still 1% + hook tax ≤ 10%.",
             },
+            {
+              term: "Exact-output buys",
+              text: "Rejected while the snipe tax is above 0 (ExactOutputDuringSnipe). Fees are taken on the pre-swap notional, so an exact-output buy would under-pay the tax. Exact-input buys, and all sells, are unaffected. The creator’s launch-time dev buy is exempt from the tax.",
+            },
           ],
         },
         {
