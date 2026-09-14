@@ -34,7 +34,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 
 import { convertLaunchQuoteToCheapQuote, executeLaunchArb } from "./arb-launch-swap";
-import { rankLaunchMarkets } from "./arb-sane-usd";
+import { previewFromMarkets, rankLaunchMarkets } from "./arb-sane-usd";
 import {
   canSwapUsdgForStock,
   isEthQuote,
@@ -564,7 +564,7 @@ async function main() {
       }
     }
 
-    const sane = await rankLaunchMarkets(publicClient, {
+    let sane = await rankLaunchMarkets(publicClient, {
       token,
       quotes: launchQuotes,
       poolKeys,
@@ -575,6 +575,26 @@ async function main() {
     if (!sane) {
       console.log(`[arb-keeper] launch ${launchId}: cannot rank markets`);
       continue;
+    }
+
+    if (!sane.usdgBuySane) {
+      const cheapOnKeeper = await readErc20Balance(publicClient, sane.cheapQuote, account.address);
+      const cheapOnExecutor = await readErc20Balance(publicClient, sane.cheapQuote, executor);
+      if (cheapOnKeeper === 0n && cheapOnExecutor === 0n) {
+        const rest = sane.markets.filter((m) => m.index !== sane.cheapIndex);
+        const fallback = previewFromMarkets(rest, preview.cheapIndex, preview.richIndex);
+        if (!fallback) {
+          console.log(
+            `[arb-keeper] launch ${launchId}: skip — cheap ${quoteLabel(sane.cheapQuote)} USDG buy is insane and no other pair`,
+          );
+          continue;
+        }
+        console.log(
+          `[arb-keeper] launch ${launchId}: skip unusable cheap ${quoteLabel(sane.cheapQuote)}` +
+            ` (insane Quotrons USD, no inventory); fallback ${quoteLabel(fallback.cheapQuote)} → ${quoteLabel(fallback.richQuote)}`,
+        );
+        sane = fallback;
+      }
     }
 
     const skewed = sane.deviationBps >= Number(minDev);

@@ -130,6 +130,15 @@ export async function rankLaunchMarkets(
     markets.push({ index: i, quote, fdvUsd, factoryUsd, saneUsd: usd });
   }
 
+  return previewFromMarkets(markets, onChainCheapIndex, onChainRichIndex);
+}
+
+/** Cheap/rich among already-priced markets. Used to drop an unusable (blown-oracle) cheap leg. */
+export function previewFromMarkets(
+  markets: RankedMarket[],
+  onChainCheapIndex: number,
+  onChainRichIndex: number,
+): SanePreview | null {
   if (markets.length < 2) return null;
 
   let cheap = markets[0]!;
