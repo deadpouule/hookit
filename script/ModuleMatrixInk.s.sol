@@ -55,7 +55,8 @@ contract ModuleMatrixInkScript is Script {
         CaseSpec[CASE_COUNT] memory specs = _cases();
 
         vm.startBroadcast(pk);
-        factory.setEthUsdPrice(ETH_USD_X18);
+        // Live factory reads the TWAP feed; only override the fallback price when explicitly asked.
+        if (vm.envOr("MATRIX_SET_ETH_USD", false)) factory.setEthUsdPrice(ETH_USD_X18);
 
         for (uint256 i = 0; i < CASE_COUNT; i++) {
             CaseSpec memory spec = specs[i];
@@ -163,7 +164,8 @@ contract ModuleMatrixInkScript is Script {
             m.dynamicFees = true;
             m.buybackVesting = true;
             m.holderAirdrop = true;
-            m.holderAirdropBps = 1_500;
+            // Fee routes must sum to 100% (BitmaskConfig.FeeRouteIncomplete): everything to holders.
+            m.holderAirdropBps = 10_000;
             m.hookTaxBps = 300;
             return m;
         }
