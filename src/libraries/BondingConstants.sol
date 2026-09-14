@@ -8,10 +8,9 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 library BondingConstants {
     /// @dev 1B tokens (18 decimals), same as Hookit master launches.
     uint256 internal constant TOTAL_SUPPLY = 1_000_000_000e18;
-    /// @dev 80% sold on the curve; 20% seeded as full-range LP at graduation.
+    /// @dev 80% sold on the curve; 20% seeded as full-range LP at graduation. Must stay > 50%:
+    ///      `BondingMath.virtualReserves` needs the LP share to be smaller than the curve share.
     uint16 internal constant CURVE_SUPPLY_BPS = 8_000;
-    /// @dev Virtual ETH reserve at curve open when graduating at 4.2 ETH (scales for other quotes).
-    uint256 internal constant VIRTUAL_QUOTE_START_ETH = 1 ether;
     /// @dev Pool fee is always 0 — GraduatedFeeHook charges instead.
     uint24 internal constant POOL_FEE = 0;
     int24 internal constant TICK_SPACING = 60;

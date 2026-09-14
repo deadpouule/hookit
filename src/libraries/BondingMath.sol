@@ -24,6 +24,26 @@ library BondingMath {
         return totalSupply - curveSupply(totalSupply);
     }
 
+    /// @notice Opening virtual reserves such that (a) the curve sells exactly `curveSupply_` once
+    ///         `graduationQuote` has been collected and (b) the terminal curve price equals the price
+    ///         of the LP seeded with (`totalSupply - curveSupply_`, `graduationQuote`): no price gap
+    ///         at graduation. Requires `curveSupply_ > totalSupply / 2`.
+    /// @dev With R = graduationQuote, Sc = curveSupply_, Sl = totalSupply - Sc:
+    ///      V = R * Sl / (2Sc - S), T = Sc * (1 + V / R). Terminal price (V+R)/(T-Sc) == R / Sl.
+    function virtualReserves(uint256 totalSupply, uint256 curveSupply_, uint256 graduationQuote)
+        internal
+        pure
+        returns (uint256 virtualQuote, uint256 virtualToken)
+    {
+        if (graduationQuote == 0 || curveSupply_ == 0 || curveSupply_ >= totalSupply) revert InvalidReserves();
+        uint256 lpSupply_ = totalSupply - curveSupply_;
+        if (curveSupply_ <= lpSupply_) revert InvalidReserves(); // 2Sc - S must be > 0
+        uint256 denom = curveSupply_ - lpSupply_;
+        virtualQuote = FullMath.mulDiv(graduationQuote, lpSupply_, denom);
+        if (virtualQuote == 0) virtualQuote = 1;
+        virtualToken = curveSupply_ + FullMath.mulDiv(virtualQuote, curveSupply_, graduationQuote);
+    }
+
     /// @notice Quote required to buy exact `tokensOut` (before trading fee).
     function quoteInForTokensOut(uint256 virtualQuote, uint256 virtualToken, uint256 tokensOut)
         internal

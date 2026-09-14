@@ -457,6 +457,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Trading moves from BondingLaunchFactory to a Uniswap v4 pool.",
             "20% of supply + collected quote become locked full-range LP.",
+            "The pool opens at the last curve price: the virtual reserves are sized so the curve sells out exactly at the target and the LP starts where the curve ended, no discount for the first pool buyers.",
             `Fees stay the 1% base, split ${CREATOR_FEE_PCT}% / ${HKT_HOLDER_FEE_PCT}% / ${PROTOCOL_FEE_PCT}% creator / $HKT / protocol.`,
             "Graduation is a funding threshold, not a quality stamp.",
             "Creator fees after graduation sit on GraduatedFeeHook.pendingCreatorTax. sweepQuote(poolId) moves them into FeeEscrow, then claim.",

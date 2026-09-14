@@ -262,13 +262,12 @@ contract BondingLaunchFactory is Owned {
         if (onCurve == 0 || onCurve >= supply) revert InvalidSupply();
 
         uint256 graduationQuote = graduationQuoteWei(params.quote);
-        uint256 virtualQuote = FullMath.mulDiv(
-            graduationQuote, BondingConstants.VIRTUAL_QUOTE_START_ETH, ProtocolConstants.GRADUATION_ETH_WEI
-        );
-        if (virtualQuote == 0) virtualQuote = 1;
+        // Reserves are derived so the curve sells out exactly at `graduationQuote` and hands the LP
+        // over at the terminal curve price (no discount for whoever buys right after graduation).
+        (uint256 virtualQuote, uint256 virtualToken) = BondingMath.virtualReserves(supply, onCurve, graduationQuote);
 
         if (devBuy > 0) {
-            _validateDevBuyQuote(devBuy, virtualQuote, onCurve, supply);
+            _validateDevBuyQuote(devBuy, virtualQuote, virtualToken, supply);
             if (!nativeQuote) {
                 if (!IERC20Minimal(Currency.unwrap(params.quote)).transferFrom(msg.sender, address(this), devBuy)) {
                     revert TransferFailed();
@@ -299,7 +298,7 @@ contract BondingLaunchFactory is Owned {
             tokensSold: 0,
             realQuote: 0,
             virtualQuote: virtualQuote,
-            virtualToken: onCurve,
+            virtualToken: virtualToken,
             graduationQuote: graduationQuote,
             poolId: PoolId.wrap(bytes32(0)),
             launchedAt: uint64(block.timestamp),

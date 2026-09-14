@@ -19,6 +19,7 @@ import {ProtocolRevenueDistributor} from "../../src/ProtocolRevenueDistributor.s
 import {GraduatedFeeHook} from "../../src/GraduatedFeeHook.sol";
 import {BondingLaunchFactory} from "../../src/BondingLaunchFactory.sol";
 import {HktHolderDropVault} from "../../src/HktHolderDropVault.sol";
+import {BondingConstants} from "../../src/libraries/BondingConstants.sol";
 import {LaunchFactoryLib} from "../../src/libraries/LaunchFactoryLib.sol";
 import {UniswapV3EthUsdTwapFeed} from "../../src/UniswapV3EthUsdTwapFeed.sol";
 import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
@@ -79,16 +80,18 @@ contract AuditBondingRouterOracleTest is Test, Deployers {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // B-1 (known limitation): graduation price discontinuity (pool opens ~65% below the last curve
-    //      price). Tokenomics decision - see the review for the virtual-reserve fix.
+    // B-1 (fixed): the pool used to open ~65% below the last curve price because the virtual token
+    //      reserve was the curve supply (the curve never sold out, 35% of supply landed in the LP).
+    //      `BondingMath.virtualReserves` now sizes the reserves so the curve sells exactly 80% at the
+    //      4.2 ETH target and the LP opens at the terminal curve price.
     // ---------------------------------------------------------------------------------------------
 
-    function test_Known_B1_GraduationPriceDiscontinuity() public {
+    function test_Fixed_B1_PoolOpensAtTerminalCurvePrice() public {
         (uint256 launchId, address token) = _launchEth(creator);
 
         // Bring the curve close to the 4.2 ETH target without crossing it.
         vm.prank(trader);
-        bonding.buy{value: 4.0 ether}(launchId, 0, 1);
+        bonding.buy{value: 4.2 ether}(launchId, 0, 1);
         assertEq(uint8(_phase(launchId)), uint8(BondingLaunchFactory.Phase.Bonding));
 
         (uint256 vq, uint256 vt) = _virtuals(launchId);
@@ -96,7 +99,7 @@ contract AuditBondingRouterOracleTest is Test, Deployers {
 
         // Cross the threshold: this buy graduates the launch.
         vm.prank(trader);
-        bonding.buy{value: 0.35 ether}(launchId, 0, 1);
+        bonding.buy{value: 0.1 ether}(launchId, 0, 1);
         assertEq(uint8(_phase(launchId)), uint8(BondingLaunchFactory.Phase.Graduated));
 
         PoolKey memory key = bonding.poolKeyOf(launchId);
@@ -108,12 +111,31 @@ contract AuditBondingRouterOracleTest is Test, Deployers {
         console.log("pool  spot after  graduation (wei/token):", poolPriceX18);
         console.log("pool / curve (bps):", poolPriceX18 * 10_000 / curvePriceX18);
 
-        // Pool opens at roughly 35% of the price the last curve buyers paid.
-        assertLt(poolPriceX18 * 10_000 / curvePriceX18, 4_000, "no material price discontinuity");
+        // The last curve buy sits within ~0.05 ETH of the target, so the pool must open within a
+        // few percent of the last curve price (it was ~35% before the fix).
+        assertApproxEqRel(poolPriceX18, curvePriceX18, 0.03e18, "graduation price gap");
+        assertGe(poolPriceX18, curvePriceX18, "pool must not open below the last curve price");
     }
 
-    /// @dev Perverse incentive: sell on the curve right before graduation, re-buy in the pool after.
-    function test_Known_B1_SellBeforeGraduationRebuyAfterMoreThanDoublesPosition() public {
+    /// @dev Exactly 80% of the supply is sold on the curve and 20% + 4.2 ETH seed the LP.
+    function test_Fixed_B1_CurveSellsExactlyEightyPercentAtTarget() public {
+        (uint256 launchId, address token) = _launchEth(creator);
+        uint256 supply = BondingConstants.TOTAL_SUPPLY;
+
+        vm.prank(trader);
+        bonding.buy{value: 10 ether}(launchId, 0, 1); // oversized: partial fill + refund
+        assertEq(uint8(_phase(launchId)), uint8(BondingLaunchFactory.Phase.Graduated));
+
+        uint256 traderTokens = IERC20Minimal(token).balanceOf(trader);
+        // Trader plus the HKT-drop curve buys (if any) hold the whole curve share.
+        assertApproxEqRel(traderTokens, supply * 8_000 / 10_000, 0.01e18, "curve share");
+        // Nothing left on the factory: the LP took totalSupply - tokensSold.
+        assertEq(IERC20Minimal(token).balanceOf(address(bonding)), 0, "factory keeps tokens");
+        assertLe(address(bonding).balance, 1, "factory keeps ETH"); // ceil rounding dust only
+    }
+
+    /// @dev The sell-before / rebuy-after round trip no longer pays: it now loses the fees.
+    function test_Fixed_B1_SellBeforeGraduationRebuyAfterDoesNotProfit() public {
         (uint256 launchId, address token) = _launchEth(creator);
 
         vm.prank(trader);
@@ -146,7 +168,9 @@ contract AuditBondingRouterOracleTest is Test, Deployers {
         uint256 h1 = IERC20Minimal(token).balanceOf(holder);
         console.log("holder tokens before dump:", h0);
         console.log("holder tokens after rebuy:", h1);
-        assertGt(h1, h0 * 2, "sell-before / rebuy-after should more than double the position");
+        assertLt(h1, h0, "round trip through graduation should not gain tokens");
+        // Loss is bounded by fees plus the 0.6 ETH the curve moved in between, not a 2x swing.
+        assertGt(h1, h0 * 70 / 100, "round trip should only lose fees and the curve move");
     }
 
     // ---------------------------------------------------------------------------------------------

@@ -32,7 +32,6 @@ export const MAX_DEV_BUY_SUPPLY_PCT = 2.5;
 const BPS = 10_000n;
 const CURVE_SUPPLY_BPS = 8_000n;
 const GRADUATION_ETH_WEI = parseEther(String(GRADUATION_ETH));
-const VIRTUAL_QUOTE_START_ETH = parseEther("1");
 
 export type DevBuyMode = "supply" | "eth";
 
@@ -69,14 +68,18 @@ export function devBuyTokensForSupplyPct(supplyPct: number): bigint {
   return (DEFAULT_TOTAL_SUPPLY * bps) / 10_000n;
 }
 
+/**
+ * Mirrors BondingMath.virtualReserves: the curve sells exactly the curve supply once the graduation
+ * quote is collected and the LP opens at the terminal curve price.
+ */
 export function initialBondingVirtualState(graduationQuoteWei: bigint) {
   const curveSupply = (DEFAULT_TOTAL_SUPPLY * CURVE_SUPPLY_BPS) / BPS;
-  let virtualQuote =
-    graduationQuoteWei > 0n
-      ? (graduationQuoteWei * VIRTUAL_QUOTE_START_ETH) / GRADUATION_ETH_WEI
-      : 1n;
+  const lpSupply = DEFAULT_TOTAL_SUPPLY - curveSupply;
+  const graduation = graduationQuoteWei > 0n ? graduationQuoteWei : GRADUATION_ETH_WEI;
+  let virtualQuote = (graduation * lpSupply) / (curveSupply - lpSupply);
   if (virtualQuote <= 0n) virtualQuote = 1n;
-  return { virtualQuote, virtualToken: curveSupply, curveSupply };
+  const virtualToken = curveSupply + (virtualQuote * curveSupply) / graduation;
+  return { virtualQuote, virtualToken, curveSupply };
 }
 
 /** Estimate gross quote for a classic bonding dev buy (% of total supply). */
