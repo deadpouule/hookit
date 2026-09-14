@@ -113,7 +113,17 @@ MATRIX_PHASE=sell MATRIX_LAUNCH_IDS=5,6,7,8,9 \
   --gas-estimate-multiplier 250
 ```
 
-Keep `--gas-estimate-multiplier 250` on the sell phase: forge simulates the whole script in one
+```bash
+# Master launch carrying a dev buy in the launch tx (emits DevBuyExecuted), then sell it back
+LAUNCH_FACTORY=0xdca9ccee27dc12256818deff316ba4b972b087a7 \
+  HOOKIT_SWAP_ROUTER=0x6889635f39c472802abde7db791f2ea48090091a \
+  forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow
+DEVBUY_PHASE=sell DEVBUY_LAUNCH_ID=<id> LAUNCH_FACTORY=... HOOKIT_SWAP_ROUTER=... \
+  forge script script/SmokeDevBuyInk.s.sol --rpc-url $INK_RPC_URL --broadcast --slow \
+  --gas-estimate-multiplier 250
+```
+
+Keep `--gas-estimate-multiplier 250` on the sell phases: forge simulates the whole script in one
 warm EVM, so its per-tx estimate misses the cold-storage cost of `afterSwap` (floor defense,
 burn, airdrop). The default 130 % limit ran out of gas on-chain on every module sell
 (452k limit vs 386k–524k actually used) while the dry run passed. `--slow` waits for each
