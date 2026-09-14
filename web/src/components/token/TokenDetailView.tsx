@@ -177,7 +177,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"swaps" | "holders">("swaps");
   const [interval, setInterval] = useState<ChartInterval | null>(null);
-  const chartInterval = interval ?? "15m";
+  const chartInterval = interval ?? "5m";
   const [buyPrefill, setBuyPrefill] = useState<string | null>(null);
   const [swapSheetOpen, setSwapSheetOpen] = useState(false);
   const [swapSheetSide, setSwapSheetSide] = useState<"buy" | "sell">("buy");
