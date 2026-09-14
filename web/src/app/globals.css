@@ -11236,6 +11236,16 @@ h2.docs-hook-heading {
   display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
+}
+
+.docs-spark-label {
+  fill: #d4d4d8;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .docs-three,

@@ -136,7 +136,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /case "arb-keeper"/);
   assert.match(visuals, /<rect x="128" y="28"/);
   assert.equal(visuals.includes('<rect x="128" y="44"'), false);
-  assert.match(visuals, /T = 5s → 0/);
+  assert.match(visuals, /parts: \["t=0", "98%"\]/);
+  assert.match(visuals, /parts: \["t=5s", "0%"\]/);
+  assert.equal(visuals.includes("τ0 98%"), false);
+  assert.equal(visuals.includes("T = 5s → 0"), false);
   assert.equal(visuals.includes("y: 104, text: \"T = 5s"), false);
   assert.match(visuals, /docs-wizard-shot/);
   assert.match(visuals, /Create a hooked token/);

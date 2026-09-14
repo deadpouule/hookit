@@ -73,24 +73,36 @@ function Spark({
   d: string;
   fill: string;
   stroke: string;
-  labels: { x: number; y: number; text: string; anchor?: "start" | "middle" | "end" }[];
+  labels: {
+    x: number;
+    y: number;
+    text?: string;
+    parts?: string[];
+    anchor?: "start" | "middle" | "end";
+  }[];
 }) {
   return (
     <svg className="docs-spark" viewBox="0 0 360 120" role="img">
       <path d={d} fill={fill} />
       <path d={d.replace(/Z$/, "")} fill="none" stroke={stroke} strokeWidth="2.2" />
-      {labels.map((label) => (
-        <text
-          key={label.text}
-          x={label.x}
-          y={label.y}
-          textAnchor={label.anchor ?? "start"}
-          fill="#a1a1aa"
-          fontSize="10"
-        >
-          {label.text}
-        </text>
-      ))}
+      {labels.map((label) => {
+        const parts = label.parts?.length ? label.parts : [label.text ?? ""];
+        return (
+          <text
+            key={parts.join("|")}
+            className="docs-spark-label"
+            x={label.x}
+            y={label.y}
+            textAnchor={label.anchor ?? "start"}
+          >
+            {parts.map((part, i) => (
+              <tspan key={`${part}-${i}`} dx={i === 0 ? undefined : 10}>
+                {part}
+              </tspan>
+            ))}
+          </text>
+        );
+      })}
     </svg>
   );
 }
@@ -363,12 +375,12 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           <div className="docs-visual-hook-row">
             <HookMark hookId="anti-snipe" theme="fire" />
             <Spark
-              d="M16 18 L16 18 L40 22 C 80 28, 140 48, 210 78 C 260 96, 310 108, 344 110 L 344 110 L 16 110 Z"
+              d="M16 24 L16 24 L40 28 C 80 34, 140 54, 210 82 C 260 98, 310 108, 344 110 L 344 110 L 16 110 Z"
               fill="rgb(239 68 68 / 0.18)"
               stroke="#ef4444"
               labels={[
-                { x: 16, y: 14, text: "τ0 98%" },
-                { x: 344, y: 88, text: "T = 5s → 0", anchor: "end" },
+                { x: 16, y: 16, parts: ["t=0", "98%"] },
+                { x: 344, y: 94, parts: ["t=5s", "0%"], anchor: "end" },
               ]}
             />
           </div>
