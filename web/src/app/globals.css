@@ -3892,8 +3892,13 @@
     color: #52525b;
     border-color: color-mix(in srgb, var(--border) 50%, transparent);
     background: transparent;
-    opacity: 0.55;
+    opacity: 0.45;
     cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .token-hero-link--off .token-hero-hook-glyph {
+    color: #52525b;
   }
 
   .token-hero-link--off:hover {
@@ -4036,6 +4041,11 @@
     order: 5;
     min-width: 0;
     overflow-x: hidden;
+  }
+
+  /* Classic: fees live in the swap card on desktop; show them on the page on phone. */
+  html[data-device="desktop"] .token-desk-fees--classic {
+    display: none;
   }
 
   .token-desk-swap {
@@ -4227,11 +4237,16 @@
     min-width: 0;
   }
 
-  .token-swap-sheet .swap-cta-sticky {
+  html[data-device="phone"] .token-swap-sheet .swap-cta-sticky {
     position: static;
     margin-top: 16px;
     padding-top: 0;
     background: none;
+  }
+
+  .token-swap-footer {
+    margin-top: 12px;
+    flex-shrink: 0;
   }
 
   .swap-sheet-tabs {

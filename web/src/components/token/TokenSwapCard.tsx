@@ -594,7 +594,7 @@ export function TokenSwapCard({
       {(error || swap.error) && (
         <p className="mt-2 text-center text-[12px] text-red-400">{error ?? swap.error}</p>
       )}
-      {footer ? <div className="mt-3">{footer}</div> : null}
+      {footer ? <div className="token-swap-footer">{footer}</div> : null}
     </div>
   );
 }
