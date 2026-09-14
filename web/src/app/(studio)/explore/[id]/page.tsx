@@ -5,8 +5,8 @@ import { getAllPoolIds, getDetailPool } from "@/lib/pools";
 import { loadLaunchPoolById } from "@/lib/server-launches";
 import { tokenShareMetadata } from "@/lib/token-share-metadata";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
-export const revalidate = 60;
 
 export function generateStaticParams() {
   return getAllPoolIds().map((id) => ({ id }));
