@@ -62,7 +62,10 @@ export function getDetailPool(id: string): TokenPool | undefined {
     },
     address: `${token.creator.slice(0, 6)}...${token.creator.slice(-4)}`,
     contractAddress: token.creator,
-    hookType: token.kind === "sushi" ? "Custom" : "Master",
+    hookType: token.hookType ?? (token.kind === "sushi" ? "Custom" : "Master"),
+    rail: token.rail,
+    bondingPhase: token.bondingPhase,
+    hooksAddress: token.creator as TokenPool["hooksAddress"],
     volume24h: token.volume,
   };
 }

@@ -203,6 +203,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     [markets],
   );
   const masterHookAddr = pool.hooksAddress;
+  const isMasterHook = pool.rail === "master" && !pool.hooks.customHook;
   const description = pool.description?.trim() || undefined;
   const twitterUrl = tokenTwitterUrl(pool.twitter);
   const websiteUrl = tokenWebsiteUrl(pool.website);
@@ -348,7 +349,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </HeroLink>
               <HeroLink
                 href={
-                  masterHookAddr
+                  isMasterHook && masterHookAddr
                     ? `${BLOCK_EXPLORER_URL}/address/${masterHookAddr}`
                     : undefined
                 }
@@ -479,11 +480,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <div className="token-desk-hooks space-y-3">
             {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
           </div>
-          {!isClassicDesk ? (
-            <div className="token-desk-fees">
-              <CreatorActions pool={activePool} />
-            </div>
-          ) : null}
+          <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
+            <CreatorActions pool={activePool} />
+          </div>
         </aside>
 
         <div className="token-desk-tx-col min-w-0">
