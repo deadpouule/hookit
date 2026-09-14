@@ -24,9 +24,14 @@ export default defineConfig({
       name: "mobile",
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 390, height: 844 },
+        userAgent: devices["iPhone 13"].userAgent,
+        viewport: devices["iPhone 13"].viewport,
+        deviceScaleFactor: devices["iPhone 13"].deviceScaleFactor,
         isMobile: true,
         hasTouch: true,
+        extraHTTPHeaders: {
+          "sec-ch-ua-mobile": "?1",
+        },
       },
     },
   ],

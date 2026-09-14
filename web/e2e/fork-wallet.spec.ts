@@ -144,6 +144,10 @@ test.describe("Hookit Ink fork wallet E2E", () => {
     const opsBefore = await client.getBalance({ address: opsTreasury });
 
     await page.goto("/launch/custom");
+    const welcome = page.getByRole("button", { name: /Agree and Continue/i });
+    if (await welcome.isVisible().catch(() => false)) {
+      await welcome.click();
+    }
     const connectedWallet = page
       .getByRole("button", { name: /0x10.*e2e1/i })
       .first();

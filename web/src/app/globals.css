@@ -7149,7 +7149,7 @@
 
   .token-card-name {
     margin: 0;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     line-height: 1.25;
     color: var(--foreground);
@@ -7183,7 +7183,7 @@
   .token-card-mcap {
     display: none;
     margin: 0.15rem 0 0;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.25;
     color: #fff;
@@ -7223,7 +7223,7 @@
     display: grid;
     gap: 0.14rem;
     margin: 0.1rem 0 0;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.3;
   }
 
@@ -7276,7 +7276,7 @@
     }
 
     .token-card-name {
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       font-weight: 700;
       text-transform: none;
       letter-spacing: -0.02em;
