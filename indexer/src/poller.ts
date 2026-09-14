@@ -193,6 +193,7 @@ function baseTokenRow(
     poolId: Hex;
     tokenIsCurrency0: boolean;
     factory?: Address;
+    hooks?: Address;
   },
   meta: { name: string; symbol: string; decimals: number; totalSupply: string },
   quoteDec: number,
@@ -212,6 +213,7 @@ function baseTokenRow(
     launchId: args.launchId,
     rail: args.rail,
     factory: args.factory,
+    hooks: args.hooks,
     holders: {},
     trades: [],
     candles5m: [],
@@ -227,11 +229,19 @@ async function ensureMasterToken(
     token: Address;
     creator: Address;
     poolId: Hex;
+    hooks?: Address;
     blockNumber: bigint;
     factory: Address;
   },
 ) {
-  if (store.getToken(args.token)) return;
+  const existing = store.getToken(args.token);
+  if (existing) {
+    if (!existing.hooks && args.hooks) {
+      existing.hooks = args.hooks;
+      store.upsertToken(existing);
+    }
+    return;
+  }
 
   const [quoteSettled, launchedAtSettled, meta] = await Promise.all([
     client
@@ -265,6 +275,7 @@ async function ensureMasterToken(
       poolId: args.poolId,
       tokenIsCurrency0: BigInt(args.token) < BigInt(q),
       factory: args.factory,
+      hooks: args.hooks,
     },
     meta,
     qd,
@@ -356,6 +367,63 @@ async function refreshBondingState(
 }
 
 const blockTsCache = new Map<string, number>();
+
+/**
+ * Fee modules (floor defense, buyback, auto-burn...) swap from inside the hook during afterSwap.
+ * Those PoolManager `Swap` logs carry the hook as sender and must not be listed as user trades.
+ */
+export function isHookInternalSwap(row: Pick<TokenRow, "hooks">, sender: Address): boolean {
+  return !!row.hooks && row.hooks.toLowerCase() === sender.toLowerCase();
+}
+
+/** Rows indexed before `hooks` was stored: read it once from the factory pool key. */
+async function backfillHooks(client: PublicClient, store: Store, row: TokenRow): Promise<void> {
+  if (row.hooks || row.rail !== "master" || !row.factory) return;
+  try {
+    const key = await rpcWithRetry(
+      () =>
+        client.readContract({
+          address: row.factory!,
+          abi: launchFactoryAbi,
+          functionName: "poolKeyOf",
+          args: [BigInt(row.launchId)],
+        }),
+      "poolKeyOf",
+    );
+    if (key.hooks && key.hooks !== zeroAddress) {
+      row.hooks = key.hooks;
+      store.upsertToken(row);
+    }
+  } catch (err) {
+    console.warn(`[indexer] poolKeyOf ${row.symbol} failed: ${err instanceof Error ? err.message : err}`);
+  }
+}
+
+const txFromCache = new Map<string, Address>();
+
+/** `tx.from` for each hash (lowercase key). Missing entries mean the lookup failed; callers fall back. */
+async function txSenders(client: PublicClient, hashes: Hex[]): Promise<Map<string, Address>> {
+  const out = new Map<string, Address>();
+  const missing: Hex[] = [];
+  for (const hash of new Set(hashes.map((h) => h.toLowerCase() as Hex))) {
+    const hit = txFromCache.get(hash);
+    if (hit) out.set(hash, hit);
+    else missing.push(hash);
+  }
+  await Promise.all(
+    missing.map(async (hash) => {
+      try {
+        const tx = await rpcWithRetry(() => client.getTransaction({ hash }), "getTransaction");
+        txFromCache.set(hash, tx.from);
+        out.set(hash, tx.from);
+      } catch (err) {
+        console.warn(`[indexer] getTransaction ${hash} failed: ${err instanceof Error ? err.message : err}`);
+      }
+    }),
+  );
+  if (txFromCache.size > 10_000) txFromCache.clear();
+  return out;
+}
 
 async function blockTimestamps(client: PublicClient, blockNumbers: bigint[]): Promise<Map<string, number>> {
   const out = new Map<string, number>();
@@ -450,12 +518,14 @@ async function indexMasterFactory(
       token: Address;
       creator: Address;
       poolId: Hex;
+      hooks?: Address;
     }>(log);
     await ensureMasterToken(client, store, cfg, {
       launchId: a.launchId,
       token: a.token,
       creator: a.creator,
       poolId: a.poolId,
+      hooks: a.hooks,
       blockNumber: log.blockNumber ?? fromBlock,
       factory,
     });
@@ -609,8 +679,21 @@ async function indexRange(
 
       const blocks = [...new Set(swapLogs.map((l) => l.blockNumber).filter((b): b is bigint => b != null))];
       const tsMap = await blockTimestamps(client, blocks);
-
       for (const log of swapLogs) {
+        const row = store.tokenForPool(logArgs<{ id: Hex }>(log).id);
+        if (row) await backfillHooks(client, store, row);
+      }
+      const userSwaps = swapLogs.filter((log) => {
+        const args = logArgs<{ id: Hex; sender: Address }>(log);
+        const row = store.tokenForPool(args.id);
+        return !!row && !isHookInternalSwap(row, args.sender);
+      });
+      const senders = await txSenders(
+        client,
+        userSwaps.map((l) => l.transactionHash).filter((h): h is Hex => !!h),
+      );
+
+      for (const log of userSwaps) {
         const args = logArgs<{
           id: Hex;
           sender: Address;
@@ -652,7 +735,8 @@ async function indexRange(
           tokenAmount: tokenAmt.toString(),
           price,
           sqrtPriceX96: args.sqrtPriceX96.toString(),
-          actor: args.sender,
+          // PoolManager reports the router/factory as sender; the wallet that paid is tx.from.
+          actor: senders.get(meta.transactionHash.toLowerCase()) ?? args.sender,
           poolId: args.id,
         };
         store.pushTrade(row.address, trade);

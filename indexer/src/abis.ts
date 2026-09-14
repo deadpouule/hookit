@@ -70,6 +70,25 @@ export const launchFactoryAbi = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "poolKeyOf",
+    inputs: [{ name: "launchId", type: "uint256" }],
+    outputs: [
+      {
+        name: "key",
+        type: "tuple",
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
 ] as const;
 
 export const bondingFactoryAbi = [
