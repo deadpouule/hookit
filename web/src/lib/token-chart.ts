@@ -1,6 +1,7 @@
 import { formatCompactUsd, isValidLaunchTimestamp } from "@/lib/format";
 import type { LiveCandle } from "@/lib/token-live";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
+import { formatTvPrice } from "@/lib/tv-chart";
 
 /** Native resolution is 1m - same as Sentry's subgraph resample. */
 export const NATIVE_CANDLE_SEC = 60;
@@ -265,16 +266,13 @@ export function chartPriceBand(
 }
 
 /**
- * Right-axis label. Fixed decimals per magnitude so ticks line up
- * ($0.000003080, $0.000003090 …) instead of trimming zeros.
+ * Right-axis label. Market cap stays compact USD; price uses the TradingView
+ * subscript form (0.0₃85495) so the fallback reads like the Advanced Chart.
  */
 export function formatChartAxis(value: number, scale: ChartScale): string {
   if (!Number.isFinite(value) || value <= 0) return "";
   if (scale === "mcap") return formatCompactUsd(value);
-  if (value >= 1000) return formatCompactUsd(value);
-  if (value >= 1) return `$${value.toFixed(2)}`;
-  const decimals = Math.min(-Math.floor(Math.log10(value)) + 3, 14);
-  return `$${value.toFixed(decimals)}`;
+  return formatTvPrice(value);
 }
 
 /**
@@ -341,12 +339,7 @@ export function seedLaunchBars(launchedAt: number | undefined, marketCap: number
 export function formatChartUsd(value: number, scale: ChartScale): string {
   if (!Number.isFinite(value) || value <= 0) return "·";
   if (scale === "mcap") return formatCompactUsd(value);
-  if (value >= 1) return formatCompactUsd(value);
-  if (value >= 0.01) return `$${value.toFixed(4)}`;
-  if (value >= 0.0001) return `$${value.toFixed(6)}`;
-  const digits = value >= 1e-8 ? 10 : 12;
-  const trimmed = value.toFixed(digits).replace(/0+$/, "").replace(/\.$/, "");
-  return `$${trimmed}`;
+  return formatTvPrice(value);
 }
 
 /** Signed % from a single bar's open → close - Stonk OHLC legend. */

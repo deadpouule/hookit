@@ -3540,6 +3540,43 @@
     background: var(--surface);
   }
 
+  /* TradingView Advanced Charts: the card is the chart (Tsunami 460 / 300). */
+  .token-chart-card--tv {
+    padding: 0;
+  }
+
+  .token-chart-toolbar--legs {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .token-chart-tv-frame {
+    height: 460px;
+    background: #111111;
+  }
+
+  .token-chart-tv-frame--compact {
+    height: 300px;
+  }
+
+  .token-chart-tv-frame--expanded {
+    height: 560px;
+  }
+
+  .token-chart-tv,
+  .token-chart-tv iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 760px) {
+    .token-chart-tv-frame,
+    .token-chart-tv-frame--compact,
+    .token-chart-tv-frame--expanded {
+      height: 300px;
+    }
+  }
+
   .token-chart-engine a[href*="tradingview"] {
     display: none !important;
   }

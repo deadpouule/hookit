@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# TradingView Advanced Charts — licensed, never committed (fetched at build)
+/public/charting_library/

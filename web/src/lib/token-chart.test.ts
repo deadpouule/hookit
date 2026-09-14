@@ -233,19 +233,19 @@ test("chartPriceBand pads a live range and a flat print without empty headroom",
   assert.equal(chartPriceBand(0, 0), null);
 });
 
-test("formatChartAxis uses fixed decimals so ticks align", () => {
-  assert.equal(formatChartAxis(0.00000308, "price"), "$0.000003080");
-  assert.equal(formatChartAxis(0.00000309, "price"), "$0.000003090");
-  assert.equal(formatChartAxis(0.0234, "price"), "$0.02340");
-  assert.equal(formatChartAxis(2.5, "price"), "$2.50");
+test("formatChartAxis uses TradingView subscript zeros for price", () => {
+  assert.equal(formatChartAxis(0.00000308, "price"), "0.0₅30800");
+  assert.equal(formatChartAxis(0.00000309, "price"), "0.0₅30900");
+  assert.equal(formatChartAxis(0.0234, "price"), "0.0234");
+  assert.equal(formatChartAxis(2.5, "price"), "2.5");
   assert.equal(formatChartAxis(12_500, "mcap"), "$12.50K");
   assert.equal(formatChartAxis(0, "price"), "");
 });
 
-test("formatChartUsd uses compact USD for mcap and extra decimals for price", () => {
+test("formatChartUsd uses compact USD for mcap and subscript price", () => {
   assert.equal(formatChartUsd(12_500, "mcap"), "$12.50K");
-  assert.equal(formatChartUsd(0.0001234, "price"), "$0.000123");
-  assert.equal(formatChartUsd(0.000003001, "price"), "$0.000003001");
+  assert.equal(formatChartUsd(0.0001234, "price"), "0.0₃12340");
+  assert.equal(formatChartUsd(0.000003001, "price"), "0.0₅30010");
 });
 
 test("barChangePct is the candle open-to-close move", () => {
