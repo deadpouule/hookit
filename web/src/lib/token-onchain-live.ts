@@ -273,7 +273,7 @@ export async function fetchOnChainLive(
         ? `${args.sender.slice(0, 6)}…${args.sender.slice(-4)}`
         : "·",
       recipientAddress: args.sender,
-      txHash: log.transactionHash,
+      txHash: log.transactionHash ?? undefined,
       side,
       amount: tokenAmt,
       totalUsd,
