@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } 
 import { HookDocsDialog } from "@/components/explore/HookDocsDialog";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { isPhoneDocument } from "@/lib/device";
 import { shortenAddress } from "@/lib/format";
 import {
   enabledMasterHooksInOrder,
@@ -53,7 +54,7 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
   }, []);
 
   useEffect(() => {
-    if (reduceMotion || paused || docsOpen || hooks.length < 2) return;
+    if (isPhoneDocument() || reduceMotion || paused || docsOpen || hooks.length < 2) return;
     const id = window.setInterval(() => {
       setIndex((i) => (i + 1) % hooks.length);
     }, ROTATE_MS);

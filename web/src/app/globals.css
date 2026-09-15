@@ -3142,7 +3142,68 @@
   }
 
   html[data-device="phone"] .lean-hero {
+    display: block;
+    height: auto;
+    min-height: 0;
+    border-radius: 1rem;
+  }
+
+  html[data-device="phone"] .hero-stage {
     display: none;
+  }
+
+  html[data-device="phone"] .hero-banner {
+    min-height: 0;
+    height: auto;
+    flex-direction: column;
+    padding: 1rem 0.9rem 0.95rem;
+  }
+
+  html[data-device="phone"] .hero-copy {
+    width: 100%;
+    height: auto;
+  }
+
+  html[data-device="phone"] .hero-copy h1,
+  html[data-device="phone"] .hero-typewriter {
+    font-size: 1.12rem;
+    line-height: 1.32;
+  }
+
+  html[data-device="phone"] .hero-pitch .powered-by-quotrons-badge--hero {
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  html[data-device="phone"] .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
+    height: 1.85rem;
+    width: 1.85rem;
+  }
+
+  html[data-device="phone"] .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__text {
+    font-size: 0.92rem;
+  }
+
+  html[data-device="phone"] .hero-pitch .hero-typewriter-mark--eth,
+  html[data-device="phone"] .hero-pitch .hero-typewriter-mark--usdg,
+  html[data-device="phone"] .hero-pitch .hero-typewriter-mark--owl {
+    height: 1.65rem;
+    width: 1.65rem;
+  }
+
+  html[data-device="phone"] .hero-pitch .hero-typewriter-mark--uniswap {
+    height: 2.1rem;
+    width: 2.1rem;
+  }
+
+  html[data-device="phone"] .hero-pitch-line--hold {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  html[data-device="phone"] .lean-hero .pairing-logo-stack--sm {
+    --pairing-stack-size: 1.65rem;
+    --pairing-stack-overlap: 0.5rem;
   }
 
   html[data-device="desktop"] .stonk-ticker,
@@ -3256,14 +3317,12 @@
     display: none;
   }
 
-  @media (min-width: 768px) {
-    .launch-coin-nav--full {
-      display: inline-flex;
-    }
+  html[data-device="desktop"] .launch-coin-nav--full {
+    display: inline-flex;
+  }
 
-    .launch-coin-nav--icon {
-      display: none;
-    }
+  html[data-device="desktop"] .launch-coin-nav--icon {
+    display: none;
   }
 
   .launch-coin {
@@ -4181,6 +4240,20 @@
 
   html[data-device="phone"] .token-desk--hooks .token-hook-pulse {
     order: 4;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+  }
+
+  html[data-device="phone"] .token-desk--hooks .token-hook-pulse-card {
+    position: relative;
+    inset: auto;
+    min-height: 10.75rem;
+    container-type: inline-size;
+  }
+
+  html[data-device="phone"] .token-desk--hooks .token-hook-pulse-desc {
+    display: -webkit-box;
   }
 
   html[data-device="phone"] .token-desk--hooks .token-desk-fees {
@@ -4208,7 +4281,7 @@
     font: inherit;
     appearance: none;
     cursor: pointer;
-    container-type: size;
+    container-type: inline-size;
     transition: border-color 0.35s ease, box-shadow 0.35s ease;
     background:
       radial-gradient(120% 90% at 110% 10%, color-mix(in srgb, var(--pulse-accent) 28%, transparent), transparent 62%),
@@ -4454,6 +4527,7 @@
     .token-desk--hooks .token-hook-pulse-card {
       position: absolute;
       inset: 0;
+      container-type: size;
     }
 
     .token-desk--hooks .token-desk-fees {
