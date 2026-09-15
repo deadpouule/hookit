@@ -8122,6 +8122,13 @@
     gap: 0.35rem 0.5rem;
   }
 
+  .hero-pitch-marks {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.22rem;
+  }
+
   .hero-pitch-line--badge {
     margin-top: 0.2rem;
   }

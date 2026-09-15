@@ -64,9 +64,11 @@ export function TypewriterTitle() {
         </span>
         <span className="hero-pitch-line">
           Multi-pair pools
-          <PairingLogoStack size="sm" ids={STOCK_PAIRING_IDS as PairingTokenId[]} />
-          <EthMark />
-          <UsdgMark />
+          <span className="hero-pitch-marks">
+            <PairingLogoStack size="sm" ids={STOCK_PAIRING_IDS as PairingTokenId[]} />
+            <EthMark />
+            <UsdgMark />
+          </span>
         </span>
         <span className="hero-pitch-line">Hold one. Collect all tokens.</span>
         <span className="hero-pitch-line hero-pitch-line--badge">
