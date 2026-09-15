@@ -207,7 +207,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
     let mappedCandles: LiveCandle[] = fromTrades;
     if (fromTrades.length && candles5m.length) {
       const firstTrade = fromTrades[0]!.t!;
-      mappedCandles = [...candles5m.filter((c) => (c.t ?? 0) + 300 < firstTrade), ...fromTrades];
+      mappedCandles = [...candles5m.filter((c) => (c.t ?? 0) + 60 < firstTrade), ...fromTrades];
     } else if (!fromTrades.length) {
       mappedCandles = candles5m;
     }

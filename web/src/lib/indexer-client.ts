@@ -195,10 +195,15 @@ export function fetchIndexerHolders(address: string, limit = 50) {
   );
 }
 
-export function fetchIndexerCandles(address: string, limit = 200, poolId?: string) {
+export function fetchIndexerCandles(
+  address: string,
+  limit = 200,
+  poolId?: string,
+  interval: "1m" | "5m" = "1m",
+) {
   const poolQ = poolId ? `&poolId=${encodeURIComponent(poolId)}` : "";
   return getJson<{ token: string; interval: string; candles: IndexerCandle[] }>(
-    `/v1/tokens/${address}/candles?limit=${limit}${poolQ}`,
+    `/v1/tokens/${address}/candles?limit=${limit}&interval=${interval}${poolQ}`,
   );
 }
 

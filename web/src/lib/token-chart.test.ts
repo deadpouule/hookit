@@ -4,29 +4,41 @@ import test from "node:test";
 import {
   mergeChartSeries,
   aggregateBars,
+  applyTicksToBuckets,
   barChangePct,
   barsForInterval,
-  CHART_MAX_BAR_SPACING,
-  CHART_MIN_WINDOW_BARS,
+  CHART_MIN_BAR_SPACING,
+  CHART_MIN_VISIBLE_BARS,
   CHART_RIGHT_OFFSET,
   CHART_WINDOW_BARS,
+  chartFitWindowBars,
+  chartFitFirstRealIndex,
   chartPriceBand,
+  chartRenderableCandle,
+  repriceBarsWithQuoteFx,
   chartVisibleLogicalRange,
   chartWindowBars,
   dropCarryForwardBars,
+  visibleExtremes,
+  visiblePriceBand,
+  definedWhitespaceTape,
+  ensureCurrentBar,
   fillEmptyBars,
   formatChartAxis,
   formatChartUsd,
   liveCandlesToBars,
   chartHudBar,
   isSyntheticBar,
+  isWhitespaceBar,
   pickChartBars,
   pinLiveMcap,
   priceBarsToMcap,
   scaleBars,
   seedLaunchBars,
   ticksToBars,
+  tradesOnBars,
   visibleCandleOhlc,
+  volumeSma,
 } from "./token-chart";
 import { TOTAL_SUPPLY } from "./token-live";
 import type { LiveCandle } from "./token-live";
@@ -237,35 +249,29 @@ test("visibleCandleOhlc gives a single print a small body", () => {
   assert.equal(real.high, 110);
 });
 
-test("opening window hugs real prints when barCount is known", () => {
-  assert.equal(chartWindowBars(60, 1, 100, 1), 10);
-  assert.equal(chartWindowBars(60, 1, 100, 3), 10);
-  assert.equal(chartWindowBars(60, 1, 100, 20), 25);
-  assert.equal(chartWindowBars(60, 1, 100, 80), CHART_WINDOW_BARS);
-});
-
-test("opening window is 72 bars, the token's age when younger, never under 20", () => {
+test("opening window is always 72 bars, like Defined Codex", () => {
   const now = 1_800_000_000;
   assert.equal(chartWindowBars(300, undefined, now), CHART_WINDOW_BARS);
-  assert.equal(chartWindowBars(300, now - 14, now), CHART_MIN_WINDOW_BARS);
-  assert.equal(chartWindowBars(300, now - 40 * 300, now), 40);
+  assert.equal(chartWindowBars(300, now - 14, now), CHART_WINDOW_BARS);
+  assert.equal(chartWindowBars(300, now - 40 * 300, now), CHART_WINDOW_BARS);
   assert.equal(chartWindowBars(300, now - 10_000 * 300, now), CHART_WINDOW_BARS);
 });
 
-test("candles pin to the right axis with the window stretched across the pane", () => {
-  const fresh = chartVisibleLogicalRange(1, 364, CHART_MIN_WINDOW_BARS);
+test("candles stretch a 72-bar Defined window across the pane", () => {
+  const fresh = chartVisibleLogicalRange(1, 364, CHART_WINDOW_BARS);
   assert.ok(fresh);
   assert.equal(fresh.to, 0 + CHART_RIGHT_OFFSET + 0.5);
-  assert.equal(fresh.barSpacing, 364 / 25);
-  assert.equal(fresh.to - fresh.from, 25);
+  const slots = CHART_WINDOW_BARS + CHART_RIGHT_OFFSET;
+  assert.equal(fresh.barSpacing, Math.max(364 / slots, CHART_MIN_BAR_SPACING));
+  assert.equal(fresh.to - fresh.from, Math.floor(364 / fresh.barSpacing));
   const desk = chartVisibleLogicalRange(120, 1038, CHART_WINDOW_BARS);
   assert.ok(desk);
   assert.equal(desk.to, 119 + CHART_RIGHT_OFFSET + 0.5);
-  assert.equal(desk.barSpacing, 1038 / 77);
-  assert.equal(desk.to - desk.from, Math.floor(1038 / (1038 / 77)));
-  const wide = chartVisibleLogicalRange(1, 1400, CHART_MIN_WINDOW_BARS);
+  assert.equal(desk.barSpacing, 1038 / slots);
+  assert.equal(desk.to - desk.from, Math.floor(1038 / desk.barSpacing));
+  const wide = chartVisibleLogicalRange(1, 1400, CHART_WINDOW_BARS);
   assert.ok(wide);
-  assert.equal(wide.barSpacing, CHART_MAX_BAR_SPACING);
+  assert.equal(wide.barSpacing, 1400 / slots);
   assert.equal(chartVisibleLogicalRange(0), null);
 });
 
@@ -278,6 +284,27 @@ test("chartPriceBand hugs the visible range so one trade fills the pane", () => 
   assert.ok(flat.maxValue > 0.000003);
   assert.ok(flat.maxValue - flat.minValue < 0.000003 * 0.005);
   assert.equal(chartPriceBand(0, 0), null);
+});
+
+test("chartRenderableCandle gives a doji a Defined-like body without changing HUD math", () => {
+  const doji = { time: 1, open: 5, high: 5, low: 5, close: 5, volume: 2 };
+  const drawn = chartRenderableCandle(doji);
+  assert.equal(drawn.close, 5);
+  assert.ok(drawn.close > drawn.open);
+  assert.ok(drawn.high - drawn.low < 5 * 0.0004);
+  assert.equal(barChangePct(doji), 0);
+});
+
+test("repriceBarsWithQuoteFx marks LEE with historical wMSTR USD like Defined", () => {
+  const liveQuoteUsd = 131;
+  const lee = [{ time: 100, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
+  const fx = [
+    { time: 100, open: 142, high: 142, low: 128, close: 128, volume: 1 },
+  ];
+  const marked = repriceBarsWithQuoteFx(lee, fx, liveQuoteUsd);
+  assert.ok(marked[0]!.open > 5300);
+  assert.ok(marked[0]!.close < 5000);
+  assert.ok(marked[0]!.close > 4800);
 });
 
 test("formatChartAxis uses TradingView subscript zeros for price", () => {
@@ -302,6 +329,41 @@ test("barChangePct is the candle open-to-close move", () => {
   );
 });
 
+test("volumeSma is the TradingView 20-period overlay", () => {
+  const bars = [10, 20, 30].map((volume, i) => ({
+    time: i,
+    open: 1,
+    high: 1,
+    low: 1,
+    close: 1,
+    volume,
+  }));
+  const sma = volumeSma(bars, 2);
+  assert.equal(sma.length, 3);
+  assert.equal(sma[0]!.value, 10);
+  assert.equal(sma[1]!.value, 15);
+  assert.equal(sma[2]!.value, 25);
+});
+
+test("tradesOnBars snaps swaps onto the candle they print in", () => {
+  const bars = [
+    { time: 600, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+    { time: 900, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+  ];
+  const marked = tradesOnBars(
+    [
+      { t: 610, side: "buy" },
+      { t: 950, side: "sell" },
+    ],
+    bars,
+  );
+  assert.equal(marked.length, 2);
+  assert.equal(marked[0]!.t, 600);
+  assert.equal(marked[0]!.side, "buy");
+  assert.equal(marked[1]!.t, 900);
+  assert.equal(marked[1]!.side, "sell");
+});
+
 test("mergeChartSeries does not double count a trade present in both candles and swaps", () => {
   const candles = [{ time: 600, open: 100, high: 110, low: 95, close: 105, volume: 2.5 }];
   const swaps = [
@@ -316,3 +378,161 @@ test("mergeChartSeries does not double count a trade present in both candles and
   assert.equal(merged[0]!.close, 105);
   assert.equal(merged[1]!.volume, 1);
 });
+
+test("definedWhitespaceTape stretches 72 Defined slots and keeps time gaps", () => {
+  const bucket = 300;
+  const end = 1_700_021_400;
+  const first = end - 40 * bucket;
+  const tape = definedWhitespaceTape(
+    [
+      { time: first, open: 10, high: 12, low: 9, close: 11, volume: 4 },
+      { time: end, open: 11, high: 13, low: 10, close: 12, volume: 2 },
+    ],
+    bucket,
+    end,
+  );
+  assert.equal(tape.length, CHART_WINDOW_BARS);
+  assert.equal(tape[tape.length - 1]!.time, end);
+  assert.equal(isWhitespaceBar(tape[tape.length - 1]!), false);
+  const real = tape.filter((b) => !isWhitespaceBar(b));
+  assert.equal(real.length, 2);
+  const idx0 = tape.findIndex((b) => b.time === first);
+  const idx1 = tape.findIndex((b) => b.time === end);
+  assert.equal(idx1 - idx0, 40);
+  assert.ok(tape.slice(idx0 + 1, idx1).every(isWhitespaceBar));
+  assert.ok(isWhitespaceBar(tape[0]!));
+});
+
+test("definedWhitespaceTape does not pack hours-apart 5m prints as neighbors", () => {
+  const bucket = 300;
+  const t0 = 1_789_431_300;
+  const t1 = t0 + 4 * 3600;
+  const now = t1 + 15 * 60;
+  const tape = definedWhitespaceTape(
+    [
+      { time: t0, open: 4810, high: 4810, low: 4810, close: 4810, volume: 1 },
+      { time: t1, open: 4950, high: 4950, low: 4950, close: 4950, volume: 40 },
+    ],
+    bucket,
+    now,
+  );
+  const a = tape.findIndex((b) => b.time === Math.floor(t0 / bucket) * bucket);
+  const b = tape.findIndex((b) => b.time === Math.floor(t1 / bucket) * bucket);
+  assert.ok(a >= 0 && b >= 0);
+  assert.equal(b - a, (t1 - t0) / bucket);
+  assert.ok(b - a > 1);
+});
+
+test("barsForInterval rolls sparse 5m prints into a 1h candle with a wick", () => {
+  const bars = [
+    { time: 0, open: 100, high: 100, low: 100, close: 100, volume: 1 },
+    { time: 300, open: 102, high: 102, low: 102, close: 102, volume: 1 },
+    { time: 1_200, open: 90, high: 90, low: 90, close: 90, volume: 2 },
+  ];
+  const hourly = barsForInterval(bars, "1h");
+  assert.equal(hourly.length, 1);
+  assert.equal(hourly[0]!.open, 100);
+  assert.equal(hourly[0]!.high, 102);
+  assert.equal(hourly[0]!.low, 90);
+  assert.equal(hourly[0]!.close, 90);
+  assert.equal(hourly[0]!.volume, 4);
+});
+
+test("applyTicksToBuckets opens a 1m slot instead of smearing onto the previous print", () => {
+  const bars = [{ time: 600, open: 10, high: 10, low: 10, close: 10, volume: 1 }];
+  const next = applyTicksToBuckets(bars, [{ t: 1_000, price: 12, volume: 2 }], 60);
+  assert.equal(next.length, 2);
+  assert.equal(next[0]!.time, 600);
+  assert.equal(next[0]!.close, 10);
+  assert.equal(next[1]!.time, 960);
+  assert.equal(next[1]!.close, 12);
+  assert.equal(next[1]!.volume, 2);
+});
+
+test("ensureCurrentBar draws the in-progress bucket at the live price", () => {
+  const bars = [{ time: 1_700_000_040, open: 10, high: 11, low: 9, close: 10.5, volume: 4 }];
+  const cur = ensureCurrentBar(bars, 60, 1_700_000_130, 12);
+  assert.equal(cur.length, 2);
+  assert.equal(cur[1]!.time, 1_700_000_100);
+  assert.equal(cur[1]!.open, 10.5);
+  assert.equal(cur[1]!.close, 12);
+  assert.equal(cur[1]!.volume, 0);
+});
+
+test("Defined auto-fit keeps 5m at 72-bar pitch instead of squeezing the whole life", () => {
+  const first = 0;
+  const tapeLength = 156;
+  assert.equal(chartFitWindowBars(tapeLength, first), CHART_WINDOW_BARS);
+});
+
+test("quiet 5m auto-fit zooms into the last print like Defined 1h", () => {
+  const tape = Array.from({ length: 156 }, (_, i) => ({
+    time: i,
+    open: i === 155 ? 5 : 0,
+    high: i === 155 ? 5 : 0,
+    low: i === 155 ? 5 : 0,
+    close: i === 155 ? 5 : 0,
+    volume: i === 155 ? 2 : 0,
+    whitespace: i !== 155,
+  }));
+  const first = chartFitFirstRealIndex(tape);
+  assert.equal(first, 155);
+  assert.equal(chartFitWindowBars(tape.length, first), CHART_MIN_VISIBLE_BARS);
+});
+
+test("visible Y-axis ignores off-screen history so a late doji fills the pane", () => {
+  const morning = { time: 1, open: 1, high: 1, low: 1, close: 1, volume: 10 };
+  const late = { time: 155, open: 5, high: 5, low: 5, close: 5, volume: 2 };
+  const tape = Array.from({ length: 156 }, (_, i) =>
+    i === 0 ? morning : i === 155 ? late : { time: i, open: 0, high: 0, low: 0, close: 0, volume: 0, whitespace: true as const },
+  );
+  const all = visibleExtremes(tape, 0, 155);
+  assert.equal(all?.atl, 1);
+  assert.equal(all?.ath, 5);
+  const vis = visibleExtremes(tape, 84, 155);
+  assert.equal(vis?.atl, 5);
+  assert.equal(vis?.ath, 5);
+  const band = visiblePriceBand(tape, 84, 155);
+  assert.ok(band);
+  assert.ok(band!.minValue < 5);
+  assert.ok(band!.maxValue > 5);
+});
+
+test("quiet 15m auto-fit ignores morning empties and zooms the last prints", () => {
+  const tape = Array.from({ length: 52 }, (_, i) => ({
+    time: i,
+    open: i === 0 || i === 51 ? 5 : 0,
+    high: i === 0 || i === 51 ? 5 : 0,
+    low: i === 0 || i === 51 ? 5 : 0,
+    close: i === 0 || i === 51 ? 5 : 0,
+    volume: i === 0 || i === 51 ? 2 : 0,
+    whitespace: i !== 0 && i !== 51,
+  }));
+  const first = chartFitFirstRealIndex(tape);
+  assert.equal(first, 51);
+  assert.equal(chartFitWindowBars(tape.length, first), CHART_MIN_VISIBLE_BARS);
+});
+
+test("Defined auto-fit zooms into two hourly prints instead of 72 empty hours", () => {
+  const fitted = chartFitWindowBars(72, 59);
+  assert.equal(fitted, 21);
+  assert.ok(fitted < CHART_WINDOW_BARS);
+});
+
+test("1m auto-fit keeps Defined 72-bar pitch on a long tape", () => {
+  assert.equal(chartFitWindowBars(780, 0), CHART_WINDOW_BARS);
+});
+
+test("chartHudBar ignores whitespace slots", () => {
+  const bars = definedWhitespaceTape(
+    [{ time: 1_700_000_000, open: 10, high: 12, low: 9, close: 11, volume: 4 }],
+    300,
+    1_700_000_000,
+  );
+  const hud = chartHudBar(bars, null);
+  assert.equal(hud?.close, 11);
+  assert.equal(hud?.volume, 4);
+  assert.equal(isWhitespaceBar(bars[0]!), true);
+  assert.equal(chartHudBar(bars, bars[0]!)?.close, 11);
+});
+

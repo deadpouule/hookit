@@ -42,7 +42,7 @@ export function useTokenIndexerData(
   const poolId = opts?.poolId ?? undefined;
 
   return useQuery({
-    queryKey: ["indexer-token-bundle", address, poolId, tradesLimit, holdersLimit, candlesLimit],
+    queryKey: ["indexer-token-bundle", address, poolId, tradesLimit, holdersLimit, candlesLimit, "1m"],
     enabled: !!address && opts?.enabled !== false,
     queryFn: async (): Promise<TokenIndexerBundle> => {
       if (!address) {
@@ -54,7 +54,7 @@ export function useTokenIndexerData(
           trades: [] as IndexerTrade[],
         })),
         fetchIndexerHolders(address, holdersLimit).catch(() => ({ holders: [] as IndexerHolder[] })),
-        fetchIndexerCandles(address, candlesLimit, poolId).catch(() => ({
+        fetchIndexerCandles(address, candlesLimit, poolId, "1m").catch(() => ({
           candles: [] as IndexerCandle[],
         })),
       ]);

@@ -3574,25 +3574,79 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px 12px;
-    padding: 8px 12px;
+    gap: 6px 10px;
+    padding: 6px 10px;
     border-bottom: 1px solid var(--border);
   }
 
-  .token-chart-legend {
+  .token-chart-tfs,
+  .token-chart-toggles {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .token-chart-tf,
+  .token-chart-toggle,
+  .token-chart-reset,
+  .token-chart-leg {
+    min-height: 28px;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: #a1a1aa;
+    transition: color 0.12s ease, background 0.12s ease;
+  }
+
+  .token-chart-tf:hover,
+  .token-chart-toggle:hover,
+  .token-chart-reset:hover,
+  .token-chart-leg:hover {
+    color: #fafafa;
+  }
+
+  .token-chart-tf.is-active,
+  .token-chart-toggle.is-active {
+    color: #fafafa;
+    background: #232327;
+  }
+
+  .token-chart-leg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .token-chart-leg.is-active {
+    color: #fff;
+    background: #9514d1;
+  }
+
+  .token-chart-reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+  }
+
+  .token-chart-hud {
+    pointer-events: none;
+    position: absolute;
+    inset: 8px 80px auto 10px;
+    z-index: 4;
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 6px 14px;
-    padding: 6px 14px;
-    border-bottom: 1px solid rgb(255 255 255 / 0.04);
+    gap: 4px 12px;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
     line-height: 1.4;
     color: #d4d4d8;
+    text-shadow: 0 1px 2px rgb(17 17 17 / 0.9);
   }
 
-  .token-chart-legend-id {
+  .token-chart-hud-id {
     font-weight: 500;
     color: #f4f4f5;
   }
@@ -3602,7 +3656,7 @@
   }
 
   .token-chart-plot {
-    background: var(--surface);
+    background: #111111;
   }
 
   /* TradingView Advanced Charts: the card is the chart (Tsunami 460 / 300). */

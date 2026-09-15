@@ -451,6 +451,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             name={pool.name}
             launchedAt={pool.launchedAt}
             quoteAddress={activePool.quoteAddress}
+            quoteUsd={activePool.quoteUsd}
             marketLegs={multi ? marketLegs : undefined}
             activeMarketIndex={marketIndex}
             onMarketIndex={multi ? setMarketIndex : undefined}

@@ -197,7 +197,7 @@ export function definedChartUrl(tokenAddress: string | undefined | null): string
   const token = tokenAddress?.trim();
   if (!token || !/^0x[a-fA-F0-9]{40}$/.test(token)) return undefined;
   const network = resolveHookitChainKey() === "ink" ? "ink" : "base";
-  return `https://www.defined.fi/${network}/${token.toLowerCase()}`;
+  return `https://www.defined.fi/token/${network}/${token.toLowerCase()}`;
 }
 
 /** Uniswap web app swap for this token (already listed on the active chain). */

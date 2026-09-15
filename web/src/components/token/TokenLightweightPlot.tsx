@@ -8,19 +8,39 @@ import {
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
+  CHART_VOLUME_MARGIN_TOP,
   CHART_WINDOW_BARS,
-  chartPriceBand,
   chartRangeSignature,
+  chartRenderableCandle,
   chartVisibleLogicalRange,
   formatChartAxis,
-  visibleCandleOhlc,
+  intervalBucketSec,
+  isWhitespaceBar,
+  visibleExtremes,
+  visiblePriceBand,
+  visibleVolumePeak,
+  volumeSma,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
   type ChartStyle,
 } from "@/lib/token-chart";
-import { TV_CANDLE_DOWN, TV_CANDLE_UP, TV_CHART_BG, TV_CHART_GRID, TV_CHART_SCALE_TEXT } from "@/lib/tv-chart";
-import type { AutoscaleInfoProvider, IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
+import {
+  TV_CANDLE_DOWN,
+  TV_CANDLE_UP,
+  TV_CHART_BG,
+  TV_CHART_GRID,
+  TV_CHART_SCALE_TEXT,
+  TV_VOLUME_DOWN,
+  TV_VOLUME_UP,
+} from "@/lib/tv-chart";
+import type {
+  AutoscaleInfoProvider,
+  IChartApi,
+  IPriceLine,
+  ISeriesApi,
+  UTCTimestamp,
+} from "lightweight-charts";
 
 const UP = TV_CANDLE_UP;
 const DOWN = TV_CANDLE_DOWN;
@@ -36,7 +56,6 @@ type TokenLightweightPlotProps = {
   style: ChartStyle;
   scale: ChartScale;
   interval?: ChartInterval;
-  /** Bars stretched across the pane on (re)fit - TradingView `timeframe`. */
   windowBars?: number;
   lineColor?: string;
   fitNonce?: number;
@@ -48,17 +67,35 @@ type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
 type ChartHandle = {
   chart: IChartApi;
   price: PriceSeries;
+  volume: ISeriesApi<"Histogram">;
+  volumeSma: ISeriesApi<"Line">;
+  athLine: IPriceLine | null;
+  atlLine: IPriceLine | null;
   style: ChartStyle;
 };
 
-/** Candles fill the pane with a little pad for the last-value label. */
-const padPriceRange: AutoscaleInfoProvider = (original) => {
-  const res = original();
-  if (!res?.priceRange) return res;
-  const band = chartPriceBand(res.priceRange.minValue, res.priceRange.maxValue);
-  if (!band) return res;
-  return { ...res, priceRange: band };
-};
+function visibleLogicalRangeOf(chart: IChartApi | null) {
+  return chart?.timeScale().getVisibleLogicalRange() ?? null;
+}
+
+/** Scale Y to the candles on screen — Defined auto, not the whole history. */
+function visiblePriceAutoscale(getBars: () => ChartBar[], getChart: () => IChartApi | null): AutoscaleInfoProvider {
+  return () => {
+    const vis = visibleLogicalRangeOf(getChart());
+    const band = visiblePriceBand(getBars(), vis?.from, vis?.to);
+    if (!band) return null;
+    return { priceRange: band };
+  };
+}
+
+function visibleVolumeAutoscale(getBars: () => ChartBar[], getChart: () => IChartApi | null): AutoscaleInfoProvider {
+  return () => {
+    const vis = visibleLogicalRangeOf(getChart());
+    const peak = visibleVolumePeak(getBars(), vis?.from, vis?.to);
+    if (!(peak > 0)) return null;
+    return { priceRange: { minValue: 0, maxValue: peak } };
+  };
+}
 
 function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
   for (let i = bars.length - 1; i >= 0; i--) {
@@ -67,10 +104,29 @@ function lookupBar(bars: ChartBar[], time: number): ChartBar | undefined {
   return undefined;
 }
 
+function lastRealBar(bars: ChartBar[]): ChartBar | undefined {
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (!isWhitespaceBar(bars[i]!)) return bars[i];
+  }
+  return undefined;
+}
+
 function lastBarUp(bars: ChartBar[]): boolean {
-  const last = bars[bars.length - 1];
+  const last = lastRealBar(bars);
   if (!last) return true;
   return last.close >= last.open;
+}
+
+function priceFormatFor(scale: ChartScale) {
+  return {
+    type: "custom" as const,
+    minMove: scale === "mcap" ? 0.01 : 1e-12,
+    formatter: (price: number) => formatChartAxis(price, scale),
+  };
+}
+
+function asTime(bar: ChartBar): UTCTimestamp {
+  return bar.time as UTCTimestamp;
 }
 
 async function attachPriceSeries(
@@ -79,11 +135,9 @@ async function attachPriceSeries(
   style: ChartStyle,
   scale: ChartScale,
   lineColor: string,
+  autoscale: AutoscaleInfoProvider,
 ): Promise<PriceSeries> {
-  const priceFormat =
-    scale === "mcap"
-      ? { type: "price" as const, precision: 2, minMove: 0.01 }
-      : { type: "price" as const, precision: 12, minMove: 1e-12 };
+  const priceFormat = priceFormatFor(scale);
 
   if (style === "line") {
     return chart.addSeries(tv.LineSeries, {
@@ -97,7 +151,7 @@ async function attachPriceSeries(
       priceLineWidth: 1,
       priceLineStyle: tv.LineStyle.Dashed,
       priceFormat,
-      autoscaleInfoProvider: padPriceRange,
+      autoscaleInfoProvider: autoscale,
     });
   }
 
@@ -114,21 +168,104 @@ async function attachPriceSeries(
     priceLineWidth: 1,
     priceLineStyle: tv.LineStyle.Dashed,
     priceFormat,
-    autoscaleInfoProvider: padPriceRange,
+    autoscaleInfoProvider: autoscale,
   });
 }
 
-/** Pin the newest candle against the right axis with the opening window across the pane. */
-function fitChartView(chart: IChartApi, barCount: number, windowBars: number) {
+function attachVolumeSeries(
+  chart: IChartApi,
+  tv: typeof import("lightweight-charts"),
+  autoscale: AutoscaleInfoProvider,
+): { volume: ISeriesApi<"Histogram">; volumeSma: ISeriesApi<"Line"> } {
+  const volume = chart.addSeries(tv.HistogramSeries, {
+    priceScaleId: "volume",
+    priceFormat: { type: "volume" },
+    lastValueVisible: false,
+    priceLineVisible: false,
+    autoscaleInfoProvider: autoscale,
+  });
+  const volumeSmaSeries = chart.addSeries(tv.LineSeries, {
+    priceScaleId: "volume",
+    color: "#d97706",
+    lineWidth: 1,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    crosshairMarkerVisible: false,
+  });
+  chart.priceScale("volume").applyOptions({
+    visible: false,
+    scaleMargins: { top: CHART_VOLUME_MARGIN_TOP, bottom: 0 },
+  });
+  return { volume, volumeSma: volumeSmaSeries };
+}
+
+/** Pin the newest candle against the right axis at Defined pitch. */
+function resizeChartToHost(chart: IChartApi, host: HTMLElement | null) {
+  if (!host) return false;
+  const width = host.clientWidth;
+  const height = host.clientHeight;
+  if (width < 8 || height < 8) return false;
+  chart.resize(width, height);
+  return true;
+}
+
+function fitChartView(chart: IChartApi, bars: ChartBar[], windowBars: number, bucketSec: number) {
+  if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const range = chartVisibleLogicalRange(barCount, width > 0 ? width : undefined, windowBars);
+  const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, windowBars);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
+  const last = bars[bars.length - 1]!;
+  const step = Math.max(bucketSec, 1);
+  const fromTime = last.time - (Math.max(windowBars, 1) - 1) * step;
+  const from = Math.max(fromTime, bars[0]!.time);
+  const to = last.time + CHART_RIGHT_OFFSET * step;
+  if (to > from) {
+    timeScale.setVisibleRange({ from: from as UTCTimestamp, to: to as UTCTimestamp });
+    return;
+  }
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
-function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, windowBars: number, refit = true) {
+function applyAthAtl(
+  handle: ChartHandle,
+  tv: typeof import("lightweight-charts"),
+  bars: ChartBar[],
+) {
+  if (handle.athLine) {
+    handle.price.removePriceLine(handle.athLine);
+    handle.athLine = null;
+  }
+  if (handle.atlLine) {
+    handle.price.removePriceLine(handle.atlLine);
+    handle.atlLine = null;
+  }
+  const vis = visibleLogicalRangeOf(handle.chart);
+  const ext = visibleExtremes(bars, vis?.from, vis?.to);
+  if (!ext) return;
+  const { ath, atl } = ext;
+  const style = {
+    color: "rgba(250,250,250,0.4)",
+    lineWidth: 1 as const,
+    lineStyle: tv.LineStyle.Dashed,
+    axisLabelVisible: true,
+  };
+  handle.athLine = handle.price.createPriceLine({ ...style, price: ath, title: "ATH" });
+  if (atl < ath) {
+    handle.atlLine = handle.price.createPriceLine({ ...style, price: atl, title: "ATL" });
+  }
+}
+
+function applyBars(
+  handle: ChartHandle,
+  tv: typeof import("lightweight-charts") | null,
+  next: ChartBar[],
+  lineColor: string,
+  windowBars: number,
+  bucketSec: number,
+  refit = true,
+) {
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
 
@@ -136,10 +273,9 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, win
     const series = handle.price as ISeriesApi<"Line">;
     series.applyOptions({ color: lineColor, priceLineColor: lineColor });
     series.setData(
-      next.map((b) => ({
-        time: b.time as UTCTimestamp,
-        value: b.close,
-      })),
+      next.map((b) =>
+        isWhitespaceBar(b) ? { time: asTime(b) } : { time: asTime(b), value: b.close },
+      ),
     );
   } else {
     (handle.price as ISeriesApi<"Candlestick">).applyOptions({
@@ -147,20 +283,38 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, win
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => {
-        const ohlc = visibleCandleOhlc(b);
-        return {
-          time: b.time as UTCTimestamp,
-          ...ohlc,
-        };
+        if (isWhitespaceBar(b)) return { time: asTime(b) };
+        const c = chartRenderableCandle(b);
+        return { time: asTime(b), open: c.open, high: c.high, low: c.low, close: c.close };
       }),
     );
   }
 
-  // No volume study on the pane (Advanced Charts desk default); volume lives in the legend.
+  handle.volume.setData(
+    next.map((b) =>
+      isWhitespaceBar(b) || !(b.volume > 0)
+        ? { time: asTime(b) }
+        : {
+            time: asTime(b),
+            value: b.volume,
+            color: b.close >= b.open ? TV_VOLUME_UP : TV_VOLUME_DOWN,
+          },
+    ),
+  );
+  handle.volumeSma.setData(
+    volumeSma(next).map((p) => ({
+      time: p.time as UTCTimestamp,
+      value: p.value,
+    })),
+  );
+
+  resizeChartToHost(handle.chart, handle.chart.chartElement());
+  if (refit) fitChartView(handle.chart, next, windowBars, bucketSec);
+  if (tv) applyAthAtl(handle, tv, next);
+
   handle.price.priceScale().applyOptions({
     scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
   });
-  if (refit) fitChartView(handle.chart, next.length, windowBars);
 }
 
 export function TokenLightweightPlot({
@@ -186,9 +340,13 @@ export function TokenLightweightPlot({
   const lineColorRef = useRef(lineColor);
   lineColorRef.current = lineColor;
   const windowBarsRef = useRef(windowBars);
+  const intervalRef = useRef(interval);
   useEffect(() => {
     windowBarsRef.current = windowBars;
   }, [windowBars]);
+  useEffect(() => {
+    intervalRef.current = interval;
+  }, [interval]);
   const rangeSigRef = useRef("");
   const tvRef = useRef<typeof import("lightweight-charts") | null>(null);
 
@@ -196,14 +354,18 @@ export function TokenLightweightPlot({
     const host = hostRef.current;
     if (!host) return;
     let disposed = false;
+    let resize: ResizeObserver | null = null;
 
     void (async () => {
       const tv = await import("lightweight-charts");
       if (disposed || !hostRef.current) return;
       tvRef.current = tv;
 
-      const chart = tv.createChart(hostRef.current, {
-        autoSize: true,
+      const hostEl = hostRef.current;
+      const chart = tv.createChart(hostEl, {
+        autoSize: false,
+        width: Math.max(hostEl.clientWidth, 320),
+        height: Math.max(hostEl.clientHeight, 240),
         layout: {
           background: { type: tv.ColorType.Solid, color: SURFACE },
           textColor: AXIS,
@@ -252,13 +414,52 @@ export function TokenLightweightPlot({
         },
       });
 
-      const price = await attachPriceSeries(chart, tv, styleRef.current, scaleRef.current, lineColorRef.current);
+      const priceAutoscale = visiblePriceAutoscale(
+        () => pendingBarsRef.current,
+        () => chart,
+      );
+      const volumeAutoscale = visibleVolumeAutoscale(
+        () => pendingBarsRef.current,
+        () => chart,
+      );
+      const price = await attachPriceSeries(
+        chart,
+        tv,
+        styleRef.current,
+        scaleRef.current,
+        lineColorRef.current,
+        priceAutoscale,
+      );
+      const { volume, volumeSma: volumeSmaSeries } = attachVolumeSeries(chart, tv, volumeAutoscale);
 
-      const handle: ChartHandle = { chart, price, style: styleRef.current };
+      const handle: ChartHandle = {
+        chart,
+        price,
+        volume,
+        volumeSma: volumeSmaSeries,
+        athLine: null,
+        atlLine: null,
+        style: styleRef.current,
+      };
       handleRef.current = handle;
+      resizeChartToHost(chart, hostRef.current);
       const next = pendingBarsRef.current;
-      rangeSigRef.current = chartRangeSignature(next, interval);
-      applyBars(handle, next, lineColorRef.current, windowBarsRef.current);
+      rangeSigRef.current = chartRangeSignature(next, interval, windowBarsRef.current);
+      applyBars(
+        handle,
+        tv,
+        next,
+        lineColorRef.current,
+        windowBarsRef.current,
+        intervalBucketSec(intervalRef.current ?? "1h"),
+      );
+
+      chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+        const live = handleRef.current;
+        const lib = tvRef.current;
+        if (!live || !lib) return;
+        applyAthAtl(live, lib, pendingBarsRef.current);
+      });
 
       chart.subscribeCrosshairMove((param) => {
         if (!param.time || !param.seriesData.size) {
@@ -267,16 +468,53 @@ export function TokenLightweightPlot({
         }
         const time = Number(param.time);
         const fromBars = lookupBar(pendingBarsRef.current, time);
-        if (fromBars) {
+        if (fromBars && !isWhitespaceBar(fromBars)) {
           onHoverRef.current(fromBars);
           return;
         }
         onHoverRef.current(null);
       });
+
+      let lastWidth = 0;
+      let lastHeight = 0;
+      resize = new ResizeObserver(() => {
+        const live = handleRef.current;
+        const el = hostRef.current;
+        if (!live || !el) return;
+        const width = el.clientWidth;
+        const height = el.clientHeight;
+        if (width < 8 || height < 8) return;
+        if (Math.abs(width - lastWidth) < 2 && Math.abs(height - lastHeight) < 2) return;
+        lastWidth = width;
+        lastHeight = height;
+        resizeChartToHost(live.chart, el);
+        fitChartView(
+          live.chart,
+          pendingBarsRef.current,
+          windowBarsRef.current,
+          intervalBucketSec(intervalRef.current ?? "1h"),
+        );
+      });
+      resize.observe(hostRef.current);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (disposed || !handleRef.current || !hostRef.current) return;
+          lastWidth = hostRef.current.clientWidth;
+          lastHeight = hostRef.current.clientHeight;
+          resizeChartToHost(handleRef.current.chart, hostRef.current);
+          fitChartView(
+            handleRef.current.chart,
+            pendingBarsRef.current,
+            windowBarsRef.current,
+            intervalBucketSec(intervalRef.current ?? "1h"),
+          );
+        });
+      });
     })();
 
     return () => {
       disposed = true;
+      resize?.disconnect();
       onHoverRef.current(null);
       handleRef.current?.chart.remove();
       handleRef.current = null;
@@ -288,12 +526,31 @@ export function TokenLightweightPlot({
     const tv = tvRef.current;
     if (!handle || !tv) return;
     if (handle.style === style) return;
+    handle.athLine = null;
+    handle.atlLine = null;
     handle.chart.removeSeries(handle.price);
-    void attachPriceSeries(handle.chart, tv, style, scale, lineColor).then((price) => {
+    void attachPriceSeries(
+      handle.chart,
+      tv,
+      style,
+      scale,
+      lineColor,
+      visiblePriceAutoscale(
+        () => pendingBarsRef.current,
+        () => handle.chart,
+      ),
+    ).then((price) => {
       if (handleRef.current !== handle) return;
       handle.price = price;
       handle.style = style;
-      applyBars(handle, pendingBarsRef.current, lineColor, windowBarsRef.current);
+      applyBars(
+        handle,
+        tv,
+        pendingBarsRef.current,
+        lineColor,
+        windowBarsRef.current,
+        intervalBucketSec(intervalRef.current ?? "1h"),
+      );
     });
   }, [style, scale, lineColor]);
 
@@ -306,26 +563,37 @@ export function TokenLightweightPlot({
       },
     });
     handle.price.applyOptions({
-      priceFormat:
-        scale === "mcap"
-          ? { type: "price", precision: 2, minMove: 0.01 }
-          : { type: "price", precision: 12, minMove: 1e-12 },
+      priceFormat: priceFormatFor(scale),
     });
   }, [scale]);
 
   useEffect(() => {
     const handle = handleRef.current;
     if (!handle) return;
-    const signature = chartRangeSignature(bars, interval);
+    const signature = chartRangeSignature(bars, interval, windowBars);
     const refit = rangeSigRef.current !== signature;
     rangeSigRef.current = signature;
-    applyBars(handle, bars, lineColor, windowBars, refit);
+    applyBars(
+      handle,
+      tvRef.current,
+      bars,
+      lineColor,
+      windowBars,
+      intervalBucketSec(interval ?? "1h"),
+      refit,
+    );
   }, [bars, lineColor, interval, windowBars]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
     const handle = handleRef.current;
-    if (handle) fitChartView(handle.chart, pendingBarsRef.current.length, windowBarsRef.current);
+    if (handle)
+      fitChartView(
+        handle.chart,
+        pendingBarsRef.current,
+        windowBarsRef.current,
+        intervalBucketSec(intervalRef.current ?? "1h"),
+      );
   }, [fitNonce]);
 
   return <div ref={hostRef} className="token-chart-engine absolute inset-0 z-[2]" />;

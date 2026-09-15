@@ -28,14 +28,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // TradingView Advanced Charts renders inside a same-origin iframe.
-        source: "/charting_library/(.*)",
-        headers: [
-          { key: "Content-Security-Policy", value: "base-uri 'self'; frame-ancestors 'self'; object-src 'none'" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-        ],
-      },
     ];
   },
   images: {

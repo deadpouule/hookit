@@ -19,6 +19,8 @@ export type ChartBar = {
   low: number;
   close: number;
   volume: number;
+  /** Empty time bucket: occupies a TradingView slot but does not draw a candle. */
+  whitespace?: boolean;
 };
 
 const INTERVAL_BUCKET_SEC: Record<ChartInterval, number> = {
@@ -104,10 +106,7 @@ export function aggregateBars(bars: ChartBar[], bucketSec: number): ChartBar[] {
 }
 
 export function barsForInterval(bars: ChartBar[], interval: ChartInterval): ChartBar[] {
-  const nativeSec = bars.length >= 2 ? Math.min(...bars.slice(1).map((b, i) => b.time - bars[i]!.time)) : NATIVE_CANDLE_SEC;
-  const bucket = INTERVAL_BUCKET_SEC[interval];
-  if (bucket <= nativeSec) return bars;
-  return aggregateBars(bars, bucket);
+  return aggregateBars(bars, INTERVAL_BUCKET_SEC[interval]);
 }
 
 export function hasChartVolume(bars: ChartBar[]): boolean {
@@ -137,13 +136,111 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
   }));
 }
 
+/** LWC draws equal OHLC as a 1px hairline; Defined still paints a short body. */
+export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+  const close = bar.close > 0 ? bar.close : bar.open;
+  const floor = Math.abs(close) * 0.00012;
+  if (!(floor > 0) || Math.abs(bar.close - bar.open) >= floor) {
+    return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+  }
+  const open = close - floor;
+  return {
+    open,
+    close,
+    high: Math.max(bar.high, close),
+    low: Math.min(bar.low > 0 ? bar.low : open, open),
+  };
+}
+
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
   if (house.length > 0) return house;
   return geckoMcap;
 }
 
+export function isWhitespaceBar(bar: ChartBar): boolean {
+  return bar.whitespace === true;
+}
+
+function quoteFxAt(fx: ChartBar[], time: number): ChartBar | undefined {
+  if (fx.length === 0) return undefined;
+  let lo = 0;
+  let hi = fx.length - 1;
+  if (time < fx[0]!.time) return fx[0];
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const t = fx[mid]!.time;
+    if (t === time) return fx[mid];
+    if (t < time) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return fx[Math.max(0, hi)];
+}
+
+/**
+ * Defined/Codex USD: house bars were converted with a single live quote USD.
+ * Reprice each bucket with the quote asset's USD OHLC at that time so LEE
+ * tracks wMSTR (green then red) instead of painting a flat doji.
+ */
+export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuoteUsd: number): ChartBar[] {
+  if (!(liveQuoteUsd > 0) || fx.length === 0) return bars;
+  return bars.map((bar) => {
+    if (isWhitespaceBar(bar) || !(bar.close > 0)) return bar;
+    const q = quoteFxAt(fx, bar.time);
+    if (!q || !(q.close > 0)) return bar;
+    const unit = bar.close / liveQuoteUsd;
+    return {
+      ...bar,
+      open: unit * q.open,
+      high: unit * Math.max(q.high, q.open, q.close),
+      low: unit * Math.min(q.low > 0 ? q.low : q.close, q.open, q.close),
+      close: unit * q.close,
+    };
+  });
+}
+
+/** After the last LEE print, keep marking USD from quote FX (Defined's live candle). */
+export function carryQuoteFxBars(
+  bars: ChartBar[],
+  fx: ChartBar[],
+  liveQuoteUsd: number,
+  bucketSec: number,
+  nowSec: number,
+): ChartBar[] {
+  if (!(liveQuoteUsd > 0) || !(bucketSec > 0) || fx.length === 0) return bars;
+  const real = bars.filter((b) => !isWhitespaceBar(b) && b.close > 0);
+  const lastTraded = [...real].reverse().find((b) => b.volume > 0);
+  const last = lastTraded ?? real[real.length - 1];
+  if (!last) return bars;
+  const lastFx = quoteFxAt(fx, last.time);
+  const denom = lastFx && lastFx.close > 0 ? lastFx.close : liveQuoteUsd;
+  if (!(denom > 0)) return bars;
+  const end = Math.floor(nowSec / bucketSec) * bucketSec;
+  const start = last.time + bucketSec;
+  if (start > end) return bars;
+  const extra: ChartBar[] = [];
+  const unit = last.close / denom;
+  for (let time = start; time <= end; time += bucketSec) {
+    const q = quoteFxAt(fx, time);
+    if (!q || !(q.close > 0)) continue;
+    extra.push({
+      time,
+      open: unit * q.open,
+      high: unit * Math.max(q.high, q.open, q.close),
+      low: unit * Math.min(q.low > 0 ? q.low : q.close, q.open, q.close),
+      close: unit * q.close,
+      volume: 0,
+    });
+  }
+  if (extra.length === 0) return bars;
+  const capped = extra.length > 12 ? extra.slice(-12) : extra;
+  const byTime = new Map(real.map((bar) => [bar.time, bar]));
+  for (const bar of capped) byTime.set(bar.time, bar);
+  return [...byTime.values()].sort((a, b) => a.time - b.time);
+}
+
 /** Carry-forward gap fills have no volume and a flat OHLC. */
 export function isSyntheticBar(bar: ChartBar): boolean {
+  if (isWhitespaceBar(bar)) return true;
   return !(bar.volume > 0) && bar.open === bar.close && bar.high === bar.close && bar.low === bar.close;
 }
 
@@ -183,18 +280,28 @@ export function visibleCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high"
 export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   if (!(liveMcap && liveMcap > 0) || bars.length === 0) return bars;
   const next = bars.map((b) => ({ ...b }));
-  let pinAt = next.length - 1;
+  let pinAt = -1;
   for (let i = next.length - 1; i >= 0; i--) {
-    if (!isSyntheticBar(next[i]!)) {
+    if (!isWhitespaceBar(next[i]!) && !isSyntheticBar(next[i]!)) {
       pinAt = i;
       break;
     }
   }
+  if (pinAt < 0) {
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (!isWhitespaceBar(next[i]!)) {
+        pinAt = i;
+        break;
+      }
+    }
+  }
+  if (pinAt < 0) return next;
   const target = next[pinAt]!;
   target.close = liveMcap;
   target.high = Math.max(target.high, liveMcap);
   target.low = Math.min(target.low, liveMcap);
   for (let i = pinAt + 1; i < next.length; i++) {
+    if (isWhitespaceBar(next[i]!)) continue;
     next[i] = {
       ...next[i]!,
       open: liveMcap,
@@ -208,11 +315,14 @@ export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
 }
 
 export function chartHudBar(bars: ChartBar[], hover: ChartBar | null): ChartBar | null {
-  if (hover) return hover;
+  if (hover && !isWhitespaceBar(hover)) return hover;
   for (let i = bars.length - 1; i >= 0; i--) {
-    if (!isSyntheticBar(bars[i]!)) return bars[i]!;
+    if (!isWhitespaceBar(bars[i]!) && !isSyntheticBar(bars[i]!)) return bars[i]!;
   }
-  return bars[bars.length - 1] ?? null;
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (!isWhitespaceBar(bars[i]!)) return bars[i]!;
+  }
+  return null;
 }
 
 export function intervalBucketSec(interval: ChartInterval): number {
@@ -249,38 +359,126 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
   return out;
 }
 
-/** TradingView `timeframe`: the opening window is 72 bars … */
+/** TradingView / Defined Codex: the opening window is always 72 bars. */
 export const CHART_WINDOW_BARS = 72;
-/** … or the token's whole life when younger, never fewer than 20 bars. */
-export const CHART_MIN_WINDOW_BARS = 20;
-/** Empty bars kept between the last candle and the right axis. */
+/** @deprecated Defined does not shrink the window on young tokens. Kept for callers. */
+export const CHART_MIN_WINDOW_BARS = 72;
+/** TV default `rightOffset` — room for the last-value tag after the last candle. */
 export const CHART_RIGHT_OFFSET = 5;
-export const CHART_MIN_BAR_SPACING = 4;
-export const CHART_MAX_BAR_SPACING = 40;
+export const CHART_MIN_BAR_SPACING = 1;
+/** Safety cap only; Defined auto-fit can go up to ~48px on a young token. */
+export const CHART_MAX_BAR_SPACING = 48;
+/** Defined "auto" — hug a quiet tape so 2–4 prints stay fat, like Codex 5m. */
+export const CHART_MIN_VISIBLE_BARS = 16;
+/** Empty slots to the left of the first print so the first candle is not glued. */
+export const CHART_FIT_PAD_BARS = 8;
 
 /**
- * Opening window: hug real prints (Tsunami: one buy → one wide candle). When we
- * know `barCount`, size the pane around those bars instead of inventing empty
- * buckets for every minute since launch. Fallback is 72, or the token's age.
+ * Bars in the opening window. Defined (TradingView `timeframe`) always uses 72
+ * slots, even on a token that is only a few hours old — empty time stays empty.
  */
-export function chartWindowBars(
-  bucketSec: number,
-  launchedAt?: number,
-  nowSec = Math.floor(Date.now() / 1000),
-  barCount?: number,
-): number {
-  if (barCount != null && barCount > 0) {
-    return Math.min(CHART_WINDOW_BARS, Math.max(barCount + CHART_RIGHT_OFFSET, 10));
-  }
-  if (!(bucketSec > 0) || !isValidLaunchTimestamp(launchedAt)) return CHART_WINDOW_BARS;
-  const ageBars = Math.ceil((nowSec - launchedAt) / bucketSec);
-  if (ageBars <= 0 || ageBars >= CHART_WINDOW_BARS) return CHART_WINDOW_BARS;
-  return Math.max(ageBars, CHART_MIN_WINDOW_BARS);
+export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowSec?: number): number {
+  return CHART_WINDOW_BARS;
 }
 
 /**
- * Visible window. The opening window is stretched across the pane (TradingView
- * `timeframe`), so candle pitch follows the window, not a fixed pixel count.
+ * Defined Codex "auto" range: last 72 slots at TradingView pitch, or zoom in
+ * when the visible window only has a handful of prints (fat 1h/5m candles).
+ * Pass the first real index inside the last 72 so a quiet 5m does not stay
+ * squeezed at 10px — scroll left for earlier session.
+ */
+export function chartFitWindowBars(tapeLength: number, firstRealIndex = 0): number {
+  if (tapeLength <= 0) return CHART_WINDOW_BARS;
+  const idx = Math.min(Math.max(firstRealIndex, 0), tapeLength - 1);
+  const fromFirst = tapeLength - idx;
+  const padded = Math.max(CHART_MIN_VISIBLE_BARS, fromFirst + CHART_FIT_PAD_BARS);
+  return Math.min(padded, CHART_WINDOW_BARS);
+}
+
+/** First real candle to pin Defined auto-zoom. Sparse 15m/5m tapes zoom to the
+ * latest prints instead of squeezing the whole session into 1px specks. */
+export function chartFitFirstRealIndex(bars: ChartBar[]): number {
+  if (bars.length === 0) return 0;
+  const last = bars.length - 1;
+  const start72 = Math.max(0, last - CHART_WINDOW_BARS + 1);
+  let reals = 0;
+  let first72 = -1;
+  let lastReal = -1;
+  for (let i = start72; i <= last; i++) {
+    if (isWhitespaceBar(bars[i]!)) continue;
+    if (first72 < 0) first72 = i;
+    lastReal = i;
+    reals++;
+  }
+  if (lastReal < 0) return start72;
+  if (reals <= 6) {
+    for (let i = last; i >= start72; i--) {
+      const bar = bars[i]!;
+      if (!isWhitespaceBar(bar) && bar.volume > 0) return i;
+    }
+    return lastReal;
+  }
+  return first72;
+}
+
+/** Inclusive logical indexes for the pane, falling back to the last 72 slots. */
+export function visibleBarSlice(
+  barCount: number,
+  from?: number,
+  to?: number,
+): { start: number; end: number } {
+  if (barCount <= 0) return { start: 0, end: -1 };
+  const last = barCount - 1;
+  const start = Math.max(0, Math.floor(from ?? Math.max(0, last - CHART_WINDOW_BARS + 1)));
+  const end = Math.min(last, Math.ceil(to ?? last));
+  return { start, end: Math.max(start, end) };
+}
+
+/** Raw high/low of real candles in the visible logical range. */
+export function visibleExtremes(
+  bars: ChartBar[],
+  from?: number,
+  to?: number,
+): { ath: number; atl: number } | null {
+  const { start, end } = visibleBarSlice(bars.length, from, to);
+  let ath = -Infinity;
+  let atl = Infinity;
+  for (let i = start; i <= end; i++) {
+    const bar = bars[i];
+    if (!bar || isWhitespaceBar(bar) || !(bar.high > 0) || !(bar.low > 0)) continue;
+    ath = Math.max(ath, bar.high);
+    atl = Math.min(atl, bar.low);
+  }
+  if (!(ath > 0) || !(atl > 0)) return null;
+  return { ath, atl };
+}
+
+/** High/low of real candles in the visible logical range (Defined auto Y-axis). */
+export function visiblePriceBand(
+  bars: ChartBar[],
+  from?: number,
+  to?: number,
+): { minValue: number; maxValue: number } | null {
+  const ext = visibleExtremes(bars, from, to);
+  if (!ext) return null;
+  return chartPriceBand(ext.atl, ext.ath);
+}
+
+/** Peak volume in the visible logical range so off-screen prints don't dwarf the pane. */
+export function visibleVolumePeak(bars: ChartBar[], from?: number, to?: number): number {
+  const { start, end } = visibleBarSlice(bars.length, from, to);
+  let hi = 0;
+  for (let i = start; i <= end; i++) {
+    const bar = bars[i];
+    if (!bar || isWhitespaceBar(bar) || !(bar.volume > 0)) continue;
+    hi = Math.max(hi, bar.volume);
+  }
+  return hi;
+}
+
+/**
+ * Visible window: stretch 72 bars (+ right offset) across the pane, same as
+ * Defined's Codex chart. Candle pitch = pane width / 77, last bar pinned right.
  */
 export function chartVisibleLogicalRange(
   barCount: number,
@@ -297,9 +495,28 @@ export function chartVisibleLogicalRange(
   return { from: to - visible, to, barSpacing };
 }
 
-/** TradingView pane margins: 10% above the high, 8% below the low. */
+/** TradingView pane: 10% above the high, volume overlay in the bottom fifth. */
 export const CHART_SCALE_MARGIN_TOP = 0.1;
-export const CHART_SCALE_MARGIN_BOTTOM = 0.08;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.22;
+export const CHART_VOLUME_MARGIN_TOP = 0.82;
+export const CHART_VOLUME_SMA_PERIOD = 20;
+
+/** TradingView default Volume SMA (period 20) for the Defined overlay. */
+export function volumeSma(
+  bars: ChartBar[],
+  period = CHART_VOLUME_SMA_PERIOD,
+): { time: number; value: number }[] {
+  if (period <= 0 || bars.length === 0) return [];
+  const out: { time: number; value: number }[] = [];
+  let sum = 0;
+  for (let i = 0; i < bars.length; i++) {
+    sum += bars[i]!.volume;
+    if (i >= period) sum -= bars[i - period]!.volume;
+    const n = Math.min(i + 1, period);
+    out.push({ time: bars[i]!.time, value: sum / n });
+  }
+  return out;
+}
 
 /**
  * Price pane geometry: hug the visible high/low so one trade fills the pane
@@ -329,6 +546,131 @@ export function formatChartAxis(value: number, scale: ChartScale): string {
   if (!Number.isFinite(value) || value <= 0) return "";
   if (scale === "mcap") return formatCompactUsd(value);
   return formatTvPrice(value);
+}
+
+/**
+ * TradingView time scale: every bucket in the 72-bar window occupies a slot.
+ * Empty buckets are whitespace so lightweight-charts does not pack sparse
+ * prints into adjacent candles (the 5m "dots" bug).
+ */
+export function definedWhitespaceTape(
+  bars: ChartBar[],
+  bucketSec: number,
+  nowSec?: number,
+  windowBars = CHART_WINDOW_BARS,
+  maxBars = 8_000,
+): ChartBar[] {
+  if (bars.length === 0 || !(bucketSec > 0)) return bars;
+  const sorted = mergeBars(
+    [...bars]
+      .filter((bar) => !isWhitespaceBar(bar))
+      .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec, whitespace: false }))
+      .sort((a, b) => a.time - b.time),
+  );
+  if (sorted.length === 0) return [];
+  const last = sorted[sorted.length - 1]!;
+  const end = Math.floor((nowSec && nowSec > last.time ? nowSec : last.time) / bucketSec) * bucketSec;
+  const minStart = end - (Math.max(windowBars, 1) - 1) * bucketSec;
+  let start = Math.min(sorted[0]!.time, minStart);
+  const span = Math.floor((end - start) / bucketSec) + 1;
+  if (span > maxBars) start = end - (Math.max(maxBars, 1) - 1) * bucketSec;
+  const byTime = new Map(sorted.map((bar) => [bar.time, bar]));
+  const out: ChartBar[] = [];
+  for (let time = start; time <= end; time += bucketSec) {
+    const real = byTime.get(time);
+    if (real) {
+      out.push({ ...real, whitespace: false });
+      continue;
+    }
+    out.push({
+      time,
+      open: 0,
+      high: 0,
+      low: 0,
+      close: 0,
+      volume: 0,
+      whitespace: true,
+    });
+  }
+  return out;
+}
+
+/**
+ * Snap ticks onto the selected timeframe bucket. Unlike a sparse "find previous
+ * bar" walk, a 1m print in an empty 5m slot becomes its own candle so 1m/5m
+ * keep intra-period wicks when rolled up.
+ */
+export function applyTicksToBuckets(bars: ChartBar[], ticks: ChartTick[], bucketSec: number): ChartBar[] {
+  if (!(bucketSec > 0)) return bars.map((b) => ({ ...b }));
+  const byTime = new Map<number, ChartBar>();
+  for (const bar of bars) {
+    if (isWhitespaceBar(bar)) continue;
+    const time = Math.floor(bar.time / bucketSec) * bucketSec;
+    const prev = byTime.get(time);
+    if (!prev) {
+      byTime.set(time, { ...bar, time, whitespace: false });
+      continue;
+    }
+    prev.high = Math.max(prev.high, bar.high);
+    prev.low = Math.min(prev.low, bar.low);
+    prev.close = bar.close;
+    prev.volume = Math.max(prev.volume, bar.volume);
+  }
+  const sorted = ticks
+    .filter((tick) => tick.t > 0 && Number.isFinite(tick.price) && tick.price > 0)
+    .sort((a, b) => a.t - b.t);
+  for (const tick of sorted) {
+    const time = Math.floor(tick.t / bucketSec) * bucketSec;
+    const volume = tick.volume != null && Number.isFinite(tick.volume) && tick.volume > 0 ? tick.volume : 0;
+    const prev = byTime.get(time);
+    if (!prev) {
+      byTime.set(time, {
+        time,
+        open: tick.price,
+        high: tick.price,
+        low: tick.price,
+        close: tick.price,
+        volume,
+        whitespace: false,
+      });
+      continue;
+    }
+    prev.high = Math.max(prev.high, tick.price);
+    prev.low = Math.min(prev.low, tick.price);
+    prev.close = tick.price;
+    if (volume > prev.volume) prev.volume = volume;
+  }
+  return [...byTime.values()].sort((a, b) => a.time - b.time);
+}
+
+/**
+ * TradingView current bar: the in-progress bucket always exists at the live
+ * price so 1m/5m keep a candle on the right edge.
+ */
+export function ensureCurrentBar(
+  bars: ChartBar[],
+  bucketSec: number,
+  nowSec: number,
+  liveValue?: number,
+): ChartBar[] {
+  if (bars.length === 0 || !(bucketSec > 0)) return bars;
+  const cur = Math.floor(nowSec / bucketSec) * bucketSec;
+  const last = [...bars].reverse().find((b) => !isWhitespaceBar(b));
+  if (last && last.time === cur) return bars;
+  const px = liveValue && liveValue > 0 ? liveValue : last?.close;
+  if (!(px && px > 0)) return bars;
+  const open = last?.close && last.close > 0 ? last.close : px;
+  return [
+    ...bars,
+    {
+      time: cur,
+      open,
+      high: Math.max(open, px),
+      low: Math.min(open, px),
+      close: px,
+      volume: 0,
+    },
+  ].sort((a, b) => a.time - b.time);
 }
 
 /**
@@ -423,6 +765,27 @@ export function barChangePct(bar: ChartBar): number {
   return ((bar.close - bar.open) / bar.open) * 100;
 }
 
-export function chartRangeSignature(bars: ChartBar[], interval?: ChartInterval): string {
-  return `${interval ?? ""}:${bars[0]?.time ?? 0}:${bars.length}:${bars[bars.length - 1]?.time ?? 0}`;
+export function chartRangeSignature(bars: ChartBar[], interval?: ChartInterval, windowBars?: number): string {
+  return `${interval ?? ""}:${windowBars ?? ""}:${bars[0]?.time ?? 0}:${bars.length}:${bars[bars.length - 1]?.time ?? 0}`;
+}
+
+export type ChartTrade = { t: number; side: "buy" | "sell" };
+
+/** Snap on-chain swaps onto the candle they belong to (Defined buy/sell dots). */
+export function tradesOnBars(trades: ChartTrade[], bars: ChartBar[], max = 80): ChartTrade[] {
+  if (trades.length === 0 || bars.length === 0) return [];
+  const out: ChartTrade[] = [];
+  for (const trade of trades) {
+    if (!(trade.t > 0)) continue;
+    let time = bars[bars.length - 1]!.time;
+    for (let i = 0; i < bars.length; i++) {
+      const nxt = bars[i + 1];
+      if (trade.t >= bars[i]!.time && (!nxt || trade.t < nxt.time)) {
+        time = bars[i]!.time;
+        break;
+      }
+    }
+    out.push({ t: time, side: trade.side });
+  }
+  return out.length > max ? out.slice(out.length - max) : out;
 }

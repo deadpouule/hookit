@@ -6,7 +6,7 @@ import { definedChartUrl, uniswapSwapUrl } from "./token-metadata";
 test("definedChartUrl builds an Ink Defined chart link for the token", () => {
   const token = "0x51a700000000000000000000000000000000d228";
   const url = definedChartUrl(token);
-  assert.equal(url, "https://www.defined.fi/ink/0x51a700000000000000000000000000000000d228");
+  assert.equal(url, "https://www.defined.fi/token/ink/0x51a700000000000000000000000000000000d228");
 });
 
 test("definedChartUrl ignores a missing or junk address", () => {

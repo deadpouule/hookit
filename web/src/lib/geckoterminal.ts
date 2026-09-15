@@ -136,6 +136,7 @@ async function gtGet(path: string): Promise<Response> {
   return fetch(`${GT_API}${path}`, {
     headers: { Accept: GT_ACCEPT },
     cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
   });
 }
 
@@ -151,11 +152,11 @@ export async function fetchGeckoTerminalBars(
   }
   const token = getAddress(tokenAddress);
 
-  const poolsRes = await gtGet(`/networks/${network}/tokens/${token}/pools?page=1`);
-  if (poolsRes.status === 429) {
-    const err = new Error("GeckoTerminal rate limited");
-    (err as Error & { status: number }).status = 429;
-    throw err;
+  let poolsRes: Response;
+  try {
+    poolsRes = await gtGet(`/networks/${network}/tokens/${token}/pools?page=1`);
+  } catch {
+    return { bars: [], pool: null };
   }
   if (!poolsRes.ok) return { bars: [], pool: null };
 
@@ -168,13 +169,13 @@ export async function fetchGeckoTerminalBars(
     currency: "usd",
     token: pick.tokenSide,
   });
-  const ohlcvRes = await gtGet(
-    `/networks/${network}/pools/${pick.address}/ohlcv/${path.timeframe}?${qs.toString()}`,
-  );
-  if (ohlcvRes.status === 429) {
-    const err = new Error("GeckoTerminal rate limited");
-    (err as Error & { status: number }).status = 429;
-    throw err;
+  let ohlcvRes: Response;
+  try {
+    ohlcvRes = await gtGet(
+      `/networks/${network}/pools/${pick.address}/ohlcv/${path.timeframe}?${qs.toString()}`,
+    );
+  } catch {
+    return { bars: [], pool: pick.address };
   }
   if (!ohlcvRes.ok) return { bars: [], pool: pick.address };
 
