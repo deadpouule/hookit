@@ -4,12 +4,14 @@ import { Suspense, useMemo, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
+import { HookDocsDialog } from "@/components/explore/HookDocsDialog";
 import { useLaunches } from "@/hooks/useLaunches";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import {
   MASTER_HOOK_FILTERS,
   EXPLORE_HOOKS,
   countHookUsage,
+  type BrowseHook,
   type MasterHookCategory,
   type MasterHookId,
 } from "@/lib/master-hooks";
@@ -22,6 +24,7 @@ type HookFilter = "all" | MasterHookCategory;
 function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
+  const [openHook, setOpenHook] = useState<BrowseHook | null>(null);
   const { data: onChainPools, isFetched } = useLaunches(initialPools);
 
   const pools = useMemo((): TokenPool[] => {
@@ -105,9 +108,16 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
       <div className="hook-grid">
         {filtered.map((hook) => (
-          <HookCard key={hook.id} hook={hook} usesPending={usesPending} />
+          <HookCard
+            key={hook.id}
+            hook={hook}
+            usesPending={usesPending}
+            onOpen={setOpenHook}
+          />
         ))}
       </div>
+
+      <HookDocsDialog hook={openHook} onOpenChange={(open) => { if (!open) setOpenHook(null); }} />
 
       {filtered.length === 0 && (
         <div className="flex flex-col items-center rounded-2xl bg-card px-6 py-16 text-center">

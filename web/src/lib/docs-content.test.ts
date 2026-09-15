@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { buildDocsSections, docsSectionHasArt, DOCS_NAV, type DocsSectionId } from "./docs-content";
+import { buildDocsSections, docsSectionForHook, docsSectionHasArt, DOCS_NAV, type DocsSectionId } from "./docs-content";
 import { DOCS_SECTION_IDS } from "./docs";
+import { EXPLORE_HOOKS } from "./master-hooks";
 
 test("docs nav ids match rendered sections and metadata", () => {
   const sections = buildDocsSections();
@@ -11,6 +12,17 @@ test("docs nav ids match rendered sections and metadata", () => {
   const sectionIds = sections.map((section) => section.id);
   assert.deepEqual(navIds, sectionIds);
   assert.deepEqual(navIds, DOCS_SECTION_IDS);
+});
+
+test("every browse hook has a docs section for the hooks popup", () => {
+  for (const hook of EXPLORE_HOOKS) {
+    const section = docsSectionForHook(hook.id);
+    assert.ok(section, `missing docs section for ${hook.id}`);
+    assert.ok(
+      section.blocks.some((block) => block.type === "visual" || block.type === "p"),
+      `${hook.id} should explain itself`,
+    );
+  }
 });
 
 test("docs no longer advertise the old 70/30 split", () => {

@@ -4120,17 +4120,20 @@
 
   .token-desk--hooks .token-hook-pulse {
     display: block;
-    order: 4;
     position: relative;
     min-height: 10.75rem;
     width: 100%;
   }
 
-  .token-desk--hooks .token-desk-fees {
+  html[data-device="phone"] .token-desk--hooks .token-hook-pulse {
+    order: 4;
+  }
+
+  html[data-device="phone"] .token-desk--hooks .token-desk-fees {
     order: 5;
   }
 
-  .token-desk--hooks .token-desk-tx-col {
+  html[data-device="phone"] .token-desk--hooks .token-desk-tx-col {
     order: 6;
   }
 
@@ -4145,8 +4148,12 @@
     width: 100%;
     overflow: hidden;
     padding: 0.72rem 0.85rem 0.7rem;
+    text-align: left;
     text-decoration: none;
     color: inherit;
+    font: inherit;
+    appearance: none;
+    cursor: pointer;
     container-type: size;
     transition: border-color 0.35s ease, box-shadow 0.35s ease;
     background:
@@ -4334,7 +4341,8 @@
     .token-desk-hooks,
     .token-desk-tx-col,
     .token-desk-fees,
-    .token-desk-swap {
+    .token-desk-swap,
+    .token-hook-pulse {
       order: initial;
     }
 
@@ -5291,6 +5299,104 @@
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 1.5rem;
+  }
+
+  .hook-pulse-browse {
+    min-height: 11.75rem;
+    height: 100%;
+  }
+
+  .hook-pulse-browse .token-hook-pulse-slide {
+    animation: none;
+  }
+
+  .hook-pulse-browse .token-hook-pulse-title {
+    padding-right: 5.5rem;
+    font-size: 1.05rem;
+  }
+
+  .hook-pulse-browse .token-hook-pulse-desc {
+    display: block;
+    max-width: 78%;
+    -webkit-line-clamp: 4;
+  }
+
+  .hook-pulse-browse .token-hook-pulse-link {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .hook-docs-dialog {
+    top: 50%;
+    left: 50%;
+    display: flex;
+    max-height: min(88dvh, 52rem);
+    width: min(42rem, calc(100% - 1.5rem));
+    max-width: min(42rem, calc(100% - 1.5rem));
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: #0c0c0e;
+    padding: 1.15rem 1.15rem 1rem;
+    color: #e4e4e7;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 0.55);
+  }
+
+  .hook-docs-dialog .docs-hook-heading {
+    margin: 0 2.2rem 0.35rem 0;
+  }
+
+  .hook-docs-dialog-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-contain: contain;
+    padding-right: 0.15rem;
+  }
+
+  .hook-docs-dialog-body .docs-spark {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hook-docs-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 0.9rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .hook-docs-launch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.4rem;
+    padding: 0 0.95rem;
+    border-radius: 0.7rem;
+    background: #9514d1;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .hook-docs-launch:hover {
+    background: #a82be0;
+  }
+
+  .hook-docs-more {
+    font-size: 0.78rem;
+    color: #a1a1aa;
+    text-decoration: none;
+  }
+
+  .hook-docs-more:hover {
+    color: #fff;
   }
 
   @media (min-width: 640px) {
