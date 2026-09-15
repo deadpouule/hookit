@@ -206,6 +206,10 @@ export function docsSectionHasArt(section: DocsSection): boolean {
   );
 }
 
+export function docsSectionForHook(hookId: BrowseHookId): DocsSection | undefined {
+  return buildDocsSections().find((section) => section.hookId === hookId);
+}
+
 export function buildDocsSections(): DocsSection[] {
   const rpc = getDefaultRpcUrl();
   const network = getNetworkLabel();

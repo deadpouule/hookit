@@ -1,63 +1,58 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { type CSSProperties } from "react";
 
-import { HookSettingsTooltip } from "@/components/explore/HookSettingsTooltip";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
-  launchWithHookHref,
+  hookThemeAccentColor,
   type BrowseHook,
 } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
 
-function capitalizeDescription(text: string) {
-  if (!text) return text;
-  return text.charAt(0).toUpperCase() + text.slice(1);
+function sentence(text: string) {
+  const t = text.trim();
+  if (!t) return t;
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 export function HookCard({
   hook,
   usesPending = false,
+  onOpen,
 }: {
   hook: BrowseHook;
   usesPending?: boolean;
+  onOpen?: (hook: BrowseHook) => void;
 }) {
   const router = useRouter();
+  const usesHref =
+    hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id);
 
   return (
-    <motion.article
-        className={cn("orb-card", `orb-card--${hook.theme}`)}
-        onClick={() => router.push(launchWithHookHref(hook.id))}
-        whileHover={{ scale: 1.02, y: -4 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-      >
-        <div className="orb-card-head">
-          <h2 className={cn("orb-hook-title-plain", `orb-hook-desc-badge--${hook.theme}`)}>
-            {hook.title}
-          </h2>
-          <HookSettingsTooltip hook={hook} />
-        </div>
-
-        <div className="orb-stage my-2">
-          <HookLogo hookId={hook.id} theme={hook.theme} className="hook-logo--stage" />
-        </div>
-
-        <div className="orb-footer">
-          <p className="orb-hook-blurb">{capitalizeDescription(hook.description)}</p>
-
-          <div className="orb-footer-actions">
-            <a
-              href={hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id)}
-              className="orb-live-uses"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
-            </a>
-          </div>
-        </div>
-      </motion.article>
+    <button
+      type="button"
+      className={cn("token-hook-pulse-card desk-card hook-pulse-browse")}
+      style={{ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
+      onClick={() => {
+        if (onOpen) onOpen(hook);
+        else router.push(usesHref);
+      }}
+    >
+      <span className="token-hook-pulse-slide">
+        <span className="token-hook-pulse-mark" aria-hidden>
+            <HookLogo
+              hookId={hook.id === "fixed-fee" ? "dynamic-fees" : hook.id}
+              theme={hook.theme}
+            />
+        </span>
+        <h2 className="token-hook-pulse-title">{hook.title}</h2>
+        <p className="token-hook-pulse-desc">{sentence(hook.description)}</p>
+        <span className="token-hook-pulse-link">
+          {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
+        </span>
+      </span>
+    </button>
   );
 }
