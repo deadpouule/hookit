@@ -8088,9 +8088,9 @@
     max-width: 100%;
     text-align: left;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 1.12rem;
+    font-size: 1.48rem;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.32;
     letter-spacing: -0.03em;
     color: #fff;
   }
@@ -8119,7 +8119,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.35rem 0.5rem;
+    gap: 0.28rem 0.42rem;
   }
 
   .hero-pitch-marks {
@@ -8129,39 +8129,65 @@
     gap: 0.22rem;
   }
 
+  .hero-pitch-multi {
+    width: 1.15em;
+    height: 1.15em;
+    flex-shrink: 0;
+    color: #7dd3fc;
+    filter: drop-shadow(0 0 6px rgb(56 189 248 / 0.55));
+  }
+
+  .hero-pitch-hold {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
+
+  .hero-pitch-hold-token {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .hero-pitch-line--badge {
     margin-top: 0.2rem;
   }
 
   .hero-pitch .powered-by-quotrons-badge--hero {
-    gap: 0.5rem;
-    padding: 0.38rem 0.75rem;
+    gap: 0.55rem;
+    padding: 0.45rem 0.88rem;
     margin-inline: 0;
   }
 
   .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
-    height: 1.7rem;
-    width: 1.7rem;
+    height: 1.9rem;
+    width: 1.9rem;
   }
 
   .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__text {
-    font-size: 0.82rem;
+    font-size: 0.92rem;
   }
 
   .hero-pitch .hero-typewriter-mark--eth,
-  .hero-pitch .hero-typewriter-mark--usdg {
-    height: 1.85rem;
-    width: 1.85rem;
+  .hero-pitch .hero-typewriter-mark--usdg,
+  .hero-pitch .hero-typewriter-mark--owl {
+    height: 2.15rem;
+    width: 2.15rem;
+  }
+
+  .hero-pitch .hero-typewriter-mark--owl {
+    background: #000;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
   }
 
   .hero-pitch .hero-typewriter-mark--uniswap {
-    height: 1.75rem;
-    width: 1.75rem;
+    height: 2.05rem;
+    width: 2.05rem;
   }
 
   .hero-pitch .hero-typewriter-mark__glyph {
-    height: 1.15rem;
-    width: 1.15rem;
+    height: 1.35rem;
+    width: 1.35rem;
   }
 
   .hero-typewriter--mobile {
@@ -8708,7 +8734,7 @@
   @media (min-width: 640px) {
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 1.22rem;
+      font-size: 1.62rem;
     }
   }
 
@@ -8734,7 +8760,7 @@
 
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 1.32rem;
+      font-size: 1.85rem;
     }
 
     .hero-stage {
@@ -8794,7 +8820,7 @@
   @media (min-width: 1180px) {
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 1.42rem;
+      font-size: 2.05rem;
     }
   }
 

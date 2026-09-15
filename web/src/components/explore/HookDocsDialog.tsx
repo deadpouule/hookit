@@ -17,9 +17,12 @@ import { launchWithHookHref, type BrowseHook, type MasterHook } from "@/lib/mast
 export function HookDocsDialog({
   hook,
   onOpenChange,
+  showUseHook = true,
 }: {
   hook: BrowseHook | MasterHook | null;
   onOpenChange: (open: boolean) => void;
+  /** Launch CTA lives on the Hooks page only, not token postcards. */
+  showUseHook?: boolean;
 }) {
   const section = useMemo(
     () => (hook ? docsSectionForHook(hook.id) : undefined),
@@ -45,16 +48,20 @@ export function HookDocsDialog({
                 <DocsBlockView key={`${hook.id}-${i}`} block={block} />
               ))}
             </div>
-            <div className="hook-docs-dialog-actions">
-              <Link href={launchWithHookHref(hook.id)} className="hook-docs-launch">
-                Use this hook
-              </Link>
-              {section ? (
-                <Link href={`/docs#${section.id}`} className="hook-docs-more">
-                  Full docs
-                </Link>
-              ) : null}
-            </div>
+            {showUseHook || section ? (
+              <div className="hook-docs-dialog-actions">
+                {showUseHook ? (
+                  <Link href={launchWithHookHref(hook.id)} className="hook-docs-launch">
+                    Use this hook
+                  </Link>
+                ) : null}
+                {section ? (
+                  <Link href={`/docs#${section.id}`} className="hook-docs-more">
+                    Full docs
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </>
         ) : null}
       </DialogContent>
