@@ -4247,6 +4247,7 @@
   .token-hook-pulse-link {
     position: relative;
     display: inline-flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 0.4rem;
     margin: 0.7rem 0 0;
@@ -4256,6 +4257,7 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    white-space: nowrap;
     color: color-mix(in srgb, var(--pulse-accent) 80%, white);
   }
 

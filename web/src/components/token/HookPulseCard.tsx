@@ -100,7 +100,7 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
           </p>
           {explorerHref ? (
             <span className="token-hook-pulse-link">
-              On-chain hook
+              Hook
               <span className="token-hook-pulse-addr">{hookAddr ? shortenAddress(hookAddr) : ""}</span>
               <ExternalLink />
             </span>
