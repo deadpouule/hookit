@@ -4123,7 +4123,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     min-height: 0;
     width: 100%;
     overflow: hidden;
@@ -4146,7 +4146,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     min-height: 0;
     height: 100%;
     animation: token-hook-pulse-in 480ms ease;
@@ -4200,7 +4200,8 @@
     position: absolute;
     z-index: 2;
     top: 0.7rem;
-    left: 0.85rem;
+    right: 0.85rem;
+    left: auto;
     display: flex;
     gap: 0.32rem;
   }
@@ -4332,17 +4333,15 @@
     .token-desk--hooks .token-desk-side {
       grid-area: side;
       align-self: stretch;
-      height: 0;
       min-height: 100%;
       overflow: hidden;
       gap: 10px;
     }
 
     .token-desk--hooks .token-desk-hooks {
-      flex: 0 1 auto;
+      flex: 0 0 auto;
       min-height: 0;
-      overflow-x: hidden;
-      overflow-y: auto;
+      overflow: visible;
     }
 
     .token-desk--hooks .token-hook-pulse {
@@ -4365,7 +4364,24 @@
 
     .token-desk--hooks .token-desk-chart {
       grid-area: chart;
-      align-self: start;
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      min-height: 460px;
+    }
+
+    .token-desk--hooks .token-desk-chart > .desk-card {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 460px;
+    }
+
+    .token-desk--hooks .token-chart-tv-frame,
+    .token-desk--hooks .token-chart-plot {
+      flex: 1 1 auto;
+      height: auto !important;
+      min-height: 460px;
     }
 
     .token-desk--hooks .token-desk-tx-col {
