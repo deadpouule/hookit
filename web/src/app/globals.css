@@ -4114,6 +4114,125 @@
     overflow-x: hidden;
   }
 
+  .token-hook-pulse {
+    display: none;
+  }
+
+  .token-hook-pulse-card {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    padding: 0.85rem 0.9rem 0.8rem;
+    container-type: size;
+    background:
+      radial-gradient(120% 90% at 110% 10%, color-mix(in srgb, var(--pulse-accent) 28%, transparent), transparent 62%),
+      var(--surface);
+  }
+
+  @container (max-height: 152px) {
+    .token-hook-pulse-desc {
+      display: none;
+    }
+  }
+
+  @container (max-height: 118px) {
+    .token-hook-pulse-facts {
+      display: none;
+    }
+  }
+
+  .token-hook-pulse-mark {
+    position: absolute;
+    right: -0.35rem;
+    top: 50%;
+    width: 7.2rem;
+    height: 7.2rem;
+    transform: translateY(-52%);
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  .token-hook-pulse-mark .hook-logo {
+    width: 100%;
+    height: 100%;
+  }
+
+  .token-hook-pulse-stack {
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .token-hook-pulse-stack .hook-logo {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .token-hook-pulse-kicker {
+    position: relative;
+    margin: 0;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--pulse-accent) 85%, white);
+  }
+
+  .token-hook-pulse-title {
+    position: relative;
+    margin: 0.2rem 0 0;
+    max-width: 78%;
+    font-size: 0.92rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: #f4f4f5;
+  }
+
+  .token-hook-pulse-desc {
+    position: relative;
+    display: -webkit-box;
+    margin: 0.35rem 0 0;
+    max-width: 92%;
+    overflow: hidden;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: #a1a1aa;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .token-hook-pulse-facts {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    margin: 0.7rem 0 0;
+    padding-top: 0.55rem;
+    border-top: 1px solid color-mix(in srgb, var(--pulse-accent) 22%, rgb(255 255 255 / 0.08));
+  }
+
+  .token-hook-pulse-facts dt {
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #71717a;
+  }
+
+  .token-hook-pulse-facts dd {
+    margin: 0.15rem 0 0;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #e4e4e7;
+  }
+
   /* Classic: fees live in the swap card on desktop; show them on the page on phone. */
   html[data-device="desktop"] .token-desk-fees--classic {
     display: none;
@@ -4169,6 +4288,41 @@
 
     .token-desk--hooks .token-desk-side {
       grid-area: side;
+      align-self: stretch;
+      height: 0;
+      min-height: 100%;
+      overflow: hidden;
+      gap: 0;
+    }
+
+    .token-desk--hooks .token-desk-hooks {
+      flex: 0 1 auto;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    .token-desk--hooks .token-hook-pulse {
+      display: flex;
+      flex: 1 1 0;
+      flex-direction: column;
+      min-height: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .token-desk--hooks .token-hook-pulse.is-on {
+      margin-bottom: 10px;
+    }
+
+    .token-desk--hooks .token-hook-pulse.is-on .token-hook-pulse-card {
+      flex: 1 1 auto;
+      height: 100%;
+    }
+
+    .token-desk--hooks .token-desk-fees {
+      flex: 0 0 auto;
     }
 
     .token-desk--hooks .token-desk-chart {

@@ -10,6 +10,7 @@ import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
+import { HookPulseCard } from "@/components/token/HookPulseCard";
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
@@ -461,6 +462,14 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <div className="token-desk-hooks space-y-3">
             {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
           </div>
+          {!isClassicDesk ? (
+            <HookPulseCard
+              pool={pool}
+              holders={live.holders}
+              txns={live.txns}
+              ageSeconds={ageSeconds}
+            />
+          ) : null}
           <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
             <CreatorActions pool={activePool} />
           </div>
