@@ -10,7 +10,7 @@ import {
 import { formatDynamicFeeRange } from "@/lib/fee-range";
 import { unpackLaunchBitmask } from "@/lib/bitmask";
 import { HOOK_MARK_TO_MASTER, HOOK_MARKS, type HookId } from "@/lib/hook-marks";
-import { HOOK_MODULE_FIELD, MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
+import { HOOK_MODULE_FIELD, MASTER_HOOKS, type MasterHook, type MasterHookId } from "@/lib/master-hooks";
 import type { LaunchModules, TokenPool } from "@/lib/types";
 
 export type ModuleSummaryLine = {
@@ -38,6 +38,13 @@ export function resolveTokenModules(
 
 export function isModuleEnabled(modules: LaunchModules, id: MasterHookId): boolean {
   return Boolean(modules[HOOK_MODULE_FIELD[id]]);
+}
+
+/** Enabled master modules in canonical number order (Anti-Snipe 1, Floor 2, …). */
+export function enabledMasterHooksInOrder(modules: LaunchModules): MasterHook[] {
+  return MASTER_HOOKS.filter((hook) => isModuleEnabled(modules, hook.id)).sort(
+    (a, b) => a.number - b.number,
+  );
 }
 
 export function moduleDetailLine(
@@ -141,7 +148,7 @@ export function listEnabledModuleSummaries(
   opts?: { hookTaxBps?: number },
 ): ModuleSummaryLine[] {
   const hookTaxBps = opts?.hookTaxBps ?? 0;
-  return MASTER_HOOKS.filter((h) => isModuleEnabled(modules, h.id)).map((h) => ({
+  return enabledMasterHooksInOrder(modules).map((h) => ({
     id: h.id,
     title: h.title,
     detail: moduleDetailLine(h.id, modules, hookTaxBps),

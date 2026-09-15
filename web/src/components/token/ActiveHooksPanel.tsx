@@ -19,11 +19,11 @@ import { holderAirdropVaultAbi } from "@/lib/contracts/holder-airdrop-vault-abi"
 import { masterLaunchHookAbi } from "@/lib/contracts/master-launch-hook-abi";
 import { floorVaultAbi } from "@/lib/contracts/swap-abi";
 import {
-  isModuleEnabled,
+  enabledMasterHooksInOrder,
   moduleTooltipText,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
-import { MASTER_HOOKS, FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
+import { FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
 import { fetchDeepenLpsAdded } from "@/lib/deepen-lps-added";
 import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { quotePerTokenFromSqrtPrice, STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
@@ -321,7 +321,7 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
   if (!isMaster || !resolved) return null;
 
   const { modules: resolvedModules, hookTaxBps } = resolved;
-  const enabledHooks = MASTER_HOOKS.filter((hook) => isModuleEnabled(resolvedModules, hook.id));
+  const enabledHooks = enabledMasterHooksInOrder(resolvedModules);
   const showFixedFee = hookTaxBps > 0 && !resolvedModules.dynamicFees;
   if (enabledHooks.length === 0 && !showFixedFee) return null;
 
@@ -432,15 +432,6 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
       </header>
 
       <ul className="token-hooks-list" data-count={moduleCount}>
-        {showFixedFee ? (
-          <li className={cn("token-hooks-row", `token-hooks-row--${FIXED_FEE_HOOK.theme}`)}>
-            <HookModuleBadge
-              hook={FIXED_FEE_HOOK}
-              stat={totalFeePlain(hookTaxBps)}
-              tip={hookTaxSummary(hookTaxBps)}
-            />
-          </li>
-        ) : null}
         {enabledHooks.map((hook) => {
           const stat = moduleLiveStatLine(hook.id, resolvedModules, live, pool, hookTaxBps);
           const tip = moduleTooltipText(hook.description, hook.id, resolvedModules, hookTaxBps);
@@ -504,6 +495,15 @@ export function ActiveHooksPanel({ pool }: { pool: TokenPool }) {
             </li>
           );
         })}
+        {showFixedFee ? (
+          <li className={cn("token-hooks-row", `token-hooks-row--${FIXED_FEE_HOOK.theme}`)}>
+            <HookModuleBadge
+              hook={FIXED_FEE_HOOK}
+              stat={totalFeePlain(hookTaxBps)}
+              tip={hookTaxSummary(hookTaxBps)}
+            />
+          </li>
+        ) : null}
       </ul>
     </section>
   );

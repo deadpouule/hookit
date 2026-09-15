@@ -7,13 +7,12 @@ import { HookLogo } from "@/components/home/market/HookLogo";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { shortenAddress } from "@/lib/format";
 import {
-  isModuleEnabled,
+  enabledMasterHooksInOrder,
   moduleDetailLine,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
 import {
   hookThemeAccentColor,
-  MASTER_HOOKS,
   type MasterHook,
 } from "@/lib/master-hooks";
 import type { TokenPool } from "@/lib/types";
@@ -36,7 +35,7 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
   const { hooks, details } = useMemo(() => {
     const resolved = resolveTokenModules(pool);
     if (!resolved) return { hooks: [] as MasterHook[], details: [] as string[] };
-    const next = MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id));
+    const next = enabledMasterHooksInOrder(resolved.modules);
     return {
       hooks: next,
       details: next.map((hook) => moduleDetailLine(hook.id, resolved.modules, resolved.hookTaxBps)),
@@ -59,9 +58,10 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
     return () => window.clearInterval(id);
   }, [hooks.length, paused, reduceMotion, clock]);
 
+  const hookKey = hooks.map((hook) => hook.id).join("|");
   useEffect(() => {
     setIndex(0);
-  }, [pool.id, pool.contractAddress]);
+  }, [pool.id, pool.contractAddress, hookKey]);
 
   const featured = hooks[hooks.length ? index % hooks.length : 0];
   if (!featured) return <div className="token-hook-pulse" aria-hidden />;

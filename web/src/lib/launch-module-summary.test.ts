@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BACKED_FLOOR_VOLUME_EXAMPLE, floorFromVolumeUsd, hookPickDetail } from "./launch-module-summary";
+import { BACKED_FLOOR_VOLUME_EXAMPLE, enabledMasterHooksInOrder, floorFromVolumeUsd, hookPickDetail } from "./launch-module-summary";
 import { MASTER_HOOKS } from "./master-hooks";
+import { EMPTY_BUILDER_MODULES } from "./hook-builder";
 
 test("floorFromVolumeUsd is volume × hook tax when the pot is 100% floor", () => {
   assert.equal(floorFromVolumeUsd(1_000_000, 2), 20_000);
@@ -32,4 +33,19 @@ test("backed floor tooltip example uses 2% / 5% volume rows", () => {
     MASTER_HOOKS.find((hook) => hook.id === "backed-floor")?.description ?? "",
     /More volume = higher floor/,
   );
+});
+
+test("enabled master hooks follow module numbers, not catalog order", () => {
+  const modules = {
+    ...EMPTY_BUILDER_MODULES,
+    holderAirdrop: true,
+    antiMev: true,
+    antiSnipe: true,
+    maxTx: true,
+  };
+  assert.deepEqual(
+    enabledMasterHooksInOrder(modules).map((hook) => hook.id),
+    ["anti-snipe", "max-tx", "anti-mev", "holder-airdrop"],
+  );
+  assert.equal(enabledMasterHooksInOrder(modules)[0]?.id, "anti-snipe");
 });
