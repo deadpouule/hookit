@@ -293,7 +293,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                     : "Bonding curve finished. Now trading on a Uniswap v4 pool."
                 }
               >
-                <span className="rounded-full bg-[#9514d1]/20 px-2 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
+                <span className="token-page-badge rounded-[2px] bg-[#9514d1]/20 px-2 py-0.5 text-[11px] font-medium text-[#d8b4fe]">
                   {pool.bondingPhase === 0 ? "Bonding" : "Graduated"}
                 </span>
               </HeaderTip>
@@ -322,7 +322,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               {copied && <span className="text-[#10b981]">Copied</span>}
             </button>
             {ageSeconds != null && (
-              <span className="rounded-full bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
+              <span className="token-page-badge rounded-[2px] bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}

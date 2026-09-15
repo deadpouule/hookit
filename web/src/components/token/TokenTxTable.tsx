@@ -38,7 +38,10 @@ function ExplorerCell({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={cn(className, "underline decoration-white/20 underline-offset-2 transition hover:text-white hover:decoration-white/60")}
+      className={cn(
+        className,
+        "token-tx-link underline decoration-[#9514d1]/45 underline-offset-2 transition hover:text-[#d8b4fe] hover:decoration-[#9514d1]",
+      )}
     >
       {children}
     </a>
