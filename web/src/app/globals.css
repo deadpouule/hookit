@@ -4097,11 +4097,13 @@
     font-weight: 600;
     text-transform: capitalize;
     color: #71717a;
+    cursor: pointer;
     transition: color 0.15s ease;
   }
 
   .token-tx-tab:hover,
   .token-tx-tab:active,
+  .token-tx-tab:focus-visible,
   .token-tx-tab.is-active {
     color: #9514d1;
   }
@@ -4180,6 +4182,10 @@
       min-height: 0;
     }
 
+    .token-desk--hooks .token-hooks-head {
+      flex-shrink: 0;
+    }
+
     .token-desk--hooks .token-hooks-list {
       flex: 1 1 auto;
       justify-content: space-evenly;
@@ -4188,7 +4194,7 @@
     }
 
     .token-desk--hooks .token-hooks-row {
-      flex: 1 1 0;
+      flex: 1 0 auto;
       min-height: 2.4rem;
       justify-content: center;
     }
