@@ -5368,8 +5368,11 @@
 
   .hook-pulse-browse .token-hook-pulse-slide {
     z-index: 1;
+    flex: 1 1 auto;
+    height: 100%;
     width: min(48%, 15.5rem);
     max-width: 48%;
+    justify-content: flex-start;
     animation: none;
   }
 
@@ -5380,6 +5383,17 @@
     right: -0.7rem;
     bottom: -0.85rem;
     opacity: 0.4;
+  }
+
+  .hook-pulse-browse[data-hook-id="backed-floor"] .token-hook-pulse-mark,
+  .hook-pulse-browse[data-hook-id="auto-burn"] .token-hook-pulse-mark,
+  .hook-pulse-browse[data-hook-id="anti-mev"] .token-hook-pulse-mark,
+  .hook-pulse-browse[data-hook-id="dynamic-fees"] .token-hook-pulse-mark,
+  .hook-pulse-browse[data-hook-id="holder-airdrop"] .token-hook-pulse-mark {
+    width: 12.4rem;
+    height: 12.4rem;
+    right: -0.85rem;
+    bottom: -1rem;
   }
 
   .hook-pulse-browse:hover .token-hook-pulse-mark {
@@ -5400,8 +5414,8 @@
 
   .hook-pulse-browse .token-hook-pulse-link {
     border-top: 0;
-    margin-top: 0.28rem;
-    padding-top: 0;
+    margin-top: auto;
+    padding-top: 0.35rem;
     color: #f4f4f5;
     font-family: inherit;
     font-size: 0.7rem;
@@ -5409,6 +5423,7 @@
     letter-spacing: 0;
     line-height: 1.35;
     text-transform: none;
+    align-self: flex-start;
   }
 
   .hook-docs-dialog {
