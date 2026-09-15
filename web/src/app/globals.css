@@ -4123,11 +4123,6 @@
     display: none;
   }
 
-  /* Unwrap on phone (and Classic) so hooks / tx / fees keep independent order. */
-  .token-side-stack {
-    display: contents;
-  }
-
   .token-desk-rail,
   .token-desk-main {
     min-width: 0;
@@ -4159,7 +4154,6 @@
 
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      /* Packed modules + fees size the middle row; chart stretches to match. */
       grid-template-rows: auto auto minmax(12rem, 1fr);
       grid-template-areas:
         "hero  hero  hero"
@@ -4167,73 +4161,6 @@
         "tx    tx    swap";
       align-items: stretch;
       align-content: start;
-    }
-
-    .token-desk--hooks .token-desk-side {
-      align-self: start;
-      height: auto;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .token-desk--hooks .token-side-stack {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-      padding: 1rem;
-    }
-
-    .token-desk--hooks .token-side-stack .token-hooks-panel.desk-card,
-    .token-desk--hooks .token-side-stack .token-desk-fees .desk-card {
-      background: transparent;
-      border: 0;
-      box-shadow: none;
-      padding: 0;
-    }
-
-    .token-desk--hooks .token-desk-hooks {
-      display: flex;
-      flex: 0 0 auto;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .token-desk--hooks .token-hooks-panel {
-      display: flex;
-      flex: 0 0 auto;
-      flex-direction: column;
-      min-height: 0;
-      padding: 0;
-    }
-
-    .token-desk--hooks .token-hooks-head {
-      flex-shrink: 0;
-    }
-
-    .token-desk--hooks .token-hooks-list {
-      flex: 0 0 auto;
-      min-height: 0;
-      justify-content: flex-start;
-      gap: 0.65rem;
-      overflow: visible;
-    }
-
-    .token-desk--hooks .token-hooks-row {
-      flex: 0 0 auto;
-      justify-content: flex-start;
-    }
-
-    .token-desk--hooks .token-desk-fees {
-      flex: 0 0 auto;
-      margin-top: 0;
-    }
-
-    .token-desk--hooks .token-side-stack .token-desk-fees .desk-card {
-      padding-top: 0.85rem;
-      margin-top: 0.65rem;
-      border-top: 1px solid rgb(255 255 255 / 0.08);
-      border-radius: 0;
     }
 
     .token-desk--hooks .token-desk-hero {
@@ -4244,27 +4171,9 @@
       grid-area: side;
     }
 
-    /* Chart fills the side-sized row instead of forcing a 460px hole under fees. */
     .token-desk--hooks .token-desk-chart {
       grid-area: chart;
-      position: relative;
-      align-self: stretch;
-      min-height: 0;
-    }
-
-    .token-desk--hooks .token-desk-chart > .desk-card {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .token-desk--hooks .token-chart-tv-frame,
-    .token-desk--hooks .token-chart-plot {
-      flex: 1 1 auto;
-      height: auto !important;
-      min-height: 0;
+      align-self: start;
     }
 
     .token-desk--hooks .token-desk-tx-col {
