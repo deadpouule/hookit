@@ -4292,7 +4292,7 @@
       height: 0;
       min-height: 100%;
       overflow: hidden;
-      gap: 0;
+      gap: 10px;
     }
 
     .token-desk--hooks .token-desk-hooks {
@@ -4300,25 +4300,21 @@
       min-height: 0;
       overflow-x: hidden;
       overflow-y: auto;
-      margin-bottom: 10px;
     }
 
     .token-desk--hooks .token-hook-pulse {
-      display: flex;
+      display: block;
+      position: relative;
       flex: 1 1 0;
-      flex-direction: column;
       min-height: 0;
       width: 100%;
       overflow: hidden;
     }
 
-    .token-desk--hooks .token-hook-pulse.is-on {
-      margin-bottom: 10px;
-    }
-
-    .token-desk--hooks .token-hook-pulse.is-on .token-hook-pulse-card {
-      flex: 1 1 auto;
-      height: 100%;
+    .token-desk--hooks .token-hook-pulse-card {
+      position: absolute;
+      inset: 0;
+      height: auto;
     }
 
     .token-desk--hooks .token-desk-fees {
