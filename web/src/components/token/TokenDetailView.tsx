@@ -74,15 +74,6 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   );
 }
 
-function formatPriceUsd(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "·";
-  if (value >= 1) return formatCompactUsd(value);
-  if (value >= 0.01) return `$${value.toFixed(4)}`;
-  if (value >= 0.0001) return `$${value.toFixed(6)}`;
-  const exp = value.toExponential(2).replace("e+", "e").replace("e-0", "e-");
-  return `$${exp}`;
-}
-
 function HeroStat({
   label,
   value,
@@ -210,10 +201,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const githubUrl = tokenGithubUrl(pool.github);
   const explorerUrl = `${BLOCK_EXPLORER_URL}/address/${contractAddress}`;
   const definedUrl = definedChartUrl(contractAddress);
-  const ath = useMemo(
-    () => live.candles.reduce((m, c) => Math.max(m, c.h), live.marketCap),
-    [live.candles, live.marketCap],
-  );
   const fullyDiluted = live.priceUsd * TOTAL_SUPPLY;
   // Only show FDV when burns / excluded sinks make it differ from market cap.
   const fdv =
@@ -407,7 +394,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
         <dl className="token-hero-stats">
           <HeroStat
-            className="token-hero-stat--desk"
             label={activeLegLabel ? `Market cap · ${activeLegLabel}` : "Market cap"}
             value={formatCompactUsd(live.marketCap)}
             title={
@@ -418,20 +404,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           >
             {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
           </HeroStat>
-          <HeroStat
-            className="token-hero-stat--mobile"
-            label="Price"
-            value={formatPriceUsd(live.priceUsd)}
-            title={live.priceUsd > 0 ? `$${live.priceUsd}` : undefined}
-          />
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
-          <HeroStat className="token-hero-stat--desk" label="ATH" value={ath > 0 ? formatCompactUsd(ath) : "·"} />
-          <HeroStat
-            className="token-hero-stat--mobile"
-            label="Holders"
-            value={live.holders > 0 ? live.holders.toLocaleString() : "·"}
-          />
         </dl>
       </div>
     </div>

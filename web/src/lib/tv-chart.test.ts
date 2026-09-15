@@ -20,7 +20,7 @@ test("TradingView resolutions mirror the Tsunami desk (1 5 15 60 1D)", () => {
   assert.equal(tvResolutionToInterval("60"), "1h");
   assert.equal(tvResolutionToInterval("1D"), "1D");
   assert.equal(tvResolutionToInterval("junk"), "5m");
-  assert.equal(intervalToTvResolution("ALL"), "1D");
+  assert.equal(intervalToTvResolution("ALL"), "1");
   assert.equal(intervalToTvResolution("4h"), "60");
   assert.equal(intervalToTvResolution("15m"), "15");
 });

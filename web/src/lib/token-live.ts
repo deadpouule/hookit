@@ -13,6 +13,8 @@ export interface LiveSwap {
   /** Unix seconds - present when the swap timestamp is known (indexer / on-chain block). */
   t?: number;
   recipient: string;
+  recipientAddress?: string;
+  txHash?: string;
   side: SwapSide;
   amount: number;
   totalUsd: number;
@@ -21,6 +23,7 @@ export interface LiveSwap {
 
 export interface LiveHolder {
   address: string;
+  holderAddress?: string;
   pct: number;
   balance: number;
 }
