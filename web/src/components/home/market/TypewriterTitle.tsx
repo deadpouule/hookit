@@ -89,12 +89,10 @@ export function TypewriterTitle() {
             <UsdgMark />
           </span>
         </span>
-        <span className="hero-pitch-line">
-          <span className="hero-pitch-hold">
-            Hold
-            <span className="hero-pitch-hold-token">
-              <HookitTokenMark />.
-            </span>
+        <span className="hero-pitch-line hero-pitch-line--hold">
+          Hold
+          <span className="hero-pitch-hold-token">
+            <HookitTokenMark />.
           </span>
           Collect all tokens.
         </span>
