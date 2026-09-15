@@ -71,10 +71,7 @@ export function TokenTxTable({
             key={id}
             type="button"
             onClick={() => onTab(id)}
-            className={cn(
-              "relative py-3 text-sm font-medium capitalize transition",
-              tab === id ? "text-white" : "text-zinc-500 hover:text-zinc-300",
-            )}
+            className={cn("token-tx-tab", tab === id && "is-active")}
           >
             {id}
             {tab === id && (
