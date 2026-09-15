@@ -4118,16 +4118,33 @@
     display: none;
   }
 
+  .token-desk--hooks .token-hook-pulse {
+    display: block;
+    order: 4;
+    position: relative;
+    min-height: 10.75rem;
+    width: 100%;
+  }
+
+  .token-desk--hooks .token-desk-fees {
+    order: 5;
+  }
+
+  .token-desk--hooks .token-desk-tx-col {
+    order: 6;
+  }
+
   .token-hook-pulse-card {
     position: relative;
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     justify-content: flex-start;
+    align-items: stretch;
     min-height: 0;
     width: 100%;
     overflow: hidden;
-    padding: 0.85rem 0.9rem 0.8rem;
+    padding: 0.72rem 0.85rem 0.7rem;
     text-decoration: none;
     color: inherit;
     container-type: size;
@@ -4147,6 +4164,7 @@
     flex: 1 1 auto;
     flex-direction: column;
     justify-content: flex-start;
+    align-items: stretch;
     min-height: 0;
     height: 100%;
     animation: token-hook-pulse-in 480ms ease;
@@ -4177,11 +4195,12 @@
 
   .token-hook-pulse-mark {
     position: absolute;
-    right: -0.35rem;
-    top: 50%;
+    right: -0.45rem;
+    bottom: -0.55rem;
+    top: auto;
     width: 7.2rem;
     height: 7.2rem;
-    transform: translateY(-52%);
+    transform: none;
     opacity: 0.18;
     pointer-events: none;
     transition: opacity 0.35s ease;
@@ -4200,10 +4219,12 @@
     position: absolute;
     z-index: 2;
     top: 0.7rem;
-    right: 0.85rem;
+    right: 0.55rem;
     left: auto;
     display: flex;
-    gap: 0.32rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.28rem;
   }
 
   .token-hook-pulse-dot {
@@ -4224,7 +4245,8 @@
   .token-hook-pulse-title {
     position: relative;
     margin: 0;
-    max-width: 78%;
+    max-width: 100%;
+    padding-right: 1.15rem;
     font-size: 0.92rem;
     font-weight: 650;
     line-height: 1.2;
@@ -4232,10 +4254,17 @@
     color: #f4f4f5;
   }
 
+  .token-hook-pulse.has-dots .token-hook-pulse-title,
+  .token-hook-pulse.has-dots .token-hook-pulse-desc {
+    padding-right: 1.35rem;
+    max-width: calc(100% - 0.2rem);
+  }
+
   .token-hook-pulse-desc {
     position: relative;
     display: -webkit-box;
-    margin: 0.35rem 0 0;
+    flex: 0 0 auto;
+    margin: 0.28rem 0 0;
     max-width: 92%;
     overflow: hidden;
     font-size: 0.7rem;
@@ -4251,7 +4280,10 @@
     flex-wrap: nowrap;
     align-items: center;
     gap: 0.4rem;
-    margin: 0.7rem 0 0;
+    margin-top: auto;
+    margin-right: 0;
+    margin-bottom: 0;
+    margin-left: 0;
     padding-top: 0.55rem;
     border-top: 1px solid color-mix(in srgb, var(--pulse-accent) 22%, rgb(255 255 255 / 0.08));
     font-size: 0.68rem;
@@ -4334,13 +4366,14 @@
       grid-area: side;
       align-self: stretch;
       min-height: 100%;
-      overflow: hidden;
+      overflow: visible;
       gap: 10px;
     }
 
     .token-desk--hooks .token-desk-hooks {
       flex: 0 0 auto;
       min-height: 0;
+      max-height: none;
       overflow: visible;
     }
 
