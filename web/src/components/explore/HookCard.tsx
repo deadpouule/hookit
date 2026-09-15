@@ -34,16 +34,17 @@ export function HookCard({
     <button
       type="button"
       className={cn("token-hook-pulse-card desk-card hook-pulse-browse")}
+      data-hook-id={hook.id}
       style={{ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
       onClick={() => {
         if (onOpen) onOpen(hook);
         else router.push(usesHref);
       }}
     >
+      <span className="token-hook-pulse-mark" aria-hidden>
+        <HookLogo hookId={hook.id} theme={hook.theme} />
+      </span>
       <span className="token-hook-pulse-slide">
-        <span className="token-hook-pulse-mark" aria-hidden>
-            <HookLogo hookId={hook.id} theme={hook.theme} />
-        </span>
         <h2 className="token-hook-pulse-title">{hook.title}</h2>
         <p className="token-hook-pulse-desc">{sentence(hook.description)}</p>
         <span className="token-hook-pulse-link">
