@@ -45,7 +45,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "overview",
     href: "#overview",
     title: "Overview",
-    description: "First Uniswap v4 launchpad with 2,304 programmable hook combinations. Hold $HKT, get every launch.",
+    description: "First Uniswap v4 launchpad with 1,152 programmable hook combinations. Hold $HKT, get every launch.",
     group: "Introduction",
     keywords: "hookit launchpad overview ink uniswap v4 master classic hkt combinations",
   },
