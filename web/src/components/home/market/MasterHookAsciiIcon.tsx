@@ -1,15 +1,18 @@
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { MASTER_HOOKS, type MasterHookId } from "@/lib/master-hooks";
+import { FIXED_FEE_HOOK, MASTER_HOOKS, type BrowseHookId } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
 
 export function MasterHookAsciiIcon({
   hookId,
   className,
 }: {
-  hookId: MasterHookId;
+  hookId: BrowseHookId;
   className?: string;
 }) {
-  const hook = MASTER_HOOKS.find((item) => item.id === hookId);
+  const hook =
+    hookId === "fixed-fee"
+      ? FIXED_FEE_HOOK
+      : MASTER_HOOKS.find((item) => item.id === hookId);
   if (!hook) return null;
 
   return (

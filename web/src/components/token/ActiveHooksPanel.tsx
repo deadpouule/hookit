@@ -23,7 +23,7 @@ import {
   moduleTooltipText,
   resolveTokenModules,
 } from "@/lib/launch-module-summary";
-import { FIXED_FEE_HOOK, type MasterHookId } from "@/lib/master-hooks";
+import { FIXED_FEE_HOOK, type BrowseHookId, type MasterHookId } from "@/lib/master-hooks";
 import { fetchDeepenLpsAdded } from "@/lib/deepen-lps-added";
 import { buybackClaimableWei as computeBuybackClaimableWei, moduleLiveStatLine, type ModuleLiveStats } from "@/lib/module-live-stats";
 import { quotePerTokenFromSqrtPrice, STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
@@ -107,7 +107,7 @@ function HookModuleBadge({
       <ModuleTip tip={tip}>
         <div className="token-hooks-chip-top">
           <MasterHookAsciiIcon
-            hookId={hook.id === "fixed-fee" ? "dynamic-fees" : (hook.id as MasterHookId)}
+            hookId={hook.id as BrowseHookId}
             className="token-hooks-ascii"
           />
           <span className="token-hooks-chip-copy">
