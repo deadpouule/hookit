@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 
 import { DocsBlockView } from "@/components/docs/DocsBlocks";
 import { DocsHookHeading } from "@/components/docs/DocsDiagrams";
@@ -12,7 +12,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { docsSectionForHook } from "@/lib/docs-content";
-import { launchWithHookHref, type BrowseHook, type MasterHook } from "@/lib/master-hooks";
+import {
+  hookThemeAccentColor,
+  launchWithHookHref,
+  type BrowseHook,
+  type MasterHook,
+} from "@/lib/master-hooks";
 
 export function HookDocsDialog({
   hook,
@@ -35,6 +40,11 @@ export function HookDocsDialog({
       <DialogContent
         overlayClassName="bg-black/45 supports-backdrop-filter:backdrop-blur-md"
         className="hook-docs-dialog flex sm:max-w-2xl"
+        style={
+          hook
+            ? ({ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties)
+            : undefined
+        }
       >
         {hook ? (
           <>
@@ -51,7 +61,14 @@ export function HookDocsDialog({
             {showUseHook || section ? (
               <div className="hook-docs-dialog-actions">
                 {showUseHook ? (
-                  <Link href={launchWithHookHref(hook.id)} className="hook-docs-launch">
+                  <Link
+                    href={launchWithHookHref(hook.id)}
+                    className={
+                      hook.theme === "yellow" || hook.theme === "lime" || hook.theme === "pearl"
+                        ? "hook-docs-launch hook-docs-launch--ink"
+                        : "hook-docs-launch"
+                    }
+                  >
                     Use this hook
                   </Link>
                 ) : null}
