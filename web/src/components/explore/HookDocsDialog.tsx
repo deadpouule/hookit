@@ -12,13 +12,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { docsSectionForHook } from "@/lib/docs-content";
-import { launchWithHookHref, type BrowseHook } from "@/lib/master-hooks";
+import { launchWithHookHref, type BrowseHook, type MasterHook } from "@/lib/master-hooks";
 
 export function HookDocsDialog({
   hook,
   onOpenChange,
 }: {
-  hook: BrowseHook | null;
+  hook: BrowseHook | MasterHook | null;
   onOpenChange: (open: boolean) => void;
 }) {
   const section = useMemo(
