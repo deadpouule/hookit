@@ -8176,8 +8176,22 @@
   }
 
   .hero-pitch .hero-typewriter-mark--owl {
-    background: #000;
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+    height: 2.25rem;
+    width: 2.25rem;
+    background: #111;
+    box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.28);
+  }
+
+  .hero-pitch-hold-token .hero-typewriter-mark {
+    margin-inline: 0 0.05rem;
+  }
+
+  .hero-pitch .hero-typewriter-mark__owl {
+    width: 72%;
+    height: auto;
+    max-width: 72%;
+    max-height: 72%;
+    object-fit: contain;
   }
 
   .hero-pitch .hero-typewriter-mark--uniswap {

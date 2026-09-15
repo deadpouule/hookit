@@ -58,11 +58,11 @@ function HookitTokenMark() {
       <span className="sr-only">Hookit</span>
       <span className="hero-typewriter-mark hero-typewriter-mark--owl" aria-hidden>
         <Image
-          src="/brand/hookit-owl-favicon.png"
+          src="/brand/hookit-owl-mark.png"
           alt=""
-          width={64}
-          height={64}
-          className="hero-typewriter-mark__photo h-auto w-auto"
+          width={48}
+          height={32}
+          className="hero-typewriter-mark__photo hero-typewriter-mark__owl"
           draggable={false}
         />
       </span>
