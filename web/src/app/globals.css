@@ -3575,6 +3575,51 @@
     height: 100%;
   }
 
+  .token-chart-last-price {
+    position: absolute;
+    z-index: 6;
+    top: 3.15rem;
+    right: 5.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.12rem;
+    pointer-events: none;
+    text-align: right;
+  }
+
+  .token-chart-last-price--plot {
+    top: 0.7rem;
+    right: 3.6rem;
+  }
+
+  .token-chart-last-price-value {
+    margin: 0;
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #f4f4f5;
+  }
+
+  .token-chart-last-price-chg {
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  @media (max-width: 760px) {
+    .token-chart-last-price {
+      top: 2.65rem;
+      right: 3.4rem;
+    }
+
+    .token-chart-last-price-value {
+      font-size: 1.45rem;
+    }
+  }
+
   @media (max-width: 760px) {
     .token-chart-tv-frame,
     .token-chart-tv-frame--compact,
