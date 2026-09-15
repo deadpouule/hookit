@@ -216,7 +216,7 @@ export function CreatorActions({ pool }: { pool: TokenPool }) {
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wide text-[#d8b4fe] uppercase">Creator fees</p>
         {isCreator ? (
-          <span className="rounded-full bg-[#9514d1]/20 px-2 py-0.5 text-[10px] font-medium text-[#d8b4fe]">
+          <span className="token-page-badge rounded-[2px] bg-[#9514d1]/20 px-2 py-0.5 text-[10px] font-medium text-[#d8b4fe]">
             You
           </span>
         ) : (

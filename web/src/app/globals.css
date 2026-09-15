@@ -1561,7 +1561,7 @@
 
   .token-hooks-panel .token-hooks-master-badge {
     gap: 6px;
-    border-radius: 6px;
+    border-radius: 2px;
     padding: 5px 11px;
     font-size: 13px;
     font-weight: 600;
@@ -1580,7 +1580,7 @@
     gap: 7px;
     width: 100%;
     margin: 0 0 0.85rem;
-    border-radius: 6px;
+    border-radius: 2px;
     padding: 8px 11px;
     font-size: 12px;
     font-weight: 600;
@@ -1601,7 +1601,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    border-radius: 6px;
+    border-radius: 2px;
     padding: 5px 11px;
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 13px;
@@ -4006,7 +4006,7 @@
 
   .token-hero-card .token-type-badge {
     gap: 4px;
-    border-radius: 6px;
+    border-radius: 2px;
     padding: 3px 7px;
     font-size: 11px;
     line-height: 1.25;
@@ -4047,6 +4047,13 @@
   .token-hero-card .token-type-badge[class*="token-type-badge--pair-"] .pick-logo--sm {
     height: 18px;
     width: 18px;
+  }
+
+  .token-detail-shell .token-type-badge,
+  .token-detail-shell .token-copy-badge,
+  .token-detail-shell .token-og-badge,
+  .token-detail-shell .token-page-badge {
+    border-radius: 2px;
   }
 
   .candle-grid {
@@ -4129,14 +4136,36 @@
 
     .token-desk--hooks {
       grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      /* Chart sizes to the plot; leftover height (tall swap column) goes to the tx table. */
+      /* Chart sizes the middle row; Swaps/Holders span under modules + chart. */
       grid-template-rows: auto auto minmax(12rem, 1fr);
       grid-template-areas:
         "hero  hero  hero"
         "side  chart swap"
-        "side  tx    swap";
+        "tx    tx    swap";
       align-items: stretch;
       align-content: start;
+    }
+
+    .token-desk--hooks .token-desk-side {
+      align-self: stretch;
+    }
+
+    .token-desk--hooks .token-desk-hooks {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .token-desk--hooks .token-hooks-panel {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .token-desk--hooks .token-hooks-list {
+      flex: 1 1 auto;
     }
 
     .token-desk--hooks .token-desk-hero {
