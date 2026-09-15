@@ -4166,10 +4166,7 @@
 
     .token-desk--hooks .token-desk-side {
       align-self: stretch;
-      /* Row height comes from the chart; extra hooks scroll inside the card. */
-      height: 0;
-      min-height: 100%;
-      overflow: hidden;
+      min-height: 0;
     }
 
     .token-desk--hooks .token-desk-hooks {
