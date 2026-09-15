@@ -3733,11 +3733,11 @@
     }
 
     .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto minmax(36px, 0.42fr);
+      grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas:
-        "desc stats ."
-        "links stats .";
-      align-items: start;
+        "desc stats"
+        "links stats";
+      align-items: end;
       gap: 10px 16px;
       padding: 4px 20px 16px;
     }
@@ -3778,7 +3778,7 @@
     border-left: 0;
   }
 
-  .token-hero-stat--mobile ~ .token-hero-stat:not(.token-hero-stat--desk) {
+  .token-hero-stat + .token-hero-stat {
     border-left: 1px solid var(--border);
   }
 
@@ -3810,19 +3810,11 @@
     color: var(--muted-foreground);
   }
 
-  .token-hero-stat--mobile {
-    display: flex;
-  }
-
-  .token-hero-stat--desk {
-    display: none;
-  }
-
   html[data-device="desktop"] {
     .token-hero-stats {
       width: auto;
-      justify-self: start;
-      align-self: center;
+      justify-self: end;
+      align-self: end;
     }
 
     .token-hero-stat {
@@ -3830,18 +3822,9 @@
       flex: 0 0 auto;
       gap: 3px;
       padding: 11px 20px;
-      border-left: 1px solid var(--border);
     }
 
-    .token-hero-stat--desk {
-      display: flex;
-    }
-
-    .token-hero-stat--mobile {
-      display: none;
-    }
-
-    .token-hero-stat--desk:first-child {
+    .token-hero-stat:first-child {
       border-left: 0;
     }
 

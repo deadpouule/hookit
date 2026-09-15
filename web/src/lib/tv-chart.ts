@@ -59,7 +59,7 @@ const INTERVAL_TO_RESOLUTION: Record<ChartInterval, TvResolution> = {
   "1h": "60",
   "4h": "60",
   "1D": "1D",
-  ALL: "1D",
+  ALL: "1",
 };
 
 export function tvResolutionToInterval(resolution: string): ChartInterval {

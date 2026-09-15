@@ -224,6 +224,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
           holders.length > 0
             ? holders.map((h) => ({
                 address: `${h.address.slice(0, 6)}…${h.address.slice(-4)}`,
+                holderAddress: h.address,
                 pct: h.pct,
                 balance: Number(h.balance) / 1e18,
               }))
@@ -265,6 +266,8 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
           ageSec: Math.max(0, Math.floor(Date.now() / 1000) - t.timestamp),
           t: t.timestamp,
           recipient: t.actor ? `${t.actor.slice(0, 6)}…${t.actor.slice(-4)}` : "·",
+          recipientAddress: t.actor || undefined,
+          txHash: t.txHash || undefined,
           side: t.side,
           amount: Number(t.tokenAmount) / 1e18,
           totalUsd,
@@ -273,6 +276,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
       }),
       holderRows: holders.map((h) => ({
         address: `${h.address.slice(0, 6)}…${h.address.slice(-4)}`,
+        holderAddress: h.address,
         pct: h.pct,
         balance: Number(h.balance) / 1e18,
       })),

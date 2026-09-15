@@ -2,9 +2,48 @@
 
 import { TrendingDown, TrendingUp } from "lucide-react";
 
+import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { formatAge, formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import type { LiveHolder, LiveSwap } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
+
+function explorerTxUrl(hash?: string) {
+  return hash && /^0x[a-fA-F0-9]{64}$/.test(hash) ? `${BLOCK_EXPLORER_URL}/tx/${hash}` : null;
+}
+
+function explorerAddressUrl(address?: string) {
+  return address && /^0x[a-fA-F0-9]{40}$/.test(address)
+    ? `${BLOCK_EXPLORER_URL}/address/${address}`
+    : null;
+}
+
+function shortHash(hash: string) {
+  return `${hash.slice(0, 6)}…${hash.slice(-4)}`;
+}
+
+function ExplorerCell({
+  href,
+  children,
+  className,
+}: {
+  href: string | null;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  if (!href) {
+    return <span className={className}>{children}</span>;
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(className, "underline decoration-white/20 underline-offset-2 transition hover:text-white hover:decoration-white/60")}
+    >
+      {children}
+    </a>
+  );
+}
 
 export function TokenTxTable({
   tab,
@@ -44,7 +83,7 @@ export function TokenTxTable({
 
       <div className="token-tx-body overflow-x-auto no-scrollbar">
         {tab === "swaps" ? (
-          <table className="w-full min-w-[720px] text-left text-[13px]">
+          <table className="w-full min-w-[820px] text-left text-[13px]">
             <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">
               <tr className="border-b border-white/10">
                 <th className="px-4 py-2.5 font-medium">Time</th>
@@ -53,12 +92,13 @@ export function TokenTxTable({
                 <th className="px-4 py-2.5 font-medium">Amount</th>
                 <th className="px-4 py-2.5 font-medium">Total USD</th>
                 <th className="px-4 py-2.5 font-medium">Market Cap</th>
+                <th className="px-4 py-2.5 font-medium">Tx</th>
               </tr>
             </thead>
             <tbody>
               {swaps.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-500">
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-zinc-500">
                     No on-chain swaps yet
                   </td>
                 </tr>
@@ -69,7 +109,11 @@ export function TokenTxTable({
                   className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
                 >
                   <td className="px-4 py-2.5 font-mono text-zinc-400">{formatAge(row.ageSec)}</td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-300">{row.recipient}</td>
+                  <td className="px-4 py-2.5 font-mono text-zinc-300">
+                    <ExplorerCell href={explorerAddressUrl(row.recipientAddress)}>
+                      {row.recipient}
+                    </ExplorerCell>
+                  </td>
                   <td
                     className="px-4 py-2.5 font-medium"
                     style={{ color: row.side === "buy" ? "#10b981" : "#ef4444" }}
@@ -91,6 +135,11 @@ export function TokenTxTable({
                         <TrendingDown className="h-3 w-3 text-[#ef4444]" />
                       )}
                     </span>
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-zinc-300">
+                    <ExplorerCell href={explorerTxUrl(row.txHash)}>
+                      {row.txHash ? shortHash(row.txHash) : "·"}
+                    </ExplorerCell>
                   </td>
                 </tr>
               ))
@@ -116,10 +165,14 @@ export function TokenTxTable({
               ) : (
                 holders.map((row) => (
                 <tr
-                  key={row.address}
+                  key={row.holderAddress ?? row.address}
                   className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
                 >
-                  <td className="px-4 py-2.5 font-mono text-zinc-300">{row.address}</td>
+                  <td className="px-4 py-2.5 font-mono text-zinc-300">
+                    <ExplorerCell href={explorerAddressUrl(row.holderAddress)}>
+                      {row.address}
+                    </ExplorerCell>
+                  </td>
                   <td className="px-4 py-2.5 font-mono text-zinc-200">
                     {formatTokenAmount(row.balance)} {ticker}
                   </td>
