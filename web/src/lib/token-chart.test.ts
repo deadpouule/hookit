@@ -13,6 +13,7 @@ import {
   chartPriceBand,
   chartVisibleLogicalRange,
   chartWindowBars,
+  dropCarryForwardBars,
   fillEmptyBars,
   formatChartAxis,
   formatChartUsd,
@@ -25,6 +26,7 @@ import {
   scaleBars,
   seedLaunchBars,
   ticksToBars,
+  visibleCandleOhlc,
 } from "./token-chart";
 import { TOTAL_SUPPLY } from "./token-live";
 import type { LiveCandle } from "./token-live";
@@ -115,7 +117,7 @@ test("priceBarsToMcap converts GeckoTerminal USD price into FDV", () => {
   assert.equal(mcap[0]!.volume, 50);
 });
 
-test("pickChartBars does not splice Gecko onto a house tape", () => {
+test("pickChartBars keeps the house tape even when Gecko is denser", () => {
   const indexer = [{ time: 1, open: 1, high: 1, low: 1, close: 1, volume: 0 }];
   const gecko = Array.from({ length: 8 }, (_, i) => ({
     time: i,
@@ -125,9 +127,9 @@ test("pickChartBars does not splice Gecko onto a house tape", () => {
     close: 2,
     volume: 1,
   }));
-  const fromGecko = pickChartBars(indexer, gecko, "5m");
-  assert.equal(fromGecko.length, 8);
-  assert.ok(fromGecko.every((b) => b.close === 2));
+  const fromHouse = pickChartBars(indexer, gecko, "5m");
+  assert.equal(fromHouse.length, 1);
+  assert.equal(fromHouse[0]!.close, 1);
   assert.equal(pickChartBars([], gecko, "ALL")[0]!.close, 2);
   const houseTape = Array.from({ length: 12 }, (_, i) => ({
     time: i,
@@ -210,6 +212,36 @@ test("a single print grows into a tape up to now", () => {
   assert.equal(filled[0]!.close, 5_000);
   assert.equal(filled[filled.length - 1]!.time, 1_700_002_800);
   assert.equal(filled[filled.length - 1]!.close, 5_000);
+});
+
+test("dropCarryForwardBars keeps real prints and drops empty buckets", () => {
+  const bars = [
+    { time: 60, open: 10, high: 12, low: 9, close: 11, volume: 4 },
+    { time: 120, open: 11, high: 11, low: 11, close: 11, volume: 0 },
+    { time: 180, open: 11, high: 11, low: 11, close: 11, volume: 0 },
+    { time: 240, open: 11, high: 13, low: 11, close: 13, volume: 2 },
+  ];
+  const real = dropCarryForwardBars(bars);
+  assert.equal(real.length, 2);
+  assert.equal(real[0]!.time, 60);
+  assert.equal(real[1]!.time, 240);
+  assert.equal(real[1]!.close, 13);
+});
+
+test("visibleCandleOhlc gives a single print a small body", () => {
+  const doji = visibleCandleOhlc({ time: 1, open: 100, high: 100, low: 100, close: 100, volume: 1 });
+  assert.ok(doji.high - doji.low > 0);
+  assert.equal((doji.high - doji.low).toFixed(1), "0.6");
+  const real = visibleCandleOhlc({ time: 1, open: 100, high: 110, low: 90, close: 105, volume: 1 });
+  assert.equal(real.open, 100);
+  assert.equal(real.high, 110);
+});
+
+test("opening window hugs real prints when barCount is known", () => {
+  assert.equal(chartWindowBars(60, 1, 100, 1), 10);
+  assert.equal(chartWindowBars(60, 1, 100, 3), 10);
+  assert.equal(chartWindowBars(60, 1, 100, 20), 25);
+  assert.equal(chartWindowBars(60, 1, 100, 80), CHART_WINDOW_BARS);
 });
 
 test("opening window is 72 bars, the token's age when younger, never under 20", () => {

@@ -3733,11 +3733,12 @@
     }
 
     .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-areas:
-        "desc stats"
-        "links stats";
+        "desc stats ."
+        "links stats .";
       align-items: end;
+      justify-items: stretch;
       gap: 10px 16px;
       padding: 4px 20px 16px;
     }
@@ -3783,10 +3784,27 @@
   }
 
   .token-hero-stat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 10px;
     color: var(--muted-foreground);
     letter-spacing: 0.01em;
     white-space: nowrap;
+  }
+
+  .token-hero-stat-label-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .token-hero-stat-label-row img,
+  .token-hero-stat-label-row .pairing-mark,
+  .token-hero-stat-label-row .pick-logo,
+  .token-hero-stat-label-row svg {
+    height: 14px;
+    width: 14px;
   }
 
   .token-hero-stat-value {
@@ -3813,15 +3831,15 @@
   html[data-device="desktop"] {
     .token-hero-stats {
       width: auto;
-      justify-self: end;
+      justify-self: center;
       align-self: end;
     }
 
     .token-hero-stat {
-      min-width: 148px;
+      min-width: 168px;
       flex: 0 0 auto;
-      gap: 3px;
-      padding: 11px 20px;
+      gap: 4px;
+      padding: 12px 24px;
     }
 
     .token-hero-stat:first-child {
@@ -3829,11 +3847,19 @@
     }
 
     .token-hero-stat-label {
-      font-size: 12px;
+      font-size: 13px;
+    }
+
+    .token-hero-stat-label-row img,
+    .token-hero-stat-label-row .pairing-mark,
+    .token-hero-stat-label-row .pick-logo,
+    .token-hero-stat-label-row svg {
+      height: 18px;
+      width: 18px;
     }
 
     .token-hero-stat-value {
-      font-size: 18px;
+      font-size: 22px;
     }
   }
 

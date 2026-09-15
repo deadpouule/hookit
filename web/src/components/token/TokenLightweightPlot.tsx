@@ -13,7 +13,7 @@ import {
   chartRangeSignature,
   chartVisibleLogicalRange,
   formatChartAxis,
-  isSyntheticBar,
+  visibleCandleOhlc,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -147,19 +147,10 @@ function applyBars(handle: ChartHandle, next: ChartBar[], lineColor: string, win
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => {
-        const mid = b.close || b.open;
-        const span = Math.max(b.high - b.low, 0);
-        // Empty buckets still draw a visible body so 1m / 5m / 15m / ALL look
-        // like 1h / 4h / 1D instead of a blank pane with one lonely print.
-        const minSpan = mid > 0 ? mid * (isSyntheticBar(b) ? 0.006 : 0.003) : 0;
-        const high = span >= minSpan ? b.high : mid + minSpan / 2;
-        const low = span >= minSpan ? b.low : Math.max(mid - minSpan / 2, 0);
+        const ohlc = visibleCandleOhlc(b);
         return {
           time: b.time as UTCTimestamp,
-          open: isSyntheticBar(b) ? mid - minSpan / 4 : b.open,
-          high,
-          low,
-          close: isSyntheticBar(b) ? mid + minSpan / 4 : b.close,
+          ...ohlc,
         };
       }),
     );
