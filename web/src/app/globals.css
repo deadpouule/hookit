@@ -4166,6 +4166,10 @@
 
     .token-desk--hooks .token-desk-side {
       align-self: stretch;
+      /* Row height comes from the chart; extra hooks scroll inside the card. */
+      height: 0;
+      min-height: 100%;
+      overflow: hidden;
     }
 
     .token-desk--hooks .token-desk-hooks {
@@ -4173,6 +4177,12 @@
       flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
+      overflow: hidden;
+    }
+
+    .token-desk--hooks .token-desk-fees {
+      margin-top: auto;
+      flex-shrink: 0;
     }
 
     .token-desk--hooks .token-hooks-panel {
@@ -4197,6 +4207,26 @@
       flex: 1 0 auto;
       min-height: 2.4rem;
       justify-content: center;
+    }
+
+    /* 1–2 hooks: hug the chips so they don't float in a hollow card. */
+    .token-desk--hooks .token-hooks-panel:has([data-count="1"]),
+    .token-desk--hooks .token-hooks-panel:has([data-count="2"]) {
+      flex: 0 0 auto;
+    }
+
+    .token-desk--hooks .token-hooks-list[data-count="1"],
+    .token-desk--hooks .token-hooks-list[data-count="2"] {
+      flex: 0 0 auto;
+      justify-content: flex-start;
+      overflow: visible;
+    }
+
+    .token-desk--hooks .token-hooks-list[data-count="1"] .token-hooks-row,
+    .token-desk--hooks .token-hooks-list[data-count="2"] .token-hooks-row {
+      flex: 0 0 auto;
+      min-height: 0;
+      justify-content: flex-start;
     }
 
     .token-desk--hooks .token-desk-hero {
