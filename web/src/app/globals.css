@@ -4338,7 +4338,7 @@
 
     .token-desk--hooks .token-desk-hooks {
       flex: 0 1 auto;
-      min-height: 5.5rem;
+      min-height: 0;
       overflow-x: hidden;
       overflow-y: auto;
     }
@@ -4346,8 +4346,8 @@
     .token-desk--hooks .token-hook-pulse {
       display: block;
       position: relative;
-      flex: 1 1 8.5rem;
-      min-height: 8.5rem;
+      flex: 1 1 7.5rem;
+      min-height: 7.5rem;
       width: 100%;
       overflow: hidden;
     }
