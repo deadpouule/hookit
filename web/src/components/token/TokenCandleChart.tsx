@@ -458,6 +458,7 @@ export function TokenCandleChart({
               {hover ? <span className="text-zinc-500">{formatDayClock(hover.time)}</span> : null}
             </>
           ) : null}
+          <ChartLastPrice value={close} pct={pct} scale={scale} variant="plot" />
         </div>
       ) : null}
 
@@ -495,19 +496,16 @@ export function TokenCandleChart({
             ) : null}
           </div>
         ) : (
-          <>
-            <ChartLastPrice value={close} pct={pct} scale={scale} variant="plot" />
-            <TokenLightweightPlot
-              bars={bars}
-              style={style}
-              scale={scale}
-              interval={interval}
-              windowBars={windowBars}
-              lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
-              fitNonce={fitNonce}
-              onHover={setHover}
-            />
-          </>
+          <TokenLightweightPlot
+            bars={bars}
+            style={style}
+            scale={scale}
+            interval={interval}
+            windowBars={windowBars}
+            lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
+            fitNonce={fitNonce}
+            onHover={setHover}
+          />
         )}
       </div>
     </div>
