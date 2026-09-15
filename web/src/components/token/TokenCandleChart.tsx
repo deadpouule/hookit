@@ -9,7 +9,7 @@ import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { TokenTradingViewChart, type TvChartStatus } from "@/components/token/TokenTradingViewChart";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatCompactUsd, formatPercent } from "@/lib/format";
-import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
+import { TV_CANDLE_DOWN, TV_CANDLE_UP, formatTvPrice } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   barChangePct,
@@ -72,6 +72,34 @@ function writeStored(key: string, value: string) {
 
 function changeForInterval(open: number, close: number): number {
   return open > 0 && Number.isFinite(close) ? ((close - open) / open) * 100 : 0;
+}
+
+function ChartLastPrice({
+  value,
+  pct,
+  scale = "price",
+  variant = "tv",
+}: {
+  value: number;
+  pct: number;
+  scale?: ChartScale;
+  variant?: "tv" | "plot";
+}) {
+  if (!(value > 0)) return null;
+  const up = pct >= 0;
+  return (
+    <div className={cn("token-chart-last-price", variant === "plot" && "token-chart-last-price--plot")}>
+      <p className="token-chart-last-price-value">
+        {scale === "mcap" ? formatCompactUsd(value) : `$${formatTvPrice(value)}`}
+      </p>
+      <span
+        className="token-chart-last-price-chg"
+        style={{ color: up ? TV_CANDLE_UP : TV_CANDLE_DOWN }}
+      >
+        {formatPercent(pct, true)}
+      </span>
+    </div>
+  );
 }
 
 function formatDayClock(ts: number): string {
@@ -295,6 +323,9 @@ export function TokenCandleChart({
             barsFor={tvBarsFor}
             onStatus={setTvStatus}
           />
+          {tvStatus === "ready" && hasData ? (
+            <ChartLastPrice value={tvBarsFor(interval).at(-1)?.close ?? 0} pct={pct} />
+          ) : null}
           {tvStatus === "loading" ? (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6">
               <div className="h-[55%] w-[88%] animate-pulse rounded-md bg-zinc-800/50" />
@@ -464,16 +495,19 @@ export function TokenCandleChart({
             ) : null}
           </div>
         ) : (
-          <TokenLightweightPlot
-            bars={bars}
-            style={style}
-            scale={scale}
-            interval={interval}
-            windowBars={windowBars}
-            lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
-            fitNonce={fitNonce}
-            onHover={setHover}
-          />
+          <>
+            <ChartLastPrice value={close} pct={pct} scale={scale} variant="plot" />
+            <TokenLightweightPlot
+              bars={bars}
+              style={style}
+              scale={scale}
+              interval={interval}
+              windowBars={windowBars}
+              lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
+              fitNonce={fitNonce}
+              onHover={setHover}
+            />
+          </>
         )}
       </div>
     </div>

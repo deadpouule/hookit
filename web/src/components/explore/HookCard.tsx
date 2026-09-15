@@ -42,10 +42,7 @@ export function HookCard({
     >
       <span className="token-hook-pulse-slide">
         <span className="token-hook-pulse-mark" aria-hidden>
-            <HookLogo
-              hookId={hook.id === "fixed-fee" ? "dynamic-fees" : hook.id}
-              theme={hook.theme}
-            />
+            <HookLogo hookId={hook.id} theme={hook.theme} />
         </span>
         <h2 className="token-hook-pulse-title">{hook.title}</h2>
         <p className="token-hook-pulse-desc">{sentence(hook.description)}</p>

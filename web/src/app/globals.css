@@ -3575,6 +3575,51 @@
     height: 100%;
   }
 
+  .token-chart-last-price {
+    position: absolute;
+    z-index: 6;
+    top: 3.15rem;
+    right: 5.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.12rem;
+    pointer-events: none;
+    text-align: right;
+  }
+
+  .token-chart-last-price--plot {
+    top: 0.7rem;
+    right: 3.6rem;
+  }
+
+  .token-chart-last-price-value {
+    margin: 0;
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #f4f4f5;
+  }
+
+  .token-chart-last-price-chg {
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  @media (max-width: 760px) {
+    .token-chart-last-price {
+      top: 2.65rem;
+      right: 3.4rem;
+    }
+
+    .token-chart-last-price-value {
+      font-size: 1.45rem;
+    }
+  }
+
   @media (max-width: 760px) {
     .token-chart-tv-frame,
     .token-chart-tv-frame--compact,
@@ -3660,7 +3705,7 @@
 
   .token-hero-mcap-value {
     margin: 0;
-    font-size: 2rem;
+    font-size: 1.7rem;
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.1;
@@ -3735,16 +3780,7 @@
     }
 
     .token-hero-mcap {
-      display: flex;
-      padding: 4px 20px 10px;
-    }
-
-    .token-hero-mcap-value {
-      font-size: 2.65rem;
-    }
-
-    .token-hero-mcap-chg {
-      font-size: 1rem;
+      display: none;
     }
 
     .token-hero-about {
@@ -3802,7 +3838,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--muted-foreground);
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -3828,7 +3864,7 @@
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
@@ -3851,10 +3887,10 @@
     }
 
     .token-hero-stat {
-      min-width: 196px;
+      min-width: 168px;
       flex: 0 0 auto;
-      gap: 6px;
-      padding: 14px 28px;
+      gap: 4px;
+      padding: 12px 24px;
     }
 
     .token-hero-stat:first-child {
@@ -3862,19 +3898,19 @@
     }
 
     .token-hero-stat-label {
-      font-size: 15px;
+      font-size: 13px;
     }
 
     .token-hero-stat-label-row img,
     .token-hero-stat-label-row .pairing-mark,
     .token-hero-stat-label-row .pick-logo,
     .token-hero-stat-label-row svg {
-      height: 20px;
-      width: 20px;
+      height: 18px;
+      width: 18px;
     }
 
     .token-hero-stat-value {
-      font-size: 1.85rem;
+      font-size: 22px;
     }
   }
 
@@ -5320,7 +5356,7 @@
   }
 
   .hook-pulse-browse {
-    min-height: 11.75rem;
+    min-height: 12.5rem;
     height: 100%;
     background:
       radial-gradient(88% 72% at 108% 12%, color-mix(in srgb, var(--pulse-accent) 14%, transparent), transparent 56%),
@@ -5329,17 +5365,17 @@
 
   .hook-pulse-browse .token-hook-pulse-slide {
     z-index: 1;
-    width: min(48%, 15.5rem);
-    max-width: 48%;
+    width: min(40%, 14.25rem);
+    max-width: 40%;
     animation: none;
   }
 
   .hook-pulse-browse .token-hook-pulse-mark {
     z-index: 0;
-    width: 10.8rem;
-    height: 10.8rem;
-    right: -0.7rem;
-    bottom: -0.85rem;
+    width: 14.2rem;
+    height: 14.2rem;
+    right: -1rem;
+    bottom: -1.15rem;
     opacity: 0.4;
   }
 
