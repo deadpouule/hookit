@@ -4128,20 +4128,49 @@
     width: 100%;
     overflow: hidden;
     padding: 0.85rem 0.9rem 0.8rem;
+    text-decoration: none;
+    color: inherit;
     container-type: size;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease;
     background:
       radial-gradient(120% 90% at 110% 10%, color-mix(in srgb, var(--pulse-accent) 28%, transparent), transparent 62%),
       var(--surface);
   }
 
-  @container (max-height: 152px) {
-    .token-hook-pulse-desc {
-      display: none;
+  .token-hook-pulse-card:hover {
+    border-color: color-mix(in srgb, var(--pulse-accent) 45%, var(--border));
+    box-shadow: 0 0 18px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
+  }
+
+  .token-hook-pulse-slide {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+    height: 100%;
+    animation: token-hook-pulse-in 480ms ease;
+  }
+
+  @keyframes token-hook-pulse-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
     }
   }
 
-  @container (max-height: 118px) {
-    .token-hook-pulse-facts {
+  @media (prefers-reduced-motion: reduce) {
+    .token-hook-pulse-slide {
+      animation: none;
+    }
+  }
+
+  @container (max-height: 132px) {
+    .token-hook-pulse-desc {
       display: none;
     }
   }
@@ -4155,6 +4184,11 @@
     transform: translateY(-52%);
     opacity: 0.18;
     pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .token-hook-pulse-card:hover .token-hook-pulse-mark {
+    opacity: 0.28;
   }
 
   .token-hook-pulse-mark .hook-logo {
@@ -4162,30 +4196,33 @@
     height: 100%;
   }
 
-  .token-hook-pulse-stack {
+  .token-hook-pulse-dots {
+    position: absolute;
+    z-index: 2;
+    top: 0.7rem;
+    left: 0.85rem;
     display: flex;
-    gap: 0.35rem;
-    margin-bottom: 0.45rem;
+    gap: 0.32rem;
   }
 
-  .token-hook-pulse-stack .hook-logo {
-    width: 1.35rem;
-    height: 1.35rem;
+  .token-hook-pulse-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.22);
+    cursor: pointer;
   }
 
-  .token-hook-pulse-kicker {
-    position: relative;
-    margin: 0;
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--pulse-accent) 85%, white);
+  .token-hook-pulse-dot.is-on {
+    background: var(--pulse-accent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--pulse-accent) 55%, transparent);
   }
 
   .token-hook-pulse-title {
     position: relative;
-    margin: 0.2rem 0 0;
+    margin: 0;
     max-width: 78%;
     font-size: 0.92rem;
     font-weight: 650;
@@ -4207,30 +4244,34 @@
     -webkit-line-clamp: 3;
   }
 
-  .token-hook-pulse-facts {
+  .token-hook-pulse-link {
     position: relative;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: inline-flex;
+    align-items: center;
     gap: 0.4rem;
     margin: 0.7rem 0 0;
     padding-top: 0.55rem;
     border-top: 1px solid color-mix(in srgb, var(--pulse-accent) 22%, rgb(255 255 255 / 0.08));
-  }
-
-  .token-hook-pulse-facts dt {
-    font-size: 0.58rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #71717a;
+    color: color-mix(in srgb, var(--pulse-accent) 80%, white);
   }
 
-  .token-hook-pulse-facts dd {
-    margin: 0.15rem 0 0;
+  .token-hook-pulse-addr {
     font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 500;
-    color: #e4e4e7;
+    letter-spacing: 0;
+    text-transform: none;
+    color: #d4d4d8;
+  }
+
+  .token-hook-pulse-link svg {
+    width: 0.75rem;
+    height: 0.75rem;
+    opacity: 0.8;
   }
 
   /* Classic: fees live in the swap card on desktop; show them on the page on phone. */
@@ -4297,7 +4338,7 @@
 
     .token-desk--hooks .token-desk-hooks {
       flex: 0 1 auto;
-      min-height: 0;
+      min-height: 5.5rem;
       overflow-x: hidden;
       overflow-y: auto;
     }
@@ -4305,8 +4346,8 @@
     .token-desk--hooks .token-hook-pulse {
       display: block;
       position: relative;
-      flex: 1 1 0;
-      min-height: 0;
+      flex: 1 1 8.5rem;
+      min-height: 8.5rem;
       width: 100%;
       overflow: hidden;
     }
@@ -4314,7 +4355,6 @@
     .token-desk--hooks .token-hook-pulse-card {
       position: absolute;
       inset: 0;
-      height: auto;
     }
 
     .token-desk--hooks .token-desk-fees {

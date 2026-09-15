@@ -462,14 +462,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           <div className="token-desk-hooks space-y-3">
             {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
           </div>
-          {!isClassicDesk ? (
-            <HookPulseCard
-              pool={pool}
-              holders={live.holders}
-              txns={live.txns}
-              ageSeconds={ageSeconds}
-            />
-          ) : null}
+          {!isClassicDesk ? <HookPulseCard pool={pool} /> : null}
           <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
             <CreatorActions pool={activePool} />
           </div>

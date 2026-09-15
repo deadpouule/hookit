@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { HookLogo } from "@/components/home/market/HookLogo";
-import { formatAge } from "@/lib/format";
+import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { shortenAddress } from "@/lib/format";
 import {
   isModuleEnabled,
   moduleDetailLine,
@@ -15,6 +17,9 @@ import {
   type MasterHook,
 } from "@/lib/master-hooks";
 import type { TokenPool } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const ROTATE_MS = 4500;
 
 function sentence(text: string) {
   const t = text.trim();
@@ -22,76 +27,101 @@ function sentence(text: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-export function HookPulseCard({
-  pool,
-  holders,
-  txns,
-  ageSeconds,
-}: {
-  pool: TokenPool;
-  holders: number;
-  txns: number;
-  ageSeconds: number | null;
-}) {
-  const { hooks, detail } = useMemo(() => {
+export function HookPulseCard({ pool }: { pool: TokenPool }) {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [clock, setClock] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  const { hooks, details } = useMemo(() => {
     const resolved = resolveTokenModules(pool);
-    if (!resolved) return { hooks: [] as MasterHook[], detail: null as string | null };
+    if (!resolved) return { hooks: [] as MasterHook[], details: [] as string[] };
     const next = MASTER_HOOKS.filter((hook) => isModuleEnabled(resolved.modules, hook.id));
-    const featured = next[0];
     return {
       hooks: next,
-      detail: featured
-        ? moduleDetailLine(featured.id, resolved.modules, resolved.hookTaxBps)
-        : null,
+      details: next.map((hook) => moduleDetailLine(hook.id, resolved.modules, resolved.hookTaxBps)),
     };
   }, [pool]);
 
-  const featured = hooks[0];
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion || paused || hooks.length < 2) return;
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % hooks.length);
+    }, ROTATE_MS);
+    return () => window.clearInterval(id);
+  }, [hooks.length, paused, reduceMotion, clock]);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [pool.id, pool.contractAddress]);
+
+  const featured = hooks[hooks.length ? index % hooks.length : 0];
   if (!featured) return <div className="token-hook-pulse" aria-hidden />;
 
   const accent = hookThemeAccentColor(featured.theme);
+  const detail = details[index % hooks.length];
+  const hookAddr = pool.hooksAddress;
+  const explorerHref = hookAddr ? `${BLOCK_EXPLORER_URL}/address/${hookAddr}` : undefined;
+
+  const pick = (i: number) => {
+    setIndex(i);
+    setClock((n) => n + 1);
+  };
 
   return (
     <div
-      className="token-hook-pulse"
+      className={cn("token-hook-pulse", hooks.length > 1 && "has-dots")}
       style={{ "--pulse-accent": accent } as CSSProperties}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
     >
-      <div className="token-hook-pulse-card desk-card">
-        <span className="token-hook-pulse-mark" aria-hidden>
-          <HookLogo hookId={featured.id} theme={featured.theme} />
+      <a
+        className="token-hook-pulse-card desk-card"
+        href={explorerHref}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span className="token-hook-pulse-slide" key={featured.id}>
+          <span className="token-hook-pulse-mark" aria-hidden>
+            <HookLogo hookId={featured.id} theme={featured.theme} />
+          </span>
+          <h3 className="token-hook-pulse-title">{featured.title}</h3>
+          <p className="token-hook-pulse-desc">
+            {sentence(featured.description)}
+            {detail ? ` · ${detail}` : ""}
+          </p>
+          {explorerHref ? (
+            <span className="token-hook-pulse-link">
+              <span>On-chain hook</span>
+              <span className="token-hook-pulse-addr">{hookAddr ? shortenAddress(hookAddr) : ""}</span>
+              <ExternalLink />
+            </span>
+          ) : null}
         </span>
-        {hooks.length > 1 ? (
-          <div className="token-hook-pulse-stack">
-            {hooks.slice(0, 4).map((hook) => (
-              <HookLogo key={hook.id} hookId={hook.id} theme={hook.theme} />
-            ))}
-          </div>
-        ) : null}
-        <p className="token-hook-pulse-kicker">
-          {hooks.length === 1 ? "Master module" : `${hooks.length} master modules`}
-        </p>
-        <h3 className="token-hook-pulse-title">
-          {hooks.length <= 2 ? hooks.map((h) => h.title).join(" + ") : featured.title}
-        </h3>
-        <p className="token-hook-pulse-desc">
-          {sentence(featured.description)}
-          {detail ? ` · ${detail}` : ""}
-        </p>
-        <dl className="token-hook-pulse-facts">
-          <div>
-            <dt>Holders</dt>
-            <dd>{holders > 0 ? holders.toLocaleString() : "—"}</dd>
-          </div>
-          <div>
-            <dt>Age</dt>
-            <dd>{ageSeconds != null ? formatAge(ageSeconds) : "—"}</dd>
-          </div>
-          <div>
-            <dt>Txns</dt>
-            <dd>{txns > 0 ? txns.toLocaleString() : "—"}</dd>
-          </div>
-        </dl>
-      </div>
+      </a>
+      {hooks.length > 1 ? (
+        <div className="token-hook-pulse-dots" role="tablist" aria-label="Master modules">
+          {hooks.map((hook, i) => (
+            <button
+              key={hook.id}
+              type="button"
+              role="tab"
+              aria-selected={i === index % hooks.length}
+              aria-label={hook.title}
+              className={cn("token-hook-pulse-dot", i === index % hooks.length && "is-on")}
+              onClick={() => pick(i)}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
