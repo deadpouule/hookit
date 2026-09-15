@@ -492,7 +492,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               stroke="#dc2626"
               labels={[
                 { x: 16, y: 16, text: "1B at launch" },
-                { x: 344, y: 86, text: "After burns", anchor: "end" },
+                { x: 236, y: 100, text: "After burns", anchor: "middle" },
               ]}
             />
           </div>
