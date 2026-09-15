@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
-import { MobileLaunchHero } from "./MobileLaunchHero";
 import { MobileStatsRow } from "./MobileStatsRow";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
@@ -285,7 +284,6 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
       <div className="space-y-3 desk:contents">
-        <MobileLaunchHero />
         <MobileStatsRow />
       </div>
 
