@@ -458,11 +458,13 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
 
         <aside className="token-desk-side">
-          <div className="token-desk-hooks space-y-3">
-            {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
-          </div>
-          <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
-            <CreatorActions pool={activePool} />
+          <div className="token-side-stack desk-card">
+            <div className="token-desk-hooks space-y-3">
+              {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+            </div>
+            <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
+              <CreatorActions pool={activePool} />
+            </div>
           </div>
         </aside>
 

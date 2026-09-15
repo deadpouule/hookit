@@ -4165,30 +4165,48 @@
     }
 
     .token-desk--hooks .token-desk-side {
-      /* Chart sizes the row. Side fills it; modules + fees stay glued at the top. */
       align-self: stretch;
       height: 0;
       min-height: 100%;
       overflow: hidden;
     }
 
+    /* Phone: unwrap so hooks/fees keep their mobile order. Desktop: one card as tall as the chart. */
+    .token-side-stack {
+      display: contents;
+    }
+
+    .token-desk--hooks .token-side-stack {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      padding: 1rem;
+    }
+
+    .token-desk--hooks .token-side-stack .token-hooks-panel.desk-card,
+    .token-desk--hooks .token-side-stack .token-desk-fees .desk-card {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+
     .token-desk--hooks .token-desk-hooks {
       display: flex;
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
       overflow: hidden;
     }
 
-    .token-desk--hooks .token-desk-fees {
-      flex: 0 0 auto;
-    }
-
     .token-desk--hooks .token-hooks-panel {
       display: flex;
-      flex: 0 1 auto;
+      flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
+      padding: 0;
     }
 
     .token-desk--hooks .token-hooks-head {
@@ -4206,6 +4224,18 @@
     .token-desk--hooks .token-hooks-row {
       flex: 0 0 auto;
       justify-content: flex-start;
+    }
+
+    .token-desk--hooks .token-desk-fees {
+      flex: 0 0 auto;
+      margin-top: auto;
+    }
+
+    .token-desk--hooks .token-side-stack .token-desk-fees .desk-card {
+      padding-top: 0.85rem;
+      margin-top: 0.65rem;
+      border-top: 1px solid rgb(255 255 255 / 0.08);
+      border-radius: 0;
     }
 
     .token-desk--hooks .token-desk-hero {
