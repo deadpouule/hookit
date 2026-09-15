@@ -138,9 +138,6 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
-  const houseReal = house.filter((b) => b.volume > 0 || b.high !== b.low).length;
-  if (house.length >= 8 || houseReal >= 4) return house;
-  if (geckoMcap.length >= 8) return geckoMcap;
   if (house.length > 0) return house;
   return geckoMcap;
 }
@@ -148,6 +145,39 @@ export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interva
 /** Carry-forward gap fills have no volume and a flat OHLC. */
 export function isSyntheticBar(bar: ChartBar): boolean {
   return !(bar.volume > 0) && bar.open === bar.close && bar.high === bar.close && bar.low === bar.close;
+}
+
+/**
+ * Drop DexScreener-style empty buckets (0 volume, flat, same close as previous)
+ * so 1m / 5m / ALL only show real prints — Tsunami: one buy → one candle.
+ */
+export function dropCarryForwardBars(bars: ChartBar[]): ChartBar[] {
+  if (bars.length <= 1) return bars;
+  const out: ChartBar[] = [];
+  for (const bar of bars) {
+    const prev = out[out.length - 1];
+    if (prev && isSyntheticBar(bar) && bar.close === prev.close) continue;
+    out.push(bar);
+  }
+  return out;
+}
+
+/** Single-print dojis get a small body so 1m / 5m look like a candle, not a plus. */
+export function visibleCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+  const mid = bar.close || bar.open;
+  const span = Math.max(bar.high - bar.low, 0);
+  const minSpan = mid > 0 ? mid * 0.006 : 0;
+  if (span >= minSpan) {
+    return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+  }
+  const half = minSpan / 2;
+  const up = bar.close >= bar.open;
+  return {
+    open: up ? Math.max(mid - half, 0) : mid + half,
+    high: mid + half,
+    low: Math.max(mid - half, 0),
+    close: up ? mid + half : Math.max(mid - half, 0),
+  };
 }
 
 export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
@@ -229,11 +259,19 @@ export const CHART_MIN_BAR_SPACING = 4;
 export const CHART_MAX_BAR_SPACING = 40;
 
 /**
- * Bars in the opening window, same rule as the Advanced Charts desk: 72, or
- * the token's age when it is younger than that, floored at 20 so a first buy
- * on a fresh token draws one wide candle instead of a sliver.
+ * Opening window: hug real prints (Tsunami: one buy → one wide candle). When we
+ * know `barCount`, size the pane around those bars instead of inventing empty
+ * buckets for every minute since launch. Fallback is 72, or the token's age.
  */
-export function chartWindowBars(bucketSec: number, launchedAt?: number, nowSec = Math.floor(Date.now() / 1000)): number {
+export function chartWindowBars(
+  bucketSec: number,
+  launchedAt?: number,
+  nowSec = Math.floor(Date.now() / 1000),
+  barCount?: number,
+): number {
+  if (barCount != null && barCount > 0) {
+    return Math.min(CHART_WINDOW_BARS, Math.max(barCount + CHART_RIGHT_OFFSET, 10));
+  }
   if (!(bucketSec > 0) || !isValidLaunchTimestamp(launchedAt)) return CHART_WINDOW_BARS;
   const ageBars = Math.ceil((nowSec - launchedAt) / bucketSec);
   if (ageBars <= 0 || ageBars >= CHART_WINDOW_BARS) return CHART_WINDOW_BARS;

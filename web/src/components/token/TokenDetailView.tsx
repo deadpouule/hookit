@@ -10,6 +10,7 @@ import { TokenTypeBadges } from "@/components/home/market/TokenBadges";
 import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
+import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -81,7 +82,7 @@ function HeroStat({
   className,
   title,
 }: {
-  label: string;
+  label: ReactNode;
   value: string;
   children?: ReactNode;
   className?: string;
@@ -394,7 +395,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
         <dl className="token-hero-stats">
           <HeroStat
-            label={activeLegLabel ? `Market cap · ${activeLegLabel}` : "Market cap"}
+            label={
+              <span className="token-hero-stat-label-row">
+                Market cap
+                <PoolQuoteMark quoteAddress={activePool.quoteAddress} quoteAsset={activePool.quoteAsset} />
+              </span>
+            }
             value={formatCompactUsd(live.marketCap)}
             title={
               activeLegLabel

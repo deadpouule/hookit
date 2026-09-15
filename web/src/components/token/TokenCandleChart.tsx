@@ -16,7 +16,7 @@ import {
   barsForInterval,
   chartHudBar,
   chartWindowBars,
-  fillEmptyBars,
+  dropCarryForwardBars,
   formatChartUsd,
   intervalBucketSec,
   liveCandlesToBars,
@@ -27,6 +27,7 @@ import {
   scaleBars,
   seedLaunchBars,
   ticksToBars,
+  visibleCandleOhlc,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -212,21 +213,26 @@ export function TokenCandleChart({
 
   const buildBars = useCallback(
     (iv: ChartInterval, sc: ChartScale) => {
-      const bucket = intervalBucketSec(iv);
-      const display = barsForInterval(source, iv);
-      const filled = fillEmptyBars(display, bucket, nowSec);
-      const withTicks = applySwapTicks(filled, swaps);
+      const display = dropCarryForwardBars(barsForInterval(source, iv));
+      const withTicks = applySwapTicks(display, swaps);
       return scaleBars(pinLiveMcap(withTicks, marketCap), sc);
     },
-    [source, nowSec, swaps, marketCap],
+    [source, swaps, marketCap],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);
-  const tvBarsFor = useCallback((iv: ChartInterval) => buildBars(iv, "price"), [buildBars]);
+  const tvBarsFor = useCallback(
+    (iv: ChartInterval) =>
+      buildBars(iv, "price").map((b) => ({
+        ...b,
+        ...visibleCandleOhlc(b),
+      })),
+    [buildBars],
+  );
 
   const hasData = bars.length > 0;
   const useTradingView = tvStatus !== "unavailable";
-  const windowBars = chartWindowBars(intervalBucketSec(interval), launchedAt, nowSec);
+  const windowBars = chartWindowBars(intervalBucketSec(interval), launchedAt, nowSec, bars.length);
   const open = bars[0]?.open ?? 0;
   const close = bars.length ? bars[bars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
