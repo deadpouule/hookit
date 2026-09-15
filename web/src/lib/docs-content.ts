@@ -775,7 +775,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "A Master module. Every swap lifts the floor: hook-tax quote goes into FloorVault, P_floor = vault ÷ circulating, and it only ratchets up, so the printed price cannot sit below it. More volume = higher floor. Single-pair only, launchMulti reverts BackedFloorNotAllowedInMulti.",
+          text: "Every swap lifts the floor: hook-tax quote goes into FloorVault, P_floor = vault ÷ circulating, and it only ratchets up, so the printed price cannot sit below it. More volume = higher floor. Single-pair only, launchMulti reverts BackedFloorNotAllowedInMulti.",
         },
         {
           type: "table",
@@ -931,7 +931,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Optional Master module. A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid, not $HKT holders. That other flow is the mandatory $HKT drop in the $HKT section.",
+          text: "A launch-time share of the hook pot accrues in HolderAirdropVault as quote (ETH, USDG, or wStock). Holders of that launched token get paid, not $HKT holders. That other flow is the mandatory $HKT drop in the $HKT section.",
         },
         {
           type: "visual",
@@ -1036,7 +1036,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Optional Master fee mode. The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks.",
+          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks.",
         },
         {
           type: "visual",

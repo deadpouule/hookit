@@ -32,6 +32,13 @@ test("docs no longer advertise the old 70/30 split", () => {
   assert.match(blob, /60 \/ 10 \/ 30/);
 });
 
+test("hook docs skip Master-module boilerplate intros", () => {
+  const blob = JSON.stringify(buildDocsSections());
+  assert.equal(blob.includes("A Master module."), false);
+  assert.equal(blob.includes("Optional Master module."), false);
+  assert.equal(blob.includes("Optional Master fee mode."), false);
+});
+
 test("docs place Deepen LPs in Protection and include pro blocks", () => {
   const sections = buildDocsSections();
   const hooks = sections.find((section) => section.id === "hooks");

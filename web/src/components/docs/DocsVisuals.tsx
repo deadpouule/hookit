@@ -158,7 +158,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <div className="docs-multi-head">
               <span className="token-type-badge token-type-badge--multi-pair">
                 <MultiPairGlyph className="token-type-badge-glyph" />
-                Multi pair
+                Multi-pair
               </span>
               <p>$TICKER</p>
             </div>

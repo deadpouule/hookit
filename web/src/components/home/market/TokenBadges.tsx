@@ -156,7 +156,7 @@ export function TokenTypeBadges({
       <BadgeTip key="multi-pair" tip={`${BADGE_TIPS.multiPair} ${legs}`}>
         <span className="token-type-badge token-type-badge--multi-pair">
           <MultiPairGlyph className="token-type-badge-glyph" />
-          Multi pair
+          Multi-pair
           <span className="token-type-badge-multi-pair-logos">
             {pairings.map((pairing) => (
               <PairingMark key={pairing.pairingId} id={pairing.pairingId} size="sm" />

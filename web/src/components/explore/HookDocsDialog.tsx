@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 
 import { DocsBlockView } from "@/components/docs/DocsBlocks";
 import { DocsHookHeading } from "@/components/docs/DocsDiagrams";
@@ -12,14 +12,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { docsSectionForHook } from "@/lib/docs-content";
-import { launchWithHookHref, type BrowseHook, type MasterHook } from "@/lib/master-hooks";
+import {
+  hookThemeAccentColor,
+  launchWithHookHref,
+  type BrowseHook,
+  type MasterHook,
+} from "@/lib/master-hooks";
 
 export function HookDocsDialog({
   hook,
   onOpenChange,
+  showUseHook = true,
 }: {
   hook: BrowseHook | MasterHook | null;
   onOpenChange: (open: boolean) => void;
+  /** Launch CTA lives on the Hooks page only, not token postcards. */
+  showUseHook?: boolean;
 }) {
   const section = useMemo(
     () => (hook ? docsSectionForHook(hook.id) : undefined),
@@ -32,6 +40,11 @@ export function HookDocsDialog({
       <DialogContent
         overlayClassName="bg-black/45 supports-backdrop-filter:backdrop-blur-md"
         className="hook-docs-dialog flex sm:max-w-2xl"
+        style={
+          hook
+            ? ({ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties)
+            : undefined
+        }
       >
         {hook ? (
           <>
@@ -45,16 +58,27 @@ export function HookDocsDialog({
                 <DocsBlockView key={`${hook.id}-${i}`} block={block} />
               ))}
             </div>
-            <div className="hook-docs-dialog-actions">
-              <Link href={launchWithHookHref(hook.id)} className="hook-docs-launch">
-                Use this hook
-              </Link>
-              {section ? (
-                <Link href={`/docs#${section.id}`} className="hook-docs-more">
-                  Full docs
-                </Link>
-              ) : null}
-            </div>
+            {showUseHook || section ? (
+              <div className="hook-docs-dialog-actions">
+                {showUseHook ? (
+                  <Link
+                    href={launchWithHookHref(hook.id)}
+                    className={
+                      hook.theme === "yellow" || hook.theme === "lime" || hook.theme === "pearl"
+                        ? "hook-docs-launch hook-docs-launch--ink"
+                        : "hook-docs-launch"
+                    }
+                  >
+                    Use this hook
+                  </Link>
+                ) : null}
+                {section ? (
+                  <Link href={`/docs#${section.id}`} className="hook-docs-more">
+                    Full docs
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </>
         ) : null}
       </DialogContent>

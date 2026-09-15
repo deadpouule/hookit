@@ -140,7 +140,11 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
           ))}
         </div>
       ) : null}
-      <HookDocsDialog hook={docsOpen ? featured : null} onOpenChange={setDocsOpen} />
+      <HookDocsDialog
+        hook={docsOpen ? featured : null}
+        onOpenChange={setDocsOpen}
+        showUseHook={false}
+      />
     </div>
   );
 }

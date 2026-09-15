@@ -97,7 +97,7 @@ export function MarketplaceToolbar({
             active={category === "multi"}
             onClick={() => onCategoryChange(category === "multi" ? "all" : "multi")}
             glyph={<MultiPairGlyph />}
-            label="Multi pair"
+            label="Multi-pair"
           />
           <FilterPill
             active={false}
