@@ -10,12 +10,12 @@ export const SITE_FAVICON = "/brand/hookit-owl-favicon.png?v=3";
 export const SITE_FAVICON_SVG = "/brand/hookit-owl-favicon.svg?v=3";
 export const SITE_FAVICON_32 = "/brand/hookit-owl-favicon-32.png?v=3";
 
-/** Homepage / generic link preview (WhatsApp / Telegram / X). Hookit × Ink banner. */
+/** Homepage / generic link preview (WhatsApp / Telegram / X). Square, full black. */
 export const SITE_OG_IMAGE = {
-  url: "/brand/og.png?v=4",
-  width: 1772,
-  height: 592,
-  alt: "Hookit × Ink",
+  url: "/brand/og.png",
+  width: 1200,
+  height: 1200,
+  alt: "Hookit",
 } as const;
 
 export const TOKEN_OG_SIZE = { width: 1200, height: 1200 } as const;
