@@ -38,7 +38,6 @@ import {
 } from "@/lib/pool-active-market";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import { TOTAL_SUPPLY } from "@/lib/token-live";
-import { formatTvPrice } from "@/lib/tv-chart";
 import {
   resolveMediaUrl,
   definedChartUrl,
@@ -359,7 +358,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             liveLoading && "animate-pulse text-zinc-500",
           )}
         >
-          {liveLoading ? "·" : `$${formatTvPrice(live.priceUsd)}`}
+          {liveLoading ? "·" : formatCompactUsd(live.marketCap)}
         </p>
         <span
           className={cn(
