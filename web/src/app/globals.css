@@ -2883,6 +2883,12 @@
     background: rgb(255 255 255 / 0.08);
   }
 
+  .hero-typewriter-mark--uniswap {
+    height: 2.2rem;
+    width: 2.2rem;
+    background: transparent;
+  }
+
   .hero-typewriter-mark__glyph {
     height: 1.75rem;
     width: 1.75rem;
@@ -4166,6 +4172,10 @@
     box-shadow: 0 0 18px color-mix(in srgb, var(--pulse-accent) 18%, transparent);
   }
 
+  .token-hook-pulse-card:hover .token-hook-pulse-mark {
+    opacity: 0.28;
+  }
+
   .token-hook-pulse-slide {
     display: flex;
     flex: 1 1 auto;
@@ -4173,8 +4183,7 @@
     justify-content: flex-start;
     align-items: stretch;
     min-height: 0;
-    height: 100%;
-    animation: token-hook-pulse-in 480ms ease;
+    animation: none;
   }
 
   @keyframes token-hook-pulse-in {
@@ -5304,15 +5313,31 @@
   .hook-pulse-browse {
     min-height: 11.75rem;
     height: 100%;
+    background:
+      radial-gradient(88% 72% at 108% 12%, color-mix(in srgb, var(--pulse-accent) 14%, transparent), transparent 56%),
+      var(--surface);
   }
 
   .hook-pulse-browse .token-hook-pulse-slide {
     animation: none;
   }
 
+  .hook-pulse-browse .token-hook-pulse-mark {
+    width: 10.8rem;
+    height: 10.8rem;
+    right: -0.7rem;
+    bottom: -0.85rem;
+    opacity: 0.4;
+  }
+
+  .hook-pulse-browse:hover .token-hook-pulse-mark {
+    opacity: 0.52;
+  }
+
   .hook-pulse-browse .token-hook-pulse-title {
     padding-right: 5.5rem;
     font-size: 1.05rem;
+    color: var(--pulse-accent);
   }
 
   .hook-pulse-browse .token-hook-pulse-desc {
@@ -8063,11 +8088,73 @@
     max-width: 100%;
     text-align: left;
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 1.65rem;
+    font-size: 1.12rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.35;
     letter-spacing: -0.03em;
     color: #fff;
+  }
+
+  .hero-pitch {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0.7rem;
+  }
+
+  .hero-pitch .hero-prompt {
+    margin: 0.08em 0 0;
+    line-height: 1.35;
+  }
+
+  .hero-pitch-lines {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.42rem;
+  }
+
+  .hero-pitch-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+  }
+
+  .hero-pitch-line--badge {
+    margin-top: 0.2rem;
+  }
+
+  .hero-pitch .powered-by-quotrons-badge--hero {
+    gap: 0.5rem;
+    padding: 0.38rem 0.75rem;
+    margin-inline: 0;
+  }
+
+  .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__logo {
+    height: 1.7rem;
+    width: 1.7rem;
+  }
+
+  .hero-pitch .powered-by-quotrons-badge--hero .powered-by-quotrons-badge__text {
+    font-size: 0.82rem;
+  }
+
+  .hero-pitch .hero-typewriter-mark--eth,
+  .hero-pitch .hero-typewriter-mark--usdg {
+    height: 1.85rem;
+    width: 1.85rem;
+  }
+
+  .hero-pitch .hero-typewriter-mark--uniswap {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .hero-pitch .hero-typewriter-mark__glyph {
+    height: 1.15rem;
+    width: 1.15rem;
   }
 
   .hero-typewriter--mobile {
@@ -8614,7 +8701,7 @@
   @media (min-width: 640px) {
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 2.15rem;
+      font-size: 1.22rem;
     }
   }
 
@@ -8640,7 +8727,7 @@
 
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 2.35rem;
+      font-size: 1.32rem;
     }
 
     .hero-stage {
@@ -8700,7 +8787,7 @@
   @media (min-width: 1180px) {
     .hero-copy h1,
     .hero-typewriter {
-      font-size: 2.65rem;
+      font-size: 1.42rem;
     }
   }
 

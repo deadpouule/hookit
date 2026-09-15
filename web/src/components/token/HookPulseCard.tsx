@@ -1,8 +1,9 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 
+import { HookDocsDialog } from "@/components/explore/HookDocsDialog";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { shortenAddress } from "@/lib/format";
@@ -30,6 +31,7 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [clock, setClock] = useState(0);
+  const [docsOpen, setDocsOpen] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const { hooks, details } = useMemo(() => {
@@ -51,12 +53,12 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
   }, []);
 
   useEffect(() => {
-    if (reduceMotion || paused || hooks.length < 2) return;
+    if (reduceMotion || paused || docsOpen || hooks.length < 2) return;
     const id = window.setInterval(() => {
       setIndex((i) => (i + 1) % hooks.length);
     }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [hooks.length, paused, reduceMotion, clock]);
+  }, [hooks.length, paused, docsOpen, reduceMotion, clock]);
 
   const hookKey = hooks.map((hook) => hook.id).join("|");
   useEffect(() => {
@@ -76,6 +78,15 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
     setClock((n) => n + 1);
   };
 
+  const openDocs = () => setDocsOpen(true);
+
+  const onCardKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDocs();
+    }
+  };
+
   return (
     <div
       className={cn("token-hook-pulse", hooks.length > 1 && "has-dots")}
@@ -83,30 +94,37 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <a
+      <div
         className="token-hook-pulse-card desk-card"
-        href={explorerHref}
-        target="_blank"
-        rel="noreferrer"
+        role="button"
+        tabIndex={0}
+        onClick={openDocs}
+        onKeyDown={onCardKey}
       >
-        <span className="token-hook-pulse-slide" key={featured.id}>
-          <span className="token-hook-pulse-mark" aria-hidden>
-            <HookLogo hookId={featured.id} theme={featured.theme} />
-          </span>
+        <span className="token-hook-pulse-mark" aria-hidden>
+          <HookLogo hookId={featured.id} theme={featured.theme} />
+        </span>
+        <div className="token-hook-pulse-slide">
           <h3 className="token-hook-pulse-title">{featured.title}</h3>
           <p className="token-hook-pulse-desc">
             {sentence(featured.description)}
             {detail ? ` · ${detail}` : ""}
           </p>
-          {explorerHref ? (
-            <span className="token-hook-pulse-link">
-              Hook
-              <span className="token-hook-pulse-addr">{hookAddr ? shortenAddress(hookAddr) : ""}</span>
-              <ExternalLink />
-            </span>
-          ) : null}
-        </span>
-      </a>
+        </div>
+        {explorerHref ? (
+          <a
+            className="token-hook-pulse-link"
+            href={explorerHref}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => event.stopPropagation()}
+          >
+            Hook
+            <span className="token-hook-pulse-addr">{hookAddr ? shortenAddress(hookAddr) : ""}</span>
+            <ExternalLink />
+          </a>
+        ) : null}
+      </div>
       {hooks.length > 1 ? (
         <div className="token-hook-pulse-dots" role="tablist" aria-label="Master modules">
           {hooks.map((hook, i) => (
@@ -122,6 +140,7 @@ export function HookPulseCard({ pool }: { pool: TokenPool }) {
           ))}
         </div>
       ) : null}
+      <HookDocsDialog hook={docsOpen ? featured : null} onOpenChange={setDocsOpen} />
     </div>
   );
 }
