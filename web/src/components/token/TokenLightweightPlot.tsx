@@ -10,6 +10,8 @@ import {
   CHART_SCALE_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
+  chartFitFirstRealIndex,
+  chartFitWindowBars,
   chartRangeSignature,
   chartRenderableCandle,
   chartVisibleLogicalRange,
@@ -180,25 +182,17 @@ function resizeChartToHost(chart: IChartApi, host: HTMLElement | null) {
 function fitChartView(
   chart: IChartApi,
   bars: ChartBar[],
-  windowBars: number,
-  bucketSec: number,
+  _windowBars: number,
+  _bucketSec: number,
   anchorIndex?: number,
 ) {
   if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, windowBars);
+  const fittedWindow = chartFitWindowBars(bars.length, chartFitFirstRealIndex(bars));
+  const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, fittedWindow);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
-  const anchor = bars[anchorIndex ?? chartFitAnchorIndex(bars)] ?? bars[bars.length - 1]!;
-  const step = Math.max(bucketSec, 1);
-  const fromTime = anchor.time - (Math.max(windowBars, 1) - 1) * step;
-  const from = Math.max(fromTime, bars[0]!.time);
-  const to = anchor.time + CHART_RIGHT_OFFSET * step;
-  if (to > from) {
-    timeScale.setVisibleRange({ from: from as UTCTimestamp, to: to as UTCTimestamp });
-    return;
-  }
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 

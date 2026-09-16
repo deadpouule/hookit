@@ -559,6 +559,15 @@ export function visiblePriceBand(
     atl = Math.min(atl, bar.low);
   }
   if (!(ath > 0) || !(atl > 0)) {
+    for (let i = start; i <= end; i++) {
+      const bar = bars[i];
+      if (!bar || !isCandleBar(bar)) continue;
+      const ohlc = chartRenderableCandle(bar);
+      ath = Math.max(ath, ohlc.high);
+      atl = Math.min(atl, ohlc.low);
+    }
+  }
+  if (!(ath > 0) || !(atl > 0)) {
     const ext = visibleExtremes(bars, from, to);
     if (!ext) return null;
     return chartPriceBand(ext.atl, ext.ath);
@@ -676,7 +685,13 @@ export function definedWhitespaceTape(
   const last = sorted[sorted.length - 1]!;
   const end = Math.floor((nowSec && nowSec > last.time ? nowSec : last.time) / bucketSec) * bucketSec;
   const minStart = end - (Math.max(windowBars, 1) - 1) * bucketSec;
-  let start = Math.min(sorted[0]!.time, minStart);
+  const firstBucket = Math.floor(sorted[0]!.time / bucketSec) * bucketSec;
+  const bucketsFromFirst = Math.floor((end - firstBucket) / bucketSec) + 1;
+  // Young tokens: don't stretch pre-launch empties across hours — keep a tight tape.
+  let start =
+    bucketsFromFirst <= CHART_MIN_VISIBLE_BARS && firstBucket > minStart
+      ? Math.max(minStart, firstBucket - CHART_FIT_PAD_BARS * bucketSec)
+      : Math.min(firstBucket, minStart);
   const span = Math.floor((end - start) / bucketSec) + 1;
   if (span > maxBars) start = end - (Math.max(maxBars, 1) - 1) * bucketSec;
   const byTime = new Map(sorted.map((bar) => [bar.time, bar]));

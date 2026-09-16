@@ -10,6 +10,7 @@ import {
   carryQuoteFxBars,
   CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
+  CHART_FIT_PAD_BARS,
   CHART_MIN_VISIBLE_BARS,
   CHART_RIGHT_OFFSET,
   CHART_WINDOW_BARS,
@@ -470,6 +471,22 @@ test("mergeChartSeries does not double count a trade present in both candles and
   assert.equal(merged[0]!.low, 95);
   assert.equal(merged[0]!.close, 105);
   assert.equal(merged[1]!.volume, 1);
+});
+
+test("definedWhitespaceTape compacts young tokens instead of padding pre-launch hours", () => {
+  const bucket = 300;
+  const end = 1_789_586_100;
+  const first = end - bucket;
+  const tape = definedWhitespaceTape(
+    [{ time: first, open: 5300, high: 5300, low: 5300, close: 5300, volume: 1 }],
+    bucket,
+    end,
+  );
+  assert.ok(tape.length < CHART_WINDOW_BARS);
+  assert.ok(tape.length <= CHART_MIN_VISIBLE_BARS + CHART_FIT_PAD_BARS + 2);
+  const trade = tape.find((bar) => !isWhitespaceBar(bar) && bar.volume > 0);
+  assert.equal(trade?.close, 5300);
+  assert.ok(tape.every((bar) => bar.time >= first - CHART_FIT_PAD_BARS * bucket));
 });
 
 test("definedWhitespaceTape stretches 72 Defined slots and keeps time gaps", () => {
