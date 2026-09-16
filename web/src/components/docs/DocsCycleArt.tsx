@@ -183,7 +183,7 @@ export function DocsCycleArt() {
       <figcaption>Every swap feeds $HKT</figcaption>
       <p className="docs-map-kicker">Token buybacks. Holder drops. A connected fee cycle.</p>
       <div className="docs-cycle" role="img" aria-label="Every launch and every swap on hookit feeds $HKT">
-        <svg viewBox="0 0 1240 900" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
+        <svg viewBox="0 0 1240 980" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
           <defs>
             <marker id="docs-cycle-w" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
@@ -363,8 +363,8 @@ export function DocsCycleArt() {
             markerEnd="url(#docs-cycle-w)"
           />
           <Callout
-            x={940}
-            y={648}
+            x={860}
+            y={858}
             width={250}
             height={96}
             lines={[
