@@ -107,7 +107,7 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   };
 
   return (
-    <div className="market-shell space-y-6 bg-background pt-8 pb-10">
+    <div className="market-shell space-y-6 bg-background pt-8 pb-28">
       <div className="max-w-xl space-y-2">
         <h1 className="terminal-title text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Discover one click hooks

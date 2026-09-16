@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type CSSProperties } from "react";
+import { type CSSProperties, type KeyboardEvent } from "react";
 
 import { HookLiveTokens } from "@/components/explore/HookLiveTokens";
 import { HookLogo } from "@/components/home/market/HookLogo";
@@ -38,16 +38,27 @@ export function HookCard({
   const usesHref =
     hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id);
 
+  const open = () => {
+    if (onOpen) onOpen(hook);
+    else router.push(usesHref);
+  };
+
+  const onCardKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      open();
+    }
+  };
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       className={cn("token-hook-pulse-card desk-card hook-pulse-browse")}
       data-hook-id={hook.id}
       style={{ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
-      onClick={() => {
-        if (onOpen) onOpen(hook);
-        else router.push(usesHref);
-      }}
+      onClick={open}
+      onKeyDown={onCardKey}
     >
       <span className="token-hook-pulse-mark" aria-hidden>
         <HookLogo hookId={hook.id} theme={hook.theme} />
@@ -63,7 +74,8 @@ export function HookCard({
         </span>
       </span>
       {onToggleCombo ? (
-        <span
+        <button
+          type="button"
           className={cn("hook-combo-add", inCombo && "is-on")}
           onClick={(event) => {
             event.preventDefault();
@@ -72,8 +84,8 @@ export function HookCard({
           }}
         >
           {inCombo ? "In combo" : "+ Combo"}
-        </span>
+        </button>
       ) : null}
-    </button>
+    </div>
   );
 }

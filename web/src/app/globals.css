@@ -4856,17 +4856,23 @@
     border-color: rgb(255 255 255 / 0.05);
   }
 
-  .token-detail-shell .market-token-block {
+  .token-detail-shell .market-token-block,
+  .token-desk-swap .market-token-block,
+  .token-swap-sheet .market-token-block {
     background: #000;
     border: 1px solid rgb(255 255 255 / 0.04);
   }
 
-  .token-detail-shell .market-token-picker {
+  .token-detail-shell .market-token-picker,
+  .token-desk-swap .market-token-picker,
+  .token-swap-sheet .market-token-picker {
     background: #070708;
     border-color: rgb(255 255 255 / 0.06);
   }
 
-  .token-detail-shell .market-preset-btn {
+  .token-detail-shell .market-preset-btn,
+  .token-desk-swap .market-preset-btn,
+  .token-swap-sheet .market-preset-btn {
     background: #0c0c0e;
   }
 
@@ -5820,11 +5826,13 @@
     border: 1px solid rgb(255 255 255 / 0.1);
     border-radius: 999px;
     background: rgb(0 0 0 / 0.55);
+    font: inherit;
     font-size: 0.62rem;
     font-weight: 650;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: #e4e4e7;
+    cursor: pointer;
   }
 
   .hook-combo-add.is-on {

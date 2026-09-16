@@ -40,11 +40,18 @@ export function HookFeatured({
       className="hook-featured"
       style={{ "--pulse-accent": accent } as CSSProperties}
     >
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         className="token-hook-pulse-card desk-card hook-pulse-browse hook-featured-card"
         data-hook-id={hook.id}
         onClick={() => onOpen(hook)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpen(hook);
+          }
+        }}
       >
         <span className="token-hook-pulse-mark" aria-hidden>
           <HookLogo hookId={hook.id} theme={hook.theme} />
@@ -58,7 +65,8 @@ export function HookFeatured({
             <span className="hook-featured-open">Open module</span>
           </span>
         </span>
-        <span
+        <button
+          type="button"
           className={inCombo ? "hook-combo-add is-on" : "hook-combo-add"}
           onClick={(event) => {
             event.preventDefault();
@@ -67,8 +75,8 @@ export function HookFeatured({
           }}
         >
           {inCombo ? "In combo" : "+ Combo"}
-        </span>
-      </button>
+        </button>
+      </div>
       <div className="hook-featured-side">
         <p className="hook-featured-side-label">Live uses</p>
         {livePools.length > 0 ? (
