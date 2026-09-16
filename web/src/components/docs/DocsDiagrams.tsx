@@ -364,14 +364,14 @@ function QuotronsFlywheelDiagram() {
     },
     {
       n: "04",
-      t: "Holders and books",
-      d: "More fees to Quotrons holders. Deeper books. More Hookit launches.",
+      t: "Terminals and books",
+      d: "More USDG into epochs for hardwired terminals. Deeper books. More Hookit launches.",
     },
   ];
   return (
     <figure className="docs-schema">
       <figcaption>Hookit × Quotrons flywheel</figcaption>
-      <div className="docs-qfly" role="img" aria-label="Every Hookit composite trade pays Quotrons LPs and holders, then deeper books pull more launches">
+      <div className="docs-qfly" role="img" aria-label="Every Hookit composite trade pays Quotrons LP vaults and hardwired terminals, then deeper books pull more launches">
         <div className="docs-qfly-loop">
           {steps.map((step) => (
             <article key={step.n} className="docs-qfly-step">
@@ -388,20 +388,20 @@ function QuotronsFlywheelDiagram() {
             <b>Win-win</b>
           </div>
         </div>
-        <div className="docs-split-bar" role="img" aria-label="Quotrons hop fee, half LP vault, half holders">
+        <div className="docs-split-bar" role="img" aria-label="Quotrons hop fee, half LP vault, half hardwired terminals">
           <div className="docs-split-seg docs-split-seg--q-lp" style={{ flex: 50 }}>
             <span>50%</span>
             <small>LP vault</small>
           </div>
           <div className="docs-split-seg docs-split-seg--q-hold" style={{ flex: 50 }}>
             <span>50%</span>
-            <small>Holders</small>
+            <small>Terminals</small>
           </div>
         </div>
       </div>
       <p className="docs-schema-note">
-        Each composite swap hits a Quotrons LP. Their hook takes USDG, splits it, and pays the venue.
-        More Hookit volume raises that stream. Stronger books make the next USDG fill tighter.
+        Each composite swap hits a Quotrons LP. Their hook takes USDG, splits 50/50, and pays the
+        Ink venue. Liquid $QUOTRON does not earn this stream. Stronger books make the next USDG fill tighter.
       </p>
     </figure>
   );

@@ -79,7 +79,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     title: "Why Quotrons",
     description: "Why we built on Quotrons. Canonical USDG LPs. Shared fee flywheel.",
     group: "Protocol",
-    keywords: "quotrons why wapple wnvidia usdg rwa lp flywheel holders flagship",
+    keywords: "quotrons why wapple wnvidia usdg rwa lp flywheel terminals hardwired flagship epoch",
   },
   {
     slug: "trading",

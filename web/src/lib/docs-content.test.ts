@@ -116,6 +116,11 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /canonical hop/);
   assert.match(blob, /"type":"diagram","id":"quotrons-flywheel"/);
   assert.match(blob, /https:\/\/www\.quotrons\.cash\/docs/);
+  assert.match(blob, /hardwired terminals/);
+  assert.match(blob, /Do not mix their \$QUOTRON\/WETH 3%/);
+  assert.match(blob, /\$250 USDG minimum/);
+  assert.match(blob, /fee on the USDG leg/);
+  assert.equal(blob.includes("Public LP deposits"), false);
   assert.match(blob, /V4ClaimsRedeemer/);
   assert.equal(blob.includes("supplies the holder set from the indexer"), false);
   assert.match(blob, /holderTracker/);
