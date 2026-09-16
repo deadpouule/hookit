@@ -8,7 +8,7 @@ import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatCompactUsd, formatPercent } from "@/lib/format";
-import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
+import { TV_CANDLE_DOWN, TV_CANDLE_UP, formatTvPrice } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   applyTicksToBuckets,
@@ -353,6 +353,19 @@ export function TokenCandleChart({
                   {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
                 </span>
                 {hover ? <span className="text-zinc-500">{formatDayClock(hover.time)}</span> : null}
+                {close > 0 ? (
+                  <div className="token-chart-last-price token-chart-last-price--plot">
+                    <p className="token-chart-last-price-value">
+                      {scale === "mcap" ? formatCompactUsd(close) : `$${formatTvPrice(close)}`}
+                    </p>
+                    <span
+                      className="token-chart-last-price-chg"
+                      style={{ color: up ? TV_CANDLE_UP : TV_CANDLE_DOWN }}
+                    >
+                      {formatPercent(pct, true)}
+                    </span>
+                  </div>
+                ) : null}
               </>
             ) : null}
           </div>

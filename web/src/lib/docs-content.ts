@@ -230,7 +230,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Hookit is the first Uniswap v4 launchpad with 1,152 programmable hook combinations. Every token is a hooked pool: pick protection, tokenomics, and fee modules, then freeze them at launch.",
+          text: "Hookit is the first Uniswap v4 launchpad with 384 programmable hook combinations. Every token is a hooked pool: pick protection, tokenomics, and fee modules, then freeze them at launch.",
         },
         {
           type: "p",

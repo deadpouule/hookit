@@ -3646,6 +3646,10 @@
     text-shadow: 0 1px 2px rgb(17 17 17 / 0.9);
   }
 
+  html[data-device="phone"] .token-chart-hud {
+    inset: 6px 10px auto 8px;
+  }
+
   .token-chart-hud-id {
     font-weight: 500;
     color: #f4f4f5;
@@ -3736,6 +3740,18 @@
     }
   }
 
+  html[data-device="phone"] .token-chart-last-price--plot {
+    margin-left: 0;
+  }
+
+  html[data-device="phone"] .token-chart-last-price-value {
+    font-size: 1rem;
+  }
+
+  html[data-device="phone"] .token-chart-last-price-chg {
+    font-size: 0.72rem;
+  }
+
   @media (max-width: 760px) {
     .token-chart-tv-frame,
     .token-chart-tv-frame--compact,
@@ -3813,10 +3829,7 @@
   }
 
   .token-hero-mcap {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    padding: 2px 12px 8px;
+    display: none;
   }
 
   .token-hero-mcap-value {
@@ -3895,10 +3908,6 @@
       font-size: 1.125rem;
     }
 
-    .token-hero-mcap {
-      display: none;
-    }
-
     .token-hero-about {
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       grid-template-areas:
@@ -3948,6 +3957,14 @@
 
   .token-hero-stat + .token-hero-stat {
     border-left: 1px solid var(--border);
+  }
+
+  .token-hero-stat--price {
+    display: none;
+  }
+
+  html[data-device="phone"] .token-hero-stat--price {
+    display: flex;
   }
 
   .token-hero-stat-label {

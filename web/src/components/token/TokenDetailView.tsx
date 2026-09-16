@@ -24,10 +24,10 @@ import {
   changeTone,
   formatAge,
   formatCompactUsd,
-  formatPercent,
   isValidLaunchTimestamp,
   shortenAddress,
 } from "@/lib/format";
+import { formatTvPrice } from "@/lib/tv-chart";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import {
   isMultiPool,
@@ -351,29 +351,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         </div>
       </header>
 
-      <div className="token-hero-mcap">
-        <p
-          className={cn(
-            "token-hero-mcap-value",
-            liveLoading && "animate-pulse text-zinc-500",
-          )}
-        >
-          {liveLoading ? "·" : formatCompactUsd(live.marketCap)}
-        </p>
-        <span
-          className={cn(
-            "token-hero-mcap-chg",
-            changeTone(live.change24h) === "up"
-              ? "token-hero-mcap-chg--up"
-              : changeTone(live.change24h) === "down"
-                ? "token-hero-mcap-chg--down"
-                : "token-hero-mcap-chg--flat",
-          )}
-        >
-          {formatPercent(live.change24h, true)} 24h
-        </span>
-      </div>
-
       <div className="token-hero-about">
         <div className="token-hero-about-desc min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500 sm:text-[11px]">About</p>
@@ -413,6 +390,11 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </HeroStat>
           <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
           <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
+          <HeroStat
+            className="token-hero-stat--price"
+            label="Price"
+            value={liveLoading ? "·" : `$${formatTvPrice(live.marketCap / TOTAL_SUPPLY)}`}
+          />
         </dl>
       </div>
     </div>
