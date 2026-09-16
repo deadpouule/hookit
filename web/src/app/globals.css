@@ -11602,6 +11602,165 @@ h2.docs-hook-heading {
   color: #71717a;
 }
 
+.docs-qfly {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.docs-qfly-loop {
+  display: grid;
+  gap: 0.7rem;
+}
+
+@media (min-width: 720px) {
+  .docs-qfly-loop {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 0.55fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: stretch;
+  }
+
+  .docs-qfly-loop > .docs-qfly-step:nth-of-type(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .docs-qfly-loop > .docs-qfly-step:nth-of-type(2) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .docs-qfly-loop > .docs-qfly-step:nth-of-type(3) {
+    grid-column: 3;
+    grid-row: 3;
+  }
+
+  .docs-qfly-loop > .docs-qfly-step:nth-of-type(4) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .docs-qfly-hub {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .docs-qfly-loop::before,
+  .docs-qfly-loop::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    border: 1.5px dashed rgb(255 110 0 / 0.38);
+  }
+
+  .docs-qfly-loop::before {
+    top: 18%;
+    left: 34%;
+    right: 34%;
+    height: 0;
+    border-width: 1.5px 0 0;
+  }
+
+  .docs-qfly-loop::after {
+    bottom: 18%;
+    left: 34%;
+    right: 34%;
+    height: 0;
+    border-width: 1.5px 0 0;
+  }
+
+  .docs-qfly-hub::before,
+  .docs-qfly-hub::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 22%;
+    border-left: 1.5px dashed rgb(255 110 0 / 0.38);
+    pointer-events: none;
+  }
+
+  .docs-qfly-hub {
+    position: relative;
+  }
+
+  .docs-qfly-hub::before {
+    top: -38%;
+  }
+
+  .docs-qfly-hub::after {
+    bottom: -38%;
+  }
+}
+
+.docs-qfly-step {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: #111111;
+}
+
+.docs-qfly-step span {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff6e00;
+}
+
+.docs-qfly-step strong {
+  font-size: 0.88rem;
+  color: #fafafa;
+}
+
+.docs-qfly-step p {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
+.docs-qfly-hub {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  min-height: 6.4rem;
+  padding: 0.7rem 0.6rem;
+  border: 1px solid rgb(255 110 0 / 0.35);
+  border-radius: 0.85rem;
+  background: radial-gradient(circle at 50% 40%, rgb(255 110 0 / 0.16), #0c0c0c 72%);
+}
+
+.docs-qfly-hub img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.docs-qfly-marks {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.docs-qfly-hub b {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffb37a;
+}
+
+.docs-split-seg--q-lp {
+  background: #0f766e;
+}
+
+.docs-split-seg--q-hold {
+  background: #ff6e00;
+}
+
 .docs-quotrons {
   display: grid;
   gap: 1rem;

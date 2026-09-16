@@ -26,11 +26,17 @@ export function DocsBlockView({ block }: { block: DocsBlock }) {
           {block.title && <p className="docs-callout-title">{block.title}</p>}
           {block.links && block.links.length > 0 ? (
             <p className="docs-callout-links">
-              {block.links.map((link) => (
-                <Link key={link.href} href={link.href}>
-                  {link.label}
-                </Link>
-              ))}
+              {block.links.map((link) =>
+                link.href.startsWith("http") ? (
+                  <a key={link.href} href={link.href} target="_blank" rel="noreferrer">
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link key={link.href} href={link.href}>
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </p>
           ) : null}
           <ul>
