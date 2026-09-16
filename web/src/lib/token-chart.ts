@@ -162,14 +162,30 @@ export function isTradedBar(bar: ChartBar): boolean {
   return !isWhitespaceBar(bar) && bar.volume > 0 && bar.close > 0;
 }
 
-/** Candle series: only real prints (+ optional live bucket at the right edge). */
-export function isCandleBar(bar: ChartBar, isLastReal = false): boolean {
-  if (isWhitespaceBar(bar) || !(bar.close > 0)) return false;
-  if (bar.volume > 0) return true;
-  return isLastReal;
+/** Every FDV bucket with a price prints on the tape (flat = thin dash, not a gap). */
+export function isCandleBar(bar: ChartBar): boolean {
+  return !isWhitespaceBar(bar) && bar.close > 0;
+}
+
+/** Thin TradingView-style dash when FDV is unchanged in this bucket. */
+export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+  const mid = bar.close || bar.open;
+  if (!(mid > 0)) return { open: 0, high: 0, low: 0, close: 0 };
+  const half = mid * 0.00025;
+  return {
+    open: mid,
+    high: mid + half,
+    low: Math.max(mid - half, 0),
+    close: mid,
+  };
 }
 
 export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+  if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
+  const mid = bar.close;
+  const span = Math.max(bar.high - bar.low, Math.abs(bar.open - bar.close));
+  const minMove = mid * 0.00005;
+  if (span <= minMove) return flatFdvCandleOhlc(bar);
   return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
 }
 
@@ -682,6 +698,45 @@ export function definedWhitespaceTape(
     });
   }
   return out;
+}
+
+/**
+ * FDV time series: after the first print, empty buckets carry the last FDV as a
+ * flat slot (drawn as a thin dash) instead of whitespace gaps.
+ */
+export function carryFdvTape(bars: ChartBar[]): ChartBar[] {
+  let prevClose = 0;
+  const out: ChartBar[] = [];
+  for (const bar of bars) {
+    if (!isWhitespaceBar(bar) && bar.close > 0) {
+      prevClose = bar.close;
+      out.push({ ...bar, whitespace: false });
+      continue;
+    }
+    if (isWhitespaceBar(bar) && prevClose > 0) {
+      out.push({
+        time: bar.time,
+        open: prevClose,
+        high: prevClose,
+        low: prevClose,
+        close: prevClose,
+        volume: 0,
+      });
+      continue;
+    }
+    out.push(bar);
+  }
+  return out;
+}
+
+/** Whitespace tape with continuous FDV carry between prints. */
+export function definedFdvTape(
+  bars: ChartBar[],
+  bucketSec: number,
+  nowSec?: number,
+  windowBars = CHART_WINDOW_BARS,
+): ChartBar[] {
+  return carryFdvTape(definedWhitespaceTape(bars, bucketSec, nowSec, windowBars));
 }
 
 /**

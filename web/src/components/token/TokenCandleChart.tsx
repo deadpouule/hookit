@@ -18,7 +18,7 @@ import {
   chartHudBar,
   chartWindowBars,
   chartSpanSec,
-  definedWhitespaceTape,
+  definedFdvTape,
   ensureCurrentBar,
   formatChartUsd,
   intervalBucketSec,
@@ -227,7 +227,7 @@ export function TokenCandleChart({
         liveFx > 0 && fx.length > 0
           ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx))
           : linkBarOpens(current);
-      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
+      return definedFdvTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
     },
     [source, swaps, marketCap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );

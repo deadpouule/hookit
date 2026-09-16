@@ -18,6 +18,9 @@ import {
   chartFitFirstRealIndex,
   chartPriceBand,
   chartRenderableCandle,
+  carryFdvTape,
+  definedFdvTape,
+  flatFdvCandleOhlc,
   intervalBucketSec,
   linkBarOpens,
   repriceBarsWithQuoteFx,
@@ -303,11 +306,49 @@ test("chartPriceBand pads the visible range like TradingView auto-scale", () => 
   assert.equal(chartPriceBand(0, 0), null);
 });
 
-test("chartRenderableCandle leaves a genuine doji unchanged", () => {
-  const doji = { time: 1, open: 5, high: 5, low: 5, close: 5, volume: 2 };
-  const drawn = chartRenderableCandle(doji);
-  assert.deepEqual(drawn, { open: 5, high: 5, low: 5, close: 5 });
-  assert.equal(barChangePct(doji), 0);
+test("flatFdvCandleOhlc draws a thin visible dash when FDV is unchanged", () => {
+  const dash = flatFdvCandleOhlc({ time: 1, open: 5000, high: 5000, low: 5000, close: 5000, volume: 0 });
+  assert.equal(dash.open, 5000);
+  assert.equal(dash.close, 5000);
+  assert.ok(dash.high > dash.close);
+  assert.ok(dash.low < dash.open);
+  assert.ok(dash.high - dash.low < 5000 * 0.001);
+});
+
+test("chartRenderableCandle uses a dash for flat FDV and real wicks for trades", () => {
+  const flat = chartRenderableCandle({ time: 1, open: 5000, high: 5000, low: 5000, close: 5000, volume: 0 });
+  assert.ok(flat.high > flat.close);
+  const traded = chartRenderableCandle({ time: 2, open: 5000, high: 5200, low: 4900, close: 5100, volume: 3 });
+  assert.equal(traded.high, 5200);
+  assert.equal(traded.low, 4900);
+});
+
+test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
+  const tape = [
+    { time: 0, open: 10, high: 12, low: 9, close: 11, volume: 2 },
+    { time: 60, open: 0, high: 0, low: 0, close: 0, volume: 0, whitespace: true },
+    { time: 120, open: 0, high: 0, low: 0, close: 0, volume: 0, whitespace: true },
+  ];
+  const carried = carryFdvTape(tape);
+  assert.equal(carried.length, 3);
+  assert.equal(carried[1]!.close, 11);
+  assert.equal(carried[1]!.volume, 0);
+  assert.equal(carried[2]!.close, 11);
+  assert.ok(!carried[1]!.whitespace);
+});
+
+test("definedFdvTape keeps pre-launch buckets empty", () => {
+  const tape = definedFdvTape(
+    [{ time: 300, open: 5, high: 6, low: 4, close: 5.5, volume: 1 }],
+    300,
+    900,
+    4,
+  );
+  assert.equal(tape.length, 4);
+  assert.equal(tape[0]!.whitespace, true);
+  assert.equal(tape[3]!.close, 5.5);
+  assert.equal(tape[2]!.close, 5.5);
+  assert.equal(tape[2]!.volume, 0);
 });
 
 test("repriceBarsWithQuoteFx scales the bar's own OHLC by quote FX", () => {

@@ -291,15 +291,9 @@ function applyBars(
     (handle.price as ISeriesApi<"Candlestick">).applyOptions({
       priceLineColor: line,
     });
-    const lastRealIdx = (() => {
-      for (let i = next.length - 1; i >= 0; i--) {
-        if (!isWhitespaceBar(next[i]!) && next[i]!.close > 0) return i;
-      }
-      return -1;
-    })();
     (handle.price as ISeriesApi<"Candlestick">).setData(
-      next.map((b, i) => {
-        if (!isCandleBar(b, i === lastRealIdx)) return { time: asTime(b) };
+      next.map((b) => {
+        if (!isCandleBar(b)) return { time: asTime(b) };
         const c = chartRenderableCandle(b);
         return { time: asTime(b), open: c.open, high: c.high, low: c.low, close: c.close };
       }),
