@@ -76,8 +76,8 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   {
     slug: "quotrons",
     href: "#quotrons",
-    title: "Why Quotrons",
-    description: "Why we built on Quotrons. Canonical USDG LPs. Shared fee flywheel.",
+    title: "Why we built on Quotrons",
+    description: "Canonical USDG LPs. Shared fee flywheel with Quotrons v4 pools.",
     group: "Protocol",
     keywords: "quotrons why wapple wnvidia usdg rwa lp flywheel terminals hardwired flagship epoch",
   },

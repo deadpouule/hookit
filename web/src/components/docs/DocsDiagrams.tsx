@@ -51,6 +51,8 @@ export function DocsDiagram({ id }: { id: DocsDiagramId }) {
       return <HktBurnDiagram />;
     case "quotrons-flywheel":
       return <QuotronsFlywheelDiagram />;
+    case "quotrons-fees":
+      return <QuotronsFeesDiagram />;
     default:
       return null;
   }
@@ -346,64 +348,44 @@ function HktBurnDiagram() {
 }
 
 function QuotronsFlywheelDiagram() {
-  const steps = [
-    {
-      n: "01",
-      t: "Hookit trade",
-      d: "Buy in USDG or sell back to USDG. Wallet never holds the wStock.",
-    },
-    {
-      n: "02",
-      t: "Quotrons LP hop",
-      d: "Canonical USDG ↔ wStock book. One unlock with the hooked launch pool.",
-    },
-    {
-      n: "03",
-      t: "Venue fee",
-      d: "Live hook fee in USDG. 50% LP vault. 50% hardwired terminals.",
-    },
-    {
-      n: "04",
-      t: "Terminals and books",
-      d: "More USDG into epochs for hardwired terminals. Deeper books. More Hookit launches.",
-    },
-  ];
   return (
-    <figure className="docs-schema">
-      <figcaption>Hookit × Quotrons flywheel</figcaption>
-      <div className="docs-qfly" role="img" aria-label="Every Hookit composite trade pays Quotrons LP vaults and hardwired terminals, then deeper books pull more launches">
-        <div className="docs-qfly-loop">
-          {steps.map((step) => (
-            <article key={step.n} className="docs-qfly-step">
-              <span>{step.n}</span>
-              <strong>{step.t}</strong>
-              <p>{step.d}</p>
-            </article>
-          ))}
-          <div className="docs-qfly-hub">
-            <div className="docs-qfly-marks">
-              <img src="/brand/hookit-owl-favicon.png" alt="" width={36} height={36} />
-              <img src="/brand/quotrons-mark.png" alt="" width={36} height={36} />
-            </div>
-            <b>Win-win</b>
-          </div>
-        </div>
-        <div className="docs-split-bar" role="img" aria-label="Quotrons hop fee, half LP vault, half hardwired terminals">
-          <div className="docs-split-seg docs-split-seg--q-lp" style={{ flex: 50 }}>
-            <span>50%</span>
-            <small>LP vault</small>
-          </div>
-          <div className="docs-split-seg docs-split-seg--q-hold" style={{ flex: 50 }}>
-            <span>50%</span>
-            <small>Terminals</small>
-          </div>
-        </div>
-      </div>
-      <p className="docs-schema-note">
-        Each composite swap hits a Quotrons LP. Their hook takes USDG, splits 50/50, and pays the
-        Ink venue. Liquid $QUOTRON does not earn this stream. Stronger books make the next USDG fill tighter.
-      </p>
-    </figure>
+    <DocsBranchGraph
+      caption="Hookit × Quotrons flywheel"
+      kicker="Every composite trade"
+      sources={[
+        { t: "Buy in USDG", d: "Wallet pays USDG. Never holds the wStock." },
+        { t: "Sell to USDG", d: "Token → wStock → USDG in one unlock." },
+      ]}
+      hub={{ t: "Quotrons v4 pool", d: "Canonical USDG ↔ wStock hop." }}
+      outputs={[
+        { t: "LP vault 50%", d: "That pool's vault, claimable in USDG." },
+        { t: "Terminals 50%", d: "Venue-wide pot → epochs → hardwired terminals." },
+        { t: "Deeper books", d: "Fees stay in the venue that prices every wStock launch." },
+        { t: "More Hookit volume", d: "Better USDG fills. More launches pair here." },
+      ]}
+      note="Liquid $QUOTRON does not earn this stream. Stronger books make the next USDG fill tighter."
+    />
+  );
+}
+
+function QuotronsFeesDiagram() {
+  return (
+    <DocsBranchGraph
+      caption="Where the venue fee goes"
+      kicker="Every hop"
+      sources={[
+        { t: "Hook fee", d: "Live take in USDG. 0.30% at writing." },
+        { t: "USDG leg", d: "Same notional, same fee, buy or sell." },
+      ]}
+      hub={{ t: "Split 50 / 50", d: "Onchain, no custody, no signature." }}
+      outputs={[
+        { t: "LP vault", d: "Per-pool. Claimable in USDG." },
+        { t: "Terminal pot", d: "Venue-wide. Quiet books ride busy ones." },
+        { t: "Epochs", d: "$250 min, $10,000 cap, at most every 5 min." },
+        { t: "Hardwired terminals", d: "Ten reward floors. Liquid $QUOTRON earns nothing." },
+      ]}
+      note="Quote the fee live. Their own rails can be fee-exempt. A Hookit hop pays."
+    />
   );
 }
 

@@ -115,12 +115,22 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /Why we built on Quotrons/);
   assert.match(blob, /canonical hop/);
   assert.match(blob, /"type":"diagram","id":"quotrons-flywheel"/);
+  assert.match(blob, /"type":"diagram","id":"quotrons-fees"/);
   assert.match(blob, /https:\/\/www\.quotrons\.cash\/docs/);
   assert.match(blob, /hardwired terminals/);
   assert.match(blob, /Do not mix their \$QUOTRON\/WETH 3%/);
   assert.match(blob, /\$250 USDG minimum/);
   assert.match(blob, /fee on the USDG leg/);
+  assert.match(blob, /the v4 pools that list stocks/);
+  assert.equal(blob.includes("hooked V4"), false);
   assert.equal(blob.includes("Public LP deposits"), false);
+  assert.equal(sections.find((section) => section.id === "quotrons")?.title, "Why we built on Quotrons");
+  assert.equal(
+    sections
+      .find((section) => section.id === "quotrons")
+      ?.blocks.filter((block) => block.type === "h3" && block.text === "Why we built on Quotrons").length,
+    0,
+  );
   assert.match(blob, /V4ClaimsRedeemer/);
   assert.equal(blob.includes("supplies the holder set from the indexer"), false);
   assert.match(blob, /holderTracker/);
@@ -177,8 +187,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(diagrams, /docs-hkt-schema/);
   assert.match(diagrams, /docs-hkt-schema-join/);
   assert.match(diagrams, /DocsBranchGraph/);
-  assert.match(diagrams, /docs-qfly/);
   assert.match(diagrams, /Hookit × Quotrons flywheel/);
+  assert.match(diagrams, /Where the venue fee goes/);
+  assert.match(diagrams, /Quotrons v4 pool/);
+  assert.equal(diagrams.includes("docs-qfly"), false);
   assert.match(diagrams, /hookit-owl-favicon/);
   assert.match(diagrams, /Launch your programmable hooks with our modules: floor, burn, vesting/);
   assert.equal(diagrams.includes("Owl totem"), false);

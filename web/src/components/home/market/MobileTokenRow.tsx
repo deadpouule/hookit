@@ -42,7 +42,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
       <div className="relative shrink-0">
         <TokenArt
           token={token}
-          className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full"
+          className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[12px]"
           glyphClassName="text-lg"
         />
         <TokenCopyBadge token={token} />
