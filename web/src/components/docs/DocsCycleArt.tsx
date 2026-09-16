@@ -312,7 +312,7 @@ export function DocsCycleArt() {
           </text>
 
           <path d="M 307 338 C 307 420, 307 620, 307 678" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <text x="322" y="520" fill="#f4f4f5" fontSize="11" fontWeight="700">
+          <text x="322" y="630" fill="#f4f4f5" fontSize="11" fontWeight="700">
             (0-9% optional)
           </text>
           <rect x="214" y="682" width="170" height="58" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
