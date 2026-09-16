@@ -141,9 +141,9 @@ test.describe("Hookit UI smoke", () => {
     const box = await plot.boundingBox();
     expect(box).toBeTruthy();
     await page.mouse.move(box!.x + box!.width * 0.45, box!.y + box!.height * 0.5);
-    await expect(page.getByText(/Market cap/i).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText(/^FDV$/).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.getByRole("button", { name: "Price" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mcap" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "FDV" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Candles" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Line" })).toBeVisible();
 

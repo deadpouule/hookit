@@ -91,7 +91,7 @@ export function TokenTxTable({
                 <th className="px-4 py-2.5 font-medium">Type</th>
                 <th className="px-4 py-2.5 font-medium">Amount</th>
                 <th className="px-4 py-2.5 font-medium">Total USD</th>
-                <th className="px-4 py-2.5 font-medium">Market Cap</th>
+                <th className="px-4 py-2.5 font-medium">FDV</th>
                 <th className="px-4 py-2.5 font-medium">Tx</th>
               </tr>
             </thead>

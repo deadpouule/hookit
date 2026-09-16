@@ -8,8 +8,16 @@ import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
   hookThemeAccentColor,
   type BrowseHook,
+  type MasterHookCategory,
 } from "@/lib/master-hooks";
 import { cn } from "@/lib/utils";
+
+const CATEGORY_LABEL: Record<MasterHookCategory, string> = {
+  protection: "Protection",
+  tokenomics: "Tokenomics",
+  rewards: "Rewards",
+  "trading-fees": "Fees",
+};
 
 function sentence(text: string) {
   const t = text.trim();
@@ -33,24 +41,32 @@ export function HookCard({
   return (
     <button
       type="button"
-      className={cn("token-hook-pulse-card desk-card hook-pulse-browse")}
+      className={cn("hook-browse-card")}
       data-hook-id={hook.id}
       style={{ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
       onClick={() => {
-        if (onOpen) onOpen(hook);
-        else router.push(usesHref);
+        window.setTimeout(() => {
+          if (onOpen) onOpen(hook);
+          else router.push(usesHref);
+        }, 0);
       }}
     >
-      <span className="token-hook-pulse-mark" aria-hidden>
-        <HookLogo hookId={hook.id} theme={hook.theme} />
-      </span>
-      <span className="token-hook-pulse-slide">
-        <h2 className="token-hook-pulse-title">{hook.title}</h2>
-        <p className="token-hook-pulse-desc">{sentence(hook.description)}</p>
-        <span className="token-hook-pulse-link">
-          {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
+      <span className="hook-browse-card__top">
+        <span className="hook-browse-card__logo" aria-hidden>
+          <HookLogo hookId={hook.id} theme={hook.theme} />
+        </span>
+        <span className="hook-browse-card__chips">
+          <span className="hook-browse-card__cat">{CATEGORY_LABEL[hook.category]}</span>
+          <span className="hook-browse-card__uses">
+            {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
+          </span>
         </span>
       </span>
+      <span className="hook-browse-card__body">
+        <h2 className="hook-browse-card__title">{hook.title}</h2>
+        <p className="hook-browse-card__desc">{sentence(hook.description)}</p>
+      </span>
+      <span className="hook-browse-card__cta">Open module</span>
     </button>
   );
 }

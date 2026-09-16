@@ -90,7 +90,7 @@ export function MarketTokenCard({
 
         <p className="token-card-mcap">
           <span className="token-card-mcap-value">{formatUsd(token.marketCap)}</span>
-          <span className="token-card-mcap-label"> MC</span>
+          <span className="token-card-mcap-label"> FDV</span>
           <span
             className={
               tone === "up"
@@ -106,7 +106,7 @@ export function MarketTokenCard({
 
         <dl className="pointer-events-none token-card-stats">
           <div>
-            <dt>Mcap</dt>
+            <dt>FDV</dt>
             <dd>{formatUsd(token.marketCap)}</dd>
           </div>
           <div>

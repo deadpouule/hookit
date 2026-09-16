@@ -601,7 +601,7 @@ export function chartPriceBand(
 }
 
 /**
- * Right-axis label. Market cap stays compact USD; price uses the TradingView
+ * Right-axis label. FDV stays compact USD; price uses the TradingView
  * subscript form (0.0₃85495) so the fallback reads like the Advanced Chart.
  */
 export function formatChartAxis(value: number, scale: ChartScale): string {
