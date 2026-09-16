@@ -8560,6 +8560,18 @@
     gap: 0.42rem;
   }
 
+  .hero-pitch-heading {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.42rem;
+    margin: 0;
+    font: inherit;
+    font-weight: inherit;
+    color: inherit;
+  }
+
   .hero-pitch-line {
     display: flex;
     flex-wrap: wrap;
@@ -8627,6 +8639,7 @@
     line-height: 1;
     text-decoration: none;
     white-space: nowrap;
+    pointer-events: auto;
     transition:
       border-color 160ms ease,
       color 160ms ease;

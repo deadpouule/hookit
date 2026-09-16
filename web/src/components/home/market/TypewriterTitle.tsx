@@ -73,33 +73,35 @@ function HookitTokenMark() {
 
 export function TypewriterTitle() {
   return (
-    <h1 className="hero-typewriter hero-pitch">
+    <div className="hero-typewriter hero-pitch">
       <span className="hero-prompt">~$</span>
-      <span className="hero-pitch-lines">
-        <span className="hero-pitch-line">
-          A new way to <span className="hero-pitch-launch">launch.</span>
-        </span>
-        <span className="hero-pitch-line">
-          Programmable v4 hooks
-          <UniswapMark />
-        </span>
-        <span className="hero-pitch-line">
-          Multi-pair pools
-          <MultiPairGlyph className="hero-pitch-multi" />
-          <span className="hero-pitch-marks">
-            <PairingLogoStack size="sm" ids={STOCK_PAIRING_IDS as PairingTokenId[]} />
-            <EthMark />
-            <UsdgMark />
+      <div className="hero-pitch-lines">
+        <h1 className="hero-pitch-heading">
+          <span className="hero-pitch-line">
+            A new way to <span className="hero-pitch-launch">launch.</span>
           </span>
-        </span>
-        <span className="hero-pitch-line hero-pitch-line--hold">
-          Hold
-          <span className="hero-pitch-hold-token">
-            <HookitTokenMark />.
+          <span className="hero-pitch-line">
+            Programmable v4 hooks
+            <UniswapMark />
           </span>
-          <span className="hero-pitch-collect">Collect all tokens.</span>
-        </span>
-        <span className="hero-pitch-line hero-pitch-line--badge">
+          <span className="hero-pitch-line">
+            Multi-pair pools
+            <MultiPairGlyph className="hero-pitch-multi" />
+            <span className="hero-pitch-marks">
+              <PairingLogoStack size="sm" ids={STOCK_PAIRING_IDS as PairingTokenId[]} />
+              <EthMark />
+              <UsdgMark />
+            </span>
+          </span>
+          <span className="hero-pitch-line hero-pitch-line--hold">
+            Hold
+            <span className="hero-pitch-hold-token">
+              <HookitTokenMark />.
+            </span>
+            <span className="hero-pitch-collect">Collect all tokens.</span>
+          </span>
+        </h1>
+        <div className="hero-pitch-line hero-pitch-line--badge">
           <PoweredByQuotronsBadge variant="hero" className="hero-quotrons-badge" />
           <Link href="/docs" className="hero-how-it-works">
             How it works
@@ -107,8 +109,8 @@ export function TypewriterTitle() {
               {">"}
             </span>
           </Link>
-        </span>
-      </span>
-    </h1>
+        </div>
+      </div>
+    </div>
   );
 }

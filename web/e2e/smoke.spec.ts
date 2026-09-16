@@ -41,6 +41,14 @@ test.describe("Hookit UI smoke", () => {
     const tokensSection = page.locator("#tokens, .token-grid, .market-card").first();
     await expect(tokensSection).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText(/Live on Ink/i).first()).toBeHidden();
+    await expect(page.getByRole("link", { name: /How it works/i })).toBeVisible();
+  });
+
+  test("Explore How it works opens docs", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop chrome only");
+    await openApp(page, "/");
+    await page.getByRole("link", { name: /How it works/i }).click();
+    await expect(page).toHaveURL(/\/docs/);
   });
 
   test("Launch page renders wizard", async ({ page }, testInfo) => {
