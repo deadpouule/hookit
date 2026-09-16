@@ -294,17 +294,17 @@ export function DocsCycleArt() {
             />
           ))}
           <path
-            d="M 186 700 C 70 660, 36 580, 100 508"
+            d="M 186 700 C 72 655, 40 575, 102 508"
             fill="none"
             stroke="#f4f4f5"
-            strokeWidth="1.8"
+            strokeWidth="2"
             markerEnd="url(#docs-cycle-w)"
           />
-          <rect x="24" y="562" width="178" height="42" rx="12" fill="#f4f4f5" />
-          <text x="113" y="578" textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
+          <rect x="16" y="548" width="210" height="48" rx="14" fill="#f4f4f5" />
+          <text x="121" y="567" textAnchor="middle" fill="#0a0a0a" fontSize="10" fontWeight="800" letterSpacing="0">
             v4 hooks who benefit
           </text>
-          <text x="113" y="594" textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
+          <text x="121" y="584" textAnchor="middle" fill="#0a0a0a" fontSize="10" fontWeight="800" letterSpacing="0">
             for tokens launched on hookit
           </text>
         </svg>
