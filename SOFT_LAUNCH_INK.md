@@ -13,7 +13,7 @@ Protocol docs: [hookit.fun/docs](https://www.hookit.fun/docs).
 | `DeployHookitCore` broadcast (57073) | **Superseded** — current stack is `RedeployHookitInk` block `55929992` |
 | `VerifyInkDeploy.s.sol` | **VERIFY_INK_OK** on factory `0x5709Aa29…` (block `55929992`) |
 | Custom hook allowlist on factory | Run **`HardenInkSoftLaunch.s.sol`** once if `customHookAllowlistEnabled` is false |
-| FeeEthRail ETH bridge | Deferred until a public USDG↔ETH pool exists |
+| FeeEthRail ETH bridge | v3 WETH/USDG LP `0x5A56…343e46` (fee 1%) — **needs matching v4 pool** on PoolManager for `setEthBridge` |
 | HookitSwapRouter required in web | Set `NEXT_PUBLIC_HOOKIT_SWAP_ROUTER` |
 | Hosted indexer | Linode — `https://indexer.hookit.fun` |
 | WalletConnect project ID | Required before public UI |
@@ -49,9 +49,12 @@ forge script script/VerifyInkDeploy.s.sol --rpc-url $INK_RPC_URL -vv
 # 3) Harden soft launch — enable custom-hook allowlist (owner tx, once)
 forge script script/HardenInkSoftLaunch.s.sol --rpc-url $INK_RPC_URL --broadcast
 
-# 4) Optional: wire FeeEthRail when USDG/ETH pool exists
-FEE_ETH_RAIL=0xd9d24028a3a2dc0874b5d4f10c2770150a719acb \
-  forge script script/WireFeeEthRailInk.s.sol --rpc-url $INK_RPC_URL --broadcast
+# 4) Wire FeeEthRail when a **v4** USDG/ETH or WETH/USDG pool exists (v3 LP alone is not enough)
+FEE_ETH_RAIL=0x6de73f59d5b7061da18fcede527f995a4ca7bba7 \
+  forge script script/WireFeeEthRailInk.s.sol:WireFeeEthRailInk --rpc-url $INK_RPC_URL --broadcast
+# Optional explicit v4 key (e.g. WETH/USDG fee 10000 spacing 200):
+# ETH_BRIDGE_FEE=10000 ETH_BRIDGE_TICK_SPACING=200 ETH_BRIDGE_USE_WETH=true \
+#   FEE_ETH_RAIL=0x6de... forge script script/WireFeeEthRailInk.s.sol:WireFeeEthRailInk --rpc-url $INK_RPC_URL --broadcast
 
 # 5) Dry-run latest bytecode on Ink fork
 forge script script/DryRunInk.s.sol --fork-url $INK_RPC_URL --disable-code-size-limit -vv

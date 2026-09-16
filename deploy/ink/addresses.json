@@ -71,6 +71,12 @@
     "startBlock": 55929992,
     "url": "https://indexer.hookit.fun"
   },
+  "usdgEthBridge": {
+    "v3Pool": "0x5a56ff4b88f0ff5b33d4b0cf541fe76daf343e46",
+    "pair": "WETH/USDG",
+    "fee": 10000,
+    "note": "Uniswap v3 LP on Ink. FeeEthRail.setEthBridge needs a live v4 WETH/USDG or ETH/USDG pool on PoolManager 0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32 — run WireFeeEthRailInk after v4 liquidity exists."
+  },
   "oracle": {
     "type": "Uniswap v3 TWAP",
     "feed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",

@@ -172,7 +172,7 @@ export function loadConfig(): IndexerConfig {
     bindHost: (process.env.INDEXER_BIND ?? "127.0.0.1").trim() || "127.0.0.1",
     pollMs: Number(process.env.INDEXER_POLL_MS ?? (isInk ? 4_000 : 12_000)),
     chunkSize: BigInt(process.env.INDEXER_CHUNK ?? (isInk ? 800 : 2_000)),
-    confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? (isInk ? 3 : 12)),
+    confirmations: BigInt(process.env.INDEXER_CONFIRMATIONS ?? 12),
     dataDir: process.env.INDEXER_DATA_DIR ?? defaultData,
     launchFactory,
     launchFactories,
