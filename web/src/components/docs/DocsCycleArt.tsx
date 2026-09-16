@@ -356,15 +356,15 @@ export function DocsCycleArt() {
             lines={["v4 hooks who benefit", "for tokens launched on hookit"]}
           />
           <path
-            d="M 418 752 C 760 840, 1100 850, 1216 660 C 1232 470, 1228 320, 1202 300"
+            d="M 418 752 C 700 920, 1050 930, 1216 660 C 1232 470, 1228 320, 1202 300"
             fill="none"
             stroke="#f4f4f5"
             strokeWidth="2"
             markerEnd="url(#docs-cycle-w)"
           />
           <Callout
-            x={860}
-            y={858}
+            x={700}
+            y={870}
             width={250}
             height={96}
             lines={[
