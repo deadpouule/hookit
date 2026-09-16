@@ -13148,6 +13148,30 @@ h2.docs-hook-heading {
   color: #fff;
 }
 
+.welcome-connect__email-value {
+  color: #e4e4e7;
+}
+
+.welcome-connect__resend {
+  margin: 0.15rem auto 0;
+  border: 0;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.welcome-connect__resend:hover:not(:disabled) {
+  color: #fff;
+}
+
+.welcome-connect__resend:disabled,
+.welcome-connect__row:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .welcome-connect__row,
 .welcome-connect__wallet {
   display: flex;

@@ -18,6 +18,20 @@ test.describe("Hookit UI smoke", () => {
     });
   });
 
+  test("Welcome connect offers social login and Rainbow wallets", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop chrome only");
+    await openApp(page, "/");
+    const connect = page.getByRole("button", { name: /^Connect$/ }).first();
+    await expect(connect).toBeEnabled({ timeout: 20_000 });
+    await connect.click();
+    await expect(page.getByRole("heading", { name: "Welcome to Hookit" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Google" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Twitter" })).toBeVisible();
+    await page.getByRole("button", { name: "Continue with a wallet" }).click();
+    await expect(page.getByRole("heading", { name: "Select your wallet" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Privy" })).toHaveCount(0);
+  });
+
   test("Explore home loads tokens", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop chrome only");
     await openApp(page, "/");

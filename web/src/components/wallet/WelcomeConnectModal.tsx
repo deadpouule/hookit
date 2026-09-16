@@ -1,13 +1,15 @@
 "use client";
 
+import { useLoginWithEmail, useLoginWithOAuth } from "@privy-io/react-auth";
 import { ArrowLeft, Mail, Search, Wallet, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAccount, useConnect, useConnectors, type Connector } from "wagmi";
 
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
+import { isPrivyConfigured, isPrivyWagmiConnector } from "@/lib/privy";
 
-type Step = "welcome" | "wallets";
+type Step = "welcome" | "otp" | "wallets";
 
 const FEATURED_ORDER = [
   "metamask",
@@ -23,6 +25,9 @@ const FEATURED_ORDER = [
   "walletconnect",
   "injected",
 ];
+
+const SOCIAL_UNAVAILABLE =
+  "Add NEXT_PUBLIC_PRIVY_APP_ID and enable email / Google / Twitter in the Privy dashboard.";
 
 function connectorIcon(connector: Connector): string | undefined {
   if (typeof connector.icon === "string" && connector.icon.length > 0) {
@@ -49,6 +54,7 @@ function uniqueConnectors(connectors: readonly Connector[]): Connector[] {
   const seen = new Set<string>();
   const unique: Connector[] = [];
   for (const connector of connectors) {
+    if (isPrivyWagmiConnector(connector)) continue;
     const key = connectorKey(connector);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -57,6 +63,43 @@ function uniqueConnectors(connectors: readonly Connector[]): Connector[] {
   return unique.sort((a, b) => featuredRank(a) - featuredRank(b) || a.name.localeCompare(b.name));
 }
 
+function connectErrorMessage(cause: unknown): string {
+  const message =
+    cause && typeof cause === "object" && "shortMessage" in cause
+      ? String((cause as { shortMessage?: string }).shortMessage)
+      : cause instanceof Error
+        ? cause.message
+        : "Could not connect";
+  if (/rejected|denied|cancel/i.test(message)) return "";
+  return message;
+}
+
+type SocialAuth = {
+  configured: boolean;
+  busy: boolean;
+  sendEmailCode: (email: string) => Promise<void>;
+  verifyEmailCode: (code: string) => Promise<void>;
+  loginGoogle: () => Promise<void>;
+  loginTwitter: () => Promise<void>;
+};
+
+const unavailableAuth: SocialAuth = {
+  configured: false,
+  busy: false,
+  sendEmailCode: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  verifyEmailCode: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  loginGoogle: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  loginTwitter: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+};
+
 export function WelcomeConnectModal({
   open,
   onClose,
@@ -64,9 +107,69 @@ export function WelcomeConnectModal({
   open: boolean;
   onClose: () => void;
 }) {
+  if (isPrivyConfigured()) {
+    return <WelcomeConnectModalPrivy open={open} onClose={onClose} />;
+  }
+  return <WelcomeConnectModalView open={open} onClose={onClose} auth={unavailableAuth} />;
+}
+
+function WelcomeConnectModalPrivy({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [oauthBusy, setOauthBusy] = useState(false);
+  const { sendCode, loginWithCode, state: emailState } = useLoginWithEmail();
+  const { initOAuth } = useLoginWithOAuth();
+
+  const emailBusy =
+    emailState.status === "sending-code" || emailState.status === "submitting-code";
+
+  const auth: SocialAuth = {
+    configured: true,
+    busy: oauthBusy || emailBusy,
+    sendEmailCode: async (email) => {
+      await sendCode({ email });
+    },
+    verifyEmailCode: async (code) => {
+      await loginWithCode({ code });
+    },
+    loginGoogle: async () => {
+      setOauthBusy(true);
+      try {
+        await initOAuth({ provider: "google" });
+      } finally {
+        setOauthBusy(false);
+      }
+    },
+    loginTwitter: async () => {
+      setOauthBusy(true);
+      try {
+        await initOAuth({ provider: "twitter" });
+      } finally {
+        setOauthBusy(false);
+      }
+    },
+  };
+
+  return <WelcomeConnectModalView open={open} onClose={onClose} auth={auth} />;
+}
+
+function WelcomeConnectModalView({
+  open,
+  onClose,
+  auth,
+}: {
+  open: boolean;
+  onClose: () => void;
+  auth: SocialAuth;
+}) {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>("welcome");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [walletQuery, setWalletQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +186,7 @@ export function WelcomeConnectModal({
     if (!open) {
       setStep("welcome");
       setEmail("");
+      setCode("");
       setWalletQuery("");
       setPendingId(null);
       setError(null);
@@ -119,6 +223,46 @@ export function WelcomeConnectModal({
     setStep("wallets");
   };
 
+  const goBack = () => {
+    setError(null);
+    setCode("");
+    setStep("welcome");
+  };
+
+  const submitEmail = async () => {
+    const next = email.trim();
+    if (!next) return;
+    setError(null);
+    try {
+      await auth.sendEmailCode(next);
+      setStep("otp");
+    } catch (cause) {
+      setError(connectErrorMessage(cause) || SOCIAL_UNAVAILABLE);
+    }
+  };
+
+  const submitCode = async () => {
+    const next = code.trim();
+    if (!next) return;
+    setError(null);
+    try {
+      await auth.verifyEmailCode(next);
+      onClose();
+    } catch (cause) {
+      setError(connectErrorMessage(cause) || "Invalid code");
+    }
+  };
+
+  const socialLogin = async (provider: "google" | "twitter") => {
+    setError(null);
+    try {
+      if (provider === "google") await auth.loginGoogle();
+      else await auth.loginTwitter();
+    } catch (cause) {
+      setError(connectErrorMessage(cause) || SOCIAL_UNAVAILABLE);
+    }
+  };
+
   const connectWallet = async (connector: Connector) => {
     setError(null);
     setPendingId(connector.uid);
@@ -126,34 +270,26 @@ export function WelcomeConnectModal({
       await connectAsync({ connector });
       onClose();
     } catch (cause) {
-      const message =
-        cause && typeof cause === "object" && "shortMessage" in cause
-          ? String((cause as { shortMessage?: string }).shortMessage)
-          : cause instanceof Error
-            ? cause.message
-            : "Could not connect";
-      if (!/rejected|denied|cancel/i.test(message)) {
-        setError(message);
-      }
+      const message = connectErrorMessage(cause);
+      if (message) setError(message);
     } finally {
       setPendingId(null);
     }
   };
+
+  const busy = auth.busy || pendingId !== null;
 
   return createPortal(
     <div className="welcome-connect" role="dialog" aria-modal="true" aria-labelledby="welcome-connect-title">
       <button type="button" className="welcome-connect__backdrop" aria-label="Close" onClick={onClose} />
       <div className="welcome-connect__card">
         <div className="welcome-connect__chrome">
-          {step === "wallets" ? (
+          {step !== "welcome" ? (
             <button
               type="button"
               className="welcome-connect__icon-btn"
               aria-label="Back"
-              onClick={() => {
-                setError(null);
-                setStep("welcome");
-              }}
+              onClick={goBack}
               {...TOOLBAR_BUTTON_PROPS}
             >
               <ArrowLeft className="h-5 w-5" />
@@ -187,8 +323,7 @@ export function WelcomeConnectModal({
               className="welcome-connect__email"
               onSubmit={(event) => {
                 event.preventDefault();
-                if (!email.trim()) return;
-                goToWallets();
+                void submitEmail();
               }}
             >
               <Mail className="welcome-connect__field-icon" aria-hidden />
@@ -199,21 +334,92 @@ export function WelcomeConnectModal({
                 inputMode="email"
                 placeholder="your@email.com"
                 value={email}
+                disabled={busy}
                 onChange={(event) => setEmail(event.target.value)}
               />
-              <button type="submit" disabled={!email.trim()}>
+              <button type="submit" disabled={busy || !email.trim()}>
                 Submit
               </button>
             </form>
 
-            <button type="button" className="welcome-connect__row" onClick={goToWallets} {...TOOLBAR_BUTTON_PROPS}>
+            <button
+              type="button"
+              className="welcome-connect__row"
+              disabled={busy}
+              onClick={() => void socialLogin("google")}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
               <GoogleMark />
               Google
             </button>
-            <button type="button" className="welcome-connect__row" onClick={goToWallets} {...TOOLBAR_BUTTON_PROPS}>
+            <button
+              type="button"
+              className="welcome-connect__row"
+              disabled={busy}
+              onClick={() => void socialLogin("twitter")}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
+              <TwitterMark />
+              Twitter
+            </button>
+            <button
+              type="button"
+              className="welcome-connect__row"
+              disabled={busy}
+              onClick={goToWallets}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
               <Wallet className="h-5 w-5" aria-hidden />
               Continue with a wallet
             </button>
+            {error ? <p className="welcome-connect__error">{error}</p> : null}
+          </div>
+        ) : step === "otp" ? (
+          <div className="welcome-connect__body">
+            <span className="welcome-connect__mark">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/hookit-owl-favicon.png" alt="" width={72} height={72} draggable={false} />
+            </span>
+            <h2 id="welcome-connect-title" className="welcome-connect__title">
+              Check your email
+            </h2>
+            <p className="welcome-connect__subtitle">
+              Enter the code we sent to <span className="welcome-connect__email-value">{email}</span>
+            </p>
+
+            <form
+              className="welcome-connect__email"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitCode();
+              }}
+            >
+              <input
+                type="text"
+                name="welcome-otp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                placeholder="6-digit code"
+                value={code}
+                disabled={busy}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              <button type="submit" disabled={busy || code.trim().length < 4}>
+                Verify
+              </button>
+            </form>
+
+            <button
+              type="button"
+              className="welcome-connect__resend"
+              disabled={busy}
+              onClick={() => void submitEmail()}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
+              Resend code
+            </button>
+            {error ? <p className="welcome-connect__error">{error}</p> : null}
           </div>
         ) : (
           <div className="welcome-connect__body welcome-connect__body--wallets">
@@ -291,6 +497,17 @@ function GoogleMark() {
       <path
         fill="#EA4335"
         d="M12 4.75c1.77 0 3.36.61 4.61 1.8l3.45-3.45C17.96 1.14 15.23 0 12 0 7.31 0 3.26 2.69 1.24 6.65l4 3.09C6.2 6.87 8.86 4.75 12 4.75Z"
+      />
+    </svg>
+  );
+}
+
+function TwitterMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M18.244 2H21.5l-7.5 8.57L22.5 22h-6.59l-5.16-6.74L5.2 22H1.93l8.02-9.16L1.5 2h6.75l4.67 6.18L18.244 2Zm-1.16 18.06h1.81L7 3.84H5.06l12.02 16.22Z"
       />
     </svg>
   );

@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: process.env.NODE_ENV === "production",
+  transpilePackages: ["@privy-io/react-auth", "@privy-io/wagmi"],
   async redirects() {
     return [
       { source: "/analytics", destination: "/stats", permanent: true },

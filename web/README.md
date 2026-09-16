@@ -22,6 +22,7 @@ Useful keys:
 | --- | --- |
 | `NEXT_PUBLIC_HOOKIT_CHAIN` | `ink` (prod) or `baseSepolia` |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | Wallet connect |
+| `NEXT_PUBLIC_PRIVY_APP_ID` | Email / Google / Twitter (Privy). Continue with wallet stays RainbowKit. |
 | `INDEXER_URL` | House indexer, proxied at `/api/indexer/*` |
 
 ## Routes
@@ -38,4 +39,4 @@ Useful keys:
 | `/stats` | Protocol stats |
 | `/terms` `/privacy` | Legal |
 
-Stack: Next 16, Tailwind v4, wagmi / viem / RainbowKit, lightweight-charts, Framer Motion.
+Stack: Next 16, Tailwind v4, wagmi / viem / RainbowKit, Privy (email / Google / Twitter), lightweight-charts, Framer Motion.

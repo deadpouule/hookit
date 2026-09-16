@@ -16,6 +16,8 @@
     "smoke": "npm run smoke:onchain && npm run smoke:ui"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.43.0",
+    "@privy-io/wagmi": "^4.0.17",
     "@rainbow-me/rainbowkit": "^2.2.11",
     "@sentry/nextjs": "^10.71.0",
     "@tanstack/react-query": "^5.102.2",
