@@ -75,7 +75,7 @@ function MemeChip({
         y={y + size / 2 + (size > 36 ? 4 : 3)}
         textAnchor="middle"
         fill="#0a0a0a"
-        fontSize={size > 36 ? 10 : 7}
+        fontSize={size > 36 ? 10 : size > 26 ? 8 : 7}
         fontWeight="800"
       >
         {label}
@@ -190,25 +190,25 @@ function HookTaxMark({
 const MEME_COLORS = ["#ff6b9d", "#c8ff3d", "#ff8a3d", "#7c5cff", "#3dffd0", "#ffd23d"] as const;
 
 const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
-  { src: "/pairing/wnvdax.svg", x: 498, y: 232, size: 28 },
-  { src: "/pairing/waaplx.svg", x: 546, y: 218, size: 26 },
-  { src: "/pairing/wtslax.png", x: 592, y: 232, size: 28 },
-  { src: "/pairing/wgooglx.svg", x: 628, y: 268, size: 26 },
-  { src: "/pairing/wamznx.svg", x: 636, y: 310, size: 26 },
-  { src: "/pairing/wmcdx.svg", x: 612, y: 350, size: 24 },
-  { src: "/pairing/wnflxx.svg", x: 568, y: 366, size: 26 },
-  { src: "/pairing/wspyx.svg", x: 520, y: 360, size: 24 },
-  { src: "/pairing/wmstrx.svg", x: 484, y: 328, size: 26 },
-  { src: "/pairing/usdg.png", x: 478, y: 278, size: 26 },
+  { src: "/pairing/wnvdax.svg", x: 504, y: 228, size: 28 },
+  { src: "/pairing/waaplx.svg", x: 548, y: 214, size: 26 },
+  { src: "/pairing/wtslax.png", x: 590, y: 226, size: 28 },
+  { src: "/pairing/wgooglx.svg", x: 630, y: 258, size: 26 },
+  { src: "/pairing/wamznx.svg", x: 642, y: 300, size: 26 },
+  { src: "/pairing/wmcdx.svg", x: 626, y: 336, size: 24 },
+  { src: "/pairing/wnflxx.svg", x: 598, y: 350, size: 24 },
+  { src: "/pairing/wspyx.svg", x: 500, y: 348, size: 24 },
+  { src: "/pairing/wmstrx.svg", x: 482, y: 322, size: 26 },
+  { src: "/pairing/usdg.png", x: 476, y: 272, size: 26 },
 ];
 
 const PILE_MEMES: { label: string; fill: string; x: number; y: number }[] = [
-  { label: "meme1", fill: MEME_COLORS[0], x: 518, y: 250 },
-  { label: "meme2", fill: MEME_COLORS[1], x: 574, y: 248 },
-  { label: "meme3", fill: MEME_COLORS[2], x: 608, y: 292 },
-  { label: "meme4", fill: MEME_COLORS[3], x: 572, y: 336 },
-  { label: "meme5", fill: MEME_COLORS[4], x: 516, y: 332 },
-  { label: "meme6", fill: MEME_COLORS[5], x: 500, y: 292 },
+  { label: "meme1", fill: MEME_COLORS[0], x: 500, y: 248 },
+  { label: "meme2", fill: MEME_COLORS[1], x: 568, y: 240 },
+  { label: "meme3", fill: MEME_COLORS[2], x: 612, y: 286 },
+  { label: "meme4", fill: MEME_COLORS[3], x: 568, y: 328 },
+  { label: "meme5", fill: MEME_COLORS[4], x: 508, y: 322 },
+  { label: "meme6", fill: MEME_COLORS[5], x: 492, y: 286 },
 ];
 
 export function DocsCycleArt() {
@@ -281,21 +281,21 @@ export function DocsCycleArt() {
             Escrow, vest, or pot
           </text>
 
-          <circle cx="560" cy="300" r="74" fill="#0a0a0a" stroke="#22d3ee" strokeWidth="2.4" />
-          <image href="/brand/hookit-owl-favicon.png" x="528" y="248" width="64" height="64" />
-          <text x="560" y="328" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="800">
-            $HKT
-          </text>
-          <text x="560" y="346" textAnchor="middle" fill="#67e8f9" fontSize="11">
-            Hold one, get all
-          </text>
+          <circle cx="560" cy="292" r="74" fill="#0a0a0a" stroke="#22d3ee" strokeWidth="2.4" />
+          <image href="/brand/hookit-owl-favicon.png" x="532" y="258" width="56" height="56" />
           {PILE_STOCKS.map((item) => (
             <Chip key={`${item.src}-${item.x}`} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
           {PILE_MEMES.map((item) => (
-            <MemeChip key={item.label} x={item.x} y={item.y} label={item.label} fill={item.fill} size={22} />
+            <MemeChip key={item.label} x={item.x} y={item.y} label={item.label} fill={item.fill} size={32} />
           ))}
-          <EthChip x={548} y={226} size={22} />
+          <EthChip x={546} y={220} size={24} />
+          <text x="560" y="412" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="800">
+            $HKT
+          </text>
+          <text x="560" y="430" textAnchor="middle" fill="#67e8f9" fontSize="11">
+            Hold one, get all
+          </text>
 
           <rect x="452" y="484" width="168" height="44" rx="14" fill="#111" stroke="#facc15" strokeOpacity="0.55" />
           <text x="468" y="512" fill="#fff" fontSize="13" fontWeight="700">
@@ -336,7 +336,7 @@ export function DocsCycleArt() {
             strokeDasharray="6 6"
             markerEnd="url(#docs-cycle-w)"
           />
-          <text x="980" y="410" fill="#f4f4f5" fontSize="11" fontWeight="700">
+          <text x="1064" y="328" textAnchor="end" fill="#f4f4f5" fontSize="11" fontWeight="700">
             Buy $HKT again
           </text>
 
@@ -349,14 +349,11 @@ export function DocsCycleArt() {
             Optional. Fills the pot.
           </text>
           <path d="M 400 651 C 430 651, 460 651, 488 651" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <rect x="492" y="608" width="340" height="96" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-          <HookTaxMark x={516} y={618} id="auto-burn" color="#dc2626" label="Burn" />
-          <HookTaxMark x={588} y={618} id="backed-floor" color="#f43f5e" label="Floor" />
-          <HookTaxMark x={660} y={618} id="deepen-lps" color="#10b981" label="Deepen" />
-          <HookTaxMark x={732} y={618} id="holder-airdrop" color="#f59e0b" label="Airdrop" />
-          <text x="662" y="694" textAnchor="middle" fill="#a1a1aa" fontSize="10">
-            Skips the 60 / 10 / 30 split
-          </text>
+          <rect x="492" y="608" width="360" height="88" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+          <HookTaxMark x={524} y={622} id="auto-burn" color="#dc2626" label="Burn" />
+          <HookTaxMark x={600} y={622} id="backed-floor" color="#f43f5e" label="Floor" />
+          <HookTaxMark x={676} y={622} id="deepen-lps" color="#10b981" label="Deepen" />
+          <HookTaxMark x={752} y={622} id="holder-airdrop" color="#f59e0b" label="Airdrop" />
         </svg>
       </div>
       <p className="docs-schema-note">
