@@ -13275,6 +13275,10 @@ h2.docs-hook-heading {
   margin-top: 0.65rem;
 }
 
+.welcome-connect__row + .welcome-connect__email {
+  margin-top: 0.65rem;
+}
+
 .welcome-connect__row:hover,
 .welcome-connect__wallet:hover,
 .welcome-connect__search:focus-within {
