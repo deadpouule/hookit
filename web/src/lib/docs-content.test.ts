@@ -273,6 +273,7 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(diagrams, /Multi-pair Arb keeper/);
   assert.equal(diagrams.includes("Hook fee"), false);
   assert.match(diagrams, /Venue fee/);
+  assert.equal(diagrams.includes("Unallocated hook tax"), false);
   assert.match(cycle, /"deepen-lps": "DeepenLP"/);
   const globals = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(globals, /\.docs-def-row dd \{[\s\S]*?word-break: normal;/);

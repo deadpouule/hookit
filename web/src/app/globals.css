@@ -10756,7 +10756,6 @@ h2.docs-hook-heading {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
 }
@@ -12920,8 +12919,8 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
 }
 
 .docs-pipe-box {
-  min-width: 6.4rem;
-  max-width: 9.5rem;
+  min-width: 7.2rem;
+  max-width: 12rem;
   border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 0.7rem;
   background: #111;
@@ -12932,6 +12931,8 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
   display: block;
   font-size: 0.78rem;
   color: #fff;
+  overflow-wrap: normal;
+  word-break: keep-all;
 }
 
 .docs-pipe-box p {

@@ -206,7 +206,7 @@ function FeeSplitDiagram() {
         </div>
         <div>
           <dt>Protocol 30%</dt>
-          <dd>Then 20% ops / 80% native-token buyback. Unallocated hook tax joins this pot.</dd>
+          <dd>Then 20% ops / 80% native-token buyback.</dd>
         </div>
       </dl>
     </figure>
