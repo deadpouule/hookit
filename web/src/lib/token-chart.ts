@@ -171,7 +171,7 @@ export function isCandleBar(bar: ChartBar): boolean {
 export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   const mid = bar.close || bar.open;
   if (!(mid > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  const half = mid * 0.00025;
+  const half = mid * 0.00015;
   return {
     open: mid,
     high: mid + half,

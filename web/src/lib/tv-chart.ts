@@ -1,15 +1,33 @@
 /**
- * Shared chart chrome for lightweight-charts (Defined-style teal/red, subscript prices).
+ * Shared chart chrome for lightweight-charts (TradingView pro dark theme).
  */
 
-export const TV_CHART_BG = "#050506";
-export const TV_CHART_GRID = "#232327";
-export const TV_CHART_SCALE_TEXT = "#7f7f88";
-/** Same teal / red as Defined.fi (TradingView crypto defaults). */
-export const TV_CANDLE_UP = "#26a69a";
-export const TV_CANDLE_DOWN = "#ef5350";
-export const TV_VOLUME_UP = "rgba(38, 166, 154, 0.55)";
-export const TV_VOLUME_DOWN = "rgba(239, 83, 80, 0.55)";
+export const TV_CHART_BG = "#060608";
+export const TV_CHART_GRID = "rgba(255, 255, 255, 0.045)";
+export const TV_CHART_SCALE_TEXT = "#8b8b96";
+export const TV_CROSSHAIR = "rgba(255, 255, 255, 0.16)";
+export const TV_CROSSHAIR_LABEL = "#1c1c1f";
+
+/** TradingView crypto palette — crisp on OLED dark. */
+export const TV_CANDLE_UP = "#2ebd85";
+export const TV_CANDLE_DOWN = "#f6465d";
+export const TV_VOLUME_UP = "rgba(46, 235, 133, 0.45)";
+export const TV_VOLUME_DOWN = "rgba(246, 70, 93, 0.45)";
+
+export function tvAreaGradient(up: boolean): { top: string; bottom: string; line: string } {
+  if (up) {
+    return {
+      line: TV_CANDLE_UP,
+      top: "rgba(46, 235, 133, 0.32)",
+      bottom: "rgba(46, 235, 133, 0.02)",
+    };
+  }
+  return {
+    line: TV_CANDLE_DOWN,
+    top: "rgba(246, 70, 93, 0.28)",
+    bottom: "rgba(246, 70, 93, 0.02)",
+  };
+}
 
 function significant(n: number): string {
   return n.toLocaleString("en-US", { maximumSignificantDigits: 6 });

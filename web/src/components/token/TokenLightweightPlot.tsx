@@ -14,6 +14,7 @@ import {
   chartRenderableCandle,
   chartVisibleLogicalRange,
   isCandleBar,
+  isTradedBar,
   formatChartAxis,
   isWhitespaceBar,
   visibleExtremes,
@@ -29,6 +30,9 @@ import {
   TV_CHART_BG,
   TV_CHART_GRID,
   TV_CHART_SCALE_TEXT,
+  TV_CROSSHAIR,
+  TV_CROSSHAIR_LABEL,
+  tvAreaGradient,
 } from "@/lib/tv-chart";
 import type {
   AutoscaleInfoProvider,
@@ -43,8 +47,8 @@ const DOWN = TV_CANDLE_DOWN;
 const SURFACE = TV_CHART_BG;
 const GRID = TV_CHART_GRID;
 const AXIS = TV_CHART_SCALE_TEXT;
-const CROSS = "rgba(255,255,255,0.22)";
-const CROSS_LABEL = "#27272a";
+const CROSS = TV_CROSSHAIR;
+const CROSS_LABEL = TV_CROSSHAIR_LABEL;
 const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 type TokenLightweightPlotProps = {
@@ -60,7 +64,7 @@ type TokenLightweightPlotProps = {
   onHover: (bar: ChartBar | null) => void;
 };
 
-type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
+type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Area">;
 
 type ChartHandle = {
   chart: IChartApi;
@@ -127,16 +131,22 @@ async function attachPriceSeries(
   const priceFormat = priceFormatFor(scale);
 
   if (style === "line") {
-    return chart.addSeries(tv.LineSeries, {
-      color: lineColor,
+    const grad = tvAreaGradient(lineColor === UP);
+    return chart.addSeries(tv.AreaSeries, {
+      lineColor: grad.line,
+      topColor: grad.top,
+      bottomColor: grad.bottom,
       lineWidth: 2,
+      lineType: tv.LineType.Curved,
       priceLineVisible: true,
       lastValueVisible: true,
       crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 4,
-      priceLineColor: lineColor,
+      crosshairMarkerRadius: 5,
+      crosshairMarkerBorderColor: grad.line,
+      crosshairMarkerBackgroundColor: TV_CHART_BG,
+      priceLineColor: grad.line,
       priceLineWidth: 1,
-      priceLineStyle: tv.LineStyle.Dashed,
+      priceLineStyle: tv.LineStyle.Dotted,
       priceFormat,
       autoscaleInfoProvider: autoscale,
     });
@@ -147,13 +157,11 @@ async function attachPriceSeries(
     downColor: DOWN,
     wickUpColor: UP,
     wickDownColor: DOWN,
-    borderVisible: true,
-    borderUpColor: UP,
-    borderDownColor: DOWN,
+    borderVisible: false,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
-    priceLineStyle: tv.LineStyle.Dashed,
+    priceLineStyle: tv.LineStyle.Dotted,
     priceFormat,
     autoscaleInfoProvider: autoscale,
   });
@@ -194,6 +202,16 @@ function fitChartView(
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
+function tradedCountInView(bars: ChartBar[], from?: number, to?: number): number {
+  const start = Math.max(0, Math.floor(from ?? 0));
+  const end = Math.min(bars.length - 1, Math.ceil(to ?? bars.length - 1));
+  let n = 0;
+  for (let i = start; i <= end; i++) {
+    if (isTradedBar(bars[i]!)) n++;
+  }
+  return n;
+}
+
 function applyAthAtl(
   handle: ChartHandle,
   tv: typeof import("lightweight-charts"),
@@ -208,18 +226,21 @@ function applyAthAtl(
     handle.atlLine = null;
   }
   const vis = visibleLogicalRangeOf(handle.chart);
+  if (tradedCountInView(bars, vis?.from, vis?.to) < 3) return;
   const ext = visibleExtremes(bars, vis?.from, vis?.to);
   if (!ext) return;
   const { ath, atl } = ext;
+  const mid = (ath + atl) / 2;
+  if (!(mid > 0) || (ath - atl) / mid < 0.008) return;
   const style = {
-    color: "rgba(250,250,250,0.4)",
+    color: "rgba(255, 255, 255, 0.22)",
     lineWidth: 1 as const,
-    lineStyle: tv.LineStyle.Dashed,
+    lineStyle: tv.LineStyle.Dotted,
     axisLabelVisible: true,
   };
-  handle.athLine = handle.price.createPriceLine({ ...style, price: ath, title: "ATH" });
+  handle.athLine = handle.price.createPriceLine({ ...style, price: ath, title: "H" });
   if (atl < ath) {
-    handle.atlLine = handle.price.createPriceLine({ ...style, price: atl, title: "ATL" });
+    handle.atlLine = handle.price.createPriceLine({ ...style, price: atl, title: "L" });
   }
 }
 
@@ -237,8 +258,15 @@ function applyBars(
   const line = up ? UP : DOWN;
 
   if (handle.style === "line") {
-    const series = handle.price as ISeriesApi<"Line">;
-    series.applyOptions({ color: lineColor, priceLineColor: lineColor });
+    const series = handle.price as ISeriesApi<"Area">;
+    const grad = tvAreaGradient(lineColor === UP);
+    series.applyOptions({
+      lineColor: grad.line,
+      topColor: grad.top,
+      bottomColor: grad.bottom,
+      priceLineColor: grad.line,
+      crosshairMarkerBorderColor: grad.line,
+    });
     series.setData(
       next.map((b) =>
         isWhitespaceBar(b) ? { time: asTime(b) } : { time: asTime(b), value: b.close },
@@ -333,14 +361,15 @@ export function TokenLightweightPlot({
           attributionLogo: false,
         },
         grid: {
-          vertLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
+          vertLines: { color: GRID, style: tv.LineStyle.Solid, visible: false },
           horzLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
         },
         rightPriceScale: {
           borderVisible: false,
-          ticksVisible: false,
+          ticksVisible: true,
           entireTextOnly: true,
-          minimumWidth: 72,
+          minimumWidth: 68,
+          alignLabels: true,
         },
         timeScale: {
           borderVisible: false,
@@ -352,6 +381,15 @@ export function TokenLightweightPlot({
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,
+          tickMarkFormatter: (time: number) => {
+            const d = new Date(time * 1000);
+            const h = d.getHours();
+            const m = d.getMinutes();
+            if (h === 0 && m === 0) {
+              return d.toLocaleDateString([], { day: "numeric", month: "short" });
+            }
+            return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          },
         },
         localization: {
           priceFormatter: (price: number) => formatChartAxis(price, scaleRef.current),

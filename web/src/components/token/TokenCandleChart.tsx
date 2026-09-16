@@ -169,7 +169,7 @@ export function TokenCandleChart({
   className?: string;
 }) {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-  const [scale, setScale] = useState<ChartScale>("price");
+  const [scale, setScale] = useState<ChartScale>("mcap");
   const [style, setStyle] = useState<ChartStyle>("candles");
   const [fitNonce, setFitNonce] = useState(0);
   const [hover, setHover] = useState<ChartBar | null>(null);
@@ -181,7 +181,7 @@ export function TokenCandleChart({
   const quoteFx = useGeckoTerminalBars(geckoQuote, "1m");
 
   useEffect(() => {
-    setScale(readStored(SCALE_KEY, ["mcap", "price"] as const, "price"));
+    setScale(readStored(SCALE_KEY, ["mcap", "price"] as const, "mcap"));
     setStyle(readStored(STYLE_KEY, ["candles", "line"] as const, "candles"));
   }, []);
 
@@ -327,24 +327,39 @@ export function TokenCandleChart({
 
       {hasData && hud ? (
         <div className="token-chart-stats" aria-live="polite">
-          <span className="token-chart-stats-id">
-            {ticker || name || "Token"}
-            <span className="text-zinc-500"> · {TF_LABEL[interval]}</span>
-          </span>
-          <span>
-            <span className="token-chart-legend-k">O</span> {formatChartUsd(hud.open, scale)}
-          </span>
-          <span>
-            <span className="token-chart-legend-k">H</span> {formatChartUsd(hud.high, scale)}
-          </span>
-          <span>
-            <span className="token-chart-legend-k">L</span> {formatChartUsd(hud.low, scale)}
-          </span>
-          <span>
-            <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
-          </span>
-          <span style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}>{formatPercent(hudPct, true)}</span>
-          {hover ? <span className="token-chart-stats-time">{formatDayClock(hover.time)}</span> : null}
+          <div className="token-chart-stats-main">
+            <span className="token-chart-stats-id">
+              {ticker || name || "Token"}
+              <span className="token-chart-stats-tf">{TF_LABEL[interval]}</span>
+            </span>
+            <div className="token-chart-stats-ohlc">
+              <span className="token-chart-stat">
+                <span className="token-chart-legend-k">O</span>
+                <span className="token-chart-stat-v">{formatChartUsd(hud.open, scale)}</span>
+              </span>
+              <span className="token-chart-stat token-chart-stat--high">
+                <span className="token-chart-legend-k">H</span>
+                <span className="token-chart-stat-v">{formatChartUsd(hud.high, scale)}</span>
+              </span>
+              <span className="token-chart-stat token-chart-stat--low">
+                <span className="token-chart-legend-k">L</span>
+                <span className="token-chart-stat-v">{formatChartUsd(hud.low, scale)}</span>
+              </span>
+              <span className="token-chart-stat token-chart-stat--close">
+                <span className="token-chart-legend-k">C</span>
+                <span className="token-chart-stat-v">{formatChartUsd(hud.close, scale)}</span>
+              </span>
+            </div>
+          </div>
+          <div className="token-chart-stats-side">
+            <span
+              className="token-chart-stats-chg"
+              style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}
+            >
+              {formatPercent(hudPct, true)}
+            </span>
+            {hover ? <span className="token-chart-stats-time">{formatDayClock(hover.time)}</span> : null}
+          </div>
         </div>
       ) : null}
 
