@@ -275,7 +275,19 @@ export function DocsWheel({
   );
 }
 
-/** Swap into the hook, then fees fan out. Not a circle. */
+function feeOutTone(title: string): string {
+  if (title.includes("$HKT")) return "#22d3ee";
+  if (title.toLowerCase().includes("creator")) return "#c084fc";
+  if (title.toLowerCase().includes("protocol")) return "#facc15";
+  return "#a1a1aa";
+}
+
+function feeOutLogo(title: string): string | null {
+  if (title.includes("$HKT")) return "/brand/hookit-owl-favicon.png";
+  return null;
+}
+
+/** Swap into the hook, then one curve per destination. */
 export function DocsFeeFlow({
   caption,
   kicker,
@@ -291,27 +303,102 @@ export function DocsFeeFlow({
   outputs: Box[];
   note?: string;
 }) {
+  const n = Math.max(outputs.length, 1);
+  const row = 86;
+  const height = Math.max(340, 28 + n * row);
+  const hubY = height / 2;
+  const swap = { x: 18, y: hubY - 42, w: 210, h: 84 };
+  const hook = { x: 292, y: hubY - 52, w: 228, h: 104 };
+  const outX = 620;
+  const outW = 252;
+  const outH = 72;
+  const markerId = `docs-fee-${slug(caption + hub.t)}`;
+  const outYs = outputs.map((_, i) => 22 + i * row);
+
   return (
     <figure className="docs-schema">
       <figcaption>{caption}</figcaption>
       {kicker ? <p className="docs-map-kicker">{kicker}</p> : null}
-      <div className="docs-fee-flow" role="img" aria-label={caption}>
-        <div className="docs-fee-flow-head">
-          <Card box={source} tone="mint" />
-          <DocsPointArrow />
-          <Card box={hub} tone="logo" />
-        </div>
-        <div className="docs-fee-flow-join" aria-hidden>
-          <DocsPointArrow down />
-        </div>
-        <div className="docs-fee-flow-outs">
-          {outputs.map((box) => (
-            <div key={box.t} className="docs-fee-flow-out">
-              <DocsPointArrow down />
-              <Card box={box} />
-            </div>
-          ))}
-        </div>
+      <div className="docs-fee-map" role="img" aria-label={caption}>
+        <svg viewBox={`0 0 900 ${height}`} className="docs-fee-map-svg">
+          <defs>
+            <marker
+              id={markerId}
+              markerWidth="12"
+              markerHeight="12"
+              refX="10"
+              refY="6"
+              orient="auto"
+              markerUnits="userSpaceOnUse"
+            >
+              <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
+            </marker>
+          </defs>
+          <path
+            d={`M ${swap.x + swap.w} ${hubY} C ${swap.x + swap.w + 28} ${hubY}, ${hook.x - 28} ${hubY}, ${hook.x} ${hubY}`}
+            fill="none"
+            stroke="#f4f4f5"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            markerEnd={`url(#${markerId})`}
+          />
+          {outputs.map((box, i) => {
+            const y = outYs[i] + outH / 2;
+            const color = feeOutTone(box.t);
+            return (
+              <path
+                key={box.t}
+                d={`M ${hook.x + hook.w} ${hubY} C ${hook.x + hook.w + 44} ${hubY}, ${outX - 40} ${y}, ${outX} ${y}`}
+                fill="none"
+                stroke={color}
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                markerEnd={`url(#${markerId})`}
+              />
+            );
+          })}
+          <rect x={swap.x} y={swap.y} width={swap.w} height={swap.h} rx="16" fill="#10261c" stroke="rgb(167 243 208 / 0.35)" />
+          <text x={swap.x + 18} y={swap.y + 34} fill="#fff" fontSize="15" fontWeight="700">
+            {source.t}
+          </text>
+          <text x={swap.x + 18} y={swap.y + 56} fill="#86efac" fontSize="11">
+            {source.d}
+          </text>
+          <rect x={hook.x} y={hook.y} width={hook.w} height={hook.h} rx="18" fill="#0a0a0a" stroke="rgb(255 255 255 / 0.18)" />
+          <image href="/brand/uniswap-mark.png" x={hook.x + 16} y={hook.y + 18} width="28" height="28" />
+          <text x={hook.x + 52} y={hook.y + 38} fill="#fff" fontSize="15" fontWeight="700">
+            {hub.t}
+          </text>
+          <text x={hook.x + 16} y={hook.y + 72} fill="#a1a1aa" fontSize="11">
+            {hub.d}
+          </text>
+          {outputs.map((box, i) => {
+            const y = outYs[i];
+            const logo = feeOutLogo(box.t);
+            const color = feeOutTone(box.t);
+            return (
+              <g key={`box-${box.t}`}>
+                <rect
+                  x={outX}
+                  y={y}
+                  width={outW}
+                  height={outH}
+                  rx="14"
+                  fill="#111"
+                  stroke={color}
+                  strokeOpacity="0.55"
+                />
+                {logo ? <image href={logo} x={outX + 12} y={y + 18} width="28" height="28" /> : null}
+                <text x={outX + (logo ? 48 : 16)} y={y + 28} fill="#fff" fontSize="13" fontWeight="700">
+                  {box.t}
+                </text>
+                <text x={outX + (logo ? 48 : 16)} y={y + 50} fill="#a1a1aa" fontSize="10.5">
+                  {box.d}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
       {note ? <p className="docs-schema-note">{note}</p> : null}
     </figure>

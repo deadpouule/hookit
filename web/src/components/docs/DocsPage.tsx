@@ -20,25 +20,24 @@ export function DocsPage() {
   const network = getNetworkLabel();
 
   useEffect(() => {
-    const nodes = sections
-      .map((s) => document.getElementById(s.id))
-      .filter((el): el is HTMLElement => !!el);
-    if (nodes.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible?.target.id) {
-          setActive(visible.target.id as DocsSectionId);
-        }
-      },
-      { rootMargin: "-15% 0px -60% 0px", threshold: [0, 0.2, 0.4] },
-    );
-
-    for (const node of nodes) observer.observe(node);
-    return () => observer.disconnect();
+    const ids = sections.map((section) => section.id);
+    const pick = () => {
+      const probe = Math.min(176, window.innerHeight * 0.24);
+      let current: DocsSectionId = ids[0] ?? "overview";
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top - probe <= 0) current = id;
+      }
+      setActive(current);
+    };
+    pick();
+    window.addEventListener("scroll", pick, { passive: true });
+    window.addEventListener("resize", pick);
+    return () => {
+      window.removeEventListener("scroll", pick);
+      window.removeEventListener("resize", pick);
+    };
   }, [sections]);
 
   const scrollTo = (id: DocsSectionId) => {

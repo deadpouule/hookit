@@ -197,8 +197,20 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(diagrams, /DocsWheel/);
   assert.match(diagrams, /DocsPipe/);
   assert.match(diagrams, /DocsFeeFlow/);
-  assert.match(diagrams, /DocsPointArrow/);
-  assert.match(diagrams, /docs-dapp-map/);
+  assert.match(diagrams, /DocsCycleArt/);
+  assert.match(diagrams, /docs-hkt-schema-join/);
+  assert.equal(diagrams.includes("docs-dapp-map"), false);
+  const cycle = readFileSync(new URL("../components/docs/DocsCycleArt.tsx", import.meta.url), "utf8");
+  assert.match(cycle, /Every swap feeds \$HKT/);
+  assert.match(cycle, /hookit-owl-favicon/);
+  assert.match(cycle, /Buy \$HKT again/);
+  const graphs = readFileSync(new URL("../components/docs/DocsBranchGraph.tsx", import.meta.url), "utf8");
+  assert.match(graphs, /DocsPointArrow/);
+  assert.match(graphs, /docs-fee-map/);
+  const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");
+  assert.match(page, /docs-section-group/);
+  assert.match(page, /getBoundingClientRect/);
+  assert.equal(page.includes("IntersectionObserver"), false);
   assert.match(diagrams, /Hookit × Quotrons flywheel/);
   assert.match(diagrams, /Where the venue fee goes/);
   assert.match(diagrams, /quotrons-mark/);
@@ -214,8 +226,6 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(launchSteps, /Deepen LPs 20%/);
   assert.match(launchSteps, /hookId="auto-burn"/);
   assert.match(launchSteps, /hookId="deepen-lps"/);
-  const page = readFileSync(new URL("../components/docs/DocsPage.tsx", import.meta.url), "utf8");
-  assert.match(page, /docs-section-group/);
   assert.match(visuals, /docs-pipe/);
   assert.match(visuals, /docs-quotrons-stock/);
   assert.match(visuals, /case "router"/);
@@ -233,10 +243,13 @@ test("docs copy has no em dashes or spaced hyphens", () => {
   assert.equal(sections.includes(" - "), false);
   const visuals = readFileSync(new URL("../components/docs/DocsVisuals.tsx", import.meta.url), "utf8");
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
+  const cycle = readFileSync(new URL("../components/docs/DocsCycleArt.tsx", import.meta.url), "utf8");
   assert.equal(visuals.includes("\u2014"), false);
   assert.equal(diagrams.includes("\u2014"), false);
+  assert.equal(cycle.includes("\u2014"), false);
   assert.equal(visuals.includes(" - "), false);
   assert.equal(diagrams.includes(" - "), false);
+  assert.equal(cycle.includes(" - "), false);
 });
 
 test("every docs section has a diagram, visual, hook catalog, or formula", () => {
