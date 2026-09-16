@@ -112,36 +112,82 @@ export function MarketplaceToolbar({
           />
         </div>
 
-        <div className="market-toolbar-actions">
-          <div className="market-toolbar-group market-toolbar-group--sort">
-            <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
-            <FilterPill active={sort === "trend"} onClick={() => onSortChange("trend")} icon={Flame} label="Trend" />
-            <FilterPill
-              active={sort === "almostBonded"}
-              onClick={() => onSortChange("almostBonded")}
-              glyph={<AlmostBondedGlyph />}
-              label="Almost bonded"
-            />
-            <FilterPill active={sort === "live"} onClick={() => onSortChange("live")} live label="Live feed" />
+        <div className="market-toolbar-secondary">
+          <div className="market-toolbar-actions">
+            <div className="market-toolbar-group market-toolbar-group--sort">
+              <FilterPill active={sort === "top"} onClick={() => onSortChange("top")} icon={Trophy} label="Top" />
+              <FilterPill active={sort === "trend"} onClick={() => onSortChange("trend")} icon={Flame} label="Trend" />
+              <FilterPill
+                active={sort === "almostBonded"}
+                onClick={() => onSortChange("almostBonded")}
+                glyph={<AlmostBondedGlyph />}
+                label="Almost bonded"
+              />
+              <FilterPill active={sort === "live"} onClick={() => onSortChange("live")} live label="Live feed" />
+            </div>
+
+            {!hideLayoutToggle && (
+              <>
+                <div className="market-toolbar-divider" aria-hidden />
+
+                <div className="market-toolbar-view">
+                  <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
+                    <Table2 className="h-4 w-4" />
+                  </IconToggle>
+                  <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
+                    <LayoutGrid className="h-4 w-4" />
+                  </IconToggle>
+                </div>
+              </>
+            )}
           </div>
 
-          {!hideLayoutToggle && (
-            <>
-              <div className="market-toolbar-divider" aria-hidden />
-
-              <div className="market-toolbar-view">
-                <IconToggle active={layout === "table"} onClick={() => onLayoutChange("table")} label="Table">
-                  <Table2 className="h-4 w-4" />
-                </IconToggle>
-                <IconToggle active={layout === "grid"} onClick={() => onLayoutChange("grid")} label="Grid">
-                  <LayoutGrid className="h-4 w-4" />
-                </IconToggle>
-              </div>
-            </>
-          )}
+          <div className="market-mobile-view" role="group" aria-label="Token layout">
+            <button
+              type="button"
+              aria-label="Grid"
+              aria-pressed={layout === "grid"}
+              onClick={() => onLayoutChange("grid")}
+              {...TOOLBAR_BUTTON_PROPS}
+              className={cn("market-mobile-view__btn", layout === "grid" && "market-mobile-view__btn--active")}
+            >
+              <GridFourGlyph />
+            </button>
+            <button
+              type="button"
+              aria-label="List"
+              aria-pressed={layout === "table"}
+              onClick={() => onLayoutChange("table")}
+              {...TOOLBAR_BUTTON_PROPS}
+              className={cn("market-mobile-view__btn", layout === "table" && "market-mobile-view__btn--active")}
+            >
+              <ListThreeGlyph />
+            </button>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function GridFourGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
+      <rect x="1" y="1" width="6" height="6" rx="1.4" />
+      <rect x="9" y="1" width="6" height="6" rx="1.4" />
+      <rect x="1" y="9" width="6" height="6" rx="1.4" />
+      <rect x="9" y="9" width="6" height="6" rx="1.4" />
+    </svg>
+  );
+}
+
+function ListThreeGlyph() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
+      <rect x="1.5" y="2.2" width="13" height="2.2" rx="1.1" />
+      <rect x="1.5" y="6.9" width="13" height="2.2" rx="1.1" />
+      <rect x="1.5" y="11.6" width="13" height="2.2" rx="1.1" />
+    </svg>
   );
 }
 

@@ -7434,13 +7434,70 @@
   }
 
   html[data-device="phone"] .market-toolbar-actions {
-    width: 100%;
+    width: auto;
+    flex: 1;
+    min-width: 0;
     justify-content: flex-start;
     margin-left: 0;
   }
 
   html[data-device="phone"] .market-toolbar-group--category {
     width: 100%;
+  }
+
+  html[data-device="phone"] .market-toolbar-group--sort {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  html[data-device="phone"] .market-toolbar-group--sort::-webkit-scrollbar {
+    display: none;
+  }
+
+  .market-toolbar-secondary {
+    display: contents;
+  }
+
+  html[data-device="phone"] .market-toolbar-secondary {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .market-mobile-view {
+    display: none;
+  }
+
+  html[data-device="phone"] .market-mobile-view {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    border-radius: 14px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    background: #141416;
+    padding: 3px;
+  }
+
+  .market-mobile-view__btn {
+    display: inline-flex;
+    width: 2.35rem;
+    height: 2.1rem;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #6b6b73;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .market-mobile-view__btn--active {
+    background: #2a2a2e;
+    color: #fff;
   }
 
   .trending-strip {
@@ -7719,6 +7776,128 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .mobile-token-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .mobile-token-grid-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 16px;
+    background: #141416;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .mobile-token-grid-card:active {
+    background: #19191c;
+  }
+
+  .mobile-token-grid-card__art {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    overflow: hidden;
+    background: #0c0c0e;
+  }
+
+  .mobile-token-grid-card__art > :first-child {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .mobile-token-grid-card__art .token-copy-badge,
+  .mobile-token-grid-card__art .token-og-badge {
+    top: 8px;
+    right: 8px;
+    bottom: auto;
+  }
+
+  .mobile-token-grid-card__body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.28rem;
+    padding: 0.7rem 0.75rem 0.75rem;
+  }
+
+  .mobile-token-grid-card__name {
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #fff;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-token-grid-card__ticker {
+    margin: 0;
+    overflow: hidden;
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #a1a1aa;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-token-grid-card__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+    margin: 0.35rem 0 0;
+  }
+
+  .mobile-token-grid-card__stats div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .mobile-token-grid-card__stats dt {
+    font-size: 0.7rem;
+    color: #71717a;
+  }
+
+  .mobile-token-grid-card__stats dd {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 650;
+    color: #fff;
+  }
+
+  .mobile-token-grid-card__badges {
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
+    padding-top: 0.45rem;
+    pointer-events: none;
+  }
+
+  .mobile-token-grid-card__badges .token-type-badges {
+    margin-top: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .mobile-token-grid-card__badges .token-type-badge {
+    padding: 1px 6px;
+    font-size: 10px;
+    line-height: 1.45;
   }
 
   .mobile-token-row {

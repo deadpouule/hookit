@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
+import { MobileTokenGridCard } from "./MobileTokenGridCard";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -91,7 +92,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   const liveLaunches = shouldFetchLiveLaunches();
   const { data: onChainPools, isLoading, isError, isFetched } = useLaunches(initialPools);
 
-  const effectiveLayout: LayoutMode = isMobile ? "grid" : layout;
+  const effectiveLayout: LayoutMode = layout;
 
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
@@ -336,7 +337,15 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         ) : (
           <>
             <div className="phone:block hidden">
-              <MobileExploreVirtualList tokens={tokens} />
+              {layout === "grid" ? (
+                <div className="mobile-token-grid">
+                  {tokens.map((token) => (
+                    <MobileTokenGridCard key={token.id} token={token} />
+                  ))}
+                </div>
+              ) : (
+                <MobileExploreVirtualList tokens={tokens} />
+              )}
             </div>
             {effectiveLayout === "grid" ? (
               <div className="hidden desk:block">
