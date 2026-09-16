@@ -1,6 +1,7 @@
 "use client";
 
 import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, useLoginWithSms, useSignupWithPasskey } from "@privy-io/react-auth";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ArrowLeft, Fingerprint, Mail, Phone, Search, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -217,6 +218,7 @@ function WelcomeConnectModalView({
 
   const { isConnected } = useAccount();
   const { connectAsync } = useConnect();
+  const { openConnectModal } = useConnectModal();
   const connectors = useConnectors();
 
   useEffect(() => {
@@ -384,12 +386,30 @@ function WelcomeConnectModalView({
           <div className="welcome-connect__body">
             <span className="welcome-connect__mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/hookit-owl-favicon.png" alt="" width={108} height={108} draggable={false} />
+              <img src="/brand/hookit-owl-mark.png" alt="" width={184} height={129} draggable={false} />
             </span>
             <h2 id="welcome-connect-title" className="welcome-connect__title">
               Welcome to Hookit
             </h2>
             <p className="welcome-connect__subtitle">Launch and trade programmed v4 hooks on Ink.</p>
+
+            <button
+              type="button"
+              className="welcome-connect__row"
+              disabled={busy}
+              onClick={() => {
+                if (openConnectModal) {
+                  onClose();
+                  window.setTimeout(() => openConnectModal(), 40);
+                  return;
+                }
+                goToWallets();
+              }}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
+              <Wallet className="h-5 w-5" aria-hidden />
+              Continue with a wallet
+            </button>
 
             <form
               className="welcome-connect__email"
@@ -467,16 +487,6 @@ function WelcomeConnectModalView({
               <TwitterMark />
               Twitter
             </button>
-            <button
-              type="button"
-              className="welcome-connect__row"
-              disabled={busy}
-              onClick={goToWallets}
-              {...TOOLBAR_BUTTON_PROPS}
-            >
-              <Wallet className="h-5 w-5" aria-hidden />
-              Continue with a wallet
-            </button>
             {error ? <p className="welcome-connect__error">{error}</p> : null}
             <p className="welcome-connect__legal">
               By continuing, you agree to our{" "}
@@ -494,7 +504,7 @@ function WelcomeConnectModalView({
           <div className="welcome-connect__body">
             <span className="welcome-connect__mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/hookit-owl-favicon.png" alt="" width={108} height={108} draggable={false} />
+              <img src="/brand/hookit-owl-mark.png" alt="" width={184} height={129} draggable={false} />
             </span>
             <h2 id="welcome-connect-title" className="welcome-connect__title">
               {otpChannel === "sms" ? "Check your phone" : "Check your email"}

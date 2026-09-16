@@ -23,7 +23,7 @@ function RainbowTree({ children }: { children: ReactNode }) {
   return (
     <RainbowKitProvider
       theme={hookitTheme}
-      modalSize="compact"
+      modalSize="wide"
       initialChain={getActiveChain()}
       appInfo={{
         appName: "hook it",
