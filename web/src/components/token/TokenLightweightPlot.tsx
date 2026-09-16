@@ -13,11 +13,10 @@ import {
   chartFitFirstRealIndex,
   chartFitWindowBars,
   chartRangeSignature,
-  candlePlotBar,
-  chartRenderableCandle,
+  candleSeriesData,
   chartVisibleLogicalRange,
+  fdvStepBar,
   isCandleBar,
-  isTradedBar,
   formatChartAxis,
   isWhitespaceBar,
   visibleExtremes,
@@ -197,12 +196,16 @@ function fitChartView(
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
-function tradedCountInView(bars: ChartBar[], from?: number, to?: number): number {
+function fdvStepsInView(bars: ChartBar[], from?: number, to?: number): number {
   const start = Math.max(0, Math.floor(from ?? 0));
   const end = Math.min(bars.length - 1, Math.ceil(to ?? bars.length - 1));
   let n = 0;
+  let prevClose: number | undefined;
   for (let i = start; i <= end; i++) {
-    if (isTradedBar(bars[i]!)) n++;
+    const bar = bars[i]!;
+    if (!fdvStepBar(bar, prevClose)) continue;
+    prevClose = bar.close;
+    n++;
   }
   return n;
 }
@@ -221,7 +224,7 @@ function applyAthAtl(
     handle.atlLine = null;
   }
   const vis = visibleLogicalRangeOf(handle.chart);
-  if (tradedCountInView(bars, vis?.from, vis?.to) < 3) return;
+  if (fdvStepsInView(bars, vis?.from, vis?.to) < 2) return;
   const ext = visibleExtremes(bars, vis?.from, vis?.to);
   if (!ext) return;
   const { ath, atl } = ext;
@@ -272,11 +275,17 @@ function applyBars(
       priceLineColor: line,
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
-      next.map((b) => {
-        if (!candlePlotBar(b)) return { time: asTime(b) };
-        const c = chartRenderableCandle(b);
-        return { time: asTime(b), open: c.open, high: c.high, low: c.low, close: c.close };
-      }),
+      candleSeriesData(next).map((point) =>
+        point.open == null
+          ? { time: point.time as UTCTimestamp }
+          : {
+              time: point.time as UTCTimestamp,
+              open: point.open,
+              high: point.high!,
+              low: point.low!,
+              close: point.close!,
+            },
+      ),
     );
   }
 

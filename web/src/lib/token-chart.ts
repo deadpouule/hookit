@@ -157,7 +157,7 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
   }));
 }
 
-/** True when the bar came from a real swap (not FX carry / gap fill). */
+/** True when the bar came from a real swap (volume metadata only — not used for FDV plot). */
 export function isTradedBar(bar: ChartBar): boolean {
   return !isWhitespaceBar(bar) && bar.volume > 0 && bar.close > 0;
 }
@@ -165,6 +165,16 @@ export function isTradedBar(bar: ChartBar): boolean {
 /** Every FDV bucket with a price prints on the tape (flat = thin dash, not a gap). */
 export function isCandleBar(bar: ChartBar): boolean {
   return !isWhitespaceBar(bar) && bar.close > 0;
+}
+
+const FDV_STEP_EPS = 0.00005;
+
+/** FDV moved vs the previous plotted bucket — mcap/time, not volume. */
+export function fdvStepBar(bar: ChartBar, prevClose?: number): boolean {
+  if (!isCandleBar(bar)) return false;
+  if (!(prevClose !== undefined && prevClose > 0)) return true;
+  const mid = bar.close;
+  return Math.abs(bar.close - prevClose) / mid > FDV_STEP_EPS;
 }
 
 /** Thin TradingView-style dash when FDV is unchanged in this bucket. */
@@ -180,21 +190,36 @@ export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high"
   };
 }
 
-export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+export function chartRenderableCandle(
+  bar: ChartBar,
+  prevClose?: number,
+): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
   const mid = bar.close;
   const span = Math.max(bar.high - bar.low, Math.abs(bar.open - bar.close));
-  const minMove = mid * 0.00005;
-  if (span <= minMove) {
-    if (isTradedBar(bar)) return visibleCandleOhlc(bar);
-    return flatFdvCandleOhlc(bar);
+  const minMove = mid * FDV_STEP_EPS;
+  if (span > minMove) {
+    return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
   }
-  return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+  if (fdvStepBar(bar, prevClose)) return visibleCandleOhlc(bar);
+  return flatFdvCandleOhlc(bar);
 }
 
-/** Candle mode draws real prints only; FDV carry and in-progress slots stay empty. */
-export function candlePlotBar(bar: ChartBar): boolean {
-  return isTradedBar(bar);
+/** Candle mode: one body per FDV step (mcap/time), skip flat carry at the same FDV. */
+export function candlePlotBar(bar: ChartBar, prevClose?: number): boolean {
+  return fdvStepBar(bar, prevClose);
+}
+
+export function candleSeriesData(
+  bars: ChartBar[],
+): Array<{ time: number; open?: number; high?: number; low?: number; close?: number }> {
+  let prevClose: number | undefined;
+  return bars.map((bar) => {
+    if (!candlePlotBar(bar, prevClose)) return { time: bar.time };
+    const ohlc = chartRenderableCandle(bar, prevClose);
+    prevClose = bar.close;
+    return { time: bar.time, open: ohlc.open, high: ohlc.high, low: ohlc.low, close: ohlc.close };
+  });
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
@@ -370,25 +395,9 @@ export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   const next = bars.map((b) => ({ ...b }));
   let pinAt = -1;
   for (let i = next.length - 1; i >= 0; i--) {
-    if (!isWhitespaceBar(next[i]!) && isTradedBar(next[i]!)) {
+    if (isCandleBar(next[i]!)) {
       pinAt = i;
       break;
-    }
-  }
-  if (pinAt < 0) {
-    for (let i = next.length - 1; i >= 0; i--) {
-      if (!isWhitespaceBar(next[i]!) && !isSyntheticBar(next[i]!)) {
-        pinAt = i;
-        break;
-      }
-    }
-  }
-  if (pinAt < 0) {
-    for (let i = next.length - 1; i >= 0; i--) {
-      if (!isWhitespaceBar(next[i]!)) {
-        pinAt = i;
-        break;
-      }
     }
   }
   if (pinAt < 0) return next;
@@ -568,20 +577,14 @@ export function visiblePriceBand(
   const { start, end } = visibleBarSlice(bars.length, from, to);
   let ath = -Infinity;
   let atl = Infinity;
+  let prevClose: number | undefined;
   for (let i = start; i <= end; i++) {
     const bar = bars[i];
-    if (!bar || !isTradedBar(bar)) continue;
-    ath = Math.max(ath, bar.high);
-    atl = Math.min(atl, bar.low);
-  }
-  if (!(ath > 0) || !(atl > 0)) {
-    for (let i = start; i <= end; i++) {
-      const bar = bars[i];
-      if (!bar || !isCandleBar(bar)) continue;
-      const ohlc = chartRenderableCandle(bar);
-      ath = Math.max(ath, ohlc.high);
-      atl = Math.min(atl, ohlc.low);
-    }
+    if (!bar || !candlePlotBar(bar, prevClose)) continue;
+    const ohlc = chartRenderableCandle(bar, prevClose);
+    prevClose = bar.close;
+    ath = Math.max(ath, ohlc.high);
+    atl = Math.min(atl, ohlc.low);
   }
   if (!(ath > 0) || !(atl > 0)) {
     const ext = visibleExtremes(bars, from, to);
