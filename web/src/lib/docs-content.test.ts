@@ -203,7 +203,8 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   const cycle = readFileSync(new URL("../components/docs/DocsCycleArt.tsx", import.meta.url), "utf8");
   assert.match(cycle, /Every swap feeds \$HKT/);
   assert.match(cycle, /hookit-owl-favicon/);
-  assert.match(cycle, /Buy \$HKT again/);
+  assert.match(cycle, /Funds ops protocole/);
+  assert.match(cycle, /AIRDROP TO \$HKT holders/);
   const graphs = readFileSync(new URL("../components/docs/DocsBranchGraph.tsx", import.meta.url), "utf8");
   assert.match(graphs, /DocsPointArrow/);
   assert.match(graphs, /docs-fee-map/);
