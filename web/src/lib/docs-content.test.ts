@@ -155,6 +155,16 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.equal(blob.includes("Creator flow"), false);
   assert.match(blob, /not financial advice/);
   assert.match(blob, /"href":"\/terms"/);
+  assert.equal(blob.includes("Leftover → protocol"), false);
+  assert.equal(blob.includes("leftover → protocol"), false);
+  assert.equal(blob.includes("1.030 ETH"), false);
+  assert.match(blob, /Receives 0\.97 ETH worth of tokens/);
+  assert.equal(blob.includes("Do not imply partnership"), false);
+  assert.equal(blob.includes("Fee tier 0"), false);
+  assert.equal(blob.includes("Cursor"), false);
+  assert.match(blob, /\/health exposes head, lagBlocks/);
+  assert.match(blob, /live venue fee/);
+  assert.equal(blob.includes("live hook fee"), false);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
   assert.equal(blob.includes("What is immutable"), false);
@@ -250,6 +260,26 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.equal(deepenBlock.includes("docs-visual-hook-row"), false);
   assert.equal(visuals.includes("pendingDeepenLps"), false);
   assert.equal(visuals.includes("Holders of $TICKER"), false);
+  assert.equal(visuals.includes("Fee tier 0"), false);
+  assert.match(visuals, /1% quote fee/);
+  assert.match(visuals, /0\.97 ETH worth of tokens/);
+  assert.equal(visuals.includes("1.03 ETH"), false);
+  assert.equal(visuals.includes("leftover → protocol"), false);
+  assert.equal(visuals.includes("Cursor"), false);
+  assert.match(visuals, /Head, lag, last poll error/);
+  assert.match(visuals, /Arb keeper closes the USD gap/);
+  assert.match(visuals, /PAIRING_TOKENS\.map/);
+  assert.equal(diagrams.includes("fee tier 0"), false);
+  assert.match(diagrams, /Multi-pair Arb keeper/);
+  assert.equal(diagrams.includes("Hook fee"), false);
+  assert.match(diagrams, /Venue fee/);
+  assert.equal(diagrams.includes("Unallocated hook tax"), false);
+  assert.match(cycle, /"deepen-lps": "DeepenLP"/);
+  const globals = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(globals, /\.docs-def-row dd \{[\s\S]*?word-break: normal;/);
+  const hooks = readFileSync(new URL("./master-hooks.ts", import.meta.url), "utf8");
+  assert.equal(hooks.includes("LEFTOVER → PROTOCOL"), false);
+  assert.equal(hooks.includes("leftover → protocol"), false);
 });
 
 test("docs copy has no em dashes or spaced hyphens", () => {

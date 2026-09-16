@@ -184,7 +184,6 @@ function FixedFeePickCard({
           className="max-w-[260px] border border-border bg-popover px-2.5 py-1.5 text-left text-[11px] leading-snug text-popover-foreground shadow-lg"
         >
           Flat extra fee on every swap. Deducted in quote only, zero sell pressure on your token.
-          Leftover fees route to the protocol.
         </TooltipContent>
       </Tooltip>
       <div className="pick-card-mark pick-ascii">
@@ -225,7 +224,7 @@ function FixedFeeConfigPanel({
       </div>
       <PickConfigControl
         theme={FIXED_FEE_THEME}
-        label="Hook fee"
+        label="Hook tax"
         value={formatBps(hookTaxBps)}
         presets={FIXED_FEE_PRESETS}
         edit={{
@@ -246,7 +245,7 @@ function FixedFeeConfigPanel({
           step={10}
         />
       </PickConfigControl>
-      <ConfigHint>Extra fee for hook modules · leftover → protocol</ConfigHint>
+      <ConfigHint>Extra fee for hook modules</ConfigHint>
     </>
   );
 }

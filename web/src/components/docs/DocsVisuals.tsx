@@ -9,7 +9,7 @@ import { HookLogo } from "@/components/home/market/HookLogo";
 import { PairingMark } from "@/components/launch/PairingMark";
 import type { DocsVisualId } from "@/lib/docs-content";
 import type { BrowseHookId, HookTheme } from "@/lib/master-hooks";
-import type { PairingTokenId } from "@/lib/pairing-tokens";
+import { PAIRING_TOKENS, type PairingTokenId } from "@/lib/pairing-tokens";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
 function Figure({
@@ -140,9 +140,9 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
         <figure className="docs-schema">
           <figcaption>Classic quote pairs</figcaption>
           <ul className="docs-classic-quotes">
-            {(["eth", "usdg", "wnvdax", "waaplx", "wtslax"] as const).map((id) => (
-              <li key={id}>
-                <PairingMark id={id} size="sm" />
+            {PAIRING_TOKENS.map((token) => (
+              <li key={token.id}>
+                <PairingMark id={token.id} size="sm" />
               </li>
             ))}
           </ul>
@@ -245,7 +245,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
     case "arb-keeper":
       return (
         <Figure
-          caption="Keeper closes the USD gap"
+          caption="Arb keeper closes the USD gap"
           note="Buys the cheap USD leg and sells the rich one in one unlock."
         >
           <svg className="docs-spark" viewBox="0 0 360 168" role="img" aria-label="Arb keeper buys the cheap pool and sells the rich one">
@@ -322,7 +322,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           nodes={[
             { t: "Wallet", d: "Sign buy or sell" },
             { t: "HookitSwapRouter", d: "Keeps hook accounting" },
-            { t: "v4 pool", d: "Fee tier 0" },
+            { t: "v4 pool", d: "1% quote fee" },
             { t: "MasterLaunchHook", d: "Quote fee → 60 / 10 / 30" },
           ]}
         />
@@ -643,9 +643,9 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           <Example
             title="Example: 2% fixed hook tax"
             rows={[
-              { k: "1 ETH buy", v: "Pays 0.01 ETH base + 0.02 ETH hook tax = 1.03 ETH in." },
+              { k: "1 ETH buy", v: "Pays 1 ETH. Receives 0.97 ETH worth of tokens (0.01 base + 0.02 hook tax)." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
-              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, leftover → protocol." },
+              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules." },
             ]}
           />
         </Figure>
@@ -694,7 +694,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           <ol className="docs-stack">
             <li>
               <span>/health</span>
-              <p>Cursor, lag, last poll error</p>
+              <p>Head, lag, last poll error</p>
             </li>
             <li>
               <span>/v1/tokens</span>

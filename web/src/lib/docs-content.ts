@@ -315,7 +315,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "Same 1B supply. 80% sells on the curve; 20% is reserved for graduation LP.",
             `Curve graduates at ~${GRADUATION_ETH} ETH (or USDG / wStock equivalent).`,
-            "After graduation, leftover tokens + collected quote seed a full-range v4 pool.",
+            "After graduation, remaining tokens + collected quote seed a full-range v4 pool.",
             "GraduatedFeeHook keeps the same 1% quote-only base. No Master hook tax.",
           ],
         },
@@ -373,7 +373,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Quotrons is the stock venue on Ink. Their v4 wStock/USDG pools are the only equity markets Hookit routes a launch against. We are eco-aligned with that venue: more Hookit launches and more Hookit volume raise the Ink venue hook fee, and that fee goes back to Quotrons LP vaults and hardwired terminals. Their flagship books get deeper. Our traders get a USDG ticket in and out. Win-win.",
+          text: "Quotrons is the stock venue on Ink. Their v4 wStock/USDG pools are the only equity markets Hookit routes a launch against. We are eco-aligned with that venue: more Hookit launches and more Hookit volume raise the Ink venue fee, and that fee goes back to Quotrons LP vaults and hardwired terminals. Their flagship books get deeper. Our traders get a USDG ticket in and out. Win-win.",
         },
         {
           type: "defs",
@@ -410,7 +410,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "The live hook fee is steppable in 0.05% steps inside a 0.05%–1.00% bound baked into the immutable hook. They cannot widen that cap. Quote it live. Do not hardcode 0.30%. Their own rails can be fee-exempt; a Hookit composite hop is ordinary volume and pays.",
+          text: "The live venue fee is steppable in 0.05% steps inside a 0.05%–1.00% bound baked into the immutable hook. They cannot widen that cap. Quote it live. Do not hardcode 0.30%. Their own rails can be fee-exempt; a Hookit composite hop is ordinary volume and pays.",
         },
         {
           type: "diagram",
@@ -435,7 +435,7 @@ export function buildDocsSections(): DocsSection[] {
           links: [{ href: "https://www.quotrons.cash/docs", label: "Quotrons docs" }],
           items: [
             "Their docs cover The Venue / Fees & Dividends on Ink wStock/USDG. That is the hop Hookit uses.",
-            "Quote the hook fee live. Do not hardcode 0.30% in an integration.",
+            "Quote the venue fee live. Do not hardcode 0.30% in an integration.",
           ],
         },
       ],
@@ -561,7 +561,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Hook tax",
-              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules only. Leftover → protocol.`,
+              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules only.`,
             },
             {
               term: "Anti-Snipe",
@@ -583,7 +583,7 @@ export function buildDocsSections(): DocsSection[] {
           rows: [
             ["Base 1%", "0.010 ETH", "0.006 creator · 0.001 $HKT drop · 0.003 protocol"],
             ["Hook tax 2%", "0.020 ETH", "0.016 burn buyback · 0.004 FloorVault"],
-            ["Trader pays", "1.030 ETH", "1.000 into the pool + 0.030 fees"],
+            ["Trader pays", "1.000 ETH", "Receives 0.97 ETH worth of tokens"],
           ],
         },
         {
@@ -1078,7 +1078,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Leftover hook tax (not routed to a sink) joins the protocol pot.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees.",
         },
         {
           type: "visual",
@@ -1297,7 +1297,7 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
           items: [
             "Token summary includes markets[], marketCount, bondingPhase, realQuote, graduationQuote, hookModules, windows (5m/1h/6h/24h), and devBuy*.",
             "Candles default 5m. Pass interval=1m for 60s buckets. Chart is mcap-based.",
-            "/health exposes cursor, lagBlocks, lastPollError.",
+            "/health exposes head, lagBlocks, lastPollError.",
             "On-chain: TokenLaunched, PoolManager Swap, bonding Bought / Sold / Graduated, StateView.getSlot0, LaunchToken.metadataURI.",
           ],
         },
@@ -1624,7 +1624,6 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
           type: "ul",
           items: [
             "Brand: hookit (hookit.fun).",
-            "Do not imply partnership, listing, or audited status.",
             "On-chain data is public. You are responsible for how you use it.",
           ],
         },
