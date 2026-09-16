@@ -185,8 +185,18 @@ export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "h
   const mid = bar.close;
   const span = Math.max(bar.high - bar.low, Math.abs(bar.open - bar.close));
   const minMove = mid * 0.00005;
-  if (span <= minMove) return flatFdvCandleOhlc(bar);
+  if (span <= minMove) {
+    if (isTradedBar(bar)) return visibleCandleOhlc(bar);
+    return flatFdvCandleOhlc(bar);
+  }
   return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+}
+
+/** Candle mode draws real prints only; FDV carry slots stay empty like DexScreener. */
+export function candlePlotBar(bar: ChartBar): boolean {
+  if (isWhitespaceBar(bar) || !(bar.close > 0)) return false;
+  if (!isTradedBar(bar) && isSyntheticBar(bar)) return false;
+  return true;
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {

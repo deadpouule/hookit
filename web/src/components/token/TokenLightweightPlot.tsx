@@ -13,6 +13,7 @@ import {
   chartFitFirstRealIndex,
   chartFitWindowBars,
   chartRangeSignature,
+  candlePlotBar,
   chartRenderableCandle,
   chartVisibleLogicalRange,
   isCandleBar,
@@ -272,7 +273,7 @@ function applyBars(
     });
     (handle.price as ISeriesApi<"Candlestick">).setData(
       next.map((b) => {
-        if (!isCandleBar(b)) return { time: asTime(b) };
+        if (!candlePlotBar(b)) return { time: asTime(b) };
         const c = chartRenderableCandle(b);
         return { time: asTime(b), open: c.open, high: c.high, low: c.low, close: c.close };
       }),

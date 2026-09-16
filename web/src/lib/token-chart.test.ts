@@ -18,6 +18,7 @@ import {
   chartFitWindowBars,
   chartFitFirstRealIndex,
   chartPriceBand,
+  candlePlotBar,
   chartRenderableCandle,
   carryFdvTape,
   definedFdvTape,
@@ -322,6 +323,18 @@ test("chartRenderableCandle uses a dash for flat FDV and real wicks for trades",
   const traded = chartRenderableCandle({ time: 2, open: 5000, high: 5200, low: 4900, close: 5100, volume: 3 });
   assert.equal(traded.high, 5200);
   assert.equal(traded.low, 4900);
+});
+
+test("chartRenderableCandle gives a single print a fat body like Defined", () => {
+  const lone = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 1 });
+  assert.ok(lone.high - lone.low >= 5300 * 0.005);
+});
+
+test("candlePlotBar skips FDV carry slots so sparse tapes show one candle per trade", () => {
+  const carry = { time: 2, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 };
+  const trade = { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 };
+  assert.equal(candlePlotBar(carry), false);
+  assert.equal(candlePlotBar(trade), true);
 });
 
 test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
