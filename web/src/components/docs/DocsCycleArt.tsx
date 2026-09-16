@@ -63,6 +63,51 @@ function LinePct({ x, y, value }: { x: number; y: number; value: string }) {
   );
 }
 
+function Callout({
+  x,
+  y,
+  width,
+  height,
+  lines,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  lines: string[];
+}) {
+  const lineH = 14;
+  const start = y+(height-(lines.length-1)*lineH)/2+4;
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx="14"
+        fill="#0a0a0a"
+        stroke="#f4f4f5"
+        strokeOpacity="0.5"
+      />
+      {lines.map((line, i) => (
+        <text
+          key={line}
+          x={x + width / 2}
+          y={start + i * lineH}
+          textAnchor="middle"
+          fill="#f4f4f5"
+          fontSize="10"
+          fontWeight="800"
+          letterSpacing="0"
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 const HOOK_SHORT: Record<BrowseHookId, string> = {
   "holder-airdrop": "Airdrop",
   "backed-floor": "Floor",
@@ -122,11 +167,10 @@ const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
 ];
 
 const PILE_MEMES: { src: string; x: number; y: number; size: number }[] = [
-  { src: "/memes/bonk.png", x: 500, y: 248, size: 32 },
-  { src: "/memes/floki.png", x: 568, y: 240, size: 32 },
-  { src: "/memes/popcat.png", x: 612, y: 286, size: 32 },
-  { src: "/memes/brett.png", x: 568, y: 328, size: 32 },
-  { src: "/memes/turbo.png", x: 508, y: 322, size: 32 },
+  { src: "/memes/pepe.png", x: 518, y: 246, size: 32 },
+  { src: "/memes/doge.png", x: 568, y: 236, size: 32 },
+  { src: "/memes/wif.png", x: 606, y: 278, size: 32 },
+  { src: "/memes/shib.png", x: 536, y: 316, size: 32 },
 ];
 
 const HOOK_STRIDE = 38;
@@ -139,7 +183,7 @@ export function DocsCycleArt() {
       <figcaption>Every swap feeds $HKT</figcaption>
       <p className="docs-map-kicker">Token buybacks. Holder drops. A connected fee cycle.</p>
       <div className="docs-cycle" role="img" aria-label="Every launch and every swap on hookit feeds $HKT">
-        <svg viewBox="0 0 1240 840" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
+        <svg viewBox="0 0 1440 900" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
           <defs>
             <marker id="docs-cycle-w" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
@@ -179,11 +223,14 @@ export function DocsCycleArt() {
           <path d="M 114 191 C 160 230, 185 265, 200 284" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
           <path d="M 86 271 C 150 290, 185 295, 200 296" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
 
-          <rect x="200" y="246" width="214" height="92" rx="28" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2" />
-          <text x="307" y="284" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800">
+          <rect x="200" y="236" width="214" height="102" rx="28" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2" />
+          <text x="307" y="260" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="800">
+            Swap
+          </text>
+          <text x="307" y="282" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800">
             1% + (0-9% hook taxes)
           </text>
-          <text x="307" y="304" textAnchor="middle" fill="#a1a1aa" fontSize="11">
+          <text x="307" y="302" textAnchor="middle" fill="#a1a1aa" fontSize="11">
             quote fee
           </text>
 
@@ -200,7 +247,7 @@ export function DocsCycleArt() {
 
           <path d="M 414 268 C 430 190, 400 160, 448 147" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
           <path d="M 414 292 C 450 292, 490 292, 486 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
-          <LinePct x={432} y={292} value="10%" />
+          <Callout x={418} y={264} width={130} height={28} lines={["10% buys the ticker"]} />
           <path d="M 360 338 C 380 430, 400 500, 448 522" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
 
           <rect x="448" y="125" width="190" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
@@ -252,6 +299,7 @@ export function DocsCycleArt() {
           </text>
 
           <path d="M 634 300 C 780 330, 860 310, 922 300" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <Callout x={702} y={276} width={196} height={28} lines={["Sent to $HKT Holders."]} />
           <rect x="922" y="250" width="280" height="100" rx="16" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
           <image href="/brand/hookit-owl-favicon.png" x="938" y="272" width="44" height="44" />
           <text x="992" y="288" fill="#fff" fontSize="14" fontWeight="700">
@@ -294,19 +342,38 @@ export function DocsCycleArt() {
             />
           ))}
           <path
-            d="M 186 700 C 72 655, 40 575, 102 508"
+            d="M 186 705 C 60 700, 12 620, 10 500 C 8 400, 8 330, 12 300 C 18 278, 28 272, 40 271"
             fill="none"
             stroke="#f4f4f5"
             strokeWidth="2"
             markerEnd="url(#docs-cycle-w)"
           />
-          <rect x="16" y="548" width="210" height="48" rx="14" fill="#f4f4f5" />
-          <text x="121" y="567" textAnchor="middle" fill="#0a0a0a" fontSize="10" fontWeight="800" letterSpacing="0">
-            v4 hooks who benefit
-          </text>
-          <text x="121" y="584" textAnchor="middle" fill="#0a0a0a" fontSize="10" fontWeight="800" letterSpacing="0">
-            for tokens launched on hookit
-          </text>
+          <Callout
+            x={32}
+            y={548}
+            width={210}
+            height={48}
+            lines={["v4 hooks who benefit", "for tokens launched on hookit"]}
+          />
+          <path
+            d="M 418 748 C 820 860, 1280 860, 1368 620 C 1408 440, 1380 310, 1208 300"
+            fill="none"
+            stroke="#f4f4f5"
+            strokeWidth="2"
+            markerEnd="url(#docs-cycle-w)"
+          />
+          <Callout
+            x={1210}
+            y={418}
+            width={220}
+            height={96}
+            lines={[
+              "$HKT holders receive hooked tokens",
+              "and the perks of tokens launched",
+              "(airdrop, vesting, stocks",
+              "or token airdrops)",
+            ]}
+          />
         </svg>
       </div>
       <p className="docs-schema-note">

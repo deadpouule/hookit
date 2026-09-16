@@ -11546,7 +11546,7 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
 .docs-cycle-svg {
   display: block;
   width: 100%;
-  min-width: 50rem;
+  min-width: 56rem;
   height: auto;
   letter-spacing: 0 !important;
 }
