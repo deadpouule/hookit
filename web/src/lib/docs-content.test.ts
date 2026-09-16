@@ -211,6 +211,14 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(cycle, /\/memes\/shib\.png/);
   assert.match(cycle, /v4 hooks who benefit/);
   assert.match(cycle, /for tokens launched on hookit/);
+  assert.match(cycle, />\s*Swap\s*</);
+  assert.match(cycle, /10% buys/);
+  assert.match(cycle, /the ticker/);
+  assert.match(cycle, /Sent to \$HKT Holders/);
+  assert.match(cycle, /\$HKT holders receive hooked tokens/);
+  assert.equal(cycle.includes("/memes/bonk.png"), false);
+  assert.equal(cycle.includes("/memes/brett.png"), false);
+  assert.equal(cycle.includes("/memes/floki.png"), false);
   const graphs = readFileSync(new URL("../components/docs/DocsBranchGraph.tsx", import.meta.url), "utf8");
   assert.match(graphs, /DocsPointArrow/);
   assert.match(graphs, /docs-fee-map/);
