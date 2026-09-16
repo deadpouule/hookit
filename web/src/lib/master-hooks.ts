@@ -441,6 +441,40 @@ export function launchWithHookHref(id: BrowseHookId) {
   return `/launch/custom?hook=${id}`;
 }
 
+/** Launch wizard with one or more preselected modules (`?hook=` or `?hooks=`). */
+export function launchComboHref(ids: readonly string[]): string {
+  const unique: BrowseHookId[] = [];
+  for (const id of ids) {
+    if (!isBrowseHookId(id) || unique.includes(id)) continue;
+    unique.push(id);
+  }
+  if (unique.length === 0) return "/launch/custom";
+  if (unique.length === 1) return launchWithHookHref(unique[0]);
+  return `/launch/custom?hooks=${unique.join(",")}`;
+}
+
+export function parseLaunchHookIds(hook?: string | null, hooks?: string | null): string[] {
+  const fromList = (hooks ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const single = hook?.trim();
+  if (single && !fromList.includes(single)) fromList.push(single);
+  return fromList;
+}
+
+/** Highest live-use count, then Backed Floor when tied. */
+export function pickFeaturedHook(hooks: BrowseHook[]): BrowseHook | null {
+  if (hooks.length === 0) return null;
+  return hooks.reduce((best, hook) => {
+    if (hook.uses > best.uses) return hook;
+    if (hook.uses === best.uses && hook.id === "backed-floor" && best.id !== "backed-floor") {
+      return hook;
+    }
+    return best;
+  });
+}
+
 export function hookAccentColor(id: MasterHookId): string {
   const hook = MASTER_HOOKS.find((item) => item.id === id);
   return hook ? hookThemeAccentColor(hook.theme) : "#9514d1";
@@ -465,4 +499,11 @@ export function withMasterHookEnabled(
     hookMode: "master",
     modules: { ...state.modules, [field]: true },
   };
+}
+
+export function withMasterHooksEnabled(
+  state: import("@/lib/types").LaunchFormState,
+  hookIds: readonly string[],
+): import("@/lib/types").LaunchFormState {
+  return hookIds.reduce((next, id) => withMasterHookEnabled(next, id), state);
 }

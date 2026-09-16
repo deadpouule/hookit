@@ -1,23 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type CSSProperties } from "react";
+import { type CSSProperties, type KeyboardEvent } from "react";
 
+import { HookLiveTokens } from "@/components/explore/HookLiveTokens";
 import { HookLogo } from "@/components/home/market/HookLogo";
 import { marketplaceHrefForHook } from "@/lib/market-hook-filter";
 import {
   hookThemeAccentColor,
   type BrowseHook,
-  type MasterHookCategory,
 } from "@/lib/master-hooks";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const CATEGORY_LABEL: Record<MasterHookCategory, string> = {
-  protection: "Protection",
-  tokenomics: "Tokenomics",
-  rewards: "Rewards",
-  "trading-fees": "Fees",
-};
 
 function sentence(text: string) {
   const t = text.trim();
@@ -28,45 +22,70 @@ function sentence(text: string) {
 export function HookCard({
   hook,
   usesPending = false,
+  livePools = [],
+  inCombo = false,
   onOpen,
+  onToggleCombo,
 }: {
   hook: BrowseHook;
   usesPending?: boolean;
+  livePools?: TokenPool[];
+  inCombo?: boolean;
   onOpen?: (hook: BrowseHook) => void;
+  onToggleCombo?: (hook: BrowseHook) => void;
 }) {
   const router = useRouter();
   const usesHref =
     hook.id === "fixed-fee" ? "/?category=master#tokens" : marketplaceHrefForHook(hook.id);
 
+  const open = () => {
+    if (onOpen) onOpen(hook);
+    else router.push(usesHref);
+  };
+
+  const onCardKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      open();
+    }
+  };
+
   return (
-    <button
-      type="button"
-      className={cn("hook-browse-card")}
+    <div
+      role="button"
+      tabIndex={0}
+      className={cn("token-hook-pulse-card desk-card hook-pulse-browse")}
       data-hook-id={hook.id}
       style={{ "--pulse-accent": hookThemeAccentColor(hook.theme) } as CSSProperties}
-      onClick={() => {
-        window.setTimeout(() => {
-          if (onOpen) onOpen(hook);
-          else router.push(usesHref);
-        }, 0);
-      }}
+      onClick={open}
+      onKeyDown={onCardKey}
     >
-      <span className="hook-browse-card__top">
-        <span className="hook-browse-card__logo" aria-hidden>
-          <HookLogo hookId={hook.id} theme={hook.theme} />
-        </span>
-        <span className="hook-browse-card__chips">
-          <span className="hook-browse-card__cat">{CATEGORY_LABEL[hook.category]}</span>
-          <span className="hook-browse-card__uses">
+      <span className="token-hook-pulse-mark" aria-hidden>
+        <HookLogo hookId={hook.id} theme={hook.theme} />
+      </span>
+      <span className="token-hook-pulse-slide">
+        <h2 className="token-hook-pulse-title">{hook.title}</h2>
+        <p className="token-hook-pulse-desc">{sentence(hook.description)}</p>
+        <span className="token-hook-pulse-link hook-pulse-uses">
+          <span className="hook-pulse-uses-count">
             {usesPending ? "…" : `${hook.uses} live ${hook.uses === 1 ? "use" : "uses"}`}
           </span>
+          <HookLiveTokens pools={livePools} />
         </span>
       </span>
-      <span className="hook-browse-card__body">
-        <h2 className="hook-browse-card__title">{hook.title}</h2>
-        <p className="hook-browse-card__desc">{sentence(hook.description)}</p>
-      </span>
-      <span className="hook-browse-card__cta">Open module</span>
-    </button>
+      {onToggleCombo ? (
+        <button
+          type="button"
+          className={cn("hook-combo-add", inCombo && "is-on")}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleCombo(hook);
+          }}
+        >
+          {inCombo ? "In combo" : "+ Combo"}
+        </button>
+      ) : null}
+    </div>
   );
 }

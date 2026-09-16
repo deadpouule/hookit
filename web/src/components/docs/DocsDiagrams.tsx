@@ -1,4 +1,9 @@
-import { DocsBranchGraph } from "@/components/docs/DocsBranchGraph";
+import {
+  DocsFork,
+  DocsPipe,
+  DocsPointArrow,
+  DocsWheel,
+} from "@/components/docs/DocsBranchGraph";
 import { AnimatedGridBackground } from "@/components/home/market/AnimatedGridBackground";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
 import { HookLogo } from "@/components/home/market/HookLogo";
@@ -149,21 +154,17 @@ function StackDiagram() {
 
 function FlywheelDiagram() {
   return (
-    <DocsBranchGraph
+    <DocsWheel
       caption="Where every swap goes"
-      kicker="Every trade"
-      sources={[
-        { t: "1% base", d: "Mandatory. Quote only." },
-        { t: "Hook tax", d: "Optional Master extra, 0 to 9%." },
-      ]}
-      hub={{ t: "MasterLaunchHook", d: "One take. Shares set at launch." }}
-      outputs={[
-        { t: "Creator 60%", d: "FeeEscrow, Buyback Vesting, or Creator → Hook." },
-        { t: "$HKT drop 10%", d: "Buys that pool's ticker for live $HKT holders." },
+      kicker="Fee flywheel"
+      center={{ t: "MasterLaunchHook", d: "One take on the quote. Shares packed at launch." }}
+      nodes={[
+        { t: "Swap prints", d: "Quote-only 1%. Never the memecoin." },
+        { t: "Creator 60%", d: "Escrow, vest, or Creator → Hook." },
+        { t: "$HKT drop 10%", d: "Buys this ticker for live $HKT holders." },
         { t: "Protocol 30%", d: "20% ops. 80% buys $HKT and burns it." },
-        { t: "Hook pot", d: "Tax (plus creator 60% if routed). Burn, floor, deepen, airdrop." },
       ]}
-      note="The 1% always splits 60 / 10 / 30. Hook tax never uses that split. It fills the pot, then modules."
+      note="Hook tax skips this split. It fills the pot, then modules (burn, floor, deepen, airdrop) spend it."
     />
   );
 }
@@ -206,18 +207,13 @@ function FeeSplitDiagram() {
 
 function SwapLifecycleDiagram() {
   return (
-    <DocsBranchGraph
+    <DocsPipe
       caption="Master swap lifecycle"
       kicker="One unlock"
-      sources={[
+      steps={[
         { t: "beforeSwap", d: "Anti-MEV, Anti-Snipe, Max Tx." },
         { t: "Take quote", d: "1% base plus hook tax. Quote leg only." },
-      ]}
-      hub={{ t: "Route", d: "60 / 10 / 30 on the 1%. Tax into the pot." }}
-      outputs={[
-        { t: "Creator 60%", d: "Escrow, vest, or hook pot." },
-        { t: "$HKT drop 10%", d: "Buy this ticker. Push next epoch." },
-        { t: "Protocol 30%", d: "Ops 20%. Native buyback and burn 80%." },
+        { t: "Split", d: "60 / 10 / 30 on the 1%. Tax into the pot." },
         { t: "afterSwap", d: "Auto-Burn, Deepen LPs, floor credit, airdrop accrue." },
       ]}
       note="Fee is never a memecoin tax. Modules spend the pot in afterSwap. The 1% split never changes."
@@ -327,13 +323,9 @@ function HktBurnDiagram() {
           })}
         </ul>
         <div className="docs-hkt-schema-join" aria-hidden>
-          <i />
-          <i />
-          <i />
-          <i />
-          <i />
-          <b />
-          <em />
+          {HKT_POOL_HOOKS.map((item) => (
+            <DocsPointArrow key={item.id} />
+          ))}
         </div>
         <div className="docs-hkt-schema-token">
           <img src="/brand/hookit-owl-favicon.png" alt="" width={88} height={88} />
@@ -349,19 +341,16 @@ function HktBurnDiagram() {
 
 function QuotronsFlywheelDiagram() {
   return (
-    <DocsBranchGraph
+    <DocsWheel
       caption="Hookit × Quotrons flywheel"
       kicker="Every composite trade"
-      sources={[
+      center={{ t: "Quotrons v4 pool", d: "Canonical USDG ↔ wStock hop." }}
+      nodes={[
         { t: "Buy in USDG", d: "Wallet pays USDG. Never holds the wStock." },
-        { t: "Sell to USDG", d: "Token → wStock → USDG in one unlock." },
-      ]}
-      hub={{ t: "Quotrons v4 pool", d: "Canonical USDG ↔ wStock hop." }}
-      outputs={[
         { t: "LP vault 50%", d: "That pool's vault, claimable in USDG." },
-        { t: "Terminals 50%", d: "Venue-wide pot → epochs → hardwired terminals." },
-        { t: "Deeper books", d: "Fees stay in the venue that prices every wStock launch." },
-        { t: "More Hookit volume", d: "Better USDG fills. More launches pair here." },
+        { t: "Deeper books", d: "Fees stay where every wStock launch is priced." },
+        { t: "More Hookit volume", d: "Tighter USDG fills. More launches pair here." },
+        { t: "Sell to USDG", d: "Token → wStock → USDG in one unlock." },
       ]}
       note="Liquid $QUOTRON does not earn this stream. Stronger books make the next USDG fill tighter."
     />
@@ -370,40 +359,32 @@ function QuotronsFlywheelDiagram() {
 
 function QuotronsFeesDiagram() {
   return (
-    <DocsBranchGraph
+    <DocsFork
       caption="Where the venue fee goes"
       kicker="Every hop"
-      sources={[
-        { t: "Hook fee", d: "Live take in USDG. 0.30% at writing." },
-        { t: "USDG leg", d: "Same notional, same fee, buy or sell." },
-      ]}
-      hub={{ t: "Split 50 / 50", d: "Onchain, no custody, no signature." }}
+      sources={[{ t: "Hook fee", d: "Live take in USDG. 0.30% at writing." }]}
+      hub={{ t: "Split 50 / 50", d: "Onchain. No custody. Same fee buy or sell." }}
       outputs={[
         { t: "LP vault", d: "Per-pool. Claimable in USDG." },
         { t: "Terminal pot", d: "Venue-wide. Quiet books ride busy ones." },
-        { t: "Epochs", d: "$250 min, $10,000 cap, at most every 5 min." },
-        { t: "Hardwired terminals", d: "Ten reward floors. Liquid $QUOTRON earns nothing." },
+        { t: "Epochs → terminals", d: "$250 min, $10,000 cap. Ten hardwired floors." },
       ]}
-      note="Quote the fee live. Their own rails can be fee-exempt. A Hookit hop pays."
+      note="Quote the fee live. Their own rails can be fee-exempt. A Hookit hop pays. Liquid $QUOTRON earns nothing."
     />
   );
 }
 
 function HktLoopDiagram() {
   return (
-    <DocsBranchGraph
+    <DocsWheel
       caption="Hold $HKT, get a slice of every launch"
       kicker="Every trade"
-      sources={[
-        { t: "$HKT bag", d: "Your live balance. Pro-rata weight." },
-        { t: "Any hooked swap", d: "1% quote fee. Master or graduated Classic." },
-      ]}
-      hub={{ t: "0.10% of the trade", d: "10% of the 1%. Mandatory." }}
-      outputs={[
+      center={{ t: "0.10% of the trade", d: "10% of the 1%. Mandatory." }}
+      nodes={[
+        { t: "Hold $HKT", d: "Live balance. Pro-rata weight. Not a snapshot." },
+        { t: "Any hooked swap", d: "Master or graduated Classic. 1% quote fee." },
         { t: "Buy that ticker", d: "HktHolderDropVault spends quote on the pool." },
-        { t: "Epoch push", d: "Live $HKT holders. Not a snapshot." },
-        { t: "Every launch", d: "$ARB, $PEPE, the next ticker. Same weight." },
-        { t: "Not more $HKT", d: "You receive the other tokens." },
+        { t: "Epoch push", d: "You receive the other tokens, not more $HKT." },
       ]}
       note="LP and protocol sinks are excluded so they do not eat the drop. More $HKT, larger slice."
     />

@@ -45,7 +45,12 @@ import {
   feeSplitStepSubtitle,
 } from "@/lib/launch-wizard";
 import { mcapStepUnlockError } from "@/lib/mcap-vest";
-import { HOOK_MODULE_FIELD, MASTER_HOOKS, withMasterHookEnabled } from "@/lib/master-hooks";
+import {
+  HOOK_MODULE_FIELD,
+  MASTER_HOOKS,
+  parseLaunchHookIds,
+  withMasterHooksEnabled,
+} from "@/lib/master-hooks";
 import { isModuleEnabled } from "@/lib/launch-module-summary";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import type { LaunchFormState, LaunchModules } from "@/lib/types";
@@ -66,11 +71,14 @@ export function MasterLaunchWizard() {
   const searchParams = useSearchParams();
   const reviewStep = 6;
 
-  // Always start at token/name. `?hook=` only preselects the module for its later step.
+  // Always start at token/name. `?hook=` / `?hooks=` only preselect modules for later steps.
   const [step, setStep] = useState(1);
 
   const [form, setForm] = useState<LaunchFormState>(() =>
-    withMasterHookEnabled(DEFAULT_MASTER_WIZARD_STATE, searchParams.get("hook")),
+    withMasterHooksEnabled(
+      DEFAULT_MASTER_WIZARD_STATE,
+      parseLaunchHookIds(searchParams.get("hook"), searchParams.get("hooks")),
+    ),
   );
   const [socialsOpen, setSocialsOpen] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);

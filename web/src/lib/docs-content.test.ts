@@ -183,11 +183,13 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /Create a hooked token/);
   assert.match(visuals, /DocsLaunchSteps/);
   assert.match(visuals, /classic-quotes/);
-  assert.match(visuals, /DocsBranchGraph/);
+  assert.match(visuals, /DocsFork/);
   const diagrams = readFileSync(new URL("../components/docs/DocsDiagrams.tsx", import.meta.url), "utf8");
   assert.match(diagrams, /docs-hkt-schema/);
   assert.match(diagrams, /docs-hkt-schema-join/);
-  assert.match(diagrams, /DocsBranchGraph/);
+  assert.match(diagrams, /DocsWheel/);
+  assert.match(diagrams, /DocsPipe/);
+  assert.match(diagrams, /DocsPointArrow/);
   assert.match(diagrams, /Hookit × Quotrons flywheel/);
   assert.match(diagrams, /Where the venue fee goes/);
   assert.match(diagrams, /Quotrons v4 pool/);
