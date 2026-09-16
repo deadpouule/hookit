@@ -38,33 +38,6 @@ function Chip({
   );
 }
 
-function TokenChip({ x, y, size = 46 }: { x: number; y: number; size?: number }) {
-  return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={size}
-        height={size}
-        rx={size > 36 ? 13 : 8}
-        fill="#141414"
-        stroke="rgb(255 255 255 / 0.14)"
-      />
-      <text
-        x={x + size / 2}
-        y={y + size / 2 + (size > 36 ? 4 : 3)}
-        textAnchor="middle"
-        fill="#d4d4d8"
-        fontSize={size > 36 ? 9 : size > 26 ? 8 : 7}
-        fontWeight="700"
-        letterSpacing="0"
-      >
-        token
-      </text>
-    </g>
-  );
-}
-
 function Pct({ x, y, value, label }: { x: number; y: number; value: string; label: string }) {
   return (
     <g>
@@ -117,15 +90,18 @@ function HookMark({
   theme: HookTheme;
   label: string;
 }) {
+  const size = 32;
+  const pad = 4;
+  const inner = size-pad*2;
   return (
     <g>
-      <rect x={x} y={y} width="36" height="36" rx="10" fill="#141414" stroke="rgb(255 255 255 / 0.14)" />
-      <foreignObject x={x + 6} y={y + 6} width="24" height="24">
+      <rect x={x} y={y} width={size} height={size} rx="8" fill="#141414" stroke="rgb(255 255 255 / 0.14)" />
+      <foreignObject x={x + pad} y={y + pad} width={inner} height={inner}>
         <div className="docs-cycle-hook-fo">
           <HookLogo hookId={hookId} theme={theme} className="docs-cycle-hook-logo" />
         </div>
       </foreignObject>
-      <text x={x + 18} y={y + 50} textAnchor="middle" fill="#d4d4d8" fontSize="8" fontWeight="700" letterSpacing="0">
+      <text x={x + size / 2} y={y + size + 16} textAnchor="middle" fill="#a1a1aa" fontSize="10" letterSpacing="0">
         {label}
       </text>
     </g>
@@ -145,14 +121,17 @@ const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
   { src: "/pairing/usdg.png", x: 476, y: 272, size: 26 },
 ];
 
-const PILE_TOKENS: { key: string; x: number; y: number }[] = [
-  { key: "p-token-a", x: 500, y: 248 },
-  { key: "p-token-b", x: 568, y: 240 },
-  { key: "p-token-c", x: 612, y: 286 },
-  { key: "p-token-d", x: 568, y: 328 },
-  { key: "p-token-e", x: 508, y: 322 },
-  { key: "p-token-f", x: 492, y: 286 },
+const PILE_MEMES: { src: string; x: number; y: number; size: number }[] = [
+  { src: "/memes/bonk.png", x: 500, y: 248, size: 32 },
+  { src: "/memes/floki.png", x: 568, y: 240, size: 32 },
+  { src: "/memes/popcat.png", x: 612, y: 286, size: 32 },
+  { src: "/memes/brett.png", x: 568, y: 328, size: 32 },
+  { src: "/memes/turbo.png", x: 508, y: 322, size: 32 },
 ];
+
+const HOOK_STRIDE = 38;
+const HOOK_X0 = 193;
+const HOOK_Y0 = 668;
 
 export function DocsCycleArt() {
   return (
@@ -190,10 +169,10 @@ export function DocsCycleArt() {
             (80% buyback burn 20% fund ops)
           </text>
 
-          <TokenChip x={40} y={88} />
-          <TokenChip x={16} y={168} />
-          <TokenChip x={68} y={168} />
-          <TokenChip x={40} y={248} />
+          <Chip x={40} y={88} src="/memes/pepe.png" />
+          <Chip x={16} y={168} src="/memes/doge.png" />
+          <Chip x={68} y={168} src="/memes/wif.png" />
+          <Chip x={40} y={248} src="/memes/shib.png" />
 
           <path d="M 86 111 C 150 140, 190 230, 200 272" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
           <path d="M 62 191 C 140 220, 180 255, 200 280" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
@@ -263,8 +242,8 @@ export function DocsCycleArt() {
           {PILE_STOCKS.map((item) => (
             <Chip key={`${item.src}-${item.x}`} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
-          {PILE_TOKENS.map((item) => (
-            <TokenChip key={item.key} x={item.x} y={item.y} size={32} />
+          {PILE_MEMES.map((item) => (
+            <Chip key={item.src} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
 
           <rect x="448" y="516" width="210" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
@@ -304,17 +283,30 @@ export function DocsCycleArt() {
           <text x="322" y="630" fill="#f4f4f5" fontSize="11" fontWeight="700">
             (0-9% optional)
           </text>
-          <rect x="186" y="668" width="970" height="148" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
           {EXPLORE_HOOKS.map((hook, i) => (
             <HookMark
               key={hook.id}
-              x={214 + (i % 6) * 150}
-              y={i < 6 ? 684 : 748}
+              x={HOOK_X0 + (i % 6) * HOOK_STRIDE + (i < 6 ? 0 : 19)}
+              y={i < 6 ? HOOK_Y0 : HOOK_Y0 + 56}
               hookId={hook.id}
               theme={hook.theme}
               label={HOOK_SHORT[hook.id]}
             />
           ))}
+          <path
+            d="M 186 700 C 70 660, 36 580, 100 508"
+            fill="none"
+            stroke="#f4f4f5"
+            strokeWidth="1.8"
+            markerEnd="url(#docs-cycle-w)"
+          />
+          <rect x="24" y="562" width="178" height="42" rx="12" fill="#f4f4f5" />
+          <text x="113" y="578" textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
+            v4 hooks who benefit
+          </text>
+          <text x="113" y="594" textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
+            for tokens launched on hookit
+          </text>
         </svg>
       </div>
       <p className="docs-schema-note">

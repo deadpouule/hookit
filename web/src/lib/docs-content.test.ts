@@ -205,6 +205,12 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(cycle, /hookit-owl-favicon/);
   assert.match(cycle, /Funds ops protocole/);
   assert.match(cycle, /AIRDROP TO \$HKT holders/);
+  assert.match(cycle, /\/memes\/pepe\.png/);
+  assert.match(cycle, /\/memes\/doge\.png/);
+  assert.match(cycle, /\/memes\/wif\.png/);
+  assert.match(cycle, /\/memes\/shib\.png/);
+  assert.match(cycle, /v4 hooks who benefit/);
+  assert.match(cycle, /for tokens launched on hookit/);
   const graphs = readFileSync(new URL("../components/docs/DocsBranchGraph.tsx", import.meta.url), "utf8");
   assert.match(graphs, /DocsPointArrow/);
   assert.match(graphs, /docs-fee-map/);
