@@ -154,23 +154,23 @@ function HookMark({
 }
 
 const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
-  { src: "/pairing/wnvdax.svg", x: 504, y: 228, size: 28 },
-  { src: "/pairing/waaplx.svg", x: 548, y: 214, size: 26 },
-  { src: "/pairing/wtslax.png", x: 590, y: 226, size: 28 },
-  { src: "/pairing/wgooglx.svg", x: 630, y: 258, size: 26 },
-  { src: "/pairing/wamznx.svg", x: 642, y: 300, size: 26 },
-  { src: "/pairing/wmcdx.svg", x: 626, y: 336, size: 24 },
-  { src: "/pairing/wnflxx.svg", x: 598, y: 350, size: 24 },
-  { src: "/pairing/wspyx.svg", x: 500, y: 348, size: 24 },
-  { src: "/pairing/wmstrx.svg", x: 482, y: 322, size: 26 },
-  { src: "/pairing/usdg.png", x: 476, y: 272, size: 26 },
+  { src: "/pairing/wnvdax.svg", x: 534, y: 228, size: 28 },
+  { src: "/pairing/waaplx.svg", x: 578, y: 214, size: 26 },
+  { src: "/pairing/wtslax.png", x: 620, y: 226, size: 28 },
+  { src: "/pairing/wgooglx.svg", x: 660, y: 258, size: 26 },
+  { src: "/pairing/wamznx.svg", x: 672, y: 300, size: 26 },
+  { src: "/pairing/wmcdx.svg", x: 656, y: 336, size: 24 },
+  { src: "/pairing/wnflxx.svg", x: 628, y: 350, size: 24 },
+  { src: "/pairing/wspyx.svg", x: 530, y: 348, size: 24 },
+  { src: "/pairing/wmstrx.svg", x: 512, y: 322, size: 26 },
+  { src: "/pairing/usdg.png", x: 522, y: 272, size: 26 },
 ];
 
 const PILE_MEMES: { src: string; x: number; y: number; size: number }[] = [
-  { src: "/memes/pepe.png", x: 518, y: 246, size: 32 },
-  { src: "/memes/doge.png", x: 568, y: 236, size: 32 },
-  { src: "/memes/wif.png", x: 606, y: 278, size: 32 },
-  { src: "/memes/shib.png", x: 536, y: 316, size: 32 },
+  { src: "/memes/pepe.png", x: 548, y: 246, size: 32 },
+  { src: "/memes/doge.png", x: 598, y: 236, size: 32 },
+  { src: "/memes/wif.png", x: 636, y: 278, size: 32 },
+  { src: "/memes/shib.png", x: 566, y: 316, size: 32 },
 ];
 
 const HOOK_STRIDE = 38;
@@ -183,7 +183,7 @@ export function DocsCycleArt() {
       <figcaption>Every swap feeds $HKT</figcaption>
       <p className="docs-map-kicker">Token buybacks. Holder drops. A connected fee cycle.</p>
       <div className="docs-cycle" role="img" aria-label="Every launch and every swap on hookit feeds $HKT">
-        <svg viewBox="0 0 1440 900" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
+        <svg viewBox="0 0 1240 900" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
           <defs>
             <marker id="docs-cycle-w" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
@@ -246,8 +246,8 @@ export function DocsCycleArt() {
           <Chip x={154} y={470} src="/pairing/wnflxx.svg" label="NFLX" size={32} />
 
           <path d="M 414 268 C 430 190, 400 160, 448 147" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 414 292 C 450 292, 490 292, 486 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
-          <Callout x={418} y={264} width={130} height={28} lines={["10% buys the ticker"]} />
+          <path d="M 414 292 C 460 292, 500 292, 514 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
+          <Callout x={416} y={268} width={96} height={36} lines={["10% buys", "the ticker"]} />
           <path d="M 360 338 C 380 430, 400 500, 448 522" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
 
           <rect x="448" y="125" width="190" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
@@ -285,7 +285,7 @@ export function DocsCycleArt() {
             Creator → Hook
           </text>
 
-          <circle cx="560" cy="292" r="74" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2.4" />
+          <circle cx="590" cy="292" r="74" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2.4" />
           {PILE_STOCKS.map((item) => (
             <Chip key={`${item.src}-${item.x}`} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
@@ -298,8 +298,8 @@ export function DocsCycleArt() {
             30% Protocol
           </text>
 
-          <path d="M 634 300 C 780 330, 860 310, 922 300" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <Callout x={702} y={276} width={196} height={28} lines={["Sent to $HKT Holders."]} />
+          <path d="M 664 300 C 800 328, 870 310, 922 300" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <Callout x={760} y={314} width={188} height={28} lines={["Sent to $HKT Holders."]} />
           <rect x="922" y="250" width="280" height="100" rx="16" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
           <image href="/brand/hookit-owl-favicon.png" x="938" y="272" width="44" height="44" />
           <text x="992" y="288" fill="#fff" fontSize="14" fontWeight="700">
@@ -356,16 +356,16 @@ export function DocsCycleArt() {
             lines={["v4 hooks who benefit", "for tokens launched on hookit"]}
           />
           <path
-            d="M 418 748 C 820 860, 1280 860, 1368 620 C 1408 440, 1380 310, 1208 300"
+            d="M 418 752 C 760 840, 1100 850, 1216 660 C 1232 470, 1228 320, 1202 300"
             fill="none"
             stroke="#f4f4f5"
             strokeWidth="2"
             markerEnd="url(#docs-cycle-w)"
           />
           <Callout
-            x={1210}
-            y={418}
-            width={220}
+            x={940}
+            y={648}
+            width={250}
             height={96}
             lines={[
               "$HKT holders receive hooked tokens",
