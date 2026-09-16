@@ -100,10 +100,10 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   {
     slug: "fees",
     href: "#fees",
-    title: "Fees and flywheel",
+    title: "Fees",
     description: "1% base splits 60/10/30. Optional hook tax funds modules.",
     group: "Protocol",
-    keywords: "fee 60 10 30 flywheel hook tax hkt buyback",
+    keywords: "fee 60 10 30 hook tax hkt buyback",
   },
   {
     slug: "creator-fees",

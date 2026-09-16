@@ -57,6 +57,7 @@ export type DocsSectionId =
 
 export type DocsDiagramId =
   | "rails"
+  | "overview-cycle"
   | "stack"
   | "flywheel"
   | "fee-split"
@@ -153,7 +154,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "quotrons", label: "Why we built on Quotrons" },
       { id: "trading", label: "Trading" },
       { id: "graduation", label: "Graduation" },
-      { id: "fees", label: "Fees and flywheel" },
+      { id: "fees", label: "Fees" },
       { id: "creator-fees", label: "Creator fees" },
       { id: "hooks", label: "Hook modules" },
     ],
@@ -233,6 +234,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "p",
           text: "Hookit is the first Uniswap v4 launchpad with 384 programmable hook combinations. Every token is a hooked pool: pick protection, tokenomics, and fee modules, then freeze them at launch.",
+        },
+        {
+          type: "diagram",
+          id: "overview-cycle",
         },
         {
           type: "p",
@@ -388,10 +393,6 @@ export function buildDocsSections(): DocsSection[] {
           ],
         },
         {
-          type: "p",
-          text: "Do not mix their $QUOTRON/WETH 3% terminal market with the Ink stock venue. The 3% carve (stock rewards, locked LP, $STONKBROKER burn, creator) is a different hook on a different market. Hookit composite hops never touch that pool. They hit the Ink wStock/USDG v4 pools, whose hook takes a live USDG fee (0.30% at writing).",
-        },
-        {
           type: "h3",
           text: "Quotrons LPs and the canonical swap",
         },
@@ -433,7 +434,7 @@ export function buildDocsSections(): DocsSection[] {
           title: "Read it from the source",
           links: [{ href: "https://www.quotrons.cash/docs", label: "Quotrons docs" }],
           items: [
-            "Their docs split The Venue / Fees & Dividends (Ink wStock/USDG) from the $QUOTRON terminal market. We follow that split.",
+            "Their docs cover The Venue / Fees & Dividends on Ink wStock/USDG. That is the hop Hookit uses.",
             "Quote the hook fee live. Do not hardcode 0.30% in an integration.",
           ],
         },
@@ -532,7 +533,7 @@ export function buildDocsSections(): DocsSection[] {
     },
     {
       id: "fees",
-      title: "Fees and flywheel",
+      title: "Fees",
       group: "Protocol",
       blocks: [
         {
@@ -1653,6 +1654,14 @@ const priceQuotePerToken = tokenIsCurrency0 ? ratio * ratio : 1 / (ratio * ratio
         {
           type: "h3",
           text: "The thesis",
+        },
+        {
+          type: "p",
+          text: "We believe holders should receive dividends the way equity does in the real world. On hookit those dividends are the memecoins people launch. The thesis is simple: hold one, get all.",
+        },
+        {
+          type: "p",
+          text: "We believe the protocol token of the dapp should receive every token on the dapp, without exception. This is not airdropped supply to pad bags or dodge dumps. Fees and volume fund it. More volume, more dollars for $HKT holders.",
         },
         {
           type: "p",
