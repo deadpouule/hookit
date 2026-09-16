@@ -34,12 +34,31 @@ export function DocsPointArrow({
   );
 }
 
-function Card({ box, tone = "node" }: { box: Box; tone?: "node" | "hub" | "mint" }) {
+function Card({
+  box,
+  tone = "node",
+  logo,
+}: {
+  box: Box;
+  tone?: "node" | "hub" | "mint" | "logo";
+  logo?: string;
+}) {
   return (
     <article className={`docs-map-card docs-map-card--${tone}`}>
+      {logo ? <img src={logo} alt="" /> : null}
       <strong>{box.t}</strong>
       <span>{box.d}</span>
     </article>
+  );
+}
+
+function WheelHub({ center, logo }: { center: Box; logo?: string }) {
+  return (
+    <div className={logo ? "docs-wheel-hub is-logo" : "docs-wheel-hub"}>
+      {logo ? <img src={logo} alt="" /> : null}
+      <strong>{center.t}</strong>
+      <span>{center.d}</span>
+    </div>
   );
 }
 
@@ -166,12 +185,14 @@ export function DocsWheel({
   center,
   nodes,
   note,
+  hubLogo,
 }: {
   caption: string;
   kicker?: string;
   center: Box;
   nodes: Box[];
   note?: string;
+  hubLogo?: string;
 }) {
   const n = nodes.length;
   const cx = 360;
@@ -219,10 +240,7 @@ export function DocsWheel({
               );
             })}
           </svg>
-          <div className="docs-wheel-hub">
-            <strong>{center.t}</strong>
-            <span>{center.d}</span>
-          </div>
+          <WheelHub center={center} logo={hubLogo} />
           {nodes.map((box, i) => {
             const deg = base + i * step;
             const a = (deg * Math.PI) / 180;
@@ -242,7 +260,7 @@ export function DocsWheel({
           })}
         </div>
         <div className="docs-wheel-stack">
-          <Card box={center} tone="hub" />
+          <Card box={center} tone={hubLogo ? "logo" : "hub"} logo={hubLogo} />
           {nodes.map((box) => (
             <div key={box.t} className="docs-wheel-stack-item">
               <DocsPointArrow down />
@@ -250,6 +268,49 @@ export function DocsWheel({
             </div>
           ))}
           <DocsPointArrow down label="loops" />
+        </div>
+      </div>
+      {note ? <p className="docs-schema-note">{note}</p> : null}
+    </figure>
+  );
+}
+
+/** Swap into the hook, then fees fan out. Not a circle. */
+export function DocsFeeFlow({
+  caption,
+  kicker,
+  source,
+  hub,
+  outputs,
+  note,
+}: {
+  caption: string;
+  kicker?: string;
+  source: Box;
+  hub: Box;
+  outputs: Box[];
+  note?: string;
+}) {
+  return (
+    <figure className="docs-schema">
+      <figcaption>{caption}</figcaption>
+      {kicker ? <p className="docs-map-kicker">{kicker}</p> : null}
+      <div className="docs-fee-flow" role="img" aria-label={caption}>
+        <div className="docs-fee-flow-head">
+          <Card box={source} tone="mint" />
+          <DocsPointArrow />
+          <Card box={hub} tone="logo" />
+        </div>
+        <div className="docs-fee-flow-join" aria-hidden>
+          <DocsPointArrow down />
+        </div>
+        <div className="docs-fee-flow-outs">
+          {outputs.map((box) => (
+            <div key={box.t} className="docs-fee-flow-out">
+              <DocsPointArrow down />
+              <Card box={box} />
+            </div>
+          ))}
         </div>
       </div>
       {note ? <p className="docs-schema-note">{note}</p> : null}

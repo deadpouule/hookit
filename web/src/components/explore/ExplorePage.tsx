@@ -4,19 +4,14 @@ import { Suspense, useMemo, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 
 import { HookCard } from "@/components/explore/HookCard";
-import { HookComboBar } from "@/components/explore/HookComboBar";
 import { HookDocsDialog } from "@/components/explore/HookDocsDialog";
-import { HookFeatured } from "@/components/explore/HookFeatured";
 import { useLaunches } from "@/hooks/useLaunches";
 import { shouldFetchLiveLaunches } from "@/lib/live-data";
 import {
   MASTER_HOOK_FILTERS,
   EXPLORE_HOOKS,
   countHookUsage,
-  pickFeaturedHook,
-  poolsUsingMasterHook,
   type BrowseHook,
-  type BrowseHookId,
   type MasterHookCategory,
   type MasterHookId,
 } from "@/lib/master-hooks";
@@ -26,22 +21,10 @@ import type { TokenPool } from "@/lib/types";
 
 type HookFilter = "all" | MasterHookCategory;
 
-function livePoolsForHook(pools: TokenPool[], hook: BrowseHook): TokenPool[] {
-  if (hook.id === "fixed-fee") {
-    return pools.filter((pool) => {
-      if (pool.hookType === "Classic" || pool.hooks.customHook) return false;
-      const resolved = resolveTokenModules(pool);
-      return Boolean(resolved && resolved.hookTaxBps > 0 && !resolved.modules.dynamicFees);
-    });
-  }
-  return poolsUsingMasterHook(pools, hook.id);
-}
-
 function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] }) {
   const [category, setCategory] = useState<HookFilter>("all");
   const [query, setQuery] = useState("");
   const [openHook, setOpenHook] = useState<BrowseHook | null>(null);
-  const [combo, setCombo] = useState<BrowseHook[]>([]);
   const { data: onChainPools, isFetched } = useLaunches(initialPools);
 
   const pools = useMemo((): TokenPool[] => {
@@ -63,51 +46,26 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     }).length;
   }, [pools]);
 
-  const withUses = useMemo(
-    () =>
-      EXPLORE_HOOKS.map((hook) => ({
-        ...hook,
-        uses: hook.id === "fixed-fee" ? fixedFeeUses : usage[hook.id as MasterHookId] ?? 0,
-      })),
-    [usage, fixedFeeUses],
-  );
-
-  const liveByHook = useMemo(() => {
-    const map = new Map<BrowseHookId, TokenPool[]>();
-    for (const hook of withUses) {
-      map.set(hook.id, livePoolsForHook(pools, hook));
-    }
-    return map;
-  }, [pools, withUses]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return withUses.filter((hook) => {
+    return EXPLORE_HOOKS.filter((hook) => {
       const matchesCategory = category === "all" || hook.category === category;
       const matchesQuery =
         !q ||
         hook.title.toLowerCase().includes(q) ||
         hook.description.toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
-    });
-  }, [category, query, withUses]);
-
-  const featured = useMemo(() => pickFeaturedHook(filtered), [filtered]);
-  const gridHooks = useMemo(
-    () => (featured ? filtered.filter((hook) => hook.id !== featured.id) : filtered),
-    [filtered, featured],
-  );
-
-  const toggleCombo = (hook: BrowseHook) => {
-    setCombo((prev) =>
-      prev.some((item) => item.id === hook.id)
-        ? prev.filter((item) => item.id !== hook.id)
-        : [...prev, hook],
-    );
-  };
+    }).map((hook) => ({
+      ...hook,
+      uses:
+        hook.id === "fixed-fee"
+          ? fixedFeeUses
+          : usage[hook.id as MasterHookId] ?? 0,
+    }));
+  }, [category, query, usage, fixedFeeUses]);
 
   return (
-    <div className="market-shell space-y-6 bg-background pt-8 pb-28">
+    <div className="market-shell space-y-6 bg-background pt-8 pb-10">
       <div className="max-w-xl space-y-2">
         <h1 className="terminal-title text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Discover one click hooks
@@ -148,35 +106,16 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         </div>
       </div>
 
-      {featured ? (
-        <HookFeatured
-          hook={featured}
-          livePools={liveByHook.get(featured.id) ?? []}
-          usesPending={usesPending}
-          inCombo={combo.some((item) => item.id === featured.id)}
-          onOpen={setOpenHook}
-          onToggleCombo={toggleCombo}
-        />
-      ) : null}
-
       <div className="hook-grid">
-        {gridHooks.map((hook) => (
+        {filtered.map((hook) => (
           <HookCard
             key={hook.id}
             hook={hook}
             usesPending={usesPending}
-            livePools={liveByHook.get(hook.id) ?? []}
-            inCombo={combo.some((item) => item.id === hook.id)}
             onOpen={setOpenHook}
-            onToggleCombo={toggleCombo}
           />
         ))}
       </div>
-
-      <HookComboBar
-        selected={combo}
-        onRemove={(hook) => setCombo((prev) => prev.filter((item) => item.id !== hook.id))}
-      />
 
       <HookDocsDialog hook={openHook} onOpenChange={(open) => { if (!open) setOpenHook(null); }} />
 

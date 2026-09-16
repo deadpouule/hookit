@@ -5,13 +5,10 @@ import { packLaunchBitmask } from "./bitmask";
 import { DEFAULT_LAUNCH_STATE, DEFAULT_MASTER_WIZARD_STATE } from "./constants";
 import {
   countHookUsage,
-  launchComboHref,
   masterHookIdsForPool,
   parseLaunchHookIds,
-  pickFeaturedHook,
   poolEnablesMasterHook,
   withMasterHooksEnabled,
-  type BrowseHook,
 } from "./master-hooks";
 import type { LaunchModules, TokenPool } from "./types";
 
@@ -82,15 +79,6 @@ test("poolEnablesMasterHook unpacks bitmask when flags were stripped", () => {
   assert.deepEqual(masterHookIdsForPool(row).sort(), ["dynamic-fees", "holder-airdrop", "max-tx"]);
 });
 
-test("launchComboHref uses hook= for one module and hooks= for stacks", () => {
-  assert.equal(launchComboHref([]), "/launch/custom");
-  assert.equal(launchComboHref(["anti-snipe"]), "/launch/custom?hook=anti-snipe");
-  assert.equal(
-    launchComboHref(["anti-snipe", "backed-floor", "anti-snipe"]),
-    "/launch/custom?hooks=anti-snipe,backed-floor",
-  );
-});
-
 test("parseLaunchHookIds merges ?hooks= and ?hook=", () => {
   assert.deepEqual(parseLaunchHookIds("anti-snipe", "backed-floor,auto-burn"), [
     "backed-floor",
@@ -98,15 +86,6 @@ test("parseLaunchHookIds merges ?hooks= and ?hook=", () => {
     "anti-snipe",
   ]);
   assert.deepEqual(parseLaunchHookIds("anti-snipe", "anti-snipe"), ["anti-snipe"]);
-});
-
-test("pickFeaturedHook prefers most uses, then backed-floor", () => {
-  const a = { id: "anti-snipe", uses: 3 } as BrowseHook;
-  const b = { id: "backed-floor", uses: 3 } as BrowseHook;
-  const c = { id: "auto-burn", uses: 4 } as BrowseHook;
-  assert.equal(pickFeaturedHook([a, b])?.id, "backed-floor");
-  assert.equal(pickFeaturedHook([a, c, b])?.id, "auto-burn");
-  assert.equal(pickFeaturedHook([]), null);
 });
 
 test("withMasterHooksEnabled turns on each module from a combo query", () => {

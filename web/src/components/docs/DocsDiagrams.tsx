@@ -1,4 +1,5 @@
 import {
+  DocsFeeFlow,
   DocsFork,
   DocsPipe,
   DocsPointArrow,
@@ -38,6 +39,8 @@ export function DocsDiagram({ id }: { id: DocsDiagramId }) {
   switch (id) {
     case "rails":
       return <RailsDiagram />;
+    case "overview-cycle":
+      return <OverviewCycleDiagram />;
     case "stack":
       return <StackDiagram />;
     case "flywheel":
@@ -129,6 +132,116 @@ function RailsDiagram() {
   );
 }
 
+function OverviewCycleDiagram() {
+  return (
+    <figure className="docs-schema">
+      <figcaption>Every swap feeds $HKT</figcaption>
+      <p className="docs-map-kicker">Connected fee cycle</p>
+      <div className="docs-dapp-map" role="img" aria-label="Every swap on hookit feeds $HKT holders">
+        <div className="docs-dapp-map-shares">
+          <p>Share of the 1% base</p>
+          <span className="is-creator">
+            <strong>60%</strong>
+            Creator
+          </span>
+          <span className="is-hkt">
+            <strong>10%</strong>
+            $HKT
+          </span>
+          <span className="is-proto">
+            <strong>30%</strong>
+            Protocol
+          </span>
+        </div>
+        <div className="docs-dapp-map-body">
+          <div className="docs-dapp-map-col">
+            <article>
+              <strong>Master launches</strong>
+              <span>Pool from block 0.</span>
+            </article>
+            <article>
+              <strong>Graduated Classic</strong>
+              <span>After 4.2 ETH-eq.</span>
+            </article>
+            <article>
+              <strong>Any quote pair</strong>
+              <span>ETH, USDG, wStock.</span>
+            </article>
+          </div>
+          <div className="docs-dapp-map-join">
+            <DocsPointArrow />
+          </div>
+          <div className="docs-dapp-map-take">
+            <article className="docs-dapp-map-pct">
+              <strong>1%</strong>
+              <span>Quote-only fee. Never the memecoin.</span>
+            </article>
+            <DocsPointArrow down />
+            <article className="docs-dapp-map-hub">
+              <img src="/brand/hookit-owl-favicon.png" alt="" />
+              <strong>MasterLaunchHook</strong>
+              <span>One take. Shares packed at launch.</span>
+            </article>
+          </div>
+          <div className="docs-dapp-map-join">
+            <DocsPointArrow />
+          </div>
+          <div className="docs-dapp-map-streams">
+            <div className="docs-dapp-map-stream">
+              <article>
+                <strong>Creator 60%</strong>
+                <span>Escrow, vest, or hook pot.</span>
+              </article>
+              <DocsPointArrow />
+              <article>
+                <strong>Claim or recycle</strong>
+                <span>Creator fees never touch the 10% drop.</span>
+              </article>
+            </div>
+            <div className="docs-dapp-map-stream is-hkt">
+              <article>
+                <strong>$HKT drop 10%</strong>
+                <span>Buys that pool's ticker.</span>
+              </article>
+              <DocsPointArrow />
+              <article>
+                <strong>Epoch to holders</strong>
+                <span>Live $HKT balances. Hold one, get all.</span>
+              </article>
+            </div>
+            <div className="docs-dapp-map-stream">
+              <article>
+                <strong>Protocol 30%</strong>
+                <span>20% ops. 80% buys $HKT.</span>
+              </article>
+              <DocsPointArrow />
+              <article>
+                <strong>Buy and burn</strong>
+                <span>Protocol buyback burns $HKT.</span>
+              </article>
+            </div>
+          </div>
+        </div>
+        <div className="docs-dapp-map-tax">
+          <article>
+            <strong>Hook tax</strong>
+            <span>Optional Master extra, 0 to 9%.</span>
+          </article>
+          <DocsPointArrow />
+          <article>
+            <strong>Hook pot</strong>
+            <span>Auto-Burn, Floor, Deepen LPs, Airdrop.</span>
+          </article>
+        </div>
+      </div>
+      <p className="docs-schema-note">
+        Hook tax skips the 60 / 10 / 30. It fills the pot, then modules spend it. The 10% $HKT
+        slice cannot be removed.
+      </p>
+    </figure>
+  );
+}
+
 function StackDiagram() {
   const layers = [
     { k: "App", v: "hookit.fun: marketplace, launch wizard, token desk" },
@@ -154,17 +267,18 @@ function StackDiagram() {
 
 function FlywheelDiagram() {
   return (
-    <DocsWheel
-      caption="Where every swap goes"
-      kicker="Fee flywheel"
-      center={{ t: "MasterLaunchHook", d: "One take on the quote. Shares packed at launch." }}
-      nodes={[
-        { t: "Swap prints", d: "Quote-only 1%. Never the memecoin." },
-        { t: "Creator 60%", d: "Escrow, vest, or Creator → Hook." },
-        { t: "$HKT drop 10%", d: "Buys this ticker for live $HKT holders." },
+    <DocsFeeFlow
+      caption="Where the 1% goes"
+      kicker="Every swap"
+      source={{ t: "Any swap", d: "Quote-only 1%. Never the memecoin." }}
+      hub={{ t: "MasterLaunchHook", d: "One take. Shares packed at launch." }}
+      outputs={[
+        { t: "Creator 60%", d: "FeeEscrow, Buyback Vesting, or Creator → Hook." },
+        { t: "$HKT drop 10%", d: "Buys that pool's ticker for live $HKT holders." },
         { t: "Protocol 30%", d: "20% ops. 80% buys $HKT and burns it." },
+        { t: "Hook pot", d: "Optional tax. Burn, floor, deepen, airdrop." },
       ]}
-      note="Hook tax skips this split. It fills the pot, then modules (burn, floor, deepen, airdrop) spend it."
+      note="The 1% always splits 60 / 10 / 30. Hook tax never uses that split. It fills the pot, then modules."
     />
   );
 }
@@ -323,9 +437,13 @@ function HktBurnDiagram() {
           })}
         </ul>
         <div className="docs-hkt-schema-join" aria-hidden>
-          {HKT_POOL_HOOKS.map((item) => (
-            <DocsPointArrow key={item.id} />
-          ))}
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+          <b />
+          <em />
         </div>
         <div className="docs-hkt-schema-token">
           <img src="/brand/hookit-owl-favicon.png" alt="" width={88} height={88} />
@@ -344,7 +462,8 @@ function QuotronsFlywheelDiagram() {
     <DocsWheel
       caption="Hookit × Quotrons flywheel"
       kicker="Every composite trade"
-      center={{ t: "Quotrons v4 pool", d: "Canonical USDG ↔ wStock hop." }}
+      center={{ t: "Quotrons", d: "Canonical USDG ↔ wStock hop." }}
+      hubLogo="/brand/quotrons-mark.png"
       nodes={[
         { t: "Buy in USDG", d: "Wallet pays USDG. Never holds the wStock." },
         { t: "LP vault 50%", d: "That pool's vault, claimable in USDG." },
@@ -352,7 +471,7 @@ function QuotronsFlywheelDiagram() {
         { t: "More Hookit volume", d: "Tighter USDG fills. More launches pair here." },
         { t: "Sell to USDG", d: "Token → wStock → USDG in one unlock." },
       ]}
-      note="Liquid $QUOTRON does not earn this stream. Stronger books make the next USDG fill tighter."
+      note="Stronger books make the next USDG fill tighter."
     />
   );
 }
@@ -369,7 +488,7 @@ function QuotronsFeesDiagram() {
         { t: "Terminal pot", d: "Venue-wide. Quiet books ride busy ones." },
         { t: "Epochs → terminals", d: "$250 min, $10,000 cap. Ten hardwired floors." },
       ]}
-      note="Quote the fee live. Their own rails can be fee-exempt. A Hookit hop pays. Liquid $QUOTRON earns nothing."
+      note="Quote the fee live. Their own rails can be fee-exempt. A Hookit hop pays."
     />
   );
 }
@@ -379,10 +498,11 @@ function HktLoopDiagram() {
     <DocsWheel
       caption="Hold $HKT, get a slice of every launch"
       kicker="Every trade"
-      center={{ t: "0.10% of the trade", d: "10% of the 1%. Mandatory." }}
+      center={{ t: "$HKT", d: "Hold one, get all." }}
+      hubLogo="/brand/hookit-owl-favicon.png"
       nodes={[
         { t: "Hold $HKT", d: "Live balance. Pro-rata weight. Not a snapshot." },
-        { t: "Any hooked swap", d: "Master or graduated Classic. 1% quote fee." },
+        { t: "Any swap", d: "Master or graduated Classic. 1% quote fee." },
         { t: "Buy that ticker", d: "HktHolderDropVault spends quote on the pool." },
         { t: "Epoch push", d: "You receive the other tokens, not more $HKT." },
       ]}
