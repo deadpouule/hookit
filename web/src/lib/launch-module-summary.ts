@@ -235,7 +235,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "creator-share-to-hook":
     `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "fixed-fee":
-    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Leftover fees route to the protocol. Mutually exclusive with dynamic fees.",
+    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Mutually exclusive with dynamic fees.",
 };
 
 /** Longer copy for pick-card and config tooltips. */
