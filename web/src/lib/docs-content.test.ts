@@ -119,6 +119,7 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /https:\/\/www\.quotrons\.cash\/docs/);
   assert.match(blob, /hardwired terminals/);
   assert.match(blob, /Do not mix their \$QUOTRON\/WETH 3%/);
+  assert.equal(blob.includes("Two Quotrons systems"), false);
   assert.match(blob, /\$250 USDG minimum/);
   assert.match(blob, /fee on the USDG leg/);
   assert.match(blob, /the v4 pools that list stocks/);

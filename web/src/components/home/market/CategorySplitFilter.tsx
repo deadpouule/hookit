@@ -26,6 +26,7 @@ type CategorySplitFilterProps = {
   /** `single` replaces the selection (RWA quote). `multiple` toggles/adds (master hooks). */
   selectionMode?: "single" | "multiple";
   onActivate: () => void;
+  onDeactivate: () => void;
   onSelectedIdsChange: (ids: string[]) => void;
 };
 
@@ -45,6 +46,7 @@ export function CategorySplitFilter({
   selectedIds,
   selectionMode = "multiple",
   onActivate,
+  onDeactivate,
   onSelectedIdsChange,
 }: CategorySplitFilterProps) {
   const [open, setOpen] = useState(false);
@@ -129,9 +131,12 @@ export function CategorySplitFilter({
   });
 
   const handleLabelClick = () => {
-    if (!active) {
-      onActivate();
+    if (active) {
+      onDeactivate();
+      setOpen(false);
+      return;
     }
+    onActivate();
   };
 
   const handleChevronClick = () => {

@@ -7072,9 +7072,16 @@
   }
 
   .category-split-pill--active,
-  .category-split-filter:hover .category-split-pill {
+  .category-split-filter--open .category-split-pill {
     border-color: rgb(255 255 255 / 0.12);
     background: #2a2a2e;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .category-split-filter:hover .category-split-pill {
+      border-color: rgb(255 255 255 / 0.12);
+      background: #2a2a2e;
+    }
   }
 
   .category-split-pill__label {
@@ -7093,9 +7100,14 @@
     transition: color 0.15s ease;
   }
 
-  .category-split-pill--active .category-split-pill__label,
-  .category-split-filter:hover .category-split-pill__label {
+  .category-split-pill--active .category-split-pill__label {
     color: #fff;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .category-split-filter:hover .category-split-pill__label {
+      color: #fff;
+    }
   }
 
   .category-split-pill__chevron {
@@ -7115,11 +7127,18 @@
   }
 
   .category-split-pill--active .category-split-pill__chevron,
-  .category-split-filter:hover .category-split-pill__chevron,
   .category-split-filter--open .category-split-pill__chevron {
     width: 1.65rem;
     opacity: 1;
     border-left-color: rgb(255 255 255 / 0.1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .category-split-filter:hover .category-split-pill__chevron {
+      width: 1.65rem;
+      opacity: 1;
+      border-left-color: rgb(255 255 255 / 0.1);
+    }
   }
 
   .category-split-pill__chevron-icon {
@@ -7416,7 +7435,7 @@
 
   html[data-device="phone"] .market-toolbar-actions {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
     margin-left: 0;
   }
 
@@ -8126,12 +8145,17 @@
   }
 
   .category-split-pill:has(.category-quotrons-logo) .category-split-pill__label {
+    color: #a1a1aa;
+  }
+
+  .category-split-pill--active:has(.category-quotrons-logo) .category-split-pill__label {
     color: #f6ecd0;
   }
 
-  .category-split-pill--active:has(.category-quotrons-logo) .category-split-pill__label,
-  .category-split-filter:hover .category-split-pill:has(.category-quotrons-logo) .category-split-pill__label {
-    color: #f6ecd0;
+  @media (hover: hover) and (pointer: fine) {
+    .category-split-filter:hover .category-split-pill:has(.category-quotrons-logo) .category-split-pill__label {
+      color: #f6ecd0;
+    }
   }
 
   .token-type-badge--multi-pair {
@@ -12779,4 +12803,275 @@ h2.docs-hook-heading {
     transition: none;
     transform: translate(-50%, -50%);
   }
+}
+
+.welcome-connect {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.welcome-connect__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.62);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.welcome-connect__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 26rem);
+  max-height: min(92dvh, 40rem);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 1.5rem;
+  background: #161618;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.55);
+}
+
+.welcome-connect__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.75rem 0;
+}
+
+.welcome-connect__icon-btn {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+
+.welcome-connect__icon-btn:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.welcome-connect__icon-btn--ghost {
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.welcome-connect__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0.35rem 1.25rem 1.5rem;
+}
+
+.welcome-connect__body--wallets {
+  min-height: 0;
+  flex: 1;
+}
+
+.welcome-connect__mark {
+  display: flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0.35rem auto 1rem;
+  overflow: hidden;
+  border-radius: 1.05rem;
+  background: #0b0b0d;
+}
+
+.welcome-connect__mark img {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+}
+
+.welcome-connect__title {
+  margin: 0;
+  text-align: center;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.welcome-connect__subtitle {
+  margin: 0.55rem 0 1.35rem;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #9f9fa8;
+}
+
+.welcome-connect__email {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3.15rem;
+  margin-bottom: 0.65rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.95rem;
+  background: #121214;
+}
+
+.welcome-connect__field-icon,
+.welcome-connect__email svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  color: #71717a;
+}
+
+.welcome-connect__email input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.welcome-connect__email input::placeholder {
+  color: #71717a;
+}
+
+.welcome-connect__email button {
+  border: 0;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.welcome-connect__email button:disabled {
+  color: #52525b;
+  cursor: default;
+}
+
+.welcome-connect__email button:not(:disabled):hover {
+  color: #fff;
+}
+
+.welcome-connect__row,
+.welcome-connect__wallet {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.15rem;
+  padding: 0 0.95rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.95rem;
+  background: #121214;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.welcome-connect__row + .welcome-connect__row {
+  margin-top: 0.65rem;
+}
+
+.welcome-connect__row:hover,
+.welcome-connect__wallet:hover,
+.welcome-connect__search:focus-within {
+  border-color: rgb(255 255 255 / 0.16);
+}
+
+.welcome-connect__wallet-hero {
+  display: flex;
+  width: 3.35rem;
+  height: 3.35rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0.15rem auto 0.85rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+  color: #d4d4d8;
+}
+
+.welcome-connect__search {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.85rem;
+  margin: 1.05rem 0 0.75rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.95rem;
+  background: #121214;
+}
+
+.welcome-connect__search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.welcome-connect__list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow-y: auto;
+  padding-bottom: 0.35rem;
+}
+
+.welcome-connect__wallet-icon {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: rgb(255 255 255 / 0.06);
+}
+
+.welcome-connect__wallet-icon img {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+.welcome-connect__pending {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #a1a1aa;
+}
+
+.welcome-connect__empty,
+.welcome-connect__error {
+  margin: 0.35rem 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+}
+
+.welcome-connect__error {
+  color: #fca5a5;
 }

@@ -388,10 +388,6 @@ export function buildDocsSections(): DocsSection[] {
           ],
         },
         {
-          type: "h3",
-          text: "Two Quotrons systems. Hookit uses one.",
-        },
-        {
           type: "p",
           text: "Do not mix their $QUOTRON/WETH 3% terminal market with the Ink stock venue. The 3% carve (stock rewards, locked LP, $STONKBROKER burn, creator) is a different hook on a different market. Hookit composite hops never touch that pool. They hit the Ink wStock/USDG v4 pools, whose hook takes a live USDG fee (0.30% at writing).",
         },

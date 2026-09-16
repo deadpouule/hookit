@@ -32,6 +32,7 @@ type MarketplaceToolbarProps = {
   masterHooks: MasterHookId[];
   onMasterHooksChange: (hooks: MasterHookId[]) => void;
   onActivateMaster: () => void;
+  onDeactivateCategory: () => void;
   rwaQuote: string | null;
   onRwaQuoteChange: (quote: string | null) => void;
   onActivateRwa: () => void;
@@ -50,6 +51,7 @@ export function MarketplaceToolbar({
   masterHooks,
   onMasterHooksChange,
   onActivateMaster,
+  onDeactivateCategory,
   rwaQuote,
   onRwaQuoteChange,
   onActivateRwa,
@@ -86,12 +88,14 @@ export function MarketplaceToolbar({
             selectedHooks={masterHooks}
             onSelectedHooksChange={onMasterHooksChange}
             onActivateMaster={onActivateMaster}
+            onDeactivate={onDeactivateCategory}
           />
           <RwaFilterMenu
             active={category === "rwa"}
             selectedQuote={rwaQuote}
             onSelectedQuoteChange={onRwaQuoteChange}
             onActivateRwa={onActivateRwa}
+            onDeactivate={onDeactivateCategory}
           />
           <FilterPill
             active={category === "multi"}

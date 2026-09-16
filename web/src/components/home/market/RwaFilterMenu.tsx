@@ -9,6 +9,7 @@ type RwaFilterMenuProps = {
   selectedQuote: string | null;
   onSelectedQuoteChange: (quote: string | null) => void;
   onActivateRwa: () => void;
+  onDeactivate: () => void;
 };
 
 export function RwaFilterMenu({
@@ -16,6 +17,7 @@ export function RwaFilterMenu({
   selectedQuote,
   onSelectedQuoteChange,
   onActivateRwa,
+  onDeactivate,
 }: RwaFilterMenuProps) {
   const selectedStock = selectedQuote
     ? INK_QUOTRON_STOCKS.find((stock) => stock.symbol.toLowerCase() === selectedQuote.toLowerCase())
@@ -41,6 +43,7 @@ export function RwaFilterMenu({
       selectedIds={selectedQuote ? [selectedQuote] : []}
       selectionMode="single"
       onActivate={onActivateRwa}
+      onDeactivate={onDeactivate}
       onSelectedIdsChange={(ids) => onSelectedQuoteChange(ids[0] ?? null)}
     />
   );

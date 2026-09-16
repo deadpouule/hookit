@@ -18,6 +18,7 @@ type MasterHookFilterMenuProps = {
   selectedHooks: MasterHookId[];
   onSelectedHooksChange: (hooks: MasterHookId[]) => void;
   onActivateMaster: () => void;
+  onDeactivate: () => void;
 };
 
 const DROPDOWN_CONTENT_PROPS = {
@@ -32,6 +33,7 @@ export function MasterHookFilterMenu({
   selectedHooks,
   onSelectedHooksChange,
   onActivateMaster,
+  onDeactivate,
 }: MasterHookFilterMenuProps) {
   const label =
     selectedHooks.length === 0
@@ -57,6 +59,7 @@ export function MasterHookFilterMenu({
       items={items}
       selectedIds={selectedHooks}
       onActivate={onActivateMaster}
+      onDeactivate={onDeactivate}
       onSelectedIdsChange={(ids) => onSelectedHooksChange(ids as MasterHookId[])}
     />
   );

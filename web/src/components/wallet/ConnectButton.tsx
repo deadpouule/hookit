@@ -4,6 +4,7 @@ import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 
+import { WelcomeConnectModal } from "@/components/wallet/WelcomeConnectModal";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { HOOKIT_CHAIN_ID } from "@/lib/contracts/config";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function ConnectButton({
   label?: string;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
@@ -56,7 +58,6 @@ export function ConnectButton({
         chain,
         openAccountModal,
         openChainModal,
-        openConnectModal,
         mounted: rkMounted,
         authenticationStatus,
       }) => {
@@ -69,20 +70,23 @@ export function ConnectButton({
 
         if (!connected) {
           return (
-            <button
-              type="button"
-              onClick={openConnectModal}
-              {...TOOLBAR_BUTTON_PROPS}
-              className={cn(
-                compact
-                  ? "home-connect"
-                  : "rounded-md border border-white/15 bg-black px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-zinc-950",
-                className,
-              )}
-            >
-              {compact ? <WalletMark /> : null}
-              {compact ? "Connect" : (label ?? "Connect wallet")}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setWelcomeOpen(true)}
+                {...TOOLBAR_BUTTON_PROPS}
+                className={cn(
+                  compact
+                    ? "home-connect"
+                    : "rounded-md border border-white/15 bg-black px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-zinc-950",
+                  className,
+                )}
+              >
+                {compact ? <WalletMark /> : null}
+                {compact ? "Connect" : (label ?? "Connect wallet")}
+              </button>
+              <WelcomeConnectModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
+            </>
           );
         }
 
