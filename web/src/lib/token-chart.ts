@@ -192,11 +192,9 @@ export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "h
   return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
 }
 
-/** Candle mode draws real prints only; FDV carry slots stay empty like DexScreener. */
+/** Candle mode draws real prints only; FDV carry and in-progress slots stay empty. */
 export function candlePlotBar(bar: ChartBar): boolean {
-  if (isWhitespaceBar(bar) || !(bar.close > 0)) return false;
-  if (!isTradedBar(bar) && isSyntheticBar(bar)) return false;
-  return true;
+  return isTradedBar(bar);
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
@@ -372,9 +370,17 @@ export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   const next = bars.map((b) => ({ ...b }));
   let pinAt = -1;
   for (let i = next.length - 1; i >= 0; i--) {
-    if (!isWhitespaceBar(next[i]!) && !isSyntheticBar(next[i]!)) {
+    if (!isWhitespaceBar(next[i]!) && isTradedBar(next[i]!)) {
       pinAt = i;
       break;
+    }
+  }
+  if (pinAt < 0) {
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (!isWhitespaceBar(next[i]!) && !isSyntheticBar(next[i]!)) {
+        pinAt = i;
+        break;
+      }
     }
   }
   if (pinAt < 0) {

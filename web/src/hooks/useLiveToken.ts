@@ -90,7 +90,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
   useEffect(() => {
     setSource("sparse");
     setLive(buildSparseLive(pool, ethUsd));
-  }, [pool.poolId, pool.id, pool.quoteAddress, ethUsd]);
+  }, [pool.poolId, pool.id, pool.quoteAddress]);
 
   useEffect(() => {
     if (source === "sparse" || pool.marketCap <= 0) return;
@@ -247,7 +247,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
     }
 
     if (candlesLookBroken(mappedCandles, mcap) && mcap > 0) {
-      mappedCandles = [];
+      mappedCandles = fromTrades.length > 0 ? fromTrades : [];
     }
 
     const recentTrades = trades.slice(0, 40);

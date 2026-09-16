@@ -333,8 +333,20 @@ test("chartRenderableCandle gives a single print a fat body like Defined", () =>
 test("candlePlotBar skips FDV carry slots so sparse tapes show one candle per trade", () => {
   const carry = { time: 2, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 };
   const trade = { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 };
+  const wick = { time: 3, open: 5300, high: 5310, low: 5300, close: 5310, volume: 0 };
   assert.equal(candlePlotBar(carry), false);
   assert.equal(candlePlotBar(trade), true);
+  assert.equal(candlePlotBar(wick), false);
+});
+
+test("pinLiveMcap pins the last traded bar not an in-progress wick", () => {
+  const bars = [
+    { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 },
+    { time: 2, open: 5300, high: 5310, low: 5300, close: 5310, volume: 0 },
+  ];
+  const pinned = pinLiveMcap(bars, 5310);
+  assert.equal(pinned[0]!.close, 5310);
+  assert.equal(pinned[0]!.volume, 2);
 });
 
 test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
