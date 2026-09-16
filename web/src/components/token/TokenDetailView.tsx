@@ -11,8 +11,8 @@ import { ActiveHooksPanel } from "@/components/token/ActiveHooksPanel";
 import { BondingProgress } from "@/components/token/BondingProgress";
 import { CreatorActions } from "@/components/token/CreatorActions";
 import { HookPulseCard } from "@/components/token/HookPulseCard";
-import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
+import { TokenLiveTicker } from "@/components/token/TokenLiveTicker";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -23,11 +23,9 @@ import { isPhoneDocument } from "@/lib/device";
 import {
   changeTone,
   formatAge,
-  formatCompactUsd,
   isValidLaunchTimestamp,
   shortenAddress,
 } from "@/lib/format";
-import { formatTvPrice } from "@/lib/tv-chart";
 import { poolToMarketToken } from "@/lib/market-tokens";
 import {
   isMultiPool,
@@ -37,7 +35,6 @@ import {
   poolWithMarket,
 } from "@/lib/pool-active-market";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
-import { TOTAL_SUPPLY } from "@/lib/token-live";
 import {
   resolveMediaUrl,
   definedChartUrl,
@@ -52,7 +49,7 @@ const TokenSwapCard = dynamic(
   () => import("@/components/token/TokenSwapCard").then((m) => m.TokenSwapCard),
   {
     loading: () => (
-      <div className="swap-card min-h-[280px] animate-pulse rounded-2xl bg-zinc-900/50" aria-hidden />
+      <div className="swap-card min-h-[280px] animate-pulse rounded-2xl bg-[#070708]" aria-hidden />
     ),
     ssr: false,
   },
@@ -73,30 +70,6 @@ function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
         {tip}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function HeroStat({
-  label,
-  value,
-  children,
-  className,
-  title,
-}: {
-  label: ReactNode;
-  value: string;
-  children?: ReactNode;
-  className?: string;
-  title?: string;
-}) {
-  return (
-    <div className={cn("token-hero-stat", className)}>
-      <dt className="token-hero-stat-label">{label}</dt>
-      <dd className="token-hero-stat-value" title={title ?? value}>
-        {value}
-        {children}
-      </dd>
-    </div>
   );
 }
 
@@ -184,7 +157,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
   const markets = useMemo(() => poolMarkets(pool), [pool]);
-  const activeLegLabel = multi ? marketLegLabel(markets[marketIndex] ?? markets[0]!) : null;
   const marketLegs = useMemo(
     () =>
       markets.map((m) => ({
@@ -203,12 +175,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const githubUrl = tokenGithubUrl(pool.github);
   const explorerUrl = `${BLOCK_EXPLORER_URL}/address/${contractAddress}`;
   const definedUrl = definedChartUrl(contractAddress);
-  const fullyDiluted = live.priceUsd * TOTAL_SUPPLY;
-  // Only show FDV when burns / excluded sinks make it differ from market cap.
-  const fdv =
-    fullyDiluted > 0 && Math.abs(fullyDiluted - live.marketCap) / fullyDiluted > 0.005
-      ? fullyDiluted
-      : null;
 
   useEffect(() => {
     const id = pool.contractAddress ?? pool.id;
@@ -370,33 +336,9 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             <GithubGlyph className="h-4 w-4" />
           </HeroLink>
         </div>
-
-        <dl className="token-hero-stats">
-          <HeroStat
-            label={
-              <span className="token-hero-stat-label-row">
-                Market cap
-                <PoolQuoteMark quoteAddress={activePool.quoteAddress} quoteAsset={activePool.quoteAsset} />
-              </span>
-            }
-            value={formatCompactUsd(live.marketCap)}
-            title={
-              activeLegLabel
-                ? `Spot FDV on the ${activeLegLabel} pool. Other quote tabs can differ until arb aligns them. Defined.fi uses the top pair (usually the richest).`
-                : undefined
-            }
-          >
-            {fdv != null && <span className="token-hero-stat-sub">/ {formatCompactUsd(fdv)} FDV</span>}
-          </HeroStat>
-          <HeroStat label="Liquidity" value={formatCompactUsd(live.liquidity)} />
-          <HeroStat label="24h volume" value={formatCompactUsd(live.volume24h)} />
-          <HeroStat
-            className="token-hero-stat--price"
-            label="Price"
-            value={liveLoading ? "·" : `$${formatTvPrice(live.marketCap / TOTAL_SUPPLY)}`}
-          />
-        </dl>
       </div>
+
+      <TokenLiveTicker live={live} loading={liveLoading} />
     </div>
   );
 

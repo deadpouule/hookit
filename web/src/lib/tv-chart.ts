@@ -2,7 +2,7 @@
  * Shared chart chrome for lightweight-charts (Defined-style teal/red, subscript prices).
  */
 
-export const TV_CHART_BG = "#111111";
+export const TV_CHART_BG = "#050506";
 export const TV_CHART_GRID = "#232327";
 export const TV_CHART_SCALE_TEXT = "#7f7f88";
 /** Same teal / red as Defined.fi (TradingView crypto defaults). */

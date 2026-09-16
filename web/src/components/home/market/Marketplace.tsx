@@ -407,7 +407,7 @@ function TokenTable({
         <thead className="text-[11px] tracking-wide text-muted-foreground uppercase">
           <tr className="border-b border-border">
             <th className="px-4 py-3 font-medium">Token</th>
-            <th className="px-4 py-3 font-medium">Market Cap</th>
+            <th className="px-4 py-3 font-medium">FDV</th>
             <th className="px-4 py-3 font-medium">Volume</th>
             <th className="px-4 py-3 font-medium">1h</th>
             <th className="px-4 py-3 font-medium">Bond</th>

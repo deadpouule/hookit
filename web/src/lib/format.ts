@@ -14,6 +14,24 @@ export function formatCompactUsd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
+/** Compact ticker USD: `$2.90M`, `$216.5K`. */
+export function formatTickerUsd(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "·";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return `$${value.toFixed(2)}`;
+}
+
+/** Holders / counts: `6.0K`. */
+export function formatCompactCount(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return "0";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return String(Math.round(value));
+}
+
 export function formatFullUsd(value: number): string {
   const rounded = Math.round(value);
   const sign = rounded < 0 ? "-" : "";

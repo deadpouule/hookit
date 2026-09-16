@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { useLaunchEthUsd } from "@/hooks/useEthUsd";
 import { useTokenIndexerData } from "@/hooks/useTokenIndexerData";
 import { DEFAULT_LAUNCH_ETH_USD } from "@/lib/constants";
-import { statsFromIndexerTrades } from "@/lib/indexer-client";
+import { fetchIndexerToken, statsFromIndexerTrades } from "@/lib/indexer-client";
+import { TOKEN_TICKER_REFETCH_MS } from "@/lib/query-cache";
 import { isMultiPool } from "@/lib/pool-active-market";
 import {
   candleFdvScale,
@@ -110,6 +111,18 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
     source,
   ]);
 
+  const tickerQuery = useQuery({
+    queryKey: ["indexer-token-tick", address, pool.poolId],
+    enabled: !!address,
+    queryFn: async () => {
+      if (!address) return null;
+      return fetchIndexerToken(address, pool.poolId ?? undefined);
+    },
+    refetchInterval: TOKEN_TICKER_REFETCH_MS,
+    staleTime: 0,
+    retry: false,
+  });
+
   const indexerQuery = useTokenIndexerData(address, {
     poolId: pool.poolId,
     candlesLimit: 2_000,
@@ -126,7 +139,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
       if (!address) return null;
       return fetchOnChainLiveApi(address, pool.poolId);
     },
-    refetchInterval: 15_000,
+    refetchInterval: 8_000,
     retry: 1,
   });
 
@@ -306,6 +319,53 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
       liquidity: pool.liquidity > 0 ? pool.liquidity : onchain.liquidity,
     });
   }, [onchainQuery.dataUpdatedAt, onchainQuery.data, indexerQuery.data?.summary, pool]);
+
+  useEffect(() => {
+    const summary = tickerQuery.data;
+    if (!summary || !summaryMatchesPool(summary.poolId, pool.poolId)) return;
+
+    const eth = resolveEthUsd(pool, launchEthUsd);
+    const isEth = quoteIsEth(pool);
+    const quoteKind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+    const quoteUsd =
+      pool.quoteUsd ??
+      (quoteKind === "eth" ? eth : quoteKind === "stable" ? 1 : fallbackStockUsd(pool.quoteAddress) || 1);
+    const priceQuote = summary.price ? Number(summary.price) : 0;
+    const mcapFromIndexer =
+      priceQuote > 0
+        ? marketCapUsdForPool(priceQuote, pool, eth, quoteUsd, pool.launchMcapQuoteHuman)
+        : 0;
+
+    const quoteVolRaw = summary.volume24h ? Number(summary.volume24h) : 0;
+    let volUsd = 0;
+    try {
+      volUsd = isEth
+        ? (quoteVolRaw / 1e18) * eth
+        : quoteVolumeUsd(BigInt(Math.trunc(quoteVolRaw)), pool, eth, quoteUsd);
+    } catch {
+      volUsd = 0;
+    }
+
+    setLive((prev) => {
+      const marketCap = mcapFromIndexer > 0 ? mcapFromIndexer : prev.marketCap;
+      return {
+        ...prev,
+        marketCap,
+        priceUsd: marketCap / TOTAL_SUPPLY,
+        volume24h: volUsd > 0 ? volUsd : prev.volume24h,
+        change24h: summary.change24h ?? prev.change24h,
+        holders: summary.holdersIndexed || prev.holders,
+      };
+    });
+  }, [
+    tickerQuery.dataUpdatedAt,
+    pool.poolId,
+    pool.quoteAddress,
+    pool.quoteAsset,
+    pool.quoteUsd,
+    pool.launchMcapQuoteHuman,
+    launchEthUsd,
+  ]);
 
   const isLoading =
     !!address &&

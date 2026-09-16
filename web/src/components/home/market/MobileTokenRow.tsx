@@ -59,7 +59,7 @@ export function MobileTokenRow({ token }: { token: MarketToken }) {
           <TokenTypeBadges token={token} />
         </div>
         <p className="mt-1 text-[12px] text-zinc-500">
-          MC <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
+          FDV <span className="text-zinc-300">{formatUsd(token.marketCap)}</span>
           <span className="mx-1.5 text-zinc-700">·</span>
           Vol <span className="text-zinc-300">{formatUsd(token.volume)}</span>
         </p>

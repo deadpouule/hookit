@@ -308,7 +308,7 @@ export function TokenCandleChart({
             ariaLabel="Chart scale"
             options={[
               { id: "price", label: "Price" },
-              { id: "mcap", label: "Mcap" },
+              { id: "mcap", label: "FDV" },
             ]}
           />
           <ChartToggle

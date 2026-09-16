@@ -46,51 +46,74 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     }).length;
   }, [pools]);
 
+  const withUses = useMemo(
+    () =>
+      EXPLORE_HOOKS.map((hook) => ({
+        ...hook,
+        uses: hook.id === "fixed-fee" ? fixedFeeUses : usage[hook.id as MasterHookId] ?? 0,
+      })),
+    [usage, fixedFeeUses],
+  );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<HookFilter, number> = {
+      all: EXPLORE_HOOKS.length,
+      protection: 0,
+      tokenomics: 0,
+      rewards: 0,
+      "trading-fees": 0,
+    };
+    for (const hook of EXPLORE_HOOKS) {
+      counts[hook.category] += 1;
+    }
+    return counts;
+  }, []);
+
+  const totalUses = useMemo(
+    () => withUses.reduce((sum, hook) => sum + hook.uses, 0),
+    [withUses],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return EXPLORE_HOOKS.filter((hook) => {
+    return withUses.filter((hook) => {
       const matchesCategory = category === "all" || hook.category === category;
       const matchesQuery =
         !q ||
         hook.title.toLowerCase().includes(q) ||
         hook.description.toLowerCase().includes(q);
       return matchesCategory && matchesQuery;
-    }).map((hook) => ({
-      ...hook,
-      uses:
-        hook.id === "fixed-fee"
-          ? fixedFeeUses
-          : usage[hook.id as MasterHookId] ?? 0,
-    }));
-  }, [category, query, usage, fixedFeeUses]);
+    });
+  }, [category, query, withUses]);
 
   return (
-    <div className="market-shell space-y-6 bg-background pt-8 pb-10">
-      <div className="max-w-xl space-y-2">
-        <h1 className="terminal-title text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          Discover one click hooks
-        </h1>
-        <p className="text-sm text-muted-foreground sm:text-base">
-          Browse our Hooks, pick your strategy, and deploy your token in one click
+    <div className="market-shell hooks-discover bg-background pt-8 pb-12">
+      <header className="hooks-discover-hero">
+        <p className="hooks-discover-kicker">Master modules</p>
+        <h1 className="hooks-discover-title">Hooks</h1>
+        <p className="hooks-discover-lede">
+          One-click Uniswap v4 modules. Pick a strategy, launch in a click.
         </p>
-      </div>
+        <p className="hooks-discover-meta">
+          {EXPLORE_HOOKS.length} modules
+          <span aria-hidden>·</span>
+          {usesPending ? "…" : `${totalUses} live uses`}
+        </p>
+      </header>
 
-      <div
-        className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
-        suppressHydrationWarning
-      >
-        <div className="relative w-full max-w-xl" suppressHydrationWarning>
+      <div className="hooks-discover-toolbar" suppressHydrationWarning>
+        <div className="hooks-discover-search" suppressHydrationWarning>
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           <input
             {...SEARCH_FIELD_PROPS}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search master hooks…"
-            className="h-11 w-full rounded-xl border border-border bg-card pr-3 pl-10 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-[#9514d1]"
+            placeholder="Search hooks…"
+            className="hooks-discover-search-input"
           />
         </div>
 
-        <div className="hooks-filter-range" role="tablist">
+        <div className="hooks-filter-range" role="tablist" aria-label="Hook category">
           {MASTER_HOOK_FILTERS.map((filter) => (
             <button
               key={filter.id}
@@ -101,6 +124,7 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
               className={category === filter.id ? "is-on" : undefined}
             >
               {filter.label}
+              <span className="hooks-filter-count">{categoryCounts[filter.id]}</span>
             </button>
           ))}
         </div>
@@ -120,9 +144,9 @@ function ExplorePageContent({ initialPools = [] }: { initialPools?: TokenPool[] 
       <HookDocsDialog hook={openHook} onOpenChange={(open) => { if (!open) setOpenHook(null); }} />
 
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center rounded-2xl bg-card px-6 py-16 text-center">
+        <div className="hooks-discover-empty">
           <Sparkles className="mb-4 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No master hooks match your filters</p>
+          <p className="text-sm text-muted-foreground">No hooks match those filters</p>
           <button
             type="button"
             onClick={() => {
@@ -143,7 +167,7 @@ export function ExplorePage({ initialPools = [] }: { initialPools?: TokenPool[] 
   return (
     <Suspense
       fallback={
-        <div className="market-shell bg-background pt-8 pb-10">
+        <div className="market-shell hooks-discover bg-background pt-8 pb-10">
           <p className="text-sm text-muted-foreground">Loading hooks…</p>
         </div>
       }
