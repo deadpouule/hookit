@@ -47,8 +47,21 @@ export type IndexerConfig = {
   launchFactories: Address[];
   bondingFactory?: Address;
   poolManager: Address;
+  hktHolderDropVault?: Address;
   startBlock: bigint;
   excludeAddresses: Set<string>;
+};
+
+export type HktDropTokenRow = {
+  payoutCount: number;
+  walletTransfers: number;
+  recipients: Record<string, true>;
+};
+
+export type HktHolderDropState = {
+  wallets: number;
+  byToken: Record<string, HktDropTokenRow>;
+  seenEvents: Record<string, true>;
 };
 
 function addr(env: string | undefined): Address | undefined {
@@ -152,6 +165,10 @@ export function loadConfig(): IndexerConfig {
     process.env.BONDING_FACTORY ??
       process.env.NEXT_PUBLIC_BONDING_FACTORY,
   );
+  const hktHolderDropVault = addr(
+    process.env.HKT_HOLDER_DROP_VAULT ??
+      (isInk ? "0x45e32e44871428bcbe9e27caa148b2e51f77379e" : undefined),
+  );
 
   const exclude = new Set<string>([
     "0x0000000000000000000000000000000000000000",
@@ -161,6 +178,7 @@ export function loadConfig(): IndexerConfig {
   ]);
   for (const f of launchFactories) exclude.add(f.toLowerCase());
   if (bondingFactory) exclude.add(bondingFactory.toLowerCase());
+  if (hktHolderDropVault) exclude.add(hktHolderDropVault.toLowerCase());
 
   const defaultData = join(fileURLToPath(new URL("..", import.meta.url)), "data");
 
@@ -178,6 +196,7 @@ export function loadConfig(): IndexerConfig {
     launchFactories,
     bondingFactory,
     poolManager,
+    hktHolderDropVault,
     startBlock: BigInt(process.env.INDEXER_START_BLOCK ?? "0"),
     excludeAddresses: exclude,
   };
@@ -290,4 +309,5 @@ export type StoreFile = {
   poolToToken: Record<string, string>;
   launchIdToToken: Record<string, string>;
   seenTrades: Record<string, true>;
+  hktHolderDrop?: HktHolderDropState;
 };

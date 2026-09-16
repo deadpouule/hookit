@@ -67,6 +67,11 @@ type IndexerProtocolStats = {
     quote: string;
     quoteDecimals: number;
   }>;
+  hktHolderDrop?: {
+    tokensSent: number;
+    wallets: number;
+    topTokens: Array<{ ticker: string; wallets: number; payouts: number }>;
+  };
 };
 
 const buybackBurnedEvent = parseAbiItem(
@@ -444,7 +449,7 @@ export async function loadLiveProtocolStats(): Promise<LiveProtocolStatsPayload>
     latestBuybacks: onChain.feeds,
     buybackBurns: onChain.burns,
     indexerOk: !!indexer,
-    hktHolderDrop: {
+    hktHolderDrop: indexer?.hktHolderDrop ?? {
       tokensSent: 0,
       wallets: 0,
       topTokens: [],

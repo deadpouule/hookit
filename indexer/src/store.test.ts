@@ -3,7 +3,7 @@ import test from "node:test";
 
 import type { Hex } from "viem";
 
-import { scopeTradesToPool } from "./store.js";
+import { Store, scopeTradesToPool } from "./store.js";
 import type { IndexedTrade } from "./config.js";
 
 const NVDA = "0x0e5d80af0cf88fbf428ca238fc86cd6e3178a042bf92d52aec17610211710b40" as Hex;
@@ -44,4 +44,35 @@ test("scopeTradesToPool: single-pair keeps every trade", () => {
   const trades = [trade(NVDA, "2e-8")];
   const scoped = scopeTradesToPool(trades, NVDA, 1);
   assert.equal(scoped.length, 1);
+});
+
+test("applyHktPayoutTransfer tracks recipients and wallet transfer count", () => {
+  const store = new Store("/tmp/hookit-test-hkt-drop", 57_073);
+  const token = "0x665650b1f56f20180cbc668acec8c3c3977bc478" as const;
+  store.upsertToken({
+    address: token,
+    poolId: NVDA,
+    quote: "0x0000000000000000000000000000000000000000" as const,
+    tokenIsCurrency0: true,
+    name: "dogink",
+    symbol: "DINK",
+    decimals: 18,
+    quoteDecimals: 18,
+    totalSupply: "1",
+    creator: "0x1111111111111111111111111111111111111111" as const,
+    launchedAt: 1,
+    launchId: 1,
+    rail: "master",
+    holders: {},
+    trades: [],
+    candles5m: [],
+  });
+  store.applyHktDropped(token);
+  store.applyHktPayoutTransfer(token, "0x2222222222222222222222222222222222222222" as const);
+  store.applyHktPayoutTransfer(token, "0x2222222222222222222222222222222222222222" as const);
+
+  const state = store.data.hktHolderDrop!;
+  assert.equal(state.wallets, 2);
+  assert.equal(state.byToken[token.toLowerCase()]?.payoutCount, 1);
+  assert.equal(Object.keys(state.byToken[token.toLowerCase()]?.recipients ?? {}).length, 1);
 });

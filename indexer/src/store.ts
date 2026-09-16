@@ -4,7 +4,17 @@ import { fileURLToPath } from "node:url";
 
 import type { Address, Hex } from "viem";
 
-import type { Candle, IndexedTrade, StoreFile, StoreFileV1, StoreFileV2, TokenMarket, TokenRow } from "./config.js";
+import type {
+  Candle,
+  HktDropTokenRow,
+  HktHolderDropState,
+  IndexedTrade,
+  StoreFile,
+  StoreFileV1,
+  StoreFileV2,
+  TokenMarket,
+  TokenRow,
+} from "./config.js";
 import { compareDec, maxDec, minDec, quotePerTokenFromAmounts } from "./math.js";
 
 const INK_USDG = "0xe343167631d89b6ffc58b88d6b7fb0228795491d";
@@ -12,6 +22,7 @@ const INK_USDG = "0xe343167631d89b6ffc58b88d6b7fb0228795491d";
 export const MAX_TRADES = 2_000;
 export const MAX_CANDLES = 5_000;
 export const MAX_SEEN_TRADES = 100_000;
+export const MAX_SEEN_HKT_EVENTS = 50_000;
 const CANDLE_SEC = 300;
 const SEC_24H = 86_400;
 
@@ -158,6 +169,7 @@ export class Store {
           throw new Error(`store chainId ${raw.chainId} != config ${chainId}`);
         }
         this.data = raw.version === 3 ? raw : repairTradePrices(raw);
+        this.ensureHktHolderDrop();
         if (raw.version === 2) {
           this.data.version = 3;
           this.save();
@@ -170,7 +182,52 @@ export class Store {
       }
     } else {
       this.data = emptyStore(chainId);
+      this.ensureHktHolderDrop();
     }
+  }
+
+  ensureHktHolderDrop(): HktHolderDropState {
+    if (!this.data.hktHolderDrop) {
+      this.data.hktHolderDrop = { wallets: 0, byToken: {}, seenEvents: {} };
+    }
+    return this.data.hktHolderDrop;
+  }
+
+  markHktEvent(id: string): boolean {
+    const state = this.ensureHktHolderDrop();
+    if (state.seenEvents[id]) return false;
+    state.seenEvents[id] = true;
+    const keys = Object.keys(state.seenEvents);
+    if (keys.length > MAX_SEEN_HKT_EVENTS) {
+      for (const key of keys.slice(0, keys.length - MAX_SEEN_HKT_EVENTS)) {
+        delete state.seenEvents[key];
+      }
+    }
+    return true;
+  }
+
+  private hktTokenRow(token: Address): HktDropTokenRow {
+    const state = this.ensureHktHolderDrop();
+    const key = token.toLowerCase();
+    let row = state.byToken[key];
+    if (!row) {
+      row = { payoutCount: 0, walletTransfers: 0, recipients: {} };
+      state.byToken[key] = row;
+    }
+    return row;
+  }
+
+  applyHktDropped(token: Address) {
+    if (!this.getToken(token)) return;
+    this.hktTokenRow(token).payoutCount += 1;
+  }
+
+  applyHktPayoutTransfer(token: Address, to: Address) {
+    if (!this.getToken(token)) return;
+    const row = this.hktTokenRow(token);
+    row.walletTransfers += 1;
+    row.recipients[to.toLowerCase()] = true;
+    this.ensureHktHolderDrop().wallets += 1;
   }
 
   save() {

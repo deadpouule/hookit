@@ -31,6 +31,12 @@ export type ProtocolWindowRollup = {
   quotes: QuoteVolume[];
 };
 
+export type ProtocolHktHolderDrop = {
+  tokensSent: number;
+  wallets: number;
+  topTokens: Array<{ ticker: string; wallets: number; payouts: number }>;
+};
+
 export type ProtocolIndexerStats = {
   tokensIndexed: number;
   tradesIndexed: number;
@@ -43,6 +49,7 @@ export type ProtocolIndexerStats = {
   daily: ProtocolDailyBucket[];
   hourly: ProtocolDailyBucket[];
   recentTrades: ProtocolTradeRow[];
+  hktHolderDrop: ProtocolHktHolderDrop;
 };
 
 function dayLabel(unixSec: number) {
@@ -94,6 +101,32 @@ function addQuote(
   } else {
     row.sellVolumeQuote = (BigInt(row.sellVolumeQuote) + quoteAmount).toString();
   }
+}
+
+function buildHktHolderDrop(store: Store): ProtocolHktHolderDrop {
+  const state = store.data.hktHolderDrop;
+  if (!state) return { tokensSent: 0, wallets: 0, topTokens: [] };
+
+  const topTokens = Object.entries(state.byToken)
+    .map(([address, row]) => {
+      const token = store.getToken(address);
+      const ticker = token?.symbol?.trim() || `${address.slice(0, 6)}…`;
+      return {
+        ticker,
+        wallets: Object.keys(row.recipients).length,
+        payouts: row.payoutCount,
+      };
+    })
+    .filter((row) => row.payouts > 0 || row.wallets > 0)
+    .sort((a, b) => b.payouts - a.payouts || b.wallets - a.wallets)
+    .slice(0, 5);
+
+  const tokensSent = Object.values(state.byToken).filter((row) => row.payoutCount > 0).length;
+  return {
+    tokensSent,
+    wallets: state.wallets,
+    topTokens,
+  };
 }
 
 function collectTrades(store: Store): ProtocolTradeRow[] {
@@ -159,5 +192,6 @@ export function buildProtocolStats(store: Store): ProtocolIndexerStats {
     daily: [...dailyMap.values()].sort((a, b) => a.dayStart - b.dayStart),
     hourly: [...hourlyMap.values()].sort((a, b) => a.dayStart - b.dayStart),
     recentTrades: [...trades].reverse().slice(0, 100),
+    hktHolderDrop: buildHktHolderDrop(store),
   };
 }

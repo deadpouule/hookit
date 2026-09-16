@@ -39,6 +39,10 @@ const transferEvent = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)",
 );
 
+const hktDroppedEvent = parseAbiItem(
+  "event Dropped(address indexed token, uint256 pot, uint256 distributed, uint256 holders, address caller)",
+);
+
 const masterLaunchEvent = parseAbiItem(
   "event TokenLaunched(uint256 indexed launchId, address indexed token, address indexed creator, bytes32 poolId, address hooks, bool customHook, int24 tickLower, int24 tickUpper, uint128 liquidity)",
 );
@@ -744,7 +748,25 @@ async function indexRange(
     }
   }
 
+  if (cfg.hktHolderDropVault) {
+    const dropped = await getLogs(client, {
+      address: cfg.hktHolderDropVault,
+      event: hktDroppedEvent,
+      fromBlock,
+      toBlock,
+    });
+    for (const log of dropped) {
+      const a = logArgs<{ token: Address }>(log);
+      const meta = tradeLogMeta(log);
+      if (!meta) continue;
+      const id = tradeId(meta.transactionHash, meta.logIndex);
+      if (!store.markHktEvent(id)) continue;
+      store.applyHktDropped(a.token);
+    }
+  }
+
   const tokens = Object.keys(store.data.tokens);
+  const vault = cfg.hktHolderDropVault?.toLowerCase();
   if (tokens.length > 0) {
     const transferLogs = await getLogs(client,{
       address: tokens as Address[],
@@ -755,6 +777,9 @@ async function indexRange(
     for (const log of transferLogs) {
       const a = logArgs<{ from: Address; to: Address; value: bigint }>(log);
       store.applyTransfer(log.address as Address, a.from, a.to, a.value);
+      if (vault && a.from.toLowerCase() === vault && a.value > 0n) {
+        store.applyHktPayoutTransfer(log.address as Address, a.to);
+      }
     }
   }
 }
