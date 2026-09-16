@@ -1,14 +1,15 @@
 "use client";
 
 import { useLoginWithEmail, useLoginWithOAuth } from "@privy-io/react-auth";
-import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ArrowLeft, Mail, Search, Wallet, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAccount, useConnect, useConnectors, type Connector } from "wagmi";
 
 import { SEARCH_FIELD_PROPS, TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { isPrivyConfigured, isPrivyWagmiConnector } from "@/lib/privy";
+import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 
 type Step = "welcome" | "otp" | "wallets";
 
@@ -120,7 +121,6 @@ function WelcomeConnectModalPrivy({
   open: boolean;
   onClose: () => void;
 }) {
-  const { openConnectModal } = useConnectModal();
   const [oauthBusy, setOauthBusy] = useState(false);
   const { sendCode, loginWithCode, state: emailState } = useLoginWithEmail();
   const { initOAuth } = useLoginWithOAuth();
@@ -155,32 +155,17 @@ function WelcomeConnectModalPrivy({
     },
   };
 
-  const continueWithWallet = () => {
-    onClose();
-    // Privy+wagmi hybrid: RainbowKit owns external wallets (WC, MetaMask, Rabby).
-    openConnectModal?.();
-  };
-
-  return (
-    <WelcomeConnectModalView
-      open={open}
-      onClose={onClose}
-      auth={auth}
-      onContinueWithWallet={continueWithWallet}
-    />
-  );
+  return <WelcomeConnectModalView open={open} onClose={onClose} auth={auth} />;
 }
 
 function WelcomeConnectModalView({
   open,
   onClose,
   auth,
-  onContinueWithWallet,
 }: {
   open: boolean;
   onClose: () => void;
   auth: SocialAuth;
-  onContinueWithWallet?: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>("welcome");
@@ -328,7 +313,7 @@ function WelcomeConnectModalView({
           <div className="welcome-connect__body">
             <span className="welcome-connect__mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/hookit-owl-favicon.png" alt="" width={72} height={72} draggable={false} />
+              <img src="/brand/hookit-owl-favicon.png" alt="" width={108} height={108} draggable={false} />
             </span>
             <h2 id="welcome-connect-title" className="welcome-connect__title">
               Welcome to Hookit
@@ -382,22 +367,30 @@ function WelcomeConnectModalView({
               type="button"
               className="welcome-connect__row"
               disabled={busy}
-              onClick={() => {
-                if (onContinueWithWallet) onContinueWithWallet();
-                else goToWallets();
-              }}
+              onClick={goToWallets}
               {...TOOLBAR_BUTTON_PROPS}
             >
               <Wallet className="h-5 w-5" aria-hidden />
               Continue with a wallet
             </button>
             {error ? <p className="welcome-connect__error">{error}</p> : null}
+            <p className="welcome-connect__legal">
+              By continuing, you agree to our{" "}
+              <Link href={TERMS_HREF} target="_blank" rel="noopener noreferrer">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href={PRIVACY_HREF} target="_blank" rel="noopener noreferrer">
+                Privacy
+              </Link>
+              .
+            </p>
           </div>
         ) : step === "otp" ? (
           <div className="welcome-connect__body">
             <span className="welcome-connect__mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/hookit-owl-favicon.png" alt="" width={72} height={72} draggable={false} />
+              <img src="/brand/hookit-owl-favicon.png" alt="" width={108} height={108} draggable={false} />
             </span>
             <h2 id="welcome-connect-title" className="welcome-connect__title">
               Check your email

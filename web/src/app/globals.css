@@ -3207,6 +3207,7 @@
     white-space: normal;
   }
 
+  html[data-device="desktop"] .hero-pitch-line--lede,
   html[data-device="desktop"] .hero-pitch-line--hold {
     font-size: 1.07em;
   }
@@ -9260,7 +9261,6 @@
     .lean-hero {
       height: auto;
       min-height: 0;
-      overflow: visible;
     }
 
     .hero-banner {
@@ -9269,7 +9269,7 @@
       flex-direction: row;
       align-items: flex-start;
       gap: 1rem;
-      padding: 1.45rem 1.25rem 0.55rem 2.35rem;
+      padding: 1.25rem 1.25rem 0.3rem 3.5rem;
     }
 
     .hero-copy {
@@ -9288,24 +9288,24 @@
       width: 52%;
       height: auto;
       align-self: start;
-      overflow: visible;
+      overflow: hidden;
     }
 
     .lean-hero .hero-totem {
-      height: auto;
-      grid-template-rows: auto auto auto;
+      height: 27.5rem;
+      grid-template-rows: minmax(0, 1fr) auto auto;
       align-content: start;
-      padding: 0.1rem 0 0.15rem;
+      padding-top: 0.1rem;
     }
 
     .hero-totem-stage,
     .hero-totem-caption,
     .hero-totem-dots {
-      width: min(100%, 22.25rem);
+      width: min(100%, 36rem);
     }
 
     .hero-totem-stage .welcome-owl--totem {
-      width: min(78%, 17.4rem);
+      width: min(68%, 17.4rem);
     }
 
     .hero-totem-mark {
@@ -13090,7 +13090,7 @@ h2.docs-hook-heading {
   z-index: 1;
   display: flex;
   width: min(100%, 26rem);
-  max-height: min(92dvh, 40rem);
+  max-height: min(92dvh, 44rem);
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.1);
@@ -13143,19 +13143,19 @@ h2.docs-hook-heading {
 
 .welcome-connect__mark {
   display: flex;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 6.75rem;
+  height: 6.75rem;
   align-items: center;
   justify-content: center;
-  margin: 0.35rem auto 1rem;
+  margin: 0.15rem auto 0.95rem;
   overflow: hidden;
-  border-radius: 1.05rem;
+  border-radius: 1.35rem;
   background: #0b0b0d;
 }
 
 .welcome-connect__mark img {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 6.75rem;
+  height: 6.75rem;
   object-fit: cover;
 }
 
@@ -13358,4 +13358,22 @@ h2.docs-hook-heading {
 
 .welcome-connect__error {
   color: #fca5a5;
+}
+
+.welcome-connect__legal {
+  margin: 1.05rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #71717a;
+}
+
+.welcome-connect__legal a {
+  color: #d4d4d8;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.welcome-connect__legal a:hover {
+  color: #fff;
 }
