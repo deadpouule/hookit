@@ -23,7 +23,7 @@ export function LaunchpadHomeClient({ initialPools = [] }: { initialPools?: Toke
   return (
     <div className="min-h-dvh bg-background pb-40 phone:pb-28">
       <SiteHeader />
-      <div className="market-shell space-y-6 pt-4 phone:space-y-4 phone:pt-3">
+      <div className="market-shell space-y-6 pt-4 desk:space-y-4 phone:space-y-4 phone:pt-3">
         <LeanHero />
         <Marketplace initialPools={initialPools} />
       </div>
