@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
 import type { PairingTokenId } from "@/lib/pairing-tokens";
@@ -75,7 +76,9 @@ export function TypewriterTitle() {
     <h1 className="hero-typewriter hero-pitch">
       <span className="hero-prompt">~$</span>
       <span className="hero-pitch-lines">
-        <span className="hero-pitch-line">A new way to launch</span>
+        <span className="hero-pitch-line">
+          A new way to <span className="hero-pitch-launch">launch.</span>
+        </span>
         <span className="hero-pitch-line">
           Programmable v4 hooks
           <UniswapMark />
@@ -98,6 +101,12 @@ export function TypewriterTitle() {
         </span>
         <span className="hero-pitch-line hero-pitch-line--badge">
           <PoweredByQuotronsBadge variant="hero" className="hero-quotrons-badge" />
+          <Link href="/docs" className="hero-how-it-works">
+            How it works
+            <span className="hero-how-it-works__chevron" aria-hidden>
+              {">"}
+            </span>
+          </Link>
         </span>
       </span>
     </h1>
