@@ -28,7 +28,8 @@ test.describe("Hookit UI smoke", () => {
     await expect(page.getByRole("button", { name: "Google" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Twitter" })).toBeVisible();
     await page.getByRole("button", { name: "Continue with a wallet" }).click();
-    await expect(page.getByRole("heading", { name: "Select your wallet" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Welcome to Hookit" })).toBeHidden();
+    await expect(page.getByText(/Connect a [Ww]allet/i).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Privy" })).toHaveCount(0);
   });
 

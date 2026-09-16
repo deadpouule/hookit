@@ -1,6 +1,7 @@
 "use client";
 
 import { useLoginWithEmail, useLoginWithOAuth } from "@privy-io/react-auth";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { ArrowLeft, Mail, Search, Wallet, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -119,6 +120,7 @@ function WelcomeConnectModalPrivy({
   open: boolean;
   onClose: () => void;
 }) {
+  const { openConnectModal } = useConnectModal();
   const [oauthBusy, setOauthBusy] = useState(false);
   const { sendCode, loginWithCode, state: emailState } = useLoginWithEmail();
   const { initOAuth } = useLoginWithOAuth();
@@ -153,17 +155,32 @@ function WelcomeConnectModalPrivy({
     },
   };
 
-  return <WelcomeConnectModalView open={open} onClose={onClose} auth={auth} />;
+  const continueWithWallet = () => {
+    onClose();
+    // Privy+wagmi hybrid: RainbowKit owns external wallets (WC, MetaMask, Rabby).
+    openConnectModal?.();
+  };
+
+  return (
+    <WelcomeConnectModalView
+      open={open}
+      onClose={onClose}
+      auth={auth}
+      onContinueWithWallet={continueWithWallet}
+    />
+  );
 }
 
 function WelcomeConnectModalView({
   open,
   onClose,
   auth,
+  onContinueWithWallet,
 }: {
   open: boolean;
   onClose: () => void;
   auth: SocialAuth;
+  onContinueWithWallet?: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>("welcome");
@@ -365,7 +382,10 @@ function WelcomeConnectModalView({
               type="button"
               className="welcome-connect__row"
               disabled={busy}
-              onClick={goToWallets}
+              onClick={() => {
+                if (onContinueWithWallet) onContinueWithWallet();
+                else goToWallets();
+              }}
               {...TOOLBAR_BUTTON_PROPS}
             >
               <Wallet className="h-5 w-5" aria-hidden />
