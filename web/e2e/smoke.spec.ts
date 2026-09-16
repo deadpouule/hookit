@@ -29,11 +29,12 @@ test.describe("Hookit UI smoke", () => {
     await expect(page.getByRole("button", { name: "Twitter" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Passkey" })).toBeVisible();
     await expect(page.getByPlaceholder("+1 phone number")).toBeVisible();
-    await page.getByRole("button", { name: "Continue with a wallet" }).click();
-    await expect(page.getByRole("heading", { name: "Select your wallet" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Privy" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
+    await page.getByRole("button", { name: "Continue with a wallet" }).click();
+    await expect(page.getByRole("heading", { name: "Welcome to Hookit" })).toBeHidden();
+    await expect(page.getByText(/Connect a [Ww]allet|Connecter un portefeuille/i).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Privy" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Select your wallet" })).toHaveCount(0);
   });
 
   test("Explore home loads tokens", async ({ page }, testInfo) => {

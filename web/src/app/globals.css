@@ -9259,24 +9259,24 @@
 
   @media (min-width: 900px) {
     .lean-hero {
-      height: auto;
-      min-height: 0;
+      height: 480px;
+      min-height: 480px;
     }
 
     .hero-banner {
-      min-height: 0;
-      height: auto;
+      min-height: 480px;
+      height: 100%;
       flex-direction: row;
-      align-items: flex-start;
+      align-items: center;
       gap: 1rem;
-      padding: 1.25rem 1.25rem 0.3rem 3.5rem;
+      padding: 1.25rem 1.25rem 1.25rem 3.5rem;
     }
 
     .hero-copy {
       width: 48%;
-      height: auto;
-      align-items: flex-start;
-      padding-top: 0.15rem;
+      height: 100%;
+      align-items: center;
+      padding-top: 0;
     }
 
     .hero-copy h1,
@@ -9286,16 +9286,16 @@
 
     .hero-stage {
       width: 52%;
-      height: auto;
-      align-self: start;
+      height: 100%;
+      align-self: center;
       overflow: hidden;
     }
 
     .lean-hero .hero-totem {
-      height: 27.5rem;
+      height: 100%;
       grid-template-rows: minmax(0, 1fr) auto auto;
-      align-content: start;
-      padding-top: 0.1rem;
+      align-content: center;
+      padding-top: 0;
     }
 
     .hero-totem-stage,
@@ -13143,20 +13143,21 @@ h2.docs-hook-heading {
 
 .welcome-connect__mark {
   display: flex;
-  width: 6.75rem;
-  height: 6.75rem;
+  width: 11.5rem;
+  aspect-ratio: 1358 / 951;
+  height: auto;
   align-items: center;
   justify-content: center;
-  margin: 0.15rem auto 0.95rem;
-  overflow: hidden;
-  border-radius: 1.35rem;
-  background: #0b0b0d;
+  margin: 0.05rem auto 0.85rem;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
 }
 
 .welcome-connect__mark img {
-  width: 6.75rem;
-  height: 6.75rem;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .welcome-connect__title {
