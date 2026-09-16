@@ -38,32 +38,28 @@ function Chip({
   );
 }
 
-function MemeChip({
-  x,
-  y,
-  label,
-  fill,
-  size = 46,
-}: {
-  x: number;
-  y: number;
-  label: string;
-  fill: string;
-  size?: number;
-}) {
+function TokenChip({ x, y, size = 46 }: { x: number; y: number; size?: number }) {
   return (
     <g>
-      <rect x={x} y={y} width={size} height={size} rx={size > 36 ? 13 : 8} fill={fill} />
+      <rect
+        x={x}
+        y={y}
+        width={size}
+        height={size}
+        rx={size > 36 ? 13 : 8}
+        fill="#141414"
+        stroke="rgb(255 255 255 / 0.14)"
+      />
       <text
         x={x + size / 2}
         y={y + size / 2 + (size > 36 ? 4 : 3)}
         textAnchor="middle"
-        fill="#0a0a0a"
+        fill="#d4d4d8"
         fontSize={size > 36 ? 9 : size > 26 ? 8 : 7}
-        fontWeight="800"
+        fontWeight="700"
         letterSpacing="0"
       >
-        {label}
+        token
       </text>
     </g>
   );
@@ -136,8 +132,6 @@ function HookMark({
   );
 }
 
-const MEME_COLORS = ["#ff6b9d", "#c8ff3d", "#ff8a3d", "#7c5cff", "#3dffd0", "#ffd23d"] as const;
-
 const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
   { src: "/pairing/wnvdax.svg", x: 504, y: 228, size: 28 },
   { src: "/pairing/waaplx.svg", x: 548, y: 214, size: 26 },
@@ -151,13 +145,13 @@ const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
   { src: "/pairing/usdg.png", x: 476, y: 272, size: 26 },
 ];
 
-const PILE_MEMES: { key: string; label: string; fill: string; x: number; y: number }[] = [
-  { key: "p-memex-a", label: "memex", fill: MEME_COLORS[0], x: 500, y: 248 },
-  { key: "p-meme2", label: "meme2", fill: MEME_COLORS[1], x: 568, y: 240 },
-  { key: "p-memex-b", label: "memex", fill: MEME_COLORS[4], x: 612, y: 286 },
-  { key: "p-meme4", label: "meme4", fill: MEME_COLORS[3], x: 568, y: 328 },
-  { key: "p-meme5", label: "meme5", fill: MEME_COLORS[2], x: 508, y: 322 },
-  { key: "p-meme6", label: "meme6", fill: MEME_COLORS[5], x: 492, y: 286 },
+const PILE_TOKENS: { key: string; x: number; y: number }[] = [
+  { key: "p-token-a", x: 500, y: 248 },
+  { key: "p-token-b", x: 568, y: 240 },
+  { key: "p-token-c", x: 612, y: 286 },
+  { key: "p-token-d", x: 568, y: 328 },
+  { key: "p-token-e", x: 508, y: 322 },
+  { key: "p-token-f", x: 492, y: 286 },
 ];
 
 export function DocsCycleArt() {
@@ -183,10 +177,10 @@ export function DocsCycleArt() {
           <Pct x={400} y={66} value="10%" label="$HKT" />
           <Pct x={530} y={66} value="30%" label="Protocol" />
 
-          <MemeChip x={40} y={88} label="memex" fill={MEME_COLORS[0]} />
-          <MemeChip x={16} y={168} label="memex" fill={MEME_COLORS[4]} />
-          <MemeChip x={68} y={168} label="meme2" fill={MEME_COLORS[1]} />
-          <MemeChip x={40} y={248} label="meme4" fill={MEME_COLORS[3]} />
+          <TokenChip x={40} y={88} />
+          <TokenChip x={16} y={168} />
+          <TokenChip x={68} y={168} />
+          <TokenChip x={40} y={248} />
 
           <path d="M 86 111 C 150 140, 190 230, 200 272" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
           <path d="M 62 191 C 140 220, 180 255, 200 280" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
@@ -217,8 +211,7 @@ export function DocsCycleArt() {
 
           <path d="M 414 268 C 430 170, 400 130, 448 118" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
           <path d="M 414 292 C 450 292, 490 292, 486 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
-          <LinePct x={432} y={278} value="80%" />
-          <LinePct x={432} y={308} value="0.10%" />
+          <LinePct x={432} y={292} value="10%" />
           <path d="M 360 338 C 380 430, 400 500, 448 522" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
 
           <rect x="448" y="96" width="150" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
@@ -230,60 +223,64 @@ export function DocsCycleArt() {
           <path d="M 598 118 C 640 130, 670 140, 698 148" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
           <path d="M 598 128 C 640 190, 670 210, 698 218" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
 
-          <rect x="702" y="56" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <rect x="702" y="56" width="210" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
           <text x="718" y="84" fill="#fff" fontSize="12" fontWeight="700">
             Escrow
           </text>
-          <rect x="702" y="116" width="186" height="56" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
-          <text x="718" y="138" fill="#fff" fontSize="12" fontWeight="700">
+          <rect x="702" y="116" width="210" height="56" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <foreignObject x="714" y="132" width="24" height="24">
+            <div className="docs-cycle-hook-fo">
+              <HookLogo hookId="buyback-vesting" theme="void" className="docs-cycle-hook-logo" />
+            </div>
+          </foreignObject>
+          <text x="744" y="142" fill="#fff" fontSize="12" fontWeight="700">
             Buyback Vesting
           </text>
-          <text x="718" y="156" fill="#a1a1aa" fontSize="10">
+          <text x="744" y="158" fill="#a1a1aa" fontSize="10">
             time or FDV target
           </text>
-          <rect x="702" y="188" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
-          <text x="718" y="216" fill="#fff" fontSize="12" fontWeight="700">
+          <rect x="702" y="188" width="210" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <foreignObject x="714" y="198" width="24" height="24">
+            <div className="docs-cycle-hook-fo">
+              <HookLogo hookId="creator-share-to-hook" theme="lime" className="docs-cycle-hook-logo" />
+            </div>
+          </foreignObject>
+          <text x="744" y="216" fill="#fff" fontSize="12" fontWeight="700">
             Creator → Hook
           </text>
           <text x="702" y="252" fill="#a1a1aa" fontSize="11">
             A choice. Pick one.
           </text>
 
-          <circle cx="560" cy="292" r="74" fill="#0a0a0a" stroke="#22d3ee" strokeWidth="2.4" />
+          <circle cx="560" cy="292" r="74" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2.4" />
           {PILE_STOCKS.map((item) => (
             <Chip key={`${item.src}-${item.x}`} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
-          {PILE_MEMES.map((item) => (
-            <MemeChip key={item.key} x={item.x} y={item.y} label={item.label} fill={item.fill} size={32} />
+          {PILE_TOKENS.map((item) => (
+            <TokenChip key={item.key} x={item.x} y={item.y} size={32} />
           ))}
 
-          <rect x="448" y="500" width="210" height="72" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
-          <text x="464" y="524" fill="#f4f4f5" fontSize="14" fontWeight="800">
+          <rect x="448" y="516" width="210" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <text x="464" y="544" fill="#f4f4f5" fontSize="14" fontWeight="800">
             30% Protocol
           </text>
-          <text x="464" y="544" fill="#f4f4f5" fontSize="11" fontWeight="700">
-            80% buyback and burn $HKT
-          </text>
-          <text x="464" y="560" fill="#f4f4f5" fontSize="11" fontWeight="700">
-            20% protocol ops funds
-          </text>
 
-          <path d="M 634 300 C 900 318, 910 200, 922 168" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <rect x="922" y="70" width="280" height="100" rx="16" fill="#111" stroke="#22d3ee" strokeOpacity="0.5" />
-          <image href="/brand/hookit-owl-favicon.png" x="938" y="92" width="44" height="44" />
-          <text x="992" y="108" fill="#fff" fontSize="14" fontWeight="700">
+          <path d="M 634 300 C 780 320, 880 280, 922 228" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <rect x="922" y="155" width="280" height="100" rx="16" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <image href="/brand/hookit-owl-favicon.png" x="938" y="177" width="44" height="44" />
+          <text x="992" y="193" fill="#fff" fontSize="14" fontWeight="700">
             Holders $HKT
           </text>
-          <text x="992" y="128" fill="#67e8f9" fontSize="11">
+          <text x="992" y="213" fill="#a1a1aa" fontSize="11">
             Hold one, get all
           </text>
-          <text x="992" y="146" fill="#a1a1aa" fontSize="11">
+          <text x="992" y="231" fill="#a1a1aa" fontSize="11">
             10% buys that ticker. Epoch push.
           </text>
 
           <path d="M 658 536 C 800 536, 900 500, 918 456" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
           <LinePct x={800} y={528} value="80%" />
-          <rect x="922" y="380" width="280" height="78" rx="16" fill="#111" stroke="#facc15" strokeOpacity="0.5" />
+          <rect x="922" y="380" width="280" height="78" rx="16" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
           <image href="/brand/hookit-owl-favicon.png" x="938" y="398" width="36" height="36" />
           <text x="984" y="412" fill="#fff" fontSize="13" fontWeight="700">
             Buy $HKT and burn
@@ -293,6 +290,13 @@ export function DocsCycleArt() {
           </text>
           <text x="984" y="448" fill="#a1a1aa" fontSize="11">
             Supply goes down
+          </text>
+          <LinePct x={1062} y={474} value="20%" />
+
+          <path d="M 658 548 C 780 580, 860 590, 918 592" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <rect x="922" y="568" width="280" height="52" rx="16" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <text x="940" y="600" fill="#fff" fontSize="13" fontWeight="700">
+            Funds ops protocole
           </text>
 
           <path
@@ -308,6 +312,9 @@ export function DocsCycleArt() {
           </text>
 
           <path d="M 307 338 C 307 420, 307 620, 307 678" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <text x="322" y="520" fill="#f4f4f5" fontSize="11" fontWeight="700">
+            (0-9% optional)
+          </text>
           <rect x="214" y="682" width="170" height="58" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
           <text x="230" y="706" fill="#fff" fontSize="12" fontWeight="700">
             Hook tax
