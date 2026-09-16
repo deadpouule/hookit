@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { MarketplaceToolbar, type CategoryKey } from "./MarketplaceToolbar";
 import { BondMeter, MarketTokenCard } from "./MarketTokenCard";
 import { MobileExploreVirtualList } from "./MobileExploreVirtualList";
-import { MobileStatsRow } from "./MobileStatsRow";
+import { MobileTokenGridCard } from "./MobileTokenGridCard";
 import { TokenArt } from "./TokenArt";
 import { TokenCopyBadge, TokenTypeBadges } from "./TokenBadges";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -92,7 +92,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
   const liveLaunches = shouldFetchLiveLaunches();
   const { data: onChainPools, isLoading, isError, isFetched } = useLaunches(initialPools);
 
-  const effectiveLayout: LayoutMode = isMobile ? "grid" : layout;
+  const effectiveLayout: LayoutMode = layout;
 
   const selectedHooks = useMemo(
     () => parseHooksParam(searchParams.get("hooks")),
@@ -212,6 +212,11 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
     syncFiltersToUrl("rwa", [], null);
   };
 
+  const handleDeactivateCategory = () => {
+    setCategory("all");
+    syncFiltersToUrl("all", [], null);
+  };
+
   const handleRwaQuoteChange = (nextQuote: string | null) => {
     setCategory("rwa");
     syncFiltersToUrl("rwa", [], nextQuote);
@@ -283,16 +288,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
 
       {!(liveLaunches && isLoading && !isFetched) && (
         <>
-      <div className="space-y-3 desk:contents">
-        <MobileStatsRow />
-      </div>
-
       <section id="tokens" className="scroll-mt-24 space-y-4 pb-8 desk:pb-48">
-        <header className="stonk-tokens-head hidden phone:flex">
-          <h2 className="stonk-tokens-title">Tokens</h2>
-          <span className="stonk-tokens-count">{tokens.length} live</span>
-        </header>
-
         <MarketplaceToolbar
           query={query}
           onQueryChange={setQuery}
@@ -303,6 +299,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
           masterHooks={selectedHooks}
           onMasterHooksChange={handleMasterHooksChange}
           onActivateMaster={handleActivateMaster}
+          onDeactivateCategory={handleDeactivateCategory}
           rwaQuote={selectedRwaQuote}
           onRwaQuoteChange={handleRwaQuoteChange}
           onActivateRwa={handleActivateRwa}
@@ -340,7 +337,15 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
         ) : (
           <>
             <div className="phone:block hidden">
-              <MobileExploreVirtualList tokens={tokens} />
+              {layout === "grid" ? (
+                <div className="mobile-token-grid">
+                  {tokens.map((token) => (
+                    <MobileTokenGridCard key={token.id} token={token} />
+                  ))}
+                </div>
+              ) : (
+                <MobileExploreVirtualList tokens={tokens} />
+              )}
             </div>
             {effectiveLayout === "grid" ? (
               <div className="hidden desk:block">

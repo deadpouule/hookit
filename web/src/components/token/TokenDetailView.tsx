@@ -407,7 +407,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Back to explore
+        Explore
       </Link>
 
       <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
