@@ -139,9 +139,9 @@ function OverviewCycleDiagram() {
 function StackDiagram() {
   const layers = [
     { k: "App", v: "hookit.fun: marketplace, launch wizard, token desk" },
-    { k: "Router", v: "HookitSwapRouter: hooked swaps, composite quote legs" },
+    { k: "Router", v: "HookitSwapRouter: hooked swaps. Multi-pair Arb keeper." },
     { k: "Hook", v: "MasterLaunchHook / GraduatedFeeHook: quote-only fees + modules" },
-    { k: "Pool", v: "Uniswap v4 PoolManager: fee tier 0, locked liquidity" },
+    { k: "Pool", v: "Uniswap v4 PoolManager: hooked pool, locked liquidity" },
     { k: "Ink", v: "Chain 57073. ETH gas, USDG + Quotrons wStocks as quotes" },
   ];
   return (
@@ -375,7 +375,7 @@ function QuotronsFeesDiagram() {
     <DocsFork
       caption="Where the venue fee goes"
       kicker="Every hop"
-      sources={[{ t: "Hook fee", d: "Live take in USDG. 0.30% at writing." }]}
+      sources={[{ t: "Venue fee", d: "Live take in USDG. 0.30% at writing." }]}
       hub={{ t: "Split 50 / 50", d: "Onchain. No custody. Same fee buy or sell." }}
       outputs={[
         { t: "LP vault", d: "Per-pool. Claimable in USDG." },

@@ -114,7 +114,7 @@ const HOOK_SHORT: Record<BrowseHookId, string> = {
   "buyback-vesting": "Vest",
   "dynamic-fees": "Dynamic",
   "fixed-fee": "Fixed",
-  "deepen-lps": "Deepen",
+  "deepen-lps": "DeepenLP",
   "auto-burn": "Burn",
   "anti-mev": "MEV",
   "max-tx": "Max Tx",
