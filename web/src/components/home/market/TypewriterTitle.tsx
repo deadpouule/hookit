@@ -94,7 +94,7 @@ export function TypewriterTitle() {
           <span className="hero-pitch-hold-token">
             <HookitTokenMark />.
           </span>
-          Collect all tokens.
+          <span className="hero-pitch-collect">Collect all tokens.</span>
         </span>
         <span className="hero-pitch-line hero-pitch-line--badge">
           <PoweredByQuotronsBadge variant="hero" className="hero-quotrons-badge" />
