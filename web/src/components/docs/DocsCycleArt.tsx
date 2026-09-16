@@ -59,8 +59,9 @@ function MemeChip({
         y={y + size / 2 + (size > 36 ? 4 : 3)}
         textAnchor="middle"
         fill="#0a0a0a"
-        fontSize={size > 36 ? 10 : size > 26 ? 8 : 7}
+        fontSize={size > 36 ? 9 : size > 26 ? 8 : 7}
         fontWeight="800"
+        letterSpacing="0"
       >
         {label}
       </text>
@@ -82,11 +83,11 @@ function Pct({ x, y, value, label }: { x: number; y: number; value: string; labe
 }
 
 function LinePct({ x, y, value }: { x: number; y: number; value: string }) {
-  const w = value.length > 4 ? 52 : 44;
+  const w = value.length > 4 ? 48 : 40;
   return (
     <g>
-      <rect x={x-w/2} y={y-12} width={w} height="24" rx="12" fill="#f4f4f5" />
-      <text x={x} y={y + 4} textAnchor="middle" fill="#0a0a0a" fontSize="10" fontWeight="800">
+      <rect x={x-w/2} y={y-11} width={w} height="22" rx="11" fill="#f4f4f5" />
+      <text x={x} y={y + 4} textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
         {value}
       </text>
     </g>
@@ -128,7 +129,7 @@ function HookMark({
           <HookLogo hookId={hookId} theme={theme} className="docs-cycle-hook-logo" />
         </div>
       </foreignObject>
-      <text x={x + 18} y={y + 50} textAnchor="middle" fill="#d4d4d8" fontSize="8" fontWeight="700">
+      <text x={x + 18} y={y + 50} textAnchor="middle" fill="#d4d4d8" fontSize="8" fontWeight="700" letterSpacing="0">
         {label}
       </text>
     </g>
@@ -165,7 +166,7 @@ export function DocsCycleArt() {
       <figcaption>Every swap feeds $HKT</figcaption>
       <p className="docs-map-kicker">Token buybacks. Holder drops. A connected fee cycle.</p>
       <div className="docs-cycle" role="img" aria-label="Every launch and every swap on hookit feeds $HKT">
-        <svg viewBox="0 0 1180 840" className="docs-cycle-svg">
+        <svg viewBox="0 0 1240 840" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
           <defs>
             <marker id="docs-cycle-w" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
@@ -179,8 +180,8 @@ export function DocsCycleArt() {
             SHARE OF THE 1%
           </text>
           <Pct x={250} y={66} value="60%" label="Creator" />
-          <Pct x={430} y={66} value="10%" label="$HKT" />
-          <Pct x={590} y={66} value="30%" label="Protocol" />
+          <Pct x={400} y={66} value="10%" label="$HKT" />
+          <Pct x={530} y={66} value="30%" label="Protocol" />
 
           <MemeChip x={40} y={88} label="memex" fill={MEME_COLORS[0]} />
           <MemeChip x={16} y={168} label="memex" fill={MEME_COLORS[4]} />
@@ -216,35 +217,35 @@ export function DocsCycleArt() {
 
           <path d="M 414 268 C 430 170, 400 130, 448 118" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
           <path d="M 414 292 C 450 292, 490 292, 486 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
-          <LinePct x={430} y={274} value="0.10%" />
-          <LinePct x={478} y={274} value="80%" />
+          <LinePct x={432} y={278} value="80%" />
+          <LinePct x={432} y={308} value="0.10%" />
           <path d="M 360 338 C 380 430, 400 500, 448 522" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
 
-          <rect x="448" y="90" width="150" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
-          <text x="464" y="118" fill="#f4f4f5" fontSize="14" fontWeight="800">
+          <rect x="448" y="96" width="150" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <text x="464" y="124" fill="#f4f4f5" fontSize="14" fontWeight="800">
             60% Creator
           </text>
 
-          <path d="M 598 102 C 620 40, 630 38, 638 40" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 598 112 C 620 108, 630 108, 638 108" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 598 122 C 620 168, 630 176, 638 178" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 598 108 C 640 70, 670 70, 698 78" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 598 118 C 640 130, 670 140, 698 148" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 598 128 C 640 190, 670 210, 698 218" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
 
-          <rect x="642" y="18" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
-          <text x="658" y="46" fill="#fff" fontSize="12" fontWeight="700">
+          <rect x="702" y="56" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="84" fill="#fff" fontSize="12" fontWeight="700">
             Escrow
           </text>
-          <rect x="642" y="78" width="186" height="56" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
-          <text x="658" y="100" fill="#fff" fontSize="12" fontWeight="700">
+          <rect x="702" y="116" width="186" height="56" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="138" fill="#fff" fontSize="12" fontWeight="700">
             Buyback Vesting
           </text>
-          <text x="658" y="118" fill="#a1a1aa" fontSize="10">
+          <text x="718" y="156" fill="#a1a1aa" fontSize="10">
             time or FDV target
           </text>
-          <rect x="642" y="150" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
-          <text x="658" y="178" fill="#fff" fontSize="12" fontWeight="700">
+          <rect x="702" y="188" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="216" fill="#fff" fontSize="12" fontWeight="700">
             Creator → Hook
           </text>
-          <text x="642" y="214" fill="#a1a1aa" fontSize="11">
+          <text x="702" y="252" fill="#a1a1aa" fontSize="11">
             A choice. Pick one.
           </text>
 
@@ -267,42 +268,42 @@ export function DocsCycleArt() {
             20% protocol ops funds
           </text>
 
-          <path d="M 634 250 C 760 180, 820 150, 858 148" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <rect x="862" y="70" width="280" height="100" rx="16" fill="#111" stroke="#22d3ee" strokeOpacity="0.5" />
-          <image href="/brand/hookit-owl-favicon.png" x="878" y="92" width="44" height="44" />
-          <text x="932" y="108" fill="#fff" fontSize="14" fontWeight="700">
+          <path d="M 634 300 C 900 318, 910 200, 922 168" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <rect x="922" y="70" width="280" height="100" rx="16" fill="#111" stroke="#22d3ee" strokeOpacity="0.5" />
+          <image href="/brand/hookit-owl-favicon.png" x="938" y="92" width="44" height="44" />
+          <text x="992" y="108" fill="#fff" fontSize="14" fontWeight="700">
             Holders $HKT
           </text>
-          <text x="932" y="128" fill="#67e8f9" fontSize="11">
+          <text x="992" y="128" fill="#67e8f9" fontSize="11">
             Hold one, get all
           </text>
-          <text x="932" y="146" fill="#a1a1aa" fontSize="11">
+          <text x="992" y="146" fill="#a1a1aa" fontSize="11">
             10% buys that ticker. Epoch push.
           </text>
 
-          <path d="M 658 536 C 760 536, 840 500, 858 456" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <LinePct x={760} y={528} value="80%" />
-          <rect x="862" y="380" width="280" height="78" rx="16" fill="#111" stroke="#facc15" strokeOpacity="0.5" />
-          <image href="/brand/hookit-owl-favicon.png" x="878" y="398" width="36" height="36" />
-          <text x="924" y="412" fill="#fff" fontSize="13" fontWeight="700">
+          <path d="M 658 536 C 800 536, 900 500, 918 456" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <LinePct x={800} y={528} value="80%" />
+          <rect x="922" y="380" width="280" height="78" rx="16" fill="#111" stroke="#facc15" strokeOpacity="0.5" />
+          <image href="/brand/hookit-owl-favicon.png" x="938" y="398" width="36" height="36" />
+          <text x="984" y="412" fill="#fff" fontSize="13" fontWeight="700">
             Buy $HKT and burn
           </text>
-          <text x="924" y="432" fill="#f4f4f5" fontSize="11" fontWeight="700">
+          <text x="984" y="432" fill="#f4f4f5" fontSize="11" fontWeight="700">
             80% of protocol cut
           </text>
-          <text x="924" y="448" fill="#a1a1aa" fontSize="11">
+          <text x="984" y="448" fill="#a1a1aa" fontSize="11">
             Supply goes down
           </text>
 
           <path
-            d="M 1000 458 C 1080 490, 1120 340, 634 330"
+            d="M 1060 458 C 1140 490, 1180 340, 634 330"
             fill="none"
             stroke="#f4f4f5"
             strokeWidth="2.2"
             strokeDasharray="6 6"
             markerEnd="url(#docs-cycle-w)"
           />
-          <text x="1164" y="328" textAnchor="end" fill="#f4f4f5" fontSize="11" fontWeight="700">
+          <text x="1224" y="328" textAnchor="end" fill="#f4f4f5" fontSize="11" fontWeight="700">
             Buy $HKT again
           </text>
 

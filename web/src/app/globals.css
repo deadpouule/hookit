@@ -11449,6 +11449,11 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
   width: 100%;
   min-width: 50rem;
   height: auto;
+  letter-spacing: 0 !important;
+}
+
+.docs-cycle-svg text {
+  letter-spacing: 0 !important;
 }
 
 .docs-cycle-hook-fo {
