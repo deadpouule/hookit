@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { PoweredByQuotronsBadge } from "@/components/brand/PoweredByQuotronsBadge";
-import { DocsBranchGraph } from "@/components/docs/DocsBranchGraph";
+import { DocsFork } from "@/components/docs/DocsBranchGraph";
 import { DocsLaunchSteps } from "@/components/docs/DocsLaunchSteps";
 import { MasterHookGlyph, MultiPairGlyph } from "@/components/home/market/CategoryGlyphs";
 import { HeroHookTotem } from "@/components/home/market/HeroHookTotem";
@@ -353,7 +353,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       );
     case "creator-fees":
       return (
-        <DocsBranchGraph
+        <DocsFork
           caption="Where the creator 60% sits"
           kicker="Every trade"
           sources={[
