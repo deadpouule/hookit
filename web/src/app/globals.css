@@ -3184,6 +3184,12 @@
     font-size: 0.92rem;
   }
 
+  html[data-device="phone"] .hero-how-it-works {
+    padding: 0.38rem 0.72rem;
+    font-size: 0.78rem;
+    border-radius: 0.7rem;
+  }
+
   html[data-device="phone"] .hero-pitch .hero-typewriter-mark--eth,
   html[data-device="phone"] .hero-pitch .hero-typewriter-mark--usdg,
   html[data-device="phone"] .hero-pitch .hero-typewriter-mark--owl {
@@ -8554,6 +8560,18 @@
     gap: 0.42rem;
   }
 
+  .hero-pitch-heading {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.42rem;
+    margin: 0;
+    font: inherit;
+    font-weight: inherit;
+    color: inherit;
+  }
+
   .hero-pitch-line {
     display: flex;
     flex-wrap: wrap;
@@ -8589,6 +8607,7 @@
     gap: 0.4rem;
   }
 
+  .hero-pitch-launch,
   .hero-pitch-collect {
     color: #9514d1;
   }
@@ -8600,6 +8619,42 @@
 
   .hero-pitch-line--badge {
     margin-top: 0.2rem;
+    gap: 0.7rem;
+  }
+
+  .hero-how-it-works {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    gap: 0.5rem;
+    padding: 0.55rem 1.05rem;
+    border: 1px solid rgb(255 255 255 / 0.22);
+    border-radius: 0.9rem;
+    background: transparent;
+    color: rgb(244 240 255 / 0.92);
+    font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.98rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    pointer-events: auto;
+    transition:
+      border-color 160ms ease,
+      color 160ms ease;
+  }
+
+  .hero-how-it-works:hover,
+  .hero-how-it-works:focus-visible {
+    border-color: rgb(255 255 255 / 0.42);
+    color: #fff;
+    outline: none;
+  }
+
+  .hero-how-it-works__chevron {
+    font-weight: 400;
+    color: inherit;
   }
 
   .hero-pitch .powered-by-quotrons-badge--hero {
@@ -9203,17 +9258,18 @@
 
   @media (min-width: 900px) {
     .lean-hero {
-      height: 480px;
-      min-height: 480px;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
     }
 
     .hero-banner {
-      min-height: 480px;
-      height: 100%;
+      min-height: 0;
+      height: auto;
       flex-direction: row;
       align-items: flex-start;
       gap: 1rem;
-      padding: 1.85rem 1.25rem 1.1rem 3.5rem;
+      padding: 1.45rem 1.25rem 0.55rem 2.35rem;
     }
 
     .hero-copy {
@@ -9230,23 +9286,26 @@
 
     .hero-stage {
       width: 52%;
-      height: 100%;
+      height: auto;
+      align-self: start;
+      overflow: visible;
     }
 
     .lean-hero .hero-totem {
+      height: auto;
       grid-template-rows: auto auto auto;
       align-content: start;
-      padding-top: 0.1rem;
+      padding: 0.1rem 0 0.15rem;
     }
 
     .hero-totem-stage,
     .hero-totem-caption,
     .hero-totem-dots {
-      width: min(100%, 36rem);
+      width: min(100%, 22.25rem);
     }
 
     .hero-totem-stage .welcome-owl--totem {
-      width: min(68%, 17.4rem);
+      width: min(78%, 17.4rem);
     }
 
     .hero-totem-mark {
