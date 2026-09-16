@@ -49,6 +49,8 @@ export function DocsDiagram({ id }: { id: DocsDiagramId }) {
       return <HktLoopDiagram />;
     case "hkt-burn":
       return <HktBurnDiagram />;
+    case "quotrons-flywheel":
+      return <QuotronsFlywheelDiagram />;
     default:
       return null;
   }
@@ -338,6 +340,68 @@ function HktBurnDiagram() {
       <p className="docs-schema-note">
         Anti-MEV and Anti-Snipe guard the book. Creator → Hook plus Auto-Burn 80% and Deepen LPs 20%
         spend the pot into this token. Protocol buyback from every other launch burns $HKT too.
+      </p>
+    </figure>
+  );
+}
+
+function QuotronsFlywheelDiagram() {
+  const steps = [
+    {
+      n: "01",
+      t: "Hookit trade",
+      d: "Buy in USDG or sell back to USDG. Wallet never holds the wStock.",
+    },
+    {
+      n: "02",
+      t: "Quotrons LP hop",
+      d: "Canonical USDG ↔ wStock book. One unlock with the hooked launch pool.",
+    },
+    {
+      n: "03",
+      t: "Venue fee",
+      d: "Live hook fee in USDG. 50% LP vault. 50% hardwired terminals.",
+    },
+    {
+      n: "04",
+      t: "Holders and books",
+      d: "More fees to Quotrons holders. Deeper books. More Hookit launches.",
+    },
+  ];
+  return (
+    <figure className="docs-schema">
+      <figcaption>Hookit × Quotrons flywheel</figcaption>
+      <div className="docs-qfly" role="img" aria-label="Every Hookit composite trade pays Quotrons LPs and holders, then deeper books pull more launches">
+        <div className="docs-qfly-loop">
+          {steps.map((step) => (
+            <article key={step.n} className="docs-qfly-step">
+              <span>{step.n}</span>
+              <strong>{step.t}</strong>
+              <p>{step.d}</p>
+            </article>
+          ))}
+          <div className="docs-qfly-hub">
+            <div className="docs-qfly-marks">
+              <img src="/brand/hookit-owl-favicon.png" alt="" width={36} height={36} />
+              <img src="/brand/quotrons-mark.png" alt="" width={36} height={36} />
+            </div>
+            <b>Win-win</b>
+          </div>
+        </div>
+        <div className="docs-split-bar" role="img" aria-label="Quotrons hop fee, half LP vault, half holders">
+          <div className="docs-split-seg docs-split-seg--q-lp" style={{ flex: 50 }}>
+            <span>50%</span>
+            <small>LP vault</small>
+          </div>
+          <div className="docs-split-seg docs-split-seg--q-hold" style={{ flex: 50 }}>
+            <span>50%</span>
+            <small>Holders</small>
+          </div>
+        </div>
+      </div>
+      <p className="docs-schema-note">
+        Each composite swap hits a Quotrons LP. Their hook takes USDG, splits it, and pays the venue.
+        More Hookit volume raises that stream. Stronger books make the next USDG fill tighter.
       </p>
     </figure>
   );

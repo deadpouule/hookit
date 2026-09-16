@@ -64,7 +64,8 @@ export type DocsDiagramId =
   | "classic-curve"
   | "floor-loop"
   | "hkt-loop"
-  | "hkt-burn";
+  | "hkt-burn"
+  | "quotrons-flywheel";
 
 export type DocsVisualId =
   | "wizard"
@@ -148,7 +149,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     items: [
       { id: "launches", label: "How launches work" },
       { id: "multi-pair", label: "Multi-pair" },
-      { id: "quotrons", label: "Quotrons" },
+      { id: "quotrons", label: "Why Quotrons" },
       { id: "trading", label: "Trading" },
       { id: "graduation", label: "Graduation" },
       { id: "fees", label: "Fees and flywheel" },
@@ -353,16 +354,57 @@ export function buildDocsSections(): DocsSection[] {
     },
     {
       id: "quotrons",
-      title: "Quotrons",
+      title: "Why Quotrons",
       group: "Protocol",
       blocks: [
         {
           type: "p",
-          text: "On Ink you can pair a launch against wrapped equities from Quotrons (wAAPLx, wNVDAx, …) or USDG. Spot USD for FDV and graduation prefers the live Quotrons pool sqrtPriceX96; a seeded usdPriceX18 is fallback.",
+          text: "We built Hookit on Quotrons because they are Ink's flagship tokenized-equity venue: the hooked V4 books that actually list stocks on this chain. Pair a launch against their wrapped equities (wAAPLx, wNVDAx, …) or USDG. Spot USD for FDV and graduation prefers the live Quotrons pool sqrtPriceX96; a seeded usdPriceX18 is fallback.",
         },
         {
           type: "visual",
           id: "quotrons",
+        },
+        {
+          type: "h3",
+          text: "Why we built on Quotrons",
+        },
+        {
+          type: "p",
+          text: "Quotrons is the stock venue on Ink. Their wStock/USDG pools are the only books we route a launch against when the quote is an equity. We are eco-aligned with that venue: more Hookit launches and more Hookit volume raise Quotrons fees, and those fees go back to Quotrons LPs and holders. Their flagship books get deeper. Our traders get a USDG ticket in and out. Win-win.",
+        },
+        {
+          type: "defs",
+          rows: [
+            {
+              term: "Flagship on Ink",
+              text: "Quotrons runs the tokenized-equity venue this chain is known for. Hookit launches sit on those books instead of inventing a second stock market.",
+            },
+            {
+              term: "Eco-aligned",
+              text: "Every composite trade is volume on their hook. Their holders eat the upside of our growth. We eat the upside of their books.",
+            },
+            {
+              term: "USDG in, USDG out",
+              text: "The trader never has to hold the wStock. The Quotrons LP is the hop that makes that true.",
+            },
+          ],
+        },
+        {
+          type: "h3",
+          text: "Quotrons LPs and the canonical swap",
+        },
+        {
+          type: "p",
+          text: "A Quotrons LP is a Uniswap v4 wStock/USDG pool with their immutable hook. That book is the canonical hop for HookitSwapRouter.swapExactInComposite: USDG → wStock on an allowed Quotrons pool, then wStock → the hooked launch pool, one unlock. Sells run the other way: token → wStock → USDG. The buy panel on a wStock-quoted launch is USDG-only because those LPs exist.",
+        },
+        {
+          type: "diagram",
+          id: "quotrons-flywheel",
+        },
+        {
+          type: "p",
+          text: "Each hop pays the live Quotrons hook fee in USDG (0.30% at writing, steppable inside a 0.05%–1.00% bound they cannot widen). Half goes to that pool's liquidity vault. Half pools venue-wide, converts to tokenized stock, and pays hardwired Quotrons terminals (holders). More Hookit volume means more of that stream. Deeper Quotrons books mean tighter USDG fills for the next launch. The loop compounds for both sides.",
         },
         {
           type: "ul",
@@ -371,6 +413,15 @@ export function buildDocsSections(): DocsSection[] {
             "Sells can composite the other way: token → wStock → USDG.",
             "Protocol wStock fees rail to USDG via ProtocolRevenueDistributor + FeeEthRail before ops / buyback.",
             "Quotrons hook 0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc. Bridge hooks must pass QuotronBridge.isAllowedBridgeHook.",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Read it from the source",
+          links: [{ href: "https://www.quotrons.cash/docs", label: "Quotrons docs" }],
+          items: [
+            "Venue, 50/50 fee split, LP vaults, and Ink contracts live on their docs.",
+            "Quote the hook fee live. Do not hardcode 0.30% in an integration.",
           ],
         },
       ],

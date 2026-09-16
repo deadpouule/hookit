@@ -76,10 +76,10 @@ export const DOCS_PAGES: DocsPageMeta[] = [
   {
     slug: "quotrons",
     href: "#quotrons",
-    title: "Quotrons",
-    description: "wStock launch pairs on Ink. USDG composite buys.",
+    title: "Why Quotrons",
+    description: "Why we built on Quotrons. Canonical USDG LPs. Shared fee flywheel.",
     group: "Protocol",
-    keywords: "quotrons wapple wnvidia usdg rwa",
+    keywords: "quotrons why wapple wnvidia usdg rwa lp flywheel holders flagship",
   },
   {
     slug: "trading",
