@@ -9205,6 +9205,7 @@
     .lean-hero {
       height: auto;
       min-height: 0;
+      overflow: visible;
     }
 
     .hero-banner {
@@ -9213,7 +9214,7 @@
       flex-direction: row;
       align-items: flex-start;
       gap: 1rem;
-      padding: 1.85rem 1.25rem 1.35rem 3.5rem;
+      padding: 1.45rem 1.25rem 0.55rem 3.5rem;
     }
 
     .hero-copy {
@@ -9239,17 +9240,17 @@
       height: auto;
       grid-template-rows: auto auto auto;
       align-content: start;
-      padding-top: 0.1rem;
+      padding: 0.1rem 0 0.15rem;
     }
 
     .hero-totem-stage,
     .hero-totem-caption,
     .hero-totem-dots {
-      width: min(100%, 20.5rem);
+      width: min(100%, 22.25rem);
     }
 
     .hero-totem-stage .welcome-owl--totem {
-      width: min(68%, 17.4rem);
+      width: min(78%, 17.4rem);
     }
 
     .hero-totem-mark {
