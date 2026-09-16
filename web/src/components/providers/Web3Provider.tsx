@@ -1,7 +1,6 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { WagmiProvider as PrivyWagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { useState, type ReactNode } from "react";
@@ -52,10 +51,10 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     return (
       <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
         <QueryClientProvider client={queryClient}>
-          <PrivyWagmiProvider config={wagmiConfig}>
+          <WagmiProvider config={wagmiConfig}>
             <PrivySessionBridge />
             {rainbow}
-          </PrivyWagmiProvider>
+          </WagmiProvider>
         </QueryClientProvider>
       </PrivyProvider>
     );

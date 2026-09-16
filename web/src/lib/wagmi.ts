@@ -1,5 +1,4 @@
-import { getDefaultConfig, getDefaultWallets } from "@rainbow-me/rainbowkit";
-import { createConfig as createPrivyWagmiConfig } from "@privy-io/wagmi";
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { createConfig, fallback, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 
@@ -43,13 +42,6 @@ const transports = {
   ),
 } as const;
 
-function rainbowWalletConnectors() {
-  return getDefaultWallets({
-    appName: "hook it",
-    projectId: walletConnectProjectId,
-  }).connectors;
-}
-
 function injectedConnectors() {
   return [injected({ shimDisconnect: true })];
 }
@@ -75,17 +67,18 @@ function createProdConfig() {
 }
 
 /**
- * Privy drives the embedded wallet after email / Google / Twitter.
- * RainbowKit connectors stay on "Continue with a wallet" (MetaMask, Rabby, WC).
+ * Privy handles email / Google / Twitter embedded wallets.
+ * RainbowKit owns external wallets (MetaMask, Rabby, WalletConnect).
+ *
+ * Use wagmi's WagmiProvider here — not @privy-io/wagmi's provider, which
+ * replaces the connector list with Privy wallets only and empties RainbowKit.
  */
 function createPrivyHybridConfig() {
-  return createPrivyWagmiConfig({
+  return getDefaultConfig({
+    appName: "hook it",
+    projectId: walletConnectProjectId,
     chains: [primary, secondary],
     transports,
-    connectors:
-      process.env.NODE_ENV === "development"
-        ? injectedConnectors()
-        : rainbowWalletConnectors(),
     ssr: true,
   });
 }
