@@ -1,11 +1,15 @@
 "use client";
 
+import { PrivyProvider } from "@privy-io/react-auth";
+import { WagmiProvider as PrivyWagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 
+import { PrivySessionBridge } from "@/components/wallet/PrivySessionBridge";
 import { getActiveChain } from "@/lib/chains";
+import { isPrivyConfigured, PRIVY_APP_ID, privyConfig } from "@/lib/privy";
 import { wagmiConfig } from "@/lib/wagmi";
 
 const hookitTheme = darkTheme({
@@ -15,6 +19,22 @@ const hookitTheme = darkTheme({
   fontStack: "system",
   overlayBlur: "small",
 });
+
+function RainbowTree({ children }: { children: ReactNode }) {
+  return (
+    <RainbowKitProvider
+      theme={hookitTheme}
+      modalSize="compact"
+      initialChain={getActiveChain()}
+      appInfo={{
+        appName: "hook it",
+        learnMoreUrl: "https://github.com/deadpouule/hookit",
+      }}
+    >
+      {children}
+    </RainbowKitProvider>
+  );
+}
 
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -26,20 +46,25 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       }),
   );
 
+  const rainbow = <RainbowTree>{children}</RainbowTree>;
+
+  if (isPrivyConfigured()) {
+    return (
+      <PrivyProvider appId={PRIVY_APP_ID} config={privyConfig}>
+        <QueryClientProvider client={queryClient}>
+          <PrivyWagmiProvider config={wagmiConfig}>
+            <PrivySessionBridge />
+            {rainbow}
+          </PrivyWagmiProvider>
+        </QueryClientProvider>
+      </PrivyProvider>
+    );
+  }
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={hookitTheme}
-          modalSize="compact"
-          initialChain={getActiveChain()}
-          appInfo={{
-            appName: "hook it",
-            learnMoreUrl: "https://github.com/deadpouule/hookit",
-          }}
-        >
-          {children}
-        </RainbowKitProvider>
+        {rainbow}
       </QueryClientProvider>
     </WagmiProvider>
   );

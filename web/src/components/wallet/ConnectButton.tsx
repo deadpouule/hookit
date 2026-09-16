@@ -1,5 +1,6 @@
 "use client";
 
+import { usePrivy } from "@privy-io/react-auth";
 import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
@@ -7,6 +8,8 @@ import { useAccount } from "wagmi";
 import { WelcomeConnectModal } from "@/components/wallet/WelcomeConnectModal";
 import { TOOLBAR_BUTTON_PROPS } from "@/lib/search-field";
 import { HOOKIT_CHAIN_ID } from "@/lib/contracts/config";
+import { shortenAddress } from "@/lib/format";
+import { isPrivyConfigured } from "@/lib/privy";
 import { cn } from "@/lib/utils";
 
 function WalletMark() {
@@ -19,6 +22,14 @@ function WalletMark() {
   );
 }
 
+type PrivySession = {
+  ready: boolean;
+  authenticated: boolean;
+  logout: () => Promise<void>;
+  address?: string;
+  isConnected: boolean;
+};
+
 export function ConnectButton({
   className,
   compact = false,
@@ -27,6 +38,44 @@ export function ConnectButton({
   className?: string;
   compact?: boolean;
   label?: string;
+}) {
+  if (isPrivyConfigured()) {
+    return <PrivyConnectButton className={className} compact={compact} label={label} />;
+  }
+  return <WalletConnectButton className={className} compact={compact} label={label} session={null} />;
+}
+
+function PrivyConnectButton({
+  className,
+  compact,
+  label,
+}: {
+  className?: string;
+  compact?: boolean;
+  label?: string;
+}) {
+  const { authenticated, ready, logout } = usePrivy();
+  const { address, isConnected } = useAccount();
+  return (
+    <WalletConnectButton
+      className={className}
+      compact={compact}
+      label={label}
+      session={{ ready, authenticated, logout, address, isConnected }}
+    />
+  );
+}
+
+function WalletConnectButton({
+  className,
+  compact = false,
+  label,
+  session,
+}: {
+  className?: string;
+  compact?: boolean;
+  label?: string;
+  session: PrivySession | null;
 }) {
   const [mounted, setMounted] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
@@ -62,11 +111,18 @@ export function ConnectButton({
         authenticationStatus,
       }) => {
         const ready = rkMounted && authenticationStatus !== "loading";
-        const connected =
+        const rainbowConnected =
           ready &&
           account &&
           chain &&
           (!authenticationStatus || authenticationStatus === "authenticated");
+        const privyConnecting = Boolean(
+          session && session.ready && session.authenticated && !session.isConnected,
+        );
+        const connected = Boolean(rainbowConnected || (session?.authenticated && session.isConnected));
+        const displayName =
+          account?.displayName ??
+          (session?.address ? shortenAddress(session.address) : "Connected");
 
         if (!connected) {
           return (
@@ -74,6 +130,7 @@ export function ConnectButton({
               <button
                 type="button"
                 onClick={() => setWelcomeOpen(true)}
+                disabled={privyConnecting}
                 {...TOOLBAR_BUTTON_PROPS}
                 className={cn(
                   compact
@@ -83,14 +140,16 @@ export function ConnectButton({
                 )}
               >
                 {compact ? <WalletMark /> : null}
-                {compact ? "Connect" : (label ?? "Connect wallet")}
+                {compact ? (privyConnecting ? "…" : "Connect") : privyConnecting ? "Connecting" : (label ?? "Connect wallet")}
               </button>
               <WelcomeConnectModal open={welcomeOpen} onClose={() => setWelcomeOpen(false)} />
             </>
           );
         }
 
-        if (chain.unsupported || chain.id !== HOOKIT_CHAIN_ID) {
+        const chainId = chain?.id;
+        const unsupported = chain?.unsupported || (chainId != null && chainId !== HOOKIT_CHAIN_ID);
+        if (unsupported) {
           return (
             <button
               type="button"
@@ -111,7 +170,15 @@ export function ConnectButton({
         return (
           <button
             type="button"
-            onClick={openAccountModal}
+            onClick={() => {
+              if (account) {
+                openAccountModal();
+                return;
+              }
+              if (session?.authenticated) {
+                void session.logout();
+              }
+            }}
             {...TOOLBAR_BUTTON_PROPS}
             className={cn(
               compact
@@ -121,7 +188,7 @@ export function ConnectButton({
             )}
           >
             <span className="home-connect-live-dot" aria-hidden />
-            {account.displayName}
+            {displayName}
           </button>
         );
       }}

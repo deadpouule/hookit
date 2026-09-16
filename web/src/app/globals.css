@@ -3201,6 +3201,15 @@
     white-space: normal;
   }
 
+  html[data-device="desktop"] .hero-pitch-line--hold {
+    font-size: 1.07em;
+  }
+
+  html[data-device="desktop"] .hero-pitch-line--hold .hero-typewriter-mark--owl {
+    height: 2.42rem;
+    width: 2.42rem;
+  }
+
   html[data-device="phone"] .lean-hero .pairing-logo-stack--sm {
     --pairing-stack-size: 1.65rem;
     --pairing-stack-overlap: 0.5rem;
@@ -8580,6 +8589,10 @@
     gap: 0.4rem;
   }
 
+  .hero-pitch-collect {
+    color: #9514d1;
+  }
+
   .hero-pitch-hold-token {
     display: inline-flex;
     align-items: center;
@@ -9198,14 +9211,16 @@
       min-height: 480px;
       height: 100%;
       flex-direction: row;
-      align-items: center;
+      align-items: flex-start;
       gap: 1rem;
-      padding: 1.25rem 1.25rem 1.25rem 3.5rem;
+      padding: 1.85rem 1.25rem 1.1rem 3.5rem;
     }
 
     .hero-copy {
       width: 48%;
-      height: 100%;
+      height: auto;
+      align-items: flex-start;
+      padding-top: 0.15rem;
     }
 
     .hero-copy h1,
@@ -9216,6 +9231,12 @@
     .hero-stage {
       width: 52%;
       height: 100%;
+    }
+
+    .lean-hero .hero-totem {
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      padding-top: 0.1rem;
     }
 
     .hero-totem-stage,
@@ -13146,6 +13167,30 @@ h2.docs-hook-heading {
 
 .welcome-connect__email button:not(:disabled):hover {
   color: #fff;
+}
+
+.welcome-connect__email-value {
+  color: #e4e4e7;
+}
+
+.welcome-connect__resend {
+  margin: 0.15rem auto 0;
+  border: 0;
+  background: transparent;
+  color: #a1a1aa;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.welcome-connect__resend:hover:not(:disabled) {
+  color: #fff;
+}
+
+.welcome-connect__resend:disabled,
+.welcome-connect__row:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .welcome-connect__row,

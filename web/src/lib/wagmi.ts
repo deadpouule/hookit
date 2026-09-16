@@ -1,8 +1,10 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { getDefaultConfig, getDefaultWallets } from "@rainbow-me/rainbowkit";
+import { createConfig as createPrivyWagmiConfig } from "@privy-io/wagmi";
 import { createConfig, fallback, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 
 import { baseSepolia, ink, resolveHookitChainKey } from "@/lib/chains";
+import { isPrivyConfigured } from "@/lib/privy";
 
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim() ||
@@ -41,12 +43,23 @@ const transports = {
   ),
 } as const;
 
+function rainbowWalletConnectors() {
+  return getDefaultWallets({
+    appName: "hook it",
+    projectId: walletConnectProjectId,
+  }).connectors;
+}
+
+function injectedConnectors() {
+  return [injected({ shimDisconnect: true })];
+}
+
 /** Dev: injected wallet only - skips WalletConnect Cloud (403 / allowlist errors on localhost). */
 function createDevConfig() {
   return createConfig({
     chains: [primary, secondary],
     transports,
-    connectors: [injected({ shimDisconnect: true })],
+    connectors: injectedConnectors(),
     ssr: true,
   });
 }
@@ -61,5 +74,24 @@ function createProdConfig() {
   });
 }
 
-export const wagmiConfig =
-  process.env.NODE_ENV === "development" ? createDevConfig() : createProdConfig();
+/**
+ * Privy drives the embedded wallet after email / Google / Twitter.
+ * RainbowKit connectors stay on "Continue with a wallet" (MetaMask, Rabby, WC).
+ */
+function createPrivyHybridConfig() {
+  return createPrivyWagmiConfig({
+    chains: [primary, secondary],
+    transports,
+    connectors:
+      process.env.NODE_ENV === "development"
+        ? injectedConnectors()
+        : rainbowWalletConnectors(),
+    ssr: true,
+  });
+}
+
+export const wagmiConfig = isPrivyConfigured()
+  ? createPrivyHybridConfig()
+  : process.env.NODE_ENV === "development"
+    ? createDevConfig()
+    : createProdConfig();
