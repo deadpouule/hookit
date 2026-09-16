@@ -26,8 +26,7 @@ const FEATURED_ORDER = [
   "injected",
 ];
 
-const SOCIAL_UNAVAILABLE =
-  "Add NEXT_PUBLIC_PRIVY_APP_ID and enable email / Google / Twitter in the Privy dashboard.";
+const SOCIAL_UNAVAILABLE = "Social login is not configured on this build.";
 
 function connectorIcon(connector: Connector): string | undefined {
   if (typeof connector.icon === "string" && connector.icon.length > 0) {
