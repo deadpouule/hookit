@@ -330,29 +330,37 @@ test("chartRenderableCandle uses a dash for flat FDV carry and real wicks for mo
   assert.equal(traded.low, 4900);
 });
 
-test("chartRenderableCandle gives the first FDV step a fat body even without volume", () => {
-  const lone = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 });
-  assert.ok(lone.high - lone.low >= 5300 * 0.005);
+test("chartRenderableCandle uses a thin dash for flat FDV maintenance without volume", () => {
+  const maintain = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 });
+  const span = maintain.high - maintain.low;
+  assert.ok(span > 0);
+  assert.ok(span < 5300 * 0.001);
 });
 
-test("candlePlotBar plots FDV steps in time, not volume ticks", () => {
+test("chartRenderableCandle uses a small doji for a flat trade print", () => {
+  const trade = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 });
+  const span = trade.high - trade.low;
+  assert.ok(span >= 5300 * 0.0005);
+  assert.ok(span < 5300 * 0.002);
+});
+
+test("candlePlotBar prints every FDV bucket in time", () => {
   const carry = { time: 2, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 };
   const first = { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 };
-  const step = { time: 3, open: 5300, high: 5310, low: 5300, close: 5310, volume: 0 };
-  assert.equal(candlePlotBar(carry, 5300), false);
+  assert.equal(candlePlotBar(carry), true);
   assert.equal(candlePlotBar(first), true);
-  assert.equal(candlePlotBar(step, 5300), true);
 });
 
-test("candleSeriesData keeps a lone DINK print visible without carry clutter", () => {
+test("candleSeriesData draws thin maintenance dashes across flat FDV carry", () => {
   const tape = [
-    { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 },
+    { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 },
     { time: 2, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 },
     { time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 },
   ];
   const plotted = candleSeriesData(tape).filter((p) => p.open != null);
-  assert.equal(plotted.length, 1);
-  assert.ok((plotted[0]!.high ?? 0) - (plotted[0]!.low ?? 0) >= 5300 * 0.005);
+  assert.equal(plotted.length, 3);
+  const carrySpan = (plotted[1]!.high ?? 0) - (plotted[1]!.low ?? 0);
+  assert.ok(carrySpan < 5300 * 0.001);
 });
 
 test("pinLiveMcap pins the live FDV edge without dropping earlier steps", () => {

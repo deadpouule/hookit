@@ -177,11 +177,11 @@ export function fdvStepBar(bar: ChartBar, prevClose?: number): boolean {
   return Math.abs(bar.close - prevClose) / mid > FDV_STEP_EPS;
 }
 
-/** Thin TradingView-style dash when FDV is unchanged in this bucket. */
+/** Defined/DexScreener: thin dash when FDV is flat and the bucket has no volume. */
 export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   const mid = bar.close || bar.open;
   if (!(mid > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  const half = mid * 0.00015;
+  const half = mid * 0.00012;
   return {
     open: mid,
     high: mid + half,
@@ -190,9 +190,23 @@ export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high"
   };
 }
 
+/** Small doji for a flat print that still had swap volume — visible but not a fat block. */
+export function tradeFlatCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
+  const mid = bar.close || bar.open;
+  if (!(mid > 0)) return { open: 0, high: 0, low: 0, close: 0 };
+  const half = mid * 0.00035;
+  const up = bar.close >= bar.open;
+  return {
+    open: up ? Math.max(mid - half, 0) : mid + half,
+    high: mid + half,
+    low: Math.max(mid - half, 0),
+    close: up ? mid + half : Math.max(mid - half, 0),
+  };
+}
+
 export function chartRenderableCandle(
   bar: ChartBar,
-  prevClose?: number,
+  _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
   const mid = bar.close;
@@ -201,23 +215,21 @@ export function chartRenderableCandle(
   if (span > minMove) {
     return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
   }
-  if (fdvStepBar(bar, prevClose)) return visibleCandleOhlc(bar);
+  if (isTradedBar(bar)) return tradeFlatCandleOhlc(bar);
   return flatFdvCandleOhlc(bar);
 }
 
-/** Candle mode: one body per FDV step (mcap/time), skip flat carry at the same FDV. */
-export function candlePlotBar(bar: ChartBar, prevClose?: number): boolean {
-  return fdvStepBar(bar, prevClose);
+/** Candle mode: every FDV bucket prints (flat carry = thin dash, trades = wicks). */
+export function candlePlotBar(bar: ChartBar, _prevClose?: number): boolean {
+  return isCandleBar(bar);
 }
 
 export function candleSeriesData(
   bars: ChartBar[],
 ): Array<{ time: number; open?: number; high?: number; low?: number; close?: number }> {
-  let prevClose: number | undefined;
   return bars.map((bar) => {
-    if (!candlePlotBar(bar, prevClose)) return { time: bar.time };
-    const ohlc = chartRenderableCandle(bar, prevClose);
-    prevClose = bar.close;
+    if (!candlePlotBar(bar)) return { time: bar.time };
+    const ohlc = chartRenderableCandle(bar);
     return { time: bar.time, open: ohlc.open, high: ohlc.high, low: ohlc.low, close: ohlc.close };
   });
 }
@@ -577,12 +589,10 @@ export function visiblePriceBand(
   const { start, end } = visibleBarSlice(bars.length, from, to);
   let ath = -Infinity;
   let atl = Infinity;
-  let prevClose: number | undefined;
   for (let i = start; i <= end; i++) {
     const bar = bars[i];
-    if (!bar || !candlePlotBar(bar, prevClose)) continue;
-    const ohlc = chartRenderableCandle(bar, prevClose);
-    prevClose = bar.close;
+    if (!bar || !candlePlotBar(bar)) continue;
+    const ohlc = chartRenderableCandle(bar);
     ath = Math.max(ath, ohlc.high);
     atl = Math.min(atl, ohlc.low);
   }

@@ -15,7 +15,6 @@ import {
   chartRangeSignature,
   candleSeriesData,
   chartVisibleLogicalRange,
-  fdvStepBar,
   isCandleBar,
   formatChartAxis,
   isWhitespaceBar,
@@ -196,16 +195,12 @@ function fitChartView(
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
-function fdvStepsInView(bars: ChartBar[], from?: number, to?: number): number {
+function fdvBarsInView(bars: ChartBar[], from?: number, to?: number): number {
   const start = Math.max(0, Math.floor(from ?? 0));
   const end = Math.min(bars.length - 1, Math.ceil(to ?? bars.length - 1));
   let n = 0;
-  let prevClose: number | undefined;
   for (let i = start; i <= end; i++) {
-    const bar = bars[i]!;
-    if (!fdvStepBar(bar, prevClose)) continue;
-    prevClose = bar.close;
-    n++;
+    if (isCandleBar(bars[i]!)) n++;
   }
   return n;
 }
@@ -224,7 +219,7 @@ function applyAthAtl(
     handle.atlLine = null;
   }
   const vis = visibleLogicalRangeOf(handle.chart);
-  if (fdvStepsInView(bars, vis?.from, vis?.to) < 2) return;
+  if (fdvBarsInView(bars, vis?.from, vis?.to) < 2) return;
   const ext = visibleExtremes(bars, vis?.from, vis?.to);
   if (!ext) return;
   const { ath, atl } = ext;
