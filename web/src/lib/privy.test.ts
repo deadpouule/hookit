@@ -3,11 +3,11 @@ import test from "node:test";
 
 import { isPrivyWagmiConnector, PRIVY_APP_ID, PRIVY_LOGIN_METHODS, privyConfig } from "./privy";
 
-test("Privy login methods are email/Google/Twitter — wallets stay on RainbowKit", () => {
+test("Privy login methods are email/SMS/passkey/Google/Twitter — wallets stay on RainbowKit", () => {
   assert.ok(PRIVY_APP_ID.length > 0);
-  assert.deepEqual([...PRIVY_LOGIN_METHODS], ["email", "google", "twitter"]);
+  assert.deepEqual([...PRIVY_LOGIN_METHODS], ["email", "sms", "passkey", "google", "twitter"]);
   assert.equal((PRIVY_LOGIN_METHODS as readonly string[]).includes("wallet"), false);
-  assert.deepEqual(privyConfig.loginMethods, ["email", "google", "twitter"]);
+  assert.deepEqual(privyConfig.loginMethods, ["email", "sms", "passkey", "google", "twitter"]);
   assert.equal(privyConfig.loginMethods?.includes("wallet"), false);
 });
 

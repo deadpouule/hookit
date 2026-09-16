@@ -77,7 +77,7 @@ export function TypewriterTitle() {
       <span className="hero-prompt">~$</span>
       <div className="hero-pitch-lines">
         <h1 className="hero-pitch-heading">
-          <span className="hero-pitch-line">
+          <span className="hero-pitch-line hero-pitch-line--lede">
             A new way to <span className="hero-pitch-launch">launch.</span>
           </span>
           <span className="hero-pitch-line">
