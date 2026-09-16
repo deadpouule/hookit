@@ -119,7 +119,7 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /already airdropped/);
   assert.match(blob, /quote accrued into BuybackVault/);
   assert.equal(blob.includes("Master (Launch Studio)"), false);
-  assert.match(blob, /2,304 programmable hook combinations/);
+  assert.match(blob, /384 programmable hook combinations/);
   assert.match(blob, /Hookit is the first Uniswap v4 launchpad/);
   assert.equal(blob.includes("hookit is the first"), false);
   assert.match(blob, /Hold 1 \$HKT and you are exposed to every token launched/);
