@@ -36,6 +36,7 @@ export function DocsBranchGraph({
             <i />
             <b />
             <i />
+            <em />
           </div>
           <article className="docs-branch-box docs-branch-box--hub">
             <strong>{hub.t}</strong>
@@ -45,6 +46,7 @@ export function DocsBranchGraph({
             <i />
             <b />
             <i />
+            <em />
           </div>
           <div className="docs-branch-col">
             {outputs.map((box) => (

@@ -65,7 +65,8 @@ export type DocsDiagramId =
   | "floor-loop"
   | "hkt-loop"
   | "hkt-burn"
-  | "quotrons-flywheel";
+  | "quotrons-flywheel"
+  | "quotrons-fees";
 
 export type DocsVisualId =
   | "wizard"
@@ -149,7 +150,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
     items: [
       { id: "launches", label: "How launches work" },
       { id: "multi-pair", label: "Multi-pair" },
-      { id: "quotrons", label: "Why Quotrons" },
+      { id: "quotrons", label: "Why we built on Quotrons" },
       { id: "trading", label: "Trading" },
       { id: "graduation", label: "Graduation" },
       { id: "fees", label: "Fees and flywheel" },
@@ -354,31 +355,27 @@ export function buildDocsSections(): DocsSection[] {
     },
     {
       id: "quotrons",
-      title: "Why Quotrons",
+      title: "Why we built on Quotrons",
       group: "Protocol",
       blocks: [
         {
           type: "p",
-          text: "We built Hookit on Quotrons because they are Ink's flagship tokenized-equity venue: the hooked V4 books that actually list stocks on this chain. Pair a launch against their wrapped equities (wAAPLx, wNVDAx, …) or USDG. Spot USD for FDV and graduation prefers the live Quotrons pool sqrtPriceX96; a seeded usdPriceX18 is fallback.",
+          text: "We built Hookit on Quotrons because they are Ink's flagship stock venue: the v4 pools that list stocks on this chain. Pair a launch against their wrapped equities (wAAPLx, wNVDAx, …) or USDG. Spot USD for FDV and graduation prefers the live Quotrons pool sqrtPriceX96; a seeded usdPriceX18 is fallback.",
         },
         {
           type: "visual",
           id: "quotrons",
         },
         {
-          type: "h3",
-          text: "Why we built on Quotrons",
-        },
-        {
           type: "p",
-          text: "Quotrons is the stock venue on Ink. Their hooked V4 wStock/USDG books are the only equity markets Hookit routes a launch against. We are eco-aligned with that venue: more Hookit launches and more Hookit volume raise the Ink venue hook fee, and that fee goes back to Quotrons LP vaults and hardwired terminals. Their flagship books get deeper. Our traders get a USDG ticket in and out. Win-win.",
+          text: "Quotrons is the stock venue on Ink. Their v4 wStock/USDG pools are the only equity markets Hookit routes a launch against. We are eco-aligned with that venue: more Hookit launches and more Hookit volume raise the Ink venue hook fee, and that fee goes back to Quotrons LP vaults and hardwired terminals. Their flagship books get deeper. Our traders get a USDG ticket in and out. Win-win.",
         },
         {
           type: "defs",
           rows: [
             {
               term: "Flagship on Ink",
-              text: "They run the tokenized-equity venue this chain is known for: wrapped Backed xStocks against USDG. Hookit sits on those books instead of inventing a second stock market.",
+              text: "They run the stock venue this chain is known for: wrapped Backed xStocks against USDG. Hookit sits on those v4 pools instead of inventing a second stock market.",
             },
             {
               term: "Eco-aligned",
@@ -396,7 +393,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Do not mix their $QUOTRON/WETH 3% terminal market with the Ink stock venue. The 3% carve (stock rewards, locked LP, $STONKBROKER burn, creator) is a different hook on a different market. Hookit composite hops never touch that pool. They hit the Ink wStock/USDG books, whose hook takes a live USDG fee (0.30% at writing).",
+          text: "Do not mix their $QUOTRON/WETH 3% terminal market with the Ink stock venue. The 3% carve (stock rewards, locked LP, $STONKBROKER burn, creator) is a different hook on a different market. Hookit composite hops never touch that pool. They hit the Ink wStock/USDG v4 pools, whose hook takes a live USDG fee (0.30% at writing).",
         },
         {
           type: "h3",
@@ -404,7 +401,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "A Quotrons LP is a Uniswap v4 wStock/USDG pool: 0% pool LP fee, their immutable hook as the only fee switch, tick spacing 60, dynamic-fee flag (never hardcode 3000 when deriving the pool id). The book holds ERC-4626 wrappers, not the raw rebasing Backed tokens. There is no oracle. Price is the AMM curve. That book is the canonical hop for HookitSwapRouter.swapExactInComposite: USDG → wStock on an allowed Quotrons pool, then wStock → the hooked launch pool, one unlock. Sells run the other way: token → wStock → USDG. The buy panel on a wStock-quoted launch is USDG-only because those LPs exist. The hook takes the fee on the USDG leg for a buy and a sell, so the same notional pays the same venue fee either way.",
+          text: "A Quotrons LP is a Uniswap v4 wStock/USDG pool: 0% pool LP fee, their immutable hook as the only fee switch, tick spacing 60, dynamic-fee flag (never hardcode 3000 when deriving the pool id). The book holds ERC-4626 wrappers, not the raw rebasing Backed tokens. There is no oracle. Price is the AMM curve. That book is the canonical hop for HookitSwapRouter.swapExactInComposite: USDG → wStock on an allowed Quotrons pool, then wStock → the launch v4 pool, one unlock. Sells run the other way: token → wStock → USDG. The buy panel on a wStock-quoted launch is USDG-only because those LPs exist. The hook takes the fee on the USDG leg for a buy and a sell, so the same notional pays the same venue fee either way.",
         },
         {
           type: "diagram",
@@ -419,20 +416,8 @@ export function buildDocsSections(): DocsSection[] {
           text: "The live hook fee is steppable in 0.05% steps inside a 0.05%–1.00% bound baked into the immutable hook. They cannot widen that cap. Quote it live. Do not hardcode 0.30%. Their own rails can be fee-exempt; a Hookit composite hop is ordinary volume and pays.",
         },
         {
-          type: "table",
-          headers: ["Pot", "Share", "Where it goes"],
-          rows: [
-            [
-              "Terminal pot",
-              "50%",
-              "Pooled venue-wide, then epochs convert USDG into the ten reward stocks and pay hardwired terminals. Liquid $QUOTRON earns nothing.",
-            ],
-            [
-              "LP pot",
-              "50%",
-              "Held per-pool in that market's liquidity vault, claimable in USDG.",
-            ],
-          ],
+          type: "diagram",
+          id: "quotrons-fees",
         },
         {
           type: "p",
@@ -441,7 +426,7 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "wStock-quoted pools: the buy panel is USDG-only. HookitSwapRouter.swapExactInComposite bridges USDG → wStock on an allowed Quotrons pool, then swaps the hooked launch pool.",
+            "wStock-quoted pools: the buy panel is USDG-only. HookitSwapRouter.swapExactInComposite bridges USDG → wStock on an allowed Quotrons pool, then swaps the launch v4 pool.",
             "Sells can composite the other way: token → wStock → USDG.",
             "Protocol wStock fees rail to USDG via ProtocolRevenueDistributor + FeeEthRail before ops / buyback.",
             "Quotrons hook 0x8bb4516059F9149Bc3b89018Fc7537f1F14a30cc. Factory 0xbFA531C90FD9e42aC13Af14823B30e40761dd3A2. Bridge hooks must pass QuotronBridge.isAllowedBridgeHook.",

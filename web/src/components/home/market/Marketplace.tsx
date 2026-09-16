@@ -259,7 +259,7 @@ function MarketplaceContent({ initialPools = [] }: { initialPools?: TokenPool[] 
             <div className="h-14 animate-pulse rounded-lg bg-white/[0.06]" />
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 border-b border-white/[0.06] py-3">
-                <div className="h-12 w-12 shrink-0 animate-pulse rounded-full bg-white/[0.08]" />
+                <div className="h-20 w-20 shrink-0 animate-pulse rounded-[12px] bg-white/[0.08]" />
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="h-4 w-2/3 animate-pulse rounded bg-white/[0.08]" />
                   <div className="h-3 w-1/2 animate-pulse rounded bg-white/[0.05]" />
