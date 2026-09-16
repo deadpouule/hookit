@@ -174,7 +174,7 @@ test("pickChartBars keeps the house tape even when Gecko is denser", () => {
   assert.ok(houseOnly.every((b) => b.close === 1));
 });
 
-test("pinLiveMcap pins the live FDV edge and leaves earlier steps intact", () => {
+test("pinLiveMcap pins carry slots after the last trade without rewriting history", () => {
   const bars = [
     { time: 1, open: 10, high: 12, low: 9, close: 11, volume: 4 },
     { time: 2, open: 11, high: 11, low: 11, close: 11, volume: 0 },
@@ -183,7 +183,7 @@ test("pinLiveMcap pins the live FDV edge and leaves earlier steps intact", () =>
   assert.equal(isSyntheticBar(bars[1]!), true);
   const pinned = pinLiveMcap(bars, 15);
   assert.equal(pinned[0]!.close, 11);
-  assert.equal(pinned[1]!.close, 11);
+  assert.equal(pinned[1]!.close, 15);
   assert.equal(pinned[2]!.close, 15);
 });
 
@@ -322,12 +322,20 @@ test("chartRenderableCandle uses a dash for flat FDV carry and real wicks for mo
     5000,
   );
   assert.ok(carry.high > carry.close);
-  const traded = chartRenderableCandle(
+  const drift = chartRenderableCandle(
     { time: 2, open: 5000, high: 5200, low: 4900, close: 5100, volume: 0 },
     5000,
   );
-  assert.equal(traded.high, 5200);
-  assert.equal(traded.low, 4900);
+  assert.ok(drift.high - drift.low < 5100 * 0.001);
+  const traded = chartRenderableCandle(
+    { time: 3, open: 5000, high: 5200, low: 4900, close: 5100, volume: 4 },
+    5000,
+  );
+  assert.equal(traded.open, 5000);
+  assert.equal(traded.close, 5100);
+  assert.ok(traded.high > traded.close);
+  assert.ok(traded.low < traded.open);
+  assert.ok(traded.high - traded.close <= 5100 * 0.0015);
 });
 
 test("chartRenderableCandle uses a thin dash for flat FDV maintenance without volume", () => {
@@ -363,14 +371,26 @@ test("candleSeriesData draws thin maintenance dashes across flat FDV carry", () 
   assert.ok(carrySpan < 5300 * 0.001);
 });
 
-test("pinLiveMcap pins the live FDV edge without dropping earlier steps", () => {
+test("pinLiveMcap leaves seed bars alone when there is no trade yet", () => {
   const bars = [
     { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 },
     { time: 2, open: 5300, high: 5310, low: 5300, close: 5310, volume: 0 },
   ];
   const pinned = pinLiveMcap(bars, 5310);
-  assert.equal(pinned[0]!.close, 5300);
+  assert.equal(pinned[0]!.close, 5310);
   assert.equal(pinned[1]!.close, 5310);
+});
+
+test("in-progress buckets without volume render as thin FDV dashes not fat blocks", () => {
+  const live = chartRenderableCandle({
+    time: 2,
+    open: 5224,
+    high: 5320,
+    low: 5224,
+    close: 5320,
+    volume: 0,
+  });
+  assert.ok(live.high - live.low < 5320 * 0.001);
 });
 
 test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
@@ -613,7 +633,9 @@ test("ensureCurrentBar draws the in-progress bucket at the live price", () => {
   const cur = ensureCurrentBar(bars, 60, 1_700_000_130, 12);
   assert.equal(cur.length, 2);
   assert.equal(cur[1]!.time, 1_700_000_100);
-  assert.equal(cur[1]!.open, 10.5);
+  assert.equal(cur[1]!.open, 12);
+  assert.equal(cur[1]!.high, 12);
+  assert.equal(cur[1]!.low, 12);
   assert.equal(cur[1]!.close, 12);
   assert.equal(cur[1]!.volume, 0);
 });

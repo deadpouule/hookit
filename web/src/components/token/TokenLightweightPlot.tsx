@@ -13,6 +13,7 @@ import {
   chartFitFirstRealIndex,
   chartFitWindowBars,
   chartRangeSignature,
+  chartStructureSignature,
   candleSeriesData,
   chartVisibleLogicalRange,
   isCandleBar,
@@ -478,13 +479,6 @@ export function TokenLightweightPlot({
         lastWidth = width;
         lastHeight = height;
         resizeChartToHost(live.chart, el);
-        fitChartView(
-          live.chart,
-          pendingBarsRef.current,
-          windowBarsRef.current,
-          bucketSecRef.current,
-          anchorIndexRef.current,
-        );
       });
       resize.observe(hostRef.current);
       requestAnimationFrame(() => {
@@ -563,7 +557,7 @@ export function TokenLightweightPlot({
   useEffect(() => {
     const handle = handleRef.current;
     if (!handle) return;
-    const signature = chartRangeSignature(bars, interval, windowBars);
+    const signature = chartStructureSignature(bars, interval, windowBars);
     const refit = rangeSigRef.current !== signature;
     rangeSigRef.current = signature;
     applyBars(

@@ -204,19 +204,33 @@ export function tradeFlatCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "hig
   };
 }
 
+/** FDV open → close move in this bucket (mcap/time), ignoring wick noise. */
+export function fdvCloseMoved(bar: ChartBar): boolean {
+  const mid = bar.close || bar.open;
+  if (!(mid > 0)) return false;
+  return Math.abs(bar.close - bar.open) / mid > FDV_STEP_EPS;
+}
+
 export function chartRenderableCandle(
   bar: ChartBar,
   _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
+  // Carry / in-progress buckets (no volume): thin FDV maintenance dash only.
+  if (!isTradedBar(bar)) return flatFdvCandleOhlc(bar);
   const mid = bar.close;
-  const span = Math.max(bar.high - bar.low, Math.abs(bar.open - bar.close));
-  const minMove = mid * FDV_STEP_EPS;
-  if (span > minMove) {
-    return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
+  if (fdvCloseMoved(bar)) {
+    const bodyLo = Math.min(bar.open, bar.close);
+    const bodyHi = Math.max(bar.open, bar.close);
+    const maxWick = mid * 0.0015;
+    return {
+      open: bar.open,
+      high: Math.min(Math.max(bar.high, bodyHi), bodyHi + maxWick),
+      low: Math.max(Math.min(bar.low, bodyLo), bodyLo - maxWick),
+      close: bar.close,
+    };
   }
-  if (isTradedBar(bar)) return tradeFlatCandleOhlc(bar);
-  return flatFdvCandleOhlc(bar);
+  return tradeFlatCandleOhlc(bar);
 }
 
 /** Candle mode: every FDV bucket prints (flat carry = thin dash, trades = wicks). */
@@ -405,19 +419,15 @@ export function visibleCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high"
 export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   if (!(liveMcap && liveMcap > 0) || bars.length === 0) return bars;
   const next = bars.map((b) => ({ ...b }));
-  let pinAt = -1;
+  let lastTrade = -1;
   for (let i = next.length - 1; i >= 0; i--) {
-    if (isCandleBar(next[i]!)) {
-      pinAt = i;
+    if (isTradedBar(next[i]!)) {
+      lastTrade = i;
       break;
     }
   }
-  if (pinAt < 0) return next;
-  const target = next[pinAt]!;
-  target.close = liveMcap;
-  target.high = Math.max(target.high, liveMcap);
-  target.low = Math.min(target.low, liveMcap);
-  for (let i = pinAt + 1; i < next.length; i++) {
+  const start = lastTrade >= 0 ? lastTrade + 1 : 0;
+  for (let i = start; i < next.length; i++) {
     if (isWhitespaceBar(next[i]!)) continue;
     next[i] = {
       ...next[i]!,
@@ -591,16 +601,11 @@ export function visiblePriceBand(
   let atl = Infinity;
   for (let i = start; i <= end; i++) {
     const bar = bars[i];
-    if (!bar || !candlePlotBar(bar)) continue;
-    const ohlc = chartRenderableCandle(bar);
-    ath = Math.max(ath, ohlc.high);
-    atl = Math.min(atl, ohlc.low);
+    if (!bar || !isCandleBar(bar)) continue;
+    ath = Math.max(ath, bar.close);
+    atl = Math.min(atl, bar.close);
   }
-  if (!(ath > 0) || !(atl > 0)) {
-    const ext = visibleExtremes(bars, from, to);
-    if (!ext) return null;
-    return chartPriceBand(ext.atl, ext.ath);
-  }
+  if (!(ath > 0) || !(atl > 0)) return null;
   return chartPriceBand(atl, ath);
 }
 
@@ -847,14 +852,13 @@ export function ensureCurrentBar(
   if (last && last.time === cur) return bars;
   const px = liveValue && liveValue > 0 ? liveValue : last?.close;
   if (!(px && px > 0)) return bars;
-  const open = last?.close && last.close > 0 ? last.close : px;
   return [
     ...bars,
     {
       time: cur,
-      open,
-      high: Math.max(open, px),
-      low: Math.min(open, px),
+      open: px,
+      high: px,
+      low: px,
       close: px,
       volume: 0,
     },
@@ -955,6 +959,12 @@ export function barChangePct(bar: ChartBar): number {
 
 export function chartRangeSignature(bars: ChartBar[], interval?: ChartInterval, windowBars?: number): string {
   return `${interval ?? ""}:${windowBars ?? ""}:${bars[0]?.time ?? 0}:${bars.length}:${bars[bars.length - 1]?.time ?? 0}`;
+}
+
+/** Refit only when buckets appear/disappear — not when live FDV drifts on the last bar. */
+export function chartStructureSignature(bars: ChartBar[], interval?: ChartInterval, windowBars?: number): string {
+  const slots = bars.map((b) => `${b.time}:${b.whitespace ? "w" : "f"}:${isTradedBar(b) ? "t" : "c"}`).join("|");
+  return `${interval ?? ""}:${windowBars ?? ""}:${slots}`;
 }
 
 export type ChartTrade = { t: number; side: "buy" | "sell" };

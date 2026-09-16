@@ -213,13 +213,18 @@ export function TokenCandleChart({
     [source, launchedAt, nowSec],
   );
 
+  const chartMcap = useMemo(() => {
+    if (!(marketCap && marketCap > 0)) return marketCap;
+    return Math.round(marketCap);
+  }, [marketCap]);
+
   const buildBars = useCallback(
     (iv: ChartInterval, sc: ChartScale) => {
       const bucket = intervalBucketSec(iv, spanSec);
       const display = barsForInterval(source, iv, spanSec);
       const withTicks = applySwapTicks(display, swaps, bucket);
-      const pinned = pinLiveMcap(withTicks, marketCap);
-      const current = ensureCurrentBar(pinned, bucket, nowSec, marketCap);
+      const pinned = pinLiveMcap(withTicks, chartMcap);
+      const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
       const fx = rollQuoteFxBars(quoteFx.data?.bars ?? [], bucket);
       const liveFx =
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
@@ -229,7 +234,7 @@ export function TokenCandleChart({
           : linkBarOpens(current);
       return definedFdvTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
     },
-    [source, swaps, marketCap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
+    [source, swaps, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);
