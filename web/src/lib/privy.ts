@@ -2,8 +2,9 @@ import type { PrivyClientConfig } from "@privy-io/react-auth";
 
 import { baseSepolia, getActiveChain, ink } from "@/lib/chains";
 
-/** Dashboard app ID. Google / Twitter OAuth clients are configured in Privy, not here. */
-export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
+/** Dashboard app ID. Not a secret — it ships in the client bundle. */
+export const PRIVY_APP_ID =
+  process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() || "cmu3yl60508zd0dl60itcihgy";
 
 /** Social + email only. External wallets stay on RainbowKit so they are not Privy MAUs. */
 export const PRIVY_LOGIN_METHODS = ["email", "google", "twitter"] as const;

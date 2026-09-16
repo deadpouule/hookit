@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isPrivyWagmiConnector, PRIVY_LOGIN_METHODS, privyConfig } from "./privy";
+import { isPrivyWagmiConnector, PRIVY_APP_ID, PRIVY_LOGIN_METHODS, privyConfig } from "./privy";
 
 test("Privy login methods are email/Google/Twitter — wallets stay on RainbowKit", () => {
+  assert.ok(PRIVY_APP_ID.length > 0);
   assert.deepEqual([...PRIVY_LOGIN_METHODS], ["email", "google", "twitter"]);
   assert.equal((PRIVY_LOGIN_METHODS as readonly string[]).includes("wallet"), false);
   assert.deepEqual(privyConfig.loginMethods, ["email", "google", "twitter"]);

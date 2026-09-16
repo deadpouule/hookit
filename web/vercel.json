@@ -1,6 +1,7 @@
 {
   "env": {
-    "VERCEL_PREVIEW_FEEDBACK_ENABLED": "0"
+    "VERCEL_PREVIEW_FEEDBACK_ENABLED": "0",
+    "NEXT_PUBLIC_PRIVY_APP_ID": "cmu3yl60508zd0dl60itcihgy"
   },
   "git": {
     "deploymentEnabled": {
