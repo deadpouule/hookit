@@ -7,15 +7,20 @@ import {
   applyTicksToBuckets,
   barChangePct,
   barsForInterval,
+  carryQuoteFxBars,
   CHART_MIN_BAR_SPACING,
   CHART_MIN_VISIBLE_BARS,
   CHART_RIGHT_OFFSET,
   CHART_WINDOW_BARS,
+  chartFitAnchorIndex,
   chartFitWindowBars,
   chartFitFirstRealIndex,
   chartPriceBand,
   chartRenderableCandle,
+  intervalBucketSec,
+  linkBarOpens,
   repriceBarsWithQuoteFx,
+  rollQuoteFxBars,
   chartVisibleLogicalRange,
   chartWindowBars,
   dropCarryForwardBars,
@@ -88,12 +93,18 @@ test("aggregateBars rolls 5m into 1h OHLC + volume", () => {
   assert.equal(hourly[1]!.volume, 4);
 });
 
-test("barsForInterval ALL keeps native buckets", () => {
+test("intervalBucketSec ALL picks a step that fits the token life in 72 bars", () => {
+  assert.equal(intervalBucketSec("ALL", 3_600), 60);
+  assert.equal(intervalBucketSec("ALL", 72 * 3_600), 3_600);
+  assert.equal(intervalBucketSec("ALL", 72 * 86_400), 86_400);
+});
+
+test("barsForInterval ALL rolls into the resolved ALL bucket", () => {
   const bars = [
-    { time: 0, open: 1, high: 1, low: 1, close: 1, volume: 0 },
-    { time: 300, open: 1, high: 2, low: 1, close: 2, volume: 0 },
+    { time: 0, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+    { time: 300, open: 1, high: 2, low: 1, close: 2, volume: 1 },
   ];
-  assert.equal(barsForInterval(bars, "ALL").length, 2);
+  assert.equal(barsForInterval(bars, "ALL", 3_600).length, 2);
   assert.equal(barsForInterval(bars, "1h").length, 1);
 });
 
@@ -286,25 +297,60 @@ test("chartPriceBand hugs the visible range so one trade fills the pane", () => 
   assert.equal(chartPriceBand(0, 0), null);
 });
 
-test("chartRenderableCandle gives a doji a Defined-like body without changing HUD math", () => {
+test("chartRenderableCandle leaves a genuine doji unchanged", () => {
   const doji = { time: 1, open: 5, high: 5, low: 5, close: 5, volume: 2 };
   const drawn = chartRenderableCandle(doji);
-  assert.equal(drawn.close, 5);
-  assert.ok(drawn.close > drawn.open);
-  assert.ok(drawn.high - drawn.low < 5 * 0.0004);
+  assert.deepEqual(drawn, { open: 5, high: 5, low: 5, close: 5 });
   assert.equal(barChangePct(doji), 0);
 });
 
-test("repriceBarsWithQuoteFx marks LEE with historical wMSTR USD like Defined", () => {
+test("repriceBarsWithQuoteFx scales the bar's own OHLC by quote FX", () => {
   const liveQuoteUsd = 131;
-  const lee = [{ time: 100, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
-  const fx = [
-    { time: 100, open: 142, high: 142, low: 128, close: 128, volume: 1 },
-  ];
+  const lee = [{ time: 100, open: 5000, high: 5200, low: 4800, close: 5000, volume: 10 }];
+  const fx = [{ time: 100, open: 142, high: 142, low: 128, close: 128, volume: 1 }];
   const marked = repriceBarsWithQuoteFx(lee, fx, liveQuoteUsd);
-  assert.ok(marked[0]!.open > 5300);
-  assert.ok(marked[0]!.close < 5000);
-  assert.ok(marked[0]!.close > 4800);
+  const factor = 128 / 131;
+  assert.equal(marked[0]!.open, 5000 * factor);
+  assert.equal(marked[0]!.high, 5200 * factor);
+  assert.equal(marked[0]!.low, 4800 * factor);
+  assert.equal(marked[0]!.close, 5000 * factor);
+});
+
+test("linkBarOpens chains each print to the previous close", () => {
+  const bars = [
+    { time: 60, open: 10, high: 12, low: 9, close: 11, volume: 1 },
+    { time: 120, open: 11, high: 11, low: 11, close: 11, volume: 1 },
+  ];
+  const linked = linkBarOpens(bars);
+  assert.equal(linked[1]!.open, 11);
+  assert.equal(linked[1]!.high, 11);
+  assert.equal(linked[1]!.low, 11);
+});
+
+test("carryQuoteFxBars only marks buckets where quote FX printed", () => {
+  const bars = [{ time: 0, open: 1000, high: 1000, low: 1000, close: 1000, volume: 5 }];
+  const fx = [
+    { time: 0, open: 100, high: 100, low: 100, close: 100, volume: 1 },
+    { time: 300, open: 110, high: 115, low: 108, close: 112, volume: 2 },
+    { time: 600, open: 112, high: 112, low: 112, close: 112, volume: 0 },
+  ];
+  const rolled = rollQuoteFxBars(fx, 300);
+  const carried = carryQuoteFxBars(bars, rolled, 100, 300, 600);
+  assert.equal(carried.length, 2);
+  assert.equal(carried[1]!.time, 300);
+  assert.equal(carried[1]!.open, 1000);
+  assert.equal(carried[1]!.close, 1120);
+  assert.ok(carried[1]!.high > carried[1]!.close);
+});
+
+test("chartFitAnchorIndex ignores whitespace and synthetic carry bars", () => {
+  const bars = [
+    { time: 0, open: 1, high: 1, low: 1, close: 1, volume: 1, whitespace: true },
+    { time: 60, open: 2, high: 2, low: 2, close: 2, volume: 2 },
+    { time: 120, open: 2, high: 2, low: 2, close: 2, volume: 0 },
+    { time: 180, open: 0, high: 0, low: 0, close: 0, volume: 0, whitespace: true },
+  ];
+  assert.equal(chartFitAnchorIndex(bars), 1);
 });
 
 test("formatChartAxis uses TradingView subscript zeros for price", () => {

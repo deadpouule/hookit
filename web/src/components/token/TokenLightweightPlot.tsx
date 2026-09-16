@@ -10,11 +10,11 @@ import {
   CHART_SCALE_MARGIN_TOP,
   CHART_VOLUME_MARGIN_TOP,
   CHART_WINDOW_BARS,
+  chartFitAnchorIndex,
   chartRangeSignature,
   chartRenderableCandle,
   chartVisibleLogicalRange,
   formatChartAxis,
-  intervalBucketSec,
   isWhitespaceBar,
   visibleExtremes,
   visiblePriceBand,
@@ -56,7 +56,9 @@ type TokenLightweightPlotProps = {
   style: ChartStyle;
   scale: ChartScale;
   interval?: ChartInterval;
+  bucketSec?: number;
   windowBars?: number;
+  anchorIndex?: number;
   lineColor?: string;
   fitNonce?: number;
   onHover: (bar: ChartBar | null) => void;
@@ -209,18 +211,24 @@ function resizeChartToHost(chart: IChartApi, host: HTMLElement | null) {
   return true;
 }
 
-function fitChartView(chart: IChartApi, bars: ChartBar[], windowBars: number, bucketSec: number) {
+function fitChartView(
+  chart: IChartApi,
+  bars: ChartBar[],
+  windowBars: number,
+  bucketSec: number,
+  anchorIndex?: number,
+) {
   if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
   const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, windowBars);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
-  const last = bars[bars.length - 1]!;
+  const anchor = bars[anchorIndex ?? chartFitAnchorIndex(bars)] ?? bars[bars.length - 1]!;
   const step = Math.max(bucketSec, 1);
-  const fromTime = last.time - (Math.max(windowBars, 1) - 1) * step;
+  const fromTime = anchor.time - (Math.max(windowBars, 1) - 1) * step;
   const from = Math.max(fromTime, bars[0]!.time);
-  const to = last.time + CHART_RIGHT_OFFSET * step;
+  const to = anchor.time + CHART_RIGHT_OFFSET * step;
   if (to > from) {
     timeScale.setVisibleRange({ from: from as UTCTimestamp, to: to as UTCTimestamp });
     return;
@@ -264,6 +272,7 @@ function applyBars(
   lineColor: string,
   windowBars: number,
   bucketSec: number,
+  anchorIndex: number,
   refit = true,
 ) {
   const up = lastBarUp(next);
@@ -309,7 +318,7 @@ function applyBars(
   );
 
   resizeChartToHost(handle.chart, handle.chart.chartElement());
-  if (refit) fitChartView(handle.chart, next, windowBars, bucketSec);
+  if (refit) fitChartView(handle.chart, next, windowBars, bucketSec, anchorIndex);
   if (tv) applyAthAtl(handle, tv, next);
 
   handle.price.priceScale().applyOptions({
@@ -322,7 +331,9 @@ export function TokenLightweightPlot({
   style,
   scale,
   interval,
+  bucketSec = 3_600,
   windowBars = CHART_WINDOW_BARS,
+  anchorIndex = 0,
   lineColor = UP,
   fitNonce = 0,
   onHover,
@@ -340,10 +351,18 @@ export function TokenLightweightPlot({
   const lineColorRef = useRef(lineColor);
   lineColorRef.current = lineColor;
   const windowBarsRef = useRef(windowBars);
+  const bucketSecRef = useRef(bucketSec);
+  const anchorIndexRef = useRef(anchorIndex);
   const intervalRef = useRef(interval);
   useEffect(() => {
     windowBarsRef.current = windowBars;
   }, [windowBars]);
+  useEffect(() => {
+    bucketSecRef.current = bucketSec;
+  }, [bucketSec]);
+  useEffect(() => {
+    anchorIndexRef.current = anchorIndex;
+  }, [anchorIndex]);
   useEffect(() => {
     intervalRef.current = interval;
   }, [interval]);
@@ -451,7 +470,8 @@ export function TokenLightweightPlot({
         next,
         lineColorRef.current,
         windowBarsRef.current,
-        intervalBucketSec(intervalRef.current ?? "1h"),
+        bucketSecRef.current,
+        anchorIndexRef.current,
       );
 
       chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
@@ -492,7 +512,8 @@ export function TokenLightweightPlot({
           live.chart,
           pendingBarsRef.current,
           windowBarsRef.current,
-          intervalBucketSec(intervalRef.current ?? "1h"),
+          bucketSecRef.current,
+          anchorIndexRef.current,
         );
       });
       resize.observe(hostRef.current);
@@ -506,7 +527,8 @@ export function TokenLightweightPlot({
             handleRef.current.chart,
             pendingBarsRef.current,
             windowBarsRef.current,
-            intervalBucketSec(intervalRef.current ?? "1h"),
+            bucketSecRef.current,
+            anchorIndexRef.current,
           );
         });
       });
@@ -549,7 +571,8 @@ export function TokenLightweightPlot({
         pendingBarsRef.current,
         lineColor,
         windowBarsRef.current,
-        intervalBucketSec(intervalRef.current ?? "1h"),
+        bucketSecRef.current,
+        anchorIndexRef.current,
       );
     });
   }, [style, scale, lineColor]);
@@ -579,10 +602,11 @@ export function TokenLightweightPlot({
       bars,
       lineColor,
       windowBars,
-      intervalBucketSec(interval ?? "1h"),
+      bucketSec,
+      anchorIndex,
       refit,
     );
-  }, [bars, lineColor, interval, windowBars]);
+  }, [bars, lineColor, interval, windowBars, bucketSec, anchorIndex]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
@@ -592,7 +616,8 @@ export function TokenLightweightPlot({
         handle.chart,
         pendingBarsRef.current,
         windowBarsRef.current,
-        intervalBucketSec(intervalRef.current ?? "1h"),
+        bucketSecRef.current,
+        anchorIndexRef.current,
       );
   }, [fitNonce]);
 

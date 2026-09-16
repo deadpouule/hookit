@@ -17,7 +17,9 @@ async function fetchBars(
   });
   if (quoteAddress) params.set("quote", quoteAddress);
   const res = await fetch(`/api/geckoterminal/ohlcv?${params.toString()}`, { cache: "no-store" });
-  if (res.status === 429 || !res.ok) return { bars: [], pool: null };
+  if (!res.ok) {
+    throw new Error(`GeckoTerminal OHLCV ${res.status}`);
+  }
   const body = (await res.json()) as { bars?: ChartBar[]; pool?: string | null };
   return { bars: Array.isArray(body.bars) ? body.bars : [], pool: body.pool ?? null };
 }

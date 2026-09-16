@@ -15,20 +15,23 @@ import {
   barChangePct,
   barsForInterval,
   carryQuoteFxBars,
-  chartFitFirstRealIndex,
+  chartFitAnchorIndex,
   chartFitWindowBars,
   chartHudBar,
+  chartSpanSec,
   definedWhitespaceTape,
   ensureCurrentBar,
   formatChartUsd,
   intervalBucketSec,
   isWhitespaceBar,
+  linkBarOpens,
   liveCandlesToBars,
   mergeChartSeries,
   pickChartBars,
   pinLiveMcap,
   priceBarsToMcap,
   repriceBarsWithQuoteFx,
+  rollQuoteFxBars,
   scaleBars,
   seedLaunchBars,
   ticksToBars,
@@ -206,31 +209,43 @@ export function TokenCandleChart({
     return pickChartBars(seeded, geckoMcap);
   }, [candles, swaps, nowSec, marketCap, gecko.data?.bars, launchedAt]);
 
+  const spanSec = useMemo(
+    () => chartSpanSec(source, launchedAt, nowSec),
+    [source, launchedAt, nowSec],
+  );
+
   const buildBars = useCallback(
     (iv: ChartInterval, sc: ChartScale) => {
-      const bucket = intervalBucketSec(iv);
-      const display = barsForInterval(source, iv);
+      const bucket = intervalBucketSec(iv, spanSec);
+      const display = barsForInterval(source, iv, spanSec);
       const withTicks = applySwapTicks(display, swaps, bucket);
       const pinned = pinLiveMcap(withTicks, marketCap);
       const current = ensureCurrentBar(pinned, bucket, nowSec, marketCap);
-      const fx = quoteFx.data?.bars ?? [];
+      const fx = rollQuoteFxBars(quoteFx.data?.bars ?? [], bucket);
       const liveFx =
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
       const marked =
         liveFx > 0 && fx.length > 0
-          ? carryQuoteFxBars(repriceBarsWithQuoteFx(current, fx, liveFx), fx, liveFx, bucket, nowSec)
-          : current;
+          ? carryQuoteFxBars(
+              linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx)),
+              fx,
+              liveFx,
+              bucket,
+              nowSec,
+            )
+          : linkBarOpens(current);
       return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec);
     },
-    [source, swaps, marketCap, nowSec, quoteFx.data?.bars, quoteUsd],
+    [source, swaps, marketCap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);
   const realBars = useMemo(() => bars.filter((b) => !isWhitespaceBar(b)), [bars]);
 
   const hasData = realBars.length > 0;
-  const firstReal = chartFitFirstRealIndex(bars);
-  const windowBars = chartFitWindowBars(bars.length, firstReal);
+  const bucketSec = intervalBucketSec(interval, spanSec);
+  const anchorIndex = chartFitAnchorIndex(bars);
+  const windowBars = chartFitWindowBars(bars.length, anchorIndex);
   const open = realBars[0]?.open ?? 0;
   const close = realBars.length ? realBars[realBars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
@@ -400,7 +415,9 @@ export function TokenCandleChart({
             style={style}
             scale={scale}
             interval={interval}
+            bucketSec={bucketSec}
             windowBars={windowBars}
+            anchorIndex={anchorIndex}
             lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
             fitNonce={fitNonce}
             onHover={setHover}

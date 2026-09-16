@@ -23,15 +23,17 @@ export type ChartBar = {
   whitespace?: boolean;
 };
 
-const INTERVAL_BUCKET_SEC: Record<ChartInterval, number> = {
+const INTERVAL_BUCKET_SEC: Record<Exclude<ChartInterval, "ALL">, number> = {
   "1m": 60,
   "5m": 300,
   "15m": 900,
   "1h": 3_600,
   "4h": 14_400,
   "1D": 86_400,
-  ALL: 60,
 };
+
+/** ALL picks the finest step that fits the token's whole life inside CHART_WINDOW_BARS. */
+const ALL_BUCKET_STEPS = [60, 300, 900, 3_600, 14_400, 86_400] as const;
 
 function finitePos(n: number): boolean {
   return Number.isFinite(n) && n > 0;
@@ -105,8 +107,27 @@ export function aggregateBars(bars: ChartBar[], bucketSec: number): ChartBar[] {
   return out;
 }
 
-export function barsForInterval(bars: ChartBar[], interval: ChartInterval): ChartBar[] {
-  return aggregateBars(bars, INTERVAL_BUCKET_SEC[interval]);
+export function chartSpanSec(bars: ChartBar[], launchedAt?: number, nowSec?: number): number {
+  const real = bars.filter((b) => !isWhitespaceBar(b) && b.time > 0);
+  const first = real[0]?.time ?? (isValidLaunchTimestamp(launchedAt) ? launchedAt : 0);
+  const last = real[real.length - 1]?.time ?? first;
+  const now = nowSec ?? Math.floor(Date.now() / 1000);
+  if (!(first > 0)) return 0;
+  return Math.max(last, now) - first;
+}
+
+export function intervalBucketSec(interval: ChartInterval, spanSec?: number): number {
+  if (interval !== "ALL") return INTERVAL_BUCKET_SEC[interval];
+  const span = spanSec ?? 0;
+  if (!(span > 0)) return ALL_BUCKET_STEPS[ALL_BUCKET_STEPS.length - 1]!;
+  for (const step of ALL_BUCKET_STEPS) {
+    if (span / step <= CHART_WINDOW_BARS) return step;
+  }
+  return ALL_BUCKET_STEPS[ALL_BUCKET_STEPS.length - 1]!;
+}
+
+export function barsForInterval(bars: ChartBar[], interval: ChartInterval, spanSec?: number): ChartBar[] {
+  return aggregateBars(bars, intervalBucketSec(interval, spanSec));
 }
 
 export function hasChartVolume(bars: ChartBar[]): boolean {
@@ -136,20 +157,8 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
   }));
 }
 
-/** LWC draws equal OHLC as a 1px hairline; Defined still paints a short body. */
 export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
-  const close = bar.close > 0 ? bar.close : bar.open;
-  const floor = Math.abs(close) * 0.00012;
-  if (!(floor > 0) || Math.abs(bar.close - bar.open) >= floor) {
-    return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
-  }
-  const open = close - floor;
-  return {
-    open,
-    close,
-    high: Math.max(bar.high, close),
-    low: Math.min(bar.low > 0 ? bar.low : open, open),
-  };
+  return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
 }
 
 export function pickChartBars(house: ChartBar[], geckoMcap: ChartBar[], _interval?: ChartInterval): ChartBar[] {
@@ -176,10 +185,23 @@ function quoteFxAt(fx: ChartBar[], time: number): ChartBar | undefined {
   return fx[Math.max(0, hi)];
 }
 
+/** Roll 1m quote FX onto the chart bucket so carry/reprice share one series. */
+export function rollQuoteFxBars(fx: ChartBar[], bucketSec: number): ChartBar[] {
+  if (!(bucketSec > 0) || fx.length === 0) return fx;
+  return aggregateBars(
+    fx.filter((bar) => !isWhitespaceBar(bar) && bar.close > 0),
+    bucketSec,
+  );
+}
+
+function quoteFxPrinted(bar: ChartBar): boolean {
+  if (!(bar.close > 0)) return false;
+  return bar.volume > 0 || bar.high > bar.low || bar.open !== bar.close;
+}
+
 /**
  * Defined/Codex USD: house bars were converted with a single live quote USD.
- * Reprice each bucket with the quote asset's USD OHLC at that time so LEE
- * tracks wMSTR (green then red) instead of painting a flat doji.
+ * Scale each bar's own OHLC by quoteCloseAtThatTime / liveQuoteUsd so wicks stay.
  */
 export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuoteUsd: number): ChartBar[] {
   if (!(liveQuoteUsd > 0) || fx.length === 0) return bars;
@@ -187,18 +209,49 @@ export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuo
     if (isWhitespaceBar(bar) || !(bar.close > 0)) return bar;
     const q = quoteFxAt(fx, bar.time);
     if (!q || !(q.close > 0)) return bar;
-    const unit = bar.close / liveQuoteUsd;
+    const factor = q.close / liveQuoteUsd;
     return {
       ...bar,
-      open: unit * q.open,
-      high: unit * Math.max(q.high, q.open, q.close),
-      low: unit * Math.min(q.low > 0 ? q.low : q.close, q.open, q.close),
-      close: unit * q.close,
+      open: bar.open * factor,
+      high: bar.high * factor,
+      low: bar.low * factor,
+      close: bar.close * factor,
     };
   });
 }
 
-/** After the last LEE print, keep marking USD from quote FX (Defined's live candle). */
+/** Each traded bucket opens at the previous bar's close so sparse tapes read continuously. */
+export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
+  let prevClose: number | undefined;
+  const out: ChartBar[] = [];
+  for (const bar of bars) {
+    if (isWhitespaceBar(bar)) {
+      out.push(bar);
+      continue;
+    }
+    if (!(bar.close > 0)) {
+      out.push({ ...bar });
+      continue;
+    }
+    if (prevClose === undefined) {
+      out.push({ ...bar });
+      prevClose = bar.close;
+      continue;
+    }
+    const open = prevClose;
+    const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
+    out.push({
+      ...bar,
+      open,
+      high: Math.max(bar.high, open, bar.close),
+      low: Math.min(lowBase, open, bar.close),
+    });
+    prevClose = bar.close;
+  }
+  return out;
+}
+
+/** After the last trade, mark USD from quote FX only where the quote printed. */
 export function carryQuoteFxBars(
   bars: ChartBar[],
   fx: ChartBar[],
@@ -207,34 +260,33 @@ export function carryQuoteFxBars(
   nowSec: number,
 ): ChartBar[] {
   if (!(liveQuoteUsd > 0) || !(bucketSec > 0) || fx.length === 0) return bars;
+  const rolledFx = rollQuoteFxBars(fx, bucketSec);
   const real = bars.filter((b) => !isWhitespaceBar(b) && b.close > 0);
   const lastTraded = [...real].reverse().find((b) => b.volume > 0);
   const last = lastTraded ?? real[real.length - 1];
   if (!last) return bars;
-  const lastFx = quoteFxAt(fx, last.time);
-  const denom = lastFx && lastFx.close > 0 ? lastFx.close : liveQuoteUsd;
-  if (!(denom > 0)) return bars;
+  const lastFx = quoteFxAt(rolledFx, last.time);
+  if (!lastFx || !(lastFx.close > 0)) return bars;
   const end = Math.floor(nowSec / bucketSec) * bucketSec;
-  const start = last.time + bucketSec;
-  if (start > end) return bars;
   const extra: ChartBar[] = [];
-  const unit = last.close / denom;
-  for (let time = start; time <= end; time += bucketSec) {
-    const q = quoteFxAt(fx, time);
-    if (!q || !(q.close > 0)) continue;
-    extra.push({
-      time,
-      open: unit * q.open,
-      high: unit * Math.max(q.high, q.open, q.close),
-      low: unit * Math.min(q.low > 0 ? q.low : q.close, q.open, q.close),
-      close: unit * q.close,
-      volume: 0,
-    });
+  let prevClose = last.close;
+  let prevFxClose = lastFx.close;
+  for (const q of rolledFx) {
+    if (q.time <= last.time || q.time > end) continue;
+    if (!quoteFxPrinted(q)) continue;
+    const close = prevClose * (q.close / prevFxClose);
+    const open = prevClose;
+    const ratioHigh = q.close > 0 ? q.high / q.close : 1;
+    const ratioLow = q.close > 0 ? (q.low > 0 ? q.low : q.close) / q.close : 1;
+    const high = Math.max(open, close, open * ratioHigh, close * ratioHigh);
+    const low = Math.min(open, close, open * ratioLow, close * ratioLow);
+    extra.push({ time: q.time, open, high, low, close, volume: 0 });
+    prevClose = close;
+    prevFxClose = q.close;
   }
   if (extra.length === 0) return bars;
-  const capped = extra.length > 12 ? extra.slice(-12) : extra;
   const byTime = new Map(real.map((bar) => [bar.time, bar]));
-  for (const bar of capped) byTime.set(bar.time, bar);
+  for (const bar of extra) byTime.set(bar.time, bar);
   return [...byTime.values()].sort((a, b) => a.time - b.time);
 }
 
@@ -325,8 +377,18 @@ export function chartHudBar(bars: ChartBar[], hover: ChartBar | null): ChartBar 
   return null;
 }
 
-export function intervalBucketSec(interval: ChartInterval): number {
-  return INTERVAL_BUCKET_SEC[interval];
+/** Last bar that is neither whitespace nor a synthetic carry — anchors auto-fit. */
+export function chartFitAnchorIndex(bars: ChartBar[]): number {
+  if (bars.length === 0) return 0;
+  for (let i = bars.length - 1; i >= 0; i--) {
+    const bar = bars[i]!;
+    if (isWhitespaceBar(bar)) continue;
+    if (!isSyntheticBar(bar)) return i;
+  }
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (!isWhitespaceBar(bars[i]!)) return i;
+  }
+  return bars.length - 1;
 }
 
 /** Bucket every swap into OHLC - this is Sentry's subgraph path, not a spot placeholder. */
@@ -387,9 +449,9 @@ export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowS
  * Pass the first real index inside the last 72 so a quiet 5m does not stay
  * squeezed at 10px — scroll left for earlier session.
  */
-export function chartFitWindowBars(tapeLength: number, firstRealIndex = 0): number {
+export function chartFitWindowBars(tapeLength: number, anchorIndex = 0): number {
   if (tapeLength <= 0) return CHART_WINDOW_BARS;
-  const idx = Math.min(Math.max(firstRealIndex, 0), tapeLength - 1);
+  const idx = Math.min(Math.max(anchorIndex, 0), tapeLength - 1);
   const fromFirst = tapeLength - idx;
   const padded = Math.max(CHART_MIN_VISIBLE_BARS, fromFirst + CHART_FIT_PAD_BARS);
   return Math.min(padded, CHART_WINDOW_BARS);
