@@ -1,7 +1,7 @@
 "use client";
 
-import { useLoginWithEmail, useLoginWithOAuth } from "@privy-io/react-auth";
-import { ArrowLeft, Mail, Search, Wallet, X } from "lucide-react";
+import { useLoginWithEmail, useLoginWithOAuth, useLoginWithPasskey, useLoginWithSms, useSignupWithPasskey } from "@privy-io/react-auth";
+import { ArrowLeft, Fingerprint, Mail, Phone, Search, Wallet, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -75,11 +75,16 @@ function connectErrorMessage(cause: unknown): string {
   return message;
 }
 
+type OtpChannel = "email" | "sms";
+
 type SocialAuth = {
   configured: boolean;
   busy: boolean;
   sendEmailCode: (email: string) => Promise<void>;
   verifyEmailCode: (code: string) => Promise<void>;
+  sendSmsCode: (phone: string) => Promise<void>;
+  verifySmsCode: (code: string) => Promise<void>;
+  loginPasskey: () => Promise<void>;
   loginGoogle: () => Promise<void>;
   loginTwitter: () => Promise<void>;
 };
@@ -91,6 +96,15 @@ const unavailableAuth: SocialAuth = {
     throw new Error(SOCIAL_UNAVAILABLE);
   },
   verifyEmailCode: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  sendSmsCode: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  verifySmsCode: async () => {
+    throw new Error(SOCIAL_UNAVAILABLE);
+  },
+  loginPasskey: async () => {
     throw new Error(SOCIAL_UNAVAILABLE);
   },
   loginGoogle: async () => {
@@ -122,20 +136,44 @@ function WelcomeConnectModalPrivy({
   onClose: () => void;
 }) {
   const [oauthBusy, setOauthBusy] = useState(false);
-  const { sendCode, loginWithCode, state: emailState } = useLoginWithEmail();
+  const { sendCode: sendEmailCode, loginWithCode: loginEmailCode, state: emailState } = useLoginWithEmail();
+  const { sendCode: sendSmsCode, loginWithCode: loginSmsCode, state: smsState } = useLoginWithSms();
+  const { loginWithPasskey, state: passkeyLoginState } = useLoginWithPasskey();
+  const { signupWithPasskey, state: passkeySignupState } = useSignupWithPasskey();
   const { initOAuth } = useLoginWithOAuth();
 
   const emailBusy =
     emailState.status === "sending-code" || emailState.status === "submitting-code";
+  const smsBusy = smsState.status === "sending-code" || smsState.status === "submitting-code";
+  const passkeyBusy =
+    passkeyLoginState.status === "generating-challenge" ||
+    passkeyLoginState.status === "awaiting-passkey" ||
+    passkeyLoginState.status === "submitting-response" ||
+    passkeySignupState.status === "generating-challenge" ||
+    passkeySignupState.status === "awaiting-passkey" ||
+    passkeySignupState.status === "submitting-response";
 
   const auth: SocialAuth = {
     configured: true,
-    busy: oauthBusy || emailBusy,
+    busy: oauthBusy || emailBusy || smsBusy || passkeyBusy,
     sendEmailCode: async (email) => {
-      await sendCode({ email });
+      await sendEmailCode({ email });
     },
     verifyEmailCode: async (code) => {
-      await loginWithCode({ code });
+      await loginEmailCode({ code });
+    },
+    sendSmsCode: async (phoneNumber) => {
+      await sendSmsCode({ phoneNumber });
+    },
+    verifySmsCode: async (code) => {
+      await loginSmsCode({ code });
+    },
+    loginPasskey: async () => {
+      try {
+        await loginWithPasskey();
+      } catch {
+        await signupWithPasskey();
+      }
     },
     loginGoogle: async () => {
       setOauthBusy(true);
@@ -170,6 +208,8 @@ function WelcomeConnectModalView({
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>("welcome");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>("email");
   const [code, setCode] = useState("");
   const [walletQuery, setWalletQuery] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -187,6 +227,8 @@ function WelcomeConnectModalView({
     if (!open) {
       setStep("welcome");
       setEmail("");
+      setPhone("");
+      setOtpChannel("email");
       setCode("");
       setWalletQuery("");
       setPendingId(null);
@@ -236,6 +278,20 @@ function WelcomeConnectModalView({
     setError(null);
     try {
       await auth.sendEmailCode(next);
+      setOtpChannel("email");
+      setStep("otp");
+    } catch (cause) {
+      setError(connectErrorMessage(cause) || SOCIAL_UNAVAILABLE);
+    }
+  };
+
+  const submitPhone = async () => {
+    const next = phone.trim();
+    if (!next) return;
+    setError(null);
+    try {
+      await auth.sendSmsCode(next);
+      setOtpChannel("sms");
       setStep("otp");
     } catch (cause) {
       setError(connectErrorMessage(cause) || SOCIAL_UNAVAILABLE);
@@ -247,10 +303,25 @@ function WelcomeConnectModalView({
     if (!next) return;
     setError(null);
     try {
-      await auth.verifyEmailCode(next);
+      if (otpChannel === "sms") await auth.verifySmsCode(next);
+      else await auth.verifyEmailCode(next);
       onClose();
     } catch (cause) {
       setError(connectErrorMessage(cause) || "Invalid code");
+    }
+  };
+
+  const resendCode = async () => {
+    if (otpChannel === "sms") await submitPhone();
+    else await submitEmail();
+  };
+
+  const loginPasskey = async () => {
+    setError(null);
+    try {
+      await auth.loginPasskey();
+    } catch (cause) {
+      setError(connectErrorMessage(cause) || SOCIAL_UNAVAILABLE);
     }
   };
 
@@ -343,6 +414,39 @@ function WelcomeConnectModalView({
               </button>
             </form>
 
+            <form
+              className="welcome-connect__email"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitPhone();
+              }}
+            >
+              <Phone className="welcome-connect__field-icon" aria-hidden />
+              <input
+                type="tel"
+                name="welcome-phone"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="+1 phone number"
+                value={phone}
+                disabled={busy}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+              <button type="submit" disabled={busy || !phone.trim()}>
+                SMS
+              </button>
+            </form>
+
+            <button
+              type="button"
+              className="welcome-connect__row"
+              disabled={busy}
+              onClick={() => void loginPasskey()}
+              {...TOOLBAR_BUTTON_PROPS}
+            >
+              <Fingerprint className="h-5 w-5" aria-hidden />
+              Passkey
+            </button>
             <button
               type="button"
               className="welcome-connect__row"
@@ -393,10 +497,11 @@ function WelcomeConnectModalView({
               <img src="/brand/hookit-owl-favicon.png" alt="" width={108} height={108} draggable={false} />
             </span>
             <h2 id="welcome-connect-title" className="welcome-connect__title">
-              Check your email
+              {otpChannel === "sms" ? "Check your phone" : "Check your email"}
             </h2>
             <p className="welcome-connect__subtitle">
-              Enter the code we sent to <span className="welcome-connect__email-value">{email}</span>
+              Enter the code we sent to{" "}
+              <span className="welcome-connect__email-value">{otpChannel === "sms" ? phone : email}</span>
             </p>
 
             <form
@@ -426,7 +531,7 @@ function WelcomeConnectModalView({
               type="button"
               className="welcome-connect__resend"
               disabled={busy}
-              onClick={() => void submitEmail()}
+              onClick={() => void resendCode()}
               {...TOOLBAR_BUTTON_PROPS}
             >
               Resend code

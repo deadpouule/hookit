@@ -6,8 +6,8 @@ import { baseSepolia, getActiveChain, ink } from "@/lib/chains";
 export const PRIVY_APP_ID =
   process.env.NEXT_PUBLIC_PRIVY_APP_ID?.trim() || "cmu3yl60508zd0dl60itcihgy";
 
-/** Social + email only. External wallets stay on RainbowKit so they are not Privy MAUs. */
-export const PRIVY_LOGIN_METHODS = ["email", "google", "twitter"] as const;
+/** Email, SMS, passkey, Google, Twitter. External wallets stay on RainbowKit so they are not Privy MAUs. */
+export const PRIVY_LOGIN_METHODS = ["email", "sms", "passkey", "google", "twitter"] as const;
 
 export function isPrivyConfigured(): boolean {
   return PRIVY_APP_ID.length > 0;
