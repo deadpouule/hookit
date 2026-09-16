@@ -10617,7 +10617,7 @@ h2.docs-hook-heading {
 
 .docs-main {
   min-width: 0;
-  max-width: 48rem;
+  max-width: 54rem;
 }
 
 .docs-section {
@@ -11425,237 +11425,30 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
   height: 2.1rem;
 }
 
-.docs-fee-flow {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.35rem;
+.docs-fee-map {
+  overflow-x: auto;
 }
 
-.docs-fee-flow-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0.2rem;
-}
-
-.docs-fee-flow-head .docs-map-card {
-  flex: 1 1 11rem;
-}
-
-.docs-fee-flow-join {
-  display: flex;
-  justify-content: center;
-  color: #f4f4f5;
-}
-
-.docs-fee-flow-outs {
-  display: grid;
-  gap: 0.55rem;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-}
-
-.docs-fee-flow-out {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-}
-
-.docs-fee-flow-out .docs-map-card {
-  width: 100%;
-}
-
-html[data-device="phone"] .docs-fee-flow-head {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-html[data-device="phone"] .docs-fee-flow-head .docs-point-arrow {
-  width: 2.6rem;
-  align-self: center;
-}
-
-html[data-device="phone"] .docs-fee-flow-head .docs-point-arrow svg {
-  transform: rotate(90deg);
-  height: 2.1rem;
-}
-
-.docs-dapp-map {
-  display: grid;
-  gap: 1rem;
-}
-
-.docs-dapp-map-shares {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  border-radius: 0.85rem;
-  background: #0a0a0a;
-}
-
-.docs-dapp-map-shares p {
-  margin: 0 0.4rem 0 0;
-  width: 100%;
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 0.58rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #71717a;
-}
-
-.docs-dapp-map-shares span {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  color: #d4d4d8;
-  font-size: 0.72rem;
-}
-
-.docs-dapp-map-shares strong {
-  font-size: 1.05rem;
-  color: #fff;
-}
-
-.docs-dapp-map-shares .is-creator {
-  border-color: rgb(149 20 209 / 0.45);
-}
-
-.docs-dapp-map-shares .is-hkt {
-  border-color: rgb(34 211 238 / 0.45);
-}
-
-.docs-dapp-map-shares .is-proto {
-  border-color: rgb(250 204 21 / 0.4);
-}
-
-.docs-dapp-map-body {
-  display: grid;
-  gap: 0.45rem;
-}
-
-@media (min-width: 860px) {
-  .docs-dapp-map-shares p {
-    width: auto;
-  }
-
-  .docs-dapp-map-body {
-    grid-template-columns: minmax(9.5rem, 0.85fr) 3.2rem minmax(11rem, 0.95fr) 3.2rem minmax(0, 1.5fr);
-    align-items: center;
-  }
-}
-
-.docs-dapp-map-col,
-.docs-dapp-map-streams {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.docs-dapp-map-col article,
-.docs-dapp-map-streams article,
-.docs-dapp-map-take article,
-.docs-dapp-map-tax article {
-  padding: 0.7rem 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  border-radius: 0.8rem;
-  background: #111;
-}
-
-.docs-dapp-map article strong {
+.docs-fee-map-svg {
   display: block;
-  color: #fff;
-  font-size: 0.8rem;
+  width: 100%;
+  min-width: 38rem;
+  height: auto;
 }
 
-.docs-dapp-map article span {
+.docs-schema--wide {
+  max-width: none;
+}
+
+.docs-cycle {
+  overflow-x: auto;
+}
+
+.docs-cycle-svg {
   display: block;
-  margin-top: 0.18rem;
-  color: #a1a1aa;
-  font-size: 0.66rem;
-  line-height: 1.35;
-}
-
-.docs-dapp-map-join {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  color: #f4f4f5;
-}
-
-@media (min-width: 860px) {
-  .docs-dapp-map-join {
-    display: flex;
-  }
-}
-
-.docs-dapp-map-take {
-  display: grid;
-  justify-items: center;
-  gap: 0.2rem;
-}
-
-.docs-dapp-map-pct {
   width: 100%;
-  text-align: center;
-}
-
-.docs-dapp-map-pct strong {
-  font-size: 1.45rem;
-}
-
-.docs-dapp-map-hub {
-  display: flex;
-  width: 100%;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: #0a0a0a !important;
-}
-
-.docs-dapp-map-hub img {
-  width: 3rem;
-  height: 3rem;
-  margin-bottom: 0.35rem;
-  object-fit: contain;
-}
-
-.docs-dapp-map-stream {
-  display: grid;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-@media (min-width: 720px) {
-  .docs-dapp-map-stream {
-    grid-template-columns: minmax(0, 1fr) 2.8rem minmax(0, 1.1fr);
-  }
-}
-
-.docs-dapp-map-stream.is-hkt article {
-  border-color: rgb(34 211 238 / 0.28);
-}
-
-.docs-dapp-map-stream .docs-point-arrow {
-  justify-self: center;
-}
-
-.docs-dapp-map-tax {
-  display: grid;
-  gap: 0.35rem;
-  align-items: center;
-  padding-top: 0.2rem;
-}
-
-@media (min-width: 720px) {
-  .docs-dapp-map-tax {
-    grid-template-columns: minmax(0, 0.7fr) 3.2rem minmax(0, 1.3fr);
-  }
+  min-width: 44rem;
+  height: auto;
 }
 
 .docs-hkt-pool-flow {
