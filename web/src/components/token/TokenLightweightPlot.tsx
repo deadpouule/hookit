@@ -8,7 +8,6 @@ import {
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
-  CHART_VOLUME_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
   chartRangeSignature,
@@ -19,8 +18,6 @@ import {
   isWhitespaceBar,
   visibleExtremes,
   visiblePriceBand,
-  visibleVolumePeak,
-  volumeSma,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -32,8 +29,6 @@ import {
   TV_CHART_BG,
   TV_CHART_GRID,
   TV_CHART_SCALE_TEXT,
-  TV_VOLUME_DOWN,
-  TV_VOLUME_UP,
 } from "@/lib/tv-chart";
 import type {
   AutoscaleInfoProvider,
@@ -70,8 +65,6 @@ type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Line">;
 type ChartHandle = {
   chart: IChartApi;
   price: PriceSeries;
-  volume: ISeriesApi<"Histogram">;
-  volumeSma: ISeriesApi<"Line">;
   athLine: IPriceLine | null;
   atlLine: IPriceLine | null;
   style: ChartStyle;
@@ -88,15 +81,6 @@ function visiblePriceAutoscale(getBars: () => ChartBar[], getChart: () => IChart
     const band = visiblePriceBand(getBars(), vis?.from, vis?.to);
     if (!band) return null;
     return { priceRange: band };
-  };
-}
-
-function visibleVolumeAutoscale(getBars: () => ChartBar[], getChart: () => IChartApi | null): AutoscaleInfoProvider {
-  return () => {
-    const vis = visibleLogicalRangeOf(getChart());
-    const peak = visibleVolumePeak(getBars(), vis?.from, vis?.to);
-    if (!(peak > 0)) return null;
-    return { priceRange: { minValue: 0, maxValue: peak } };
   };
 }
 
@@ -173,33 +157,6 @@ async function attachPriceSeries(
     priceFormat,
     autoscaleInfoProvider: autoscale,
   });
-}
-
-function attachVolumeSeries(
-  chart: IChartApi,
-  tv: typeof import("lightweight-charts"),
-  autoscale: AutoscaleInfoProvider,
-): { volume: ISeriesApi<"Histogram">; volumeSma: ISeriesApi<"Line"> } {
-  const volume = chart.addSeries(tv.HistogramSeries, {
-    priceScaleId: "volume",
-    priceFormat: { type: "volume" },
-    lastValueVisible: false,
-    priceLineVisible: false,
-    autoscaleInfoProvider: autoscale,
-  });
-  const volumeSmaSeries = chart.addSeries(tv.LineSeries, {
-    priceScaleId: "volume",
-    color: "#d97706",
-    lineWidth: 1,
-    lastValueVisible: false,
-    priceLineVisible: false,
-    crosshairMarkerVisible: false,
-  });
-  chart.priceScale("volume").applyOptions({
-    visible: false,
-    scaleMargins: { top: CHART_VOLUME_MARGIN_TOP, bottom: 0 },
-  });
-  return { volume, volumeSma: volumeSmaSeries };
 }
 
 /** Pin the newest candle against the right axis at Defined pitch. */
@@ -299,24 +256,6 @@ function applyBars(
       }),
     );
   }
-
-  handle.volume.setData(
-    next.map((b) =>
-      isWhitespaceBar(b) || !(b.volume > 0)
-        ? { time: asTime(b) }
-        : {
-            time: asTime(b),
-            value: b.volume,
-            color: b.close >= b.open ? TV_VOLUME_UP : TV_VOLUME_DOWN,
-          },
-    ),
-  );
-  handle.volumeSma.setData(
-    volumeSma(next).map((p) => ({
-      time: p.time as UTCTimestamp,
-      value: p.value,
-    })),
-  );
 
   resizeChartToHost(handle.chart, handle.chart.chartElement());
   if (refit) fitChartView(handle.chart, next, windowBars, bucketSec, anchorIndex);
@@ -438,10 +377,6 @@ export function TokenLightweightPlot({
         () => pendingBarsRef.current,
         () => chart,
       );
-      const volumeAutoscale = visibleVolumeAutoscale(
-        () => pendingBarsRef.current,
-        () => chart,
-      );
       const price = await attachPriceSeries(
         chart,
         tv,
@@ -450,13 +385,10 @@ export function TokenLightweightPlot({
         lineColorRef.current,
         priceAutoscale,
       );
-      const { volume, volumeSma: volumeSmaSeries } = attachVolumeSeries(chart, tv, volumeAutoscale);
 
       const handle: ChartHandle = {
         chart,
         price,
-        volume,
-        volumeSma: volumeSmaSeries,
         athLine: null,
         atlLine: null,
         style: styleRef.current,

@@ -7,7 +7,7 @@ import { zeroAddress } from "viem";
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
-import { formatCompactUsd, formatPercent } from "@/lib/format";
+import { formatPercent } from "@/lib/format";
 import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
@@ -344,10 +344,6 @@ export function TokenCandleChart({
             <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
           </span>
           <span style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}>{formatPercent(hudPct, true)}</span>
-          <span>
-            <span className="token-chart-legend-k">Vol</span>{" "}
-            {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
-          </span>
           {hover ? <span className="token-chart-stats-time">{formatDayClock(hover.time)}</span> : null}
         </div>
       ) : null}

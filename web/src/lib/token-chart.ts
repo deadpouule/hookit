@@ -597,9 +597,9 @@ export function chartVisibleLogicalRange(
   return { from: to - visible, to, barSpacing };
 }
 
-/** TradingView pane: headroom above high, volume docked at bottom. */
-export const CHART_SCALE_MARGIN_TOP = 0.14;
-export const CHART_SCALE_MARGIN_BOTTOM = 0.26;
+/** TradingView pane: headroom above/below the FDV series (no volume dock). */
+export const CHART_SCALE_MARGIN_TOP = 0.12;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.08;
 export const CHART_VOLUME_MARGIN_TOP = 0.84;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 
