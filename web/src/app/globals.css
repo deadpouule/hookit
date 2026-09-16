@@ -11447,8 +11447,26 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
 .docs-cycle-svg {
   display: block;
   width: 100%;
-  min-width: 46rem;
+  min-width: 50rem;
   height: auto;
+  letter-spacing: 0 !important;
+}
+
+.docs-cycle-svg text {
+  letter-spacing: 0 !important;
+}
+
+.docs-cycle-hook-fo {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docs-cycle-hook-logo {
+  width: 24px;
+  height: 24px;
 }
 
 .docs-hkt-pool-flow {

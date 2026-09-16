@@ -1,3 +1,6 @@
+import { HookLogo } from "@/components/home/market/HookLogo";
+import { EXPLORE_HOOKS, type BrowseHookId, type HookTheme } from "@/lib/master-hooks";
+
 function Chip({
   x,
   y,
@@ -35,25 +38,6 @@ function Chip({
   );
 }
 
-function EthChip({ x, y, size = 46 }: { x: number; y: number; size?: number }) {
-  const s = size / 46;
-  return (
-    <g>
-      <rect x={x} y={y} width={size} height={size} rx={13 * s} fill="#627eea" stroke="rgb(255 255 255 / 0.14)" />
-      <path
-        transform={`translate(${x + 11 * s} ${y + 8 * s}) scale(${1.05 * s})`}
-        fill="#fff"
-        d="M12 2.2 5.8 12.2 12 15.8l6.2-3.6L12 2.2Zm0 19.6 6.2-8.6L12 16.8 5.8 13.2 12 21.8Z"
-      />
-      {size >= 40 ? (
-        <text x={x + size / 2} y={y + size + 16} textAnchor="middle" fill="#a1a1aa" fontSize="10">
-          ETH
-        </text>
-      ) : null}
-    </g>
-  );
-}
-
 function MemeChip({
   x,
   y,
@@ -75,8 +59,9 @@ function MemeChip({
         y={y + size / 2 + (size > 36 ? 4 : 3)}
         textAnchor="middle"
         fill="#0a0a0a"
-        fontSize={size > 36 ? 10 : size > 26 ? 8 : 7}
+        fontSize={size > 36 ? 9 : size > 26 ? 8 : 7}
         fontWeight="800"
+        letterSpacing="0"
       >
         {label}
       </text>
@@ -84,22 +69,10 @@ function MemeChip({
   );
 }
 
-function Pct({
-  x,
-  y,
-  value,
-  label,
-  color,
-}: {
-  x: number;
-  y: number;
-  value: string;
-  label: string;
-  color: string;
-}) {
+function Pct({ x, y, value, label }: { x: number; y: number; value: string; label: string }) {
   return (
     <g>
-      <text x={x} y={y} fill={color} fontSize="22" fontWeight="800">
+      <text x={x} y={y} fill="#f4f4f5" fontSize="22" fontWeight="800">
         {value}
       </text>
       <text x={x + (value.length > 3 ? 58 : 48)} y={y} fill="#d4d4d8" fontSize="13">
@@ -109,78 +82,54 @@ function Pct({
   );
 }
 
-function HookGlyph({
-  id,
-  color,
-}: {
-  id: "auto-burn" | "backed-floor" | "deepen-lps" | "holder-airdrop";
-  color: string;
-}) {
-  if (id === "auto-burn") {
-    return (
-      <g fill="none">
-        <path
-          d="M12 2.8c1.7 2.6 5.2 5.1 5.2 9.1A5.2 5.2 0 0 1 7 11.9C7 8.4 10.2 5.6 12 2.8Z"
-          fill={color}
-          fillOpacity="0.22"
-          stroke={color}
-          strokeWidth="1.7"
-          strokeLinejoin="round"
-        />
-        <path d="M12 8.2c1 1.6 2.6 2.8 2.6 4.7A2.6 2.6 0 0 1 9.4 13c0-1.7 1.5-3 2.6-4.8Z" fill={color} />
-      </g>
-    );
-  }
-  if (id === "backed-floor") {
-    return <path d="M14 8h7v3H14zM9 12h12v3H9zM3 16h18v5H3z" fill={color} />;
-  }
-  if (id === "deepen-lps") {
-    return (
-      <g>
-        <path d="M2.2 5.1h4v2.15H2.2zM2.2 7.25h6.2v2.15H2.2zM2.2 9.4h8.2v2.15H2.2zM2.2 11.55h9.5v2.25H2.2zM2.2 13.8h10.3v5.1H2.2z" fill={color} />
-        <path
-          d="M17.8 5.1h4v2.15h-4zM15.6 7.25h6.2v2.15h-6.2zM13.6 9.4h8.2v2.15h-8.2zM12.3 11.55h9.5v2.25h-9.5zM11.5 13.8h10.3v5.1H11.5z"
-          fill={color}
-          fillOpacity="0.42"
-        />
-      </g>
-    );
-  }
+function LinePct({ x, y, value }: { x: number; y: number; value: string }) {
+  const w = value.length > 4 ? 48 : 40;
   return (
-    <g fill="none">
-      <path d="M3.8 10.2C3.8 5.4 7.4 2.2 12 2.2s8.2 3.2 8.2 8Z" fill={color} />
-      <path
-        d="M5.6 10.2 9.1 16.6M9.4 10.2 10.5 16.6M14.6 10.2 13.5 16.6M18.4 10.2 14.9 16.6"
-        stroke={color}
-        strokeWidth="1.45"
-        strokeLinecap="round"
-      />
-      <rect x="8.2" y="16.4" width="7.6" height="5.2" rx="0.45" fill={color} />
-      <rect x="7.6" y="16.15" width="8.8" height="1.45" rx="0.3" fill={color} />
+    <g>
+      <rect x={x-w/2} y={y-11} width={w} height="22" rx="11" fill="#f4f4f5" />
+      <text x={x} y={y + 4} textAnchor="middle" fill="#0a0a0a" fontSize="9" fontWeight="800" letterSpacing="0">
+        {value}
+      </text>
     </g>
   );
 }
 
-function HookTaxMark({
+const HOOK_SHORT: Record<BrowseHookId, string> = {
+  "holder-airdrop": "Airdrop",
+  "backed-floor": "Floor",
+  "buyback-vesting": "Vest",
+  "dynamic-fees": "Dynamic",
+  "fixed-fee": "Fixed",
+  "deepen-lps": "Deepen",
+  "auto-burn": "Burn",
+  "anti-mev": "MEV",
+  "max-tx": "Max Tx",
+  "anti-snipe": "Snipe",
+  "creator-share-to-hook": "Creator",
+};
+
+function HookMark({
   x,
   y,
-  id,
-  color,
+  hookId,
+  theme,
   label,
 }: {
   x: number;
   y: number;
-  id: "auto-burn" | "backed-floor" | "deepen-lps" | "holder-airdrop";
-  color: string;
+  hookId: BrowseHookId;
+  theme: HookTheme;
   label: string;
 }) {
   return (
     <g>
       <rect x={x} y={y} width="36" height="36" rx="10" fill="#141414" stroke="rgb(255 255 255 / 0.14)" />
-      <g transform={`translate(${x + 6} ${y + 6})`}>
-        <HookGlyph id={id} color={color} />
-      </g>
-      <text x={x + 18} y={y + 50} textAnchor="middle" fill="#d4d4d8" fontSize="9" fontWeight="700">
+      <foreignObject x={x + 6} y={y + 6} width="24" height="24">
+        <div className="docs-cycle-hook-fo">
+          <HookLogo hookId={hookId} theme={theme} className="docs-cycle-hook-logo" />
+        </div>
+      </foreignObject>
+      <text x={x + 18} y={y + 50} textAnchor="middle" fill="#d4d4d8" fontSize="8" fontWeight="700" letterSpacing="0">
         {label}
       </text>
     </g>
@@ -202,13 +151,13 @@ const PILE_STOCKS: { src: string; x: number; y: number; size: number }[] = [
   { src: "/pairing/usdg.png", x: 476, y: 272, size: 26 },
 ];
 
-const PILE_MEMES: { label: string; fill: string; x: number; y: number }[] = [
-  { label: "meme1", fill: MEME_COLORS[0], x: 500, y: 248 },
-  { label: "meme2", fill: MEME_COLORS[1], x: 568, y: 240 },
-  { label: "meme3", fill: MEME_COLORS[2], x: 612, y: 286 },
-  { label: "meme4", fill: MEME_COLORS[3], x: 568, y: 328 },
-  { label: "meme5", fill: MEME_COLORS[4], x: 508, y: 322 },
-  { label: "meme6", fill: MEME_COLORS[5], x: 492, y: 286 },
+const PILE_MEMES: { key: string; label: string; fill: string; x: number; y: number }[] = [
+  { key: "p-memex-a", label: "memex", fill: MEME_COLORS[0], x: 500, y: 248 },
+  { key: "p-meme2", label: "meme2", fill: MEME_COLORS[1], x: 568, y: 240 },
+  { key: "p-memex-b", label: "memex", fill: MEME_COLORS[4], x: 612, y: 286 },
+  { key: "p-meme4", label: "meme4", fill: MEME_COLORS[3], x: 568, y: 328 },
+  { key: "p-meme5", label: "meme5", fill: MEME_COLORS[2], x: 508, y: 322 },
+  { key: "p-meme6", label: "meme6", fill: MEME_COLORS[5], x: 492, y: 286 },
 ];
 
 export function DocsCycleArt() {
@@ -217,36 +166,32 @@ export function DocsCycleArt() {
       <figcaption>Every swap feeds $HKT</figcaption>
       <p className="docs-map-kicker">Token buybacks. Holder drops. A connected fee cycle.</p>
       <div className="docs-cycle" role="img" aria-label="Every launch and every swap on hookit feeds $HKT">
-        <svg viewBox="0 0 1080 720" className="docs-cycle-svg">
+        <svg viewBox="0 0 1240 840" className="docs-cycle-svg" style={{ letterSpacing: 0 }}>
           <defs>
             <marker id="docs-cycle-w" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M0 1.1 L11 6 L0 10.9 L2.8 6 Z" fill="#f4f4f5" />
             </marker>
           </defs>
 
-          <text x="36" y="40" fill="#71717a" fontSize="11" letterSpacing="2.2">
+          <text x="36" y="36" fill="#71717a" fontSize="11" letterSpacing="2.2">
             LAUNCHED ON HOOKIT
           </text>
-          <text x="250" y="40" fill="#71717a" fontSize="11" letterSpacing="2.2">
+          <text x="250" y="36" fill="#71717a" fontSize="11" letterSpacing="2.2">
             SHARE OF THE 1%
           </text>
-          <Pct x={250} y={72} value="60%" label="Creator" color="#c084fc" />
-          <Pct x={430} y={72} value="10%" label="$HKT" color="#22d3ee" />
-          <Pct x={590} y={72} value="30%" label="Protocol" color="#facc15" />
+          <Pct x={250} y={66} value="60%" label="Creator" />
+          <Pct x={400} y={66} value="10%" label="$HKT" />
+          <Pct x={530} y={66} value="30%" label="Protocol" />
 
-          <Chip x={40} y={92} src="/brand/hookit-owl-favicon.png" label="$HKT" />
-          <EthChip x={16} y={172} />
-          <MemeChip x={68} y={172} label="meme1" fill={MEME_COLORS[0]} />
-          <MemeChip x={16} y={252} label="meme2" fill={MEME_COLORS[1]} />
-          <MemeChip x={68} y={252} label="meme3" fill={MEME_COLORS[2]} />
-          <MemeChip x={40} y={332} label="meme4" fill={MEME_COLORS[3]} />
+          <MemeChip x={40} y={88} label="memex" fill={MEME_COLORS[0]} />
+          <MemeChip x={16} y={168} label="memex" fill={MEME_COLORS[4]} />
+          <MemeChip x={68} y={168} label="meme2" fill={MEME_COLORS[1]} />
+          <MemeChip x={40} y={248} label="meme4" fill={MEME_COLORS[3]} />
 
-          <path d="M 86 115 C 150 130, 190 230, 200 268" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 62 195 C 140 220, 180 255, 200 276" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 114 195 C 160 230, 185 265, 200 280" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 62 275 C 140 285, 180 285, 200 288" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 114 275 C 160 290, 185 295, 200 292" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 86 355 C 155 340, 185 320, 200 304" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 86 111 C 150 140, 190 230, 200 272" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 62 191 C 140 220, 180 255, 200 280" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 114 191 C 160 230, 185 265, 200 284" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 86 271 C 150 290, 185 295, 200 296" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
 
           <rect x="200" y="246" width="214" height="92" rx="28" fill="#0a0a0a" stroke="#f4f4f5" strokeWidth="2" />
           <text x="307" y="284" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="800">
@@ -259,101 +204,129 @@ export function DocsCycleArt() {
             MasterLaunchHook
           </text>
 
-          <Chip x={40} y={428} src="/brand/quotrons-mark.png" label="wStock" />
-          <Chip x={16} y={508} src="/pairing/usdg.png" label="USDG" size={32} />
-          <Chip x={54} y={508} src="/pairing/wnvdax.svg" label="NVDA" size={32} />
-          <Chip x={92} y={508} src="/pairing/waaplx.svg" label="AAPL" size={32} />
-          <Chip x={130} y={508} src="/pairing/wtslax.png" label="TSLA" size={32} />
-          <Chip x={16} y={572} src="/pairing/wspyx.svg" label="SPY" size={32} />
-          <Chip x={54} y={572} src="/pairing/wgooglx.svg" label="GOOG" size={32} />
-          <Chip x={92} y={572} src="/pairing/wamznx.svg" label="AMZN" size={32} />
-          <Chip x={130} y={572} src="/pairing/wnflxx.svg" label="NFLX" size={32} />
+          <Chip x={40} y={348} src="/brand/quotrons-mark.png" label="wStock" />
+          <path d="M 86 371 C 150 360, 180 330, 200 314" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <Chip x={16} y={448} src="/pairing/usdg.png" label="USDG" size={32} />
+          <Chip x={54} y={448} src="/pairing/wnvdax.svg" label="NVDA" size={32} />
+          <Chip x={92} y={448} src="/pairing/waaplx.svg" label="AAPL" size={32} />
+          <Chip x={130} y={448} src="/pairing/wtslax.png" label="TSLA" size={32} />
+          <Chip x={16} y={512} src="/pairing/wspyx.svg" label="SPY" size={32} />
+          <Chip x={54} y={512} src="/pairing/wgooglx.svg" label="GOOG" size={32} />
+          <Chip x={92} y={512} src="/pairing/wamznx.svg" label="AMZN" size={32} />
+          <Chip x={130} y={512} src="/pairing/wnflxx.svg" label="NFLX" size={32} />
 
-          <path d="M 414 268 C 430 170, 390 122, 448 112" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 414 268 C 430 170, 400 130, 448 118" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
           <path d="M 414 292 C 450 292, 490 292, 486 292" fill="none" stroke="#f4f4f5" strokeWidth="2.6" markerEnd="url(#docs-cycle-w)" />
-          <path d="M 360 338 C 380 430, 400 488, 448 500" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <LinePct x={432} y={278} value="80%" />
+          <LinePct x={432} y={308} value="0.10%" />
+          <path d="M 360 338 C 380 430, 400 500, 448 522" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
 
-          <rect x="452" y="82" width="168" height="64" rx="14" fill="#111" stroke="#c084fc" strokeOpacity="0.55" />
-          <text x="468" y="108" fill="#fff" fontSize="13" fontWeight="700">
-            Creator 60%
+          <rect x="448" y="96" width="150" height="44" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <text x="464" y="124" fill="#f4f4f5" fontSize="14" fontWeight="800">
+            60% Creator
           </text>
-          <text x="468" y="128" fill="#a1a1aa" fontSize="11">
-            Escrow, vest, or pot
+
+          <path d="M 598 108 C 640 70, 670 70, 698 78" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 598 118 C 640 130, 670 140, 698 148" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <path d="M 598 128 C 640 190, 670 210, 698 218" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+
+          <rect x="702" y="56" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="84" fill="#fff" fontSize="12" fontWeight="700">
+            Escrow
+          </text>
+          <rect x="702" y="116" width="186" height="56" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="138" fill="#fff" fontSize="12" fontWeight="700">
+            Buyback Vesting
+          </text>
+          <text x="718" y="156" fill="#a1a1aa" fontSize="10">
+            time or FDV target
+          </text>
+          <rect x="702" y="188" width="186" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
+          <text x="718" y="216" fill="#fff" fontSize="12" fontWeight="700">
+            Creator → Hook
+          </text>
+          <text x="702" y="252" fill="#a1a1aa" fontSize="11">
+            A choice. Pick one.
           </text>
 
           <circle cx="560" cy="292" r="74" fill="#0a0a0a" stroke="#22d3ee" strokeWidth="2.4" />
-          <image href="/brand/hookit-owl-favicon.png" x="532" y="258" width="56" height="56" />
           {PILE_STOCKS.map((item) => (
             <Chip key={`${item.src}-${item.x}`} x={item.x} y={item.y} src={item.src} size={item.size} />
           ))}
           {PILE_MEMES.map((item) => (
-            <MemeChip key={item.label} x={item.x} y={item.y} label={item.label} fill={item.fill} size={32} />
+            <MemeChip key={item.key} x={item.x} y={item.y} label={item.label} fill={item.fill} size={32} />
           ))}
-          <EthChip x={546} y={220} size={24} />
-          <text x="560" y="412" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="800">
-            $HKT
+
+          <rect x="448" y="500" width="210" height="72" rx="14" fill="#111" stroke="#f4f4f5" strokeOpacity="0.35" />
+          <text x="464" y="524" fill="#f4f4f5" fontSize="14" fontWeight="800">
+            30% Protocol
           </text>
-          <text x="560" y="430" textAnchor="middle" fill="#67e8f9" fontSize="11">
+          <text x="464" y="544" fill="#f4f4f5" fontSize="11" fontWeight="700">
+            80% buyback and burn $HKT
+          </text>
+          <text x="464" y="560" fill="#f4f4f5" fontSize="11" fontWeight="700">
+            20% protocol ops funds
+          </text>
+
+          <path d="M 634 300 C 900 318, 910 200, 922 168" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <rect x="922" y="70" width="280" height="100" rx="16" fill="#111" stroke="#22d3ee" strokeOpacity="0.5" />
+          <image href="/brand/hookit-owl-favicon.png" x="938" y="92" width="44" height="44" />
+          <text x="992" y="108" fill="#fff" fontSize="14" fontWeight="700">
+            Holders $HKT
+          </text>
+          <text x="992" y="128" fill="#67e8f9" fontSize="11">
             Hold one, get all
           </text>
-
-          <rect x="452" y="484" width="168" height="44" rx="14" fill="#111" stroke="#facc15" strokeOpacity="0.55" />
-          <text x="468" y="512" fill="#fff" fontSize="13" fontWeight="700">
-            Protocol 30%
+          <text x="992" y="146" fill="#a1a1aa" fontSize="11">
+            10% buys that ticker. Epoch push.
           </text>
 
-          <path d="M 634 280 C 710 230, 760 180, 798 166" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <rect x="802" y="128" width="236" height="78" rx="16" fill="#111" stroke="#22d3ee" strokeOpacity="0.5" />
-          <image href="/brand/hookit-owl-favicon.png" x="818" y="146" width="36" height="36" />
-          <text x="864" y="160" fill="#fff" fontSize="13" fontWeight="700">
-            Live $HKT holders
-          </text>
-          <text x="864" y="180" fill="#a1a1aa" fontSize="11">
-            10% buys that ticker
-          </text>
-          <text x="864" y="196" fill="#67e8f9" fontSize="11">
-            Epoch push, pro-rata
-          </text>
-
-          <path d="M 620 506 C 720 520, 820 490, 802 436" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
-          <rect x="802" y="380" width="236" height="78" rx="16" fill="#111" stroke="#facc15" strokeOpacity="0.5" />
-          <image href="/brand/hookit-owl-favicon.png" x="818" y="398" width="36" height="36" />
-          <text x="864" y="412" fill="#fff" fontSize="13" fontWeight="700">
+          <path d="M 658 536 C 800 536, 900 500, 918 456" fill="none" stroke="#f4f4f5" strokeWidth="2.2" markerEnd="url(#docs-cycle-w)" />
+          <LinePct x={800} y={528} value="80%" />
+          <rect x="922" y="380" width="280" height="78" rx="16" fill="#111" stroke="#facc15" strokeOpacity="0.5" />
+          <image href="/brand/hookit-owl-favicon.png" x="938" y="398" width="36" height="36" />
+          <text x="984" y="412" fill="#fff" fontSize="13" fontWeight="700">
             Buy $HKT and burn
           </text>
-          <text x="864" y="432" fill="#a1a1aa" fontSize="11">
+          <text x="984" y="432" fill="#f4f4f5" fontSize="11" fontWeight="700">
             80% of protocol cut
           </text>
-          <text x="864" y="448" fill="#fde68a" fontSize="11">
+          <text x="984" y="448" fill="#a1a1aa" fontSize="11">
             Supply goes down
           </text>
 
           <path
-            d="M 920 458 C 1000 480, 1020 340, 634 330"
+            d="M 1060 458 C 1140 490, 1180 340, 634 330"
             fill="none"
             stroke="#f4f4f5"
             strokeWidth="2.2"
             strokeDasharray="6 6"
             markerEnd="url(#docs-cycle-w)"
           />
-          <text x="1064" y="328" textAnchor="end" fill="#f4f4f5" fontSize="11" fontWeight="700">
+          <text x="1224" y="328" textAnchor="end" fill="#f4f4f5" fontSize="11" fontWeight="700">
             Buy $HKT again
           </text>
 
-          <path d="M 307 338 C 307 400, 307 560, 307 618" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <rect x="214" y="622" width="186" height="58" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-          <text x="230" y="646" fill="#fff" fontSize="12" fontWeight="700">
+          <path d="M 307 338 C 307 420, 307 620, 307 678" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <rect x="214" y="682" width="170" height="58" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+          <text x="230" y="706" fill="#fff" fontSize="12" fontWeight="700">
             Hook tax
           </text>
-          <text x="230" y="664" fill="#a1a1aa" fontSize="11">
+          <text x="230" y="724" fill="#a1a1aa" fontSize="11">
             Optional. Fills the pot.
           </text>
-          <path d="M 400 651 C 430 651, 460 651, 488 651" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
-          <rect x="492" y="608" width="360" height="88" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
-          <HookTaxMark x={524} y={622} id="auto-burn" color="#dc2626" label="Burn" />
-          <HookTaxMark x={600} y={622} id="backed-floor" color="#f43f5e" label="Floor" />
-          <HookTaxMark x={676} y={622} id="deepen-lps" color="#10b981" label="Deepen" />
-          <HookTaxMark x={752} y={622} id="holder-airdrop" color="#f59e0b" label="Airdrop" />
+          <path d="M 384 711 C 410 711, 430 711, 452 711" fill="none" stroke="#f4f4f5" strokeWidth="1.8" markerEnd="url(#docs-cycle-w)" />
+          <rect x="456" y="668" width="700" height="148" rx="14" fill="#111" stroke="rgb(255 255 255 / 0.12)" />
+          {EXPLORE_HOOKS.map((hook, i) => (
+            <HookMark
+              key={hook.id}
+              x={476 + (i % 6) * 110}
+              y={i < 6 ? 684 : 748}
+              hookId={hook.id}
+              theme={hook.theme}
+              label={HOOK_SHORT[hook.id]}
+            />
+          ))}
         </svg>
       </div>
       <p className="docs-schema-note">
