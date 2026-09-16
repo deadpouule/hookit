@@ -139,15 +139,16 @@ function Glyph({ id }: { id: BrowseHookId }) {
     case "creator-share-to-hook":
       return (
         <svg viewBox="0 0 24 24" fill="none">
-          <rect x="5.4" y="15.1" width="13.2" height="5.5" rx="1.5" stroke={stroke} strokeWidth="1.7" />
+          <rect x="5.1" y="16.15" width="13.8" height="5.05" rx="1.15" stroke={stroke} strokeWidth="1.65" />
+          <rect x="7.35" y="8.35" width="9.3" height="8" rx="0.55" stroke={stroke} strokeWidth="1.65" />
+          <ellipse cx="12" cy="7.15" rx="5.35" ry="3.35" stroke={stroke} strokeWidth="1.65" />
           <path
-            d="M7.5 15.1c-2.7 0-3.9-4-1.4-5.4C5.6 6 9.2 4.4 12 7.2 14.8 4.4 18.4 6 17.9 9.7c2.5 1.4 1.3 5.4-1.4 5.4"
+            d="M10.05 16.1V9.15M12 16.1V8.2M13.95 16.1V9.15"
             stroke={stroke}
-            strokeWidth="1.7"
+            strokeWidth="1.15"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
-          <path d="M12 5.6v3.9" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
+          <path d="M12 3.85v1.7" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
         </svg>
       );
     case "fixed-fee":
