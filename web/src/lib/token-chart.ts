@@ -157,6 +157,18 @@ export function scaleBars(bars: ChartBar[], scale: ChartScale, supply = TOTAL_SU
   }));
 }
 
+/** True when the bar came from a real swap (not FX carry / gap fill). */
+export function isTradedBar(bar: ChartBar): boolean {
+  return !isWhitespaceBar(bar) && bar.volume > 0 && bar.close > 0;
+}
+
+/** Candle series: only real prints (+ optional live bucket at the right edge). */
+export function isCandleBar(bar: ChartBar, isLastReal = false): boolean {
+  if (isWhitespaceBar(bar) || !(bar.close > 0)) return false;
+  if (bar.volume > 0) return true;
+  return isLastReal;
+}
+
 export function chartRenderableCandle(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   return { open: bar.open, high: bar.high, low: bar.low, close: bar.close };
 }
@@ -428,8 +440,8 @@ export const CHART_MIN_WINDOW_BARS = 72;
 /** TV default `rightOffset` — room for the last-value tag after the last candle. */
 export const CHART_RIGHT_OFFSET = 5;
 export const CHART_MIN_BAR_SPACING = 1;
-/** Safety cap only; Defined auto-fit can go up to ~48px on a young token. */
-export const CHART_MAX_BAR_SPACING = 48;
+/** Cap candle width — TradingView rarely exceeds ~32px even on young tokens. */
+export const CHART_MAX_BAR_SPACING = 32;
 /** Defined "auto" — hug a quiet tape so 2–4 prints stay fat, like Codex 5m. */
 export const CHART_MIN_VISIBLE_BARS = 16;
 /** Empty slots to the left of the first print so the first candle is not glued. */
@@ -515,15 +527,27 @@ export function visibleExtremes(
   return { ath, atl };
 }
 
-/** High/low of real candles in the visible logical range (Defined auto Y-axis). */
+/** High/low of traded candles in the visible logical range (TV auto-scale). */
 export function visiblePriceBand(
   bars: ChartBar[],
   from?: number,
   to?: number,
 ): { minValue: number; maxValue: number } | null {
-  const ext = visibleExtremes(bars, from, to);
-  if (!ext) return null;
-  return chartPriceBand(ext.atl, ext.ath);
+  const { start, end } = visibleBarSlice(bars.length, from, to);
+  let ath = -Infinity;
+  let atl = Infinity;
+  for (let i = start; i <= end; i++) {
+    const bar = bars[i];
+    if (!bar || !isTradedBar(bar)) continue;
+    ath = Math.max(ath, bar.high);
+    atl = Math.min(atl, bar.low);
+  }
+  if (!(ath > 0) || !(atl > 0)) {
+    const ext = visibleExtremes(bars, from, to);
+    if (!ext) return null;
+    return chartPriceBand(ext.atl, ext.ath);
+  }
+  return chartPriceBand(atl, ath);
 }
 
 /** Peak volume in the visible logical range so off-screen prints don't dwarf the pane. */
@@ -557,10 +581,10 @@ export function chartVisibleLogicalRange(
   return { from: to - visible, to, barSpacing };
 }
 
-/** TradingView pane: 10% above the high, volume overlay in the bottom fifth. */
-export const CHART_SCALE_MARGIN_TOP = 0.1;
-export const CHART_SCALE_MARGIN_BOTTOM = 0.22;
-export const CHART_VOLUME_MARGIN_TOP = 0.82;
+/** TradingView pane: headroom above high, volume docked at bottom. */
+export const CHART_SCALE_MARGIN_TOP = 0.14;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.26;
+export const CHART_VOLUME_MARGIN_TOP = 0.84;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 
 /** TradingView default Volume SMA (period 20) for the Defined overlay. */
@@ -594,10 +618,13 @@ export function chartPriceBand(
   const hi0 = Math.max(minValue, maxValue);
   const mid = (lo0 + hi0) / 2;
   if (!(mid > 0)) return null;
-  const floorSpan = mid * 0.004;
   const span = hi0 - lo0;
-  if (span >= floorSpan) return { minValue: lo0, maxValue: hi0 };
-  return { minValue: Math.max(mid - floorSpan / 2, 0), maxValue: mid + floorSpan / 2 };
+  const pad = span > 0 ? span * 0.1 : mid * 0.02;
+  if (span > 0) {
+    return { minValue: Math.max(lo0 - pad, 0), maxValue: hi0 + pad };
+  }
+  const half = pad / 2;
+  return { minValue: Math.max(mid - half, 0), maxValue: mid + half };
 }
 
 /**

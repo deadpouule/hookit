@@ -3646,29 +3646,28 @@
     padding: 4px 6px;
   }
 
-  .token-chart-hud {
-    pointer-events: none;
-    position: absolute;
-    inset: 8px 80px auto 10px;
-    z-index: 4;
+  .token-chart-stats {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 4px 12px;
+    padding: 6px 10px;
+    border-bottom: 1px solid rgb(255 255 255 / 0.04);
     font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
     line-height: 1.4;
     color: #d4d4d8;
-    text-shadow: 0 1px 2px rgb(17 17 17 / 0.9);
+    background: #070708;
   }
 
-  html[data-device="phone"] .token-chart-hud {
-    inset: 6px 10px auto 8px;
-  }
-
-  .token-chart-hud-id {
+  .token-chart-stats-id {
     font-weight: 500;
     color: #f4f4f5;
+    margin-right: 2px;
+  }
+
+  .token-chart-stats-time {
+    color: #71717a;
   }
 
   .token-chart-legend-k {

@@ -8,6 +8,7 @@ import {
   barChangePct,
   barsForInterval,
   carryQuoteFxBars,
+  CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
   CHART_MIN_VISIBLE_BARS,
   CHART_RIGHT_OFFSET,
@@ -282,18 +283,23 @@ test("candles stretch a 72-bar Defined window across the pane", () => {
   assert.equal(desk.to - desk.from, Math.floor(1038 / desk.barSpacing));
   const wide = chartVisibleLogicalRange(1, 1400, CHART_WINDOW_BARS);
   assert.ok(wide);
-  assert.equal(wide.barSpacing, 1400 / slots);
+  assert.equal(wide.barSpacing, Math.min(1400 / slots, CHART_MAX_BAR_SPACING));
   assert.equal(chartVisibleLogicalRange(0), null);
 });
 
-test("chartPriceBand hugs the visible range so one trade fills the pane", () => {
-  assert.deepEqual(chartPriceBand(100, 120), { minValue: 100, maxValue: 120 });
-  assert.deepEqual(chartPriceBand(0.0000051, 0.0000051235), { minValue: 0.0000051, maxValue: 0.0000051235 });
+test("chartPriceBand pads the visible range like TradingView auto-scale", () => {
+  const band = chartPriceBand(100, 120);
+  assert.ok(band);
+  assert.equal(band!.minValue, 98);
+  assert.equal(band!.maxValue, 122);
+  const micro = chartPriceBand(0.0000051, 0.0000051235);
+  assert.ok(micro);
+  assert.ok(micro!.minValue < 0.0000051);
+  assert.ok(micro!.maxValue > 0.0000051235);
   const flat = chartPriceBand(0.000003, 0.000003);
   assert.ok(flat);
   assert.ok(flat.minValue < 0.000003);
   assert.ok(flat.maxValue > 0.000003);
-  assert.ok(flat.maxValue - flat.minValue < 0.000003 * 0.005);
   assert.equal(chartPriceBand(0, 0), null);
 });
 

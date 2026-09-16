@@ -8,16 +8,15 @@ import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatCompactUsd, formatPercent } from "@/lib/format";
-import { TV_CANDLE_DOWN, TV_CANDLE_UP, formatTvPrice } from "@/lib/tv-chart";
+import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   applyTicksToBuckets,
   barChangePct,
   barsForInterval,
-  carryQuoteFxBars,
   chartFitAnchorIndex,
-  chartFitWindowBars,
   chartHudBar,
+  chartWindowBars,
   chartSpanSec,
   definedWhitespaceTape,
   ensureCurrentBar,
@@ -226,15 +225,9 @@ export function TokenCandleChart({
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
       const marked =
         liveFx > 0 && fx.length > 0
-          ? carryQuoteFxBars(
-              linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx)),
-              fx,
-              liveFx,
-              bucket,
-              nowSec,
-            )
+          ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx))
           : linkBarOpens(current);
-      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec);
+      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
     },
     [source, swaps, marketCap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
@@ -245,7 +238,7 @@ export function TokenCandleChart({
   const hasData = realBars.length > 0;
   const bucketSec = intervalBucketSec(interval, spanSec);
   const anchorIndex = chartFitAnchorIndex(bars);
-  const windowBars = chartFitWindowBars(bars.length, anchorIndex);
+  const windowBars = chartWindowBars();
   const open = realBars[0]?.open ?? 0;
   const close = realBars.length ? realBars[realBars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
@@ -332,6 +325,33 @@ export function TokenCandleChart({
         </div>
       </div>
 
+      {hasData && hud ? (
+        <div className="token-chart-stats" aria-live="polite">
+          <span className="token-chart-stats-id">
+            {ticker || name || "Token"}
+            <span className="text-zinc-500"> · {TF_LABEL[interval]}</span>
+          </span>
+          <span>
+            <span className="token-chart-legend-k">O</span> {formatChartUsd(hud.open, scale)}
+          </span>
+          <span>
+            <span className="token-chart-legend-k">H</span> {formatChartUsd(hud.high, scale)}
+          </span>
+          <span>
+            <span className="token-chart-legend-k">L</span> {formatChartUsd(hud.low, scale)}
+          </span>
+          <span>
+            <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
+          </span>
+          <span style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}>{formatPercent(hudPct, true)}</span>
+          <span>
+            <span className="token-chart-legend-k">Vol</span>{" "}
+            {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
+          </span>
+          {hover ? <span className="token-chart-stats-time">{formatDayClock(hover.time)}</span> : null}
+        </div>
+      ) : null}
+
       <div
         className={cn(
           "token-chart-plot relative",
@@ -342,50 +362,6 @@ export function TokenCandleChart({
               : "h-[260px] sm:h-[380px] md:h-[460px]",
         )}
       >
-        {hasData ? (
-          <div className="token-chart-hud">
-            <span className="token-chart-hud-id">
-              {ticker || name || "Token"}
-              <span className="text-zinc-500"> · {TF_LABEL[interval]}</span>
-            </span>
-            {hud ? (
-              <>
-                <span>
-                  <span className="token-chart-legend-k">O</span> {formatChartUsd(hud.open, scale)}
-                </span>
-                <span>
-                  <span className="token-chart-legend-k">H</span> {formatChartUsd(hud.high, scale)}
-                </span>
-                <span>
-                  <span className="token-chart-legend-k">L</span> {formatChartUsd(hud.low, scale)}
-                </span>
-                <span>
-                  <span className="token-chart-legend-k">C</span> {formatChartUsd(hud.close, scale)}
-                </span>
-                <span style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}>{formatPercent(hudPct, true)}</span>
-                <span>
-                  <span className="token-chart-legend-k">Vol</span>{" "}
-                  {hud.volume > 0 ? formatCompactUsd(hud.volume) : "—"}
-                </span>
-                {hover ? <span className="text-zinc-500">{formatDayClock(hover.time)}</span> : null}
-                {close > 0 ? (
-                  <div className="token-chart-last-price token-chart-last-price--plot">
-                    <p className="token-chart-last-price-value">
-                      {scale === "mcap" ? formatCompactUsd(close) : `$${formatTvPrice(close)}`}
-                    </p>
-                    <span
-                      className="token-chart-last-price-chg"
-                      style={{ color: up ? TV_CANDLE_UP : TV_CANDLE_DOWN }}
-                    >
-                      {formatPercent(pct, true)}
-                    </span>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        ) : null}
-
         {isLoading && !hasData ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6">
             <div className="h-[55%] w-[88%] animate-pulse rounded-md bg-zinc-800/50" />
