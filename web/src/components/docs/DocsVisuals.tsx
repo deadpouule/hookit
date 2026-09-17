@@ -376,8 +376,8 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <HookMark hookId="anti-snipe" theme="fire" />
             <Spark
               d="M16 24 L16 24 L40 28 C 80 34, 140 54, 210 82 C 260 98, 310 108, 344 110 L 344 110 L 16 110 Z"
-              fill="rgb(239 68 68 / 0.18)"
-              stroke="#ef4444"
+              fill="rgb(255 0 80 / 0.18)"
+              stroke="#ff0050"
               labels={[
                 { x: 16, y: 16, parts: ["t=0", "98%"] },
                 { x: 344, y: 94, parts: ["t=5s", "0%"], anchor: "end" },
@@ -426,7 +426,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       return (
         <Figure caption="Single-swap supply cap" note="0.1%–2.5% of supply. Oversized exact-input reverts.">
           <div className="docs-visual-hook-row">
-            <HookMark hookId="max-tx" theme="yellow" />
+            <HookMark hookId="max-tx" theme="lime" />
             <div className="docs-cap">
               <div className="docs-cap-track">
                 <span className="docs-cap-fill" style={{ width: "42%" }} />
@@ -628,9 +628,9 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       return (
         <Figure caption="Creator 60% feeds the hook pot" note="Nothing to claim as creator fees. $HKT 10% is untouched.">
           <div className="docs-visual-hook-row">
-            <HookMark hookId="creator-share-to-hook" theme="lime" />
+            <HookMark hookId="creator-share-to-hook" theme="yellow" />
             <div className="docs-split-bar" role="img" aria-label="Creator 60 percent redirected into the hook pot">
-              <div className="docs-split-seg" style={{ flex: 60, background: "#84cc16", color: "#111" }}>
+              <div className="docs-split-seg" style={{ flex: 60, background: "#facc15", color: "#111" }}>
                 <span>60%</span>
                 <small>→ hook pot</small>
               </div>

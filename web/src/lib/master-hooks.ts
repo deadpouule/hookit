@@ -50,11 +50,12 @@ export type HookTheme =
   | "yellow"
   | "teal"
   | "cobalt"
-  | "brown";
+  | "brown"
+  | "olive";
 
 /** Slider / accent colors aligned with pick-card hook themes */
 export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
-  fire: "#ef4444",
+  fire: "#ff0050",
   gold: "#f59e0b",
   void: "#e879f9",
   nature: "#10b981",
@@ -70,6 +71,7 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   teal: "#2dd4bf",
   cobalt: "#3b82f6",
   brown: "#b45309",
+  olive: "#4e561a",
 };
 
 export function hookThemeAccentColor(theme: HookTheme): string {
@@ -131,7 +133,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "every swap the floor goes up - so the price can only go up. More volume = higher floor",
     category: "protection",
     icon: Layers,
-    theme: "brown",
+    theme: "olive",
     keyword: "FLOOR",
     creator: CREATOR,
     uses: 9,
@@ -225,22 +227,6 @@ export const MASTER_HOOKS: MasterHook[] = [
     settings: ["+ SAME-BLOCK OPPOSING SWAP COOLDOWN", "+ TRANSIENT STORAGE GUARD", "+ PER-ORIGIN BLOCK LOCK"],
   },
   {
-    id: "max-tx",
-    number: 5,
-    title: "Max Tx",
-    description: "caps each swap between 0.1% and 2.5% of total supply. Fixed at launch",
-    category: "protection",
-    icon: Gauge,
-    theme: "yellow",
-    keyword: "TX",
-    creator: CREATOR,
-    uses: 6,
-    royalty: "0% of hook fees",
-    savedAt: "Block 25,799,401",
-    summary: "1 active hook block • per-swap supply cap",
-    settings: ["+ MAX TX BPS ON", "+ CAP PER SWAP VS SUPPLY", "+ REVERTS OVERSIZE SWAPS"],
-  },
-  {
     id: "anti-snipe",
     number: 1,
     title: "Anti-Snipe",
@@ -255,6 +241,22 @@ export const MASTER_HOOKS: MasterHook[] = [
     savedAt: "Block 25,799,104",
     summary: "1 active hook block • 50% initial snipe tax",
     settings: ["+ DECAY TAX ON OPENING BUYS", "+ INITIAL TAX 50%", "+ FADES OVER LAUNCH WINDOW"],
+  },
+  {
+    id: "max-tx",
+    number: 5,
+    title: "Max Tx",
+    description: "caps each swap between 0.1% and 2.5% of total supply. Fixed at launch",
+    category: "protection",
+    icon: Gauge,
+    theme: "lime",
+    keyword: "TX",
+    creator: CREATOR,
+    uses: 6,
+    royalty: "0% of hook fees",
+    savedAt: "Block 25,799,401",
+    summary: "1 active hook block • per-swap supply cap",
+    settings: ["+ MAX TX BPS ON", "+ CAP PER SWAP VS SUPPLY", "+ REVERTS OVERSIZE SWAPS"],
   },
   {
     id: "hook-to-creator",
@@ -283,7 +285,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "send your 60% of the base 1% into the hook pot instead of claiming escrow",
     category: "rewards",
     icon: Percent,
-    theme: "lime",
+    theme: "yellow",
     keyword: "CREATOR",
     creator: CREATOR,
     uses: 0,
