@@ -254,9 +254,9 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "contracts",
     href: "#contracts",
     title: "Contracts",
-    description: "Live factory, router, claims redeemer, and Uniswap v4 core.",
+    description: "Live factory, router, aggregator, claims redeemer, and Uniswap v4 core.",
     group: "Reference",
-    keywords: "launchfactory hookitswaprouter v4claimsredeemer",
+    keywords: "launchfactory hookitswaprouter balancedaggregator v4claimsredeemer",
   },
   {
     slug: "events",

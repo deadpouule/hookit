@@ -78,6 +78,7 @@ export type DocsVisualId =
   | "router"
   | "master-studio"
   | "multi-pair"
+  | "balanced-aggregator"
   | "arb-keeper"
   | "quotrons"
   | "trading"
