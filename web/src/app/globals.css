@@ -930,16 +930,16 @@
   }
 
   .pick-card--fire:hover {
-    border-color: rgb(239 68 68 / 0.45);
+    border-color: rgb(255 0 80 / 0.5);
   }
 
   .pick-card--fire.is-on {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 1px #ef4444, 0 0 20px rgb(239 68 68 / 0.38);
+    border-color: #ff0050;
+    box-shadow: 0 0 0 1px #ff0050, 0 0 22px rgb(255 0 80 / 0.45);
   }
 
   .pick-card--fire.is-on .pick-card-title {
-    color: #fecaca;
+    color: #ffb0c8;
   }
 
   .pick-card--gold:hover {
@@ -1137,6 +1137,19 @@
     color: #fde68a;
   }
 
+  .pick-card--olive:hover {
+    border-color: rgb(78 86 26 / 0.55);
+  }
+
+  .pick-card--olive.is-on {
+    border-color: #4e561a;
+    box-shadow: 0 0 0 1px #4e561a, 0 0 20px rgb(78 86 26 / 0.45);
+  }
+
+  .pick-card--olive.is-on .pick-card-title {
+    color: #c4cc7a;
+  }
+
   .pick-card-mark {
     display: flex;
     height: 52px;
@@ -1197,7 +1210,7 @@
     height: 8.5rem;
   }
 
-  .hook-logo--fire { color: #ef4444; }
+  .hook-logo--fire { color: #ff0050; }
   .hook-logo--gold { color: #f59e0b; }
   .hook-logo--void { color: #e879f9; }
   .hook-logo--nature { color: #10b981; }
@@ -1217,6 +1230,7 @@
 
   .hook-logo--cobalt { color: #3b82f6; }
   .hook-logo--brown { color: #b45309; }
+  .hook-logo--olive { color: #4e561a; }
 
   .pick-card-title {
     margin: 0.15rem 0 0;
@@ -1781,15 +1795,15 @@
   }
 
   .token-hooks-vault-field--fire {
-    border-color: rgb(239 68 68 / 0.28);
+    border-color: rgb(255 0 80 / 0.32);
   }
 
   .token-hooks-vault-field--fire:hover,
   .token-hooks-vault-field--fire:focus-within {
-    border-color: rgb(239 68 68 / 0.6);
+    border-color: rgb(255 0 80 / 0.65);
     box-shadow:
-      0 0 10px rgb(239 68 68 / 0.35),
-      inset 0 0 14px rgb(239 68 68 / 0.06);
+      0 0 10px rgb(255 0 80 / 0.4),
+      inset 0 0 14px rgb(255 0 80 / 0.08);
   }
 
   .token-hooks-vault-field--gold {
@@ -1970,6 +1984,18 @@
     box-shadow:
       0 0 10px rgb(180 83 9 / 0.38),
       inset 0 0 14px rgb(180 83 9 / 0.08);
+  }
+
+  .token-hooks-vault-field--olive {
+    border-color: rgb(78 86 26 / 0.4);
+  }
+
+  .token-hooks-vault-field--olive:hover,
+  .token-hooks-vault-field--olive:focus-within {
+    border-color: rgb(78 86 26 / 0.7);
+    box-shadow:
+      0 0 10px rgb(78 86 26 / 0.4),
+      inset 0 0 14px rgb(78 86 26 / 0.1);
   }
 
   .token-hooks-vault-field .token-hooks-vault-input {
@@ -2241,7 +2267,7 @@
   }
 
   .token-hooks-meter-fill--fire {
-    background: linear-gradient(90deg, #ef4444, #f97316);
+    background: linear-gradient(90deg, #ff0050, #ff4d80);
   }
 
   .token-hooks-meter-fill--gold {
@@ -2304,9 +2330,13 @@
     background: linear-gradient(90deg, #b45309, #d97706);
   }
 
+  .token-hooks-meter-fill--olive {
+    background: linear-gradient(90deg, #4e561a, #6b7324);
+  }
+
   .pick-config--fire.pick-config--focused {
-    border-color: rgb(239 68 68 / 0.45);
-    box-shadow: 0 0 0 1px rgb(239 68 68 / 0.25), 0 0 24px rgb(239 68 68 / 0.12);
+    border-color: rgb(255 0 80 / 0.5);
+    box-shadow: 0 0 0 1px rgb(255 0 80 / 0.28), 0 0 24px rgb(255 0 80 / 0.16);
   }
 
   .pick-config--gold.pick-config--focused {
@@ -2382,6 +2412,11 @@
   .pick-config--brown.pick-config--focused {
     border-color: rgb(180 83 9 / 0.5);
     box-shadow: 0 0 0 1px rgb(180 83 9 / 0.28), 0 0 24px rgb(180 83 9 / 0.14);
+  }
+
+  .pick-config--olive.pick-config--focused {
+    border-color: rgb(78 86 26 / 0.55);
+    box-shadow: 0 0 0 1px rgb(78 86 26 / 0.3), 0 0 24px rgb(78 86 26 / 0.16);
   }
 
   .pick-config-title {
@@ -6019,8 +6054,8 @@
   }
 
   .orb-card--fire:hover {
-    border-color: #ef4444;
-    box-shadow: 0 0 15px rgb(239 68 68 / 0.5);
+    border-color: #ff0050;
+    box-shadow: 0 0 15px rgb(255 0 80 / 0.55);
   }
 
   .orb-card--gold:hover {
@@ -6096,6 +6131,11 @@
   .orb-card--brown:hover {
     border-color: #b45309;
     box-shadow: 0 0 15px rgb(180 83 9 / 0.5);
+  }
+
+  .orb-card--olive:hover {
+    border-color: #4e561a;
+    box-shadow: 0 0 15px rgb(78 86 26 / 0.55);
   }
 
   .orb-card-head {
@@ -6295,7 +6335,7 @@
   }
 
   .ascii-shape--fire {
-    background-image: linear-gradient(160deg, #fed7aa, #fb923c, #ef4444, #7f1d1d, #fb923c);
+    background-image: linear-gradient(160deg, #ffd6e4, #ff4d80, #ff0050, #7a0028, #ff4d80);
   }
 
   .ascii-shape--gold {
@@ -6358,11 +6398,15 @@
     background-image: linear-gradient(160deg, #fef3c7, #fbbf24, #b45309, #78350f, #d97706);
   }
 
+  .ascii-shape--olive {
+    background-image: linear-gradient(160deg, #d4dc8c, #8a9240, #4e561a, #2a3010, #6b7324);
+  }
+
   .orb-card:hover .ascii-shape--fire,
   .pick-card:hover .ascii-shape--fire,
   .pick-card.is-on .ascii-shape--fire,
   .ascii-shape--hot.ascii-shape--fire {
-    filter: drop-shadow(0 0 12px rgb(239 68 68 / 0.8));
+    filter: drop-shadow(0 0 12px rgb(255 0 80 / 0.85));
   }
 
   .orb-card:hover .ascii-shape--gold,
@@ -6470,6 +6514,13 @@
     filter: drop-shadow(0 0 12px rgb(180 83 9 / 0.85));
   }
 
+  .orb-card:hover .ascii-shape--olive,
+  .pick-card:hover .ascii-shape--olive,
+  .pick-card.is-on .ascii-shape--olive,
+  .ascii-shape--hot.ascii-shape--olive {
+    filter: drop-shadow(0 0 12px rgb(78 86 26 / 0.9));
+  }
+
   .orb-footer {
     display: flex;
     flex-direction: column;
@@ -6498,9 +6549,9 @@
   }
 
   .orb-hook-desc-badge--fire {
-    border-color: rgb(239 68 68 / 0.45);
-    background: rgb(239 68 68 / 0.14);
-    color: #fb923c;
+    border-color: rgb(255 0 80 / 0.5);
+    background: rgb(255 0 80 / 0.16);
+    color: #ff7aa0;
   }
 
   .orb-hook-desc-badge--gold {
@@ -6591,6 +6642,12 @@
     border-color: rgb(180 83 9 / 0.45);
     background: rgb(180 83 9 / 0.16);
     color: #fde68a;
+  }
+
+  .orb-hook-desc-badge--olive {
+    border-color: rgb(78 86 26 / 0.5);
+    background: rgb(78 86 26 / 0.2);
+    color: #c4cc7a;
   }
 
   button.orb-hook-desc-badge {
@@ -6710,7 +6767,8 @@
   .orb-hook-title-plain.orb-hook-desc-badge--yellow,
   .orb-hook-title-plain.orb-hook-desc-badge--teal,
   .orb-hook-title-plain.orb-hook-desc-badge--cobalt,
-  .orb-hook-title-plain.orb-hook-desc-badge--brown {
+  .orb-hook-title-plain.orb-hook-desc-badge--brown,
+  .orb-hook-title-plain.orb-hook-desc-badge--olive {
     border: 0;
     background: transparent;
     padding: 0;
@@ -9412,10 +9470,10 @@
   }
 
   .hero-hook-card.is-on.hero-hook-card--fire {
-    border-color: #ef4444;
+    border-color: #ff0050;
     box-shadow:
-      0 0 0 1px #ef4444,
-      0 0 40px -10px rgb(239 68 68 / 0.4);
+      0 0 0 1px #ff0050,
+      0 0 40px -10px rgb(255 0 80 / 0.45);
   }
 
   .hero-hook-card.is-on.hero-hook-card--gold {
@@ -9521,6 +9579,13 @@
     box-shadow:
       0 0 0 1px #b45309,
       0 0 40px -10px rgb(180 83 9 / 0.45);
+  }
+
+  .hero-hook-card.is-on.hero-hook-card--olive {
+    border-color: #4e561a;
+    box-shadow:
+      0 0 0 1px #4e561a,
+      0 0 40px -10px rgb(78 86 26 / 0.5);
   }
 
   .hero-hook-card .hero-hook-title-badge {
@@ -11189,13 +11254,14 @@ h2.docs-hook-heading {
 .docs-hkt-schema-hook .hook-logo--steel { color: #6366f1; }
 .docs-hkt-schema-hook .hook-logo--ember { color: #f97316; }
 .docs-hkt-schema-hook .hook-logo--ice { color: #38bdf8; }
-.docs-hkt-schema-hook .hook-logo--fire { color: #ef4444; }
+.docs-hkt-schema-hook .hook-logo--fire { color: #ff0050; }
 .docs-hkt-schema-hook .hook-logo--lime { color: #84cc16; }
 .docs-hkt-schema-hook .hook-logo--yellow { color: #facc15; }
 .docs-hkt-schema-hook .hook-logo--volt { color: #03b1ed; }
 .docs-hkt-schema-hook .hook-logo--teal { color: #2dd4bf; }
 .docs-hkt-schema-hook .hook-logo--cobalt { color: #3b82f6; }
 .docs-hkt-schema-hook .hook-logo--brown { color: #b45309; }
+.docs-hkt-schema-hook .hook-logo--olive { color: #4e561a; }
 
 .docs-hkt-schema-hook strong {
   display: block;

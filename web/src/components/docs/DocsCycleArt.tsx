@@ -279,7 +279,7 @@ export function DocsCycleArt() {
           <rect x="702" y="228" width="210" height="44" rx="12" fill="#111" stroke="rgb(255 255 255 / 0.16)" />
           <foreignObject x="714" y="238" width="24" height="24">
             <div className="docs-cycle-hook-fo">
-              <HookLogo hookId="creator-share-to-hook" theme="lime" className="docs-cycle-hook-logo" />
+              <HookLogo hookId="creator-share-to-hook" theme="yellow" className="docs-cycle-hook-logo" />
             </div>
           </foreignObject>
           <text x="744" y="256" fill="#fff" fontSize="12" fontWeight="700">

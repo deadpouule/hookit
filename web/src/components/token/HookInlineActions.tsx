@@ -24,7 +24,7 @@ export function FloorVaultInline({
   quoteLabel,
   floorPriceHuman,
   embedded = false,
-  theme = "brown",
+  theme = "olive",
 }: {
   pool: TokenPool;
   floorVault: Address | undefined;
@@ -366,7 +366,7 @@ export function HookInlineAction({
         quoteLabel={quoteLabel}
         floorPriceHuman={floorPriceHuman}
         embedded={embedded}
-        theme={theme ?? "brown"}
+        theme={theme ?? "olive"}
       />
     );
   }
