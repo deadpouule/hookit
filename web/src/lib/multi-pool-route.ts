@@ -429,8 +429,9 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan. Probe one market before blasting every pool: a hanging
- * slice means MAX is too fat, so retry at half (the 50% preset that works).
+ * Best sell plan. A direct stock receive (AAPL) already quotes a 100% dump.
+ * USDG must reuse that same single-pool fill, then bridge — not skip 100%
+ * singles (that is why AAPL worked and USDG did not).
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -453,21 +454,39 @@ export async function quoteBestSellPlan(
   const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
 
   const quoteFullSingles = async (): Promise<BestSellLeg[]> => {
-    const results = await Promise.all(legs.map((leg) => quoteLeg(leg, amountIn)));
+    const results = await Promise.all(
+      legs.map(async (leg) => {
+        const one = await withQuoteTimeout(quoteLeg(leg, amountIn), QUOTE_TIMEOUT_MS);
+        if (!one || one === QUOTE_TIMED_OUT) return null;
+        return one;
+      }),
+    );
     const singles = results.filter((q): q is BestSellLeg => q != null);
     singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
     return singles;
   };
 
   if (splitToStable && legs.length >= 2) {
+    const singles = await quoteFullSingles();
     let bestPlan: BestSellPlan | null = null;
-    const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, legs);
-    if (equalLegs) {
-      bestPlan = splitSellPlan(
-        equalLegs,
-        `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
-        pickBestSellLeg(equalLegs),
-      );
+    if (singles[0]) {
+      bestPlan = {
+        legs: [singles[0]],
+        amountOut: singles[0].amountOut,
+        routeLabel: singles[0].routeLabel,
+        bestSingle: singles[0],
+      };
+    }
+
+    if (!bestPlan) {
+      const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, legs);
+      if (equalLegs) {
+        bestPlan = splitSellPlan(
+          equalLegs,
+          `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
+          pickBestSellLeg(equalLegs),
+        );
+      }
     }
 
     if (!bestPlan) {
