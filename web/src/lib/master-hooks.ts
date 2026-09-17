@@ -70,7 +70,7 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   yellow: "#facc15",
   teal: "#2dd4bf",
   cobalt: "#3b82f6",
-  brown: "#b45309",
+  brown: "#713600",
   olive: "#4e561a",
 };
 
@@ -133,7 +133,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "every swap the floor goes up - so the price can only go up. More volume = higher floor",
     category: "protection",
     icon: Layers,
-    theme: "olive",
+    theme: "brown",
     keyword: "FLOOR",
     creator: CREATOR,
     uses: 9,
