@@ -43,8 +43,23 @@ export function isPairingDisabled(id: string): boolean {
   return PAIRING_TOKENS.some((token) => token.id === id && token.disabled);
 }
 
+/** Native ETH is single-pair only. Multi-pair is USDG + Quotrons wStocks. */
+export function isMultiPairQuote(id: PairingTokenId): boolean {
+  return id !== "eth";
+}
+
+export function multiPairingTokens(): PairingToken[] {
+  return PAIRING_TOKENS.filter((token) => isMultiPairQuote(token.id));
+}
+
 export function firstEnabledPairing(exclude?: PairingTokenId): PairingToken | undefined {
   return PAIRING_TOKENS.find((token) => !token.disabled && token.id !== exclude);
+}
+
+export function firstEnabledMultiPairing(exclude?: PairingTokenId): PairingToken | undefined {
+  return PAIRING_TOKENS.find(
+    (token) => !token.disabled && isMultiPairQuote(token.id) && token.id !== exclude,
+  );
 }
 
 export function formatPairingTicker(id: PairingTokenId) {

@@ -193,8 +193,8 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /docs-deepen-logo--deep/);
   assert.match(visuals, /Until FDV/);
   assert.match(visuals, /Retail 0\.2 ETH/);
-  assert.match(visuals, /case "arb-keeper"/);
-  assert.match(visuals, /<rect x="128" y="28"/);
+  assert.match(visuals, /case "balanced-aggregator"/);
+  assert.match(visuals, /<rect x="128" y="72"/);
   assert.equal(visuals.includes('<rect x="128" y="44"'), false);
   assert.match(visuals, /parts: \["t=0", "98%"\]/);
   assert.match(visuals, /parts: \["t=5s", "0%"\]/);
@@ -273,10 +273,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.equal(visuals.includes("leftover → protocol"), false);
   assert.equal(visuals.includes("Cursor"), false);
   assert.match(visuals, /Head, lag, last poll error/);
-  assert.match(visuals, /Arb keeper closes the USD gap/);
+  assert.match(visuals, /One USDG payment, many markets/);
   assert.match(visuals, /PAIRING_TOKENS\.map/);
   assert.equal(diagrams.includes("fee tier 0"), false);
-  assert.match(diagrams, /Multi-pair Arb keeper/);
+  assert.match(diagrams, /BalancedAggregator: hooked swaps, USDG multi-pair splits/);
   assert.equal(diagrams.includes("Hook fee"), false);
   assert.match(diagrams, /Venue fee/);
   assert.equal(diagrams.includes("Unallocated hook tax"), false);

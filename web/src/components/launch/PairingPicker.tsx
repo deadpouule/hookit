@@ -5,9 +5,11 @@ import { PairModeToggle } from "@/components/launch/PairModeToggle";
 import { PickCard } from "@/components/launch/PickCard";
 import { AccentSlider } from "@/components/launch/AccentSlider";
 import {
-  firstEnabledPairing,
+  firstEnabledMultiPairing,
   formatPairingTicker,
+  isMultiPairQuote,
   isPairingDisabled,
+  multiPairingTokens,
   pairingSubtitle,
   PAIRING_TOKENS,
   type PairingTokenId,
@@ -63,7 +65,7 @@ export function PairingPicker({
   const classicOnly = variant === "classic";
   const isMulti = !classicOnly && markets.length > 1;
   const selectedIds = new Set(markets.map((m) => m.id));
-  const selectableTokens = PAIRING_TOKENS;
+  const selectableTokens = isMulti ? multiPairingTokens() : PAIRING_TOKENS;
 
   const setMode = (mode: "single" | "multi") => {
     if (classicOnly) return;
@@ -74,18 +76,23 @@ export function PairingPicker({
       return;
     }
     if (markets.length > 1) return;
-    const primary = markets[0] ?? { id: "eth" as PairingTokenId, bps: BPS_TOTAL };
-    const second = firstEnabledPairing(primary.id);
-    if (!second) return;
+    const primary = markets[0];
+    const first =
+      primary && isMultiPairQuote(primary.id)
+        ? primary
+        : firstEnabledMultiPairing();
+    const second = first ? firstEnabledMultiPairing(first.id) : undefined;
+    if (!first || !second) return;
     const split = equalSplit(2);
     onMarketsChange([
-      { id: primary.id, bps: split[0]! },
+      { id: first.id, bps: split[0]! },
       { id: second.id, bps: split[1]! },
     ]);
   };
 
   const toggle = (id: PairingTokenId) => {
     if (isPairingDisabled(id)) return;
+    if (isMulti && !isMultiPairQuote(id)) return;
     if (classicOnly || !isMulti) {
       onMarketsChange([{ id, bps: BPS_TOTAL }]);
       onFloorQuoteIndexChange(0);
@@ -115,7 +122,7 @@ export function PairingPicker({
           {!compact ? (
             <p className="mt-2 text-xs text-zinc-600">
               {isMulti
-                ? "One token, several locked v4 pools. supply split by weight. Same launch FDV per leg."
+                ? "One token, several locked v4 pools against USDG and stocks. Supply split by weight. Same launch FDV per leg."
                 : "Classic one-pool launch against a single quote asset."}
             </p>
           ) : null}

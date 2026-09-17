@@ -120,6 +120,9 @@ export function useLaunchToken(rail: LaunchRail = "master") {
         throw new Error("Market weights must total 100%");
       }
       const isMulti = form.markets.length > 1;
+      if (isMulti && form.markets.some((m) => m.id === "eth")) {
+        throw new Error("Multi-pair uses USDG and stocks only. ETH is single-pair.");
+      }
       if (isMulti && form.modules.backedFloor) {
         throw new Error("Backed floor is single-pair only. Disable it or switch to one market.");
       }

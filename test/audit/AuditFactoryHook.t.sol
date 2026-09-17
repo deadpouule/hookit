@@ -345,34 +345,31 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // M-3 (fixed): launchMulti demanded devBuyQuoteIn wei of ETH whenever any market was native,
-    //      even when the dev buy is paid in markets[0]'s ERC-20, stranding the ETH in the factory.
+    // M-3 (fixed): launchMulti never pulls extra ETH for an ERC-20 first market.
+    //      Native ETH is no longer a multi-pair quote; extra msg.value is rejected.
     // ─────────────────────────────────────────────────────────────────────────
     function test_Fixed_M3_LaunchMultiErc20DevBuyNeedsNoEth() public {
         MockQuoteToken q = new MockQuoteToken("Stock", "STK", 18);
+        MockQuoteToken q2 = new MockQuoteToken("Stock2", "ST2", 18);
         factory.setQuote(address(q), true, 18, 2_000e18, address(0));
+        factory.setQuote(address(q2), true, 18, 2_000e18, address(0));
         q.approve(address(factory), type(uint256).max);
 
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
         markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(q)), bps: 5_000});
-        markets[1] = LaunchFactory.MarketInput({quote: ETH, bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(q2)), bps: 5_000});
 
         uint256 devBuy = 0.05e18; // 0.05 STK ≈ $100 (< 2.5% of $5k)
         uint256 factoryEthBefore = address(factory).balance;
         uint256 qBefore = q.balanceOf(address(this));
 
-        // Only the launch fee is needed in ETH; the dev buy is pulled in STK.
         factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(_multiParams(markets, devBuy));
 
         assertEq(qBefore - q.balanceOf(address(this)), devBuy, "dev buy was paid in the ERC-20");
-        uint256 kept = address(factory).balance - factoryEthBefore;
-        emit log_named_uint("ETH kept by factory (wei)", kept);
-        assertLe(kept, 1, "only the 1-wei native dust stays in the factory");
+        assertEq(address(factory).balance, factoryEthBefore, "ERC-20 multi-pair keeps no ETH");
 
-        // Over-paying ETH is refunded rather than kept.
-        uint256 ethBefore = address(this).balance;
+        vm.expectRevert(LaunchFactory.NativeNotAccepted.selector);
         factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI + devBuy}(_multiParams(markets, devBuy));
-        assertApproxEqAbs(ethBefore - address(this).balance, ProtocolConstants.LAUNCH_FEE_WEI, 1, "extra ETH refunded");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

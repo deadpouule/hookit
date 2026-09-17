@@ -25,12 +25,15 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
 
     address internal trader = address(0xBEEF);
     MockQuoteToken internal quoteA;
+    MockQuoteToken internal quoteB;
 
     function setUp() public {
         deployProtocol();
         vm.deal(trader, 1000 ether);
         quoteA = new MockQuoteToken("Quote A", "QTA", 18);
+        quoteB = new MockQuoteToken("Quote B", "QTB", 18);
         factory.setQuote(address(quoteA), true, 18, 2_000e18, address(0));
+        factory.setQuote(address(quoteB), true, 18, 3_000e18, address(0));
     }
 
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
@@ -120,7 +123,7 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         assertGt(airdrops.lastAirdropAt(token), 0);
     }
 
-    function testMultiVesting_EthAndErc20Credit() public {
+    function testMultiVesting_TwoErc20Credit() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.buybackVestingDurationSeconds = uint32(30 days);
@@ -130,24 +133,24 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         PoolKey memory key0 = factory.poolKeyOfMarket(launchId, 0);
         PoolKey memory key1 = factory.poolKeyOfMarket(launchId, 1);
 
-        _buyAs(trader, key0, 1 ether);
+        _buyQuoteToken(trader, key0, quoteA, 50e18);
         vm.roll(block.number + 1);
-        _buyQuote(trader, key1, token, 50e18);
+        _buyQuoteToken(trader, key1, quoteB, 50e18);
         vm.roll(block.number + 1);
 
-        (, uint128 ethStreamed,,,) = buybacks.streams(address(this), token);
-        assertGt(ethStreamed, 0);
+        (, uint128 streamed,,,) = buybacks.streams(address(this), token);
+        assertGt(streamed, 0);
 
         vm.warp(block.timestamp + 31 days);
-        uint256 ethBefore = address(this).balance;
-        uint256 qBefore = quoteA.balanceOf(address(this));
+        uint256 aBefore = quoteA.balanceOf(address(this));
+        uint256 bBefore = quoteB.balanceOf(address(this));
         buybacks.claim(token);
-        assertGt(address(this).balance, ethBefore);
-        assertGt(quoteA.balanceOf(address(this)), qBefore);
+        assertGt(quoteA.balanceOf(address(this)), aBefore);
+        assertGt(quoteB.balanceOf(address(this)), bBefore);
         assertEq(buybacks.vestedOf(address(this), token), 0);
     }
 
-    function testMultiAirdrop_EthAndErc20Pots() public {
+    function testMultiAirdrop_TwoErc20Pots() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.holderAirdrop = true;
         m.holderAirdropBps = 10_000;
@@ -157,28 +160,28 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         (uint256 launchId, address token,) = _launchMulti(m, 0);
         PoolKey memory key0 = factory.poolKeyOfMarket(launchId, 0);
         PoolKey memory key1 = factory.poolKeyOfMarket(launchId, 1);
-        Currency eth = Currency.wrap(address(0));
-        Currency erc = Currency.wrap(address(quoteA));
+        Currency ercA = Currency.wrap(address(quoteA));
+        Currency ercB = Currency.wrap(address(quoteB));
 
-        _buyAs(trader, key0, 1 ether);
+        _buyQuoteToken(trader, key0, quoteA, 50e18);
         vm.roll(block.number + 1);
-        _buyQuote(trader, key1, token, 50e18);
+        _buyQuoteToken(trader, key1, quoteB, 50e18);
 
-        assertGt(airdrops.potOf(token, eth), 0);
-        assertGt(airdrops.potOf(token, erc), 0);
+        assertGt(airdrops.potOf(token, ercA), 0);
+        assertGt(airdrops.potOf(token, ercB), 0);
 
         vm.warp(block.timestamp + 61);
         vm.roll(block.number + 1);
-        _buyAs(trader, key0, 0.01 ether);
+        _buyQuoteToken(trader, key0, quoteA, 1e18);
         vm.roll(block.number + 1);
-        _buyAs(trader, key0, 0.01 ether);
+        _buyQuoteToken(trader, key0, quoteA, 1e18);
         assertGt(airdrops.lastAirdropAt(token), 0);
 
         vm.roll(block.number + 1);
-        _buyQuote(trader, key1, token, 1e18);
+        _buyQuoteToken(trader, key1, quoteB, 1e18);
         vm.roll(block.number + 1);
-        _buyQuote(trader, key1, token, 1e18);
-        assertGt(airdrops.lastAirdropAtQuote(token, erc.toId()), 0);
+        _buyQuoteToken(trader, key1, quoteB, 1e18);
+        assertGt(airdrops.lastAirdropAtQuote(token, ercB.toId()), 0);
     }
 
     function _launchFloor() internal returns (address token, PoolKey memory key) {
@@ -196,8 +199,8 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         returns (uint256 launchId, address token, PoolId primary)
     {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 6_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 4_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 6_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 4_000});
         (launchId, token, primary) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchMultiParams({
                 name: "Cohab",
@@ -228,11 +231,11 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
         );
     }
 
-    function _buyQuote(address user, PoolKey memory key, address token, uint256 quoteIn) internal {
-        quoteA.transfer(user, quoteIn);
+    function _buyQuoteToken(address user, PoolKey memory key, MockQuoteToken quote, uint256 quoteIn) internal {
+        quote.transfer(user, quoteIn);
         vm.startPrank(user);
-        quoteA.approve(address(swapRouter), quoteIn);
-        bool quoteIsCurrency0 = Currency.unwrap(key.currency0) == address(quoteA);
+        quote.approve(address(swapRouter), quoteIn);
+        bool quoteIsCurrency0 = Currency.unwrap(key.currency0) == address(quote);
         swapRouter.swap(
             key,
             SwapParams({
@@ -244,7 +247,6 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
             abi.encode(user)
         );
         vm.stopPrank();
-        token;
     }
 
     function _sellAs(address user, PoolKey memory key, address token, uint256 tokenIn) internal {

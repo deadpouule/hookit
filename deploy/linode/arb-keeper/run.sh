@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# DEPRECATED: replaced by BalancedAggregator user routing. Disable hookit-arb-keeper.timer on Linode.
 # Multi-pair arb keeper — loads /opt/hookit/.env then runs indexer/scripts/arb-keeper.ts
 set -euo pipefail
 

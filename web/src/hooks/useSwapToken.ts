@@ -13,13 +13,26 @@ import {
 } from "wagmi";
 
 import {
+  balancedBuyLegsFromPlan,
+  balancedDeadlineSec,
+  balancedMinTotalOut,
+  balancedSellLegsFromRoute,
+  canUseBalancedAggregatorBuy,
+  canUseBalancedAggregatorSell,
+  planCanUseBalancedAggregator,
+  routeCanUseBalancedAggregator,
+} from "@/lib/balanced-aggregator-route";
+import {
   STABLE_QUOTE_ADDRESS,
+  getBalancedAggregatorAddress,
   getHookitSwapRouterAddress,
   getSwapRouterAddress,
   isProductionSwapRouter,
+  supportsBalancedAggregator,
   supportsCompositeSwap,
   USDC_ADDRESS,
 } from "@/lib/contracts/config";
+import { balancedAggregatorAbi } from "@/lib/contracts/balanced-aggregator-abi";
 import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { hookitSwapRouterAbi, poolSwapTestAbi } from "@/lib/contracts/swap-abi";
 import {
@@ -159,6 +172,52 @@ export function useSwapToken(pool: TokenPool) {
           receiveAsset,
           address,
         );
+        const aggregator = getBalancedAggregatorAddress();
+        const receiveAddr = receiveAsset.isNative ? zeroAddress : (receiveAsset.address ?? zeroAddress);
+        if (
+          aggregator &&
+          best &&
+          canUseBalancedAggregatorSell(receiveAddr as Address) &&
+          routeCanUseBalancedAggregator(best) &&
+          pool.launchId != null
+        ) {
+          const legs = balancedSellLegsFromRoute(pool, best, amountIn, bps);
+          if (legs.length > 0) {
+            const args = [
+              BigInt(pool.launchId),
+              token,
+              amountIn,
+              balancedMinTotalOut(legs),
+              legs,
+              address,
+              balancedDeadlineSec(),
+            ] as const;
+            await ensureErc20Allowance(token, aggregator, amountIn);
+            let aggregatorReady = false;
+            try {
+              await publicClient.simulateContract({
+                address: aggregator,
+                abi: balancedAggregatorAbi,
+                functionName: "sellExactInput",
+                args,
+                account: address,
+              });
+              aggregatorReady = true;
+            } catch {
+              aggregatorReady = false;
+            }
+            if (aggregatorReady) {
+              const hash = await writeContractAsync({
+                address: aggregator,
+                abi: balancedAggregatorAbi,
+                functionName: "sellExactInput",
+                args,
+              });
+              await publicClient.waitForTransactionReceipt({ hash });
+              return hash;
+            }
+          }
+        }
         if (best?.kind === "direct") {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
@@ -209,6 +268,52 @@ export function useSwapToken(pool: TokenPool) {
       // Multi-pool buy aggregator (+ optional split across pools).
       if (side === "buy" && shouldAggregateMultiBuy(pool) && !payingDirectQuote) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
+        const aggregator = getBalancedAggregatorAddress();
+        if (
+          plan &&
+          aggregator &&
+          supportsBalancedAggregator() &&
+          canUseBalancedAggregatorBuy(payment.address) &&
+          planCanUseBalancedAggregator(plan) &&
+          pool.launchId != null
+        ) {
+          const legs = balancedBuyLegsFromPlan(pool, plan, bps);
+          if (legs.length === plan.legs.length) {
+            const args = [
+              BigInt(pool.launchId),
+              token,
+              amountIn,
+              balancedMinTotalOut(legs),
+              legs,
+              address,
+              balancedDeadlineSec(),
+            ] as const;
+            await ensureErc20Allowance(payment.address, aggregator, amountIn);
+            let aggregatorReady = false;
+            try {
+              await publicClient.simulateContract({
+                address: aggregator,
+                abi: balancedAggregatorAbi,
+                functionName: "buyExactInput",
+                args,
+                account: address,
+              });
+              aggregatorReady = true;
+            } catch {
+              aggregatorReady = false;
+            }
+            if (aggregatorReady) {
+              const hash = await writeContractAsync({
+                address: aggregator,
+                abi: balancedAggregatorAbi,
+                functionName: "buyExactInput",
+                args,
+              });
+              await publicClient.waitForTransactionReceipt({ hash });
+              return hash;
+            }
+          }
+        }
         if (plan) {
           const executeBuyLeg = async (leg: BestBuyLeg): Promise<`0x${string}`> => {
             const minOut =

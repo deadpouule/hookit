@@ -14,6 +14,7 @@ import {
   getClaimsRedeemerAddress,
   getHkitBuybackAddress,
   getHookitSwapRouterAddress,
+  getBalancedAggregatorAddress,
   getLaunchFactoryAddress,
   getLaunchFactoryQueryAddress,
   getNativeTokenAddress,
@@ -223,6 +224,7 @@ export function buildDocsSections(): DocsSection[] {
   const factoryQuery = getLaunchFactoryQueryAddress();
   const bonding = getBondingFactoryAddress();
   const router = getHookitSwapRouterAddress();
+  const aggregator = getBalancedAggregatorAddress();
   const distributor = getProtocolDistributorAddress();
   const buyback = getHkitBuybackAddress();
   const native = getNativeTokenAddress();
@@ -340,7 +342,7 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "1–5 markets. Typical: ETH + USDG + one or more Quotrons wStocks.",
+            "1–5 markets. USDG and Quotrons wStocks only. ETH is single-pair.",
             "Each market has its own poolId, tick range, and liquidity. The token page has a market switcher.",
             "Explore shows a multi-pair badge. Indexer fields: marketCount, markets[].",
             "Backed Floor is rejected in multi (BackedFloorNotAllowedInMulti). The wizard hides the floor card when you add a second market.",
@@ -349,15 +351,15 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "h3",
-          text: "Arb keeper",
+          text: "Balanced aggregator",
         },
         {
           type: "p",
-          text: "MultiPairArbExecutor buys the cheap USD leg and sells the rich one in one unlock. Defaults: 10% min deviation, max clip 0.50% of supply.",
+          text: "BalancedAggregator is the PAIR-style router for multi-market tokens. Pay USDG once; the contract splits your input across up to five USDG and wStock markets in a single unlock. Stock legs bridge through Quotrons wStock/USDG pools before the launch hook leg, using the same canonical routing as HookitSwapRouter, but atomic for split buys and sells.",
         },
         {
           type: "visual",
-          id: "arb-keeper",
+          id: "balanced-aggregator",
         },
       ],
     },
@@ -1417,6 +1419,12 @@ GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
           label: "HookitSwapRouter",
           address: addr(router),
           note: "Required for hooked swaps",
+        },
+        {
+          type: "contract",
+          label: "BalancedAggregator",
+          address: addr(aggregator),
+          note: "PAIR-style USDG multi-market splits",
         },
         {
           type: "contract",

@@ -283,16 +283,27 @@ contract ForkInkRealisticCampaignTest is InkForkTestBase {
     function _runMultiGroup(Currency[] memory quotes, uint256 start, uint256 requested, uint8 floorIndex) internal {
         uint256 count = requested;
         if (start + count > quotes.length) count = quotes.length - start;
-        // launchMulti requires at least two markets; pair the final lone stock with ETH and USDG.
-        if (count == 1) count = 3;
+        // launchMulti is USDG + wStocks; pair a leftover stock with USDG.
+        if (count == 1) count = 2;
 
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](count);
-        for (uint256 i; i < count; ++i) {
-            Currency quote = start + i < quotes.length ? quotes[start + i] : quotes[i - 1];
+        uint256 filled;
+        for (uint256 i = start; i < quotes.length && filled < count; ++i) {
+            if (quotes[i].isAddressZero()) continue;
             uint16 bps = uint16(10_000 / count);
-            if (i == count - 1) bps = uint16(10_000 - uint256(bps) * (count - 1));
-            markets[i] = LaunchFactory.MarketInput({quote: quote, bps: bps});
+            if (filled == count - 1) bps = uint16(10_000 - uint256(bps) * (count - 1));
+            markets[filled] = LaunchFactory.MarketInput({quote: quotes[i], bps: bps});
+            ++filled;
         }
+        if (filled == 1) {
+            markets[1] = LaunchFactory.MarketInput({
+                quote: markets[0].quote == usdg ? Currency.wrap(QuotronStockQuotes.wSPYx) : usdg,
+                bps: uint16(10_000 - markets[0].bps)
+            });
+            filled = 2;
+        }
+        require(filled == count, "multi group");
+        if (floorIndex >= count) floorIndex = 0;
 
         BitmaskConfig.Modules memory m = _defaultModules();
         m.autoBurn = true;

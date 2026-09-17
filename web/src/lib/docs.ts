@@ -70,9 +70,9 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "multi-pair",
     href: "#multi-pair",
     title: "Multi-pair",
-    description: "One token, up to five quote markets. Floor off. Arb keeper keeps USD legs in line.",
+    description: "One token, up to five USDG and wStock markets. Floor off. Balanced aggregator splits USDG input.",
     group: "Protocol",
-    keywords: "launchmulti markets bps arb keeper",
+    keywords: "launchmulti markets bps balanced aggregator usdg wstock",
   },
   {
     slug: "quotrons",

@@ -139,7 +139,7 @@ function OverviewCycleDiagram() {
 function StackDiagram() {
   const layers = [
     { k: "App", v: "hookit.fun: marketplace, launch wizard, token desk" },
-    { k: "Router", v: "HookitSwapRouter: hooked swaps. Multi-pair Arb keeper." },
+    { k: "Router", v: "HookitSwapRouter and BalancedAggregator: hooked swaps, USDG multi-pair splits." },
     { k: "Hook", v: "MasterLaunchHook / GraduatedFeeHook: quote-only fees + modules" },
     { k: "Pool", v: "Uniswap v4 PoolManager: hooked pool, locked liquidity" },
     { k: "Ink", v: "Chain 57073. ETH gas, USDG + Quotrons wStocks as quotes" },

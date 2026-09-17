@@ -17,7 +17,7 @@ import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {QuotronBridge} from "../src/libraries/QuotronBridge.sol";
 import {QuotronStockQuotes} from "../src/libraries/QuotronStockQuotes.sol";
 
-/// @notice Ink smoke: stock-only launchMulti + composite buy (ETH or USDG bridge leg).
+/// @notice Ink smoke: stock-only launchMulti + composite buy (USDG bridge leg).
 /// @dev Phase 1: `STOCK_PHASE=launch forge script ... --broadcast`
 ///      Phase 2: `STOCK_PHASE=buy STOCK_LAUNCH_ID=<id> forge script ... --broadcast`
 ///      Phase 3: `STOCK_PHASE=sell STOCK_LAUNCH_ID=<id> forge script ... --broadcast`

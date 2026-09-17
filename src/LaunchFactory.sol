@@ -118,7 +118,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     mapping(uint256 => int24) public launchTickSpacing;
     mapping(uint256 => uint24) public launchFeeFlag;
 
-    /// @notice ERC-20 quotes (USDG, Quotrons wStocks, …). Native ETH is always allowed.
+    /// @notice ERC-20 quotes (USDG, Quotrons wStocks, …). Native ETH is always allowed on single-pair `launch`.
     mapping(address => QuoteConfig) public quoteConfigs;
 
     /// @notice Non-zero when created via `launchMulti` (1–5 canonical markets).
@@ -185,6 +185,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
     error DuplicateQuote();
     error InvalidFloorQuoteIndex();
     error BackedFloorNotAllowedInMulti();
+    error NativeQuoteNotAllowedInMulti();
 
     constructor(IPoolManager _poolManager, MasterLaunchHook _masterHook, address owner_, address treasury_)
         Owned(owner_)
@@ -387,7 +388,8 @@ contract LaunchFactory is Owned, IUnlockCallback {
     }
 
     /// @notice Deploy one token and 1–5 permanently locked v4 markets atomically (PAIR-style multi-pair).
-    /// @dev Backed floor is single-pair only; vesting/airdrop run on every market.
+    /// @dev Native ETH is single-pair only. Multi-pair quotes are USDG and Quotrons wStocks.
+    ///      Backed floor is single-pair only; vesting/airdrop run on every market.
     function launchMulti(LaunchMultiParams calldata params)
         external
         payable
@@ -403,8 +405,9 @@ contract LaunchFactory is Owned, IUnlockCallback {
         int24 spacing = params.tickSpacing == 0 ? ProtocolConstants.DEFAULT_TICK_SPACING : params.tickSpacing;
         if (spacing <= 0) revert InvalidTickSpacing();
 
-        (bool hasNative,) = LaunchFactoryLib.validateMarkets(_libMarkets(params.markets));
+        LaunchFactoryLib.validateMarkets(_libMarkets(params.markets));
         for (uint256 i; i < marketLen; ++i) {
+            if (params.markets[i].quote.isAddressZero()) revert NativeQuoteNotAllowedInMulti();
             _assertQuoteAllowed(params.markets[i].quote);
         }
 
@@ -414,16 +417,7 @@ contract LaunchFactory is Owned, IUnlockCallback {
             revert BackedFloorNotAllowedInMulti();
         }
 
-        // The dev buy is executed against markets[0]; only require its ETH when that market is native,
-        // otherwise the ERC-20 is pulled and any ETH sent for it would be stranded here.
-        LaunchFactoryLib.collectLaunchFee(
-            treasury,
-            launchFee,
-            hasNative,
-            params.markets[0].quote.isAddressZero() ? params.devBuyQuoteIn : 0,
-            msg.value,
-            msg.sender
-        );
+        LaunchFactoryLib.collectLaunchFee(treasury, launchFee, false, 0, msg.value, msg.sender);
 
         token = LaunchTokenDeployLib.deploy(
             address(this),

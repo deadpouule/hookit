@@ -266,7 +266,7 @@ abstract contract InkForkTestBase is Test {
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
                 markets: markets,
                 tickSpacing: 60,
-                bitmask: BitmaskConfig.pack(_defaultModules()),
+                bitmask: BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(_defaultModules())),
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,

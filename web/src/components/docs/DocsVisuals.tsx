@@ -164,8 +164,8 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             </div>
             <div className="docs-multi-legs">
               {[
-                { id: "eth" as const, label: "ETH", bps: "40%" },
-                { id: "usdg" as const, label: "USDG", bps: "30%" },
+                { id: "usdg" as const, label: "USDG", bps: "40%" },
+                { id: "waaplx" as const, label: "wAAPLx", bps: "30%" },
                 { id: "wnvdax" as const, label: "wNVDAx", bps: "30%" },
               ].map((leg) => (
                 <div key={leg.label} className="docs-multi-leg">
@@ -242,55 +242,52 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           </div>
         </Figure>
       );
-    case "arb-keeper":
+    case "balanced-aggregator":
       return (
         <Figure
-          caption="Arb keeper closes the USD gap"
-          note="Buys the cheap USD leg and sells the rich one in one unlock."
+          caption="One USDG payment, many markets"
+          note="BalancedAggregator splits exact input across canonical launch legs in one unlock."
         >
-          <svg className="docs-spark" viewBox="0 0 360 168" role="img" aria-label="Arb keeper buys the cheap pool and sells the rich one">
-            <rect x="12" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(56 189 248 / 0.45)" />
-            <text x="64" y="54" textAnchor="middle" fill="#7dd3fc" fontSize="12" fontWeight="700">
-              ETH pool
+          <svg className="docs-spark" viewBox="0 0 360 168" role="img" aria-label="Balanced aggregator routes USDG across multiple launch markets">
+            <rect x="128" y="12" width="104" height="48" rx="12" fill="rgb(34 197 94 / 0.12)" stroke="rgb(34 197 94 / 0.5)" />
+            <text x="180" y="34" textAnchor="middle" fill="#86efac" fontSize="12" fontWeight="700">
+              USDG in
             </text>
-            <text x="64" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
-              cheap USD
+            <text x="180" y="50" textAnchor="middle" fill="#a1a1aa" fontSize="9">
+              exact input
             </text>
-            <rect x="128" y="28" width="104" height="64" rx="12" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.5)" />
-            <text x="180" y="54" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
-              Keeper
+            <rect x="128" y="72" width="104" height="48" rx="12" fill="rgb(149 20 209 / 0.14)" stroke="rgb(149 20 209 / 0.5)" />
+            <text x="180" y="94" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700">
+              Aggregator
             </text>
-            <text x="180" y="72" textAnchor="middle" fill="#c4b5fd" fontSize="8">
+            <text x="180" y="110" textAnchor="middle" fill="#c4b5fd" fontSize="8">
               one unlock
             </text>
-            <rect x="244" y="28" width="104" height="64" rx="12" fill="#111" stroke="rgb(244 63 94 / 0.45)" />
-            <text x="296" y="54" textAnchor="middle" fill="#fb7185" fontSize="12" fontWeight="700">
-              wNVDA pool
+            <rect x="12" y="132" width="96" height="28" rx="8" fill="#111" stroke="rgb(56 189 248 / 0.45)" />
+            <text x="60" y="150" textAnchor="middle" fill="#7dd3fc" fontSize="9" fontWeight="700">
+              wNFLX leg
             </text>
-            <text x="296" y="72" textAnchor="middle" fill="#a1a1aa" fontSize="9">
-              rich USD
+            <rect x="132" y="132" width="96" height="28" rx="8" fill="#111" stroke="rgb(244 63 94 / 0.45)" />
+            <text x="180" y="150" textAnchor="middle" fill="#fb7185" fontSize="9" fontWeight="700">
+              wNVDA leg
             </text>
-            <path d="M116 60 L128 60" stroke="#7dd3fc" strokeWidth="1.6" />
-            <path d="M232 60 L244 60" stroke="#fb7185" strokeWidth="1.6" />
-            <text x="122" y="52" fill="#7dd3fc" fontSize="8">
-              buy
+            <rect x="252" y="132" width="96" height="28" rx="8" fill="#111" stroke="rgb(250 204 21 / 0.45)" />
+            <text x="300" y="150" textAnchor="middle" fill="#fde047" fontSize="9" fontWeight="700">
+              USDG leg
             </text>
-            <text x="238" y="52" textAnchor="end" fill="#fb7185" fontSize="8">
-              sell
-            </text>
-            <text x="180" y="136" textAnchor="middle" fill="#a1a1aa" fontSize="10">
-              Buy cheap tokens, sell the rich leg.
-            </text>
-            <text x="180" y="152" textAnchor="middle" fill="#71717a" fontSize="9">
-              Min 10% USD gap. Clip 0.50% of supply.
+            <path d="M180 60 L60 132" stroke="#86efac" strokeWidth="1.4" />
+            <path d="M180 60 L180 132" stroke="#86efac" strokeWidth="1.4" />
+            <path d="M180 60 L300 132" stroke="#86efac" strokeWidth="1.4" />
+            <text x="180" y="168" textAnchor="middle" fill="#71717a" fontSize="9">
+              Stock legs bridge Quotrons wStock/USDG before the hook swap.
             </text>
           </svg>
           <Example
             title="Example"
             rows={[
-              { k: "Gap", v: "ETH leg 10% cheaper in USD than the wNVDA leg." },
-              { k: "Clip", v: "Keeper buys ETH-quoted tokens, sells into wNVDA, max 0.50% of supply." },
-              { k: "Unlock", v: "One keeper tx closes the gap across the token's quote markets." },
+              { k: "Buy", v: "100 USDG → 60% wNFLX leg + 40% wNVDA leg → tokens to your wallet." },
+              { k: "Bridge", v: "Each stock leg uses the canonical Quotrons pool, same as HookitSwapRouter composite." },
+              { k: "Sell", v: "Reverse path: token → wStock → USDG, still one tx when routed through the aggregator." },
             ]}
           />
         </Figure>

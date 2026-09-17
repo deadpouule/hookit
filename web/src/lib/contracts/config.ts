@@ -102,13 +102,14 @@ export const chainlinkAggregatorAbi = [
  * On Ink, these win over stale Vercel `NEXT_PUBLIC_LAUNCH_FACTORY` so new
  * launches cannot silently hit the pre-patch HolderAirdropVault.
  */
-export const INK_LAUNCH_FACTORY = getAddress("0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0");
-export const INK_LAUNCH_FACTORY_QUERY = getAddress("0x58B038697b27aE16efaEbb200c6bA86D28fa42D9");
-const INK_BONDING_FACTORY = getAddress("0xa629619D516BE82308dbdB12A4ca324c44ea9c67");
-const INK_SWAP_ROUTER = getAddress("0x718dAb9d61eEEE18c11399598254F2CC59f95dA9");
-const INK_CLAIMS_REDEEMER = getAddress("0xd95458005acd7AA90823543F43b30f3a4B7aF057");
-const INK_PROTOCOL_DISTRIBUTOR = getAddress("0xCc6F74989f8400751Eb77421E0bDCC280b58A608");
-const INK_HKIT_BUYBACK = getAddress("0xa3820E552D6C61650cE8B9b76306385271fDC736");
+export const INK_LAUNCH_FACTORY = getAddress("0x54027828C6475d8FEeAB4fd81A7F79963bD7ed37");
+export const INK_LAUNCH_FACTORY_QUERY = getAddress("0x0e86Fe01653B0b49F9e65F3832e3dAedC21cD8f3");
+const INK_BONDING_FACTORY = getAddress("0x4536B2fa48E6f81CdA1296AE87f288d20df610a4");
+const INK_SWAP_ROUTER = getAddress("0xf94e301607344B1B10ED1FE1A5099e92Cb76F362");
+const INK_BALANCED_AGGREGATOR = getAddress("0x5Be5e0c91B8c3cfEF969c82e02776C6e3F92Bc98");
+const INK_CLAIMS_REDEEMER = getAddress("0x85065220eA534d999203BAC08eE506067B98Eaf5");
+const INK_PROTOCOL_DISTRIBUTOR = getAddress("0x91Ef75507E7154FBC09c2a6BF45Af3fdd25EB815");
+const INK_HKIT_BUYBACK = getAddress("0x72b798F9AB2545D476424a8870Ab13F59AEE669b");
 const INK_NATIVE_TOKEN = getAddress("0x964ce443c5e111ea1b87a70166c6894af3eddb08");
 
 export type LaunchFactoryPair = {
@@ -223,6 +224,16 @@ export function isProductionSwapRouter(): boolean {
 export function canUseDevSwapFallback(): boolean {
   const d = getChainDeployment();
   return d.chainId !== INK_MAINNET.chainId && d.poolSwapTest !== zeroAddress;
+}
+
+/** PAIR-style multi-pool aggregator (`BalancedAggregator`). Hardcoded on Ink. */
+export function getBalancedAggregatorAddress(): Address | undefined {
+  if (resolveHookitChainKey() === "ink") return INK_BALANCED_AGGREGATOR;
+  return parseEnvAddress(process.env.NEXT_PUBLIC_BALANCED_AGGREGATOR);
+}
+
+export function supportsBalancedAggregator(): boolean {
+  return !!getBalancedAggregatorAddress();
 }
 
 export function supportsCompositeSwap(): boolean {

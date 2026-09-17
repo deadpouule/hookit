@@ -73,12 +73,12 @@ the public catalogue from the current Ink deployment:
 ```bash
 systemctl stop hookit-indexer
 cp /var/lib/hookit-indexer/hookit-57073.json \
-  /root/hookit-57073.before-55929992.json
+  /root/hookit-57073.before-56151088.json
 
 # Keep only these current factories in /opt/hookit/.env:
-# LAUNCH_FACTORY=0x5709Aa29ED27FF098e76378999C9B0CDE42b83E0
-# BONDING_FACTORY=0xa629619D516BE82308dbdB12A4ca324c44ea9c67
-# INDEXER_START_BLOCK=55929992
+# LAUNCH_FACTORY=0x54027828C6475d8FEeAB4fd81A7F79963bD7ed37
+# BONDING_FACTORY=0x4536B2fa48E6f81CdA1296AE87f288d20df610a4
+# INDEXER_START_BLOCK=56151088
 
 rm -f /var/lib/hookit-indexer/hookit-57073.json \
   /var/lib/hookit-indexer/hookit-57073.json.tmp
@@ -95,8 +95,8 @@ Fees accrue as `pending` until flushed. Enable the timer so they route every day
 ```bash
 # In /opt/hookit/.env — see env.example
 FEE_KEEPER_PRIVATE_KEY=0x...   # gas wallet
-PROTOCOL_DISTRIBUTOR=0xc724b1dadb0215a601c143fdec53152d8e61867f
-HKIT_BUYBACK=0x64ce593c8678512097cd0d53f737c3621fb66e5d
+PROTOCOL_DISTRIBUTOR=0x91Ef75507E7154FBC09c2a6BF45Af3fdd25EB815
+HKIT_BUYBACK=0x72b798F9AB2545D476424a8870Ab13F59AEE669b
 
 chmod +x /opt/hookit/deploy/linode/fee-keeper/run.sh
 install -m 644 /opt/hookit/deploy/linode/systemd/hookit-fee-keeper.service /etc/systemd/system/

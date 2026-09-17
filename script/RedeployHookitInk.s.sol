@@ -14,6 +14,7 @@ import {GraduatedFeeHook} from "../src/GraduatedFeeHook.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {BondingLaunchFactory} from "../src/BondingLaunchFactory.sol";
 import {HookitSwapRouter} from "../src/HookitSwapRouter.sol";
+import {BalancedAggregator} from "../src/BalancedAggregator.sol";
 import {FeeEthRail} from "../src/FeeEthRail.sol";
 import {HkitBuyback} from "../src/HkitBuyback.sol";
 import {FloorVault} from "../src/FloorVault.sol";
@@ -98,6 +99,7 @@ contract RedeployHookitInkScript is Script {
         HookitDeployLib.seedBondingQuotes(bonding);
 
         HookitSwapRouter router = new HookitSwapRouter(manager);
+        BalancedAggregator aggregator = new BalancedAggregator(manager, factory);
         V4ClaimsRedeemer claimsRedeemer = new V4ClaimsRedeemer(manager);
         LaunchFactoryQuery launchQuery = new LaunchFactoryQuery(factory);
         FeeEthRail feeRail = new FeeEthRail(deployer, manager, v4.stableQuote);
@@ -166,6 +168,7 @@ contract RedeployHookitInkScript is Script {
         console.log("BondingLaunchFactory", address(bonding));
         console.log("LiquidityLocker", address(bonding.locker()));
         console.log("HookitSwapRouter", address(router));
+        console.log("BalancedAggregator", address(aggregator));
         console.log("V4ClaimsRedeemer", address(claimsRedeemer));
         console.log("LaunchFactoryQuery", address(launchQuery));
         console.log("FeeEthRail", address(feeRail));
@@ -184,6 +187,7 @@ contract RedeployHookitInkScript is Script {
         console.log("ENV_NEXT_PUBLIC_LAUNCH_FACTORY_QUERY", address(launchQuery));
         console.log("ENV_NEXT_PUBLIC_BONDING_FACTORY", address(bonding));
         console.log("ENV_NEXT_PUBLIC_HOOKIT_SWAP_ROUTER", address(router));
+        console.log("ENV_NEXT_PUBLIC_BALANCED_AGGREGATOR", address(aggregator));
         console.log("ENV_NEXT_PUBLIC_CLAIMS_REDEEMER", address(claimsRedeemer));
         console.log("ENV_NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR", address(distributor));
         console.log("ENV_NEXT_PUBLIC_HKIT_BUYBACK", address(hkitBuyback));

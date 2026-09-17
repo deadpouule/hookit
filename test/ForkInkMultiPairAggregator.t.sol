@@ -10,6 +10,7 @@ import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 
 import {InkForkTestBase} from "./utils/InkForkTestBase.sol";
+import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 import {HookitSwapRouter} from "../src/HookitSwapRouter.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
@@ -247,7 +248,7 @@ contract ForkInkMultiPairAggregatorTest is InkForkTestBase {
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
                 markets: markets,
                 tickSpacing: 60,
-                bitmask: BitmaskConfig.pack(modules),
+                bitmask: BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(modules)),
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,

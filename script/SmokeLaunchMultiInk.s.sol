@@ -15,12 +15,12 @@ import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ModuleMatrix} from "../test/utils/ModuleMatrix.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 
-/// @notice Ink smoke: launchMulti (ETH + USDG) + buy/sell on primary ETH pool.
+/// @notice Ink smoke: launchMulti (USDG + wNVDA) + buy/sell on primary USDG pool.
 /// @dev Phase 1: `MULTI_PHASE=launch forge script ... --broadcast`
 ///      Phase 2: `MULTI_PHASE=sell MULTI_LAUNCH_ID=<id> forge script ... --broadcast` (next block)
 contract SmokeLaunchMultiInkScript is Script {
     address internal constant USDG = 0xe343167631d89B6Ffc58B88d6b7fB0228795491D;
-    uint256 internal constant ETH_USD_X18 = 2_491e18;
+    address internal constant W_NVDA = 0xa8ddb5Cd96b5222AFe198316E9A57CAA642850D5;
 
     function run() public {
         string memory phase = vm.envOr("MULTI_PHASE", string("launch"));
@@ -38,8 +38,8 @@ contract SmokeLaunchMultiInkScript is Script {
         HookitSwapRouter router = HookitSwapRouter(payable(vm.envAddress("HOOKIT_SWAP_ROUTER")));
 
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 6_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(USDG), bps: 4_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(USDG), bps: 6_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(W_NVDA), bps: 4_000});
 
         BitmaskConfig.Modules memory modules = ModuleMatrix.fromMask(1);
         uint256 bitmask = BitmaskConfig.pack(modules);
@@ -48,7 +48,6 @@ contract SmokeLaunchMultiInkScript is Script {
         console.log("ethBefore", user.balance);
 
         vm.startBroadcast(pk);
-        factory.setEthUsdPrice(ETH_USD_X18);
 
         (uint256 launchId, address token, PoolId poolId) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchMultiParams({
@@ -70,10 +69,11 @@ contract SmokeLaunchMultiInkScript is Script {
         require(factory.launchMarketCount(launchId) == 2, "market count");
 
         PoolKey memory key = factory.poolKeyOf(launchId);
-        uint256 buyWei = vm.envOr("MULTI_BUY_WEI", uint256(0.001 ether));
+        uint256 buyUsdg = vm.envOr("MULTI_BUY_USDG", uint256(10e6));
+        IERC20(USDG).approve(address(router), buyUsdg);
         bool zeroForOne = _buyZeroForOne(key, token);
         uint160 buyLimit = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
-        router.swapExactIn{value: buyWei}(key, zeroForOne, buyWei, 1, buyLimit);
+        router.swapExactIn(key, zeroForOne, buyUsdg, 1, buyLimit);
         vm.stopBroadcast();
 
         console.log("launchId", launchId);
@@ -93,7 +93,7 @@ contract SmokeLaunchMultiInkScript is Script {
         uint256 launchId = vm.envUint("MULTI_LAUNCH_ID");
 
         PoolKey memory key = factory.poolKeyOf(launchId);
-        address token = Currency.unwrap(key.currency0) == address(0)
+        address token = Currency.unwrap(key.currency0) == USDG
             ? Currency.unwrap(key.currency1)
             : Currency.unwrap(key.currency0);
 
@@ -107,7 +107,7 @@ contract SmokeLaunchMultiInkScript is Script {
         router.swapExactIn(key, sellZeroForOne, tokenBal, 1, sellLimit);
         vm.stopBroadcast();
 
-        console.log("ethAfter", user.balance);
+        console.log("usdgAfter", IERC20(USDG).balanceOf(user));
         console.log("tokenAfter", IERC20(token).balanceOf(user));
         console.log("MULTI_SELL_OK");
     }

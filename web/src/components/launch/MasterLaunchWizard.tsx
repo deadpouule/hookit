@@ -60,6 +60,9 @@ function validateTokenStep(form: LaunchFormState): string | null {
   if (!form.name.trim()) return "Token name is required.";
   if (!form.ticker.trim()) return "Token symbol is required.";
   if (form.markets.length > 1) {
+    if (form.markets.some((market) => market.id === "eth")) {
+      return "Multi-pair uses USDG and stocks only. ETH is single-pair.";
+    }
     const totalBps = form.markets.reduce((sum, market) => sum + market.bps, 0);
     if (totalBps !== 10_000) return "Multi-pair liquidity split must total 100%.";
   }

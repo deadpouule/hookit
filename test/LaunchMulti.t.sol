@@ -24,20 +24,23 @@ contract LaunchMultiTest is LaunchpadTestBase {
 
     MockQuoteToken internal quoteA;
     MockQuoteToken internal quoteB;
+    MockQuoteToken internal quoteC;
 
     function setUp() public {
         deployProtocol();
         quoteA = new MockQuoteToken("Quote A", "QTA", 18);
         quoteB = new MockQuoteToken("Quote B", "QTB", 18);
+        quoteC = new MockQuoteToken("Quote C", "QTC", 18);
         factory.setQuote(address(quoteA), true, 18, 2_000e18, address(0));
         factory.setQuote(address(quoteB), true, 18, 3_000e18, address(0));
+        factory.setQuote(address(quoteC), true, 18, 4_000e18, address(0));
     }
 
-    function testLaunchMulti_EthAndErc20() public {
+    function testLaunchMulti_TwoErc20() public {
         uint256 supply = ProtocolConstants.DEFAULT_LAUNCH_SUPPLY;
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 6_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 4_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 6_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 4_000});
 
         BitmaskConfig.Modules memory m = defaultModules();
         m.antiSnipe = true;
@@ -75,8 +78,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
         assertGt(m0.liquidity, 0);
         assertGt(m1.liquidity, 0);
 
-        uint256 ethSlice = supply * 6_000 / 10_000;
-        uint256 ercSlice = supply - ethSlice;
+        uint256 sliceA = supply * 6_000 / 10_000;
+        uint256 sliceB = supply - sliceA;
         assertLt(LaunchTokenLike(token).balanceOf(address(factory)), 1e15);
 
         PoolKey memory key0 = factory.poolKeyOfMarket(launchId, 0);
@@ -84,30 +87,65 @@ contract LaunchMultiTest is LaunchpadTestBase {
         assertEq(factory.poolLaunchId(key0.toId()), launchId);
         assertEq(factory.poolMarketIndex(key1.toId()), 1);
 
-        buyExactIn(key0, 0.01 ether);
+        quoteA.approve(address(swapRouter), type(uint256).max);
+        bool aIs0 = Currency.unwrap(key0.currency0) == address(quoteA);
+        swapRouter.swap(
+            key0,
+            SwapParams({
+                zeroForOne: aIs0,
+                amountSpecified: -int256(10e18),
+                sqrtPriceLimitX96: aIs0 ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            abi.encode(address(this))
+        );
         vm.roll(block.number + 1);
 
-        quoteA.approve(address(swapRouter), type(uint256).max);
-        bool quoteIsCurrency0 = Currency.unwrap(key1.currency0) == address(quoteA);
+        quoteB.approve(address(swapRouter), type(uint256).max);
+        bool bIs0 = Currency.unwrap(key1.currency0) == address(quoteB);
         swapRouter.swap(
             key1,
             SwapParams({
-                zeroForOne: quoteIsCurrency0,
+                zeroForOne: bIs0,
                 amountSpecified: -int256(10e18),
-                sqrtPriceLimitX96: quoteIsCurrency0 ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+                sqrtPriceLimitX96: bIs0 ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
             }),
             PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
             abi.encode(address(this))
         );
 
         assertGt(LaunchTokenLike(token).balanceOf(address(this)), 0);
-        ethSlice;
-        ercSlice;
+        sliceA;
+        sliceB;
+    }
+
+    function testLaunchMulti_RevertsNativeQuote() public {
+        LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
+
+        vm.expectRevert(LaunchFactory.NativeQuoteNotAllowedInMulti.selector);
+        factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
+            LaunchFactory.LaunchMultiParams({
+                name: "Eth",
+                symbol: "ETHM",
+                metadataURI: "",
+                totalSupply: 1e18,
+                markets: markets,
+                tickSpacing: 60,
+                bitmask: 0,
+                customHook: IHooks(address(0)),
+                floorQuoteIndex: 0,
+                devBuyQuoteIn: 0,
+                minDevBuyTokensOut: 0,
+                vestPacked: 0
+            })
+        );
     }
 
     function testLaunchMulti_TokenAddressEndsWithBrandNibble() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](1);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 10_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 10_000});
 
         (, address token,) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchMultiParams({
@@ -130,8 +168,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
 
     function testLaunchMulti_RevertsDuplicateQuote() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
 
         vm.expectRevert(LaunchFactory.DuplicateQuote.selector);
         factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
@@ -154,8 +192,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
 
     function testLaunchMulti_RevertsInvalidBps() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 4_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 4_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 4_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 4_000});
 
         vm.expectRevert(LaunchFactory.InvalidMarketBps.selector);
         factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(
@@ -178,8 +216,8 @@ contract LaunchMultiTest is LaunchpadTestBase {
 
     function testLaunchMulti_RevertsWhenBackedFloor() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 5_000});
 
         BitmaskConfig.Modules memory mods = defaultModules();
         mods.backedFloor = true;
@@ -207,9 +245,9 @@ contract LaunchMultiTest is LaunchpadTestBase {
 
     function testLaunchMulti_ThreeMarketsSupplySplit() public {
         LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](3);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 5_000});
-        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 3_000});
-        markets[2] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 2_000});
+        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteA)), bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteB)), bps: 3_000});
+        markets[2] = LaunchFactory.MarketInput({quote: Currency.wrap(address(quoteC)), bps: 2_000});
 
         uint256 supply = 1_000_000e18;
         (uint256 launchId,,) = factory.launchMulti{value: ProtocolConstants.LAUNCH_FEE_WEI}(

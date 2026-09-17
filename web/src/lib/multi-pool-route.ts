@@ -24,6 +24,8 @@ export type BestSellRoute =
       hookKey: V4PoolKey;
       amountOut: bigint;
       routeLabel: string;
+      /** On-chain `poolKeyOfMarket` index. Missing when reconstructed from UI markets. */
+      marketIndex?: number;
     }
   | {
       kind: "composite";
@@ -33,6 +35,7 @@ export type BestSellRoute =
       amountOut: bigint;
       intermediateOut: bigint;
       routeLabel: string;
+      marketIndex?: number;
     };
 
 export type BestBuyLeg =
@@ -43,6 +46,7 @@ export type BestBuyLeg =
       amountIn: bigint;
       amountOut: bigint;
       routeLabel: string;
+      marketIndex?: number;
     }
   | {
       kind: "composite";
@@ -52,6 +56,7 @@ export type BestBuyLeg =
       amountIn: bigint;
       amountOut: bigint;
       routeLabel: string;
+      marketIndex?: number;
     };
 
 export type BestBuyPlan = {
@@ -63,6 +68,8 @@ export type BestBuyPlan = {
 type MarketLeg = {
   marketQuote: Address;
   hookKey: V4PoolKey;
+  /** Set only when loaded from `LaunchFactory.poolKeyOfMarket`. */
+  marketIndex?: number;
 };
 
 const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
@@ -147,8 +154,8 @@ async function loadMarketLegs(
     });
 
     const legs: MarketLeg[] = [];
-    for (const r of results) {
-      if (r.status !== "success" || !r.result) continue;
+    results.forEach((r, i) => {
+      if (r.status !== "success" || !r.result) return;
       const raw = r.result as {
         currency0: Address;
         currency1: Address;
@@ -166,8 +173,9 @@ async function loadMarketLegs(
       legs.push({
         marketQuote: marketQuoteFromKey(hookKey, token),
         hookKey,
+        marketIndex: i,
       });
-    }
+    });
     if (legs.length > 0) return legs;
   }
 
@@ -225,6 +233,7 @@ async function quoteBuyLegWithKey(
       amountIn,
       amountOut,
       routeLabel: `${payment.label} → ${pool.ticker}`,
+      marketIndex: leg.marketIndex,
     };
   }
 
@@ -247,6 +256,7 @@ async function quoteBuyLegWithKey(
     amountIn,
     amountOut,
     routeLabel: `${payment.label} → ${midLabel} → ${pool.ticker}`,
+    marketIndex: leg.marketIndex,
   };
 }
 
@@ -270,7 +280,7 @@ export async function quoteBestSellRoute(
   const candidates: BestSellRoute[] = [];
 
   await Promise.all(
-    legs.map(async ({ marketQuote, hookKey }) => {
+    legs.map(async ({ marketQuote, hookKey, marketIndex }) => {
       const amountOut = await quoteExactInOnKey(
         client,
         hookKey,
@@ -290,6 +300,7 @@ export async function quoteBestSellRoute(
           hookKey,
           amountOut,
           routeLabel: `${pool.ticker} → ${receive.symbol}`,
+          marketIndex,
         });
         return;
       }
@@ -305,6 +316,7 @@ export async function quoteBestSellRoute(
         amountOut: bridge.amountOut,
         intermediateOut: amountOut,
         routeLabel: `${pool.ticker} → ${midLabel} → ${receive.symbol}`,
+        marketIndex,
       });
     }),
   );

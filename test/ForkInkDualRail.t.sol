@@ -81,7 +81,7 @@ contract ForkInkDualRailTest is InkForkTestBase {
     function testFork_DualRail_FeeCap_BothRails() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
         m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS;
-        BitmaskConfig.pack(m);
+        BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(m));
         _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Cap", "CAP");
 
         // Classic: any creator tax reverts (base 1% only).

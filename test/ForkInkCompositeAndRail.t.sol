@@ -105,24 +105,20 @@ contract ForkInkCompositeAndRailTest is InkForkTestBase {
         }
     }
 
-    function testFork_LaunchMulti_EthUsdgWspyx_LiveFdvAndCompositeSell() public onlyFork {
-        LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](3);
-        markets[0] = LaunchFactory.MarketInput({quote: Currency.wrap(address(0)), bps: 4_000});
-        markets[1] = LaunchFactory.MarketInput({quote: usdg, bps: 3_000});
-        markets[2] = LaunchFactory.MarketInput({quote: wspyx, bps: 3_000});
+    function testFork_LaunchMulti_UsdgWspyx_LiveFdvAndCompositeSell() public onlyFork {
+        LaunchFactory.MarketInput[] memory markets = new LaunchFactory.MarketInput[](2);
+        markets[0] = LaunchFactory.MarketInput({quote: usdg, bps: 5_000});
+        markets[1] = LaunchFactory.MarketInput({quote: wspyx, bps: 5_000});
 
         InkForkTestBase.LaunchResult memory l = _launchMulti(creator, markets, "Multi", "MLT");
-        assertEq(factory.launchMarketCount(l.launchId), 3);
+        assertEq(factory.launchMarketCount(l.launchId), 2);
 
-        PoolKey memory ethKey = factory.poolKeyOfMarket(l.launchId, 0);
-        PoolKey memory usdgKey = factory.poolKeyOfMarket(l.launchId, 1);
-        PoolKey memory spyKey = factory.poolKeyOfMarket(l.launchId, 2);
+        PoolKey memory usdgKey = factory.poolKeyOfMarket(l.launchId, 0);
+        PoolKey memory spyKey = factory.poolKeyOfMarket(l.launchId, 1);
 
-        _assertSpotFdvFiveThousandUsd(ethKey, l.token, Currency.wrap(address(0)));
         _assertSpotFdvFiveThousandUsd(usdgKey, l.token, usdg);
         _assertSpotFdvFiveThousandUsd(spyKey, l.token, wspyx);
 
-        _routerBuy(trader, ethKey, l.token, 0.05 ether);
         _routerBuy(trader, usdgKey, l.token, 100e6);
         _routerBuy(trader, spyKey, l.token, 0.02e18);
         uint256 tokens = _tokenBalance(l.token, trader);
