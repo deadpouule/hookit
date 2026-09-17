@@ -227,14 +227,18 @@ contract ForkInkFullCoverageTest is InkForkTestBase {
         vm.deal(creatorC, 10 ether);
 
         InkForkTestBase.LaunchResult memory a = _launch(
-            creator, Currency.wrap(address(0)), _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "A", "AAA"
+            creator,
+            Currency.wrap(address(0)),
+            _defaultModules(),
+            60,
+            ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
+            "A",
+            "AAA"
         );
-        InkForkTestBase.LaunchResult memory b = _launch(
-            creatorB, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "B", "BBB"
-        );
-        InkForkTestBase.LaunchResult memory c = _launch(
-            creatorC, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "C", "CCC"
-        );
+        InkForkTestBase.LaunchResult memory b =
+            _launch(creatorB, usdg, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "B", "BBB");
+        InkForkTestBase.LaunchResult memory c =
+            _launch(creatorC, wspyx, _defaultModules(), 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "C", "CCC");
 
         _routerBuy(trader, a.key, a.token, 1 ether);
         _routerBuy(trader, b.key, b.token, 300e6);
@@ -272,9 +276,10 @@ contract ForkInkFullCoverageTest is InkForkTestBase {
         uint256 potDelta = hktDrop.potOf(l.token) - potBefore;
         uint256 expectedBaseFee = buyIn * uint256(ProtocolConstants.BASE_FEE_BPS) / ProtocolConstants.BPS_DENOMINATOR;
 
-        assertApproxEqRel(escrowDelta, expectedBaseFee * 60 / 100, 0.08e18);
+        uint256 expectedHookTax = buyIn * 400 / ProtocolConstants.BPS_DENOMINATOR;
+        assertApproxEqRel(escrowDelta, expectedBaseFee * 60 / 100 + expectedHookTax, 0.08e18, "creator base + hook tax");
         assertGt(potDelta, 0, "hkt holder cut buys launched token");
-        assertGt(protoDelta, 0, "protocol accrues hook tax + base share");
-        assertGt(protoDelta + escrowDelta, expectedBaseFee, "fees exceed creator base alone");
+        assertApproxEqRel(protoDelta, expectedBaseFee * 30 / 100, 0.08e18, "protocol 30% of base only");
+        assertGt(escrowDelta, protoDelta, "unrouted hook tax pays the creator");
     }
 }

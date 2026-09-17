@@ -645,7 +645,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             rows={[
               { k: "1 ETH buy", v: "Pays 1 ETH. Receives 0.97 ETH worth of tokens (0.01 base + 0.02 hook tax)." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
-              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules." },
+              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, or the creator if none are on." },
             ]}
           />
         </Figure>

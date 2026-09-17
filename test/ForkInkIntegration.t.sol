@@ -235,9 +235,9 @@ contract ForkInkIntegrationTest is InkForkTestBase {
         assertApproxEqRel(buybackReceived, pending - opsReceived, 0.02e18);
     }
 
-    function testFork_HookTaxGoesToProtocol_NotCreator() public onlyFork {
+    function testFork_HookTaxGoesToCreator_WhenNoSinks() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.hookTaxBps = 500; // 5% — no modules → unallocated hook tax to protocol
+        m.hookTaxBps = 500; // 5% — no sinks → hook tax credited to the creator
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tax", "TAX");
         Currency quote = Currency.wrap(address(0));
@@ -248,9 +248,9 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
         uint256 escrowDelta = escrow.balanceOf(creator, quote) - escrowBefore;
         uint256 protoDelta = distributor.pending(quote) - protoBefore;
-        // Creator only gets 60% of the 1% base; hook tax tips protocol above creator.
+        // Creator gets 60% of the 1% plus the 5% hook tax. Protocol only 30% of the 1%.
         assertGt(escrowDelta, 0);
-        assertGt(protoDelta, escrowDelta);
+        assertGt(escrowDelta, protoDelta);
     }
 
     function testFork_UsdgQuote_FeesAccrueInUsdg() public onlyFork {

@@ -561,7 +561,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Hook tax",
-              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules only.`,
+              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules when a sink is on. With Fixed or Dynamic Fees alone, credited to the creator (claimable).`,
             },
             {
               term: "Anti-Snipe",
@@ -587,6 +587,10 @@ export function buildDocsSections(): DocsSection[] {
           ],
         },
         {
+          type: "p",
+          text: "Same buy with no burn, floor, DeepenLP, or airdrop: the 0.020 ETH hook tax is credited to the creator and is claimable. Protocol still only takes 0.003 ETH from the 1% base.",
+        },
+        {
           type: "h3",
           text: "Launch fee",
         },
@@ -599,7 +603,7 @@ export function buildDocsSections(): DocsSection[] {
           title: "Fixed at launch",
           items: [
             "Pool LP fee is 0%. The hook is the fee switch.",
-            "Hook tax is for modules, not an extra creator skim.",
+            "Hook tax funds modules when a sink is on. Fixed or Dynamic Fees alone pay the creator.",
             "Module percents of the hook pot must sum to 100% when any sink is on.",
             "Creator → Hook and Buyback Vesting cannot both take the creator’s 60%.",
           ],
@@ -726,12 +730,12 @@ export function buildDocsSections(): DocsSection[] {
         { type: "hook-title", hookId: "fixed-fee" },
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator.",
         },
         { type: "hook-title", hookId: "dynamic-fees" },
         {
           type: "p",
-          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Full write-up below.",
+          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Alone, it pays the creator. Full write-up below.",
         },
         {
           type: "callout",
@@ -1078,7 +1082,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator.",
         },
         {
           type: "visual",
@@ -1089,6 +1093,7 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "You set hook tax at launch. Base 1% + hook tax ≤ 10%.",
             "Hook tax never uses the 60 / 10 / 30 split. That split is only the 1% base (and snipe).",
+            "No burn, floor, DeepenLP, or airdrop: the tax is credited to the creator and is claimable.",
           ],
         },
       ],
@@ -1101,7 +1106,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks.",
+          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks. Alone, the ramped tax is credited to the creator.",
         },
         {
           type: "visual",
@@ -1133,6 +1138,7 @@ export function buildDocsSections(): DocsSection[] {
             "You set a min total fee and a max hook tax at launch. Base 1% + max hook tax ≤ 10%.",
             "Cannot combine with Fixed Fees. One extra-tax mode per pool.",
             "The 1% base still splits 60 / 10 / 30. Only the hook-tax slice ramps.",
+            "No burn, floor, DeepenLP, or airdrop: the ramped tax is credited to the creator and is claimable.",
             "Whale-sized flow pays for the depth it consumes. Retail on a healthy book stays near the floor fee.",
           ],
         },
