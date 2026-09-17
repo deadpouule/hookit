@@ -216,35 +216,18 @@ contract AuditFactoryHookTest is LaunchpadTestBase {
         assertEq(airdrops.lastAirdropAt(token), lastPaid, "epoch completes over the following swaps");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // M-0 (fixed by removal): the max-wallet recipient came from caller-controlled hookData, so the
-    //      module only bound well-behaved routers. The module is gone; its legacy bits are rejected.
-    // ─────────────────────────────────────────────────────────────────────────
-    function test_Fixed_M0_MaxWalletModuleRemoved() public {
-        uint256 packed = BitmaskConfig.pack(defaultModules());
-        assertEq(packed & BitmaskConfig.RESERVED_MAX_WALLET_MASK, 0, "pack never sets the reserved bits");
+    /// Hook → Creator reuses the former max-wallet bit. Empty hookData still works.
+    function testHookToCreator_EmptyHookDataSucceeds() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
+        uint256 packed = BitmaskConfig.pack(m);
+        assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.HOOK_TO_CREATOR_ENABLED));
+        assertEq(BitmaskConfig.hookToCreatorBps(packed), 10_000);
 
-        vm.expectRevert(LaunchFactory.ModuleRemoved.selector);
-        factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
-            LaunchFactory.LaunchParams({
-                name: "MW",
-                symbol: "MW",
-                metadataURI: "ipfs://mw",
-                totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
-                quote: Currency.wrap(address(0)),
-                tickSpacing: 60,
-                startingTick: 0,
-                bitmask: packed | (1 << 4),
-                customHook: IHooks(address(0)),
-                devBuyQuoteIn: 0,
-                minDevBuyTokensOut: 0,
-                vestPacked: 0
-            })
-        );
-
-        // The hook no longer reads a recipient from hookData: buys with empty hookData go through.
-        (, address token,, PoolKey memory key) =
-            launchToken(defaultModules(), 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        (, address token,, PoolKey memory key) = launchToken(m, 0, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY);
+        token;
         swapRouter.swap{value: 0.001 ether}(
             key,
             SwapParams({

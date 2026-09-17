@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DEFAULT_MASTER_WIZARD_STATE } from "./constants";
-import { feeRouteSwapBps, hookPotBps } from "./hook-fee-route";
+import { feeRouteSwapBps, hookPotBps, hookPotNeedsRoute } from "./hook-fee-route";
 
 test("hook pot is hook tax plus optional creator cut", () => {
   const modules = {
@@ -21,4 +21,18 @@ test("hook pot is hook tax plus optional creator cut", () => {
   const withCreator = { ...modules, creatorShareToHook: true };
   assert.equal(hookPotBps(withCreator, 500), 560);
   assert.equal(feeRouteSwapBps(withCreator, 500, "autoBurnPct"), 224);
+});
+
+test("hook tax without a sink needs a destination", () => {
+  const empty = { ...DEFAULT_MASTER_WIZARD_STATE.modules };
+  assert.equal(hookPotNeedsRoute(empty, 0), false);
+  assert.equal(hookPotNeedsRoute(empty, 200), true);
+  assert.equal(
+    hookPotNeedsRoute({ ...empty, hookToCreator: true, hookToCreatorPct: 100 }, 200),
+    false,
+  );
+  assert.equal(
+    hookPotNeedsRoute({ ...empty, creatorShareToHook: true }, 0),
+    true,
+  );
 });

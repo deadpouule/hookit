@@ -10,12 +10,9 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {LPFeeLibrary} from "@uniswap/v4-core/src/libraries/LPFeeLibrary.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PoolSwapTest} from "@uniswap/v4-core/src/test/PoolSwapTest.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-
 import {LaunchpadTestBase, LaunchTokenLike} from "./utils/LaunchpadTestBase.sol";
 import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
-import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {FixedPointMath} from "../src/libraries/FixedPointMath.sol";
 
@@ -176,30 +173,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
 
     // ─── Behavioral edge cases ────────────────────────────────────────────────
 
-    /// Max wallet was removed (it only ever checked the router-supplied recipient): a launch that
-    /// still sets its legacy bits is rejected instead of silently ignored.
-    function testLegacyMaxWalletBitsRejected() public {
-        uint256 packed = BitmaskConfig.pack(defaultModules());
-        uint256[2] memory legacy = [packed | (1 << 4), packed | (uint256(200) << 55)];
-        for (uint256 i; i < legacy.length; ++i) {
-            vm.expectRevert(LaunchFactory.ModuleRemoved.selector);
-            factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
-                LaunchFactory.LaunchParams({
-                    name: "MW",
-                    symbol: "MW",
-                    metadataURI: "ipfs://mw",
-                    totalSupply: 1_000_000e18,
-                    quote: Currency.wrap(address(0)),
-                    tickSpacing: 60,
-                    startingTick: 0,
-                    bitmask: legacy[i],
-                    customHook: IHooks(address(0)),
-                    devBuyQuoteIn: 0,
-                    minDevBuyTokensOut: 0,
-                    vestPacked: 0
-                })
-            );
-        }
+    function testSingleModule_HookToCreator() public {
+        _launchBuySellSmoke(ModuleMatrix.BIT_HOOK_TO_CREATOR);
     }
 
     /// Buys without hookData work: nothing in the hook reads a recipient any more.
@@ -271,7 +246,7 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _buyAs(buyer, key, 2 ether);
         (, uint128 streamed,,,) = buybacks.streams(address(this), token);
         assertGt(streamed, 0);
-        // 60% of the 1% plus the unrouted 2% hook tax both vest. Escrow stays empty.
+        // 60% of the 1% plus Hook → Creator 100% of the 2% tax both vest. Escrow stays empty.
         assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
     }
 

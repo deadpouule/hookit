@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowDownToLine,
   ArrowLeftRight,
   Coins,
   Droplets,
@@ -114,6 +115,16 @@ export const HOOK_MODULE_ACCENTS = {
     text: "text-[#ffe9a0]",
     icon: Gift,
   },
+  hookToCreator: {
+    id: "hook-to-creator",
+    label: "Hook → Creator",
+    color: "#e4e4e7",
+    glow: "rgba(228, 228, 231, 0.45)",
+    bg: "bg-[#e4e4e7]/10",
+    border: "border-[#e4e4e7]/40",
+    text: "text-[#f4f4f5]",
+    icon: ArrowDownToLine,
+  },
 } as const satisfies Record<string, HookModuleAccent>;
 
 const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
@@ -127,6 +138,7 @@ const TAG_TO_ACCENT: Record<string, HookModuleAccent> = {
   "Auto Burn": HOOK_MODULE_ACCENTS.autoBurn,
   "Deepen LPs": HOOK_MODULE_ACCENTS.deepenLps,
   "Holder Airdrop": HOOK_MODULE_ACCENTS.holderAirdrop,
+  "Hook → Creator": HOOK_MODULE_ACCENTS.hookToCreator,
   "Custom Hook": {
     ...HOOK_MODULE_ACCENTS.hookTax,
     id: "custom",

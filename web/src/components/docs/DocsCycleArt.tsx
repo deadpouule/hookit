@@ -119,6 +119,7 @@ const HOOK_SHORT: Record<BrowseHookId, string> = {
   "anti-mev": "MEV",
   "max-tx": "Max Tx",
   "anti-snipe": "Snipe",
+  "hook-to-creator": "→ Creator",
   "creator-share-to-hook": "Creator",
 };
 

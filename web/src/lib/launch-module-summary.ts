@@ -102,6 +102,8 @@ export function moduleDetailLine(
       }
       return `${modules.holderAirdropPct}% of hook fees → holder drops`;
     }
+    case "hook-to-creator":
+      return `${modules.hookToCreatorPct ?? 100}% of hook fees → creator`;
     case "creator-share-to-hook": {
       const share = CREATOR_SHARE_BPS / 100;
       if (hookTaxBps > 0) {
@@ -187,6 +189,7 @@ const MODULE_SUMMARY_PHRASE: Record<MasterHookId, string> = {
   "auto-burn": "Burns tokens on swaps",
   "deepen-lps": "Deepens the LP book",
   "holder-airdrop": "Drops quote to holders",
+  "hook-to-creator": "Hook tax → creator",
   "creator-share-to-hook": "Creator fees → hook pot",
 };
 
@@ -205,6 +208,7 @@ const HOOK_PICK_TAGLINE: Record<MasterHookId, string> = {
   "auto-burn": "Burn on swap",
   "deepen-lps": "Deepen LPs",
   "holder-airdrop": "Holder airdrops",
+  "hook-to-creator": "Tax to creator",
   "creator-share-to-hook": "Fees → hook pot",
 };
 
@@ -223,19 +227,21 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "max-tx":
     "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert. Useful against whale dumps or bot-sized trades.",
   "dynamic-fees":
-    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle. Alone, the extra tax is credited to the creator. With Buyback Vesting, the tax vests.",
+    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle. You must pick a 100% destination for the extra tax (Hook → Creator, burn, floor, Deepen LPs, or airdrop).",
   "buyback-vesting":
-    `Routes the creator's ${CREATOR_SHARE_BPS / 100}% base-fee share into a vesting vault instead of instant escrow. Unrouted Fixed or Dynamic Fees (no floor, burn, DeepenLP, or airdrop) vest here too, not in FeeEscrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
+    `Routes the creator's ${CREATOR_SHARE_BPS / 100}% base-fee share into a vesting vault instead of instant escrow. Hook → Creator slices vest here too. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "auto-burn":
     "Sends a slice of the hook fee pot to the dead address on every swap. Supply shrinks over time without manual burns or sell pressure on your token.",
   "deepen-lps":
     "Routes a share of hook fees into the launch liquidity range. Swap some quote for token when needed, then mint. Thickens the book for whales and traders instead of paying extra fees to existing LPs.",
   "holder-airdrop":
     "Every swap accrues into a vault. All holders receive quote or stocks on a time window, or when FDV hits a target (5M–10B), all at once or by %. Permissionless. Anyone can trigger the push.",
+  "hook-to-creator":
+    "Sends a share of the hook pot to the creator. Alone it is 100% and claimable in FeeEscrow. Split it with Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop so the shares still add to 100%. If Buyback Vesting is on, this slice vests instead of instant claim.",
   "creator-share-to-hook":
-    `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
+    `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across Hook → Creator, floor, burn, Deepen LPs, or airdrop. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "fixed-fee":
-    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Alone, the tax is credited to the creator and is claimable. With Buyback Vesting, the tax vests. Mutually exclusive with dynamic fees.",
+    "Adds a flat hook tax on every swap, deducted in quote only. You must pick a 100% destination: Hook → Creator, Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop. Mutually exclusive with dynamic fees.",
 };
 
 /** Longer copy for pick-card and config tooltips. */
@@ -286,6 +292,7 @@ const MODULE_SUMMARY_PHRASE_LOWER: Record<MasterHookId, string> = {
   "auto-burn": "burns tokens on swaps",
   "deepen-lps": "deepens the LP book",
   "holder-airdrop": "airdrops to holders",
+  "hook-to-creator": "pays hook tax to the creator",
   "creator-share-to-hook": "feeds creator fees into hooks",
 };
 

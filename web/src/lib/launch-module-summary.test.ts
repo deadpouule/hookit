@@ -30,10 +30,9 @@ test("backed floor tooltip example uses 2% / 5% volume rows", () => {
   );
   assert.match(hookPickDetail("backed-floor"), /More volume = higher floor/);
   assert.equal(hookPickDetail("fixed-fee").toLowerCase().includes("leftover"), false);
-  assert.match(hookPickDetail("fixed-fee"), /credited to the creator/);
-  assert.match(hookPickDetail("fixed-fee"), /With Buyback Vesting, the tax vests/);
-  assert.match(hookPickDetail("dynamic-fees"), /credited to the creator/);
-  assert.match(hookPickDetail("buyback-vesting"), /vest here too/);
+  assert.match(hookPickDetail("fixed-fee"), /100% destination/);
+  assert.match(hookPickDetail("dynamic-fees"), /100% destination/);
+  assert.match(hookPickDetail("buyback-vesting"), /Hook → Creator slices vest/);
   assert.match(
     MASTER_HOOKS.find((hook) => hook.id === "backed-floor")?.description ?? "",
     /More volume = higher floor/,

@@ -42,6 +42,7 @@ export type DocsSectionId =
   | "auto-burn"
   | "buyback-vesting"
   | "holder-airdrop"
+  | "hook-to-creator"
   | "creator-share"
   | "fixed-fees"
   | "dynamic-fees"
@@ -87,6 +88,7 @@ export type DocsVisualId =
   | "auto-burn"
   | "buyback-vesting"
   | "holder-airdrop"
+  | "hook-to-creator"
   | "creator-share"
   | "fixed-fees"
   | "dynamic-fees"
@@ -170,6 +172,7 @@ export const DOCS_NAV: { group: string; items: { id: DocsSectionId; label: strin
       { id: "auto-burn", label: "Auto-Burn" },
       { id: "buyback-vesting", label: "Buyback Vesting" },
       { id: "holder-airdrop", label: "Holder Airdrop" },
+      { id: "hook-to-creator", label: "Hook → Creator" },
       { id: "creator-share", label: "Creator → Hook" },
       { id: "fixed-fees", label: "Fixed Fees" },
       { id: "dynamic-fees", label: "Dynamic Fees" },
@@ -561,7 +564,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Hook tax",
-              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules when a sink is on. Buyback Vesting is a sink: the tax vests in BuybackVault. With Fixed or Dynamic Fees alone, credited to the creator (claimable).`,
+              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules you pick as destinations. Shares of the pot (Hook → Creator, burn, floor, Deepen LPs, airdrop) must sum to 100%. Fixed or Dynamic Fees with no destination cannot launch.`,
             },
             {
               term: "Anti-Snipe",
@@ -588,7 +591,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Same buy with no burn, floor, DeepenLP, airdrop, or Buyback Vesting: the 0.020 ETH hook tax is credited to the creator and is claimable. Protocol still only takes 0.003 ETH from the 1% base. Same buy with Buyback Vesting and no other sink: the 0.020 ETH tax vests in BuybackVault with the creator’s 0.006 ETH.",
+          text: "Same buy with Hook → Creator at 100% and no other destination: the 0.020 ETH hook tax is credited to the creator and is claimable. Protocol still only takes 0.003 ETH from the 1% base. Same buy with Hook → Creator 100% plus Buyback Vesting: the 0.020 ETH tax vests in BuybackVault with the creator’s 0.006 ETH.",
         },
         {
           type: "h3",
@@ -603,8 +606,8 @@ export function buildDocsSections(): DocsSection[] {
           title: "Fixed at launch",
           items: [
             "Pool LP fee is 0%. The hook is the fee switch.",
-            "Hook tax funds modules when a sink is on. Buyback Vesting is a sink. Fixed or Dynamic Fees alone pay the creator.",
-            "Floor, burn, DeepenLP, and airdrop percents of the hook pot must sum to 100% when any of them is on.",
+            "Hook tax funds destinations you pick. Shares (Hook → Creator, burn, floor, Deepen LPs, airdrop) must equal 100% whenever the pot is funded.",
+            "Fixed or Dynamic Fees with no destination cannot launch. Hook → Creator alone is 100% to the creator.",
             "Creator → Hook and Buyback Vesting cannot both take the creator’s 60%.",
           ],
         },
@@ -632,11 +635,11 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "BuybackVault",
-              text: "If Buyback Vesting is on. Time vest or FDV cliff/steps. Also takes unrouted hook tax. Creator-only claim of the unlocked slice.",
+              text: "If Buyback Vesting is on. Time vest or FDV cliff/steps. Also takes the Hook → Creator slice of the hook pot. Creator-only claim of the unlocked slice.",
             },
             {
               term: "Hook pot",
-              text: "If Creator → Hook is on. The 60% joins floor / burn / deepen / airdrop. Nothing to claim as creator fees.",
+              text: "If Creator → Hook is on. The 60% joins Hook → Creator / floor / burn / deepen / airdrop. Nothing to claim as creator fees unless Hook → Creator takes a share.",
             },
           ],
         },
@@ -714,6 +717,11 @@ export function buildDocsSections(): DocsSection[] {
           type: "p",
           text: "Hook pot → HolderAirdropVault in quote. Epoch or FDV target, pro-rata by that token’s balance. Full write-up below.",
         },
+        { type: "hook-title", hookId: "hook-to-creator" },
+        {
+          type: "p",
+          text: "Share of the hook pot paid to the creator. Alone it is 100%. Split it with burn, floor, Deepen LPs, or airdrop so the shares still add to 100%.",
+        },
         { type: "hook-title", hookId: "creator-share-to-hook" },
         {
           type: "p",
@@ -730,19 +738,19 @@ export function buildDocsSections(): DocsSection[] {
         { type: "hook-title", hookId: "fixed-fee" },
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator. With Buyback Vesting, the tax vests.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. You must pick a 100% destination (Hook → Creator, burn, floor, Deepen LPs, or airdrop). The wizard will not advance until you do.",
         },
         { type: "hook-title", hookId: "dynamic-fees" },
         {
           type: "p",
-          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Alone, it pays the creator. With Buyback Vesting, the tax vests. Full write-up below.",
+          text: "Hook tax ramps with in-range LP depth consumed. No oracle. You must pick a 100% destination. Full write-up below.",
         },
         {
           type: "callout",
           title: "Limits",
           items: [
-            "Floor + burn + Deepen LPs + airdrop shares of the hook pot must equal 100% when any of them is on.",
-            "Floor, burn, Deepen LPs, and airdrop need hook tax > 0 (unless Creator → Hook feeds the pot).",
+            "Floor + burn + Deepen LPs + airdrop + Hook → Creator shares of the hook pot must equal 100% whenever the pot is funded.",
+            "Floor, burn, Deepen LPs, airdrop, and Hook → Creator need hook tax > 0 (unless Creator → Hook feeds the pot).",
             "Base 1% + hook tax ≤ 10%.",
             "Classic does not use these modules.",
           ],
@@ -913,7 +921,7 @@ export function buildDocsSections(): DocsSection[] {
             "Hook tax is queued to pendingDeepenLps[poolId] and minted in afterSwap.",
             "If the nested mint fails, the same amount is re-queued. Funds are not lost.",
             "The token page sums LpDeepened(poolId, quoteAmount) as quote already minted into the LP, and still shows pendingDeepenLps(poolId) when the queue is non-zero.",
-            "Share of the hook pot must sum to 100% with floor / burn / airdrop when any sink is on.",
+            "Share of the hook pot must sum to 100% with floor / burn / airdrop / Hook → Creator when the pot is funded.",
           ],
         },
       ],
@@ -950,7 +958,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits), not in the module bitmask. Unrouted hook tax (Fixed or Dynamic Fees with no floor, burn, DeepenLP, or airdrop) also goes to BuybackVault. It is not claimable in FeeEscrow.`,
+          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits), not in the module bitmask. The Hook → Creator slice of the hook pot vests here too. It is not claimable in FeeEscrow.`,
         },
         {
           type: "visual",
@@ -977,7 +985,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             `Cannot combine with Creator → Hook. Both spend the same ${CREATOR_FEE_PCT}% creator cut.`,
-            "This module is a hook-tax sink. Fixed or Dynamic Fees with no other sink vest the extra tax here, not in FeeEscrow.",
+            "Hook → Creator slices vest here too. Fixed or Dynamic Fees still need an explicit destination. This module is not a leftover sink.",
             "The 10% $HKT drop is mandatory and unchanged. The 30% protocol cut is unchanged.",
             "Buyers can see the vest on the token page. Instant creator dump of trading fees is off the table.",
             "The token page shows quote accrued into BuybackVault, still pending / claimable, and the until-FDV cliff or first / next by-% rung.",
@@ -1032,7 +1040,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "Needs hook tax > 0 (or Creator → Hook feeding the pot) so there is something to accrue.",
-            "Share of the hook pot must sum to 100% with floor / burn / Deepen LPs when any sink is on.",
+            "Share of the hook pot must sum to 100% with floor / burn / Deepen LPs / Hook → Creator when the pot is funded.",
             "Permissionless. Anyone can trigger the push once the epoch is ready.",
             "The token page reads released (already airdropped) and potOf (still pending), plus the until-FDV cliff or first / next by-% rung.",
             "Max 48 holders per batch so a swap stays inside the gas envelope.",
@@ -1052,6 +1060,32 @@ export function buildDocsSections(): DocsSection[] {
       ],
     },
     {
+      id: "hook-to-creator",
+      title: "Hook → Creator",
+      hookId: "hook-to-creator",
+      group: "Modules",
+      blocks: [
+        {
+          type: "p",
+          text: "Send a share of the hook pot to the creator. If this is the only destination, it is 100%. Pair it with Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop and the shares still add to 100%. Fixed or Dynamic Fees with no destination cannot launch.",
+        },
+        {
+          type: "visual",
+          id: "hook-to-creator",
+        },
+        {
+          type: "ul",
+          items: [
+            "Alone: 100% of the hook pot is credited to the creator and is claimable in FeeEscrow.",
+            "Auto-Burn 50% + Hook → Creator 50%: they split the pot.",
+            "If Buyback Vesting is on, this slice goes to BuybackVault instead of FeeEscrow.",
+            "The wizard will not advance until destinations sum to 100%.",
+            "Shares with floor / burn / Deepen LPs / airdrop must equal 100% whenever the pot is funded.",
+          ],
+        },
+      ],
+    },
+    {
       id: "creator-share",
       title: "Creator → Hook",
       hookId: "creator-share-to-hook",
@@ -1059,7 +1093,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `Routes the creator’s ${CREATOR_FEE_PCT}% of the 1% base into the hook pot instead of FeeEscrow. Same module split as hook tax (floor / burn / deepen / airdrop).`,
+          text: `Routes the creator’s ${CREATOR_FEE_PCT}% of the 1% base into the hook pot instead of FeeEscrow. Same module split as hook tax (Hook → Creator / floor / burn / deepen / airdrop).`,
         },
         {
           type: "visual",
@@ -1083,7 +1117,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator. With Buyback Vesting, the tax vests.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. You must pick a 100% destination (Hook → Creator, burn, floor, Deepen LPs, or airdrop). The wizard will not advance until you do.",
         },
         {
           type: "visual",
@@ -1094,8 +1128,9 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "You set hook tax at launch. Base 1% + hook tax ≤ 10%.",
             "Hook tax never uses the 60 / 10 / 30 split. That split is only the 1% base (and snipe).",
-            "No burn, floor, DeepenLP, airdrop, or Buyback Vesting: the tax is credited to the creator and is claimable.",
-            "Buyback Vesting plus this tax: the extra vests in BuybackVault.",
+            "Hook → Creator alone: 100% of the tax is credited to the creator and is claimable.",
+            "Hook → Creator plus Buyback Vesting: that slice vests in BuybackVault.",
+            "No destination: launch packing reverts. The wizard blocks Continue.",
           ],
         },
       ],
@@ -1108,7 +1143,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks. Alone, the ramped tax is credited to the creator. With Buyback Vesting, it vests.",
+          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks. You must pick a 100% destination. Hook → Creator alone credits the ramped tax to the creator. With Buyback Vesting, that slice vests.",
         },
         {
           type: "visual",
@@ -1140,8 +1175,9 @@ export function buildDocsSections(): DocsSection[] {
             "You set a min total fee and a max hook tax at launch. Base 1% + max hook tax ≤ 10%.",
             "Cannot combine with Fixed Fees. One extra-tax mode per pool.",
             "The 1% base still splits 60 / 10 / 30. Only the hook-tax slice ramps.",
-            "No burn, floor, DeepenLP, airdrop, or Buyback Vesting: the ramped tax is credited to the creator and is claimable.",
-            "Buyback Vesting plus this tax: the extra vests in BuybackVault.",
+            "Hook → Creator alone: the ramped tax is credited to the creator and is claimable.",
+            "Hook → Creator plus Buyback Vesting: that slice vests in BuybackVault.",
+            "No destination: launch packing reverts. The wizard blocks Continue.",
             "Whale-sized flow pays for the depth it consumes. Retail on a healthy book stays near the floor fee.",
           ],
         },
@@ -1534,13 +1570,13 @@ const [page, bitmasks, timestamps, total] = await client.readContract({
 bit 1        BACKED_FLOOR
 bit 2        ANTI_MEV
 bit 3        MAX_TX
-bit 4        reserved (former MAX_WALLET, removed)
+bit 4        HOOK_TO_CREATOR
 bit 5        DYNAMIC_FEES
 bit 6        BUYBACK_VESTING
 bits 7-22    hookTaxBps
 bits 23-38   antiSnipeDurationSeconds
 bits 39-54   maxTxBps
-bits 55-70   reserved (former maxWalletBps, removed)
+bits 55-70   hookToCreatorBps
 bits 71-94   floorAllocationBps
 bits 95-110  initialSnipeTaxBps
 bit 111      AUTO_BURN

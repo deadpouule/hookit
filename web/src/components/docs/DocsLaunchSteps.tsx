@@ -17,15 +17,15 @@ const STEP_COPY: Record<(typeof MASTER_LAUNCH_STEPS)[number]["id"], { title: str
   },
   3: {
     title: "Where hook-tax value goes over the life of the token.",
-    note: "Holder Airdrop, Auto-Burn, Backed Floor, Buyback Vesting, Deepen LPs. Buyback Vesting cannot combine with Creator → Hook.",
+    note: "Holder Airdrop, Auto-Burn, Backed Floor, Buyback Vesting, Deepen LPs, Hook → Creator. Buyback Vesting cannot combine with Creator → Hook.",
   },
   4: {
     title: "How much extra tax sits on top of the mandatory 1%.",
-    note: "Fixed hook tax or Dynamic Fees (not both). Creator → Hook can route the 60% creator cut into the pot.",
+    note: "Fixed hook tax or Dynamic Fees (not both). A tax needs a 100% destination. Creator → Hook can route the 60% creator cut into the pot.",
   },
   5: {
     title: "Split the hook pot to 100% across the sinks you turned on.",
-    note: "Floor + burn + deepen + airdrop must sum to 100% when any of them is on. No pot if tax is 0 and Creator → Hook is off.",
+    note: "Floor + burn + deepen + airdrop + Hook → Creator must sum to 100% when the pot is funded. No pot if tax is 0 and Creator → Hook is off.",
   },
   6: {
     title: "Read the recap, set an optional same-tx dev buy, sign.",

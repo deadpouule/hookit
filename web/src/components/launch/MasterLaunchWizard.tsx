@@ -35,7 +35,7 @@ import { estimateFloorPrice } from "@/lib/format";
 import type { HookId } from "@/lib/hook-marks";
 import { MASTER_TO_HOOK_MARK } from "@/lib/hook-marks";
 import { loadBuilderDraft } from "@/lib/hook-builder";
-import { feeRouteIsComplete, hookPotBps, listEnabledFeeRoutes, rebalanceFeeRoutes } from "@/lib/hook-fee-route";
+import { feeRouteIsComplete, hookPotBps, hookPotNeedsRoute, listEnabledFeeRoutes, rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import {
   LAUNCH_WIZARD_HOOK_IDS,
   MASTER_LAUNCH_STEPS,
@@ -176,7 +176,8 @@ export function MasterLaunchWizard() {
       (id === "backed-floor" ||
         id === "auto-burn" ||
         id === "deepen-lps" ||
-        id === "holder-airdrop") &&
+        id === "holder-airdrop" ||
+        id === "hook-to-creator") &&
       next
     ) {
       const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: true };
@@ -190,7 +191,8 @@ export function MasterLaunchWizard() {
       (id === "backed-floor" ||
         id === "auto-burn" ||
         id === "deepen-lps" ||
-        id === "holder-airdrop") &&
+        id === "holder-airdrop" ||
+        id === "hook-to-creator") &&
       !next
     ) {
       const nextModules = { ...form.modules, [HOOK_MODULE_FIELD[id]]: false };
@@ -265,7 +267,19 @@ export function MasterLaunchWizard() {
         return;
       }
     }
+    if (step === 4 && hookPotNeedsRoute(form.modules, form.hookTaxBps)) {
+      setError(
+        "This tax needs a destination. Turn on Hook → Creator, Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop, then split 100% on the next step.",
+      );
+      return;
+    }
     if (step === 5) {
+      if (hookPotNeedsRoute(form.modules, form.hookTaxBps)) {
+        setError(
+          "This tax needs a destination. Turn on Hook → Creator, Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop, and split 100%.",
+        );
+        return;
+      }
       if (!feeRouteIsComplete(form.modules)) {
         setError("Hook fee shares must add to 100%.");
         return;

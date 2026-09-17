@@ -15,6 +15,7 @@ import {MockQuoteToken} from "./mocks/MockQuoteToken.sol";
 import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../src/libraries/ProtocolConstants.sol";
 import {LaunchFactory} from "../src/LaunchFactory.sol";
+import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 
 /// @notice Hooks must coexist on one token: claims-native floor fill, airdrop without nested unlock,
 ///         and multi-market vesting/airdrop keyed by quote.
@@ -205,7 +206,7 @@ contract ModuleCohabitationTest is LaunchpadTestBase, IUnlockCallback {
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
                 markets: markets,
                 tickSpacing: 60,
-                bitmask: BitmaskConfig.pack(m),
+                bitmask: BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(m)),
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: floorQuoteIndex,
                 devBuyQuoteIn: 0,

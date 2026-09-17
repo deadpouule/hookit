@@ -40,6 +40,7 @@ function feeSplitDetail(form: LaunchFormState): string {
   if (form.modules.backedFloor) parts.push(`Floor ${form.modules.floorAllocation}%`);
   if (form.modules.deepenLps) parts.push(`LPs ${form.modules.deepenLpsPct}%`);
   if (form.modules.holderAirdrop) parts.push(`Airdrop ${form.modules.holderAirdropPct}%`);
+  if (form.modules.hookToCreator) parts.push(`Creator ${form.modules.hookToCreatorPct ?? 100}%`);
   return parts.length > 0 ? parts.join(" · ") : "No hook-tax modules";
 }
 
@@ -124,7 +125,7 @@ export function summarizePreviousStep(
 
 const NEXT_STEP_HINTS: Record<number, string> = {
   2: "Anti-MEV, anti-snipe and max tx caps.",
-  3: "Burn, floor, vesting, Deepen LPs, and holder airdrops.",
+  3: "Burn, floor, vesting, Deepen LPs, holder airdrops, and Hook → Creator.",
   4: "Dynamic Fees, fixed hook tax, and creator share routing.",
   5: "Split hook tax and see how much of each swap each module gets.",
   6: "Final review, optional dev buy, and launch.",

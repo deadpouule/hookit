@@ -21,6 +21,7 @@ function modules(over: Partial<LaunchModules> = {}): LaunchModules {
     holderAirdrop: false,
     holderAirdropPct: 50,
     creatorShareToHook: false,
+    hookToCreator: false,
     buybackVesting: true,
     buybackVestingDurationDays: 30,
     buybackVestingMcapUsd: 0,
@@ -44,4 +45,26 @@ test("buyback time vest packs the chosen duration", () => {
   const unpacked = unpackLaunchBitmask(packed);
   assert.equal(unpacked.modules.buybackVestingDurationDays, 14);
   assert.equal(unpacked.modules.buybackVestingMcapUsd, 0);
+});
+
+test("hook-to-creator packs 100% and round-trips", () => {
+  const packed = packLaunchBitmask(
+    modules({
+      buybackVesting: false,
+      hookToCreator: true,
+      hookToCreatorPct: 100,
+    }),
+    200,
+  );
+  const unpacked = unpackLaunchBitmask(packed);
+  assert.equal(unpacked.modules.hookToCreator, true);
+  assert.equal(unpacked.modules.hookToCreatorPct, 100);
+  assert.equal(unpacked.hookTaxBps, 200);
+});
+
+test("hook tax without a destination refuses to pack", () => {
+  assert.throws(
+    () => packLaunchBitmask(modules({ buybackVesting: false }), 200),
+    /destination/i,
+  );
 });

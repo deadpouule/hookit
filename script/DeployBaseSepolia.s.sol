@@ -93,7 +93,7 @@ contract DeployBaseSepoliaScript is Script {
                 hookTaxBps: 50,
                 antiSnipeDurationSeconds: 600,
                 maxTxBps: 0,
-                floorAllocationBps: 2_000,
+                floorAllocationBps: 10_000,
                 initialSnipeTaxBps: 5_000,
                 autoBurnBps: 0,
                 deepenLpsBps: 0,
@@ -102,7 +102,9 @@ contract DeployBaseSepoliaScript is Script {
                 dynamicFeeMinTotalBps: 0,
                 dynamicFeeRampUp: false,
                 dynamicFeeDepthSaturationBps: 0,
-                holderAirdropEpochSeconds: 0
+                holderAirdropEpochSeconds: 0,
+                hookToCreator: false,
+                hookToCreatorBps: 0
             })
         );
 

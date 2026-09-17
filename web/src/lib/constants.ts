@@ -101,6 +101,8 @@ export const DEFAULT_LAUNCH_STATE: LaunchFormState = {
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
     dynamicFeeDepthSaturationBps: DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
     creatorShareToHook: false,
+    hookToCreator: false,
+    hookToCreatorPct: 100,
   },
   hookTaxBps: 0,
   devBuyMode: "supply",
@@ -143,6 +145,8 @@ export const DEFAULT_CLASSIC_LAUNCH_STATE: LaunchFormState = {
     dynamicFeeMaxBps: DYNAMIC_FEE_DEFAULT_MAX_BPS,
     dynamicFeeDepthSaturationBps: DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS,
     creatorShareToHook: false,
+    hookToCreator: false,
+    hookToCreatorPct: 100,
   },
 };
 

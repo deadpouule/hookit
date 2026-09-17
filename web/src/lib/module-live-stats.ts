@@ -248,6 +248,8 @@ export function moduleLiveStatLine(
     }
     case "creator-share-to-hook":
       return null;
+    case "hook-to-creator":
+      return `${modules.hookToCreatorPct ?? 100}% of hook fees → creator`;
     default:
       return null;
   }

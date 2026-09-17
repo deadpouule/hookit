@@ -3,13 +3,19 @@ import { resolveEffectiveHookTaxBps } from "@/lib/fee-range";
 import type { LaunchModules } from "@/lib/types";
 
 /** Percent fields that split the hook-tax pot (must sum to 100 when multiple are on). */
-export type FeeRouteKey = "floorAllocation" | "autoBurnPct" | "deepenLpsPct" | "holderAirdropPct";
+export type FeeRouteKey =
+  | "floorAllocation"
+  | "autoBurnPct"
+  | "deepenLpsPct"
+  | "holderAirdropPct"
+  | "hookToCreatorPct";
 
 const FEE_ROUTE_KEYS: FeeRouteKey[] = [
   "floorAllocation",
   "autoBurnPct",
   "deepenLpsPct",
   "holderAirdropPct",
+  "hookToCreatorPct",
 ];
 
 export function isFeeRouteKey(key: keyof LaunchModules): key is FeeRouteKey {
@@ -26,6 +32,8 @@ export function feeRouteEnabled(modules: LaunchModules, key: FeeRouteKey): boole
       return modules.deepenLps;
     case "holderAirdropPct":
       return modules.holderAirdrop;
+    case "hookToCreatorPct":
+      return Boolean(modules.hookToCreator);
   }
 }
 
@@ -34,7 +42,7 @@ export function listEnabledFeeRoutes(modules: LaunchModules): FeeRouteKey[] {
 }
 
 export function getFeeRouteValue(modules: LaunchModules, key: FeeRouteKey): number {
-  return modules[key];
+  return Number(modules[key] ?? 0);
 }
 
 /** Sum of active fee-route shares (target is always 100). */
@@ -47,6 +55,11 @@ export function feeRouteIsComplete(modules: LaunchModules): boolean {
   const enabled = listEnabledFeeRoutes(modules);
   if (enabled.length === 0) return true;
   return feeRouteTotalPct(modules) === 100;
+}
+
+/** Hook tax / Creator → Hook funds a pot that must have a 100% destination. */
+export function hookPotNeedsRoute(modules: LaunchModules, hookTaxBps: number): boolean {
+  return hookPotBps(modules, hookTaxBps) > 0 && listEnabledFeeRoutes(modules).length === 0;
 }
 
 function splitIntegerTotal(keys: FeeRouteKey[], weights: number[], total: number): Partial<LaunchModules> {

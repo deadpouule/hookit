@@ -64,6 +64,10 @@ export interface LaunchModules {
   holderAirdropStepPct?: number[];
   /** Route creator's 60% of the base fee into the hook pot (modules) instead of escrow. */
   creatorShareToHook: boolean;
+  /** Route a % of the hook pot to the creator (escrow, or BuybackVault if vesting is on). */
+  hookToCreator?: boolean;
+  /** Percent of the hook pot paid to the creator when Hook → Creator is on. */
+  hookToCreatorPct?: number;
 }
 
 export interface LaunchMarketInput {
@@ -137,6 +141,7 @@ export interface TokenPool {
     deepenLps?: boolean;
     holderAirdrop?: boolean;
     creatorShareToHook?: boolean;
+    hookToCreator?: boolean;
     customHook: boolean;
   };
   /** Unpacked Master bitmask modules + params (Master launches only). */

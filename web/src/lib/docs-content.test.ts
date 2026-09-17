@@ -165,8 +165,10 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /\/health exposes head, lagBlocks/);
   assert.match(blob, /live venue fee/);
   assert.equal(blob.includes("live hook fee"), false);
-  assert.match(blob, /Fixed or Dynamic Fees alone pay the creator/);
-  assert.match(blob, /Buyback Vesting is a sink/);
+  assert.match(blob, /must pick a 100% destination/);
+  assert.match(blob, /Hook → Creator/);
+  assert.equal(blob.includes("Fixed or Dynamic Fees alone pay the creator"), false);
+  assert.equal(blob.includes("Buyback Vesting is a sink"), false);
   assert.match(blob, /credited to the creator and is claimable/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
@@ -257,6 +259,7 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /docs-pipe/);
   assert.match(visuals, /docs-quotrons-stock/);
   assert.match(visuals, /case "router"/);
+  assert.match(visuals, /case "hook-to-creator"/);
   assert.match(visuals, /case "creator-flow"/);
   assert.equal(visuals.includes('className="docs-wizard"'), false);
   const deepenBlock = visuals.split('case "deepen-lps"')[1]?.split("case \"")[0] ?? "";
@@ -309,6 +312,7 @@ test("every docs section has a diagram, visual, hook catalog, or formula", () =>
   assert.match(blob, /"type":"visual","id":"quotrons"/);
   assert.match(blob, /"type":"visual","id":"multi-pair"/);
   assert.match(blob, /"type":"visual","id":"holder-airdrop"/);
+  assert.match(blob, /"type":"visual","id":"hook-to-creator"/);
 });
 
 test("docs read as live and drop Analytics / testnet language", () => {

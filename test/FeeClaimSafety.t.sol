@@ -153,6 +153,8 @@ contract FeeClaimSafetyTest is LaunchpadTestBase {
 
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 50;
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         uint256 bitmask = BitmaskConfig.pack(m);
 
         vm.prank(address(wallet));

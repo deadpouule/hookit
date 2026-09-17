@@ -23,7 +23,8 @@ const OFF_MODULES: LaunchModules = {
   holderAirdrop: false,
   buybackVesting: false,
   dynamicFees: false,
-  creatorShareToHook: false,
+    creatorShareToHook: false,
+    hookToCreator: false,
 };
 
 function pool(overrides: Partial<TokenPool> & { hooks: TokenPool["hooks"]; hookType?: TokenPool["hookType"] }): TokenPool {

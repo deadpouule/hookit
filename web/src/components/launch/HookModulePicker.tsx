@@ -245,7 +245,7 @@ function FixedFeeConfigPanel({
           step={10}
         />
       </PickConfigControl>
-      <ConfigHint>Pays modules you turn on, Buyback Vesting if that is the sink, or the creator if none are on</ConfigHint>
+      <ConfigHint>Needs a 100% destination: Hook → Creator, Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop. Continue is blocked until you pick one.</ConfigHint>
     </>
   );
 }
@@ -1175,13 +1175,22 @@ function HookSettings({
       modules.autoBurn ||
       modules.deepenLps ||
       modules.holderAirdrop ||
+      Boolean(modules.hookToCreator) ||
       hookTaxBps > 0;
 
     return (
       <ConfigHint>
         {hasFeeSink
           ? "60% creator share → hook pot with your modules. Split it on the next step"
-          : "60% creator share → hook pot (enable floor, burn, LP, or airdrop to route it)"}
+          : "60% creator share → hook pot. Enable Hook → Creator, floor, burn, LP, or airdrop to route it"}
+      </ConfigHint>
+    );
+  }
+
+  if (hook.id === "hook-to-creator") {
+    return (
+      <ConfigHint>
+        Alone it is 100% of the hook pot, paid to you. Split it with burn, floor, Deepen LPs, or airdrop on the Fee split step. Vests if Buyback Vesting is on.
       </ConfigHint>
     );
   }

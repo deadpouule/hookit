@@ -596,6 +596,34 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           />
         </Figure>
       );
+    case "hook-to-creator":
+      return (
+        <Figure
+          caption="Hook tax paid to the creator"
+          note="Alone it is 100%. Split with burn, floor, Deepen LPs, or airdrop so shares still add to 100%."
+        >
+          <div className="docs-visual-hook-row">
+            <HookMark hookId="hook-to-creator" theme="pearl" />
+            <div className="docs-split-bar" role="img" aria-label="Hook pot split 50 percent burn 50 percent creator">
+              <div className="docs-split-seg" style={{ flex: 50, background: "#dc2626", color: "#fff" }}>
+                <span>50%</span>
+                <small>Auto-Burn</small>
+              </div>
+              <div className="docs-split-seg" style={{ flex: 50, background: "#e4e4e7", color: "#111" }}>
+                <span>50%</span>
+                <small>→ Creator</small>
+              </div>
+            </div>
+          </div>
+          <Example
+            title="Example: 1 ETH buy, 2% hook tax"
+            rows={[
+              { k: "Hook → Creator 100%", v: "0.020 ETH tax to creator escrow, plus 0.006 ETH from the 1% base." },
+              { k: "Burn 50% + Creator 50%", v: "0.010 ETH burn buyback and 0.010 ETH to the creator." },
+            ]}
+          />
+        </Figure>
+      );
     case "creator-share":
       return (
         <Figure caption="Creator 60% feeds the hook pot" note="Nothing to claim as creator fees. $HKT 10% is untouched.">
@@ -619,7 +647,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           <Example
             title="Example: 1 ETH buy, no hook tax, Creator → Hook on"
             rows={[
-              { k: "Base 1%", v: "0.006 ETH to floor / burn / deepen / airdrop instead of escrow." },
+              { k: "Base 1%", v: "0.006 ETH to Hook → Creator / floor / burn / deepen / airdrop instead of escrow." },
               { k: "$100k volume", v: "$600 extra in the pot. Creator claims $0." },
             ]}
           />
@@ -646,7 +674,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             rows={[
               { k: "1 ETH buy", v: "Pays 1 ETH. Receives 0.97 ETH worth of tokens (0.01 base + 0.02 hook tax)." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
-              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, Buyback Vesting, or the creator if none are on." },
+              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax needs a 100% destination (Hook → Creator, burn, floor, Deepen LPs, or airdrop)." },
             ]}
           />
         </Figure>

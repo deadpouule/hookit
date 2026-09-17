@@ -139,6 +139,28 @@ function Glyph({ id }: { id: HookId }) {
           <path d="M5 12h10M12 7l5 5-5 5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
+    case "hookToCreator":
+      return (
+        <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+          <path d="M8.35 10.2 4.7 2.45 11.75 7.55Z" fill={stroke} />
+          <path d="M15.65 10.2 19.3 2.45 12.25 7.55Z" fill={stroke} />
+          <circle cx="12" cy="13.55" r="6.2" stroke={stroke} strokeWidth="1.7" />
+          <path d="M9.1 12.7h2.15M12.75 12.7h2.15" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
+          <path
+            d="M9.4 15.4c.95 1.3 4.25 1.3 5.2 0"
+            stroke={stroke}
+            strokeWidth="1.45"
+            strokeLinecap="round"
+          />
+          <path
+            d="M17.7 16.75c2.65 1.1 3.5 3.4 1.15 4.85"
+            stroke={stroke}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+          <path d="M17.15 20.45 19.2 22.35 21.25 20.45 19.2 18.6Z" fill={stroke} />
+        </svg>
+      );
     case "custom":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">

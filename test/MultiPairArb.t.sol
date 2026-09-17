@@ -18,6 +18,7 @@ import {LaunchFactory} from "../src/LaunchFactory.sol";
 import {MasterLaunchHook} from "../src/MasterLaunchHook.sol";
 import {MultiPairArbExecutor} from "../src/MultiPairArbExecutor.sol";
 import {Owned} from "../src/base/Owned.sol";
+import {ModuleMatrix} from "./utils/ModuleMatrix.sol";
 
 contract MultiPairArbTest is LaunchpadTestBase {
     MockQuoteToken internal quoteA;
@@ -183,7 +184,7 @@ contract MultiPairArbTest is LaunchpadTestBase {
                 totalSupply: ProtocolConstants.DEFAULT_LAUNCH_SUPPLY,
                 markets: markets,
                 tickSpacing: 60,
-                bitmask: BitmaskConfig.pack(modules),
+                bitmask: BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(modules)),
                 customHook: IHooks(address(0)),
                 floorQuoteIndex: 0,
                 devBuyQuoteIn: 0,
