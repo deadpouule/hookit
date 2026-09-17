@@ -290,6 +290,7 @@ export const FIXED_FEE_HOOK: BrowseHook = {
   settings: [
     "+ FLAT HOOK TAX ON SWAPS",
     "+ QUOTE-ONLY DEDUCTION",
+    "+ NO SINK PAYS THE CREATOR",
   ],
 };
 

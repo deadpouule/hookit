@@ -165,6 +165,8 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.match(blob, /\/health exposes head, lagBlocks/);
   assert.match(blob, /live venue fee/);
   assert.equal(blob.includes("live hook fee"), false);
+  assert.match(blob, /Fixed or Dynamic Fees alone pay the creator/);
+  assert.match(blob, /credited to the creator and is claimable/);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
   assert.equal(blob.includes("What is immutable"), false);

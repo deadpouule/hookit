@@ -96,7 +96,7 @@ export function FeeSplitStep({
         </p>
       ) : (
         <p className="pick-config-hint" style={{ marginTop: 0 }}>
-          No burn, floor, Deepen LPs, or holder airdrop is on.
+          No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax is paid to the creator.
         </p>
       )}
 

@@ -66,7 +66,7 @@ library FeeSplitLib {
 
         _splitBase(feeAmount, effectiveHookTaxBps, totalBps, hktDropReady, r);
         _routeCreator(manager, quote, token, creator, packed, fromPoolClaims, t, r);
-        _routeHookPot(manager, quote, token, packed, fromPoolClaims, t, r);
+        _routeHookPot(manager, quote, token, creator, packed, fromPoolClaims, t, r);
     }
 
     function _splitBase(
@@ -83,8 +83,8 @@ library FeeSplitLib {
             protocolFromBase += hktShare;
             hktShare = 0;
         }
-        // Reuse fields as scratch: protocolShare = protocolFromBase + leftover hook pot (filled later).
         // floorCut temporarily holds the hook pot before module cuts are applied.
+        // Unrouted hook tax is credited to the creator later, not added to protocol.
         r.creatorEscrowAmt = creatorShare;
         r.hktShare = hktShare;
         r.protocolShare = protocolFromBase;
@@ -129,6 +129,7 @@ library FeeSplitLib {
         IPoolManager manager,
         Currency quote,
         address token,
+        address creator,
         uint256 packed,
         bool fromPoolClaims,
         Targets calldata t,
@@ -166,7 +167,21 @@ library FeeSplitLib {
         r.autoBurnCut = autoBurnCut;
         r.deepenLpsCut = deepenLpsCut;
         r.airdropCut = airdropCut;
-        r.protocolShare += hookPot - routed;
+
+        uint256 unrouted = hookPot - routed;
+        if (unrouted > 0) {
+            bool anySink = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
+                || packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED) || packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
+                || packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED);
+            if (anySink) {
+                // Rounding dust on a 100% route stays with protocol, same as before.
+                r.protocolShare += unrouted;
+            } else {
+                r.creatorEscrowAmt += unrouted;
+                _fund(manager, quote, address(t.escrow), unrouted, fromPoolClaims);
+                t.escrow.creditInternal(creator, quote, unrouted);
+            }
+        }
 
         _fund(manager, quote, address(t.distributor), r.protocolShare, fromPoolClaims);
         if (r.protocolShare > 0) t.distributor.notifyInternal(quote, r.protocolShare);

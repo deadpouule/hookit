@@ -95,6 +95,23 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertEq(escrow.balanceOf(address(this), Currency.wrap(token)), 0);
     }
 
+    function testHookTaxOnlyPaysCreatorWhenNoSinks() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200; // +2%
+        (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+
+        uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        uint256 protoBefore = distributor.pending(Currency.wrap(address(0)));
+        buyExactIn(key, 10 ether);
+
+        uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
+        uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
+        // 1% base + 2% tax on 10 ETH. Creator gets ~0.26 (0.06 + 0.20). Protocol only the 0.03 base slice.
+        assertApproxEqRel(creatorDelta, 0.26 ether, 0.05e18);
+        assertLt(protoDelta, 0.05 ether);
+        assertGt(creatorDelta, protoDelta);
+    }
+
     function testSellDuringSnipeSplitsWithoutSnipeTax() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.antiSnipe = true;
@@ -113,10 +130,10 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
         uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
         uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
-        // Sell fee = base 1% + hook tax 1%. Creator only gets 60% of the base slice; hook tax → protocol
-        // (no modules). Creator should still outpace protocol-from-base, but not the old ~85% creator-tax path.
+        // Sell fee = base 1% + hook tax 1%. No sinks: hook tax is credited to the creator.
+        // Creator gets 60% of the 1% plus the full 1% tax; protocol only the 30% of base.
         assertGt(creatorDelta, 0);
-        assertGt(protoDelta, creatorDelta); // hook tax remainder tips protocol above creator
+        assertGt(creatorDelta, protoDelta);
     }
 
     function testAntiSnipeDecays() public {

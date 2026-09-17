@@ -170,7 +170,7 @@ function FlywheelDiagram() {
         { t: "Creator 60%", d: "Escrow, vest, or hook pot." },
         { t: "$HKT drop 10%", d: "Buys that ticker for live holders." },
         { t: "Protocol 30%", d: "20% ops. 80% buys and burns $HKT." },
-        { t: "Hook pot", d: "Optional tax. Burn, floor, deepen, airdrop." },
+        { t: "Hook pot", d: "Optional tax. Modules, or the creator if none." },
       ]}
       note="The 1% always splits 60 / 10 / 30. Hook tax never uses that split. It fills the pot, then modules."
     />
