@@ -2,7 +2,7 @@ import { type Address, zeroAddress } from "viem";
 
 import type { BalancedRouteLeg } from "@/lib/contracts/balanced-aggregator-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import type { BestBuyPlan, BestSellRoute } from "@/lib/multi-pool-route";
+import type { BestBuyPlan, BestSellPlan, BestSellRoute } from "@/lib/multi-pool-route";
 import { poolMarkets } from "@/lib/pool-active-market";
 import type { TokenPool } from "@/lib/types";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
@@ -59,11 +59,32 @@ export function balancedSellLegsFromRoute(
   amountIn: bigint,
   slippageBps: number,
 ): BalancedRouteLeg[] {
+  return balancedSellLegsFromPlan(pool, {
+    legs: [{ ...route, amountIn }],
+    amountOut: route.amountOut,
+    routeLabel: route.routeLabel,
+    bestSingle: { ...route, amountIn },
+  }, slippageBps);
+}
+
+export function balancedSellLegsFromPlan(
+  pool: TokenPool,
+  plan: BestSellPlan,
+  slippageBps: number,
+): BalancedRouteLeg[] {
   void pool;
-  const marketIndex = executionMarketIndex(route);
-  if (marketIndex == null) return [];
-  const minOut = (route.amountOut * BigInt(10_000 - slippageBps)) / BigInt(10_000) || BigInt(1);
-  return [{ marketIndex, amountIn, minAmountOut: minOut }];
+  const legs: BalancedRouteLeg[] = [];
+  for (const leg of plan.legs) {
+    const marketIndex = executionMarketIndex(leg);
+    if (marketIndex == null) return [];
+    const minOut = (leg.amountOut * BigInt(10_000 - slippageBps)) / BigInt(10_000) || BigInt(1);
+    legs.push({
+      marketIndex,
+      amountIn: leg.amountIn,
+      minAmountOut: minOut,
+    });
+  }
+  return legs;
 }
 
 export function canUseBalancedAggregatorBuy(paymentAddress: Address): boolean {
@@ -83,6 +104,13 @@ export function planCanUseBalancedAggregator(plan: BestBuyPlan): boolean {
 
 export function routeCanUseBalancedAggregator(route: BestSellRoute): boolean {
   return executionMarketIndex(route) != null;
+}
+
+export function sellPlanCanUseBalancedAggregator(plan: BestSellPlan): boolean {
+  return (
+    plan.legs.length > 0 &&
+    plan.legs.every((leg) => executionMarketIndex(leg) != null)
+  );
 }
 
 export function balancedDeadlineSec(offsetSec = 600): bigint {

@@ -292,6 +292,41 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         _assertAggregatorEmpty(token);
     }
 
+    function testFork_BalancedAggregator_SellSplitFourStocks() public onlyFork {
+        QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
+        (uint256 launchId, address token) = _launchStockGroup(stocks, 0, 4, _defaultModules());
+        BalancedAggregator.RouteLeg[] memory buyLegs = new BalancedAggregator.RouteLeg[](4);
+        for (uint256 i; i < 4; ++i) {
+            buyLegs[i] = BalancedAggregator.RouteLeg({marketIndex: uint8(i), amountIn: 20e6, minAmountOut: 1});
+        }
+        uint256 bought = _buySplit(launchId, token, buyLegs);
+        assertGt(bought, 0, "4-way buy");
+        vm.roll(block.number + 1);
+
+        uint256 sellAmt = bought / 10;
+        require(sellAmt >= 4, "sell too small");
+        uint256 slice = sellAmt / 4;
+        BalancedAggregator.RouteLeg[] memory sellLegs = new BalancedAggregator.RouteLeg[](4);
+        uint256 filled;
+        for (uint256 i; i < 4; ++i) {
+            uint256 amt = i == 3 ? sellAmt - filled : slice;
+            filled += amt;
+            sellLegs[i] = BalancedAggregator.RouteLeg({marketIndex: uint8(i), amountIn: amt, minAmountOut: 1});
+        }
+
+        vm.startPrank(trader);
+        IERC20(token).approve(address(aggregator), sellAmt);
+        uint256 usdgBefore = IERC20(Currency.unwrap(usdg)).balanceOf(trader);
+        uint256 usdgOut = aggregator.sellExactInput(
+            launchId, token, sellAmt, 1, sellLegs, trader, block.timestamp + 600
+        );
+        vm.stopPrank();
+        assertGt(usdgOut, 0, "4-way sell");
+        assertEq(IERC20(Currency.unwrap(usdg)).balanceOf(trader), usdgBefore + usdgOut, "sell credit");
+        assertEq(IERC20(token).balanceOf(address(aggregator)), 0, "token leftover");
+        _assertAggregatorEmpty(token);
+    }
+
     function testFork_BalancedAggregator_RecipientNotPayer() public onlyFork {
         QuotronStockQuotes.Listing[] memory stocks = QuotronStockQuotes.listings();
         (uint256 launchId, address token) = _launchStockGroup(stocks, 0, 2, _defaultModules());

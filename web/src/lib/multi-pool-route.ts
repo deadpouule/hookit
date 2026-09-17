@@ -65,6 +65,16 @@ export type BestBuyPlan = {
   routeLabel: string;
 };
 
+export type BestSellLeg = BestSellRoute & { amountIn: bigint };
+
+export type BestSellPlan = {
+  legs: BestSellLeg[];
+  amountOut: bigint;
+  routeLabel: string;
+  /** Full-size best single market; used when aggregator execution is unavailable. */
+  bestSingle: BestSellLeg;
+};
+
 type MarketLeg = {
   marketQuote: Address;
   hookKey: V4PoolKey;
@@ -260,6 +270,62 @@ async function quoteBuyLegWithKey(
   };
 }
 
+async function quoteSellLegWithKey(
+  client: PublicClient,
+  pool: TokenPool,
+  amountIn: bigint,
+  receive: SwapAsset,
+  recipient: Address,
+  token: Address,
+  want: Address,
+  leg: MarketLeg,
+): Promise<BestSellLeg | null> {
+  const { marketQuote, hookKey, marketIndex } = leg;
+  const amountOut = await quoteExactInOnKey(
+    client,
+    hookKey,
+    token,
+    "sell",
+    amountIn,
+    recipient,
+  );
+  if (!amountOut) return null;
+
+  const midLabel = quoteLabel(pool, marketQuote);
+
+  if (marketQuote.toLowerCase() === want.toLowerCase()) {
+    return {
+      kind: "direct",
+      marketQuote,
+      hookKey,
+      amountIn,
+      amountOut,
+      routeLabel: `${pool.ticker} → ${receive.symbol}`,
+      marketIndex,
+    };
+  }
+
+  const bridge = await findBridgeRoute(client, marketQuote, want, amountOut);
+  if (!bridge || bridge.amountOut <= BigInt(0)) return null;
+
+  return {
+    kind: "composite",
+    marketQuote,
+    hookKey,
+    bridge,
+    amountIn,
+    amountOut: bridge.amountOut,
+    intermediateOut: amountOut,
+    routeLabel: `${pool.ticker} → ${midLabel} → ${receive.symbol}`,
+    marketIndex,
+  };
+}
+
+function marketLegForQuote(legs: MarketLeg[], quote: Address): MarketLeg | undefined {
+  const key = quote.toLowerCase();
+  return legs.find((l) => l.marketQuote.toLowerCase() === key);
+}
+
 /**
  * Quote every Hookit market leg (and optional 1-hop bridge to the receive asset),
  * then pick the max `amountOut`. Lightweight aggregator for multi-pool sells.
@@ -271,58 +337,117 @@ export async function quoteBestSellRoute(
   receive: SwapAsset,
   recipient: Address = zeroAddress,
 ): Promise<BestSellRoute | null> {
+  const plan = await quoteBestSellPlan(client, pool, amountIn, receive, recipient);
+  return plan?.bestSingle ?? null;
+}
+
+/**
+ * Best sell plan: try each market at 100%, then split size across the top two
+ * routes (and an equal N-way clip) when a split yields more USDG / quote than
+ * dumping the whole size into one pool.
+ */
+export async function quoteBestSellPlan(
+  client: PublicClient,
+  pool: TokenPool,
+  amountIn: bigint,
+  receive: SwapAsset,
+  recipient: Address = zeroAddress,
+): Promise<BestSellPlan | null> {
   if (amountIn <= BigInt(0)) return null;
   const token = pool.contractAddress as Address | undefined;
   if (!token) return null;
 
   const want = receiveCurrency(receive);
   const legs = await loadMarketLegs(client, pool);
-  const candidates: BestSellRoute[] = [];
+  const singles: BestSellLeg[] = [];
 
   await Promise.all(
-    legs.map(async ({ marketQuote, hookKey, marketIndex }) => {
-      const amountOut = await quoteExactInOnKey(
+    legs.map(async (leg) => {
+      const quoted = await quoteSellLegWithKey(
         client,
-        hookKey,
-        token,
-        "sell",
+        pool,
         amountIn,
+        receive,
         recipient,
+        token,
+        want,
+        leg,
       );
-      if (!amountOut) return;
-
-      const midLabel = quoteLabel(pool, marketQuote);
-
-      if (marketQuote.toLowerCase() === want.toLowerCase()) {
-        candidates.push({
-          kind: "direct",
-          marketQuote,
-          hookKey,
-          amountOut,
-          routeLabel: `${pool.ticker} → ${receive.symbol}`,
-          marketIndex,
-        });
-        return;
-      }
-
-      const bridge = await findBridgeRoute(client, marketQuote, want, amountOut);
-      if (!bridge || bridge.amountOut <= BigInt(0)) return;
-
-      candidates.push({
-        kind: "composite",
-        marketQuote,
-        hookKey,
-        bridge,
-        amountOut: bridge.amountOut,
-        intermediateOut: amountOut,
-        routeLabel: `${pool.ticker} → ${midLabel} → ${receive.symbol}`,
-        marketIndex,
-      });
+      if (quoted) singles.push(quoted);
     }),
   );
 
-  if (candidates.length === 0) return null;
-  return candidates.reduce((best, cur) => (cur.amountOut > best.amountOut ? cur : best));
+  if (singles.length === 0) return null;
+
+  singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
+  const bestSingle = singles[0]!;
+  let bestPlan: BestSellPlan = {
+    legs: [bestSingle],
+    amountOut: bestSingle.amountOut,
+    routeLabel: bestSingle.routeLabel,
+    bestSingle,
+  };
+
+  // BalancedAggregator only settles USDG, so split sells are USDG-only.
+  const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
+  if (!splitToStable || singles.length < 2) return bestPlan;
+
+  const a = singles[0]!;
+  const b = singles[1]!;
+  const legAMeta = marketLegForQuote(legs, a.marketQuote);
+  const legBMeta = marketLegForQuote(legs, b.marketQuote);
+  if (legAMeta && legBMeta) {
+    for (const bps of SPLIT_BPS) {
+      const amountA = (amountIn * BigInt(bps)) / 10_000n;
+      const amountB = amountIn - amountA;
+      if (amountA <= 0n || amountB <= 0n) continue;
+
+      const [legA, legB] = await Promise.all([
+        quoteSellLegWithKey(client, pool, amountA, receive, recipient, token, want, legAMeta),
+        quoteSellLegWithKey(client, pool, amountB, receive, recipient, token, want, legBMeta),
+      ]);
+      if (!legA || !legB) continue;
+
+      const total = legA.amountOut + legB.amountOut;
+      if (total > bestPlan.amountOut) {
+        const pctA = Math.round(bps / 100);
+        bestPlan = {
+          legs: [legA, legB],
+          amountOut: total,
+          routeLabel: `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+          bestSingle,
+        };
+      }
+    }
+  }
+
+  if (singles.length >= 2) {
+    const n = BigInt(singles.length);
+    const slice = amountIn / n;
+    if (slice > 0n) {
+      const equalQuoted = await Promise.all(
+        singles.map((s, i) => {
+          const meta = marketLegForQuote(legs, s.marketQuote);
+          if (!meta) return Promise.resolve(null);
+          const amt = i === singles.length - 1 ? amountIn - slice * (n - 1n) : slice;
+          return quoteSellLegWithKey(client, pool, amt, receive, recipient, token, want, meta);
+        }),
+      );
+      if (equalQuoted.every((q): q is BestSellLeg => q != null)) {
+        const total = equalQuoted.reduce((sum, leg) => sum + leg.amountOut, 0n);
+        if (total > bestPlan.amountOut) {
+          bestPlan = {
+            legs: equalQuoted,
+            amountOut: total,
+            routeLabel: `Split equal · ${equalQuoted.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
+            bestSingle,
+          };
+        }
+      }
+    }
+  }
+
+  return bestPlan;
 }
 
 /**

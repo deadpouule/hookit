@@ -10,7 +10,7 @@ import {
 import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
 import {
   quoteBestBuyPlan,
-  quoteBestSellRoute,
+  quoteBestSellPlan,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
 } from "@/lib/multi-pool-route";
@@ -174,10 +174,10 @@ export async function quotePoolSwapWithMeta(
       : poolQuoteAddress(pool);
 
     if (receiveAsset && shouldAggregateMultiSell(pool, receiveAsset)) {
-      const best = await quoteBestSellRoute(client, pool, amountIn, receiveAsset, recipient);
-      if (best) {
-        amountOut = best.amountOut;
-        route = best.routeLabel;
+      const plan = await quoteBestSellPlan(client, pool, amountIn, receiveAsset, recipient);
+      if (plan) {
+        amountOut = plan.amountOut;
+        route = plan.routeLabel;
       }
     }
 

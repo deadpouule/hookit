@@ -2,6 +2,7 @@ import { type Address, zeroAddress } from "viem";
 
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { poolQuoteAddress, poolQuoteLabel, stableQuoteLabel } from "@/lib/payment-assets";
+import { isMultiPool } from "@/lib/pool-active-market";
 import { poolHasQuoteMarket } from "@/lib/pool-key";
 import { shortAddress } from "@/lib/master-hooks";
 import { isRwaQuote } from "@/lib/token-identity";
@@ -167,5 +168,7 @@ export function defaultSwapPair(
   const token = poolToSwapAsset(pool);
   const quote = poolQuoteSwapAsset(pool);
   if (side === "buy") return { sell: quote, buy: token };
+  // Multi-pool sells settle in USDG so BalancedAggregator can split across legs.
+  if (isMultiPool(pool)) return { sell: token, buy: STABLE_SWAP_ASSET };
   return { sell: token, buy: quote };
 }

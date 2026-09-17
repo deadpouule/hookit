@@ -183,13 +183,27 @@ contract BalancedAggregator is IUnlockCallback {
                 );
             } else {
                 _swapCompositeSell(
-                    hookKey, call.token, quote, address(this), call.recipient, leg.amountIn, leg.minAmountOut
+                    hookKey,
+                    call.token,
+                    quote,
+                    address(this),
+                    call.recipient,
+                    call.payer,
+                    leg.amountIn,
+                    leg.minAmountOut
                 );
             }
         }
 
-        uint256 tokenAfter = IERC20Minimal(call.token).balanceOf(address(this));
-        if (tokenAfter != tokenBefore) revert InsufficientOutput();
+        _refund(usdg, call.recipient);
+        _pushErc20(Currency.unwrap(usdg), call.recipient, 0);
+        _pushErc20(call.token, call.payer, tokenBefore);
+        for (uint256 i; i < call.legs.length; ++i) {
+            PoolKey memory hookKey = factory.poolKeyOfMarket(call.launchId, call.legs[i].marketIndex);
+            Currency quote = _quoteCurrency(hookKey, call.token);
+            if (quote == usdg) continue;
+            _pushErc20(Currency.unwrap(quote), call.recipient, 0);
+        }
 
         uint256 usdgAfter = IERC20Minimal(Currency.unwrap(usdg)).balanceOf(call.recipient);
         totalOut = usdgAfter > usdgBefore ? usdgAfter - usdgBefore : 0;
@@ -279,6 +293,7 @@ contract BalancedAggregator is IUnlockCallback {
         Currency quote,
         address payer,
         address recipient,
+        address refundTo,
         uint256 tokenIn,
         uint256 minOut
     ) internal returns (uint256 amountOut) {
@@ -300,7 +315,7 @@ contract BalancedAggregator is IUnlockCallback {
 
         int256 tokenDelta = poolManager.currencyDelta(address(this), tokenCur);
         if (tokenDelta < 0) {
-            tokenCur.settle(poolManager, payer, uint256(-tokenDelta), false);
+            tokenCur.settleWithBuffer(poolManager, payer, uint256(-tokenDelta));
         }
 
         int256 quoteCredit = poolManager.currencyDelta(address(this), quote);
@@ -327,9 +342,9 @@ contract BalancedAggregator is IUnlockCallback {
 
         int256 quoteLeft = poolManager.currencyDelta(address(this), quote);
         if (quoteLeft < 0) {
-            quote.settle(poolManager, address(this), uint256(-quoteLeft), false);
+            quote.settleWithBuffer(poolManager, address(this), uint256(-quoteLeft));
         } else if (quoteLeft > 0) {
-            quote.take(poolManager, payer, uint256(quoteLeft), false);
+            quote.take(poolManager, recipient, uint256(quoteLeft), false);
         }
 
         Currency bridgeOut = bridgeSellZfo ? bridgeKey.currency1 : bridgeKey.currency0;
@@ -342,7 +357,7 @@ contract BalancedAggregator is IUnlockCallback {
 
         int256 tokenLeft = poolManager.currencyDelta(address(this), tokenCur);
         if (tokenLeft > 0) {
-            tokenCur.take(poolManager, payer, uint256(tokenLeft), false);
+            tokenCur.take(poolManager, refundTo, uint256(tokenLeft), false);
         }
     }
 
@@ -406,6 +421,11 @@ contract BalancedAggregator is IUnlockCallback {
     function _refund(Currency currency, address to) internal {
         int256 delta = poolManager.currencyDelta(address(this), currency);
         if (delta > 0) currency.take(poolManager, to, uint256(delta), false);
+    }
+
+    function _pushErc20(address token, address to, uint256 keep) internal {
+        uint256 bal = IERC20Minimal(token).balanceOf(address(this));
+        if (bal > keep) IERC20Minimal(token).transfer(to, bal - keep);
     }
 
     function _validateDeadline(uint256 deadline) internal view {

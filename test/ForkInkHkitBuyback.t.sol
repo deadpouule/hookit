@@ -5,6 +5,8 @@ import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 import {InkForkTestBase} from "./utils/InkForkTestBase.sol";
 import {HkitLaunchLib} from "../src/libraries/HkitLaunchLib.sol";
@@ -14,6 +16,7 @@ import {BitmaskConfig} from "../src/libraries/BitmaskConfig.sol";
 /// @notice HKIT fair launch + buyback/burn on Ink fork.
 contract ForkInkHkitBuybackTest is InkForkTestBase {
     using PoolIdLibrary for PoolKey;
+    using StateLibrary for IPoolManager;
 
     address internal hkit;
     PoolKey internal hkitKey;
@@ -59,7 +62,6 @@ contract ForkInkHkitBuybackTest is InkForkTestBase {
             manager.getLiquidity(hkitKey.toId()) > seedLiq || hook.pendingDeepenLps(hkitKey.toId()) > 0, "deepen"
         );
         assertGt(distributor.pending(Currency.wrap(address(0))), 0);
-    }
     }
 
     function testFork_HkitBuybackExecuteBurnsSupply() public onlyFork {

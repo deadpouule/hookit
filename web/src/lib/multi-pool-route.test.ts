@@ -10,6 +10,7 @@ import {
 import {
   multiPoolMarketQuotes,
   quoteBestBuyPlan,
+  quoteBestSellPlan,
   quoteBestSellRoute,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
@@ -211,6 +212,36 @@ test("sell aggregator picks the highest USDG composite output", async () => {
   assert.equal(best.marketQuote, STOCK_B);
   assert.equal(best.amountOut, 3_000n);
   assert.equal(best.intermediateOut, 3_000n);
+});
+
+test("sell aggregator splits when smaller clips beat a single dump", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    const quote = quoteSide(key);
+    if (quote.toLowerCase() === STOCK_A.toLowerCase()) {
+      return amount <= 600n ? amount * 3n : amount;
+    }
+    if (quote.toLowerCase() === STOCK_B.toLowerCase()) {
+      return amount <= 400n ? amount * 3n : amount;
+    }
+    return null;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 2);
+  assert.equal(plan.legs[0]!.amountIn, 600n);
+  assert.equal(plan.legs[1]!.amountIn, 400n);
+  assert.equal(plan.amountOut, 3_000n);
+  assert.match(plan.routeLabel, /Split 60\/40%/);
 });
 
 test("sell aggregator uses a direct market when receiving that quote", async () => {

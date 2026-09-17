@@ -5,15 +5,17 @@ import { zeroAddress, type Address } from "viem";
 
 import {
   balancedBuyLegsFromPlan,
+  balancedSellLegsFromPlan,
   balancedSellLegsFromRoute,
   canUseBalancedAggregatorBuy,
   isBalancedAggregatorQuote,
   marketIndexForQuote,
   planCanUseBalancedAggregator,
   routeCanUseBalancedAggregator,
+  sellPlanCanUseBalancedAggregator,
 } from "@/lib/balanced-aggregator-route";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
-import type { BestBuyPlan, BestSellRoute } from "@/lib/multi-pool-route";
+import type { BestBuyPlan, BestSellPlan, BestSellRoute } from "@/lib/multi-pool-route";
 import type { TokenPool } from "@/lib/types";
 import { INK_QUOTRON_STOCKS } from "@/lib/xstocks";
 
@@ -156,6 +158,54 @@ test("balancedSellLegsFromRoute keeps factory index for Quotrons legs", () => {
   assert.equal(legs[0]?.marketIndex, 2);
   assert.equal(legs[0]?.amountIn, 7n);
   assert.equal(routeCanUseBalancedAggregator(route), true);
+});
+
+test("balancedSellLegsFromPlan splits factory indices across markets", () => {
+  const plan: BestSellPlan = {
+    legs: [
+      {
+        kind: "composite",
+        marketQuote: STOCK_A,
+        marketIndex: 0,
+        hookKey: hookKey(STOCK_A),
+        bridge: bridge(STOCK_A),
+        amountIn: 60n,
+        amountOut: 50n,
+        intermediateOut: 10n,
+        routeLabel: "MLT → AAPL → USDG",
+      },
+      {
+        kind: "composite",
+        marketQuote: STOCK_B,
+        marketIndex: 1,
+        hookKey: hookKey(STOCK_B),
+        bridge: bridge(STOCK_B),
+        amountIn: 40n,
+        amountOut: 30n,
+        intermediateOut: 8n,
+        routeLabel: "MLT → NVDA → USDG",
+      },
+    ],
+    amountOut: 80n,
+    routeLabel: "split",
+    bestSingle: {
+      kind: "composite",
+      marketQuote: STOCK_A,
+      marketIndex: 0,
+      hookKey: hookKey(STOCK_A),
+      bridge: bridge(STOCK_A),
+      amountIn: 100n,
+      amountOut: 70n,
+      intermediateOut: 20n,
+      routeLabel: "MLT → AAPL → USDG",
+    },
+  };
+  const legs = balancedSellLegsFromPlan(poolFor(), plan, 100);
+  assert.equal(legs.length, 2);
+  assert.equal(legs[0]?.marketIndex, 0);
+  assert.equal(legs[0]?.amountIn, 60n);
+  assert.equal(legs[1]?.marketIndex, 1);
+  assert.equal(sellPlanCanUseBalancedAggregator(plan), true);
 });
 
 test("canUseBalancedAggregatorBuy accepts USDG only", () => {

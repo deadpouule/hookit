@@ -16,11 +16,11 @@ import {
   balancedBuyLegsFromPlan,
   balancedDeadlineSec,
   balancedMinTotalOut,
-  balancedSellLegsFromRoute,
+  balancedSellLegsFromPlan,
   canUseBalancedAggregatorBuy,
   canUseBalancedAggregatorSell,
   planCanUseBalancedAggregator,
-  routeCanUseBalancedAggregator,
+  sellPlanCanUseBalancedAggregator,
 } from "@/lib/balanced-aggregator-route";
 import {
   STABLE_QUOTE_ADDRESS,
@@ -58,11 +58,12 @@ import {
 } from "@/lib/v4-bridge";
 import {
   quoteBestBuyPlan,
-  quoteBestSellRoute,
+  quoteBestSellPlan,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
   type BestBuyLeg,
 } from "@/lib/multi-pool-route";
+import { resolveMasterLaunch } from "@/lib/launches";
 import { quoteHookLeg, quotePoolSwapWithMeta } from "@/lib/swap-quote";
 
 export type SwapSide = import("@/lib/swap-quote").SwapSide;
@@ -165,7 +166,7 @@ export function useSwapToken(pool: TokenPool) {
 
       // Multi-pool sell aggregator: quote all Hookit legs (+ optional bridge) and execute best.
       if (side === "sell" && receiveAsset && shouldAggregateMultiSell(pool, receiveAsset)) {
-        const best = await quoteBestSellRoute(
+        const plan = await quoteBestSellPlan(
           publicClient,
           pool,
           amountIn,
@@ -174,17 +175,20 @@ export function useSwapToken(pool: TokenPool) {
         );
         const aggregator = getBalancedAggregatorAddress();
         const receiveAddr = receiveAsset.isNative ? zeroAddress : (receiveAsset.address ?? zeroAddress);
+        const resolved = await resolveMasterLaunch(publicClient, token);
+        const launchId = resolved?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
         if (
           aggregator &&
-          best &&
+          plan &&
           canUseBalancedAggregatorSell(receiveAddr as Address) &&
-          routeCanUseBalancedAggregator(best) &&
-          pool.launchId != null
+          sellPlanCanUseBalancedAggregator(plan) &&
+          launchId != null &&
+          launchId > BigInt(0)
         ) {
-          const legs = balancedSellLegsFromRoute(pool, best, amountIn, bps);
+          const legs = balancedSellLegsFromPlan(pool, plan, bps);
           if (legs.length > 0) {
             const args = [
-              BigInt(pool.launchId),
+              launchId,
               token,
               amountIn,
               balancedMinTotalOut(legs),
@@ -218,6 +222,7 @@ export function useSwapToken(pool: TokenPool) {
             }
           }
         }
+        const best = plan?.bestSingle ?? plan?.legs[0];
         if (best?.kind === "direct") {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
@@ -269,18 +274,22 @@ export function useSwapToken(pool: TokenPool) {
       if (side === "buy" && shouldAggregateMultiBuy(pool) && !payingDirectQuote) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
         const aggregator = getBalancedAggregatorAddress();
+        const resolvedBuy = await resolveMasterLaunch(publicClient, token);
+        const buyLaunchId =
+          resolvedBuy?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
         if (
           plan &&
           aggregator &&
           supportsBalancedAggregator() &&
           canUseBalancedAggregatorBuy(payment.address) &&
           planCanUseBalancedAggregator(plan) &&
-          pool.launchId != null
+          buyLaunchId != null &&
+          buyLaunchId > BigInt(0)
         ) {
           const legs = balancedBuyLegsFromPlan(pool, plan, bps);
           if (legs.length === plan.legs.length) {
             const args = [
-              BigInt(pool.launchId),
+              buyLaunchId,
               token,
               amountIn,
               balancedMinTotalOut(legs),
