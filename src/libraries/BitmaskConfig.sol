@@ -12,13 +12,13 @@ import {ProtocolConstants} from "./ProtocolConstants.sol";
 ///      bit 1        BACKED_FLOOR_ENABLED
 ///      bit 2        ANTI_MEV_COOLDOWN_ENABLED
 ///      bit 3        MAX_TX_ENABLED
-///      bit 4        reserved (former MAX_WALLET_ENABLED, module removed — must be 0)
+///      bit 4        HOOK_TO_CREATOR_ENABLED — route a % of the hook pot to the creator
 ///      bit 5        DYNAMIC_FEES_ENABLED
 ///      bit 6        BUYBACK_VESTING_ENABLED
 ///      bits 7-22    hookTaxBps (uint16) — extra fee for hook modules (not creator)
 ///      bits 23-38   antiSnipeDurationSeconds (uint16)
 ///      bits 39-54   maxTxBps (uint16)
-///      bits 55-70   reserved (former maxWalletBps, module removed — must be 0)
+///      bits 55-70   hookToCreatorBps (uint16) — % of hook tax pot
 ///      bits 71-94   floorAllocationBps (uint24) — % of hook tax pot
 ///      bits 95-110  initialSnipeTaxBps (uint16)
 ///      bit 111      AUTO_BURN_ENABLED
@@ -38,6 +38,7 @@ library BitmaskConfig {
     uint256 internal constant BACKED_FLOOR_ENABLED = 1 << 1;
     uint256 internal constant ANTI_MEV_COOLDOWN_ENABLED = 1 << 2;
     uint256 internal constant MAX_TX_ENABLED = 1 << 3;
+    uint256 internal constant HOOK_TO_CREATOR_ENABLED = 1 << 4;
     uint256 internal constant DYNAMIC_FEES_ENABLED = 1 << 5;
     uint256 internal constant BUYBACK_VESTING_ENABLED = 1 << 6;
     uint256 internal constant AUTO_BURN_ENABLED = 1 << 111;
@@ -48,6 +49,7 @@ library BitmaskConfig {
     uint256 internal constant HOOK_TAX_SHIFT = 7;
     uint256 internal constant SNIPE_DURATION_SHIFT = 23;
     uint256 internal constant MAX_TX_SHIFT = 39;
+    uint256 internal constant HOOK_TO_CREATOR_BPS_SHIFT = 55;
     uint256 internal constant FLOOR_ALLOC_SHIFT = 71;
     uint256 internal constant INITIAL_SNIPE_TAX_SHIFT = 95;
     uint256 internal constant AUTO_BURN_BPS_SHIFT = 113;
@@ -58,11 +60,6 @@ library BitmaskConfig {
     uint256 internal constant DYNAMIC_FEE_RAMP_UP_ENABLED = 1 << 211;
     uint256 internal constant DYNAMIC_FEE_TRADE_TARGET_SHIFT = 212;
     uint256 internal constant HOLDER_AIRDROP_EPOCH_SHIFT = 228;
-
-    /// @dev Bits of the removed max-wallet module (flag bit 4 + bps bits 55-70). Kept out of the
-    ///      layout so older packed values decode unchanged; `pack` never sets them and the factory
-    ///      rejects launches that do.
-    uint256 internal constant RESERVED_MAX_WALLET_MASK = (1 << 4) | (uint256(0xFFFF) << 55);
 
     uint256 internal constant UINT16_MASK = 0xFFFF;
     uint256 internal constant UINT32_MASK = 0xFFFFFFFF;
@@ -92,6 +89,8 @@ library BitmaskConfig {
         bool dynamicFeeRampUp;
         uint16 dynamicFeeDepthSaturationBps;
         uint32 holderAirdropEpochSeconds;
+        bool hookToCreator;
+        uint16 hookToCreatorBps;
     }
 
     function pack(Modules memory m) internal pure returns (uint256 packed) {
@@ -101,8 +100,10 @@ library BitmaskConfig {
             | (m.dynamicFees ? DYNAMIC_FEES_ENABLED : 0) | (m.buybackVesting ? BUYBACK_VESTING_ENABLED : 0)
             | (m.autoBurn ? AUTO_BURN_ENABLED : 0) | (m.deepenLps ? DEEPEN_LPS_ENABLED : 0)
             | (m.holderAirdrop ? HOLDER_AIRDROP_ENABLED : 0)
-            | (m.creatorShareToHook ? CREATOR_SHARE_TO_HOOK_ENABLED : 0) | (uint256(m.hookTaxBps) << HOOK_TAX_SHIFT)
+            | (m.creatorShareToHook ? CREATOR_SHARE_TO_HOOK_ENABLED : 0)
+            | (m.hookToCreator ? HOOK_TO_CREATOR_ENABLED : 0) | (uint256(m.hookTaxBps) << HOOK_TAX_SHIFT)
             | (uint256(m.antiSnipeDurationSeconds) << SNIPE_DURATION_SHIFT) | (uint256(m.maxTxBps) << MAX_TX_SHIFT)
+            | (uint256(m.hookToCreatorBps) << HOOK_TO_CREATOR_BPS_SHIFT)
             | (uint256(m.floorAllocationBps) << FLOOR_ALLOC_SHIFT)
             | (uint256(m.initialSnipeTaxBps) << INITIAL_SNIPE_TAX_SHIFT)
             | (uint256(m.autoBurnBps) << AUTO_BURN_BPS_SHIFT) | (uint256(m.deepenLpsBps) << DEEPEN_LPS_BPS_SHIFT)
@@ -125,9 +126,11 @@ library BitmaskConfig {
         m.deepenLps = packed & DEEPEN_LPS_ENABLED != 0;
         m.holderAirdrop = packed & HOLDER_AIRDROP_ENABLED != 0;
         m.creatorShareToHook = packed & CREATOR_SHARE_TO_HOOK_ENABLED != 0;
+        m.hookToCreator = packed & HOOK_TO_CREATOR_ENABLED != 0;
         m.hookTaxBps = uint16((packed >> HOOK_TAX_SHIFT) & UINT16_MASK);
         m.antiSnipeDurationSeconds = uint16((packed >> SNIPE_DURATION_SHIFT) & UINT16_MASK);
         m.maxTxBps = uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
+        m.hookToCreatorBps = uint16((packed >> HOOK_TO_CREATOR_BPS_SHIFT) & UINT16_MASK);
         m.floorAllocationBps = uint24((packed >> FLOOR_ALLOC_SHIFT) & UINT24_MASK);
         m.initialSnipeTaxBps = uint16((packed >> INITIAL_SNIPE_TAX_SHIFT) & UINT16_MASK);
         m.autoBurnBps = uint16((packed >> AUTO_BURN_BPS_SHIFT) & UINT16_MASK);
@@ -154,6 +157,10 @@ library BitmaskConfig {
 
     function maxTxBps(uint256 packed) internal pure returns (uint16) {
         return uint16((packed >> MAX_TX_SHIFT) & UINT16_MASK);
+    }
+
+    function hookToCreatorBps(uint256 packed) internal pure returns (uint16) {
+        return uint16((packed >> HOOK_TO_CREATOR_BPS_SHIFT) & UINT16_MASK);
     }
 
     function floorAllocationBps(uint256 packed) internal pure returns (uint24) {
@@ -221,6 +228,7 @@ library BitmaskConfig {
         if (m.autoBurnBps > ProtocolConstants.MAX_AUTO_BURN_BPS) revert AutoBurnTooHigh();
         if (m.deepenLpsBps > ProtocolConstants.MAX_DEEPEN_LPS_BPS) revert DeepenLpsTooHigh();
         if (m.holderAirdropBps > ProtocolConstants.MAX_HOLDER_AIRDROP_BPS) revert HolderAirdropTooHigh();
+        if (m.hookToCreatorBps > ProtocolConstants.MAX_HOOK_TO_CREATOR_BPS) revert HookToCreatorTooHigh();
         if (m.holderAirdrop) {
             uint32 epoch = m.holderAirdropEpochSeconds;
             if (epoch == 0) epoch = ProtocolConstants.DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS;
@@ -236,10 +244,11 @@ library BitmaskConfig {
         if (m.autoBurn) routed += m.autoBurnBps;
         if (m.deepenLps) routed += m.deepenLpsBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
+        if (m.hookToCreator) routed += m.hookToCreatorBps;
         if (routed > ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteTooHigh();
-        if (routed > 0 && routed != ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteIncomplete();
-        // Fee sinks need a funded hook pot: hook tax and/or creator's 60% of base.
-        if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) revert HookFundingRequired();
+        bool potFunded = m.hookTaxBps > 0 || m.creatorShareToHook;
+        if (potFunded && routed != ProtocolConstants.BPS_DENOMINATOR) revert FeeRouteIncomplete();
+        if (!potFunded && routed > 0) revert HookFundingRequired();
         if (m.creatorShareToHook && m.buybackVesting) revert CreatorShareConflict();
         if (m.buybackVesting) {
             uint32 duration = m.buybackVestingDurationSeconds;
@@ -272,6 +281,7 @@ library BitmaskConfig {
     error AutoBurnTooHigh();
     error DeepenLpsTooHigh();
     error HolderAirdropTooHigh();
+    error HookToCreatorTooHigh();
     error HolderAirdropEpochTooShort();
     error HolderAirdropEpochTooLong();
     error FeeRouteTooHigh();

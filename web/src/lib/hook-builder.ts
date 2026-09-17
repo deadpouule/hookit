@@ -21,6 +21,7 @@ export type LiveBlockId =
   | "autoBurn"
   | "deepenLps"
   | "holderAirdrop"
+  | "hookToCreator"
   | "creatorShareToHook";
 
 export type SoonBlockId = "surgeFees" | "nthBuy" | "royalty";
@@ -57,6 +58,8 @@ export const EMPTY_BUILDER_MODULES: LaunchModules = {
   holderAirdropUnlockMode: "all",
   holderAirdropStepPct: [0, 0, 0, 0, 0, 0],
   creatorShareToHook: false,
+  hookToCreator: false,
+  hookToCreatorPct: 100,
 };
 
 export const EMPTY_BUILDER_DRAFT: BuilderDraft = {
@@ -74,6 +77,7 @@ export const EXECUTION_ORDER: LiveBlockId[] = [
   "autoBurn",
   "deepenLps",
   "holderAirdrop",
+  "hookToCreator",
   "creatorShareToHook",
 ];
 
@@ -141,12 +145,21 @@ export const LIVE_BLOCKS: BuilderBlockDef[] = [
     accent: HOOK_MODULE_ACCENTS.holderAirdrop,
   },
   {
+    id: "hookToCreator",
+    live: true,
+    label: "Hook → Creator",
+    short: "tax to creator",
+    description:
+      "Send a share of the hook pot to the creator. Alone it is 100%. Split it with burn, floor, Deepen LPs, or airdrop.",
+    accent: HOOK_MODULE_ACCENTS.hookToCreator,
+  },
+  {
     id: "creatorShareToHook",
     live: true,
     label: "Creator → Hook",
     short: "60% into modules",
     description:
-      "Send the creator’s 60% of the base 1% fee into the hook pot (floor / burn / deepen / airdrop) instead of escrow.",
+      "Send the creator’s 60% of the base 1% fee into the hook pot (Hook → Creator, floor, burn, deepen, airdrop) instead of escrow.",
     accent: HOOK_MODULE_ACCENTS.hookTax,
   },
   {
@@ -232,6 +245,8 @@ export function isBlockEnabled(
       return modules.deepenLps;
     case "holderAirdrop":
       return modules.holderAirdrop;
+    case "hookToCreator":
+      return Boolean(modules.hookToCreator);
     case "creatorShareToHook":
       return modules.creatorShareToHook;
   }
@@ -244,6 +259,7 @@ export function feeRoutePct(modules: LaunchModules): number {
   if (modules.autoBurn) routed += modules.autoBurnPct;
   if (modules.deepenLps) routed += modules.deepenLpsPct;
   if (modules.holderAirdrop) routed += modules.holderAirdropPct;
+  if (modules.hookToCreator) routed += modules.hookToCreatorPct ?? 0;
   return routed;
 }
 
@@ -319,7 +335,11 @@ export function applyBlockToggle(
   const nextModules = { ...draft.modules, [id]: enabled };
   let { hookTaxBps } = draft;
   const feeSink =
-    id === "backedFloor" || id === "autoBurn" || id === "deepenLps" || id === "holderAirdrop";
+    id === "backedFloor" ||
+    id === "autoBurn" ||
+    id === "deepenLps" ||
+    id === "holderAirdrop" ||
+    id === "hookToCreator";
   if (enabled && feeSink && hookTaxBps === 0 && !nextModules.creatorShareToHook) hookTaxBps = 50;
   if (feeSink) {
     const routePatch = rebalanceFeeRoutes(enabled ? nextModules : { ...nextModules, [id]: false });

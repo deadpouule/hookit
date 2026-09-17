@@ -95,9 +95,18 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertEq(escrow.balanceOf(address(this), Currency.wrap(token)), 0);
     }
 
-    function testHookTaxOnlyPaysCreatorWhenNoSinks() public {
+    function testHookTaxWithoutRouteReverts() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        vm.expectRevert(BitmaskConfig.FeeRouteIncomplete.selector);
+        BitmaskConfig.pack(m);
+    }
+
+    function testHookToCreatorTakesHookTax() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200; // +2%
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
@@ -112,11 +121,30 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertGt(creatorDelta, protoDelta);
     }
 
+    function testHookToCreatorSplitsWithAutoBurn() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.hookTaxBps = 200;
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 5_000;
+        m.autoBurn = true;
+        m.autoBurnBps = 5_000;
+        (,,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+
+        uint256 creatorBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        buyExactIn(key, 10 ether);
+        uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
+        // 60% of 1% = 0.06 plus 50% of 2% tax = 0.10 → ~0.16. Not the full 0.20 tax.
+        assertApproxEqRel(creatorDelta, 0.16 ether, 0.05e18);
+        assertLt(creatorDelta, 0.22 ether);
+    }
+
     function testHookTaxVestsWhenBuybackVestingNoOtherSinks() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.buybackVesting = true;
         m.buybackVestingDurationSeconds = uint32(30 days);
         m.hookTaxBps = 500; // +5%
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         uint256 escrowBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
@@ -138,6 +166,8 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         m.antiSnipeDurationSeconds = 1_000;
         m.initialSnipeTaxBps = 8_800;
         m.hookTaxBps = 100;
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
 
         buyExactIn(key, 5 ether);
@@ -150,7 +180,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
         uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
         uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
-        // Sell fee = base 1% + hook tax 1%. No allocation sink and no vest: tax → escrow.
+        // Sell fee = base 1% + hook tax 1%. Hook → Creator 100%: tax → escrow.
         // Creator gets 60% of the 1% plus the full 1% tax; protocol only the 30% of base.
         assertGt(creatorDelta, 0);
         assertGt(creatorDelta, protoDelta);

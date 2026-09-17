@@ -23,6 +23,7 @@ import {BuybackVault} from "../../src/BuybackVault.sol";
 import {HolderAirdropVault} from "../../src/HolderAirdropVault.sol";
 import {BitmaskConfig} from "../../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
+import {ModuleMatrix} from "./ModuleMatrix.sol";
 
 abstract contract LaunchpadTestBase is Test, Deployers {
     FloorVault internal vault;
@@ -99,7 +100,9 @@ abstract contract LaunchpadTestBase is Test, Deployers {
             dynamicFeeMinTotalBps: 0,
             dynamicFeeRampUp: false,
             dynamicFeeDepthSaturationBps: 0,
-            holderAirdropEpochSeconds: 0
+            holderAirdropEpochSeconds: 0,
+            hookToCreator: false,
+            hookToCreatorBps: 0
         });
     }
 
@@ -107,7 +110,7 @@ abstract contract LaunchpadTestBase is Test, Deployers {
         internal
         returns (uint256 launchId, address token, PoolId poolId, PoolKey memory key)
     {
-        uint256 bitmask = BitmaskConfig.pack(modules);
+        uint256 bitmask = BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(modules));
         (launchId, token, poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({
                 name: "Test",

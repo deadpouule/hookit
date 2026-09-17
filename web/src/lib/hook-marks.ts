@@ -10,6 +10,7 @@ export type HookId =
   | "buybackVesting"
   | "autoBurn"
   | "deepenLps"
+  | "hookToCreator"
   | "creatorShareToHook"
   | "custom"
   | "quoteFee";
@@ -96,6 +97,14 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     color: "#10b981",
     glow: "rgba(16,185,129,0.4)",
   },
+  hookToCreator: {
+    id: "hookToCreator",
+    label: "Hook → Creator",
+    short: "→ Creator",
+    hint: "Hook tax share paid to the creator",
+    color: "#e4e4e7",
+    glow: "rgba(228,228,231,0.4)",
+  },
   creatorShareToHook: {
     id: "creatorShareToHook",
     label: "Creator → Hook",
@@ -154,6 +163,7 @@ export const HOOK_MARK_TO_MASTER: Partial<Record<HookId, MasterHookId>> = {
   buybackVesting: "buyback-vesting",
   autoBurn: "auto-burn",
   deepenLps: "deepen-lps",
+  hookToCreator: "hook-to-creator",
   creatorShareToHook: "creator-share-to-hook",
   quoteFee: "dynamic-fees",
 };
@@ -169,6 +179,7 @@ export const MASTER_TO_HOOK_MARK: Record<MasterHookId, HookId> = {
   "buyback-vesting": "buybackVesting",
   "auto-burn": "autoBurn",
   "deepen-lps": "deepenLps",
+  "hook-to-creator": "hookToCreator",
   "creator-share-to-hook": "creatorShareToHook",
 };
 

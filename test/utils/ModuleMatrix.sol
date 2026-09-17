@@ -16,7 +16,7 @@ library ModuleMatrix {
     uint16 internal constant BIT_BACKED_FLOOR = 1 << 1;
     uint16 internal constant BIT_ANTI_MEV = 1 << 2;
     uint16 internal constant BIT_MAX_TX = 1 << 3;
-    // bit 4 was max wallet (module removed) — left unused so the mask space stays stable.
+    uint16 internal constant BIT_HOOK_TO_CREATOR = 1 << 4;
     uint16 internal constant BIT_DYNAMIC_FEES = 1 << 5;
     uint16 internal constant BIT_BUYBACK_VESTING = 1 << 6;
     uint16 internal constant BIT_AUTO_BURN = 1 << 7;
@@ -32,6 +32,16 @@ library ModuleMatrix {
 
     function fromExtendedMask(uint16 mask) internal pure returns (BitmaskConfig.Modules memory m) {
         return fromMask(mask & (EXTENDED_MASK_SPACE - 1));
+    }
+
+    /// @dev Tests that set a hook tax without a sink get Hook → Creator at 100%.
+    function ensureFeeRoute(BitmaskConfig.Modules memory m) internal pure returns (BitmaskConfig.Modules memory) {
+        bool anyAlloc = m.backedFloor || m.autoBurn || m.deepenLps || m.holderAirdrop || m.hookToCreator;
+        if (!anyAlloc && (m.hookTaxBps > 0 || m.dynamicFees || m.creatorShareToHook)) {
+            m.hookToCreator = true;
+            m.hookToCreatorBps = uint16(ProtocolConstants.BPS_DENOMINATOR);
+        }
+        return m;
     }
 
     function kitchenSink() internal pure returns (BitmaskConfig.Modules memory m) {
@@ -51,6 +61,7 @@ library ModuleMatrix {
         m.backedFloor = mask & BIT_BACKED_FLOOR != 0;
         m.antiMev = mask & BIT_ANTI_MEV != 0;
         m.maxTx = mask & BIT_MAX_TX != 0;
+        m.hookToCreator = mask & BIT_HOOK_TO_CREATOR != 0;
         m.dynamicFees = mask & BIT_DYNAMIC_FEES != 0;
         m.buybackVesting = mask & BIT_BUYBACK_VESTING != 0;
         m.autoBurn = mask & BIT_AUTO_BURN != 0;
@@ -61,6 +72,7 @@ library ModuleMatrix {
             m.initialSnipeTaxBps = 1_500;
         }
         if (m.maxTx) m.maxTxBps = 100;
+        if (m.hookToCreator) m.hookToCreatorBps = 1_000;
         if (m.backedFloor) m.floorAllocationBps = 1_000;
         if (m.autoBurn) m.autoBurnBps = 1_000;
         if (m.deepenLps) m.deepenLpsBps = 1_000;
@@ -86,7 +98,20 @@ library ModuleMatrix {
         if (m.autoBurn) routed += m.autoBurnBps;
         if (m.deepenLps) routed += m.deepenLpsBps;
         if (m.holderAirdrop) routed += m.holderAirdropBps;
+        if (m.hookToCreator) routed += m.hookToCreatorBps;
         if (routed > 0 && m.hookTaxBps == 0 && !m.creatorShareToHook) m.hookTaxBps = 200;
+        if (m.dynamicFees) {
+            if (m.dynamicFeeMinTotalBps == 0) m.dynamicFeeMinTotalBps = ProtocolConstants.BASE_FEE_BPS;
+            if (m.hookTaxBps == 0) m.hookTaxBps = 200;
+            m.dynamicFeeRampUp = true;
+            if (m.dynamicFeeDepthSaturationBps == 0) {
+                m.dynamicFeeDepthSaturationBps = ProtocolConstants.DYNAMIC_FEE_DEFAULT_DEPTH_SATURATION_BPS;
+            }
+        }
+        if ((m.hookTaxBps > 0 || m.creatorShareToHook) && routed == 0) {
+            m.hookToCreator = true;
+            m.hookToCreatorBps = uint16(ProtocolConstants.BPS_DENOMINATOR);
+        }
         if (m.dynamicFees) {
             if (m.dynamicFeeMinTotalBps == 0) m.dynamicFeeMinTotalBps = ProtocolConstants.BASE_FEE_BPS;
             if (m.hookTaxBps == 0) m.hookTaxBps = 200;
@@ -105,6 +130,7 @@ library ModuleMatrix {
         if (m.autoBurn) count++;
         if (m.deepenLps) count++;
         if (m.holderAirdrop) count++;
+        if (m.hookToCreator) count++;
         if (count == 0) return m;
 
         uint16 base = uint16(ProtocolConstants.BPS_DENOMINATOR / count);
@@ -131,8 +157,14 @@ library ModuleMatrix {
         }
         if (m.holderAirdrop) {
             m.holderAirdropBps = base + (idx < rem ? 1 : 0);
+            idx++;
         } else {
             m.holderAirdropBps = 0;
+        }
+        if (m.hookToCreator) {
+            m.hookToCreatorBps = base + (idx < rem ? 1 : 0);
+        } else {
+            m.hookToCreatorBps = 0;
         }
         return m;
     }

@@ -27,6 +27,7 @@ import {GraduatedFeeHook} from "../../src/GraduatedFeeHook.sol";
 import {BondingLaunchFactory} from "../../src/BondingLaunchFactory.sol";
 import {BitmaskConfig} from "../../src/libraries/BitmaskConfig.sol";
 import {ProtocolConstants} from "../../src/libraries/ProtocolConstants.sol";
+import {ModuleMatrix} from "./ModuleMatrix.sol";
 import {UniswapV4Deployments} from "../../src/libraries/UniswapV4Deployments.sol";
 import {HookitDeployLib} from "../../src/libraries/HookitDeployLib.sol";
 import {QuotronStockQuotes} from "../../src/libraries/QuotronStockQuotes.sol";
@@ -205,7 +206,9 @@ abstract contract InkForkTestBase is Test {
             dynamicFeeMinTotalBps: 0,
             dynamicFeeRampUp: false,
             dynamicFeeDepthSaturationBps: 0,
-            holderAirdropEpochSeconds: 0
+            holderAirdropEpochSeconds: 0,
+            hookToCreator: false,
+            hookToCreatorBps: 0
         });
     }
 
@@ -226,7 +229,7 @@ abstract contract InkForkTestBase is Test {
         string memory name,
         string memory symbol
     ) internal returns (LaunchResult memory r) {
-        uint256 bitmask = BitmaskConfig.pack(modules);
+        uint256 bitmask = BitmaskConfig.pack(ModuleMatrix.ensureFeeRoute(modules));
         vm.prank(launcher);
         (r.launchId, r.token, r.poolId) = factory.launch{value: ProtocolConstants.LAUNCH_FEE_WEI}(
             LaunchFactory.LaunchParams({

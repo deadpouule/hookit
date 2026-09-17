@@ -23,6 +23,7 @@ import {
   feeRouteIsComplete,
   feeRouteSliderMax,
   feeRouteTotalPct,
+  getFeeRouteValue,
   listEnabledFeeRoutes,
   setFeeRouteShare,
   type FeeRouteKey,
@@ -201,6 +202,23 @@ export function BuilderTuner({
           </div>
         ) : null}
 
+        {selected === "hookToCreator" ? (
+          <div>
+            <FeeRouteSlider
+              routeKey="hookToCreatorPct"
+              label="Share of hook tax"
+              modules={modules}
+              color={def.accent.color}
+              onModulesChange={onModulesChange}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Paid to the creator. Alone it is 100%. Split it with burn, floor, Deepen LPs, or airdrop
+              so the shares still add to 100%. Vests if Buyback Vesting is on.
+            </p>
+            <FeeRouteHint modules={modules} />
+          </div>
+        ) : null}
+
         {selected === "maxTx" ? (
           <div>
             <SliderRow
@@ -220,16 +238,23 @@ export function BuilderTuner({
         ) : null}
 
         {selected === "hookTax" ? (
-          <SliderRow
-            label="Hook tax"
-            valueLabel={formatBps(hookTaxBps)}
-            color={def.accent.color}
-            value={hookTaxBps}
-            min={10}
-            max={MAX_HOOK_TAX_BPS}
-            step={10}
-            onChange={onCreatorTaxChange}
-          />
+          <div>
+            <SliderRow
+              label="Hook tax"
+              valueLabel={formatBps(hookTaxBps)}
+              color={def.accent.color}
+              value={hookTaxBps}
+              min={10}
+              max={MAX_HOOK_TAX_BPS}
+              step={10}
+              onChange={onCreatorTaxChange}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Needs a 100% destination: Hook → Creator, Auto-Burn, Backed Floor, Deepen LPs, or Holder
+              Airdrop.
+            </p>
+            <FeeRouteHint modules={modules} />
+          </div>
         ) : null}
 
         {selected === "creatorShareToHook" ? (
@@ -280,7 +305,7 @@ function FeeRouteSlider({
     );
   }
 
-  const value = modules[routeKey];
+  const value = getFeeRouteValue(modules, routeKey);
   return (
     <SliderRow
       label={label}

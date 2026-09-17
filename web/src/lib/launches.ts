@@ -149,6 +149,7 @@ export function launchToTokenPool(launch: OnChainLaunch): TokenPool {
       autoBurn: modules.autoBurn,
       deepenLps: modules.deepenLps,
       holderAirdrop: modules.holderAirdrop,
+      hookToCreator: modules.hookToCreator,
       creatorShareToHook: modules.creatorShareToHook,
       customHook: launch.customHook,
     },

@@ -13,8 +13,8 @@ library ProtocolConstants {
     /// @dev Split of the 1% base fee (+ snipe tax): 60% creator / 10% $HKT holders / 30% protocol.
     ///      The 10% buys the launched token and epoch-pushes it pro-rata to live $HKT holders.
     ///      Hook tax is separate and never enters this split. It funds Master hook modules
-    ///      when an allocation sink is on. Buyback Vesting is also a sink: unrouted tax
-    ///      credits BuybackVault. With no sink, it is credited to the creator.
+    ///      (floor / burn / Deepen LPs / airdrop / Hook → Creator). Those shares must sum to 100%
+    ///      whenever the pot is funded. Rounding dust stays with protocol.
     ///      Must sum to BPS_DENOMINATOR. Existing pools keep the old 70/30 until a hook cutover.
     uint16 internal constant CREATOR_SHARE_BPS = 6_000;
     uint16 internal constant HKT_HOLDER_SHARE_BPS = 1_000;
@@ -61,6 +61,7 @@ library ProtocolConstants {
     uint16 internal constant MAX_DEEPEN_LPS_BPS = 10_000;
     /// @dev Max share of the quote-fee pool routed to holder airdrops (100% — combined routes capped at 100%).
     uint16 internal constant MAX_HOLDER_AIRDROP_BPS = 10_000;
+    uint16 internal constant MAX_HOOK_TO_CREATOR_BPS = 10_000;
     /// @dev Default holder airdrop epoch when launcher leaves field at 0.
     uint32 internal constant DEFAULT_HOLDER_AIRDROP_EPOCH_SECONDS = 15 minutes;
     /// @dev Launcher-configurable airdrop epoch bounds.

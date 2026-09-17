@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowDownToLine,
   Coins,
   EyeOff,
   Flame,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { unpackLaunchBitmask } from "@/lib/bitmask";
+import { rebalanceFeeRoutes } from "@/lib/hook-fee-route";
 import type { LaunchModules, TokenPool } from "@/lib/types";
 
 export type MasterHookCategory = "trading-fees" | "protection" | "tokenomics" | "rewards";
@@ -27,6 +29,7 @@ export type MasterHookId =
   | "auto-burn"
   | "deepen-lps"
   | "holder-airdrop"
+  | "hook-to-creator"
   | "creator-share-to-hook";
 
 export type BrowseHookId = MasterHookId | "fixed-fee";
@@ -151,7 +154,6 @@ export const MASTER_HOOKS: MasterHook[] = [
     summary: "1 active hook block • time vest or unlock-at-mcap",
     settings: [
       "+ CREATOR CUT TO BUYBACKVAULT",
-      "+ UNROUTED HOOK TAX TO VAULT",
       "+ TIME VEST OR UNTIL MCAP",
       "+ CLAIM AFTER UNLOCK",
     ],
@@ -253,6 +255,26 @@ export const MASTER_HOOKS: MasterHook[] = [
     settings: ["+ DECAY TAX ON OPENING BUYS", "+ INITIAL TAX 50%", "+ FADES OVER LAUNCH WINDOW"],
   },
   {
+    id: "hook-to-creator",
+    number: 12,
+    title: "Hook → Creator",
+    description: "send a share of the hook tax to the creator. Split 100% with burn, floor, Deepen LPs, airdrop",
+    category: "rewards",
+    icon: ArrowDownToLine,
+    theme: "pearl",
+    keyword: "CREATOR",
+    creator: CREATOR,
+    uses: 0,
+    royalty: "0% of hook fees",
+    savedAt: "Block  - ",
+    summary: "hook pot → creator escrow or vest",
+    settings: [
+      "+ % OF HOOK TAX POT",
+      "+ 100% ALONE, SPLIT WITH SINKS",
+      "+ VESTS IF BUYBACK VESTING IS ON",
+    ],
+  },
+  {
     id: "creator-share-to-hook",
     number: 11,
     title: "Creator → Hook",
@@ -295,8 +317,7 @@ export const FIXED_FEE_HOOK: BrowseHook = {
   settings: [
     "+ FLAT HOOK TAX ON SWAPS",
     "+ QUOTE-ONLY DEDUCTION",
-    "+ NO SINK PAYS THE CREATOR",
-    "+ VESTING IS A SINK",
+    "+ MUST PICK A 100% DESTINATION",
   ],
 };
 
@@ -326,6 +347,7 @@ export const HOOK_MODULE_FIELD: Record<MasterHookId, keyof LaunchModules> = {
   "auto-burn": "autoBurn",
   "deepen-lps": "deepenLps",
   "holder-airdrop": "holderAirdrop",
+  "hook-to-creator": "hookToCreator",
   "creator-share-to-hook": "creatorShareToHook",
 };
 
@@ -339,6 +361,7 @@ const POOL_HOOK_BY_MASTER_ID: Record<MasterHookId, keyof TokenPool["hooks"]> = {
   "auto-burn": "autoBurn",
   "deepen-lps": "deepenLps",
   "holder-airdrop": "holderAirdrop",
+  "hook-to-creator": "hookToCreator",
   "creator-share-to-hook": "creatorShareToHook",
 };
 
@@ -357,6 +380,7 @@ type HookUsagePool = {
     autoBurn?: boolean;
     deepenLps?: boolean;
     holderAirdrop?: boolean;
+    hookToCreator?: boolean;
     creatorShareToHook?: boolean;
     customHook?: boolean;
   };
@@ -397,6 +421,7 @@ export function countHookUsage(pools: HookUsagePool[]): Record<MasterHookId, num
     "auto-burn": 0,
     "deepen-lps": 0,
     "holder-airdrop": 0,
+    "hook-to-creator": 0,
     "creator-share-to-hook": 0,
   };
   for (const pool of pools) {
@@ -476,10 +501,17 @@ export function withMasterHookEnabled(
   }
   if (!isMasterHookId(hookId)) return state;
   const field = HOOK_MODULE_FIELD[hookId];
+  const nextModules = { ...state.modules, [field]: true };
+  const isFeeRoute =
+    hookId === "backed-floor" ||
+    hookId === "auto-burn" ||
+    hookId === "deepen-lps" ||
+    hookId === "holder-airdrop" ||
+    hookId === "hook-to-creator";
   return {
     ...state,
     hookMode: "master",
-    modules: { ...state.modules, [field]: true },
+    modules: isFeeRoute ? { ...nextModules, ...rebalanceFeeRoutes(nextModules) } : nextModules,
   };
 }
 

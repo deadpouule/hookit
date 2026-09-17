@@ -11,7 +11,7 @@ const FLAG_ANTI_SNIPE = BigInt(1) << BigInt(0);
 const FLAG_BACKED_FLOOR = BigInt(1) << BigInt(1);
 const FLAG_ANTI_MEV = BigInt(1) << BigInt(2);
 const FLAG_MAX_TX = BigInt(1) << BigInt(3);
-// bit 4 + bits 55-70: former max wallet (module removed). Never set; the factory rejects them.
+const FLAG_HOOK_TO_CREATOR = BigInt(1) << BigInt(4);
 const FLAG_DYNAMIC_FEES = BigInt(1) << BigInt(5);
 const FLAG_BUYBACK_VESTING = BigInt(1) << BigInt(6);
 const FLAG_AUTO_BURN = BigInt(1) << BigInt(111);
@@ -22,6 +22,7 @@ const FLAG_CREATOR_SHARE_TO_HOOK = BigInt(1) << BigInt(162);
 const SHIFT_HOOK_TAX = BigInt(7);
 const SHIFT_SNIPE_DURATION = BigInt(23);
 const SHIFT_MAX_TX = BigInt(39);
+const SHIFT_HOOK_TO_CREATOR_BPS = BigInt(55);
 const SHIFT_FLOOR_ALLOC = BigInt(71);
 const SHIFT_INITIAL_SNIPE_TAX = BigInt(95);
 const SHIFT_AUTO_BURN_BPS = BigInt(113);
@@ -86,26 +87,24 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   const autoBurnBps = BigInt(modules.autoBurnPct * 100);
   const deepenLpsBps = BigInt(modules.deepenLpsPct * 100);
   const holderAirdropBps = BigInt(modules.holderAirdropPct * 100);
+  const hookToCreatorBps = BigInt((modules.hookToCreatorPct ?? 100) * 100);
 
   let routed = 0;
   if (modules.backedFloor) routed += modules.floorAllocation;
   if (modules.autoBurn) routed += modules.autoBurnPct;
   if (modules.deepenLps) routed += modules.deepenLpsPct;
   if (modules.holderAirdrop) routed += modules.holderAirdropPct;
+  if (modules.hookToCreator) routed += modules.hookToCreatorPct ?? 0;
   if (routed > 100) {
-    throw new Error("Floor + Auto Burn + Deepen LPs + Holder Airdrop cannot exceed 100% of hook tax");
+    throw new Error("Fee routes cannot exceed 100% of hook tax");
   }
-  const feeRouteCount =
-    (modules.backedFloor ? 1 : 0) +
-    (modules.autoBurn ? 1 : 0) +
-    (modules.deepenLps ? 1 : 0) +
-    (modules.holderAirdrop ? 1 : 0);
-  if (feeRouteCount > 0 && routed !== 100) {
-    throw new Error("Fee routes must total exactly 100% of the hook tax. Nothing left unallocated");
+  const potFunded = effectiveHookTax > 0 || Boolean(modules.creatorShareToHook);
+  if (potFunded && routed !== 100) {
+    throw new Error("Pick a destination for the hook tax. Shares must total 100%");
   }
-  if (routed > 0 && effectiveHookTax === 0 && !modules.creatorShareToHook) {
+  if (!potFunded && routed > 0) {
     throw new Error(
-      "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / deepen LPs / airdrop",
+      "Enable a hook tax and/or route creator base fees to the hook when using floor / burn / deepen LPs / airdrop / Hook → Creator",
     );
   }
 
@@ -127,10 +126,12 @@ export function packLaunchBitmask(modules: LaunchModules, hookTaxBps: number): b
   if (modules.deepenLps) packed |= FLAG_DEEPEN_LPS;
   if (modules.holderAirdrop) packed |= FLAG_HOLDER_AIRDROP;
   if (modules.creatorShareToHook) packed |= FLAG_CREATOR_SHARE_TO_HOOK;
+  if (modules.hookToCreator) packed |= FLAG_HOOK_TO_CREATOR;
 
   packed |= BigInt(effectiveHookTax) << SHIFT_HOOK_TAX;
   packed |= BigInt(modules.antiSnipeDuration) << SHIFT_SNIPE_DURATION;
   packed |= BigInt(modules.maxTxBps) << SHIFT_MAX_TX;
+  packed |= hookToCreatorBps << SHIFT_HOOK_TO_CREATOR_BPS;
   packed |= floorAllocationBps << SHIFT_FLOOR_ALLOC;
   packed |= initialSnipeTaxBps << SHIFT_INITIAL_SNIPE_TAX;
   packed |= autoBurnBps << SHIFT_AUTO_BURN_BPS;
@@ -177,10 +178,12 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
   const deepenLps = (packed & FLAG_DEEPEN_LPS) !== BigInt(0);
   const holderAirdrop = (packed & FLAG_HOLDER_AIRDROP) !== BigInt(0);
   const creatorShareToHook = (packed & FLAG_CREATOR_SHARE_TO_HOOK) !== BigInt(0);
+  const hookToCreator = (packed & FLAG_HOOK_TO_CREATOR) !== BigInt(0);
 
   const hookTaxBps = Number((packed >> SHIFT_HOOK_TAX) & UINT16_MASK);
   const antiSnipeDuration = Number((packed >> SHIFT_SNIPE_DURATION) & UINT16_MASK);
   const maxTxBps = Number((packed >> SHIFT_MAX_TX) & UINT16_MASK);
+  const hookToCreatorBps = Number((packed >> SHIFT_HOOK_TO_CREATOR_BPS) & UINT16_MASK);
   const floorAllocationBps = Number((packed >> SHIFT_FLOOR_ALLOC) & UINT24_MASK);
   let initialSnipeTaxBps = Number((packed >> SHIFT_INITIAL_SNIPE_TAX) & UINT16_MASK);
   if (initialSnipeTaxBps === 0 && antiSnipe) initialSnipeTaxBps = 5000;
@@ -237,6 +240,9 @@ export function unpackLaunchBitmask(packed: bigint): UnpackedBitmask {
             : undefined,
       holderAirdropMcapUsd: 0,
       creatorShareToHook,
+      hookToCreator,
+      hookToCreatorPct:
+        hookToCreatorBps === 0 ? 100 : Math.max(1, Math.round(hookToCreatorBps / 100)),
     },
   };
 }

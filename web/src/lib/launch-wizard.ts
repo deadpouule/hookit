@@ -20,9 +20,9 @@ export const MASTER_WIZARD_STEP_SUBTITLES: Record<
 > = {
   1: null,
   2: "Shield your launch. Block bots, limit trade size, and limit wallet holdings.",
-  3: "Long-term token mechanics. Burns, floor, vesting, LP rewards, and holder airdrops. Buyback Vesting can't combine with Creator → Hook.",
-  4: `Tune swap fees. Pick dynamic volume pricing or a fixed hook tax. Creator → Hook and Buyback Vesting can't both take the ${CREATOR_CUT_PCT}% creator cut.`,
-  5: "Configure how much of each swap goes to your hook modules.",
+  3: "Long-term token mechanics. Burns, floor, vesting, LP rewards, holder airdrops, and Hook → Creator. Buyback Vesting can't combine with Creator → Hook.",
+  4: `Tune swap fees. Pick dynamic volume pricing or a fixed hook tax. A tax needs a 100% destination (Hook → Creator, burn, floor, Deepen LPs, or airdrop). Creator → Hook and Buyback Vesting can't both take the ${CREATOR_CUT_PCT}% creator cut.`,
+  5: "Configure how much of each swap goes to your hook modules. Shares must add to 100%.",
   6: "Review your token and launch when ready.",
 };
 
@@ -32,7 +32,7 @@ export const MASTER_WIZARD_STEP_INTRO =
 /** Hook groups per wizard step (Master launch). */
 export const LAUNCH_WIZARD_HOOK_IDS: Record<2 | 3 | 4, MasterHookId[]> = {
   2: ["anti-mev", "anti-snipe", "max-tx"],
-  3: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps"],
+  3: ["holder-airdrop", "auto-burn", "backed-floor", "buyback-vesting", "deepen-lps", "hook-to-creator"],
   4: ["dynamic-fees", "creator-share-to-hook"],
 };
 
@@ -41,6 +41,7 @@ const FEE_ROUTE_HOOK: Record<FeeRouteKey, MasterHookId> = {
   autoBurnPct: "auto-burn",
   deepenLpsPct: "deepen-lps",
   holderAirdropPct: "holder-airdrop",
+  hookToCreatorPct: "hook-to-creator",
 };
 
 export function formatEnglishList(items: string[]): string {

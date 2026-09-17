@@ -65,7 +65,9 @@ contract FeeDistributionTest is Test {
             dynamicFeeMinTotalBps: 150,
             dynamicFeeRampUp: true,
             dynamicFeeDepthSaturationBps: 10_000,
-            holderAirdropEpochSeconds: 900
+            holderAirdropEpochSeconds: 900,
+            hookToCreator: false,
+            hookToCreatorBps: 0
         });
         uint256 packed = BitmaskConfig.pack(m);
         BitmaskConfig.Modules memory out = BitmaskConfig.unpack(packed);
@@ -99,6 +101,13 @@ contract FeeDistributionTest is Test {
     function testFeeRouteIncomplete() public {
         BitmaskConfig.Modules memory m;
         m.hookTaxBps = 200;
+        vm.expectRevert(BitmaskConfig.FeeRouteIncomplete.selector);
+        this.packModules(m);
+    }
+
+    function testFeeRouteIncompletePartialSinks() public {
+        BitmaskConfig.Modules memory m;
+        m.hookTaxBps = 200;
         m.backedFloor = true;
         m.autoBurn = true;
         m.floorAllocationBps = 4_000;
@@ -125,6 +134,8 @@ contract FeeDistributionTest is Test {
         m.antiSnipe = true;
         m.initialSnipeTaxBps = 9_900;
         m.hookTaxBps = 100;
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         vm.expectRevert(BitmaskConfig.OpenFeeTooHigh.selector);
         this.packModules(m);
     }

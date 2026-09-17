@@ -84,7 +84,7 @@ library FeeSplitLib {
             hktShare = 0;
         }
         // floorCut temporarily holds the hook pot before module cuts are applied.
-        // Unrouted hook tax later vests, pays the creator, or (allocation-sink dust) protocol.
+        // Allocation sinks (including Hook → Creator) take the pot. Dust stays with protocol.
         r.creatorEscrowAmt = creatorShare;
         r.hktShare = hktShare;
         r.protocolShare = protocolFromBase;
@@ -148,17 +148,24 @@ library FeeSplitLib {
         uint256 airdropCut = packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED)
             ? FixedPointMath.applyBps(hookPot, packed.holderAirdropBps())
             : 0;
+        uint256 creatorCut = packed.enabled(BitmaskConfig.HOOK_TO_CREATOR_ENABLED)
+            ? FixedPointMath.applyBps(hookPot, packed.hookToCreatorBps())
+            : 0;
 
-        uint256 routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut;
+        uint256 routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut + creatorCut;
         if (routed > hookPot) {
-            airdropCut = 0;
-            routed = floorCut + autoBurnCut + deepenLpsCut;
+            creatorCut = 0;
+            routed = floorCut + autoBurnCut + deepenLpsCut + airdropCut;
             if (routed > hookPot) {
-                deepenLpsCut = 0;
-                routed = floorCut + autoBurnCut;
+                airdropCut = 0;
+                routed = floorCut + autoBurnCut + deepenLpsCut;
                 if (routed > hookPot) {
-                    autoBurnCut = 0;
-                    routed = floorCut;
+                    deepenLpsCut = 0;
+                    routed = floorCut + autoBurnCut;
+                    if (routed > hookPot) {
+                        autoBurnCut = 0;
+                        routed = floorCut;
+                    }
                 }
             }
         }
@@ -170,21 +177,23 @@ library FeeSplitLib {
 
         uint256 unrouted = hookPot - routed;
         if (unrouted > 0) {
-            bool anyAllocationSink = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
-                || packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED) || packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
-                || packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED);
-            if (anyAllocationSink) {
-                // Rounding dust on a 100% route stays with protocol, same as before.
-                r.protocolShare += unrouted;
+            // Rounding dust on a 100% route stays with protocol.
+            r.protocolShare += unrouted;
+        }
+
+        if (creatorCut > 0) {
+            if (token == t.distributor.nativeToken() && t.distributor.nativeToken() != address(0)) {
+                r.buybackAmt += creatorCut;
+                _fund(manager, quote, address(t.distributor), creatorCut, fromPoolClaims);
+                t.distributor.notifyBuybackInternal(quote, creatorCut);
             } else if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED)) {
-                // Vesting is a sink: Fixed/Dynamic tax vests with the creator's 60%.
-                r.buybackAmt += unrouted;
-                _fund(manager, quote, address(t.buybacks), unrouted, fromPoolClaims);
-                t.buybacks.creditInternal(creator, token, quote, unrouted, packed.buybackVestingDurationSeconds());
+                r.buybackAmt += creatorCut;
+                _fund(manager, quote, address(t.buybacks), creatorCut, fromPoolClaims);
+                t.buybacks.creditInternal(creator, token, quote, creatorCut, packed.buybackVestingDurationSeconds());
             } else {
-                r.creatorEscrowAmt += unrouted;
-                _fund(manager, quote, address(t.escrow), unrouted, fromPoolClaims);
-                t.escrow.creditInternal(creator, quote, unrouted);
+                r.creatorEscrowAmt += creatorCut;
+                _fund(manager, quote, address(t.escrow), creatorCut, fromPoolClaims);
+                t.escrow.creditInternal(creator, quote, creatorCut);
             }
         }
 

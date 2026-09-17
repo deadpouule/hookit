@@ -17,6 +17,7 @@ test("hooks page order: airdrop / deepen / burn swapped to the front slots", () 
       "anti-mev",
       "max-tx",
       "anti-snipe",
+      "hook-to-creator",
       "creator-share-to-hook",
     ],
   );
@@ -32,6 +33,7 @@ test("hooks page order: airdrop / deepen / burn swapped to the front slots", () 
       "anti-mev",
       "max-tx",
       "anti-snipe",
+      "hook-to-creator",
       "creator-share-to-hook",
     ],
   );

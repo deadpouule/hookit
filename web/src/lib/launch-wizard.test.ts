@@ -29,7 +29,7 @@ test("masterHookWizardStep maps tokenomics before trading fees", () => {
   assert.equal(masterHookWizardStep("buyback-vesting"), 3);
   assert.equal(masterHookWizardStep("dynamic-fees"), 4);
   assert.equal(masterHookWizardStep("fixed-fee"), 4);
-  assert.equal(masterHookWizardStep("anti-snipe"), 2);
+  assert.equal(masterHookWizardStep("hook-to-creator"), 3);
 });
 
 test("formatEnglishList joins hook titles", () => {
@@ -59,9 +59,10 @@ test("feeSplitStepSubtitle lists only enabled fee-route hooks", () => {
     backedFloor: true,
     deepenLps: true,
     holderAirdrop: true,
+    hookToCreator: true,
   });
   assert.equal(
     allRoutes,
-    "Configure how much of each swap goes to Backed Floor, Auto-Burn, Deepen LPs, and Holder Airdrop.",
+    "Configure how much of each swap goes to Backed Floor, Auto-Burn, Deepen LPs, Holder Airdrop, and Hook → Creator.",
   );
 });

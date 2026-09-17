@@ -15,6 +15,7 @@ import {
   getFeeRouteValue,
   hookPotBps,
   listEnabledFeeRoutes,
+  rebalanceFeeRoutes,
   setFeeRouteShare,
   type FeeRouteKey,
 } from "@/lib/hook-fee-route";
@@ -27,6 +28,7 @@ const ROUTE_HOOK: Record<FeeRouteKey, MasterHookId> = {
   autoBurnPct: "auto-burn",
   deepenLpsPct: "deepen-lps",
   holderAirdropPct: "holder-airdrop",
+  hookToCreatorPct: "hook-to-creator",
 };
 
 function swapPctLabel(bps: number): string {
@@ -80,7 +82,12 @@ export function FeeSplitStep({
         receive the launched token, pro-rata.
       </p>
 
-      {potBps > 0 ? (
+      {potBps > 0 && routes.length === 0 ? (
+        <p className="pick-config-hint pick-config-hint--warn" style={{ marginTop: 0 }}>
+          You must pick a 100% destination for this tax. Turn on Hook → Creator, Auto-Burn, Backed
+          Floor, Deepen LPs, or Holder Airdrop.
+        </p>
+      ) : potBps > 0 ? (
         <p className="pick-config-hint pick-config-hint--swap" style={{ marginTop: 0 }}>
           Hook pot to split: {swapPctLabel(potBps)} of each swap
           {modules.creatorShareToHook
@@ -96,9 +103,7 @@ export function FeeSplitStep({
         </p>
       ) : (
         <p className="pick-config-hint" style={{ marginTop: 0 }}>
-          {modules.buybackVesting
-            ? "No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax vests with Buyback Vesting."
-            : "No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax is paid to the creator."}
+          No extra hook tax. Add Fixed or Dynamic Fees, or Creator → Hook, if you want a pot to split.
         </p>
       )}
 
@@ -157,12 +162,24 @@ export function FeeSplitStep({
             </p>
           ) : null}
         </div>
+      ) : potBps > 0 ? (
+        <button
+          type="button"
+          className="pick-config-hint pick-config-hint--swap"
+          style={{ marginTop: 0, textAlign: "left" }}
+          onClick={() => {
+            const next = { ...modules, hookToCreator: true, hookToCreatorPct: 100 };
+            onUpdate({ hookToCreator: true, ...rebalanceFeeRoutes(next) });
+          }}
+        >
+          Send 100% to Hook → Creator
+        </button>
       ) : null}
 
       {modules.buybackVesting ? (
         <p className="pick-config-hint pick-config-hint--swap">
-          Buyback vesting takes the creator cut separately. {swapPctLabel(creatorCutBps)} of each
-          swap vests to you, not this split.
+          Buyback vesting takes the {swapPctLabel(creatorCutBps)} creator cut of the 1% separately.
+          Hook → Creator still splits this pot, and that slice vests too.
         </p>
       ) : null}
     </div>

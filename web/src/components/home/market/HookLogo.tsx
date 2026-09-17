@@ -151,6 +151,14 @@ function Glyph({ id }: { id: BrowseHookId }) {
           <path d="M12 3.85v1.7" stroke={stroke} strokeWidth="1.55" strokeLinecap="round" />
         </svg>
       );
+    case "hook-to-creator":
+      return (
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3.4v10.2" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M8.2 10.4 12 14.2 15.8 10.4" stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="12" cy="18.4" r="3.1" stroke={stroke} strokeWidth="1.7" />
+        </svg>
+      );
     case "fixed-fee":
       return (
         <svg viewBox="0 0 24 24" fill="none">
