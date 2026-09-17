@@ -1008,16 +1008,16 @@
   }
 
   .pick-card--ember:hover {
-    border-color: rgb(249 115 22 / 0.45);
+    border-color: rgb(255 77 0 / 0.6);
   }
 
   .pick-card--ember.is-on {
-    border-color: #f97316;
-    box-shadow: 0 0 0 1px #f97316, 0 0 20px rgb(249 115 22 / 0.38);
+    border-color: #ff4d00;
+    box-shadow: 0 0 0 1px #ff4d00, 0 0 24px rgb(255 77 0 / 0.55);
   }
 
   .pick-card--ember.is-on .pick-card-title {
-    color: #fed7aa;
+    color: #ffb380;
   }
 
   .pick-card--rose:hover {
@@ -1216,7 +1216,7 @@
   .hook-logo--nature { color: #10b981; }
   .hook-logo--volt { color: #03b1ed; }
   .hook-logo--ice { color: #38bdf8; }
-  .hook-logo--ember { color: #f97316; }
+  .hook-logo--ember { color: #ff4d00; }
   .hook-logo--rose { color: #f43f5e; }
   .hook-logo--steel { color: #6366f1; }
   .hook-logo--crimson { color: #dc2626; }
@@ -1867,15 +1867,15 @@
   }
 
   .token-hooks-vault-field--ember {
-    border-color: rgb(249 115 22 / 0.28);
+    border-color: rgb(255 77 0 / 0.4);
   }
 
   .token-hooks-vault-field--ember:hover,
   .token-hooks-vault-field--ember:focus-within {
-    border-color: rgb(249 115 22 / 0.6);
+    border-color: rgb(255 77 0 / 0.75);
     box-shadow:
-      0 0 10px rgb(249 115 22 / 0.35),
-      inset 0 0 14px rgb(249 115 22 / 0.06);
+      0 0 12px rgb(255 77 0 / 0.5),
+      inset 0 0 14px rgb(255 77 0 / 0.1);
   }
 
   .token-hooks-vault-field--rose {
@@ -2295,7 +2295,7 @@
   }
 
   .token-hooks-meter-fill--ember {
-    background: linear-gradient(90deg, #f97316, #fb923c);
+    background: linear-gradient(90deg, #ff4d00, #ff8533);
   }
 
   .token-hooks-meter-fill--rose {
@@ -2365,8 +2365,8 @@
   }
 
   .pick-config--ember.pick-config--focused {
-    border-color: rgb(249 115 22 / 0.45);
-    box-shadow: 0 0 0 1px rgb(249 115 22 / 0.25), 0 0 24px rgb(249 115 22 / 0.12);
+    border-color: rgb(255 77 0 / 0.6);
+    box-shadow: 0 0 0 1px rgb(255 77 0 / 0.35), 0 0 28px rgb(255 77 0 / 0.22);
   }
 
   .pick-config--rose.pick-config--focused {
@@ -6084,8 +6084,8 @@
   }
 
   .orb-card--ember:hover {
-    border-color: #f97316;
-    box-shadow: 0 0 15px rgb(249 115 22 / 0.5);
+    border-color: #ff4d00;
+    box-shadow: 0 0 18px rgb(255 77 0 / 0.65);
   }
 
   .orb-card--rose:hover {
@@ -6359,7 +6359,7 @@
   }
 
   .ascii-shape--ember {
-    background-image: linear-gradient(160deg, #ffedd5, #fdba74, #f97316, #9a3412, #fdba74);
+    background-image: linear-gradient(160deg, #ffe0cc, #ff8a3d, #ff4d00, #7a1f00, #ff8a3d);
   }
 
   .ascii-shape--rose {
@@ -6448,7 +6448,7 @@
   .pick-card:hover .ascii-shape--ember,
   .pick-card.is-on .ascii-shape--ember,
   .ascii-shape--hot.ascii-shape--ember {
-    filter: drop-shadow(0 0 12px rgb(249 115 22 / 0.8));
+    filter: drop-shadow(0 0 14px rgb(255 77 0 / 0.95));
   }
 
   .orb-card:hover .ascii-shape--rose,
@@ -6585,9 +6585,9 @@
   }
 
   .orb-hook-desc-badge--ember {
-    border-color: rgb(249 115 22 / 0.45);
-    background: rgb(249 115 22 / 0.14);
-    color: #fdba74;
+    border-color: rgb(255 77 0 / 0.55);
+    background: rgb(255 77 0 / 0.18);
+    color: #ffb380;
   }
 
   .orb-hook-desc-badge--rose {
@@ -9512,10 +9512,10 @@
   }
 
   .hero-hook-card.is-on.hero-hook-card--ember {
-    border-color: #f97316;
+    border-color: #ff4d00;
     box-shadow:
-      0 0 0 1px #f97316,
-      0 0 40px -10px rgb(249 115 22 / 0.4);
+      0 0 0 1px #ff4d00,
+      0 0 44px -8px rgb(255 77 0 / 0.55);
   }
 
   .hero-hook-card.is-on.hero-hook-card--rose {
@@ -11252,7 +11252,7 @@ h2.docs-hook-heading {
 .docs-hkt-schema-hook .hook-logo--crimson { color: #dc2626; }
 .docs-hkt-schema-hook .hook-logo--nature { color: #10b981; }
 .docs-hkt-schema-hook .hook-logo--steel { color: #6366f1; }
-.docs-hkt-schema-hook .hook-logo--ember { color: #f97316; }
+.docs-hkt-schema-hook .hook-logo--ember { color: #ff4d00; }
 .docs-hkt-schema-hook .hook-logo--ice { color: #38bdf8; }
 .docs-hkt-schema-hook .hook-logo--fire { color: #ff0050; }
 .docs-hkt-schema-hook .hook-logo--lime { color: #84cc16; }

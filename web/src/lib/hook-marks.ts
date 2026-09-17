@@ -70,8 +70,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Dynamic Fees",
     short: "Dyn Fees",
     hint: "Volatility-adjusted LP fee flag",
-    color: "#f97316",
-    glow: "rgba(249,115,22,0.4)",
+    color: "#ff4d00",
+    glow: "rgba(255,77,0,0.55)",
   },
   buybackVesting: {
     id: "buybackVesting",

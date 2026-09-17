@@ -689,8 +689,8 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             <HookMark hookId="dynamic-fees" theme="ember" />
             <Spark
               d="M16 96 L16 96 C 70 94, 120 88, 170 70 C 230 48, 280 28, 344 18 L 344 110 L 16 110 Z"
-              fill="rgb(249 115 22 / 0.18)"
-              stroke="#f97316"
+              fill="rgb(255 77 0 / 0.2)"
+              stroke="#ff4d00"
               labels={[
                 { x: 16, y: 88, text: "τ_min 1%" },
                 { x: 288, y: 16, text: "τ_max 9%" },

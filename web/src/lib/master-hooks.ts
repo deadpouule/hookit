@@ -61,7 +61,7 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   nature: "#10b981",
   volt: "#03b1ed",
   ice: "#38bdf8",
-  ember: "#f97316",
+  ember: "#ff4d00",
   rose: "#f43f5e",
   steel: "#6366f1",
   crimson: "#dc2626",
