@@ -38,8 +38,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Backed Floor",
     short: "Floor",
     hint: "More volume, higher floor",
-    color: "#4e561a",
-    glow: "rgba(78,86,26,0.5)",
+    color: "#713600",
+    glow: "rgba(113,54,0,0.5)",
   },
   antiMev: {
     id: "antiMev",
@@ -70,8 +70,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Dynamic Fees",
     short: "Dyn Fees",
     hint: "Volatility-adjusted LP fee flag",
-    color: "#f97316",
-    glow: "rgba(249,115,22,0.4)",
+    color: "#ff4d00",
+    glow: "rgba(255,77,0,0.55)",
   },
   buybackVesting: {
     id: "buybackVesting",

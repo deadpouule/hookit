@@ -185,7 +185,7 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
 
 test("hook figures use real diagrams plus worked examples, not 01-04 cards", () => {
   const visuals = readFileSync(new URL("../components/docs/DocsVisuals.tsx", import.meta.url), "utf8");
-  assert.match(visuals, /#f97316/);
+  assert.match(visuals, /#ff4d00/);
   assert.match(visuals, /theme="ember"/);
   assert.match(visuals, /50 such buys/);
   assert.match(visuals, /After burns/);
