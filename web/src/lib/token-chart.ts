@@ -519,7 +519,9 @@ export const CHART_FIT_PAD_BARS = 8;
  * Bars in the opening window. Defined (TradingView `timeframe`) always uses 72
  * slots, even on a token that is only a few hours old — empty time stays empty.
  */
-export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowSec?: number): number {
+export function chartWindowBars(bucketSec?: number, _launchedAt?: number, _nowSec?: number): number {
+  if (bucketSec === 60) return 360;
+  if (bucketSec === 300) return 120;
   return CHART_WINDOW_BARS;
 }
 
@@ -529,38 +531,41 @@ export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowS
  * Pass the first real index inside the last 72 so a quiet 5m does not stay
  * squeezed at 10px — scroll left for earlier session.
  */
-export function chartFitWindowBars(tapeLength: number, anchorIndex = 0): number {
-  if (tapeLength <= 0) return CHART_WINDOW_BARS;
+export function chartFitWindowBars(
+  tapeLength: number,
+  anchorIndex = 0,
+  maxWindow = CHART_WINDOW_BARS,
+): number {
+  if (tapeLength <= 0) return maxWindow;
   const idx = Math.min(Math.max(anchorIndex, 0), tapeLength - 1);
   const fromFirst = tapeLength - idx;
   const padded = Math.max(CHART_MIN_VISIBLE_BARS, fromFirst + CHART_FIT_PAD_BARS);
-  return Math.min(padded, CHART_WINDOW_BARS);
+  return Math.min(padded, Math.max(maxWindow, 1));
 }
 
 /** First real candle to pin Defined auto-zoom. Sparse 15m/5m tapes zoom to the
  * latest prints instead of squeezing the whole session into 1px specks. */
-export function chartFitFirstRealIndex(bars: ChartBar[]): number {
+export function chartFitFirstRealIndex(bars: ChartBar[], windowBars = CHART_WINDOW_BARS): number {
   if (bars.length === 0) return 0;
   const last = bars.length - 1;
-  const start72 = Math.max(0, last - CHART_WINDOW_BARS + 1);
+  const traded: number[] = [];
+  for (let i = 0; i <= last; i++) {
+    if (!isWhitespaceBar(bars[i]!) && bars[i]!.volume > 0) traded.push(i);
+  }
+  if (traded.length > 0 && traded.length <= 16) return traded[0]!;
+  const start = Math.max(0, last - Math.max(windowBars, 1) + 1);
   let reals = 0;
-  let first72 = -1;
+  let first = -1;
   let lastReal = -1;
-  for (let i = start72; i <= last; i++) {
+  for (let i = start; i <= last; i++) {
     if (isWhitespaceBar(bars[i]!)) continue;
-    if (first72 < 0) first72 = i;
+    if (first < 0) first = i;
     lastReal = i;
     reals++;
   }
-  if (lastReal < 0) return start72;
-  if (reals <= 6) {
-    for (let i = last; i >= start72; i--) {
-      const bar = bars[i]!;
-      if (!isWhitespaceBar(bar) && bar.volume > 0) return i;
-    }
-    return lastReal;
-  }
-  return first72;
+  if (lastReal < 0) return start;
+  if (reals <= 6) return traded[traded.length - 1] ?? lastReal;
+  return first;
 }
 
 /** Inclusive logical indexes for the pane, falling back to the last 72 slots. */

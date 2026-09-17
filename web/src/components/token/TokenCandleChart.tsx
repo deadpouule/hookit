@@ -234,7 +234,7 @@ export function TokenCandleChart({
         liveFx > 0 && fx.length > 0
           ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx), bucket)
           : linkBarOpens(current, bucket);
-      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
+      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars(bucket));
     },
     [source, swaps, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
@@ -245,7 +245,7 @@ export function TokenCandleChart({
   const hasData = realBars.length > 0;
   const bucketSec = intervalBucketSec(interval, spanSec);
   const anchorIndex = chartFitAnchorIndex(bars);
-  const windowBars = chartWindowBars();
+  const windowBars = chartWindowBars(bucketSec);
   const open = realBars[0]?.open ?? 0;
   const close = realBars.length ? realBars[realBars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);

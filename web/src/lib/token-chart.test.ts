@@ -281,12 +281,11 @@ test("visibleCandleOhlc gives a single print a small body", () => {
   assert.equal(real.high, 110);
 });
 
-test("opening window is always 72 bars, like Defined Codex", () => {
-  const now = 1_800_000_000;
-  assert.equal(chartWindowBars(300, undefined, now), CHART_WINDOW_BARS);
-  assert.equal(chartWindowBars(300, now - 14, now), CHART_WINDOW_BARS);
-  assert.equal(chartWindowBars(300, now - 40 * 300, now), CHART_WINDOW_BARS);
-  assert.equal(chartWindowBars(300, now - 10_000 * 300, now), CHART_WINDOW_BARS);
+test("opening window is wider on 1m/5m so thin books keep their spikes", () => {
+  assert.equal(chartWindowBars(60), 360);
+  assert.equal(chartWindowBars(300), 120);
+  assert.equal(chartWindowBars(900), CHART_WINDOW_BARS);
+  assert.equal(chartWindowBars(), CHART_WINDOW_BARS);
 });
 
 test("candles stretch a 72-bar Defined window across the pane", () => {
@@ -720,8 +719,8 @@ test("quiet 15m auto-fit ignores morning empties and zooms the last prints", () 
     whitespace: i !== 0 && i !== 51,
   }));
   const first = chartFitFirstRealIndex(tape);
-  assert.equal(first, 51);
-  assert.equal(chartFitWindowBars(tape.length, first), CHART_MIN_VISIBLE_BARS);
+  assert.equal(first, 0);
+  assert.equal(chartFitWindowBars(tape.length, first), 52 + CHART_FIT_PAD_BARS);
 });
 
 test("Defined auto-fit zooms into two hourly prints instead of 72 empty hours", () => {

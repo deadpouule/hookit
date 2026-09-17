@@ -195,7 +195,11 @@ function fitChartView(
   if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const fittedWindow = chartFitWindowBars(bars.length, chartFitFirstRealIndex(bars));
+  const fittedWindow = chartFitWindowBars(
+    bars.length,
+    chartFitFirstRealIndex(bars, _windowBars),
+    _windowBars,
+  );
   const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, fittedWindow);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
