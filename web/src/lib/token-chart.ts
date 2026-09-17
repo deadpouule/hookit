@@ -23,6 +23,77 @@ export type ChartBar = {
   whitespace?: boolean;
 };
 
+export interface RawTrade {
+  timestamp: number; // unix seconds
+  priceUsd: number;
+  volumeUsd: number;
+}
+
+export interface OhlcBar {
+  time: number; // unix seconds
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+/**
+ * Strict bucket discretization + AllonSol forward-fill.
+ * Quiet windows copy the previous close as a flat doji (O=H=L=C, volume=0).
+ */
+export function buildContinuousOhlcv(
+  trades: RawTrade[],
+  intervalSeconds: number,
+  startTime: number,
+  endTime: number,
+  fallbackPrice: number,
+): OhlcBar[] {
+  if (!(intervalSeconds > 0)) return [];
+  const buckets = new Map<number, RawTrade[]>();
+  for (const trade of trades) {
+    if (!(trade.timestamp > 0) || !(trade.priceUsd > 0)) continue;
+    const bTime = Math.floor(trade.timestamp / intervalSeconds) * intervalSeconds;
+    const list = buckets.get(bTime);
+    if (list) list.push(trade);
+    else buckets.set(bTime, [trade]);
+  }
+  for (const list of buckets.values()) {
+    list.sort((a, b) => a.timestamp - b.timestamp);
+  }
+  const result: OhlcBar[] = [];
+  const startBucket = Math.floor(startTime / intervalSeconds) * intervalSeconds;
+  const endBucket = Math.floor(endTime / intervalSeconds) * intervalSeconds;
+  let lastClose = fallbackPrice;
+  for (let t = startBucket; t <= endBucket; t += intervalSeconds) {
+    const bucketTrades = buckets.get(t);
+    if (bucketTrades && bucketTrades.length > 0) {
+      const open = bucketTrades[0]!.priceUsd;
+      let high = open;
+      let low = open;
+      let volume = 0;
+      for (const tr of bucketTrades) {
+        if (tr.priceUsd > high) high = tr.priceUsd;
+        if (tr.priceUsd < low) low = tr.priceUsd;
+        volume += tr.volumeUsd > 0 ? tr.volumeUsd : 0;
+      }
+      const close = bucketTrades[bucketTrades.length - 1]!.priceUsd;
+      lastClose = close;
+      result.push({ time: t, open, high, low, close, volume });
+    } else {
+      result.push({
+        time: t,
+        open: lastClose,
+        high: lastClose,
+        low: lastClose,
+        close: lastClose,
+        volume: 0,
+      });
+    }
+  }
+  return result;
+}
+
 const INTERVAL_BUCKET_SEC: Record<Exclude<ChartInterval, "ALL">, number> = {
   "1m": 60,
   "5m": 300,
@@ -217,8 +288,11 @@ export function chartRenderableCandle(
   _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  // In-progress / last-candle bucket with no prints yet: thin dash, not a fake body.
-  if (!isTradedBar(bar)) return flatFdvCandleOhlc(bar);
+  // Quiet minutes: true AllonSol doji (O=H=L=C) — a horizontal dash, not a fake wick.
+  if (!isTradedBar(bar)) {
+    const px = bar.close || bar.open;
+    return { open: px, high: px, low: px, close: px };
+  }
   const high = Math.max(bar.high, bar.open, bar.close);
   const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
   return {
@@ -507,7 +581,10 @@ export const CHART_WINDOW_BARS = 72;
 export const CHART_MIN_WINDOW_BARS = 72;
 /** TV default `rightOffset` — room for the last-value tag after the last candle. */
 export const CHART_RIGHT_OFFSET = 5;
-export const CHART_MIN_BAR_SPACING = 1;
+export const CHART_MIN_BAR_SPACING = 4;
+/** Lightweight Charts price precision for micro-caps (0.00005010). */
+export const CHART_PRICE_DECIMALS = 8;
+export const CHART_PRICE_MIN_MOVE = 1e-8;
 /** Cap candle width — TradingView rarely exceeds ~32px even on young tokens. */
 export const CHART_MAX_BAR_SPACING = 32;
 /** Defined "auto" — hug a quiet tape so 2–4 prints stay fat, like Codex 5m. */
@@ -650,9 +727,9 @@ export function chartVisibleLogicalRange(
   return { from: to - visible, to, barSpacing };
 }
 
-/** TradingView pane: headroom above/below the FDV series (no volume dock). */
-export const CHART_SCALE_MARGIN_TOP = 0.12;
-export const CHART_SCALE_MARGIN_BOTTOM = 0.08;
+/** TradingView pane: 16% headroom so micro-moves do not crush against the rails. */
+export const CHART_SCALE_MARGIN_TOP = 0.16;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.16;
 export const CHART_VOLUME_MARGIN_TOP = 0.84;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 
@@ -688,7 +765,7 @@ export function chartPriceBand(
   const mid = (lo0 + hi0) / 2;
   if (!(mid > 0)) return null;
   const span = hi0 - lo0;
-  const pad = span > 0 ? span * 0.1 : mid * 0.02;
+  const pad = span > 0 ? span * 0.18 : mid * 0.04;
   if (span > 0) {
     return { minValue: Math.max(lo0 - pad, 0), maxValue: hi0 + pad };
   }

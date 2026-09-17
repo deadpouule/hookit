@@ -71,6 +71,35 @@ function quoteDecimalsForTrade(row: TokenRow, poolId?: string): number {
   return row.quoteDecimals || 18;
 }
 
+/** AllonSol forward-fill: empty buckets copy the previous close as a flat doji. */
+export function forwardFillCandles(candles: Candle[], bucketSec: number): Candle[] {
+  if (candles.length === 0 || !(bucketSec > 0)) return candles;
+  const sorted = [...candles].sort((a, b) => a.t - b.t);
+  const start = Math.floor(sorted[0]!.t / bucketSec) * bucketSec;
+  const end = Math.floor(sorted[sorted.length - 1]!.t / bucketSec) * bucketSec;
+  const byTime = new Map(sorted.map((c) => [Math.floor(c.t / bucketSec) * bucketSec, c]));
+  const out: Candle[] = [];
+  let prev = sorted[0]!;
+  for (let t = start; t <= end; t += bucketSec) {
+    const real = byTime.get(t);
+    if (real) {
+      out.push(real);
+      prev = real;
+      continue;
+    }
+    out.push({
+      t,
+      o: prev.c,
+      h: prev.c,
+      l: prev.c,
+      c: prev.c,
+      vQuote: "0",
+      trades: 0,
+    });
+  }
+  return out;
+}
+
 function rebuildCandles(trades: IndexedTrade[], bucketSec = CANDLE_SEC): Candle[] {
   const series: Candle[] = [];
   const sorted = [...trades].sort((a, b) => a.timestamp - b.timestamp);
@@ -579,6 +608,7 @@ export class Store {
   candles(token: Address, limit: number, poolId?: string, bucketSec = CANDLE_SEC): Candle[] {
     const row = this.getToken(token);
     if (!row) return [];
+    let series: Candle[];
     if (bucketSec !== CANDLE_SEC) {
       const key = poolId?.toLowerCase();
       const trades = row.trades.filter((t) => {
@@ -586,15 +616,15 @@ export class Store {
         if (key) return tradePool === key;
         return tradePool === row.poolId.toLowerCase();
       });
-      return rebuildCandles(trades, bucketSec).slice(-limit);
-    }
-    if (poolId) {
+      series = rebuildCandles(trades, bucketSec);
+    } else if (poolId) {
       const key = poolId.toLowerCase();
-      const series = row.candles5mByPool?.[key];
-      if (series?.length) return series.slice(-limit);
-      return this._candlesFromTrades(row, limit, key);
+      const stored = row.candles5mByPool?.[key];
+      series = stored?.length ? stored : this._candlesFromTrades(row, Number.MAX_SAFE_INTEGER, key);
+    } else {
+      series = row.candles5m;
     }
-    return row.candles5m.slice(-limit);
+    return forwardFillCandles(series, bucketSec).slice(-limit);
   }
 
   trades(token: Address, limit: number, offset = 0, poolId?: string): IndexedTrade[] {

@@ -164,6 +164,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         share: marketSharePct(m),
         quoteAddress: m.quoteAddress,
         quoteAsset: m.quoteAsset,
+        poolId: m.poolId,
       })),
     [markets],
   );
@@ -377,6 +378,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             quoteAddress={activePool.quoteAddress}
             quoteUsd={activePool.quoteUsd}
             marketLegs={multi ? marketLegs : undefined}
+            activePoolId={activePool.poolId}
             activeMarketIndex={marketIndex}
             onMarketIndex={multi ? setMarketIndex : undefined}
             onBeFirstBuy={beFirstBuy}

@@ -3,7 +3,7 @@ import test from "node:test";
 
 import type { Hex } from "viem";
 
-import { Store, scopeTradesToPool } from "./store.js";
+import { Store, forwardFillCandles, scopeTradesToPool } from "./store.js";
 import type { IndexedTrade } from "./config.js";
 
 const NVDA = "0x0e5d80af0cf88fbf428ca238fc86cd6e3178a042bf92d52aec17610211710b40" as Hex;
@@ -38,6 +38,24 @@ test("scopeTradesToPool: explicit poolId selects that market", () => {
   const scoped = scopeTradesToPool(trades, NVDA, 3, NFLX);
   assert.equal(scoped.length, 1);
   assert.equal(scoped[0]?.poolId, NFLX);
+});
+
+test("forwardFillCandles inserts flat dojis between distant 1m prints", () => {
+  const filled = forwardFillCandles(
+    [
+      { t: 960, o: "1e-8", h: "1.2e-8", l: "9e-9", c: "1.1e-8", vQuote: "12", trades: 1 },
+      { t: 1_140, o: "1.0e-8", h: "1.0e-8", l: "9.5e-9", c: "9.7e-9", vQuote: "8", trades: 1 },
+    ],
+    60,
+  );
+  assert.equal(filled.length, 4);
+  assert.equal(filled[1]!.t, 1_020);
+  assert.equal(filled[1]!.o, "1.1e-8");
+  assert.equal(filled[1]!.c, "1.1e-8");
+  assert.equal(filled[1]!.vQuote, "0");
+  assert.equal(filled[1]!.trades, 0);
+  assert.equal(filled[2]!.t, 1_080);
+  assert.equal(filled[3]!.c, "9.7e-9");
 });
 
 test("scopeTradesToPool: single-pair keeps every trade", () => {

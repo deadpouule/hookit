@@ -1350,13 +1350,13 @@ GET /v1/tokens
 GET /v1/tokens/:address?poolId=
 GET /v1/tokens/:address/trades?limit=50&offset=0&poolId=
 GET /v1/tokens/:address/holders?limit=50
-GET /v1/tokens/:address/candles?limit=200&poolId=&interval=5m|1m`,
+GET /v1/tokens/:address/candles?limit=200&poolId=&interval=1m|5m|10m|15m|1h`,
         },
         {
           type: "ul",
           items: [
             "Token summary includes markets[], marketCount, bondingPhase, realQuote, graduationQuote, hookModules, windows (5m/1h/6h/24h), and devBuy*.",
-            "Candles default 5m. Pass interval=1m for 60s buckets. Chart is mcap-based.",
+            "Candles default 5m. Pass interval=1m, 10m, 15m, or 1h. Empty buckets forward-fill the last close. Chart is mcap-based and scoped to poolId.",
             "/health exposes head, lagBlocks, lastPollError.",
             "On-chain: TokenLaunched, PoolManager Swap, bonding Bought / Sold / Graduated, StateView.getSlot0, LaunchToken.metadataURI.",
           ],
