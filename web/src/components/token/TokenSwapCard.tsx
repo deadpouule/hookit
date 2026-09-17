@@ -301,6 +301,20 @@ export function TokenSwapCard({
   const quotedReceive = onBonding ? bondingQuote.receiveAmount : poolSwapQuote.receiveAmount;
   const swapQuoteMeta = onBonding ? bondingQuote.quote : poolSwapQuote.quote;
 
+  useEffect(() => {
+    if (side !== "sell" || onBonding) return;
+    const used = swapQuoteMeta?.amountInUsed;
+    if (used == null || used <= 0n || !amount) return;
+    let requested: bigint;
+    try {
+      requested = parseUnits(amount.trim().replace(",", "."), payDecimals);
+    } catch {
+      return;
+    }
+    if (used >= requested || requested - used <= 1n) return;
+    setAmount(formatUnits(used, payDecimals));
+  }, [amount, onBonding, payDecimals, side, swapQuoteMeta?.amountInUsed]);
+
   const hasAmount = !!amount && Number(amount) > 0;
 
   const maxTxWarn = useMemo(() => {

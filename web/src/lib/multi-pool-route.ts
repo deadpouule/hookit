@@ -353,7 +353,11 @@ async function quoteEqualSplitOnLegs(
   amountIn: bigint,
   legs: MarketLeg[],
 ): Promise<BestSellLeg[] | null> {
-  if (legs.length < 2 || amountIn <= 0n) return null;
+  if (legs.length === 0 || amountIn <= 0n) return null;
+  if (legs.length === 1) {
+    const quoted = await quoteLeg(legs[0]!, amountIn);
+    return quoted ? [quoted] : null;
+  }
   const n = BigInt(legs.length);
   const slice = amountIn / n;
   if (slice <= 0n) return null;
@@ -367,7 +371,7 @@ async function quoteEqualSplitOnLegs(
   if (quoted.every((q): q is BestSellLeg => q != null)) return quoted;
 
   const working = legs.filter((_, i) => quoted[i] != null);
-  if (working.length >= 2 && working.length < legs.length) {
+  if (working.length >= 1 && working.length < legs.length) {
     return quoteEqualSplitOnLegs(quoteLeg, amountIn, working);
   }
   return null;
@@ -384,6 +388,32 @@ function splitSellPlan(
     routeLabel,
     bestSingle,
   };
+}
+
+export function planFilledIn(plan: BestSellPlan): bigint {
+  return plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
+}
+
+/** When a full dump reverts, probe 75% then 50% on every market in one round. */
+async function quoteLargestPartialClip(
+  quoteLeg: QuoteSellLeg,
+  amountIn: bigint,
+  legs: MarketLeg[],
+): Promise<BestSellLeg | null> {
+  const sizes = [(amountIn * 3n) / 4n, amountIn / 2n].filter(
+    (size) => size > 0n && size < amountIn,
+  );
+  if (sizes.length === 0 || legs.length === 0) return null;
+  const probed = await Promise.all(
+    sizes.flatMap((size) => legs.map((leg) => quoteLeg(leg, size))),
+  );
+  const ok = probed.filter((q): q is BestSellLeg => q != null);
+  if (ok.length === 0) return null;
+  ok.sort((a, b) => {
+    if (a.amountIn === b.amountIn) return a.amountOut > b.amountOut ? -1 : 1;
+    return a.amountIn > b.amountIn ? -1 : 1;
+  });
+  return ok[0] ?? null;
 }
 
 /**
@@ -456,6 +486,18 @@ export async function quoteBestSellPlan(
   }
 
   if (!splitToStable) return bestPlan;
+
+  if (!bestPlan) {
+    const partial = await quoteLargestPartialClip(quoteLeg, amountIn, legs);
+    if (partial) {
+      bestPlan = {
+        legs: [partial],
+        amountOut: partial.amountOut,
+        routeLabel: partial.routeLabel,
+        bestSingle: partial,
+      };
+    }
+  }
 
   // Two-pool 60/40-style clips can beat a 50/50. Skip the extra round-trips
   // when an equal split already covers three or more markets.

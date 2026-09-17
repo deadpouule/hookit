@@ -9,6 +9,7 @@ import {
 } from "@/lib/payment-assets";
 import { poolKeyForQuote, poolKeyFromLaunch } from "@/lib/pool-key";
 import {
+  planFilledIn,
   quoteBestBuyPlan,
   quoteBestSellPlan,
   shouldAggregateMultiBuy,
@@ -40,6 +41,8 @@ export type SwapQuoteDisplayMeta = {
   route: string;
   /** True when on-chain quoter failed and spot price was used. */
   estimated?: boolean;
+  /** Size actually routed. May be below the typed amount when MAX cannot fill. */
+  amountInUsed?: bigint;
 };
 
 export type PoolSwapQuoteMeta = SwapQuoteDisplayMeta & {
@@ -155,6 +158,7 @@ export async function quotePoolSwapWithMeta(
   let amountOut: bigint | null = null;
   let route = "·";
   let estimated = false;
+  let amountInUsed = amountIn;
   const payment = paymentAssetById(paymentId);
   const payDecimals =
     side === "buy" && payAsset ? payAsset.decimals : payment.decimals;
@@ -179,6 +183,8 @@ export async function quotePoolSwapWithMeta(
       if (plan) {
         amountOut = plan.amountOut;
         route = plan.routeLabel;
+        const filled = planFilledIn(plan);
+        if (filled > 0n) amountInUsed = filled;
       }
     }
 
@@ -279,5 +285,6 @@ export async function quotePoolSwapWithMeta(
     priceImpactPct: impact,
     route,
     estimated,
+    amountInUsed,
   };
 }

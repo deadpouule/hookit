@@ -246,6 +246,35 @@ test("sell aggregator still splits when every full-size dump reverts", async () 
   assert.match(plan.routeLabel, /Split equal/);
 });
 
+test("sell aggregator quotes a 50-75% clip when a full MAX dump reverts", async () => {
+  const stockC = INK_QUOTRON_STOCKS[2]!.address;
+  const stockD = INK_QUOTRON_STOCKS[3]!.address;
+  const quotes = [STOCK_A, STOCK_B, stockC, stockD];
+  const pool = poolFor(quotes);
+  const client = mockClient(
+    quotes.map(keyFor),
+    (key, amount) => {
+      if (isQuotronBridge(key)) return amount;
+      if (quoteSide(key).toLowerCase() !== STOCK_A.toLowerCase()) return null;
+      if (amount >= 1000n) return null;
+      return amount;
+    },
+  );
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.legs[0]!.amountIn, 750n);
+  assert.equal(plan.amountOut, 750n);
+});
+
 test("sell aggregator splits when smaller clips beat a single dump", async () => {
   const pool = poolFor([STOCK_A, STOCK_B]);
   const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {

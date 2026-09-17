@@ -57,6 +57,7 @@ import {
   sqrtLimit,
 } from "@/lib/v4-bridge";
 import {
+  planFilledIn,
   quoteBestBuyPlan,
   quoteBestSellPlan,
   shouldAggregateMultiBuy,
@@ -187,16 +188,17 @@ export function useSwapToken(pool: TokenPool) {
         ) {
           const legs = balancedSellLegsFromPlan(pool, plan, bps);
           if (legs.length > 0) {
+            const sellIn = planFilledIn(plan);
             const args = [
               launchId,
               token,
-              amountIn,
+              sellIn,
               balancedMinTotalOut(legs),
               legs,
               address,
               balancedDeadlineSec(),
             ] as const;
-            await ensureErc20Allowance(token, aggregator, amountIn);
+            await ensureErc20Allowance(token, aggregator, sellIn);
             let aggregatorReady = false;
             try {
               await publicClient.simulateContract({
@@ -226,16 +228,17 @@ export function useSwapToken(pool: TokenPool) {
           throw new Error("Split sell could not be simulated. Try a smaller amount.");
         }
         const best = plan?.bestSingle ?? plan?.legs[0];
+        const clip = best && best.amountIn > 0n ? best.amountIn : amountIn;
         if (best?.kind === "direct") {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
             (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-          await ensureErc20Allowance(token, router, amountIn);
+          await ensureErc20Allowance(token, router, clip);
           const hash = await writeContractAsync({
             address: router,
             abi: hookitSwapRouterAbi,
             functionName: "swapExactIn",
-            args: [best.hookKey, zeroForOne, amountIn, minOut, sqrtLimit(zeroForOne)],
+            args: [best.hookKey, zeroForOne, clip, minOut, sqrtLimit(zeroForOne)],
           });
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
@@ -250,7 +253,7 @@ export function useSwapToken(pool: TokenPool) {
           const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
             (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-          await ensureErc20Allowance(token, hookitRouter, amountIn);
+          await ensureErc20Allowance(token, hookitRouter, clip);
           const hash = await writeContractAsync({
             address: hookitRouter,
             abi: hookitSwapRouterAbi,
@@ -258,7 +261,7 @@ export function useSwapToken(pool: TokenPool) {
             args: [
               best.bridge.key,
               best.bridge.zeroForOne,
-              amountIn,
+              clip,
               best.hookKey,
               hookZeroForOne,
               best.marketQuote,

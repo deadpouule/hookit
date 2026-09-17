@@ -1,6 +1,6 @@
 "use client";
 
-import { formatUnits, parseEther, parseUnits, zeroAddress } from "viem";
+import { formatUnits, parseUnits, zeroAddress } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { useEffect, useState } from "react";
 
@@ -38,10 +38,7 @@ export function usePoolSwapQuote(opts: {
     const handle = window.setTimeout(() => {
       void (async () => {
         try {
-          const amountIn =
-            opts.decimalsIn === 18
-              ? parseEther(opts.amount)
-              : parseUnits(opts.amount, opts.decimalsIn);
+          const amountIn = parseUnits(opts.amount.trim().replace(",", "."), opts.decimalsIn);
 
           const result = await quotePoolSwapWithMeta(
             publicClient,
