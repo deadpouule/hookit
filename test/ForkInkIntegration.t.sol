@@ -237,7 +237,7 @@ contract ForkInkIntegrationTest is InkForkTestBase {
 
     function testFork_HookTaxGoesToCreator_WhenNoSinks() public onlyFork {
         BitmaskConfig.Modules memory m = _defaultModules();
-        m.hookTaxBps = 500; // 5% — no sinks → hook tax credited to the creator
+        m.hookTaxBps = 500; // 5% — no sinks (vesting off) → hook tax credited to the creator
         InkForkTestBase.LaunchResult memory l =
             _launch(creator, Currency.wrap(address(0)), m, 60, ProtocolConstants.DEFAULT_LAUNCH_SUPPLY, "Tax", "TAX");
         Currency quote = Currency.wrap(address(0));

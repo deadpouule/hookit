@@ -549,6 +549,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
               { k: "30-day vest, day 15", v: "$300 claimable. Linear. Dump later does not relock it." },
               { k: "Until $10M FDV", v: "$0 until mcap prints $10M, then the full $600." },
               { k: "By % rungs", v: "e.g. 25% at $10M, 25% at $50M, 50% at $100M." },
+              { k: "Plus Fixed 2%", v: "$2,000 more locked in the same vault. Not FeeEscrow." },
             ]}
           />
         </Figure>
@@ -645,7 +646,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             rows={[
               { k: "1 ETH buy", v: "Pays 1 ETH. Receives 0.97 ETH worth of tokens (0.01 base + 0.02 hook tax)." },
               { k: "10 × 1 ETH buys", v: "0.10 ETH base (60/10/30) + 0.20 ETH into the hook pot." },
-              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, or the creator if none are on." },
+              { k: "$1M volume", v: "$10k base + $20k hook tax. Tax funds modules, Buyback Vesting, or the creator if none are on." },
             ]}
           />
         </Figure>

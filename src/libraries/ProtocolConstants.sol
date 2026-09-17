@@ -13,7 +13,8 @@ library ProtocolConstants {
     /// @dev Split of the 1% base fee (+ snipe tax): 60% creator / 10% $HKT holders / 30% protocol.
     ///      The 10% buys the launched token and epoch-pushes it pro-rata to live $HKT holders.
     ///      Hook tax is separate and never enters this split. It funds Master hook modules
-    ///      when a sink is on; otherwise it is credited to the creator.
+    ///      when an allocation sink is on. Buyback Vesting is also a sink: unrouted tax
+    ///      credits BuybackVault. With no sink, it is credited to the creator.
     ///      Must sum to BPS_DENOMINATOR. Existing pools keep the old 70/30 until a hook cutover.
     uint16 internal constant CREATOR_SHARE_BPS = 6_000;
     uint16 internal constant HKT_HOLDER_SHARE_BPS = 1_000;

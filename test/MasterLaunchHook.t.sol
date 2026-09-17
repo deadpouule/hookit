@@ -112,6 +112,26 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertGt(creatorDelta, protoDelta);
     }
 
+    function testHookTaxVestsWhenBuybackVestingNoOtherSinks() public {
+        BitmaskConfig.Modules memory m = defaultModules();
+        m.buybackVesting = true;
+        m.buybackVestingDurationSeconds = uint32(30 days);
+        m.hookTaxBps = 500; // +5%
+        (, address token,, PoolKey memory key) = launchToken(m, 0, 1_000_000_000e18);
+
+        uint256 escrowBefore = escrow.balanceOf(address(this), Currency.wrap(address(0)));
+        uint256 protoBefore = distributor.pending(Currency.wrap(address(0)));
+        buyExactIn(key, 10 ether);
+
+        uint256 escrowDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - escrowBefore;
+        uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
+        (, uint128 streamed,,,) = buybacks.streams(address(this), token);
+        // 10 ETH * (0.60% creator cut + 5% tax) = 0.56 ETH into BuybackVault. Escrow stays empty.
+        assertEq(escrowDelta, 0);
+        assertApproxEqRel(streamed, 0.56 ether, 0.05e18);
+        assertLt(protoDelta, 0.05 ether);
+    }
+
     function testSellDuringSnipeSplitsWithoutSnipeTax() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.antiSnipe = true;
@@ -130,7 +150,7 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
 
         uint256 creatorDelta = escrow.balanceOf(address(this), Currency.wrap(address(0))) - creatorBefore;
         uint256 protoDelta = distributor.pending(Currency.wrap(address(0))) - protoBefore;
-        // Sell fee = base 1% + hook tax 1%. No sinks: hook tax is credited to the creator.
+        // Sell fee = base 1% + hook tax 1%. No allocation sink and no vest: tax → escrow.
         // Creator gets 60% of the 1% plus the full 1% tax; protocol only the 30% of base.
         assertGt(creatorDelta, 0);
         assertGt(creatorDelta, protoDelta);

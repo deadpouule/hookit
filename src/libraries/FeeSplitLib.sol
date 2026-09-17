@@ -84,7 +84,7 @@ library FeeSplitLib {
             hktShare = 0;
         }
         // floorCut temporarily holds the hook pot before module cuts are applied.
-        // Unrouted hook tax is credited to the creator later, not added to protocol.
+        // Unrouted hook tax later vests, pays the creator, or (allocation-sink dust) protocol.
         r.creatorEscrowAmt = creatorShare;
         r.hktShare = hktShare;
         r.protocolShare = protocolFromBase;
@@ -170,12 +170,17 @@ library FeeSplitLib {
 
         uint256 unrouted = hookPot - routed;
         if (unrouted > 0) {
-            bool anySink = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
+            bool anyAllocationSink = packed.enabled(BitmaskConfig.BACKED_FLOOR_ENABLED)
                 || packed.enabled(BitmaskConfig.AUTO_BURN_ENABLED) || packed.enabled(BitmaskConfig.DEEPEN_LPS_ENABLED)
                 || packed.enabled(BitmaskConfig.HOLDER_AIRDROP_ENABLED);
-            if (anySink) {
+            if (anyAllocationSink) {
                 // Rounding dust on a 100% route stays with protocol, same as before.
                 r.protocolShare += unrouted;
+            } else if (packed.enabled(BitmaskConfig.BUYBACK_VESTING_ENABLED)) {
+                // Vesting is a sink: Fixed/Dynamic tax vests with the creator's 60%.
+                r.buybackAmt += unrouted;
+                _fund(manager, quote, address(t.buybacks), unrouted, fromPoolClaims);
+                t.buybacks.creditInternal(creator, token, quote, unrouted, packed.buybackVestingDurationSeconds());
             } else {
                 r.creatorEscrowAmt += unrouted;
                 _fund(manager, quote, address(t.escrow), unrouted, fromPoolClaims);
