@@ -18,6 +18,7 @@ export type DocsSlug =
   | "auto-burn"
   | "buyback-vesting"
   | "holder-airdrop"
+  | "hook-to-creator"
   | "creator-share"
   | "fixed-fees"
   | "dynamic-fees"
@@ -101,7 +102,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "fees",
     href: "#fees",
     title: "Fees",
-    description: "1% base splits 60/10/30. Optional hook tax funds modules.",
+    description: "1% base splits 60/10/30. Hook tax needs a 100% destination.",
     group: "Protocol",
     keywords: "fee 60 10 30 hook tax hkt buyback",
   },
@@ -173,7 +174,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "buyback-vesting",
     href: "#buyback-vesting",
     title: "Buyback Vesting",
-    description: "Creator 60% of base vests on time or FDV.",
+    description: "Creator 60% of base vests on time or FDV. Hook → Creator slices vest too.",
     group: "Modules",
     keywords: "buyback vesting escrow fdv cliff vestpacked",
   },
@@ -184,6 +185,14 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     description: "Hook-pot quote paid pro-rata via ERC-6909 claims.",
     group: "Modules",
     keywords: "holder airdrop epoch quote vault claims",
+  },
+  {
+    slug: "hook-to-creator",
+    href: "#hook-to-creator",
+    title: "Hook → Creator",
+    description: "Share of the hook pot paid to the creator. Alone it is 100%.",
+    group: "Modules",
+    keywords: "hook to creator destination fee escrow vest",
   },
   {
     slug: "creator-share",
@@ -197,7 +206,7 @@ export const DOCS_PAGES: DocsPageMeta[] = [
     slug: "fixed-fees",
     href: "#fixed-fees",
     title: "Fixed Fees",
-    description: "Flat extra hook tax. Exclusive with Dynamic Fees.",
+    description: "Flat extra hook tax. Must pick a 100% destination.",
     group: "Modules",
     keywords: "fixed fees hook tax",
   },

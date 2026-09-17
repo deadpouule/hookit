@@ -68,6 +68,8 @@ contract BondingLaunchTest is Test, Deployers {
     function test_SteadyFeeCappedAt10Percent_MasterAndBonding() public {
         BitmaskConfig.Modules memory m;
         m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS; // 9% → total 10%
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
         BitmaskConfig.pack(m);
 
         m.hookTaxBps = ProtocolConstants.MAX_HOOK_TAX_BPS + 1;

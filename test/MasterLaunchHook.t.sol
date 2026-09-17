@@ -95,11 +95,15 @@ contract MasterLaunchHookTest is LaunchpadTestBase {
         assertEq(escrow.balanceOf(address(this), Currency.wrap(token)), 0);
     }
 
+    function packModules(BitmaskConfig.Modules memory m) public pure returns (uint256) {
+        return BitmaskConfig.pack(m);
+    }
+
     function testHookTaxWithoutRouteReverts() public {
         BitmaskConfig.Modules memory m = defaultModules();
         m.hookTaxBps = 200;
         vm.expectRevert(BitmaskConfig.FeeRouteIncomplete.selector);
-        BitmaskConfig.pack(m);
+        this.packModules(m);
     }
 
     function testHookToCreatorTakesHookTax() public {

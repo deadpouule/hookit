@@ -32,6 +32,8 @@ contract DynamicFeesTest is LaunchpadTestBase {
         m.hookTaxBps = 200; // 3% max total
         m.dynamicFeeRampUp = true;
         m.dynamicFeeDepthSaturationBps = 10_000; // max fee at 100% depth consumption
+        m.hookToCreator = true;
+        m.hookToCreatorBps = 10_000;
     }
 
     function testInRangeQuoteDepth_BuyWithQuoteAsCurrency1() public pure {
