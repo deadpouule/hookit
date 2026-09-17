@@ -187,7 +187,7 @@ async function routeImpactOk(
       functionName: "getSlot0",
       args: [poolIdFromKey(hookKey)],
     })) as readonly [bigint, number, number, number] | { sqrtPriceX96?: bigint };
-    const sqrt = Array.isArray(slot) ? slot[0] : slot.sqrtPriceX96;
+    const sqrt = Array.isArray(slot) ? slot[0] : (slot as { sqrtPriceX96?: bigint }).sqrtPriceX96;
     if (typeof sqrt !== "bigint" || sqrt < MIN_SQRT_PRICE || sqrt > MAX_SQRT_PRICE) return true;
     const tokenIs0 = hookKey.currency0.toLowerCase() === token.toLowerCase();
     const spotOut =
