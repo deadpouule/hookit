@@ -561,7 +561,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "Hook tax",
-              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules when a sink is on. With Fixed or Dynamic Fees alone, credited to the creator (claimable).`,
+              text: `Optional Master extra, 0–${MAX_HOOK_TAX_BPS / 100}%, so base + tax ≤ 10%. Funds modules when a sink is on. Buyback Vesting is a sink: the tax vests in BuybackVault. With Fixed or Dynamic Fees alone, credited to the creator (claimable).`,
             },
             {
               term: "Anti-Snipe",
@@ -588,7 +588,7 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "Same buy with no burn, floor, DeepenLP, or airdrop: the 0.020 ETH hook tax is credited to the creator and is claimable. Protocol still only takes 0.003 ETH from the 1% base.",
+          text: "Same buy with no burn, floor, DeepenLP, airdrop, or Buyback Vesting: the 0.020 ETH hook tax is credited to the creator and is claimable. Protocol still only takes 0.003 ETH from the 1% base. Same buy with Buyback Vesting and no other sink: the 0.020 ETH tax vests in BuybackVault with the creator’s 0.006 ETH.",
         },
         {
           type: "h3",
@@ -603,8 +603,8 @@ export function buildDocsSections(): DocsSection[] {
           title: "Fixed at launch",
           items: [
             "Pool LP fee is 0%. The hook is the fee switch.",
-            "Hook tax funds modules when a sink is on. Fixed or Dynamic Fees alone pay the creator.",
-            "Module percents of the hook pot must sum to 100% when any sink is on.",
+            "Hook tax funds modules when a sink is on. Buyback Vesting is a sink. Fixed or Dynamic Fees alone pay the creator.",
+            "Floor, burn, DeepenLP, and airdrop percents of the hook pot must sum to 100% when any of them is on.",
             "Creator → Hook and Buyback Vesting cannot both take the creator’s 60%.",
           ],
         },
@@ -632,7 +632,7 @@ export function buildDocsSections(): DocsSection[] {
             },
             {
               term: "BuybackVault",
-              text: "If Buyback Vesting is on. Time vest or FDV cliff/steps. Creator-only claim of the unlocked slice.",
+              text: "If Buyback Vesting is on. Time vest or FDV cliff/steps. Also takes unrouted hook tax. Creator-only claim of the unlocked slice.",
             },
             {
               term: "Hook pot",
@@ -730,19 +730,19 @@ export function buildDocsSections(): DocsSection[] {
         { type: "hook-title", hookId: "fixed-fee" },
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator. With Buyback Vesting, the tax vests.",
         },
         { type: "hook-title", hookId: "dynamic-fees" },
         {
           type: "p",
-          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Alone, it pays the creator. Full write-up below.",
+          text: "Hook tax ramps with in-range LP depth consumed. No oracle. Alone, it pays the creator. With Buyback Vesting, the tax vests. Full write-up below.",
         },
         {
           type: "callout",
           title: "Limits",
           items: [
             "Floor + burn + Deepen LPs + airdrop shares of the hook pot must equal 100% when any of them is on.",
-            "Any fee sink needs hook tax > 0 (unless Creator → Hook feeds the pot).",
+            "Floor, burn, Deepen LPs, and airdrop need hook tax > 0 (unless Creator → Hook feeds the pot).",
             "Base 1% + hook tax ≤ 10%.",
             "Classic does not use these modules.",
           ],
@@ -950,7 +950,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits), not in the module bitmask.`,
+          text: `When this module is on, the creator does not take the ${CREATOR_FEE_PCT}% of the 1% base in FeeEscrow. That cut goes to BuybackVault and unlocks on a clock, or when fully-diluted mcap prints a USD target packed at launch in vestPacked (low 128 bits), not in the module bitmask. Unrouted hook tax (Fixed or Dynamic Fees with no floor, burn, DeepenLP, or airdrop) also goes to BuybackVault. It is not claimable in FeeEscrow.`,
         },
         {
           type: "visual",
@@ -977,6 +977,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             `Cannot combine with Creator → Hook. Both spend the same ${CREATOR_FEE_PCT}% creator cut.`,
+            "This module is a hook-tax sink. Fixed or Dynamic Fees with no other sink vest the extra tax here, not in FeeEscrow.",
             "The 10% $HKT drop is mandatory and unchanged. The 30% protocol cut is unchanged.",
             "Buyers can see the vest on the token page. Instant creator dump of trading fees is off the table.",
             "The token page shows quote accrued into BuybackVault, still pending / claimable, and the until-FDV cliff or first / next by-% rung.",
@@ -1082,7 +1083,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator.",
+          text: "Flat extra hook tax on every swap, quote-only. Mutually exclusive with Dynamic Fees. Alone, it pays the creator. With Buyback Vesting, the tax vests.",
         },
         {
           type: "visual",
@@ -1093,7 +1094,8 @@ export function buildDocsSections(): DocsSection[] {
           items: [
             "You set hook tax at launch. Base 1% + hook tax ≤ 10%.",
             "Hook tax never uses the 60 / 10 / 30 split. That split is only the 1% base (and snipe).",
-            "No burn, floor, DeepenLP, or airdrop: the tax is credited to the creator and is claimable.",
+            "No burn, floor, DeepenLP, airdrop, or Buyback Vesting: the tax is credited to the creator and is claimable.",
+            "Buyback Vesting plus this tax: the extra vests in BuybackVault.",
           ],
         },
       ],
@@ -1106,7 +1108,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks. Alone, the ramped tax is credited to the creator.",
+          text: "The extra hook tax is not a flat bps. It scales with how much of the in-range book the swap eats. A small clip on a deep book stays cheap. The same clip on a thin book pays more. No oracle, no 24h volume window, only current Uniswap v4 liquidity in the launch ticks. Alone, the ramped tax is credited to the creator. With Buyback Vesting, it vests.",
         },
         {
           type: "visual",
@@ -1138,7 +1140,8 @@ export function buildDocsSections(): DocsSection[] {
             "You set a min total fee and a max hook tax at launch. Base 1% + max hook tax ≤ 10%.",
             "Cannot combine with Fixed Fees. One extra-tax mode per pool.",
             "The 1% base still splits 60 / 10 / 30. Only the hook-tax slice ramps.",
-            "No burn, floor, DeepenLP, or airdrop: the ramped tax is credited to the creator and is claimable.",
+            "No burn, floor, DeepenLP, airdrop, or Buyback Vesting: the ramped tax is credited to the creator and is claimable.",
+            "Buyback Vesting plus this tax: the extra vests in BuybackVault.",
             "Whale-sized flow pays for the depth it consumes. Retail on a healthy book stays near the floor fee.",
           ],
         },

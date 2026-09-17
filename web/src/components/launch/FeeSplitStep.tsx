@@ -96,7 +96,9 @@ export function FeeSplitStep({
         </p>
       ) : (
         <p className="pick-config-hint" style={{ marginTop: 0 }}>
-          No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax is paid to the creator.
+          {modules.buybackVesting
+            ? "No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax vests with Buyback Vesting."
+            : "No burn, floor, Deepen LPs, or holder airdrop is on. Hook tax is paid to the creator."}
         </p>
       )}
 
