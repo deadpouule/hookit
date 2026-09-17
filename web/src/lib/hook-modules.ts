@@ -38,11 +38,11 @@ export const HOOK_MODULE_ACCENTS = {
   backedFloor: {
     id: "backed-floor",
     label: "Backed Floor",
-    color: "#39ff8a",
-    glow: "rgba(57, 255, 138, 0.5)",
-    bg: "bg-[#39ff8a]/10",
-    border: "border-[#39ff8a]/40",
-    text: "text-[#6bffb0]",
+    color: "#b45309",
+    glow: "rgba(180, 83, 9, 0.5)",
+    bg: "bg-[#b45309]/10",
+    border: "border-[#b45309]/40",
+    text: "text-[#fbbf24]",
     icon: TrendingUp,
   },
   antiMev: {
@@ -118,11 +118,11 @@ export const HOOK_MODULE_ACCENTS = {
   hookToCreator: {
     id: "hook-to-creator",
     label: "Hook → Creator",
-    color: "#e4e4e7",
-    glow: "rgba(228, 228, 231, 0.45)",
-    bg: "bg-[#e4e4e7]/10",
-    border: "border-[#e4e4e7]/40",
-    text: "text-[#f4f4f5]",
+    color: "#dc2626",
+    glow: "rgba(220, 38, 38, 0.5)",
+    bg: "bg-[#dc2626]/12",
+    border: "border-[#dc2626]/40",
+    text: "text-[#fca5a5]",
     icon: ArrowDownToLine,
   },
 } as const satisfies Record<string, HookModuleAccent>;

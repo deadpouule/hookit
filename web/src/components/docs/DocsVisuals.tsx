@@ -603,13 +603,13 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
           note="Alone it is 100%. Split with burn, floor, Deepen LPs, or airdrop so shares still add to 100%."
         >
           <div className="docs-visual-hook-row">
-            <HookMark hookId="hook-to-creator" theme="pearl" />
+            <HookMark hookId="hook-to-creator" theme="crimson" />
             <div className="docs-split-bar" role="img" aria-label="Hook pot split 50 percent burn 50 percent creator">
               <div className="docs-split-seg" style={{ flex: 50, background: "#dc2626", color: "#fff" }}>
                 <span>50%</span>
                 <small>Auto-Burn</small>
               </div>
-              <div className="docs-split-seg" style={{ flex: 50, background: "#e4e4e7", color: "#111" }}>
+              <div className="docs-split-seg" style={{ flex: 50, background: "#ef4444", color: "#fff" }}>
                 <span>50%</span>
                 <small>→ Creator</small>
               </div>

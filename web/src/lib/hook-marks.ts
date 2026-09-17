@@ -38,8 +38,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Backed Floor",
     short: "Floor",
     hint: "More volume, higher floor",
-    color: "#f59e0b",
-    glow: "rgba(245,158,11,0.4)",
+    color: "#b45309",
+    glow: "rgba(180,83,9,0.45)",
   },
   antiMev: {
     id: "antiMev",
@@ -102,8 +102,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Hook → Creator",
     short: "→ Creator",
     hint: "Hook tax share paid to the creator",
-    color: "#e4e4e7",
-    glow: "rgba(228,228,231,0.4)",
+    color: "#dc2626",
+    glow: "rgba(220,38,38,0.45)",
   },
   creatorShareToHook: {
     id: "creatorShareToHook",
