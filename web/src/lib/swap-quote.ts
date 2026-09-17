@@ -263,10 +263,10 @@ export async function quotePoolSwapWithMeta(
 
   if (!amountOut || amountOut <= BigInt(0)) {
     // Spot * tokens is in pool-quote units (wStock/ETH), not USDG. Using it as a
-    // 6-decimal USDG quote turns a MAX dump into literal crumbs on screen.
-    if (side === "sell" && receiveAsset && isStableSwapAsset(receiveAsset)) {
-      return null;
-    }
+    // 6-decimal USDG quote turns a MAX dump into literal crumbs on screen, and a
+    // USDG buy into a fake "$20 in, $20 out" that execution cannot match.
+    if (receiveAsset && isStableSwapAsset(receiveAsset)) return null;
+    if (side === "buy" && payAsset && isStableSwapAsset(payAsset)) return null;
     const decimalsIn = side === "buy" ? payDecimals : 18;
     const decimalsOut = side === "buy" ? 18 : receiveAsset?.decimals ?? payment.decimals;
     amountOut = spotQuoteFallback(pool, side, amountIn, decimalsIn, decimalsOut);

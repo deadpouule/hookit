@@ -167,7 +167,10 @@ export function defaultSwapPair(
 ): { sell: SwapAsset; buy: SwapAsset } {
   const token = poolToSwapAsset(pool);
   const quote = poolQuoteSwapAsset(pool);
-  if (side === "buy") return { sell: quote, buy: token };
+  if (side === "buy") {
+    if (isMultiPool(pool)) return { sell: STABLE_SWAP_ASSET, buy: token };
+    return { sell: quote, buy: token };
+  }
   // Multi-pool sells settle in USDG so BalancedAggregator can split across legs.
   if (isMultiPool(pool)) return { sell: token, buy: STABLE_SWAP_ASSET };
   return { sell: token, buy: quote };

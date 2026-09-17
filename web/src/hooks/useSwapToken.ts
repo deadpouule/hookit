@@ -62,7 +62,6 @@ import {
   quoteBestSellPlan,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
-  type BestBuyLeg,
 } from "@/lib/multi-pool-route";
 import { resolveMasterLaunch } from "@/lib/launches";
 import { quoteHookLeg, quotePoolSwapWithMeta } from "@/lib/swap-quote";
@@ -327,71 +326,15 @@ export function useSwapToken(pool: TokenPool) {
               await publicClient.waitForTransactionReceipt({ hash });
               return hash;
             }
+            throw new Error(
+              "This size moves the pool too much for a USDG buy. Try a smaller amount.",
+            );
           }
         }
         if (plan) {
-          const executeBuyLeg = async (leg: BestBuyLeg): Promise<`0x${string}`> => {
-            const minOut =
-              (leg.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-            const hookZeroForOne = hookSwapDirection(leg.hookKey, token, "buy");
-
-            if (leg.kind === "direct") {
-              if (payment.address !== zeroAddress) {
-                await ensureErc20Allowance(payment.address, router, leg.amountIn);
-              }
-              const hash = await writeContractAsync({
-                address: router,
-                abi: hookitSwapRouterAbi,
-                functionName: "swapExactIn",
-                args: [
-                  leg.hookKey,
-                  hookZeroForOne,
-                  leg.amountIn,
-                  minOut,
-                  sqrtLimit(hookZeroForOne),
-                ],
-                value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
-              });
-              await publicClient.waitForTransactionReceipt({ hash });
-              return hash;
-            }
-
-            if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
-              throw new Error(
-                "Best buy route needs HookitSwapRouter. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
-              );
-            }
-            const hookitRouter = getHookitSwapRouterAddress()!;
-            if (payment.address !== zeroAddress) {
-              await ensureErc20Allowance(payment.address, hookitRouter, leg.amountIn);
-            }
-            const hash = await writeContractAsync({
-              address: hookitRouter,
-              abi: hookitSwapRouterAbi,
-              functionName: "swapExactInComposite",
-              args: [
-                leg.bridge.key,
-                leg.bridge.zeroForOne,
-                leg.amountIn,
-                leg.hookKey,
-                hookZeroForOne,
-                leg.marketQuote,
-                minOut,
-                sqrtLimit(leg.bridge.zeroForOne),
-                sqrtLimit(hookZeroForOne),
-              ],
-              value: payment.address === zeroAddress ? leg.amountIn : BigInt(0),
-            });
-            await publicClient.waitForTransactionReceipt({ hash });
-            return hash;
-          };
-
-          let lastHash: `0x${string}` | undefined;
-          for (const leg of plan.legs) {
-            lastHash = await executeBuyLeg(leg);
-          }
-          if (!lastHash) throw new Error("Buy aggregator produced no transactions");
-          return lastHash;
+          throw new Error(
+            "USDG aggregator could not simulate this buy. Try a smaller amount or buy with the stock pair.",
+          );
         }
         // Aggregator found nothing - fall through to single-market buy path.
       }
