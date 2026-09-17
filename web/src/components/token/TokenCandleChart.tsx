@@ -18,7 +18,7 @@ import {
   chartHudBar,
   chartWindowBars,
   chartSpanSec,
-  definedWhitespaceTape,
+  definedFdvTape,
   ensureCurrentBar,
   formatChartUsd,
   formatLastCandleUtc,
@@ -91,10 +91,16 @@ function formatDayClock(ts: number): string {
   });
 }
 
-function applySwapTicks(bars: ChartBar[], swaps: LiveSwap[], bucketSec: number): ChartBar[] {
+function swapsForPool(swaps: LiveSwap[], poolId?: string): LiveSwap[] {
+  if (!poolId) return swaps;
+  const key = poolId.toLowerCase();
+  return swaps.filter((s) => !s.poolId || s.poolId.toLowerCase() === key);
+}
+
+function applySwapTicks(bars: ChartBar[], swaps: LiveSwap[], bucketSec: number, poolId?: string): ChartBar[] {
   return applyTicksToBuckets(
     bars,
-    swaps
+    swapsForPool(swaps, poolId)
       .filter((s) => s.t != null && s.t > 0 && s.marketCap > 0)
       .map((s) => ({ t: s.t!, price: s.marketCap, volume: s.totalUsd })),
     bucketSec,
@@ -141,6 +147,7 @@ export function TokenCandleChart({
   quoteAddress,
   quoteUsd,
   marketLegs,
+  activePoolId,
   activeMarketIndex = 0,
   onMarketIndex,
   onBeFirstBuy,
@@ -162,7 +169,8 @@ export function TokenCandleChart({
   launchedAt?: number;
   quoteAddress?: string;
   quoteUsd?: number;
-  marketLegs?: { label: string; share: string; quoteAddress?: string; quoteAsset?: string }[];
+  marketLegs?: { label: string; share: string; quoteAddress?: string; quoteAsset?: string; poolId?: string }[];
+  activePoolId?: string;
   activeMarketIndex?: number;
   onMarketIndex?: (index: number) => void;
   onBeFirstBuy?: () => void;
@@ -175,6 +183,7 @@ export function TokenCandleChart({
   const [style, setStyle] = useState<ChartStyle>("candles");
   const [fitNonce, setFitNonce] = useState(0);
   const [hover, setHover] = useState<ChartBar | null>(null);
+  const selectedPoolId = activePoolId ?? marketLegs?.[activeMarketIndex]?.poolId;
   const geckoQuote = (() => {
     const candidates = [quoteAddress, marketLegs?.[activeMarketIndex]?.quoteAddress];
     return candidates.find((addr) => addr && addr.toLowerCase() !== zeroAddress);
@@ -200,7 +209,7 @@ export function TokenCandleChart({
   const source = useMemo(() => {
     const fromCandles = liveCandlesToBars(candles, nowSec);
     const fromSwaps = ticksToBars(
-      swaps
+      swapsForPool(swaps, selectedPoolId)
         .filter((s) => s.t != null && s.t > 0 && s.marketCap > 0)
         .map((s) => ({ t: s.t!, price: s.marketCap, volume: s.totalUsd })),
     );
@@ -208,7 +217,7 @@ export function TokenCandleChart({
     const seeded = house.length ? house : seedLaunchBars(launchedAt, marketCap ?? 0);
     const geckoMcap = priceBarsToMcap(gecko.data?.bars ?? []);
     return pickChartBars(seeded, geckoMcap);
-  }, [candles, swaps, nowSec, marketCap, gecko.data?.bars, launchedAt]);
+  }, [candles, swaps, selectedPoolId, nowSec, marketCap, gecko.data?.bars, launchedAt]);
 
   const spanSec = useMemo(
     () => chartSpanSec(source, launchedAt, nowSec),
@@ -224,19 +233,21 @@ export function TokenCandleChart({
     (iv: ChartInterval, sc: ChartScale) => {
       const bucket = intervalBucketSec(iv, spanSec);
       const display = barsForInterval(source, iv, spanSec);
-      const withTicks = applySwapTicks(display, swaps, bucket);
-      const pinned = pinLiveMcap(withTicks, chartMcap);
-      const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
+      const withTicks = applySwapTicks(display, swaps, bucket, selectedPoolId);
       const fx = rollQuoteFxBars(quoteFx.data?.bars ?? [], bucket);
       const liveFx =
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
+      // Reprice traded prints first, then forward-fill so quiet minutes hold last execution.
       const marked =
         liveFx > 0 && fx.length > 0
-          ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx), bucket)
-          : linkBarOpens(current, bucket);
-      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars(bucket));
+          ? linkBarOpens(repriceBarsWithQuoteFx(withTicks, fx, liveFx), bucket)
+          : linkBarOpens(withTicks, bucket);
+      const tape = definedFdvTape(marked, bucket, nowSec, chartWindowBars(bucket));
+      const pinned = pinLiveMcap(tape, chartMcap);
+      const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
+      return scaleBars(current, sc);
     },
-    [source, swaps, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
+    [source, swaps, selectedPoolId, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);

@@ -19,6 +19,8 @@ export interface LiveSwap {
   amount: number;
   totalUsd: number;
   marketCap: number;
+  /** Source pool — required so multi-leg tokens never mix quote prints. */
+  poolId?: string;
 }
 
 export interface LiveHolder {

@@ -285,6 +285,7 @@ export function useLiveToken(pool: TokenPool): LiveTokenResult {
           amount: Number(t.tokenAmount) / 1e18,
           totalUsd,
           marketCap: Number.isFinite(tradeMcap) && tradeMcap > 0 ? tradeMcap : mcap,
+          poolId: t.poolId || pool.poolId,
         };
       }),
       holderRows: holders.map((h) => ({

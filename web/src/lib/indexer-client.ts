@@ -199,7 +199,7 @@ export function fetchIndexerCandles(
   address: string,
   limit = 200,
   poolId?: string,
-  interval: "1m" | "5m" = "1m",
+  interval: "1m" | "5m" | "10m" | "15m" | "1h" = "1m",
 ) {
   const poolQ = poolId ? `&poolId=${encodeURIComponent(poolId)}` : "";
   return getJson<{ token: string; interval: string; candles: IndexerCandle[] }>(

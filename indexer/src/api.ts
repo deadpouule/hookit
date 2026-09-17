@@ -19,6 +19,25 @@ function json(res: ServerResponse, status: number, body: unknown) {
   res.end(payload);
 }
 
+const CANDLE_INTERVAL_SEC: Record<string, number> = {
+  "1m": 60,
+  "5m": 300,
+  "10m": 600,
+  "15m": 900,
+  "1h": 3600,
+  "4h": 14_400,
+  "1D": 86_400,
+};
+
+function candleIntervalSec(interval: string): number {
+  return CANDLE_INTERVAL_SEC[interval] ?? 300;
+}
+
+function candleIntervalLabel(bucketSec: number): string {
+  const found = Object.entries(CANDLE_INTERVAL_SEC).find(([, sec]) => sec === bucketSec);
+  return found?.[0] ?? "5m";
+}
+
 function pathParts(url: string): string[] {
   const u = new URL(url, "http://localhost");
   return u.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
@@ -204,11 +223,11 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
       }
       if (parts[3] === "candles") {
         const interval = u.searchParams.get("interval") ?? "5m";
-        const bucketSec = interval === "1m" ? 60 : 300;
+        const bucketSec = candleIntervalSec(interval);
         json(res, 200, {
           token: token.toLowerCase(),
           poolId: poolId ?? null,
-          interval: bucketSec === 60 ? "1m" : "5m",
+          interval: candleIntervalLabel(bucketSec),
           candles: store.candles(token, limit, poolId, bucketSec),
         });
         return;
@@ -224,7 +243,7 @@ export function startApi(store: Store, cfg: IndexerConfig, getLatestBlock?: () =
         "GET /v1/tokens/:address",
         "GET /v1/tokens/:address/trades?limit=50&offset=0&poolId=",
         "GET /v1/tokens/:address/holders?limit=50",
-        "GET /v1/tokens/:address/candles?limit=200&poolId=",
+        "GET /v1/tokens/:address/candles?limit=200&poolId=&interval=1m|5m|10m|15m|1h",
       ],
     });
   });

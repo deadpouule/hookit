@@ -7,12 +7,16 @@ import {
   applyTicksToBuckets,
   barChangePct,
   barsForInterval,
+  buildContinuousOhlcv,
   carryQuoteFxBars,
   CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
   CHART_FIT_PAD_BARS,
   CHART_MIN_VISIBLE_BARS,
+  CHART_PRICE_MIN_MOVE,
   CHART_RIGHT_OFFSET,
+  CHART_SCALE_MARGIN_BOTTOM,
+  CHART_SCALE_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
   chartFitWindowBars,
@@ -309,8 +313,8 @@ test("candles stretch a 72-bar Defined window across the pane", () => {
 test("chartPriceBand pads the visible range like TradingView auto-scale", () => {
   const band = chartPriceBand(100, 120);
   assert.ok(band);
-  assert.equal(band!.minValue, 98);
-  assert.equal(band!.maxValue, 122);
+  assert.equal(band!.minValue, 96.4);
+  assert.equal(band!.maxValue, 123.6);
   const micro = chartPriceBand(0.0000051, 0.0000051235);
   assert.ok(micro);
   assert.ok(micro!.minValue < 0.0000051);
@@ -331,17 +335,21 @@ test("flatFdvCandleOhlc draws a thin visible dash when FDV is unchanged", () => 
   assert.ok(dash.high - dash.low < 5000 * 0.001);
 });
 
-test("chartRenderableCandle uses a dash for flat FDV carry and real wicks for moves", () => {
+test("chartRenderableCandle uses a true doji for flat FDV carry and real wicks for moves", () => {
   const carry = chartRenderableCandle(
     { time: 1, open: 5000, high: 5000, low: 5000, close: 5000, volume: 0 },
     5000,
   );
-  assert.ok(carry.high > carry.close);
+  assert.equal(carry.open, 5000);
+  assert.equal(carry.high, 5000);
+  assert.equal(carry.low, 5000);
+  assert.equal(carry.close, 5000);
   const drift = chartRenderableCandle(
     { time: 2, open: 5000, high: 5200, low: 4900, close: 5100, volume: 0 },
     5000,
   );
-  assert.ok(drift.high - drift.low < 5100 * 0.001);
+  assert.equal(drift.high, drift.low);
+  assert.equal(drift.close, 5100);
   const traded = chartRenderableCandle(
     { time: 3, open: 5000, high: 5200, low: 4900, close: 5100, volume: 4 },
     5000,
@@ -352,11 +360,12 @@ test("chartRenderableCandle uses a dash for flat FDV carry and real wicks for mo
   assert.equal(traded.low, 4900);
 });
 
-test("chartRenderableCandle uses a thin dash for flat FDV maintenance without volume", () => {
+test("chartRenderableCandle uses a true doji for flat FDV maintenance without volume", () => {
   const maintain = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 });
-  const span = maintain.high - maintain.low;
-  assert.ok(span > 0);
-  assert.ok(span < 5300 * 0.001);
+  assert.equal(maintain.open, 5300);
+  assert.equal(maintain.high, 5300);
+  assert.equal(maintain.low, 5300);
+  assert.equal(maintain.close, 5300);
 });
 
 test("chartRenderableCandle keeps a flat trade print as a real doji", () => {
@@ -383,7 +392,7 @@ test("candleSeriesData draws thin maintenance dashes across flat FDV carry", () 
   const plotted = candleSeriesData(tape).filter((p) => p.open != null);
   assert.equal(plotted.length, 3);
   const carrySpan = (plotted[1]!.high ?? 0) - (plotted[1]!.low ?? 0);
-  assert.ok(carrySpan < 5300 * 0.001);
+  assert.equal(carrySpan, 0);
 });
 
 test("pinLiveMcap leaves seed bars alone when there is no trade yet", () => {
@@ -405,7 +414,8 @@ test("in-progress buckets without volume render as thin FDV dashes not fat block
     close: 5320,
     volume: 0,
   });
-  assert.ok(live.high - live.low < 5320 * 0.001);
+  assert.equal(live.high, live.low);
+  assert.equal(live.close, 5320);
 });
 
 test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
@@ -731,6 +741,68 @@ test("Defined auto-fit zooms into two hourly prints instead of 72 empty hours", 
 
 test("1m auto-fit keeps Defined 72-bar pitch on a long tape", () => {
   assert.equal(chartFitWindowBars(780, 0), CHART_WINDOW_BARS);
+});
+
+test("buildContinuousOhlcv forward-fills empty 5m buckets as flat dojis", () => {
+  const start = 1_700_000_100;
+  const bars = buildContinuousOhlcv(
+    [
+      { timestamp: start + 30, priceUsd: 0.0000501, volumeUsd: 12.5 },
+      { timestamp: start + 15 * 60 + 20, priceUsd: 0.0000497, volumeUsd: 8.2 },
+    ],
+    300,
+    start,
+    start + 15 * 60,
+    0.0000498,
+  );
+  assert.equal(bars.length, 4);
+  assert.equal(bars[0]!.time, start);
+  assert.equal(bars[0]!.open, 0.0000501);
+  assert.equal(bars[0]!.close, 0.0000501);
+  assert.equal(bars[0]!.volume, 12.5);
+  assert.equal(bars[1]!.time, start + 300);
+  assert.equal(bars[1]!.open, 0.0000501);
+  assert.equal(bars[1]!.high, 0.0000501);
+  assert.equal(bars[1]!.low, 0.0000501);
+  assert.equal(bars[1]!.close, 0.0000501);
+  assert.equal(bars[1]!.volume, 0);
+  assert.equal(bars[2]!.volume, 0);
+  assert.equal(bars[2]!.close, 0.0000501);
+  assert.equal(bars[3]!.time, start + 900);
+  assert.equal(bars[3]!.open, 0.0000497);
+  assert.equal(bars[3]!.low, 0.0000497);
+  assert.equal(bars[3]!.close, 0.0000497);
+  assert.equal(bars[3]!.volume, 8.2);
+});
+
+test("definedFdvTape then linkBarOpens builds an AllonSol staircase", () => {
+  const bucket = 60;
+  const t0 = 1_700_000_040;
+  const tape = definedFdvTape(
+    [
+      { time: t0, open: 5_100, high: 5_120, low: 5_080, close: 5_100, volume: 12.5 },
+      { time: t0 + 180, open: 4_970, high: 4_970, low: 4_950, close: 4_960, volume: 8.2 },
+    ],
+    bucket,
+    t0 + 180,
+    4,
+  );
+  const stair = linkBarOpens(tape, bucket);
+  assert.ok(stair.length >= 4);
+  const quiet = stair.filter((b) => b.volume === 0 && b.time > t0 && b.time < t0 + 180);
+  assert.ok(quiet.length >= 2);
+  assert.ok(quiet.every((b) => b.open === 5_100 && b.close === 5_100 && b.high === 5_100));
+  const sell = stair.find((b) => b.time === t0 + 180);
+  assert.equal(sell?.open, 5_100);
+  assert.equal(sell?.close, 4_960);
+  assert.equal(sell?.low, 4_950);
+});
+
+test("micro-cap price scale uses 8-decimal minMove and 16% pane margins", () => {
+  assert.equal(CHART_PRICE_MIN_MOVE, 1e-8);
+  assert.equal(CHART_SCALE_MARGIN_TOP, 0.16);
+  assert.equal(CHART_SCALE_MARGIN_BOTTOM, 0.16);
+  assert.equal(CHART_MIN_BAR_SPACING, 4);
 });
 
 test("chartHudBar ignores whitespace slots", () => {

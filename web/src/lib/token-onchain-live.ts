@@ -278,6 +278,7 @@ export async function fetchOnChainLive(
       amount: tokenAmt,
       totalUsd,
       marketCap: mcap,
+      poolId,
     });
   }
 

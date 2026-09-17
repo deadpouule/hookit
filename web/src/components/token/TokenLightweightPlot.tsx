@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import {
   CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
+  CHART_PRICE_MIN_MOVE,
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
@@ -117,7 +118,7 @@ function lastBarUp(bars: ChartBar[]): boolean {
 function priceFormatFor(scale: ChartScale) {
   return {
     type: "custom" as const,
-    minMove: scale === "mcap" ? 0.01 : 1e-12,
+    minMove: scale === "mcap" ? 0.01 : CHART_PRICE_MIN_MOVE,
     formatter: (price: number) => formatChartAxis(price, scale),
   };
 }
@@ -143,7 +144,7 @@ async function attachPriceSeries(
       topColor: grad.top,
       bottomColor: grad.bottom,
       lineWidth: 2,
-      lineType: tv.LineType.Curved,
+      lineType: tv.LineType.WithSteps,
       priceLineVisible: true,
       lastValueVisible: true,
       crosshairMarkerVisible: true,
