@@ -35,19 +35,31 @@ contract ForkInkHkitBuybackTest is InkForkTestBase {
         uint256 packed = hook.configs(hkitKey.toId());
         assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.ANTI_SNIPE_ENABLED));
         assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.ANTI_MEV_COOLDOWN_ENABLED));
+        assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.CREATOR_SHARE_TO_HOOK_ENABLED));
+        assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.AUTO_BURN_ENABLED));
         assertTrue(BitmaskConfig.enabled(packed, BitmaskConfig.DEEPEN_LPS_ENABLED));
         assertFalse(BitmaskConfig.enabled(packed, BitmaskConfig.BACKED_FLOOR_ENABLED));
+        BitmaskConfig.Modules memory mods = BitmaskConfig.unpack(packed);
+        assertEq(mods.autoBurnBps, 8_000);
+        assertEq(mods.deepenLpsBps, 2_000);
     }
 
-    function testFork_HkitCreatorFeesGoToBuybackNotEscrow() public onlyFork {
+    function testFork_HkitCreatorShareGoesToBurnAndDeepen() public onlyFork {
         uint256 escrowBefore = escrow.balanceOf(deployer, Currency.wrap(address(0)));
-        uint256 buybackPendingBefore = distributor.pendingBuyback(Currency.wrap(address(0)));
+        uint256 supplyBefore = IERC20(hkit).totalSupply();
+        uint128 seedLiq = hook.launchState(hkitKey.toId()).seedLiquidity;
 
         _routerBuy(trader, hkitKey, hkit, 1 ether);
 
         assertEq(escrow.balanceOf(deployer, Currency.wrap(address(0))), escrowBefore);
-        assertGt(distributor.pendingBuyback(Currency.wrap(address(0))), buybackPendingBefore);
+        assertTrue(
+            IERC20(hkit).totalSupply() < supplyBefore || hook.pendingAutoBurn(hkitKey.toId()) > 0, "auto-burn"
+        );
+        assertTrue(
+            manager.getLiquidity(hkitKey.toId()) > seedLiq || hook.pendingDeepenLps(hkitKey.toId()) > 0, "deepen"
+        );
         assertGt(distributor.pending(Currency.wrap(address(0))), 0);
+    }
     }
 
     function testFork_HkitBuybackExecuteBurnsSupply() public onlyFork {

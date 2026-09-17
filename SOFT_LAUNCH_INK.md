@@ -32,7 +32,7 @@ From `web/src/lib/contracts/config.ts`:
 | **V4ClaimsRedeemer** | `0x85065220eA534d999203BAC08eE506067B98Eaf5` |
 | **ProtocolRevenueDistributor** | `0x91Ef75507E7154FBC09c2a6BF45Af3fdd25EB815` |
 | **HkitBuyback** | `0x72b798F9AB2545D476424a8870Ab13F59AEE669b` |
-| **Native token** | `0x964ce443c5e111ea1b87a70166c6894af3eddb08` |
+| **Native token** | `0xF91BAaB0043bE02c5a1774ed837eaFEA3b283f38` |
 
 Previous factory generations stay on-chain. `deploy/ink/addresses.json` lists older stacks. Do not point new launches at them. This cutover **wipes** the hosted indexer so the public catalogue starts empty on factory `0x54027828…`.
 
@@ -78,7 +78,7 @@ NEXT_PUBLIC_BALANCED_AGGREGATOR=0x5Be5e0c91B8c3cfEF969c82e02776C6e3F92Bc98
 NEXT_PUBLIC_CLAIMS_REDEEMER=0x85065220eA534d999203BAC08eE506067B98Eaf5
 NEXT_PUBLIC_PROTOCOL_DISTRIBUTOR=0x91Ef75507E7154FBC09c2a6BF45Af3fdd25EB815
 NEXT_PUBLIC_HKIT_BUYBACK=0x72b798F9AB2545D476424a8870Ab13F59AEE669b
-NEXT_PUBLIC_NATIVE_TOKEN=0x964ce443c5e111ea1b87a70166c6894af3eddb08
+NEXT_PUBLIC_NATIVE_TOKEN=0xF91BAaB0043bE02c5a1774ed837eaFEA3b283f38
 NEXT_PUBLIC_DEV_BUY_SNIPE_EXEMPT=1
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<real>
 INDEXER_URL=https://indexer.hookit.fun

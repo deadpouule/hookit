@@ -26,7 +26,7 @@
     "HkitBuyback": "0x72b798f9ab2545d476424a8870ab13f59aee669b",
     "MultiPairArbExecutor": "0xf5d87eae49a40723c15196a71f1d9b506ef5ba50",
     "UniswapV3EthUsdTwapFeed": "0x4b286359a4e5739d414ad00d6a320f93ff2b6092",
-    "NativeToken": "0x964ce443c5e111ea1b87a70166c6894af3eddb08"
+    "NativeToken": "0xf91baab0043be02c5a1774ed837eafea3b283f38"
   },
   "previousContracts": {
     "LaunchFactories": [
@@ -69,8 +69,8 @@
   },
   "nativeToken": {
     "name": "HOOKTEST",
-    "symbol": "HTEST",
-    "address": "0x964ce443c5e111ea1b87a70166c6894af3eddb08"
+    "symbol": "HTST",
+    "address": "0xf91baab0043be02c5a1774ed837eafea3b283f38"
   },
   "indexer": {
     "startBlock": 56151088,
@@ -90,7 +90,7 @@
   },
   "notes": [
     "Synced from forge broadcast by scripts/sync-ink-deploy.mjs on 2026-09-17.",
-    "Existing native token carried forward; fair launch was skipped for this redeploy.",
+    "HTST fair-launched on this factory (launchId 1): Anti-MEV, Anti-Snipe, Creator to Hook, Auto-Burn 80%, Deepen LPs 20%.",
     "Indexer defaults to the current factories only; reset its store for a clean-slate deployment.",
     "customHookAllowlistEnabled expected true after harden.",
     "ETH/USD uses the guarded WETH/USDt0 Uniswap v3 30-minute TWAP."

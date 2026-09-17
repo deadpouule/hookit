@@ -15,16 +15,19 @@ import {IFloorVault} from "../interfaces/IFloorVault.sol";
 
 /// @title HkitLaunchLib
 /// @notice Fair-launch the protocol native token (ETH pair, buyback flywheel).
+/// @dev Modules: Anti-MEV, Anti-Snipe, Creator → Hook (60% of the 1% into the hook pot),
+///      Auto-Burn 80% / Deepen LPs 20%. Protocol 80% of every launch still buys and burns the token.
 library HkitLaunchLib {
     function defaultModules() internal pure returns (BitmaskConfig.Modules memory m) {
         m.antiSnipe = true;
         m.antiMev = true;
+        m.creatorShareToHook = true;
+        m.autoBurn = true;
         m.deepenLps = true;
-        // 1% hook tax, 100% Deepen LPs.
-        m.hookTaxBps = 100;
         m.antiSnipeDurationSeconds = ProtocolConstants.HKIT_ANTI_SNIPE_DURATION_SECONDS;
         m.initialSnipeTaxBps = ProtocolConstants.DEFAULT_INITIAL_SNIPE_TAX_BPS;
-        m.deepenLpsBps = ProtocolConstants.MAX_DEEPEN_LPS_BPS;
+        m.autoBurnBps = 8_000;
+        m.deepenLpsBps = 2_000;
     }
 
     /// @notice Launch native token, register flywheel, configure buyback executor.
