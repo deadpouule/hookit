@@ -14,18 +14,26 @@ export const TV_CANDLE_DOWN = "#f6465d";
 export const TV_VOLUME_UP = "rgba(46, 235, 133, 0.45)";
 export const TV_VOLUME_DOWN = "rgba(246, 70, 93, 0.45)";
 
+/** AllonSol monochrome candles: white up, gray down, no green/red. */
+export const TV_MONO_UP = "#f4f4f5";
+export const TV_MONO_DOWN = "#3f3f46";
+export const TV_MONO_WICK_UP = "#fafafa";
+export const TV_MONO_WICK_DOWN = "#a1a1aa";
+export const TV_MONO_BORDER_UP = "#ffffff";
+export const TV_MONO_BORDER_DOWN = "#71717a";
+
 export function tvAreaGradient(up: boolean): { top: string; bottom: string; line: string } {
   if (up) {
     return {
-      line: TV_CANDLE_UP,
-      top: "rgba(46, 235, 133, 0.32)",
-      bottom: "rgba(46, 235, 133, 0.02)",
+      line: TV_MONO_UP,
+      top: "rgba(244, 244, 245, 0.22)",
+      bottom: "rgba(244, 244, 245, 0.02)",
     };
   }
   return {
-    line: TV_CANDLE_DOWN,
-    top: "rgba(246, 70, 93, 0.28)",
-    bottom: "rgba(246, 70, 93, 0.02)",
+    line: TV_MONO_WICK_DOWN,
+    top: "rgba(161, 161, 170, 0.16)",
+    bottom: "rgba(161, 161, 170, 0.02)",
   };
 }
 

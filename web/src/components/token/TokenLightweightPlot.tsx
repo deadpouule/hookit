@@ -27,13 +27,17 @@ import {
   type ChartStyle,
 } from "@/lib/token-chart";
 import {
-  TV_CANDLE_DOWN,
-  TV_CANDLE_UP,
   TV_CHART_BG,
   TV_CHART_GRID,
   TV_CHART_SCALE_TEXT,
   TV_CROSSHAIR,
   TV_CROSSHAIR_LABEL,
+  TV_MONO_BORDER_DOWN,
+  TV_MONO_BORDER_UP,
+  TV_MONO_DOWN,
+  TV_MONO_UP,
+  TV_MONO_WICK_DOWN,
+  TV_MONO_WICK_UP,
   tvAreaGradient,
 } from "@/lib/tv-chart";
 import type {
@@ -44,8 +48,8 @@ import type {
   UTCTimestamp,
 } from "lightweight-charts";
 
-const UP = TV_CANDLE_UP;
-const DOWN = TV_CANDLE_DOWN;
+const UP = TV_MONO_UP;
+const DOWN = TV_MONO_DOWN;
 const SURFACE = TV_CHART_BG;
 const GRID = TV_CHART_GRID;
 const AXIS = TV_CHART_SCALE_TEXT;
@@ -155,11 +159,13 @@ async function attachPriceSeries(
   }
 
   return chart.addSeries(tv.CandlestickSeries, {
-    upColor: UP,
-    downColor: DOWN,
-    wickUpColor: UP,
-    wickDownColor: DOWN,
-    borderVisible: false,
+    upColor: TV_MONO_UP,
+    downColor: TV_MONO_DOWN,
+    wickUpColor: TV_MONO_WICK_UP,
+    wickDownColor: TV_MONO_WICK_DOWN,
+    borderVisible: true,
+    borderUpColor: TV_MONO_BORDER_UP,
+    borderDownColor: TV_MONO_BORDER_DOWN,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -189,7 +195,11 @@ function fitChartView(
   if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const fittedWindow = chartFitWindowBars(bars.length, chartFitFirstRealIndex(bars));
+  const fittedWindow = chartFitWindowBars(
+    bars.length,
+    chartFitFirstRealIndex(bars, _windowBars),
+    _windowBars,
+  );
   const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, fittedWindow);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });

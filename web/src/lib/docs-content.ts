@@ -1070,7 +1070,7 @@ export function buildDocsSections(): DocsSection[] {
       blocks: [
         {
           type: "p",
-          text: "Send a share of the hook pot to the creator. If this is the only destination, it is 100%. Pair it with Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop and the shares still add to 100%. Fixed or Dynamic Fees with no destination cannot launch.",
+          text: "Send a share of the hook pot to the creator. If this is the only destination, it is 100%. Pair it with Deepen LPs, Backed Floor, or Holder Airdrop and the shares still add to 100%. Fixed or Dynamic Fees with no destination cannot launch.",
         },
         {
           type: "visual",
@@ -1080,7 +1080,7 @@ export function buildDocsSections(): DocsSection[] {
           type: "ul",
           items: [
             "Alone: 100% of the hook pot is credited to the creator and is claimable in FeeEscrow.",
-            "Auto-Burn 50% + Hook → Creator 50%: they split the pot.",
+            "Deepen LPs 50% + Hook → Creator 50%: they split the pot.",
             "If Buyback Vesting is on, this slice goes to BuybackVault instead of FeeEscrow.",
             "The wizard will not advance until destinations sum to 100%.",
             "Shares with floor / burn / Deepen LPs / airdrop must equal 100% whenever the pot is funded.",

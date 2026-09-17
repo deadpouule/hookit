@@ -170,6 +170,8 @@ test("docs cover multi-pair, Quotrons, creator fees, and every hook page", () =>
   assert.equal(blob.includes("Fixed or Dynamic Fees alone pay the creator"), false);
   assert.equal(blob.includes("Buyback Vesting is a sink"), false);
   assert.match(blob, /credited to the creator and is claimable/);
+  assert.match(blob, /Deepen LPs 50% \+ Hook → Creator 50%/);
+  assert.equal(blob.includes("Auto-Burn 50% + Hook → Creator 50%"), false);
   assert.equal(blob.includes("Portfolio. Tokens you created"), false);
   assert.equal(blob.includes("What you can do"), false);
   assert.equal(blob.includes("What is immutable"), false);
@@ -260,6 +262,10 @@ test("hook figures use real diagrams plus worked examples, not 01-04 cards", () 
   assert.match(visuals, /docs-quotrons-stock/);
   assert.match(visuals, /case "router"/);
   assert.match(visuals, /case "hook-to-creator"/);
+  const hookCreator = visuals.split('case "hook-to-creator"')[1]?.split("case \"")[0] ?? "";
+  assert.match(hookCreator, /Deepen LPs/);
+  assert.match(hookCreator, /#10b981/);
+  assert.equal(hookCreator.includes("Auto-Burn"), false);
   assert.match(visuals, /case "creator-flow"/);
   assert.equal(visuals.includes('className="docs-wizard"'), false);
   const deepenBlock = visuals.split('case "deepen-lps"')[1]?.split("case \"")[0] ?? "";

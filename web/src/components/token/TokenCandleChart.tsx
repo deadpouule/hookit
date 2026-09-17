@@ -8,7 +8,7 @@ import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatPercent } from "@/lib/format";
-import { TV_CANDLE_DOWN, TV_CANDLE_UP } from "@/lib/tv-chart";
+import { TV_MONO_DOWN, TV_MONO_UP, TV_MONO_WICK_DOWN } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   applyTicksToBuckets,
@@ -18,9 +18,10 @@ import {
   chartHudBar,
   chartWindowBars,
   chartSpanSec,
-  definedFdvTape,
+  definedWhitespaceTape,
   ensureCurrentBar,
   formatChartUsd,
+  formatLastCandleUtc,
   intervalBucketSec,
   isWhitespaceBar,
   linkBarOpens,
@@ -47,6 +48,7 @@ export type { ChartInterval };
 const TF_LABEL: Record<ChartInterval, string> = {
   "1m": "1m",
   "5m": "5m",
+  "10m": "10m",
   "15m": "15m",
   "1h": "1h",
   "4h": "4h",
@@ -230,9 +232,9 @@ export function TokenCandleChart({
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
       const marked =
         liveFx > 0 && fx.length > 0
-          ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx))
-          : linkBarOpens(current);
-      return definedFdvTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars());
+          ? linkBarOpens(repriceBarsWithQuoteFx(current, fx, liveFx), bucket)
+          : linkBarOpens(current, bucket);
+      return definedWhitespaceTape(scaleBars(marked, sc), bucket, nowSec, chartWindowBars(bucket));
     },
     [source, swaps, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
   );
@@ -243,7 +245,7 @@ export function TokenCandleChart({
   const hasData = realBars.length > 0;
   const bucketSec = intervalBucketSec(interval, spanSec);
   const anchorIndex = chartFitAnchorIndex(bars);
-  const windowBars = chartWindowBars();
+  const windowBars = chartWindowBars(bucketSec);
   const open = realBars[0]?.open ?? 0;
   const close = realBars.length ? realBars[realBars.length - 1]!.close : 0;
   const pct = changeForInterval(open, close);
@@ -306,7 +308,7 @@ export function TokenCandleChart({
             ariaLabel="Chart scale"
             options={[
               { id: "price", label: "Price" },
-              { id: "mcap", label: "FDV" },
+              { id: "mcap", label: "Market cap" },
             ]}
           />
           <ChartToggle
@@ -336,30 +338,36 @@ export function TokenCandleChart({
             <span className="token-chart-stats-id">
               {ticker || name || "Token"}
               <span className="token-chart-stats-tf">{TF_LABEL[interval]}</span>
+              <span className="token-chart-stats-unit">{scale === "mcap" ? "USD" : "PRICE"}</span>
             </span>
-            <div className="token-chart-stats-ohlc">
-              <span className="token-chart-stat">
-                <span className="token-chart-legend-k">O</span>
-                <span className="token-chart-stat-v">{formatChartUsd(hud.open, scale)}</span>
-              </span>
-              <span className="token-chart-stat token-chart-stat--high">
-                <span className="token-chart-legend-k">H</span>
-                <span className="token-chart-stat-v">{formatChartUsd(hud.high, scale)}</span>
-              </span>
-              <span className="token-chart-stat token-chart-stat--low">
-                <span className="token-chart-legend-k">L</span>
-                <span className="token-chart-stat-v">{formatChartUsd(hud.low, scale)}</span>
-              </span>
-              <span className="token-chart-stat token-chart-stat--close">
-                <span className="token-chart-legend-k">C</span>
-                <span className="token-chart-stat-v">{formatChartUsd(hud.close, scale)}</span>
-              </span>
-            </div>
+            <span className="token-chart-last-candle">
+              last candle {formatLastCandleUtc(hud.time)}
+            </span>
+            {hover ? (
+              <div className="token-chart-stats-ohlc">
+                <span className="token-chart-stat">
+                  <span className="token-chart-legend-k">O</span>
+                  <span className="token-chart-stat-v">{formatChartUsd(hud.open, scale)}</span>
+                </span>
+                <span className="token-chart-stat token-chart-stat--high">
+                  <span className="token-chart-legend-k">H</span>
+                  <span className="token-chart-stat-v">{formatChartUsd(hud.high, scale)}</span>
+                </span>
+                <span className="token-chart-stat token-chart-stat--low">
+                  <span className="token-chart-legend-k">L</span>
+                  <span className="token-chart-stat-v">{formatChartUsd(hud.low, scale)}</span>
+                </span>
+                <span className="token-chart-stat token-chart-stat--close">
+                  <span className="token-chart-legend-k">C</span>
+                  <span className="token-chart-stat-v">{formatChartUsd(hud.close, scale)}</span>
+                </span>
+              </div>
+            ) : null}
           </div>
           <div className="token-chart-stats-side">
             <span
               className="token-chart-stats-chg"
-              style={{ color: hudUp ? TV_CANDLE_UP : TV_CANDLE_DOWN }}
+              style={{ color: hudUp ? TV_MONO_UP : TV_MONO_WICK_DOWN }}
             >
               {formatPercent(hudPct, true)}
             </span>
@@ -410,7 +418,7 @@ export function TokenCandleChart({
             bucketSec={bucketSec}
             windowBars={windowBars}
             anchorIndex={anchorIndex}
-            lineColor={up ? TV_CANDLE_UP : TV_CANDLE_DOWN}
+            lineColor={up ? TV_MONO_UP : TV_MONO_DOWN}
             fitNonce={fitNonce}
             onHover={setHover}
           />

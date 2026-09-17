@@ -6,7 +6,7 @@ import { formatTvPrice } from "@/lib/tv-chart";
 /** Native resolution is 1m - same as Sentry's subgraph resample. */
 export const NATIVE_CANDLE_SEC = 60;
 
-export const CHART_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D", "ALL"] as const;
+export const CHART_TIMEFRAMES = ["1m", "5m", "10m", "15m", "1h", "4h", "1D", "ALL"] as const;
 export type ChartInterval = (typeof CHART_TIMEFRAMES)[number];
 export type ChartScale = "mcap" | "price";
 export type ChartStyle = "candles" | "line";
@@ -26,6 +26,7 @@ export type ChartBar = {
 const INTERVAL_BUCKET_SEC: Record<Exclude<ChartInterval, "ALL">, number> = {
   "1m": 60,
   "5m": 300,
+  "10m": 600,
   "15m": 900,
   "1h": 3_600,
   "4h": 14_400,
@@ -216,21 +217,16 @@ export function chartRenderableCandle(
   _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  // Carry / in-progress buckets (no volume): thin FDV maintenance dash only.
+  // In-progress / last-candle bucket with no prints yet: thin dash, not a fake body.
   if (!isTradedBar(bar)) return flatFdvCandleOhlc(bar);
-  const mid = bar.close;
-  if (fdvCloseMoved(bar)) {
-    const bodyLo = Math.min(bar.open, bar.close);
-    const bodyHi = Math.max(bar.open, bar.close);
-    const maxWick = mid * 0.0015;
-    return {
-      open: bar.open,
-      high: Math.min(Math.max(bar.high, bodyHi), bodyHi + maxWick),
-      low: Math.max(Math.min(bar.low, bodyLo), bodyLo - maxWick),
-      close: bar.close,
-    };
-  }
-  return tradeFlatCandleOhlc(bar);
+  const high = Math.max(bar.high, bar.open, bar.close);
+  const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
+  return {
+    open: bar.open,
+    high,
+    low: Math.min(lowBase, bar.open, bar.close),
+    close: bar.close,
+  };
 }
 
 /** Candle mode: every FDV bucket prints (flat carry = thin dash, trades = wicks). */
@@ -307,9 +303,10 @@ export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuo
   });
 }
 
-/** Each traded bucket opens at the previous bar's close so sparse tapes read continuously. */
-export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
+/** Stair-step only across adjacent buckets. A time gap keeps its own open (isolated spike). */
+export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
   let prevClose: number | undefined;
+  let prevTime: number | undefined;
   const out: ChartBar[] = [];
   for (const bar of bars) {
     if (isWhitespaceBar(bar)) {
@@ -320,9 +317,16 @@ export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
       out.push({ ...bar });
       continue;
     }
-    if (prevClose === undefined) {
+    const adjacent =
+      prevClose !== undefined &&
+      prevTime !== undefined &&
+      bucketSec !== undefined &&
+      bucketSec > 0 &&
+      bar.time === prevTime + bucketSec;
+    if (!adjacent || prevClose === undefined) {
       out.push({ ...bar });
       prevClose = bar.close;
+      prevTime = bar.time;
       continue;
     }
     const open = prevClose;
@@ -334,6 +338,7 @@ export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
       low: Math.min(lowBase, open, bar.close),
     });
     prevClose = bar.close;
+    prevTime = bar.time;
   }
   return out;
 }
@@ -514,7 +519,9 @@ export const CHART_FIT_PAD_BARS = 8;
  * Bars in the opening window. Defined (TradingView `timeframe`) always uses 72
  * slots, even on a token that is only a few hours old — empty time stays empty.
  */
-export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowSec?: number): number {
+export function chartWindowBars(bucketSec?: number, _launchedAt?: number, _nowSec?: number): number {
+  if (bucketSec === 60) return 360;
+  if (bucketSec === 300) return 120;
   return CHART_WINDOW_BARS;
 }
 
@@ -524,38 +531,41 @@ export function chartWindowBars(_bucketSec?: number, _launchedAt?: number, _nowS
  * Pass the first real index inside the last 72 so a quiet 5m does not stay
  * squeezed at 10px — scroll left for earlier session.
  */
-export function chartFitWindowBars(tapeLength: number, anchorIndex = 0): number {
-  if (tapeLength <= 0) return CHART_WINDOW_BARS;
+export function chartFitWindowBars(
+  tapeLength: number,
+  anchorIndex = 0,
+  maxWindow = CHART_WINDOW_BARS,
+): number {
+  if (tapeLength <= 0) return maxWindow;
   const idx = Math.min(Math.max(anchorIndex, 0), tapeLength - 1);
   const fromFirst = tapeLength - idx;
   const padded = Math.max(CHART_MIN_VISIBLE_BARS, fromFirst + CHART_FIT_PAD_BARS);
-  return Math.min(padded, CHART_WINDOW_BARS);
+  return Math.min(padded, Math.max(maxWindow, 1));
 }
 
 /** First real candle to pin Defined auto-zoom. Sparse 15m/5m tapes zoom to the
  * latest prints instead of squeezing the whole session into 1px specks. */
-export function chartFitFirstRealIndex(bars: ChartBar[]): number {
+export function chartFitFirstRealIndex(bars: ChartBar[], windowBars = CHART_WINDOW_BARS): number {
   if (bars.length === 0) return 0;
   const last = bars.length - 1;
-  const start72 = Math.max(0, last - CHART_WINDOW_BARS + 1);
+  const traded: number[] = [];
+  for (let i = 0; i <= last; i++) {
+    if (!isWhitespaceBar(bars[i]!) && bars[i]!.volume > 0) traded.push(i);
+  }
+  if (traded.length > 0 && traded.length <= 16) return traded[0]!;
+  const start = Math.max(0, last - Math.max(windowBars, 1) + 1);
   let reals = 0;
-  let first72 = -1;
+  let first = -1;
   let lastReal = -1;
-  for (let i = start72; i <= last; i++) {
+  for (let i = start; i <= last; i++) {
     if (isWhitespaceBar(bars[i]!)) continue;
-    if (first72 < 0) first72 = i;
+    if (first < 0) first = i;
     lastReal = i;
     reals++;
   }
-  if (lastReal < 0) return start72;
-  if (reals <= 6) {
-    for (let i = last; i >= start72; i--) {
-      const bar = bars[i]!;
-      if (!isWhitespaceBar(bar) && bar.volume > 0) return i;
-    }
-    return lastReal;
-  }
-  return first72;
+  if (lastReal < 0) return start;
+  if (reals <= 6) return traded[traded.length - 1] ?? lastReal;
+  return first;
 }
 
 /** Inclusive logical indexes for the pane, falling back to the last 72 slots. */
@@ -601,9 +611,9 @@ export function visiblePriceBand(
   let atl = Infinity;
   for (let i = start; i <= end; i++) {
     const bar = bars[i];
-    if (!bar || !isCandleBar(bar)) continue;
-    ath = Math.max(ath, bar.close);
-    atl = Math.min(atl, bar.close);
+    if (!bar || !isCandleBar(bar) || !(bar.high > 0) || !(bar.low > 0)) continue;
+    ath = Math.max(ath, bar.high);
+    atl = Math.min(atl, bar.low);
   }
   if (!(ath > 0) || !(atl > 0)) return null;
   return chartPriceBand(atl, ath);
@@ -943,6 +953,16 @@ export function seedLaunchBars(launchedAt: number | undefined, marketCap: number
       volume: 0,
     },
   ];
+}
+
+/** AllonSol-style last-candle clock: `22:19:00 UTC`. */
+export function formatLastCandleUtc(ts: number): string {
+  if (!(ts > 0) || !Number.isFinite(ts)) return "";
+  const d = new Date(ts * 1000);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss} UTC`;
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {
