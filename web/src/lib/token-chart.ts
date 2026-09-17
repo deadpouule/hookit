@@ -6,7 +6,7 @@ import { formatTvPrice } from "@/lib/tv-chart";
 /** Native resolution is 1m - same as Sentry's subgraph resample. */
 export const NATIVE_CANDLE_SEC = 60;
 
-export const CHART_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D", "ALL"] as const;
+export const CHART_TIMEFRAMES = ["1m", "5m", "10m", "15m", "1h", "4h", "1D", "ALL"] as const;
 export type ChartInterval = (typeof CHART_TIMEFRAMES)[number];
 export type ChartScale = "mcap" | "price";
 export type ChartStyle = "candles" | "line";
@@ -26,6 +26,7 @@ export type ChartBar = {
 const INTERVAL_BUCKET_SEC: Record<Exclude<ChartInterval, "ALL">, number> = {
   "1m": 60,
   "5m": 300,
+  "10m": 600,
   "15m": 900,
   "1h": 3_600,
   "4h": 14_400,
@@ -216,21 +217,16 @@ export function chartRenderableCandle(
   _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  // Carry / in-progress buckets (no volume): thin FDV maintenance dash only.
+  // In-progress / last-candle bucket with no prints yet: thin dash, not a fake body.
   if (!isTradedBar(bar)) return flatFdvCandleOhlc(bar);
-  const mid = bar.close;
-  if (fdvCloseMoved(bar)) {
-    const bodyLo = Math.min(bar.open, bar.close);
-    const bodyHi = Math.max(bar.open, bar.close);
-    const maxWick = mid * 0.0015;
-    return {
-      open: bar.open,
-      high: Math.min(Math.max(bar.high, bodyHi), bodyHi + maxWick),
-      low: Math.max(Math.min(bar.low, bodyLo), bodyLo - maxWick),
-      close: bar.close,
-    };
-  }
-  return tradeFlatCandleOhlc(bar);
+  const high = Math.max(bar.high, bar.open, bar.close);
+  const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
+  return {
+    open: bar.open,
+    high,
+    low: Math.min(lowBase, bar.open, bar.close),
+    close: bar.close,
+  };
 }
 
 /** Candle mode: every FDV bucket prints (flat carry = thin dash, trades = wicks). */
@@ -307,9 +303,10 @@ export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuo
   });
 }
 
-/** Each traded bucket opens at the previous bar's close so sparse tapes read continuously. */
-export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
+/** Stair-step only across adjacent buckets. A time gap keeps its own open (isolated spike). */
+export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
   let prevClose: number | undefined;
+  let prevTime: number | undefined;
   const out: ChartBar[] = [];
   for (const bar of bars) {
     if (isWhitespaceBar(bar)) {
@@ -320,9 +317,16 @@ export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
       out.push({ ...bar });
       continue;
     }
-    if (prevClose === undefined) {
+    const adjacent =
+      prevClose !== undefined &&
+      prevTime !== undefined &&
+      bucketSec !== undefined &&
+      bucketSec > 0 &&
+      bar.time === prevTime + bucketSec;
+    if (!adjacent) {
       out.push({ ...bar });
       prevClose = bar.close;
+      prevTime = bar.time;
       continue;
     }
     const open = prevClose;
@@ -334,6 +338,7 @@ export function linkBarOpens(bars: ChartBar[]): ChartBar[] {
       low: Math.min(lowBase, open, bar.close),
     });
     prevClose = bar.close;
+    prevTime = bar.time;
   }
   return out;
 }
@@ -601,9 +606,9 @@ export function visiblePriceBand(
   let atl = Infinity;
   for (let i = start; i <= end; i++) {
     const bar = bars[i];
-    if (!bar || !isCandleBar(bar)) continue;
-    ath = Math.max(ath, bar.close);
-    atl = Math.min(atl, bar.close);
+    if (!bar || !isCandleBar(bar) || !(bar.high > 0) || !(bar.low > 0)) continue;
+    ath = Math.max(ath, bar.high);
+    atl = Math.min(atl, bar.low);
   }
   if (!(ath > 0) || !(atl > 0)) return null;
   return chartPriceBand(atl, ath);
@@ -943,6 +948,16 @@ export function seedLaunchBars(launchedAt: number | undefined, marketCap: number
       volume: 0,
     },
   ];
+}
+
+/** AllonSol-style last-candle clock: `22:19:00 UTC`. */
+export function formatLastCandleUtc(ts: number): string {
+  if (!(ts > 0) || !Number.isFinite(ts)) return "";
+  const d = new Date(ts * 1000);
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss} UTC`;
 }
 
 export function formatChartUsd(value: number, scale: ChartScale): string {

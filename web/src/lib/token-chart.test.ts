@@ -38,6 +38,7 @@ import {
   fillEmptyBars,
   formatChartAxis,
   formatChartUsd,
+  formatLastCandleUtc,
   liveCandlesToBars,
   chartHudBar,
   isSyntheticBar,
@@ -130,6 +131,21 @@ test("barsForInterval rolls 5m into 15m and 4h", () => {
   assert.equal(fifteen[0]!.volume, 3);
   assert.equal(fifteen[1]!.time, 900);
   assert.equal(barsForInterval(bars, "4h").length, 1);
+});
+
+test("1m 10m 15m keep different bucket counts on a sparse tape", () => {
+  const bars = [0, 60, 300, 600, 900].map((time, i) => ({
+    time,
+    open: 10 + i,
+    high: 11 + i,
+    low: 9 + i,
+    close: 10.5 + i,
+    volume: 1,
+  }));
+  assert.equal(barsForInterval(bars, "1m").length, 5);
+  assert.equal(barsForInterval(bars, "10m").length, 2);
+  assert.equal(barsForInterval(bars, "15m").length, 2);
+  assert.notEqual(barsForInterval(bars, "1m")[1]!.close, barsForInterval(bars, "10m")[0]!.close);
 });
 
 test("scaleBars converts market cap to per-token price", () => {
@@ -333,9 +349,8 @@ test("chartRenderableCandle uses a dash for flat FDV carry and real wicks for mo
   );
   assert.equal(traded.open, 5000);
   assert.equal(traded.close, 5100);
-  assert.ok(traded.high > traded.close);
-  assert.ok(traded.low < traded.open);
-  assert.ok(traded.high - traded.close <= 5100 * 0.0015);
+  assert.equal(traded.high, 5200);
+  assert.equal(traded.low, 4900);
 });
 
 test("chartRenderableCandle uses a thin dash for flat FDV maintenance without volume", () => {
@@ -345,11 +360,12 @@ test("chartRenderableCandle uses a thin dash for flat FDV maintenance without vo
   assert.ok(span < 5300 * 0.001);
 });
 
-test("chartRenderableCandle uses a small doji for a flat trade print", () => {
+test("chartRenderableCandle keeps a flat trade print as a real doji", () => {
   const trade = chartRenderableCandle({ time: 3, open: 5300, high: 5300, low: 5300, close: 5300, volume: 2 });
-  const span = trade.high - trade.low;
-  assert.ok(span >= 5300 * 0.0005);
-  assert.ok(span < 5300 * 0.002);
+  assert.equal(trade.open, 5300);
+  assert.equal(trade.high, 5300);
+  assert.equal(trade.low, 5300);
+  assert.equal(trade.close, 5300);
 });
 
 test("candlePlotBar prints every FDV bucket in time", () => {
@@ -438,10 +454,20 @@ test("linkBarOpens chains each print to the previous close", () => {
     { time: 60, open: 10, high: 12, low: 9, close: 11, volume: 1 },
     { time: 120, open: 11, high: 11, low: 11, close: 11, volume: 1 },
   ];
-  const linked = linkBarOpens(bars);
+  const linked = linkBarOpens(bars, 60);
   assert.equal(linked[1]!.open, 11);
   assert.equal(linked[1]!.high, 11);
   assert.equal(linked[1]!.low, 11);
+});
+
+test("linkBarOpens keeps its own open across a time gap", () => {
+  const bars = [
+    { time: 60, open: 10, high: 12, low: 9, close: 11, volume: 1 },
+    { time: 600, open: 20, high: 22, low: 19, close: 21, volume: 1 },
+  ];
+  const linked = linkBarOpens(bars, 60);
+  assert.equal(linked[1]!.open, 20);
+  assert.equal(linked[1]!.close, 21);
 });
 
 test("carryQuoteFxBars only marks buckets where quote FX printed", () => {
@@ -477,6 +503,10 @@ test("formatChartAxis uses TradingView subscript zeros for price", () => {
   assert.equal(formatChartAxis(2.5, "price"), "2.5");
   assert.equal(formatChartAxis(12_500, "mcap"), "$12.50K");
   assert.equal(formatChartAxis(0, "price"), "");
+});
+
+test("formatLastCandleUtc prints the AllonSol last-candle clock", () => {
+  assert.equal(formatLastCandleUtc(1_700_000_340), "22:19:00 UTC");
 });
 
 test("formatChartUsd uses compact USD for mcap and subscript price", () => {

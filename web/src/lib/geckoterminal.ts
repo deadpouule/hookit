@@ -19,6 +19,8 @@ export function geckoOhlcvPath(interval: ChartInterval): GeckoOhlcvPath | null {
       return { timeframe: "minute", aggregate: 1 };
     case "5m":
       return { timeframe: "minute", aggregate: 5 };
+    case "10m":
+      return { timeframe: "minute", aggregate: 10 };
     case "15m":
       return { timeframe: "minute", aggregate: 15 };
     case "1h":

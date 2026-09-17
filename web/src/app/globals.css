@@ -3770,6 +3770,21 @@
     background: rgb(255 255 255 / 0.06);
   }
 
+  .token-chart-stats-unit {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #a1a1aa;
+  }
+
+  .token-chart-last-candle {
+    font-size: 11px;
+    font-weight: 500;
+    color: #a1a1aa;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
   .token-chart-stats-ohlc {
     display: flex;
     flex-wrap: wrap;
@@ -3789,11 +3804,11 @@
   }
 
   .token-chart-stat--high .token-chart-stat-v {
-    color: #2ebd85;
+    color: #fafafa;
   }
 
   .token-chart-stat--low .token-chart-stat-v {
-    color: #f6465d;
+    color: #a1a1aa;
   }
 
   .token-chart-stat--close .token-chart-stat-v {

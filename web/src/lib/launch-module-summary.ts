@@ -237,7 +237,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "holder-airdrop":
     "Every swap accrues into a vault. All holders receive quote or stocks on a time window, or when FDV hits a target (5M–10B), all at once or by %. Permissionless. Anyone can trigger the push.",
   "hook-to-creator":
-    "Sends a share of the hook pot to the creator. Alone it is 100% and claimable in FeeEscrow. Split it with Auto-Burn, Backed Floor, Deepen LPs, or Holder Airdrop so the shares still add to 100%. If Buyback Vesting is on, this slice vests instead of instant claim.",
+    "Sends a share of the hook pot to the creator. Alone it is 100% and claimable in FeeEscrow. Split it with Deepen LPs, Backed Floor, or Holder Airdrop so the shares still add to 100%. If Buyback Vesting is on, this slice vests instead of instant claim.",
   "creator-share-to-hook":
     `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across Hook → Creator, floor, burn, Deepen LPs, or airdrop. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "fixed-fee":

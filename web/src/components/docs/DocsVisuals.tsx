@@ -597,16 +597,16 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
       return (
         <Figure
           caption="Hook tax paid to the creator"
-          note="Alone it is 100%. Split with burn, floor, Deepen LPs, or airdrop so shares still add to 100%."
+          note="Alone it is 100%. Split with Deepen LPs, floor, or airdrop so shares still add to 100%."
         >
           <div className="docs-visual-hook-row">
             <HookMark hookId="hook-to-creator" theme="crimson" />
-            <div className="docs-split-bar" role="img" aria-label="Hook pot split 50 percent burn 50 percent creator">
-              <div className="docs-split-seg" style={{ flex: 50, background: "#dc2626", color: "#fff" }}>
+            <div className="docs-split-bar" role="img" aria-label="Hook pot split 50 percent Deepen LPs 50 percent creator">
+              <div className="docs-split-seg" style={{ flex: 50, background: "#10b981", color: "#052e1c" }}>
                 <span>50%</span>
-                <small>Auto-Burn</small>
+                <small>Deepen LPs</small>
               </div>
-              <div className="docs-split-seg" style={{ flex: 50, background: "#ef4444", color: "#fff" }}>
+              <div className="docs-split-seg" style={{ flex: 50, background: "#dc2626", color: "#fff" }}>
                 <span>50%</span>
                 <small>→ Creator</small>
               </div>
@@ -616,7 +616,7 @@ export function DocsVisual({ id }: { id: DocsVisualId }) {
             title="Example: 1 ETH buy, 2% hook tax"
             rows={[
               { k: "Hook → Creator 100%", v: "0.020 ETH tax to creator escrow, plus 0.006 ETH from the 1% base." },
-              { k: "Burn 50% + Creator 50%", v: "0.010 ETH burn buyback and 0.010 ETH to the creator." },
+              { k: "Deepen LPs 50% + Creator 50%", v: "0.010 ETH minted into the launch range and 0.010 ETH to the creator." },
             ]}
           />
         </Figure>
