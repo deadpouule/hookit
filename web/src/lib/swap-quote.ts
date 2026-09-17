@@ -68,20 +68,26 @@ export async function quoteHookLeg(
   const hookData = hookRecipientData(recipient);
 
   try {
-    const { result } = await client.simulateContract({
-      address: V4_QUOTER_ADDRESS,
-      abi: v4QuoterAbi,
-      functionName: "quoteExactInputSingle",
-      args: [
-        {
-          poolKey: key,
-          zeroForOne,
-          exactAmount: quoteAmountIn,
-          hookData,
-        },
-      ],
-    });
-    const amountOut = result[0] as bigint;
+    const raced = await Promise.race([
+      client.simulateContract({
+        address: V4_QUOTER_ADDRESS,
+        abi: v4QuoterAbi,
+        functionName: "quoteExactInputSingle",
+        args: [
+          {
+            poolKey: key,
+            zeroForOne,
+            exactAmount: quoteAmountIn,
+            hookData,
+          },
+        ],
+      }).then((value) => value, () => null),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), 5_000);
+      }),
+    ]);
+    if (!raced) return null;
+    const amountOut = raced.result[0] as bigint;
     return amountOut > BigInt(0) ? amountOut : null;
   } catch {
     return null;
@@ -186,9 +192,9 @@ export async function quotePoolSwapWithMeta(
         const filled = planFilledIn(plan);
         if (filled > 0n) amountInUsed = filled;
       }
-    }
-
-    if (amountOut == null) {
+      // A 100% dump into the default pool hangs the V4 quoter on MAX. Aggregator
+      // already tried every market at fillable clips — do not fall through.
+    } else if (amountOut == null) {
       // Prefer a direct market leg when the receive asset is one of this launch's quotes.
       const directKeyQuote =
         receiveAsset && isDirectPoolReceive(pool, receiveAsset) ? receiveCurrency : undefined;

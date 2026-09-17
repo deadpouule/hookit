@@ -85,6 +85,7 @@ type MarketLeg = {
 const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
 const MARKET_LEGS_TTL_MS = 20_000;
+const QUOTE_TIMEOUT_MS = 5_000;
 
 type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
 const marketLegsCache = new Map<string, CachedMarketLegs>();
@@ -113,6 +114,18 @@ function marketQuoteFromKey(hookKey: V4PoolKey, token: Address): Address {
   return hookKey.currency0;
 }
 
+async function withQuoteTimeout<T>(work: Promise<T>): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), QUOTE_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([work.then((value) => value, () => null), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 async function quoteExactInOnKey(
   client: PublicClient,
   hookKey: V4PoolKey,
@@ -124,8 +137,8 @@ async function quoteExactInOnKey(
   if (amountIn <= 0n || amountIn > UINT128_MAX) return null;
   const zeroForOne = hookSwapDirection(hookKey, token, side);
   const hookData = hookRecipientData(recipient);
-  try {
-    const { result } = await client.simulateContract({
+  const raced = await withQuoteTimeout(
+    client.simulateContract({
       address: V4_QUOTER_ADDRESS,
       abi: v4QuoterAbi,
       functionName: "quoteExactInputSingle",
@@ -137,12 +150,11 @@ async function quoteExactInOnKey(
           hookData: hookData as Hex,
         },
       ],
-    });
-    const amountOut = result[0] as bigint;
-    return amountOut > BigInt(0) ? amountOut : null;
-  } catch {
-    return null;
-  }
+    }),
+  );
+  if (!raced) return null;
+  const amountOut = raced.result[0] as bigint;
+  return amountOut > BigInt(0) ? amountOut : null;
 }
 
 /** Prefer on-chain PoolKeys from the factory - reconstructed keys often miss the fee flag. */
@@ -336,28 +348,19 @@ async function quoteSellLegWithKey(
   };
 }
 
-function marketLegForQuote(legs: MarketLeg[], quote: Address): MarketLeg | undefined {
-  const key = quote.toLowerCase();
-  return legs.find((l) => l.marketQuote.toLowerCase() === key);
-}
-
 function pickBestSellLeg(legs: BestSellLeg[]): BestSellLeg {
   return [...legs].sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1))[0]!;
 }
 
 type QuoteSellLeg = (leg: MarketLeg, amountIn: bigint) => Promise<BestSellLeg | null>;
 
-/** Equal N-way clip across `legs`. If some slices revert, retry on the markets that quoted. */
+/** Equal N-way clip. Never retries a single market at 100% — that dump hangs the V4 quoter. */
 async function quoteEqualSplitOnLegs(
   quoteLeg: QuoteSellLeg,
   amountIn: bigint,
   legs: MarketLeg[],
 ): Promise<BestSellLeg[] | null> {
-  if (legs.length === 0 || amountIn <= 0n) return null;
-  if (legs.length === 1) {
-    const quoted = await quoteLeg(legs[0]!, amountIn);
-    return quoted ? [quoted] : null;
-  }
+  if (legs.length < 2 || amountIn <= 0n) return null;
   const n = BigInt(legs.length);
   const slice = amountIn / n;
   if (slice <= 0n) return null;
@@ -371,7 +374,7 @@ async function quoteEqualSplitOnLegs(
   if (quoted.every((q): q is BestSellLeg => q != null)) return quoted;
 
   const working = legs.filter((_, i) => quoted[i] != null);
-  if (working.length >= 1 && working.length < legs.length) {
+  if (working.length >= 2 && working.length < legs.length) {
     return quoteEqualSplitOnLegs(quoteLeg, amountIn, working);
   }
   return null;
@@ -394,25 +397,18 @@ export function planFilledIn(plan: BestSellPlan): bigint {
   return plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
 }
 
-/** When a full dump reverts, probe 75% then 50% on every market in one round. */
+/** Same size as the working 50% preset — 75% still dumps too hard and hangs the quoter. */
 async function quoteLargestPartialClip(
   quoteLeg: QuoteSellLeg,
   amountIn: bigint,
   legs: MarketLeg[],
 ): Promise<BestSellLeg | null> {
-  const sizes = [(amountIn * 3n) / 4n, amountIn / 2n].filter(
-    (size) => size > 0n && size < amountIn,
-  );
-  if (sizes.length === 0 || legs.length === 0) return null;
-  const probed = await Promise.all(
-    sizes.flatMap((size) => legs.map((leg) => quoteLeg(leg, size))),
-  );
+  const half = amountIn / 2n;
+  if (half <= 0n || legs.length === 0) return null;
+  const probed = await Promise.all(legs.map((leg) => quoteLeg(leg, half)));
   const ok = probed.filter((q): q is BestSellLeg => q != null);
   if (ok.length === 0) return null;
-  ok.sort((a, b) => {
-    if (a.amountIn === b.amountIn) return a.amountOut > b.amountOut ? -1 : 1;
-    return a.amountIn > b.amountIn ? -1 : 1;
-  });
+  ok.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
   return ok[0] ?? null;
 }
 
@@ -432,8 +428,8 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan: try each market at 100% and an equal N-way split in one
- * round-trip. Pairwise 60/40 clips run in parallel only for two-market routes.
+ * Best sell plan. Full-size dumps into a thin stock pool hang the V4 quoter
+ * (MAX waits minutes, 50% returns). Quote equal clips and a 50% single first.
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -455,41 +451,29 @@ export async function quoteBestSellPlan(
 
   const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
 
-  const [singleResults, equalLegs] = await Promise.all([
-    Promise.all(legs.map((leg) => quoteLeg(leg, amountIn))),
-    splitToStable && legs.length >= 2
-      ? quoteEqualSplitOnLegs(quoteLeg, amountIn, legs)
-      : Promise.resolve(null),
-  ]);
+  const quoteFullSingles = async (): Promise<BestSellLeg[]> => {
+    const results = await Promise.all(legs.map((leg) => quoteLeg(leg, amountIn)));
+    const singles = results.filter((q): q is BestSellLeg => q != null);
+    singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
+    return singles;
+  };
 
-  const singles = singleResults.filter((q): q is BestSellLeg => q != null);
-  singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
+  // Multi USDG: never wait on 100% dumps. Those freeze MAX even when 50% quotes.
+  if (splitToStable && legs.length >= 2) {
+    const [equalLegs, partial] = await Promise.all([
+      quoteEqualSplitOnLegs(quoteLeg, amountIn, legs),
+      quoteLargestPartialClip(quoteLeg, amountIn, legs),
+    ]);
 
-  let bestPlan: BestSellPlan | null = singles[0]
-    ? {
-        legs: [singles[0]],
-        amountOut: singles[0].amountOut,
-        routeLabel: singles[0].routeLabel,
-        bestSingle: singles[0],
-      }
-    : null;
-
-  if (equalLegs) {
-    const total = equalLegs.reduce((sum, leg) => sum + leg.amountOut, 0n);
-    if (!bestPlan || total > bestPlan.amountOut) {
+    let bestPlan: BestSellPlan | null = null;
+    if (equalLegs) {
       bestPlan = splitSellPlan(
         equalLegs,
         `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
-        bestPlan?.bestSingle ?? pickBestSellLeg(equalLegs),
+        pickBestSellLeg(equalLegs),
       );
     }
-  }
-
-  if (!splitToStable) return bestPlan;
-
-  if (!bestPlan) {
-    const partial = await quoteLargestPartialClip(quoteLeg, amountIn, legs);
-    if (partial) {
+    if (partial && (!bestPlan || partial.amountOut > bestPlan.amountOut)) {
       bestPlan = {
         legs: [partial],
         amountOut: partial.amountOut,
@@ -497,43 +481,48 @@ export async function quoteBestSellPlan(
         bestSingle: partial,
       };
     }
-  }
 
-  // Two-pool 60/40-style clips can beat a 50/50. Skip the extra round-trips
-  // when an equal split already covers three or more markets.
-  if (legs.length === 2) {
-    const pairA =
-      singles.length >= 2 ? marketLegForQuote(legs, singles[0]!.marketQuote) : legs[0];
-    const pairB =
-      singles.length >= 2 ? marketLegForQuote(legs, singles[1]!.marketQuote) : legs[1];
-    if (pairA && pairB && pairA.marketQuote.toLowerCase() !== pairB.marketQuote.toLowerCase()) {
-      const pairPlans = await Promise.all(
-        SPLIT_BPS.map(async (bps) => {
-          const amountA = (amountIn * BigInt(bps)) / 10_000n;
-          const amountB = amountIn - amountA;
-          if (amountA <= 0n || amountB <= 0n) return null;
-          const [legA, legB] = await Promise.all([
-            quoteLeg(pairA, amountA),
-            quoteLeg(pairB, amountB),
-          ]);
-          if (!legA || !legB) return null;
-          const pctA = Math.round(bps / 100);
-          return splitSellPlan(
-            [legA, legB],
-            `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
-            bestPlan?.bestSingle ?? pickBestSellLeg([legA, legB]),
-          );
-        }),
-      );
-      for (const plan of pairPlans) {
-        if (plan && (!bestPlan || plan.amountOut > bestPlan.amountOut)) {
-          bestPlan = plan;
+    if (legs.length === 2) {
+      const pairA = legs[0];
+      const pairB = legs[1];
+      if (pairA && pairB) {
+        const pairPlans = await Promise.all(
+          SPLIT_BPS.map(async (bps) => {
+            const amountA = (amountIn * BigInt(bps)) / 10_000n;
+            const amountB = amountIn - amountA;
+            if (amountA <= 0n || amountB <= 0n) return null;
+            const [legA, legB] = await Promise.all([
+              quoteLeg(pairA, amountA),
+              quoteLeg(pairB, amountB),
+            ]);
+            if (!legA || !legB) return null;
+            const pctA = Math.round(bps / 100);
+            return splitSellPlan(
+              [legA, legB],
+              `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+              bestPlan?.bestSingle ?? pickBestSellLeg([legA, legB]),
+            );
+          }),
+        );
+        for (const plan of pairPlans) {
+          if (plan && (!bestPlan || plan.amountOut > bestPlan.amountOut)) {
+            bestPlan = plan;
+          }
         }
       }
     }
+
+    return bestPlan;
   }
 
-  return bestPlan;
+  const singles = await quoteFullSingles();
+  if (!singles[0]) return null;
+  return {
+    legs: [singles[0]],
+    amountOut: singles[0].amountOut,
+    routeLabel: singles[0].routeLabel,
+    bestSingle: singles[0],
+  };
 }
 
 /**

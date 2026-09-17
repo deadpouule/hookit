@@ -210,8 +210,8 @@ test("sell aggregator picks the highest USDG composite output", async () => {
   assert.ok(best);
   assert.equal(best.kind, "composite");
   assert.equal(best.marketQuote, STOCK_B);
-  assert.equal(best.amountOut, 3_000n);
-  assert.equal(best.intermediateOut, 3_000n);
+  assert.equal(best.amountOut, 1_500n);
+  assert.equal(best.intermediateOut, 1_500n);
 });
 
 test("sell aggregator still splits when every full-size dump reverts", async () => {
@@ -246,7 +246,7 @@ test("sell aggregator still splits when every full-size dump reverts", async () 
   assert.match(plan.routeLabel, /Split equal/);
 });
 
-test("sell aggregator quotes a 50-75% clip when a full MAX dump reverts", async () => {
+test("sell aggregator quotes a 50% clip when a full MAX dump reverts", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
   const quotes = [STOCK_A, STOCK_B, stockC, stockD];
@@ -271,8 +271,8 @@ test("sell aggregator quotes a 50-75% clip when a full MAX dump reverts", async 
 
   assert.ok(plan);
   assert.equal(plan.legs.length, 1);
-  assert.equal(plan.legs[0]!.amountIn, 750n);
-  assert.equal(plan.amountOut, 750n);
+  assert.equal(plan.legs[0]!.amountIn, 500n);
+  assert.equal(plan.amountOut, 500n);
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {
