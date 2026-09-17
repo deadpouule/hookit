@@ -49,7 +49,8 @@ export type HookTheme =
   | "pearl"
   | "yellow"
   | "teal"
-  | "cobalt";
+  | "cobalt"
+  | "brown";
 
 /** Slider / accent colors aligned with pick-card hook themes */
 export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
@@ -68,6 +69,7 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   yellow: "#facc15",
   teal: "#2dd4bf",
   cobalt: "#3b82f6",
+  brown: "#b45309",
 };
 
 export function hookThemeAccentColor(theme: HookTheme): string {
@@ -129,7 +131,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "every swap the floor goes up - so the price can only go up. More volume = higher floor",
     category: "protection",
     icon: Layers,
-    theme: "rose",
+    theme: "brown",
     keyword: "FLOOR",
     creator: CREATOR,
     uses: 9,
@@ -261,7 +263,7 @@ export const MASTER_HOOKS: MasterHook[] = [
     description: "send a share of the hook tax to the creator. Split 100% with burn, floor, Deepen LPs, airdrop",
     category: "rewards",
     icon: ArrowDownToLine,
-    theme: "pearl",
+    theme: "crimson",
     keyword: "CREATOR",
     creator: CREATOR,
     uses: 0,

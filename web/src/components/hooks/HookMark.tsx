@@ -136,7 +136,9 @@ function Glyph({ id }: { id: HookId }) {
     case "creatorShareToHook":
       return (
         <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
-          <path d="M5 12h10M12 7l5 5-5 5" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          <ellipse cx="12" cy="5.2" rx="4.2" ry="1.6" stroke={stroke} strokeWidth="1.7" />
+          <circle cx="12" cy="10.2" r="2.2" fill={stroke} />
+          <path d="M7.8 18.8c.6-3 2.1-4.4 4.2-4.4s3.6 1.4 4.2 4.4" stroke={stroke} strokeWidth="1.7" strokeLinecap="round" />
         </svg>
       );
     case "hookToCreator":
