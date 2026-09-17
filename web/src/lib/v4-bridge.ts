@@ -56,7 +56,7 @@ async function quoteBridge(
   amountIn: bigint,
 ): Promise<bigint | null> {
   try {
-    const { result } = await client.simulateContract({
+    const quoted = client.simulateContract({
       address: V4_QUOTER_ADDRESS,
       abi: v4QuoterAbi,
       functionName: "quoteExactInputSingle",
@@ -69,7 +69,14 @@ async function quoteBridge(
         },
       ],
     });
-    const amountOut = result[0] as bigint;
+    const raced = await Promise.race([
+      quoted.then((value) => value, () => null),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), 5_000);
+      }),
+    ]);
+    if (!raced) return null;
+    const amountOut = raced.result[0] as bigint;
     return amountOut > BigInt(0) ? amountOut : null;
   } catch {
     return null;

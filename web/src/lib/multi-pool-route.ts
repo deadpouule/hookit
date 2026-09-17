@@ -86,6 +86,9 @@ const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
 const MARKET_LEGS_TTL_MS = 20_000;
 const QUOTE_TIMEOUT_MS = 5_000;
+/** Fat per-pool dumps hang the V4 quoter; give up and retry at half size. */
+const SLICE_PROBE_MS = 3_000;
+const QUOTE_TIMED_OUT = Symbol("quote-timeout");
 
 type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
 const marketLegsCache = new Map<string, CachedMarketLegs>();
@@ -114,10 +117,13 @@ function marketQuoteFromKey(hookKey: V4PoolKey, token: Address): Address {
   return hookKey.currency0;
 }
 
-async function withQuoteTimeout<T>(work: Promise<T>): Promise<T | null> {
+async function withQuoteTimeout<T>(
+  work: Promise<T>,
+  ms: number = QUOTE_TIMEOUT_MS,
+): Promise<T | null | typeof QUOTE_TIMED_OUT> {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<null>((resolve) => {
-    timer = setTimeout(() => resolve(null), QUOTE_TIMEOUT_MS);
+  const timeout = new Promise<typeof QUOTE_TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(QUOTE_TIMED_OUT), ms);
   });
   try {
     return await Promise.race([work.then((value) => value, () => null), timeout]);
@@ -152,7 +158,7 @@ async function quoteExactInOnKey(
       ],
     }),
   );
-  if (!raced) return null;
+  if (!raced || raced === QUOTE_TIMED_OUT) return null;
   const amountOut = raced.result[0] as bigint;
   return amountOut > BigInt(0) ? amountOut : null;
 }
@@ -354,7 +360,7 @@ function pickBestSellLeg(legs: BestSellLeg[]): BestSellLeg {
 
 type QuoteSellLeg = (leg: MarketLeg, amountIn: bigint) => Promise<BestSellLeg | null>;
 
-/** Equal N-way clip. Never retries a single market at 100% — that dump hangs the V4 quoter. */
+/** Equal N-way clip. Probe one pool first — a hanging slice means the size is too fat. */
 async function quoteEqualSplitOnLegs(
   quoteLeg: QuoteSellLeg,
   amountIn: bigint,
@@ -365,8 +371,18 @@ async function quoteEqualSplitOnLegs(
   const slice = amountIn / n;
   if (slice <= 0n) return null;
 
+  const first = legs[0];
+  if (!first) return null;
+  const probed = await withQuoteTimeout(quoteLeg(first, slice), SLICE_PROBE_MS);
+  if (probed === QUOTE_TIMED_OUT) {
+    const half = amountIn / 2n;
+    if (half <= 0n || half === amountIn) return null;
+    return quoteEqualSplitOnLegs(quoteLeg, half, legs);
+  }
+
   const quoted = await Promise.all(
     legs.map((leg, i) => {
+      if (i === 0) return Promise.resolve(probed);
       const amt = i === legs.length - 1 ? amountIn - slice * (n - 1n) : slice;
       return quoteLeg(leg, amt);
     }),
@@ -397,21 +413,6 @@ export function planFilledIn(plan: BestSellPlan): bigint {
   return plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
 }
 
-/** Same size as the working 50% preset — 75% still dumps too hard and hangs the quoter. */
-async function quoteLargestPartialClip(
-  quoteLeg: QuoteSellLeg,
-  amountIn: bigint,
-  legs: MarketLeg[],
-): Promise<BestSellLeg | null> {
-  const half = amountIn / 2n;
-  if (half <= 0n || legs.length === 0) return null;
-  const probed = await Promise.all(legs.map((leg) => quoteLeg(leg, half)));
-  const ok = probed.filter((q): q is BestSellLeg => q != null);
-  if (ok.length === 0) return null;
-  ok.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
-  return ok[0] ?? null;
-}
-
 /**
  * Quote every Hookit market leg (and optional 1-hop bridge to the receive asset),
  * then pick the max `amountOut`. Lightweight aggregator for multi-pool sells.
@@ -428,8 +429,8 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan. Full-size dumps into a thin stock pool hang the V4 quoter
- * (MAX waits minutes, 50% returns). Quote equal clips and a 50% single first.
+ * Best sell plan. Probe one market before blasting every pool: a hanging
+ * slice means MAX is too fat, so retry at half (the 50% preset that works).
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -458,14 +459,9 @@ export async function quoteBestSellPlan(
     return singles;
   };
 
-  // Multi USDG: never wait on 100% dumps. Those freeze MAX even when 50% quotes.
   if (splitToStable && legs.length >= 2) {
-    const [equalLegs, partial] = await Promise.all([
-      quoteEqualSplitOnLegs(quoteLeg, amountIn, legs),
-      quoteLargestPartialClip(quoteLeg, amountIn, legs),
-    ]);
-
     let bestPlan: BestSellPlan | null = null;
+    const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, legs);
     if (equalLegs) {
       bestPlan = splitSellPlan(
         equalLegs,
@@ -473,16 +469,29 @@ export async function quoteBestSellPlan(
         pickBestSellLeg(equalLegs),
       );
     }
-    if (partial && (!bestPlan || partial.amountOut > bestPlan.amountOut)) {
-      bestPlan = {
-        legs: [partial],
-        amountOut: partial.amountOut,
-        routeLabel: partial.routeLabel,
-        bestSingle: partial,
-      };
+
+    if (!bestPlan) {
+      const clip = amountIn / 2n;
+      if (clip > 0n) {
+        for (const leg of legs) {
+          const one = await withQuoteTimeout(quoteLeg(leg, clip), SLICE_PROBE_MS);
+          if (!one || one === QUOTE_TIMED_OUT) continue;
+          bestPlan = {
+            legs: [one],
+            amountOut: one.amountOut,
+            routeLabel: one.routeLabel,
+            bestSingle: one,
+          };
+          break;
+        }
+      }
     }
 
-    if (legs.length === 2) {
+    if (
+      bestPlan &&
+      legs.length === 2 &&
+      planFilledIn(bestPlan) >= amountIn - 1n
+    ) {
       const pairA = legs[0];
       const pairB = legs[1];
       if (pairA && pairB) {

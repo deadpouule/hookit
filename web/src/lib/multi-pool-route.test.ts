@@ -77,7 +77,7 @@ type QuoteFn = (
   key: V4PoolKey,
   amountIn: bigint,
   zeroForOne: boolean,
-) => bigint | null;
+) => bigint | null | Promise<bigint | null>;
 
 function mockClient(keys: V4PoolKey[], quote: QuoteFn): PublicClient {
   return {
@@ -90,7 +90,7 @@ function mockClient(keys: V4PoolKey[], quote: QuoteFn): PublicClient {
         exactAmount: bigint;
         zeroForOne: boolean;
       };
-      const amountOut = quote(
+      const amountOut = await quote(
         params.poolKey,
         params.exactAmount,
         params.zeroForOne,
@@ -273,6 +273,36 @@ test("sell aggregator quotes a 50% clip when a full MAX dump reverts", async () 
   assert.equal(plan.legs.length, 1);
   assert.equal(plan.legs[0]!.amountIn, 500n);
   assert.equal(plan.amountOut, 500n);
+});
+
+test("MAX still quotes when a full-size dump never returns", async () => {
+  const stockC = INK_QUOTRON_STOCKS[2]!.address;
+  const stockD = INK_QUOTRON_STOCKS[3]!.address;
+  const quotes = [STOCK_A, STOCK_B, stockC, stockD];
+  const pool = poolFor(quotes);
+  const client = mockClient(
+    quotes.map(keyFor),
+    (key, amount) => {
+      if (isQuotronBridge(key)) return amount;
+      if (amount > 125n) return new Promise(() => {});
+      return amount;
+    },
+  );
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 4);
+  assert.equal(
+    plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n),
+    500n,
+  );
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {
