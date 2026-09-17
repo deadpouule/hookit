@@ -70,7 +70,7 @@ export const HOOK_THEME_ACCENT: Record<HookTheme, string> = {
   yellow: "#facc15",
   teal: "#2dd4bf",
   cobalt: "#3b82f6",
-  brown: "#713600",
+  brown: "#c45c00",
   olive: "#4e561a",
 };
 

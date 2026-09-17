@@ -38,8 +38,8 @@ export const HOOK_MARKS: Record<HookId, HookMarkDef> = {
     label: "Backed Floor",
     short: "Floor",
     hint: "More volume, higher floor",
-    color: "#713600",
-    glow: "rgba(113,54,0,0.5)",
+    color: "#c45c00",
+    glow: "rgba(196,92,0,0.6)",
   },
   antiMev: {
     id: "antiMev",

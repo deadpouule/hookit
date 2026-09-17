@@ -1125,16 +1125,16 @@
   }
 
   .pick-card--brown:hover {
-    border-color: rgb(113 54 0 / 0.55);
+    border-color: rgb(196 92 0 / 0.65);
   }
 
   .pick-card--brown.is-on {
-    border-color: #713600;
-    box-shadow: 0 0 0 1px #713600, 0 0 20px rgb(113 54 0 / 0.5);
+    border-color: #c45c00;
+    box-shadow: 0 0 0 1px #c45c00, 0 0 24px rgb(196 92 0 / 0.55);
   }
 
   .pick-card--brown.is-on .pick-card-title {
-    color: #e8c9a0;
+    color: #ffd4a8;
   }
 
   .pick-card--olive:hover {
@@ -1229,7 +1229,7 @@
   .hook-logo--teal { color: #2dd4bf; }
 
   .hook-logo--cobalt { color: #3b82f6; }
-  .hook-logo--brown { color: #713600; }
+  .hook-logo--brown { color: #c45c00; }
   .hook-logo--olive { color: #4e561a; }
 
   .pick-card-title {
@@ -1975,15 +1975,15 @@
   }
 
   .token-hooks-vault-field--brown {
-    border-color: rgb(113 54 0 / 0.4);
+    border-color: rgb(196 92 0 / 0.45);
   }
 
   .token-hooks-vault-field--brown:hover,
   .token-hooks-vault-field--brown:focus-within {
-    border-color: rgb(113 54 0 / 0.75);
+    border-color: rgb(196 92 0 / 0.8);
     box-shadow:
-      0 0 10px rgb(113 54 0 / 0.45),
-      inset 0 0 14px rgb(113 54 0 / 0.12);
+      0 0 12px rgb(196 92 0 / 0.5),
+      inset 0 0 14px rgb(196 92 0 / 0.12);
   }
 
   .token-hooks-vault-field--olive {
@@ -2327,7 +2327,7 @@
   }
 
   .token-hooks-meter-fill--brown {
-    background: linear-gradient(90deg, #713600, #a35200);
+    background: linear-gradient(90deg, #c45c00, #e07a20);
   }
 
   .token-hooks-meter-fill--olive {
@@ -2410,8 +2410,8 @@
   }
 
   .pick-config--brown.pick-config--focused {
-    border-color: rgb(113 54 0 / 0.55);
-    box-shadow: 0 0 0 1px rgb(113 54 0 / 0.32), 0 0 24px rgb(113 54 0 / 0.18);
+    border-color: rgb(196 92 0 / 0.65);
+    box-shadow: 0 0 0 1px rgb(196 92 0 / 0.35), 0 0 28px rgb(196 92 0 / 0.22);
   }
 
   .pick-config--olive.pick-config--focused {
@@ -6129,8 +6129,8 @@
   }
 
   .orb-card--brown:hover {
-    border-color: #713600;
-    box-shadow: 0 0 15px rgb(113 54 0 / 0.55);
+    border-color: #c45c00;
+    box-shadow: 0 0 18px rgb(196 92 0 / 0.65);
   }
 
   .orb-card--olive:hover {
@@ -6395,7 +6395,7 @@
   }
 
   .ascii-shape--brown {
-    background-image: linear-gradient(160deg, #f3d5a8, #c17a2e, #713600, #3d1c00, #a35200);
+    background-image: linear-gradient(160deg, #ffd4a0, #e07a20, #c45c00, #713600, #e07a20);
   }
 
   .ascii-shape--olive {
@@ -6511,7 +6511,7 @@
   .pick-card:hover .ascii-shape--brown,
   .pick-card.is-on .ascii-shape--brown,
   .ascii-shape--hot.ascii-shape--brown {
-    filter: drop-shadow(0 0 12px rgb(113 54 0 / 0.9));
+    filter: drop-shadow(0 0 14px rgb(196 92 0 / 0.95));
   }
 
   .orb-card:hover .ascii-shape--olive,
@@ -6639,9 +6639,9 @@
   }
 
   .orb-hook-desc-badge--brown {
-    border-color: rgb(113 54 0 / 0.5);
-    background: rgb(113 54 0 / 0.22);
-    color: #e8c9a0;
+    border-color: rgb(196 92 0 / 0.55);
+    background: rgb(196 92 0 / 0.2);
+    color: #ffd4a8;
   }
 
   .orb-hook-desc-badge--olive {
@@ -9575,10 +9575,10 @@
   }
 
   .hero-hook-card.is-on.hero-hook-card--brown {
-    border-color: #713600;
+    border-color: #c45c00;
     box-shadow:
-      0 0 0 1px #713600,
-      0 0 40px -10px rgb(113 54 0 / 0.5);
+      0 0 0 1px #c45c00,
+      0 0 44px -8px rgb(196 92 0 / 0.55);
   }
 
   .hero-hook-card.is-on.hero-hook-card--olive {
@@ -11260,7 +11260,7 @@ h2.docs-hook-heading {
 .docs-hkt-schema-hook .hook-logo--volt { color: #03b1ed; }
 .docs-hkt-schema-hook .hook-logo--teal { color: #2dd4bf; }
 .docs-hkt-schema-hook .hook-logo--cobalt { color: #3b82f6; }
-.docs-hkt-schema-hook .hook-logo--brown { color: #713600; }
+.docs-hkt-schema-hook .hook-logo--brown { color: #c45c00; }
 .docs-hkt-schema-hook .hook-logo--olive { color: #4e561a; }
 
 .docs-hkt-schema-hook strong {
