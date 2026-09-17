@@ -245,7 +245,7 @@ function FixedFeeConfigPanel({
           step={10}
         />
       </PickConfigControl>
-      <ConfigHint>Extra fee for hook modules</ConfigHint>
+      <ConfigHint>Pays modules you turn on, or the creator if none are on</ConfigHint>
     </>
   );
 }

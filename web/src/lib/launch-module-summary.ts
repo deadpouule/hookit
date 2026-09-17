@@ -223,7 +223,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "max-tx":
     "Limits how large any single swap can be relative to total supply. Oversized exact-input swaps revert. Useful against whale dumps or bot-sized trades.",
   "dynamic-fees":
-    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle.",
+    "Enables Uniswap v4 dynamic fees. Each swap pays between your min and max based on how much in-range liquidity it consumes. Shallow pools charge more for the same quote size. No oracle. Alone, the extra tax is credited to the creator.",
   "buyback-vesting":
     `Routes the creator's ${CREATOR_SHARE_BPS / 100}% base-fee share into a vesting vault instead of instant escrow. Choose a linear time vest, or keep fees locked until FDV hits a USD target (all at once, or by % at 10M / 50M / 100M / 500M / 1B / 10B). Can't combine with Creator → Hook. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "auto-burn":
@@ -235,7 +235,7 @@ const HOOK_PICK_DETAIL: Record<MasterHookId | "fixed-fee", string> = {
   "creator-share-to-hook":
     `Redirects your ${CREATOR_SHARE_BPS / 100}% creator cut from escrow into the same hook pot as module fees. Split across floor, burn, Deepen LPs, airdrop, or protocol based on what you enabled. Can't combine with Buyback Vesting. Both spend that same ${CREATOR_SHARE_BPS / 100}% cut.`,
   "fixed-fee":
-    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Mutually exclusive with dynamic fees.",
+    "Adds a flat hook tax on every swap, deducted in quote only. Pairs with protection and tokenomics modules. Alone, the tax is credited to the creator and is claimable. Mutually exclusive with dynamic fees.",
 };
 
 /** Longer copy for pick-card and config tooltips. */

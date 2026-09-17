@@ -131,10 +131,9 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         if (m.buybackVesting) {
             (, uint128 streamed,,,) = buybacks.streams(address(this), token);
             assertGt(streamed, 0);
-            assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
         }
-        if (m.autoBurn && !m.dynamicFees) assertEq(hook.pendingAutoBurn(poolId), 0);
-        if (m.deepenLps && !m.dynamicFees) assertEq(hook.pendingDeepenLps(poolId), 0);
+        if (m.autoBurn && !m.dynamicFees) assertEq(hook.pendingAutoBurn(poolId), 0, "autoburn pending");
+        if (m.deepenLps && !m.dynamicFees) assertEq(hook.pendingDeepenLps(poolId), 0, "deepen pending");
     }
 
     // ─── Kitchen sink & singles ───────────────────────────────────────────────
@@ -272,7 +271,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _buyAs(buyer, key, 2 ether);
         (, uint128 streamed,,,) = buybacks.streams(address(this), token);
         assertGt(streamed, 0);
-        assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
+        // 60% of the 1% vests. Unrouted 2% hook tax is credited to the creator.
+        assertGt(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
     }
 
     function testFeeRoutingTriple_FloorBurnDeepen() public {
