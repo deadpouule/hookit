@@ -149,7 +149,12 @@ export const MASTER_HOOKS: MasterHook[] = [
     royalty: "0% of hook fees",
     savedAt: "Block 25,799,640",
     summary: "1 active hook block • time vest or unlock-at-mcap",
-    settings: ["+ CREATOR CUT TO BUYBACKVAULT", "+ TIME VEST OR UNTIL MCAP", "+ CLAIM AFTER UNLOCK"],
+    settings: [
+      "+ CREATOR CUT TO BUYBACKVAULT",
+      "+ UNROUTED HOOK TAX TO VAULT",
+      "+ TIME VEST OR UNTIL MCAP",
+      "+ CLAIM AFTER UNLOCK",
+    ],
   },
   {
     id: "dynamic-fees",
@@ -291,6 +296,7 @@ export const FIXED_FEE_HOOK: BrowseHook = {
     "+ FLAT HOOK TAX ON SWAPS",
     "+ QUOTE-ONLY DEDUCTION",
     "+ NO SINK PAYS THE CREATOR",
+    "+ VESTING IS A SINK",
   ],
 };
 

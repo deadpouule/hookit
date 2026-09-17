@@ -271,8 +271,8 @@ contract ModuleCombinationsTest is LaunchpadTestBase {
         _buyAs(buyer, key, 2 ether);
         (, uint128 streamed,,,) = buybacks.streams(address(this), token);
         assertGt(streamed, 0);
-        // 60% of the 1% vests. Unrouted 2% hook tax is credited to the creator.
-        assertGt(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
+        // 60% of the 1% plus the unrouted 2% hook tax both vest. Escrow stays empty.
+        assertEq(escrow.balanceOf(address(this), Currency.wrap(address(0))), 0);
     }
 
     function testFeeRoutingTriple_FloorBurnDeepen() public {

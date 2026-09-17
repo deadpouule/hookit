@@ -245,7 +245,7 @@ function FixedFeeConfigPanel({
           step={10}
         />
       </PickConfigControl>
-      <ConfigHint>Pays modules you turn on, or the creator if none are on</ConfigHint>
+      <ConfigHint>Pays modules you turn on, Buyback Vesting if that is the sink, or the creator if none are on</ConfigHint>
     </>
   );
 }
