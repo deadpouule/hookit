@@ -303,7 +303,7 @@ export function TokenSwapCard({
 
   useEffect(() => {
     if (side !== "sell" || onBonding) return;
-    const used = swapQuoteMeta?.amountInUsed;
+    const used = poolSwapQuote.quote?.amountInUsed;
     if (used == null || used <= 0n || !amount) return;
     let requested: bigint;
     try {
@@ -313,7 +313,7 @@ export function TokenSwapCard({
     }
     if (used >= requested || requested - used <= 1n) return;
     setAmount(formatUnits(used, payDecimals));
-  }, [amount, onBonding, payDecimals, side, swapQuoteMeta?.amountInUsed]);
+  }, [amount, onBonding, payDecimals, side, poolSwapQuote.quote?.amountInUsed]);
 
   const hasAmount = !!amount && Number(amount) > 0;
 
