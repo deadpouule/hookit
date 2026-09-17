@@ -323,7 +323,7 @@ export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
       bucketSec !== undefined &&
       bucketSec > 0 &&
       bar.time === prevTime + bucketSec;
-    if (!adjacent) {
+    if (!adjacent || prevClose === undefined) {
       out.push({ ...bar });
       prevClose = bar.close;
       prevTime = bar.time;
