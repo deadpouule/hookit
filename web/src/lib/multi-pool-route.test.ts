@@ -246,6 +246,29 @@ test("sell aggregator still splits when every full-size dump reverts", async () 
   assert.match(plan.routeLabel, /Split equal/);
 });
 
+test("sell aggregator keeps a single pool when it beats an equal split", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    return quoteSide(key).toLowerCase() === STOCK_A.toLowerCase()
+      ? amount * 2n
+      : amount * 3n;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.bestSingle.marketQuote, STOCK_B);
+  assert.equal(plan.amountOut, 3_000n);
+});
+
 test("USDG sell reuses a full-size stock dump that already quotes", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;

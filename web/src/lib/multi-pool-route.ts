@@ -413,6 +413,22 @@ export function planFilledIn(plan: BestSellPlan): bigint {
   return plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
 }
 
+function pickBetterSellPlan(
+  amountIn: bigint,
+  a: BestSellPlan | null,
+  b: BestSellPlan | null,
+): BestSellPlan | null {
+  if (!a) return b;
+  if (!b) return a;
+  const aFill = planFilledIn(a);
+  const bFill = planFilledIn(b);
+  const aFull = aFill >= amountIn - 1n;
+  const bFull = bFill >= amountIn - 1n;
+  if (aFull !== bFull) return aFull ? a : b;
+  if (a.amountOut !== b.amountOut) return a.amountOut > b.amountOut ? a : b;
+  return bFill > aFill ? b : a;
+}
+
 /**
  * Quote every Hookit market leg (and optional 1-hop bridge to the receive asset),
  * then pick the max `amountOut`. Lightweight aggregator for multi-pool sells.
@@ -429,9 +445,9 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan. A direct stock receive (AAPL) already quotes a 100% dump.
- * USDG must reuse that same single-pool fill, then bridge — not skip 100%
- * singles (that is why AAPL worked and USDG did not).
+ * Best sell plan. Aggregator: quote every viable route (one pool, equal
+ * split, 60/40 on the top two) and keep the max USDG out. Split only when
+ * it beats a single pool — never because it is the default.
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -467,7 +483,11 @@ export async function quoteBestSellPlan(
   };
 
   if (splitToStable && legs.length >= 2) {
-    const singles = await quoteFullSingles();
+    const [singles, equalLegs] = await Promise.all([
+      quoteFullSingles(),
+      quoteEqualSplitOnLegs(quoteLeg, amountIn, legs),
+    ]);
+
     let bestPlan: BestSellPlan | null = null;
     if (singles[0]) {
       bestPlan = {
@@ -477,15 +497,57 @@ export async function quoteBestSellPlan(
         bestSingle: singles[0],
       };
     }
-
-    if (!bestPlan) {
-      const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, legs);
-      if (equalLegs) {
-        bestPlan = splitSellPlan(
+    if (equalLegs) {
+      bestPlan = pickBetterSellPlan(
+        amountIn,
+        bestPlan,
+        splitSellPlan(
           equalLegs,
           `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
           pickBestSellLeg(equalLegs),
-        );
+        ),
+      );
+    }
+
+    const pairA =
+      singles.length >= 2
+        ? legs.find((l) => l.marketQuote.toLowerCase() === singles[0]!.marketQuote.toLowerCase())
+        : legs.length === 2
+          ? legs[0]
+          : undefined;
+    const pairB =
+      singles.length >= 2
+        ? legs.find((l) => l.marketQuote.toLowerCase() === singles[1]!.marketQuote.toLowerCase())
+        : legs.length === 2
+          ? legs[1]
+          : undefined;
+
+    if (
+      pairA &&
+      pairB &&
+      bestPlan &&
+      planFilledIn(bestPlan) >= amountIn - 1n
+    ) {
+      const pairPlans = await Promise.all(
+        SPLIT_BPS.map(async (bps) => {
+          const amountA = (amountIn * BigInt(bps)) / 10_000n;
+          const amountB = amountIn - amountA;
+          if (amountA <= 0n || amountB <= 0n) return null;
+          const [legA, legB] = await Promise.all([
+            quoteLeg(pairA, amountA),
+            quoteLeg(pairB, amountB),
+          ]);
+          if (!legA || !legB) return null;
+          const pctA = Math.round(bps / 100);
+          return splitSellPlan(
+            [legA, legB],
+            `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+            pickBestSellLeg([legA, legB]),
+          );
+        }),
+      );
+      for (const plan of pairPlans) {
+        bestPlan = pickBetterSellPlan(amountIn, bestPlan, plan);
       }
     }
 
@@ -502,40 +564,6 @@ export async function quoteBestSellPlan(
             bestSingle: one,
           };
           break;
-        }
-      }
-    }
-
-    if (
-      bestPlan &&
-      legs.length === 2 &&
-      planFilledIn(bestPlan) >= amountIn - 1n
-    ) {
-      const pairA = legs[0];
-      const pairB = legs[1];
-      if (pairA && pairB) {
-        const pairPlans = await Promise.all(
-          SPLIT_BPS.map(async (bps) => {
-            const amountA = (amountIn * BigInt(bps)) / 10_000n;
-            const amountB = amountIn - amountA;
-            if (amountA <= 0n || amountB <= 0n) return null;
-            const [legA, legB] = await Promise.all([
-              quoteLeg(pairA, amountA),
-              quoteLeg(pairB, amountB),
-            ]);
-            if (!legA || !legB) return null;
-            const pctA = Math.round(bps / 100);
-            return splitSellPlan(
-              [legA, legB],
-              `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
-              bestPlan?.bestSingle ?? pickBestSellLeg([legA, legB]),
-            );
-          }),
-        );
-        for (const plan of pairPlans) {
-          if (plan && (!bestPlan || plan.amountOut > bestPlan.amountOut)) {
-            bestPlan = plan;
-          }
         }
       }
     }
