@@ -8,7 +8,6 @@ import {
 } from "viem";
 
 import {
-  findMaxFillableSellAmount,
   multiPoolMarketQuotes,
   quoteBestBuyPlan,
   quoteBestSellPlan,
@@ -245,24 +244,6 @@ test("sell aggregator still splits when every full-size dump reverts", async () 
   );
   assert.equal(plan.amountOut, 2_000n);
   assert.match(plan.routeLabel, /Split equal/);
-});
-
-test("MAX sell caps to the largest size the pools can quote", async () => {
-  const pool = poolFor([STOCK_A, STOCK_B]);
-  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
-    if (isQuotronBridge(key)) return amount;
-    if (amount > 200n) return null;
-    return amount;
-  });
-
-  const fillable = await findMaxFillableSellAmount(
-    client,
-    pool,
-    1_000n,
-    STABLE_SWAP_ASSET,
-    TOKEN,
-  );
-  assert.ok(fillable >= 250n && fillable <= 400n);
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {

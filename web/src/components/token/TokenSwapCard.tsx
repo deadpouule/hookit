@@ -19,10 +19,6 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
-import {
-  findMaxFillableSellAmount,
-  shouldAggregateMultiSell,
-} from "@/lib/multi-pool-route";
 import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
 import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
 import {
@@ -480,21 +476,6 @@ export function TokenSwapCard({
     return `${ticker} → ${buyAsset.symbol}`;
   })();
 
-  const resolveMaxSellAmount = useCallback(
-    async (spendable: bigint) => {
-      if (!publicClient || spendable <= 0n) return spendable;
-      const fillable = await findMaxFillableSellAmount(
-        publicClient,
-        pool,
-        spendable,
-        buyAsset,
-        address ?? zeroAddress,
-      );
-      return fillable > 0n ? fillable : spendable;
-    },
-    [address, buyAsset, pool, publicClient],
-  );
-
   return (
     <div className={cn(variant === "sheet" ? "token-swap-sheet-body" : "desk-card p-4")}>
       {variant === "sheet" ? (
@@ -555,11 +536,6 @@ export function TokenSwapCard({
         ethUsd={ethUsd}
         quoteUsd={pool.quoteUsd}
         quoteMeta={swapQuoteMeta}
-        resolveMaxSellAmount={
-          side === "sell" && shouldAggregateMultiSell(pool, buyAsset)
-            ? resolveMaxSellAmount
-            : undefined
-        }
       />
 
       {snipeWarn && (

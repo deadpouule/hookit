@@ -84,6 +84,10 @@ type MarketLeg = {
 
 const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
+const MARKET_LEGS_TTL_MS = 20_000;
+
+type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
+const marketLegsCache = new Map<string, CachedMarketLegs>();
 
 function receiveCurrency(receive: SwapAsset): Address {
   if (receive.isNative) return zeroAddress;
@@ -149,11 +153,16 @@ async function loadMarketLegs(
   const token = pool.contractAddress as Address | undefined;
   if (!token) return [];
 
+  const cacheKey = `${token.toLowerCase()}:${pool.launchId ?? ""}:${pool.marketCount ?? pool.markets?.length ?? 0}`;
+  const cached = marketLegsCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.legs;
+
   const resolved = await resolveMasterLaunch(client, token);
   const launchId = resolved?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
   const factory = resolved?.factory;
   const marketCount = pool.marketCount ?? pool.markets?.length ?? 1;
 
+  let legs: MarketLeg[] = [];
   if (factory && launchId != null && launchId > BigInt(0) && marketCount > 0) {
     const results = await client.multicall({
       contracts: Array.from({ length: marketCount }, (_, i) => ({
@@ -165,7 +174,6 @@ async function loadMarketLegs(
       allowFailure: true,
     });
 
-    const legs: MarketLeg[] = [];
     results.forEach((r, i) => {
       if (r.status !== "success" || !r.result) return;
       const raw = r.result as {
@@ -188,18 +196,23 @@ async function loadMarketLegs(
         marketIndex: i,
       });
     });
-    if (legs.length > 0) return legs;
   }
 
-  // Fallback: reconstruct from UI markets (may fail to quote if fee is wrong).
-  const quotes = multiPoolMarketQuotes(pool);
-  return quotes
-    .map((marketQuote) => {
-      const hookKey =
-        poolKeyForQuote(pool, marketQuote) ?? poolKeyFromLaunch(pool, marketQuote);
-      return hookKey ? { marketQuote, hookKey } : null;
-    })
-    .filter((x): x is MarketLeg => x != null);
+  if (legs.length === 0) {
+    const quotes = multiPoolMarketQuotes(pool);
+    legs = quotes
+      .map((marketQuote) => {
+        const hookKey =
+          poolKeyForQuote(pool, marketQuote) ?? poolKeyFromLaunch(pool, marketQuote);
+        return hookKey ? { marketQuote, hookKey } : null;
+      })
+      .filter((x): x is MarketLeg => x != null);
+  }
+
+  if (legs.length > 0) {
+    marketLegsCache.set(cacheKey, { expires: Date.now() + MARKET_LEGS_TTL_MS, legs });
+  }
+  return legs;
 }
 
 /** Unique quote addresses for every Hookit market on this launch. */
@@ -389,9 +402,8 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan: try each market at 100%, then split across every market
- * (equal N-way, then 60/40-style) even when a full-size dump reverts. MAX
- * sells into thin stock pools usually fail at 100% per pool and must split.
+ * Best sell plan: try each market at 100% and an equal N-way split in one
+ * round-trip. Pairwise 60/40 clips run in parallel only for two-market routes.
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -411,13 +423,16 @@ export async function quoteBestSellPlan(
   const quoteLeg: QuoteSellLeg = (leg, amt) =>
     quoteSellLegWithKey(client, pool, amt, receive, recipient, token, want, leg);
 
-  const singles: BestSellLeg[] = [];
-  await Promise.all(
-    legs.map(async (leg) => {
-      const quoted = await quoteLeg(leg, amountIn);
-      if (quoted) singles.push(quoted);
-    }),
-  );
+  const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
+
+  const [singleResults, equalLegs] = await Promise.all([
+    Promise.all(legs.map((leg) => quoteLeg(leg, amountIn))),
+    splitToStable && legs.length >= 2
+      ? quoteEqualSplitOnLegs(quoteLeg, amountIn, legs)
+      : Promise.resolve(null),
+  ]);
+
+  const singles = singleResults.filter((q): q is BestSellLeg => q != null);
   singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
 
   let bestPlan: BestSellPlan | null = singles[0]
@@ -429,39 +444,6 @@ export async function quoteBestSellPlan(
       }
     : null;
 
-  // BalancedAggregator only settles USDG, so split sells are USDG-only.
-  const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
-  if (!splitToStable) return bestPlan;
-
-  const pairA =
-    singles.length >= 2 ? marketLegForQuote(legs, singles[0]!.marketQuote) : legs[0];
-  const pairB =
-    singles.length >= 2 ? marketLegForQuote(legs, singles[1]!.marketQuote) : legs[1];
-  if (pairA && pairB && pairA.marketQuote.toLowerCase() !== pairB.marketQuote.toLowerCase()) {
-    for (const bps of SPLIT_BPS) {
-      const amountA = (amountIn * BigInt(bps)) / 10_000n;
-      const amountB = amountIn - amountA;
-      if (amountA <= 0n || amountB <= 0n) continue;
-
-      const [legA, legB] = await Promise.all([
-        quoteLeg(pairA, amountA),
-        quoteLeg(pairB, amountB),
-      ]);
-      if (!legA || !legB) continue;
-
-      const total = legA.amountOut + legB.amountOut;
-      if (!bestPlan || total > bestPlan.amountOut) {
-        const pctA = Math.round(bps / 100);
-        bestPlan = splitSellPlan(
-          [legA, legB],
-          `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
-          bestPlan?.bestSingle ?? pickBestSellLeg([legA, legB]),
-        );
-      }
-    }
-  }
-
-  const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, legs);
   if (equalLegs) {
     const total = equalLegs.reduce((sum, leg) => sum + leg.amountOut, 0n);
     if (!bestPlan || total > bestPlan.amountOut) {
@@ -473,47 +455,43 @@ export async function quoteBestSellPlan(
     }
   }
 
-  return bestPlan;
-}
+  if (!splitToStable) return bestPlan;
 
-/**
- * Largest sell size ≤ `amountIn` that still quotes. Used by MAX so the desk
- * does not fill a dump the pools cannot price.
- */
-export async function findMaxFillableSellAmount(
-  client: PublicClient,
-  pool: TokenPool,
-  amountIn: bigint,
-  receive: SwapAsset,
-  recipient: Address = zeroAddress,
-): Promise<bigint> {
-  if (amountIn <= 0n) return 0n;
-  const full = await quoteBestSellPlan(client, pool, amountIn, receive, recipient);
-  if (full && full.amountOut > 0n) return amountIn;
-
-  let working = 0n;
-  let failed = amountIn;
-  let probe = amountIn / 2n;
-  for (let i = 0; i < 10 && probe > 0n; i++) {
-    const plan = await quoteBestSellPlan(client, pool, probe, receive, recipient);
-    if (plan && plan.amountOut > 0n) {
-      working = probe;
-      break;
+  // Two-pool 60/40-style clips can beat a 50/50. Skip the extra round-trips
+  // when an equal split already covers three or more markets.
+  if (legs.length === 2) {
+    const pairA =
+      singles.length >= 2 ? marketLegForQuote(legs, singles[0]!.marketQuote) : legs[0];
+    const pairB =
+      singles.length >= 2 ? marketLegForQuote(legs, singles[1]!.marketQuote) : legs[1];
+    if (pairA && pairB && pairA.marketQuote.toLowerCase() !== pairB.marketQuote.toLowerCase()) {
+      const pairPlans = await Promise.all(
+        SPLIT_BPS.map(async (bps) => {
+          const amountA = (amountIn * BigInt(bps)) / 10_000n;
+          const amountB = amountIn - amountA;
+          if (amountA <= 0n || amountB <= 0n) return null;
+          const [legA, legB] = await Promise.all([
+            quoteLeg(pairA, amountA),
+            quoteLeg(pairB, amountB),
+          ]);
+          if (!legA || !legB) return null;
+          const pctA = Math.round(bps / 100);
+          return splitSellPlan(
+            [legA, legB],
+            `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+            bestPlan?.bestSingle ?? pickBestSellLeg([legA, legB]),
+          );
+        }),
+      );
+      for (const plan of pairPlans) {
+        if (plan && (!bestPlan || plan.amountOut > bestPlan.amountOut)) {
+          bestPlan = plan;
+        }
+      }
     }
-    failed = probe;
-    probe = probe / 2n;
   }
-  if (working === 0n) return 0n;
 
-  let lo = working;
-  let hi = failed > working ? failed - 1n : working;
-  for (let i = 0; i < 6 && lo < hi; i++) {
-    const mid = (lo + hi + 1n) / 2n;
-    const plan = await quoteBestSellPlan(client, pool, mid, receive, recipient);
-    if (plan && plan.amountOut > 0n) lo = mid;
-    else hi = mid - 1n;
-  }
-  return lo;
+  return bestPlan;
 }
 
 /**

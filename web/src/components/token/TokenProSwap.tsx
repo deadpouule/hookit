@@ -93,7 +93,6 @@ export function TokenProSwap({
   ethUsd = 3000,
   quoteUsd,
   quoteMeta,
-  resolveMaxSellAmount,
 }: {
   pool: TokenPool;
   sellAsset: SwapAsset;
@@ -114,8 +113,6 @@ export function TokenProSwap({
   /** USD price of one pool quote unit (ETH / USDG / stock). */
   quoteUsd?: number;
   quoteMeta?: SwapQuoteDisplayMeta | null;
-  /** Optional cap (multi-pool USDG sells) so MAX stays inside quotable size. */
-  resolveMaxSellAmount?: (spendable: bigint) => Promise<bigint>;
 }) {
   const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
   const [flipAnim, setFlipAnim] = useState(false);
@@ -184,13 +181,6 @@ export function TokenProSwap({
     if (spendableRaw !== undefined) {
       if (spendableRaw <= 0n) return;
       onSellAmount(formatUnits(spendableRaw, sellAsset.decimals));
-      if (resolveMaxSellAmount) {
-        void resolveMaxSellAmount(spendableRaw).then((capped) => {
-          if (capped > 0n && capped < spendableRaw) {
-            onSellAmount(formatUnits(capped, sellAsset.decimals));
-          }
-        });
-      }
       return;
     }
     if (sellBalance <= 0) return;
