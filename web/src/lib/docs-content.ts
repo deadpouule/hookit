@@ -356,7 +356,19 @@ export function buildDocsSections(): DocsSection[] {
         },
         {
           type: "p",
-          text: "BalancedAggregator is the PAIR-style router for multi-market tokens. Pay USDG once; the contract splits your input across up to five USDG and wStock markets in a single unlock. Stock legs bridge through Quotrons wStock/USDG pools before the launch hook leg, using the same canonical routing as HookitSwapRouter, but atomic for split buys and sells.",
+          text: "BalancedAggregator is the PAIR-style router for multi-market tokens. Automatic routing is USDG only: pay USDG, or sell the project token for USDG. Stock legs hop USDG ↔ wStock on Quotrons V4, then wStock ↔ project token on the canonical launch V4 pool. ETH is not a multi-pair quote. Picking a ticker (AAPL, NVDA, …) trades that pool directly and is not the aggregator.",
+        },
+        {
+          type: "ul",
+          items: [
+            "Reads every canonical launch pool registered for the project token.",
+            "Quotes the required USDG ↔ wStock V4 conversion and the wStock ↔ project-token V4 leg.",
+            "Rejects unsupported markets and routes with more than 15% live V4 price impact.",
+            "Compares the best single pool with discrete multi-pool allocations. Uses a split only when the extra output covers the extra gas.",
+            "Applies per-leg minimums plus an aggregate minimum, then re-quotes and simulates immediately before wallet signing.",
+            "Never silently falls back to a selected pool. If no safe USDG route can be built, the interface reports the failure and you can pick a market ticker.",
+            "At most five unique launch-pool legs. The contract reconstructs and verifies every pool key against LaunchFactory.",
+          ],
         },
         {
           type: "visual",

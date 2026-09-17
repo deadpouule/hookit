@@ -1,13 +1,16 @@
 import { type Address, type Hex, type PublicClient, zeroAddress } from "viem";
 
-import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { resolveMasterLaunch } from "@/lib/launches";
 import { v4QuoterAbi } from "@/lib/contracts/swap-abi";
 import { poolQuoteLabel, type PaymentAsset } from "@/lib/payment-assets";
 import { isMultiPool, poolMarkets } from "@/lib/pool-active-market";
-import { poolKeyForQuote, poolKeyFromLaunch, type V4PoolKey } from "@/lib/pool-key";
+import { poolIdFromKey, poolKeyForQuote, poolKeyFromLaunch, type V4PoolKey } from "@/lib/pool-key";
+import { STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
+import { quoteFromTokenWei } from "@/lib/quote-usd";
 import type { SwapAsset } from "@/lib/swap-assets";
+import { isStableSwapAsset } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import {
   findBridgeRoute,
@@ -88,6 +91,10 @@ const MARKET_LEGS_TTL_MS = 20_000;
 const QUOTE_TIMEOUT_MS = 5_000;
 /** Fat per-pool dumps hang the V4 quoter; give up and retry at half size. */
 const SLICE_PROBE_MS = 3_000;
+/** Same cap as BalancedAggregator.MAX_PRICE_IMPACT_BPS — reject at quote time. */
+const MAX_ROUTE_IMPACT_BPS = 1_500n;
+/** Split must beat the best single by this much (gas of extra legs). */
+const SPLIT_MIN_IMPROVE_BPS = 30n;
 const QUOTE_TIMED_OUT = Symbol("quote-timeout");
 
 type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
@@ -160,7 +167,38 @@ async function quoteExactInOnKey(
   );
   if (!raced || raced === QUOTE_TIMED_OUT) return null;
   const amountOut = raced.result[0] as bigint;
-  return amountOut > BigInt(0) ? amountOut : null;
+  if (amountOut <= 0n) return null;
+  if (!(await routeImpactOk(client, hookKey, token, side, amountIn, amountOut))) return null;
+  return amountOut;
+}
+
+async function routeImpactOk(
+  client: PublicClient,
+  hookKey: V4PoolKey,
+  token: Address,
+  side: "buy" | "sell",
+  amountIn: bigint,
+  quotedOut: bigint,
+): Promise<boolean> {
+  try {
+    const slot = (await client.readContract({
+      address: STATE_VIEW_ADDRESS,
+      abi: stateViewAbi,
+      functionName: "getSlot0",
+      args: [poolIdFromKey(hookKey)],
+    })) as readonly [bigint, number, number, number] | { sqrtPriceX96?: bigint };
+    const sqrt = Array.isArray(slot) ? slot[0] : slot.sqrtPriceX96;
+    if (typeof sqrt !== "bigint" || sqrt < MIN_SQRT_PRICE || sqrt > MAX_SQRT_PRICE) return true;
+    const tokenIs0 = hookKey.currency0.toLowerCase() === token.toLowerCase();
+    const spotOut =
+      side === "sell"
+        ? quoteFromTokenWei(amountIn, sqrt, tokenIs0)
+        : quoteFromTokenWei(amountIn, sqrt, !tokenIs0);
+    if (spotOut <= quotedOut || spotOut === 0n) return true;
+    return ((spotOut - quotedOut) * 10_000n) / spotOut <= MAX_ROUTE_IMPACT_BPS;
+  } catch {
+    return true;
+  }
 }
 
 /** Prefer on-chain PoolKeys from the factory - reconstructed keys often miss the fee flag. */
@@ -425,8 +463,22 @@ function pickBetterSellPlan(
   const aFull = aFill >= amountIn - 1n;
   const bFull = bFill >= amountIn - 1n;
   if (aFull !== bFull) return aFull ? a : b;
+
+  const aSplit = a.legs.length > 1;
+  const bSplit = b.legs.length > 1;
+  if (aSplit !== bSplit) {
+    const single = aSplit ? b : a;
+    const split = aSplit ? a : b;
+    return splitBeatsSingle(single.amountOut, split.amountOut) ? split : single;
+  }
+
   if (a.amountOut !== b.amountOut) return a.amountOut > b.amountOut ? a : b;
   return bFill > aFill ? b : a;
+}
+
+function splitBeatsSingle(singleOut: bigint, splitOut: bigint): boolean {
+  if (splitOut <= singleOut) return false;
+  return (splitOut - singleOut) * 10_000n >= singleOut * SPLIT_MIN_IMPROVE_BPS;
 }
 
 /**
@@ -656,7 +708,7 @@ export async function quoteBestBuyPlan(
   );
   if (splitPlans && splitPlans !== QUOTE_TIMED_OUT) {
     for (const plan of splitPlans) {
-      if (plan && plan.amountOut > bestPlan.amountOut) bestPlan = plan;
+      if (plan && splitBeatsSingle(bestPlan.amountOut, plan.amountOut)) bestPlan = plan;
     }
   }
 
@@ -664,9 +716,16 @@ export async function quoteBestBuyPlan(
 }
 
 export function shouldAggregateMultiSell(pool: TokenPool, receive?: SwapAsset): boolean {
-  return !!receive && isMultiPool(pool) && multiPoolMarketQuotes(pool).length > 1;
+  return (
+    !!receive &&
+    isStableSwapAsset(receive) &&
+    isMultiPool(pool) &&
+    multiPoolMarketQuotes(pool).length > 1
+  );
 }
 
-export function shouldAggregateMultiBuy(pool: TokenPool): boolean {
-  return isMultiPool(pool) && multiPoolMarketQuotes(pool).length > 1;
+export function shouldAggregateMultiBuy(pool: TokenPool, payment?: PaymentAsset): boolean {
+  if (!isMultiPool(pool) || multiPoolMarketQuotes(pool).length <= 1) return false;
+  if (!payment) return true;
+  return payment.address.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
 }

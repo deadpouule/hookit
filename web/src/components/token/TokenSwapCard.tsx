@@ -339,8 +339,12 @@ export function TokenSwapCard({
   }, [side, modules, pool.launchedAt]);
 
   const canTrade = useMemo(
-    () => walletReady && !!pool.contractAddress && hasAmount,
-    [walletReady, pool.contractAddress, hasAmount],
+    () =>
+      walletReady &&
+      !!pool.contractAddress &&
+      hasAmount &&
+      (onBonding || !!swapQuoteMeta),
+    [walletReady, pool.contractAddress, hasAmount, onBonding, swapQuoteMeta],
   );
 
   const marketSellBalanceRaw = sellAsset.isNative
@@ -472,9 +476,13 @@ export function TokenSwapCard({
     ? "Enter amount"
     : writing || swap.isPending
       ? "Confirm in wallet…"
-      : side === "buy"
-        ? `Buy ${ticker}`
-        : `Sell ${ticker}`;
+      : !onBonding && !swapQuoteMeta
+        ? poolSwapQuote.pending
+          ? "Quoting…"
+          : "No safe route"
+        : side === "buy"
+          ? `Buy ${ticker}`
+          : `Sell ${ticker}`;
 
   const routeLabel = (() => {
     if (swapQuoteMeta?.route) return swapQuoteMeta.route;
@@ -550,6 +558,7 @@ export function TokenSwapCard({
         ethUsd={ethUsd}
         quoteUsd={pool.quoteUsd}
         quoteMeta={swapQuoteMeta}
+        quotePending={!onBonding && poolSwapQuote.pending}
       />
 
       {snipeWarn && (

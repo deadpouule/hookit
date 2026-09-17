@@ -1,4 +1,4 @@
-import type { Address } from "viem";
+import { encodeAbiParameters, keccak256, type Address, type Hex } from "viem";
 import { zeroAddress } from "viem";
 
 import { DEFAULT_TICK_SPACING } from "@/lib/contracts/config";
@@ -68,4 +68,25 @@ export function poolHasQuoteMarket(pool: TokenPool, quote: Address): boolean {
   const q = quote.toLowerCase();
   if (poolQuoteAddress(pool).toLowerCase() === q) return true;
   return (pool.markets ?? []).some((m) => m.quoteAddress.toLowerCase() === q);
+}
+
+/** Uniswap v4 PoolId = keccak256(abi.encode(PoolKey)). */
+export function poolIdFromKey(key: V4PoolKey): Hex {
+  return keccak256(
+    encodeAbiParameters(
+      [
+        {
+          type: "tuple",
+          components: [
+            { name: "currency0", type: "address" },
+            { name: "currency1", type: "address" },
+            { name: "fee", type: "uint24" },
+            { name: "tickSpacing", type: "int24" },
+            { name: "hooks", type: "address" },
+          ],
+        },
+      ],
+      [key],
+    ),
+  );
 }

@@ -224,15 +224,14 @@ export async function quotePoolSwapWithMeta(
       }
     }
   } else {
-    if (shouldAggregateMultiBuy(pool) && !directPay) {
+    if (shouldAggregateMultiBuy(pool, payment)) {
       const plan = await quoteBestBuyPlan(client, pool, payment, amountIn, recipient);
       if (plan) {
         amountOut = plan.amountOut;
         route = plan.routeLabel;
       }
-    }
-
-    if (amountOut == null) {
+      // Automatic USDG routing never silently falls back to a single market.
+    } else if (amountOut == null) {
       const poolQuote = poolQuoteAddress(pool);
 
       if (directPay) {

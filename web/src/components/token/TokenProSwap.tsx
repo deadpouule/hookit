@@ -10,6 +10,7 @@ import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import type { PaymentAssetId } from "@/lib/payment-assets";
 import { type SwapAsset, isStableSwapAsset, needsCompositeSell, poolQuoteSwapAsset } from "@/lib/swap-assets";
+import { isMultiPool } from "@/lib/pool-active-market";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
@@ -93,6 +94,7 @@ export function TokenProSwap({
   ethUsd = 3000,
   quoteUsd,
   quoteMeta,
+  quotePending = false,
 }: {
   pool: TokenPool;
   sellAsset: SwapAsset;
@@ -113,6 +115,7 @@ export function TokenProSwap({
   /** USD price of one pool quote unit (ETH / USDG / stock). */
   quoteUsd?: number;
   quoteMeta?: SwapQuoteDisplayMeta | null;
+  quotePending?: boolean;
 }) {
   const [selectSide, setSelectSide] = useState<"sell" | "buy" | null>(null);
   const [flipAnim, setFlipAnim] = useState(false);
@@ -189,7 +192,14 @@ export function TokenProSwap({
 
   const route = (() => {
     if (quoteMeta?.route) return quoteMeta.route;
-    if (!receiveAmount || Number(sellAmount) <= 0) return "·";
+    const hasSell = Number(sellAmount) > 0;
+    const hasReceive = !!receiveAmount && Number(receiveAmount) > 0;
+    const autoUsdg =
+      isMultiPool(pool) && (isStableSwapAsset(sellAsset) || isStableSwapAsset(buyAsset));
+    if (hasSell && !hasReceive && !quotePending && autoUsdg) {
+      return "No safe USDG route. Pick a stock ticker to trade that pool directly.";
+    }
+    if (!hasReceive || !hasSell) return "·";
     if (needsCompositeSell(pool, buyAsset)) {
       return `${sellAsset.symbol} → ${poolQuoteSwapAsset(pool).symbol} → ${buyAsset.symbol}`;
     }

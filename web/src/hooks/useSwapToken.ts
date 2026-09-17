@@ -221,62 +221,18 @@ export function useSwapToken(pool: TokenPool) {
               await publicClient.waitForTransactionReceipt({ hash });
               return hash;
             }
-          }
-        }
-        if (plan && plan.legs.length > 1) {
-          throw new Error("Split sell could not be simulated. Try a smaller amount.");
-        }
-        const best = plan?.bestSingle ?? plan?.legs[0];
-        const clip = best && best.amountIn > 0n ? best.amountIn : amountIn;
-        if (best?.kind === "direct") {
-          const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
-          const minOut =
-            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-          await ensureErc20Allowance(token, router, clip);
-          const hash = await writeContractAsync({
-            address: router,
-            abi: hookitSwapRouterAbi,
-            functionName: "swapExactIn",
-            args: [best.hookKey, zeroForOne, clip, minOut, sqrtLimit(zeroForOne)],
-          });
-          await publicClient.waitForTransactionReceipt({ hash });
-          return hash;
-        }
-        if (best?.kind === "composite") {
-          if (!supportsCompositeSwap() || !isProductionSwapRouter()) {
             throw new Error(
-              "Best sell route needs HookitSwapRouter composite sell. Set NEXT_PUBLIC_HOOKIT_SWAP_ROUTER.",
+              "No safe USDG route for this size. Pick a stock ticker to trade that pool directly.",
             );
           }
-          const hookitRouter = getHookitSwapRouterAddress()!;
-          const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
-          const minOut =
-            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
-          await ensureErc20Allowance(token, hookitRouter, clip);
-          const hash = await writeContractAsync({
-            address: hookitRouter,
-            abi: hookitSwapRouterAbi,
-            functionName: "swapExactInCompositeSell",
-            args: [
-              best.bridge.key,
-              best.bridge.zeroForOne,
-              clip,
-              best.hookKey,
-              hookZeroForOne,
-              best.marketQuote,
-              minOut,
-              sqrtLimit(best.bridge.zeroForOne),
-              sqrtLimit(hookZeroForOne),
-            ],
-          });
-          await publicClient.waitForTransactionReceipt({ hash });
-          return hash;
         }
-        // Aggregator found nothing - fall through to single-market sell path.
+        throw new Error(
+          "No safe USDG route. Pick a stock ticker to trade that pool directly.",
+        );
       }
 
       // Multi-pool buy aggregator (+ optional split across pools).
-      if (side === "buy" && shouldAggregateMultiBuy(pool) && !payingDirectQuote) {
+      if (side === "buy" && shouldAggregateMultiBuy(pool, payment)) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
         const aggregator = getBalancedAggregatorAddress();
         const resolvedBuy = await resolveMasterLaunch(publicClient, token);
@@ -327,16 +283,13 @@ export function useSwapToken(pool: TokenPool) {
               return hash;
             }
             throw new Error(
-              "This size moves the pool too much for a USDG buy. Try a smaller amount.",
+              "No safe USDG route for this size. Pick a stock ticker to trade that pool directly.",
             );
           }
         }
-        if (plan) {
-          throw new Error(
-            "USDG aggregator could not simulate this buy. Try a smaller amount or buy with the stock pair.",
-          );
-        }
-        // Aggregator found nothing - fall through to single-market buy path.
+        throw new Error(
+          "No safe USDG route. Pick a stock ticker to trade that pool directly.",
+        );
       }
 
       // Prefer the market matching payment (buy) or receive asset (sell) on multi launches.

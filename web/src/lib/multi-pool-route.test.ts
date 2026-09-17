@@ -115,9 +115,19 @@ function isQuotronBridge(key: V4PoolKey): boolean {
 
 test("deduplicates market quotes and enables aggregation only for multi pools", () => {
   const pool = poolFor([STOCK_A, STOCK_B, STOCK_A]);
+  const stockReceive: SwapAsset = {
+    key: "stock-a",
+    symbol: "STOCKA",
+    name: "Stock A",
+    address: STOCK_A,
+    decimals: 18,
+  };
   assert.deepEqual(multiPoolMarketQuotes(pool), [STOCK_A, STOCK_B]);
   assert.equal(shouldAggregateMultiBuy(pool), true);
+  assert.equal(shouldAggregateMultiBuy(pool, paymentAssetById("USDC")), true);
+  assert.equal(shouldAggregateMultiBuy(pool, paymentAssetById("ETH")), false);
   assert.equal(shouldAggregateMultiSell(pool, STABLE_SWAP_ASSET), true);
+  assert.equal(shouldAggregateMultiSell(pool, stockReceive), false);
   assert.equal(shouldAggregateMultiBuy(poolFor([STOCK_A])), false);
 });
 
@@ -355,6 +365,30 @@ test("MAX still quotes when a full-size dump never returns", async () => {
     plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n),
     500n,
   );
+});
+
+test("does not split when the extra output does not cover extra gas", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    const quote = quoteSide(key);
+    if (quote.toLowerCase() === STOCK_B.toLowerCase() && amount <= 4_000n) {
+      return amount + 29n;
+    }
+    return amount;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    10_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.amountOut, 10_000n);
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {

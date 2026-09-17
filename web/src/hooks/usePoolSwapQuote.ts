@@ -26,15 +26,18 @@ export function usePoolSwapQuote(opts: {
   const { address } = useAccount();
   const [receiveAmount, setReceiveAmount] = useState("");
   const [quote, setQuote] = useState<PoolSwapQuoteMeta | null>(null);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (!opts.enabled || !publicClient || !opts.amount || Number(opts.amount) <= 0) {
       setReceiveAmount("");
       setQuote(null);
+      setPending(false);
       return;
     }
 
     let cancelled = false;
+    setPending(true);
     const handle = window.setTimeout(() => {
       void (async () => {
         try {
@@ -56,15 +59,18 @@ export function usePoolSwapQuote(opts: {
           if (!result) {
             setReceiveAmount("");
             setQuote(null);
+            setPending(false);
             return;
           }
 
           setQuote(result);
           setReceiveAmount(formatUnits(result.amountOut, opts.decimalsOut));
+          setPending(false);
         } catch {
           if (!cancelled) {
             setReceiveAmount("");
             setQuote(null);
+            setPending(false);
           }
         }
       })();
@@ -89,5 +95,5 @@ export function usePoolSwapQuote(opts: {
     opts.enabled,
   ]);
 
-  return { receiveAmount, quote };
+  return { receiveAmount, quote, pending };
 }
