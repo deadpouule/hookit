@@ -18,6 +18,7 @@ import type { TokenPool } from "@/lib/types";
 import {
   isDirectPoolReceive,
   isPoolQuoteAsset,
+  isStableSwapAsset,
   needsCompositeSell,
   type SwapAsset,
 } from "@/lib/swap-assets";
@@ -249,6 +250,11 @@ export async function quotePoolSwapWithMeta(
   }
 
   if (!amountOut || amountOut <= BigInt(0)) {
+    // Spot * tokens is in pool-quote units (wStock/ETH), not USDG. Using it as a
+    // 6-decimal USDG quote turns a MAX dump into literal crumbs on screen.
+    if (side === "sell" && receiveAsset && isStableSwapAsset(receiveAsset)) {
+      return null;
+    }
     const decimalsIn = side === "buy" ? payDecimals : 18;
     const decimalsOut = side === "buy" ? 18 : receiveAsset?.decimals ?? payment.decimals;
     amountOut = spotQuoteFallback(pool, side, amountIn, decimalsIn, decimalsOut);

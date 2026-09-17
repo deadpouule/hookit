@@ -8,6 +8,7 @@ import {
 } from "viem";
 
 import {
+  findMaxFillableSellAmount,
   multiPoolMarketQuotes,
   quoteBestBuyPlan,
   quoteBestSellPlan,
@@ -212,6 +213,56 @@ test("sell aggregator picks the highest USDG composite output", async () => {
   assert.equal(best.marketQuote, STOCK_B);
   assert.equal(best.amountOut, 3_000n);
   assert.equal(best.intermediateOut, 3_000n);
+});
+
+test("sell aggregator still splits when every full-size dump reverts", async () => {
+  const stockC = INK_QUOTRON_STOCKS[2]!.address;
+  const stockD = INK_QUOTRON_STOCKS[3]!.address;
+  const quotes = [STOCK_A, STOCK_B, stockC, stockD];
+  const pool = poolFor(quotes);
+  const client = mockClient(
+    quotes.map(keyFor),
+    (key, amount) => {
+      if (isQuotronBridge(key)) return amount;
+      if (amount > 250n) return null;
+      return amount * 2n;
+    },
+  );
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 4);
+  assert.equal(
+    plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n),
+    1_000n,
+  );
+  assert.equal(plan.amountOut, 2_000n);
+  assert.match(plan.routeLabel, /Split equal/);
+});
+
+test("MAX sell caps to the largest size the pools can quote", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    if (amount > 200n) return null;
+    return amount;
+  });
+
+  const fillable = await findMaxFillableSellAmount(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+  assert.ok(fillable >= 250n && fillable <= 400n);
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {

@@ -222,6 +222,9 @@ export function useSwapToken(pool: TokenPool) {
             }
           }
         }
+        if (plan && plan.legs.length > 1) {
+          throw new Error("Split sell could not be simulated. Try a smaller amount.");
+        }
         const best = plan?.bestSingle ?? plan?.legs[0];
         if (best?.kind === "direct") {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
