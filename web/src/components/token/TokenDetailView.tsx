@@ -359,45 +359,47 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         <div className="token-desk-main min-w-0">
           <div className="token-desk-hero min-w-0">{heroCard}</div>
 
-          <div className="token-desk-chart min-w-0 space-y-3">
-            {multi && (
-              <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
-                This token trades on <strong className="text-foreground">{markets.length} pools</strong>
-                {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
-                pool tab on the chart or swap to trade that quote.
-              </p>
-            )}
-            <TokenCandleChart
-              candles={live.candles}
-              swaps={live.swaps}
-              isLoading={liveLoading}
-              interval={chartInterval}
-              onInterval={setInterval}
-              marketCap={live.marketCap}
-              launchMcap={poolLaunchMcapUsd(activePool)}
-              tokenAddress={contractAddress}
-              ticker={pool.ticker}
-              name={pool.name}
-              launchedAt={pool.launchedAt}
-              quoteAddress={activePool.quoteAddress}
-              quoteUsd={activePool.quoteUsd}
-              marketLegs={multi ? marketLegs : undefined}
-              activePoolId={activePool.poolId}
-              activeMarketIndex={marketIndex}
-              onMarketIndex={multi ? setMarketIndex : undefined}
-              onBeFirstBuy={beFirstBuy}
-            />
-          </div>
+          <div className="token-desk-stage">
+            <aside className="token-desk-side">
+              <div className="token-desk-hooks space-y-3">
+                {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+              </div>
+              {!isClassicDesk ? <HookPulseCard pool={pool} /> : null}
+              <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
+                <CreatorActions pool={activePool} />
+              </div>
+            </aside>
 
-          <aside className="token-desk-side">
-            <div className="token-desk-hooks space-y-3">
-              {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+            <div className="token-desk-chart min-w-0 space-y-3">
+              {multi && (
+                <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
+                  This token trades on <strong className="text-foreground">{markets.length} pools</strong>
+                  {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
+                  pool tab on the chart or swap to trade that quote.
+                </p>
+              )}
+              <TokenCandleChart
+                candles={live.candles}
+                swaps={live.swaps}
+                isLoading={liveLoading}
+                interval={chartInterval}
+                onInterval={setInterval}
+                marketCap={live.marketCap}
+                launchMcap={poolLaunchMcapUsd(activePool)}
+                tokenAddress={contractAddress}
+                ticker={pool.ticker}
+                name={pool.name}
+                launchedAt={pool.launchedAt}
+                quoteAddress={activePool.quoteAddress}
+                quoteUsd={activePool.quoteUsd}
+                marketLegs={multi ? marketLegs : undefined}
+                activePoolId={activePool.poolId}
+                activeMarketIndex={marketIndex}
+                onMarketIndex={multi ? setMarketIndex : undefined}
+                onBeFirstBuy={beFirstBuy}
+              />
             </div>
-            {!isClassicDesk ? <HookPulseCard pool={pool} /> : null}
-            <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
-              <CreatorActions pool={activePool} />
-            </div>
-          </aside>
+          </div>
 
           <div className="token-desk-tx-col min-w-0">
             <TokenTxTable
