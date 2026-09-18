@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
 import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
-import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
+import { BLOCK_EXPLORER_URL, STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { isPhoneDocument } from "@/lib/device";
 import {
   changeTone,
@@ -400,12 +400,10 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               )}
             >
               {multi && (
-                <div className="token-multi-pool-note rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
-                  <span>
-                    This token trades on{" "}
-                    <strong className="text-foreground">{markets.length} pools</strong>
-                    {" "}(
-                  </span>
+                <div className="token-multi-pool-note">
+                  <span>This token trades on</span>
+                  <strong className="text-foreground">{markets.length} pools</strong>
+                  <span>(</span>
                   {marketLegs.map((leg, i) => (
                     <span key={`${leg.quoteAddress}-${i}`} className="token-multi-pool-note__leg">
                       {i > 0 ? <span className="token-multi-pool-note__plus">+</span> : null}
@@ -413,9 +411,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                       <span className="text-foreground">{leg.label}</span>
                     </span>
                   ))}
-                  <span>
-                    ). {stableQuoteLabel()} buys and sells route across them automatically.
+                  <span>).</span>
+                  <span className="token-multi-pool-note__leg">
+                    <PoolQuoteMark quoteAddress={STABLE_QUOTE_ADDRESS} quoteAsset={stableQuoteLabel()} />
+                    <span className="text-foreground">{stableQuoteLabel()}</span>
                   </span>
+                  <span>buys and sells route across them automatically.</span>
                 </div>
               )}
               <TokenCandleChart
