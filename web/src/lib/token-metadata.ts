@@ -97,7 +97,26 @@ function ipfsHttpUrls(uri: string): string[] {
   return urls;
 }
 
-const remoteMetaCache = new Map<string, TokenMetadataFields>();
+type RemoteMetaCacheEntry = { fields: TokenMetadataFields; expiresAt: number };
+const remoteMetaCache = new Map<string, RemoteMetaCacheEntry>();
+/** Retry failed IPFS metadata after a short window (gateway propagation). */
+const NEGATIVE_META_CACHE_MS = 45_000;
+/** Successful metadata can be reused longer within a warm server instance. */
+const POSITIVE_META_CACHE_MS = 5 * 60_000;
+
+function readMetaCache(uri: string): TokenMetadataFields | undefined {
+  const hit = remoteMetaCache.get(uri);
+  if (!hit) return undefined;
+  if (hit.expiresAt <= Date.now()) {
+    remoteMetaCache.delete(uri);
+    return undefined;
+  }
+  return hit.fields;
+}
+
+function writeMetaCache(uri: string, fields: TokenMetadataFields, ttlMs: number) {
+  remoteMetaCache.set(uri, { fields, expiresAt: Date.now() + ttlMs });
+}
 
 /** True when a string looks like a renderable image / media URI. */
 export function isTokenMediaUri(value: string | undefined | null): boolean {
@@ -243,8 +262,8 @@ export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFi
   }
 
   if (uri.startsWith("ipfs://") || uri.startsWith("https://") || uri.startsWith("http://")) {
-    const cached = remoteMetaCache.get(uri);
-    if (cached) return cached;
+    const cached = readMetaCache(uri);
+    if (cached !== undefined) return cached;
 
     for (const httpUrl of ipfsHttpUrls(uri)) {
       if (!isSafeRemoteMetadataUrl(httpUrl)) continue;
@@ -258,14 +277,14 @@ export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFi
         const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
         if (contentType.startsWith("image/")) {
           const fields = { image: uri };
-          remoteMetaCache.set(uri, fields);
+          writeMetaCache(uri, fields, POSITIVE_META_CACHE_MS);
           return fields;
         }
 
         const text = await res.text();
         try {
           const fields = fieldsFromUnknown(JSON.parse(text));
-          remoteMetaCache.set(uri, fields);
+          writeMetaCache(uri, fields, POSITIVE_META_CACHE_MS);
           return fields;
         } catch {
           continue;
@@ -275,7 +294,7 @@ export async function resolveTokenMetadata(uri: string): Promise<TokenMetadataFi
       }
     }
 
-    remoteMetaCache.set(uri, {});
+    writeMetaCache(uri, {}, NEGATIVE_META_CACHE_MS);
     return {};
   }
 
@@ -291,13 +310,21 @@ export function clipImageForMetadata(image: string | null | undefined): string |
   return undefined;
 }
 
+/** Ordered HTTP URLs to try for a token image (gateways rotated on <img> error). */
+export function mediaUrlCandidates(uri: string | undefined | null): string[] {
+  if (!uri) return [];
+  if (uri.startsWith("ipfs://")) return ipfsHttpUrls(uri);
+  if (
+    uri.startsWith("https://") ||
+    uri.startsWith("http://") ||
+    uri.startsWith("data:image/")
+  ) {
+    return [uri];
+  }
+  return [];
+}
+
 /** Resolve ipfs:// to an HTTP gateway URL for <img src>. */
 export function resolveMediaUrl(uri: string | undefined | null): string | undefined {
-  if (!uri) return undefined;
-  if (uri.startsWith("ipfs://")) {
-    const cid = uri.slice("ipfs://".length).replace(/^ipfs\//, "");
-    const gateway = IPFS_GATEWAY_FALLBACKS[0] ?? DEFAULT_IPFS_GATEWAY;
-    return `${gateway}/${cid}`;
-  }
-  return uri;
+  return mediaUrlCandidates(uri)[0];
 }

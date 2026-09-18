@@ -302,6 +302,8 @@ export type StoreFile = {
   version: 3;
   chainId: number;
   cursor: string;
+  /** Block hash at `cursor` — used to detect chain reorgs before advancing. */
+  cursorBlockHash?: Hex;
   updatedAt: number;
   lastPollError?: string;
   lastPollAt?: number;

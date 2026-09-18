@@ -69,7 +69,7 @@ export function createClient(cfg: IndexerConfig): PublicClient {
   });
 }
 
-const RATE_LIMIT_RE = /rate limit|429|too many requests/i;
+const RATE_LIMIT_RE = /rate limit|429|too many requests|http 429/i;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -454,9 +454,53 @@ async function blockTimestamps(client: PublicClient, blockNumbers: bigint[]): Pr
   return out;
 }
 
+/** Roll back the cursor when the block hash at `cursor` no longer matches (chain reorg). */
+export async function validateCursorBlock(
+  client: PublicClient,
+  store: Store,
+  confirmations: bigint,
+): Promise<boolean> {
+  const cursor = BigInt(store.data.cursor || "0");
+  const expected = store.data.cursorBlockHash;
+  if (cursor === 0n || !expected) return true;
+
+  const block = await rpcWithRetry(
+    () => client.getBlock({ blockNumber: cursor }),
+    "getBlock(cursor)",
+  );
+  if (block.hash?.toLowerCase() === expected.toLowerCase()) return true;
+
+  const rewind = cursor > confirmations ? cursor - confirmations : 0n;
+  console.warn(
+    `[indexer] reorg detected at block ${cursor} — rolling cursor back to ${rewind}`,
+  );
+  store.data.cursor = rewind.toString();
+  delete store.data.cursorBlockHash;
+  store.save();
+  return false;
+}
+
+async function persistCursor(
+  client: PublicClient,
+  store: Store,
+  to: bigint,
+) {
+  store.data.cursor = to.toString();
+  const block = await rpcWithRetry(
+    () => client.getBlock({ blockNumber: to }),
+    "getBlock(cursor-hash)",
+  );
+  if (block.hash) store.data.cursorBlockHash = block.hash;
+  store.save();
+}
+
 export async function tick(client: PublicClient, store: Store, cfg: IndexerConfig): Promise<number> {
   const latest = await rpcWithRetry(() => client.getBlockNumber(), "getBlockNumber");
   const safeHead = latest > cfg.confirmations ? latest - cfg.confirmations : 0n;
+
+  if (!(await validateCursorBlock(client, store, cfg.confirmations))) {
+    return 0;
+  }
 
   let from = BigInt(store.data.cursor || "0");
   if (from === 0n && cfg.startBlock > 0n) from = cfg.startBlock;
@@ -472,8 +516,7 @@ export async function tick(client: PublicClient, store: Store, cfg: IndexerConfi
   while (from <= safeHead) {
     const to = from + cfg.chunkSize - 1n > safeHead ? safeHead : from + cfg.chunkSize - 1n;
     await indexRange(client, store, cfg, from, to);
-    store.data.cursor = to.toString();
-    store.save();
+    await persistCursor(client, store, to);
     processed += Number(to - from + 1n);
     from = to + 1n;
     if (from <= safeHead) await sleep(250);

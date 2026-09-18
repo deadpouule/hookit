@@ -79,7 +79,6 @@ export type DocsVisualId =
   | "master-studio"
   | "multi-pair"
   | "balanced-aggregator"
-  | "arb-keeper"
   | "quotrons"
   | "trading"
   | "creator-fees"

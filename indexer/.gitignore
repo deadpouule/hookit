@@ -1,5 +1,13 @@
 node_modules/
-data/
+
+# Environnements et secrets
 .env
+.env.*
+!.env.example
+!*.example
+
+# Indexer persistence (never commit live chain data)
+data/
 dist/
+*.log
 *.tmp

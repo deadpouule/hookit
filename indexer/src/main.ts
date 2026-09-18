@@ -3,6 +3,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadConfig } from "./config.js";
+import { formatErrorForLog } from "./errors.js";
 import { createClient, tick, probeLaunchLogs } from "./poller.js";
 import { startApi } from "./api.js";
 import { Store } from "./store.js";
@@ -61,10 +62,10 @@ async function main() {
       if (n > 0) console.log(`[indexer] +${n} blocks → cursor ${store.data.cursor}`);
       return n;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = formatErrorForLog(err);
       store.setPollError(msg);
       store.save();
-      console.error("[indexer] poll error", err);
+      console.error("[indexer] poll error", msg);
       throw err;
     }
   };

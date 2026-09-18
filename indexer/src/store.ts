@@ -1,4 +1,13 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  writeSync,
+} from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -262,7 +271,14 @@ export class Store {
   save() {
     this.data.updatedAt = Math.floor(Date.now() / 1000);
     const tmp = `${this.path}.tmp`;
-    writeFileSync(tmp, JSON.stringify(this.data));
+    const payload = JSON.stringify(this.data);
+    const fd = openSync(tmp, "w");
+    try {
+      writeSync(fd, payload);
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
     renameSync(tmp, this.path);
   }
 

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-
+import { TokenImage } from "@/components/token/TokenImage";
 import { cn } from "@/lib/utils";
 import type { MarketToken } from "@/lib/market-tokens";
-import { isTokenMediaUri, resolveMediaUrl } from "@/lib/token-metadata";
+import { isTokenMediaUri } from "@/lib/token-metadata";
 
 export function TokenArt({
   token,
@@ -15,11 +14,8 @@ export function TokenArt({
   className?: string;
   glyphClassName?: string;
 }) {
-  const mediaSrc = resolveMediaUrl(
-    token.imageUrl || (isTokenMediaUri(token.emoji) ? token.emoji : undefined),
-  );
-  const [broken, setBroken] = useState(false);
-  const showImage = Boolean(mediaSrc) && !broken;
+  const mediaUri =
+    token.imageUrl || (isTokenMediaUri(token.emoji) ? token.emoji : undefined);
   const fallback = token.ticker.slice(0, 1).toUpperCase();
 
   return (
@@ -32,13 +28,15 @@ export function TokenArt({
         className="absolute -bottom-8 -left-6 h-28 w-28 rounded-full opacity-40 blur-2xl"
         style={{ background: token.artAccent }}
       />
-      {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={mediaSrc}
-          alt=""
+      {mediaUri ? (
+        <TokenImage
+          uri={mediaUri}
           className="relative z-[1] h-full w-full object-cover"
-          onError={() => setBroken(true)}
+          fallback={
+            <span className={cn("relative z-[1] select-none", glyphClassName)}>
+              {fallback}
+            </span>
+          }
         />
       ) : (
         <span className={cn("relative z-[1] select-none", glyphClassName)}>

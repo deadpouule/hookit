@@ -1,24 +1,27 @@
-# Compiler files
+# Compiler / Foundry
 cache/
 out/
 
-# Commonly ignored directories
+# Broadcasts Foundry (may contain private keys and ephemeral deploy addresses)
+broadcast/
+/broadcast/
+
+# Logs & caches
+*.log
 .logs/
 .ignore/
+data/
+dist/
 
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
+# Environnements et secrets
+.env
+.env.*
+!.env.example
+!*.example
 
 # Forge docs at repo root + vendored package docs (not the web /docs UI)
 /docs/
 **/lib/**/docs/
-
-# Dotenv file
-.env
-.env.*
-!.env.example
 
 # Next.js frontend
 web/node_modules/
@@ -26,3 +29,6 @@ web/.next/
 web/out/
 web/.vercel/
 web/*.tsbuildinfo
+
+# OS
+.DS_Store

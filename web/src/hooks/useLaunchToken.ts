@@ -357,6 +357,7 @@ export function useLaunchToken(rail: LaunchRail = "master") {
       setPhase("done");
       setResult(out);
       await queryClient.invalidateQueries({ queryKey: ["launches"] });
+      await queryClient.invalidateQueries({ queryKey: ["launch-pool"] });
       toast.dismiss(loadingId);
       toast.success("Token launched", `${form.ticker.trim().toUpperCase()} · ${hash.slice(0, 10)}…`);
 

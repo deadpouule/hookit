@@ -39,12 +39,8 @@ import {
 import { resolveQuoteKind } from "@/lib/quote-usd";
 import { stableQuoteLabel } from "@/lib/payment-assets";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
-import {
-  resolveMediaUrl,
-  tokenGithubUrl,
-  tokenTwitterUrl,
-  tokenWebsiteUrl,
-} from "@/lib/token-metadata";
+import { TokenImage } from "@/components/token/TokenImage";
+import { tokenGithubUrl, tokenTwitterUrl, tokenWebsiteUrl } from "@/lib/token-metadata";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -166,7 +162,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
   const ageSeconds = isValidLaunchTimestamp(pool.launchedAt)
     ? Math.max(1, Math.floor(Date.now() / 1000 - pool.launchedAt))
     : null;
-  const media = resolveMediaUrl(pool.image);
+  const mediaUri = pool.image;
   const marketToken = useMemo(() => poolToMarketToken(pool), [pool]);
   const isClassicDesk = pool.rail === "classic";
   const markets = useMemo(() => poolMarkets(pool), [pool]);
@@ -234,9 +230,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
     <div className="desk-card token-hero-card">
       <header className="token-hero-head">
         <div className="token-hero-logo" style={{ background: pool.bannerGradient }}>
-          {media ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={media} alt="" className="h-full w-full object-cover" />
+          {mediaUri ? (
+            <TokenImage
+              uri={mediaUri}
+              className="h-full w-full object-cover"
+              fallback={<span className="token-hero-logo-letter">{pool.ticker[0]}</span>}
+            />
           ) : (
             <span className="token-hero-logo-letter">{pool.ticker[0]}</span>
           )}
