@@ -240,7 +240,15 @@ function FilterPill({
       ) : Icon ? (
         <Icon className="h-3.5 w-3.5 shrink-0" />
       ) : null}
-      <span>{label}</span>
+      <span>
+        {live ? (
+          <>
+            Live<span className="market-filter-pill__wide"> feed</span>
+          </>
+        ) : (
+          label
+        )}
+      </span>
       {hint ? <span className="market-filter-pill__hint">{hint}</span> : null}
     </button>
   );

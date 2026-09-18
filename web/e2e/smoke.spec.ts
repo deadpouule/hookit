@@ -92,6 +92,24 @@ test.describe("Hookit UI smoke", () => {
     await expect(page.getByRole("heading", { name: "Tokens" })).toBeVisible();
   });
 
+  test("Mobile Live sort is not glued to the view bar", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await openApp(page, "/");
+    const live = page.getByRole("button", { name: /^Live\b/ });
+    const actions = page.locator(".market-toolbar-actions");
+    const view = page.locator(".market-mobile-view");
+    await expect(live).toBeVisible();
+    await expect(view).toBeVisible();
+    const liveBox = await live.boundingBox();
+    const actionsBox = await actions.boundingBox();
+    const viewBox = await view.boundingBox();
+    expect(liveBox).toBeTruthy();
+    expect(actionsBox).toBeTruthy();
+    expect(viewBox).toBeTruthy();
+    expect(liveBox!.x + liveBox!.width).toBeLessThanOrEqual(actionsBox!.x + actionsBox!.width - 6);
+    expect(viewBox!.x - (actionsBox!.x + actionsBox!.width)).toBeGreaterThanOrEqual(8);
+  });
+
   test("Mobile explore opens a token", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "mobile project only");
     await openApp(page, "/");
