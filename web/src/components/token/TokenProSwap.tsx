@@ -9,8 +9,7 @@ import { InkAvatarBadge } from "@/components/home/market/InkAvatarBadge";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import type { PaymentAssetId } from "@/lib/payment-assets";
-import { type SwapAsset, isStableSwapAsset, needsCompositeSell, poolQuoteSwapAsset } from "@/lib/swap-assets";
-import { isMultiPool } from "@/lib/pool-active-market";
+import { type SwapAsset, isStableSwapAsset, poolQuoteSwapAsset } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { SwapQuoteDisplayMeta } from "@/lib/swap-quote";
@@ -94,7 +93,6 @@ export function TokenProSwap({
   ethUsd = 3000,
   quoteUsd,
   quoteMeta,
-  quotePending = false,
 }: {
   pool: TokenPool;
   sellAsset: SwapAsset;
@@ -189,22 +187,6 @@ export function TokenProSwap({
     if (sellBalance <= 0) return;
     onSellAmount(sellBalance < 1 ? sellBalance.toFixed(6) : String(sellBalance));
   };
-
-  const route = (() => {
-    if (quoteMeta?.route) return quoteMeta.route;
-    const hasSell = Number(sellAmount) > 0;
-    const hasReceive = !!receiveAmount && Number(receiveAmount) > 0;
-    const autoUsdg =
-      isMultiPool(pool) && (isStableSwapAsset(sellAsset) || isStableSwapAsset(buyAsset));
-    if (hasSell && !hasReceive && !quotePending && autoUsdg) {
-      return "No safe USDG route. Pick a stock ticker to trade that pool directly.";
-    }
-    if (!hasReceive || !hasSell) return "·";
-    if (needsCompositeSell(pool, buyAsset)) {
-      return `${sellAsset.symbol} → ${poolQuoteSwapAsset(pool).symbol} → ${buyAsset.symbol}`;
-    }
-    return `${sellAsset.symbol} → ${buyAsset.symbol}`;
-  })();
 
   const minReceivedLabel = (() => {
     if (quoteMeta && quoteMeta.minAmountOut > 0n) {
@@ -309,9 +291,7 @@ export function TokenProSwap({
       <dl className="market-details">
         <Detail label="Minimum received" value={minReceivedLabel} />
         <Detail label="Price impact" value={priceImpactLabel} />
-        <Detail label="Route" value={route} />
         <Detail label="Max slippage" value={`${slippagePct}%`} />
-        <Detail label="Platform fee" value="Free" valueClass="text-white" />
       </dl>
 
       <SwapTokenSelectModal

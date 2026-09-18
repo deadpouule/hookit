@@ -83,16 +83,16 @@ export function TokenTxTable({
 
       <div className="token-tx-body overflow-x-auto no-scrollbar">
         {tab === "swaps" ? (
-          <table className="w-full min-w-[820px] text-left text-[13px]">
+          <table className="token-tx-table token-tx-table--swaps w-full min-w-[820px] text-left text-[13px]">
             <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">
               <tr className="border-b border-white/10">
                 <th className="px-4 py-2.5 font-medium">Time</th>
-                <th className="px-4 py-2.5 font-medium">Recipient</th>
+                <th className="token-tx-col-wide px-4 py-2.5 font-medium">Recipient</th>
                 <th className="px-4 py-2.5 font-medium">Type</th>
                 <th className="px-4 py-2.5 font-medium">Amount</th>
                 <th className="px-4 py-2.5 font-medium">Total USD</th>
-                <th className="px-4 py-2.5 font-medium">FDV</th>
-                <th className="px-4 py-2.5 font-medium">Tx</th>
+                <th className="token-tx-col-wide px-4 py-2.5 font-medium">FDV</th>
+                <th className="token-tx-col-wide px-4 py-2.5 font-medium">Tx</th>
               </tr>
             </thead>
             <tbody>
@@ -109,7 +109,7 @@ export function TokenTxTable({
                   className="border-b border-white/[0.06] last:border-0 hover:bg-white/[0.03]"
                 >
                   <td className="px-4 py-2.5 font-mono text-zinc-400">{formatAge(row.ageSec)}</td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-300">
+                  <td className="token-tx-col-wide px-4 py-2.5 font-mono text-zinc-300">
                     <ExplorerCell href={explorerAddressUrl(row.recipientAddress)}>
                       {row.recipient}
                     </ExplorerCell>
@@ -126,7 +126,7 @@ export function TokenTxTable({
                   <td className="px-4 py-2.5 font-mono text-zinc-200">
                     {formatCompactUsd(row.totalUsd)}
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="token-tx-col-wide px-4 py-2.5">
                     <span className="inline-flex items-center gap-1 font-mono text-zinc-200">
                       {formatCompactUsd(row.marketCap)}
                       {row.side === "buy" ? (
@@ -136,7 +136,7 @@ export function TokenTxTable({
                       )}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 font-mono text-zinc-300">
+                  <td className="token-tx-col-wide px-4 py-2.5 font-mono text-zinc-300">
                     <ExplorerCell href={explorerTxUrl(row.txHash)}>
                       {row.txHash ? shortHash(row.txHash) : "·"}
                     </ExplorerCell>
@@ -147,7 +147,7 @@ export function TokenTxTable({
             </tbody>
           </table>
         ) : (
-          <table className="w-full min-w-[520px] text-left text-[13px]">
+          <table className="token-tx-table token-tx-table--holders w-full min-w-[520px] text-left text-[13px]">
             <thead className="text-[11px] tracking-wide text-zinc-500 uppercase">
               <tr className="border-b border-white/10">
                 <th className="px-4 py-2.5 font-medium">Holder</th>

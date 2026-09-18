@@ -4473,6 +4473,94 @@
     font-size: 0.34rem;
   }
 
+  html[data-device="phone"] .token-hero-head {
+    gap: 10px;
+    padding: 10px 12px 8px;
+  }
+
+  html[data-device="phone"] .token-hero-logo {
+    height: 52px;
+    width: 52px;
+    border-radius: 10px;
+  }
+
+  html[data-device="phone"] .token-hero-logo-letter {
+    font-size: 1.35rem;
+  }
+
+  html[data-device="phone"] .token-hero-name {
+    font-size: 1.05rem;
+  }
+
+  html[data-device="phone"] .token-hero-ticker {
+    font-size: 0.8rem;
+  }
+
+  html[data-device="phone"] .token-hero-title-row {
+    gap: 4px 6px;
+  }
+
+  html[data-device="phone"] .token-hero-card .token-type-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  html[data-device="phone"] .token-live-ticker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 8px;
+    overflow: visible;
+    padding: 8px 12px 10px;
+  }
+
+  html[data-device="phone"] .token-live-tick {
+    flex: none;
+    padding-right: 0;
+    min-width: 0;
+  }
+
+  html[data-device="phone"] .token-live-tick dd {
+    font-size: 12px;
+    gap: 4px;
+    white-space: normal;
+  }
+
+  html[data-device="phone"] .token-live-tick-chg {
+    font-size: 10px;
+  }
+
+  html[data-device="phone"] .token-tx-table--swaps,
+  html[data-device="phone"] .token-tx-table--holders {
+    min-width: 0;
+  }
+
+  html[data-device="phone"] .token-tx-col-wide {
+    display: none;
+  }
+
+  html[data-device="phone"] .token-tx-table {
+    font-size: 12px;
+  }
+
+  html[data-device="phone"] .token-tx-table th,
+  html[data-device="phone"] .token-tx-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  html[data-device="phone"] .token-chart-toolbar {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  html[data-device="phone"] .token-hooks-panel {
+    padding: 0.75rem;
+  }
+
+  html[data-device="phone"] .token-desk-main {
+    gap: 10px;
+  }
+
   html[data-device="phone"] .token-hero-about {
     display: none;
   }
@@ -5216,7 +5304,7 @@
     overflow-y: auto;
     border-radius: 20px 20px 0 0;
     border-color: rgb(255 255 255 / 0.1);
-    background: #0c1018;
+    background: #000;
     padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -5768,6 +5856,8 @@
 
   .swap-token-modal {
     border-radius: 16px;
+    background: #000;
+    color: #fafafa;
   }
 
   .swap-token-search {
@@ -5776,7 +5866,7 @@
     gap: 10px;
     border-radius: 999px;
     border: 1px solid #9514d1;
-    background: #0f0f11;
+    background: #070708;
     padding: 10px 14px;
   }
 
