@@ -4661,15 +4661,24 @@
   }
 
   .token-desk-chart {
-    order: 2;
+    min-width: 0;
   }
 
   .token-desk-side {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    order: 3;
     min-width: 0;
+  }
+
+  /* Phone only: stack chart above modules. Desktop must keep DOM order
+     (modules then chart) so the 260px track is never the candlestick pane. */
+  html[data-device="phone"] .token-desk-stage > .token-desk-chart {
+    order: 1;
+  }
+
+  html[data-device="phone"] .token-desk-stage > .token-desk-side {
+    order: 2;
   }
 
   .token-desk-hooks {
@@ -4941,7 +4950,7 @@
   html[data-device="desktop"] {
     .token-desk {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-columns: minmax(0, 1fr) 340px;
       gap: 16px 20px;
       align-items: start;
       overflow: visible;
@@ -4949,16 +4958,17 @@
 
     @media (min-width: 1280px) {
       .token-desk {
-        grid-template-columns: minmax(0, 1fr) 390px;
+        grid-template-columns: minmax(0, 1fr) 360px;
       }
 
       .token-desk--hooks .token-desk-stage {
-        grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+        grid-template-columns: 275px minmax(0, 1fr);
       }
     }
 
     .token-desk-hero,
     .token-desk-stage,
+    .token-desk-side,
     .token-desk-chart,
     .token-desk-hooks,
     .token-desk-tx-col,
@@ -4992,16 +5002,22 @@
 
     .token-desk--hooks .token-desk-stage {
       display: grid;
-      grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+      grid-template-columns: 260px minmax(0, 1fr);
       gap: 14px 16px;
-      align-items: stretch;
+      align-items: start;
+    }
+
+    .token-desk--hooks .token-desk-side {
+      order: 1;
+      width: 100%;
+      min-width: 0;
     }
 
     .token-desk-side {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      align-self: stretch;
+      align-self: start;
       min-width: 0;
       overflow: visible;
     }
@@ -5033,9 +5049,11 @@
     }
 
     .token-desk--hooks .token-desk-chart {
+      order: 2;
       align-self: stretch;
       display: flex;
       flex-direction: column;
+      min-width: 0;
       min-height: 460px;
     }
 
@@ -5084,6 +5102,10 @@
     padding-bottom: 1rem;
     background: #000;
     overflow: visible;
+  }
+
+  .token-detail-shell.market-shell {
+    max-width: 1700px;
   }
 
   .token-detail-shell .desk-card {

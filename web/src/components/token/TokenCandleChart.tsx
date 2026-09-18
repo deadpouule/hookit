@@ -236,7 +236,7 @@ export function TokenCandleChart({
   };
 
   return (
-    <div className={cn("desk-card token-chart-card overflow-hidden", className)}>
+    <div className={cn("desk-card token-chart-card w-full min-w-0 overflow-hidden", className)}>
       <div className="token-chart-toolbar">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {marketLegs && marketLegs.length > 1 && onMarketIndex ? (
@@ -310,7 +310,7 @@ export function TokenCandleChart({
 
       <div
         className={cn(
-          "token-chart-plot relative",
+          "token-chart-plot relative min-w-0",
           expanded
             ? "h-[280px] sm:h-[460px] md:h-[560px]"
             : compact
