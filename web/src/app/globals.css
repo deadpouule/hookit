@@ -3849,6 +3849,19 @@
     background: #060608;
   }
 
+  .token-chart-ohlc-legend {
+    max-width: calc(100% - 84px);
+    overflow: hidden;
+    letter-spacing: 0.01em;
+  }
+
+  html[data-device="phone"] .token-chart-ohlc-legend {
+    top: 8px;
+    left: 8px;
+    font-size: 10px !important;
+    max-width: calc(100% - 72px);
+  }
+
   html[data-device="phone"] .token-chart-stats {
     padding: 6px 10px;
     gap: 6px 10px;

@@ -422,6 +422,7 @@ export function TokenCandleChart({
             style={style}
             scale={scale}
             interval={interval}
+            symbol={`${ticker || name || "Token"}/${marketLegs?.[activeMarketIndex]?.quoteAsset || "USD"}`}
             bucketSec={bucketSec}
             windowBars={windowBars}
             anchorIndex={anchorIndex}
