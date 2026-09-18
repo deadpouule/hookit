@@ -355,12 +355,28 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
         Explore
       </Link>
 
-      <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
-        <div className="token-desk-main min-w-0">
+      <div
+        className={cn(
+          "token-desk mt-4 grid grid-cols-1 items-start gap-5 desk:grid-cols-[minmax(0,1fr)_340px] desk:xl:grid-cols-[minmax(0,1fr)_360px]",
+          isClassicDesk ? "token-desk--wide" : "token-desk--hooks",
+        )}
+      >
+        <div className="token-desk-main flex min-w-0 flex-col gap-4">
           <div className="token-desk-hero min-w-0">{heroCard}</div>
 
-          <div className="token-desk-stage">
-            <aside className="token-desk-side">
+          <div
+            className={cn(
+              "token-desk-stage min-w-0",
+              !isClassicDesk &&
+                "desk:grid desk:grid-cols-[260px_minmax(0,1fr)] desk:items-start desk:gap-4 desk:xl:grid-cols-[275px_minmax(0,1fr)]",
+            )}
+          >
+            <aside
+              className={cn(
+                "token-desk-side flex w-full min-w-0 flex-col gap-3",
+                !isClassicDesk && "desk:order-1",
+              )}
+            >
               <div className="token-desk-hooks space-y-3">
                 {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
               </div>
@@ -370,7 +386,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               </div>
             </aside>
 
-            <div className="token-desk-chart min-w-0 space-y-3">
+            <div
+              className={cn(
+                "token-desk-chart flex w-full min-w-0 flex-col gap-2",
+                !isClassicDesk && "desk:order-2",
+              )}
+            >
               {multi && (
                 <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
                   This token trades on <strong className="text-foreground">{markets.length} pools</strong>
@@ -413,7 +434,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
           </div>
         </div>
 
-        <aside className="token-desk-swap space-y-3">
+        <aside className="token-desk-swap sticky top-4 w-full space-y-3 self-start">
           <div ref={swapRef}>
             <TokenSwapCard
               {...swapProps}
