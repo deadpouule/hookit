@@ -5,13 +5,13 @@ import { useEffect, useRef } from "react";
 import {
   CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
+  CHART_PRICE_DECIMALS,
   CHART_PRICE_MIN_MOVE,
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
-  chartFitFirstRealIndex,
   chartFitWindowBars,
   chartRangeSignature,
   chartStructureSignature,
@@ -116,9 +116,16 @@ function lastBarUp(bars: ChartBar[]): boolean {
 }
 
 function priceFormatFor(scale: ChartScale) {
+  if (scale === "price") {
+    return {
+      type: "price" as const,
+      precision: CHART_PRICE_DECIMALS,
+      minMove: CHART_PRICE_MIN_MOVE,
+    };
+  }
   return {
     type: "custom" as const,
-    minMove: scale === "mcap" ? 0.01 : CHART_PRICE_MIN_MOVE,
+    minMove: 0.01,
     formatter: (price: number) => formatChartAxis(price, scale),
   };
 }
@@ -196,12 +203,15 @@ function fitChartView(
   if (bars.length === 0) return;
   const timeScale = chart.timeScale();
   const width = timeScale.width();
-  const fittedWindow = chartFitWindowBars(
+  const anchor = anchorIndex ?? chartFitAnchorIndex(bars);
+  const fittedWindow = chartFitWindowBars(bars.length, anchor, _windowBars);
+  const range = chartVisibleLogicalRange(
     bars.length,
-    chartFitFirstRealIndex(bars, _windowBars),
-    _windowBars,
+    width > 0 ? width : undefined,
+    fittedWindow,
+    CHART_RIGHT_OFFSET,
+    anchor,
   );
-  const range = chartVisibleLogicalRange(bars.length, width > 0 ? width : undefined, fittedWindow);
   if (!range) return;
   timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
@@ -256,7 +266,7 @@ function applyBars(
   lineColor: string,
   windowBars: number,
   bucketSec: number,
-  anchorIndex: number,
+  anchorIndex?: number,
   refit = true,
 ) {
   const up = lastBarUp(next);
@@ -312,7 +322,7 @@ export function TokenLightweightPlot({
   interval,
   bucketSec = 3_600,
   windowBars = CHART_WINDOW_BARS,
-  anchorIndex = 0,
+  anchorIndex,
   lineColor = UP,
   fitNonce = 0,
   onHover,
@@ -376,11 +386,13 @@ export function TokenLightweightPlot({
           horzLines: { color: GRID, style: tv.LineStyle.Solid, visible: true },
         },
         rightPriceScale: {
+          autoScale: true,
           borderVisible: false,
           ticksVisible: true,
           entireTextOnly: true,
           minimumWidth: 68,
           alignLabels: true,
+          scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
         },
         timeScale: {
           borderVisible: false,

@@ -14,6 +14,7 @@ import {
   applyTicksToBuckets,
   barChangePct,
   barsForInterval,
+  carryQuoteFxBars,
   chartFitAnchorIndex,
   chartHudBar,
   chartWindowBars,
@@ -185,10 +186,11 @@ export function TokenCandleChart({
   const [hover, setHover] = useState<ChartBar | null>(null);
   const selectedPoolId = activePoolId ?? marketLegs?.[activeMarketIndex]?.poolId;
   const geckoQuote = (() => {
-    const candidates = [quoteAddress, marketLegs?.[activeMarketIndex]?.quoteAddress];
+    const selected = marketLegs?.[activeMarketIndex]?.quoteAddress;
+    const candidates = [selected, quoteAddress];
     return candidates.find((addr) => addr && addr.toLowerCase() !== zeroAddress);
   })();
-  const gecko = useGeckoTerminalBars(tokenAddress, interval, geckoQuote);
+  const gecko = useGeckoTerminalBars(tokenAddress, "1m", geckoQuote);
   const quoteFx = useGeckoTerminalBars(geckoQuote, "1m");
 
   useEffect(() => {
@@ -237,12 +239,14 @@ export function TokenCandleChart({
       const fx = rollQuoteFxBars(quoteFx.data?.bars ?? [], bucket);
       const liveFx =
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
-      // Reprice traded prints first, then forward-fill so quiet minutes hold last execution.
-      const marked =
+      const repriced =
+        liveFx > 0 && fx.length > 0 ? repriceBarsWithQuoteFx(withTicks, fx, liveFx) : withTicks;
+      const linked = linkBarOpens(repriced);
+      const carried =
         liveFx > 0 && fx.length > 0
-          ? linkBarOpens(repriceBarsWithQuoteFx(withTicks, fx, liveFx), bucket)
-          : linkBarOpens(withTicks, bucket);
-      const tape = definedFdvTape(marked, bucket, nowSec, chartWindowBars(bucket));
+          ? carryQuoteFxBars(linked, fx, liveFx, bucket, nowSec)
+          : linked;
+      const tape = definedFdvTape(carried, bucket, nowSec, chartWindowBars(bucket));
       const pinned = pinLiveMcap(tape, chartMcap);
       const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
       return scaleBars(current, sc);

@@ -39,5 +39,6 @@ export function useGeckoTerminalBars(
     enabled: !!normalized && supported,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    retry: 1,
   });
 }
