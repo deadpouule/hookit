@@ -55,12 +55,15 @@ const AXIS = TV_CHART_SCALE_TEXT;
 const CROSS = TV_CROSSHAIR;
 const CROSS_LABEL = TV_CROSSHAIR_LABEL;
 const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
+const LEGEND_UP = "#10B981";
+const LEGEND_DOWN = "#EF4444";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
   style: ChartStyle;
   scale: ChartScale;
   interval?: ChartInterval;
+  symbol?: string;
   bucketSec?: number;
   windowBars?: number;
   anchorIndex?: number;
@@ -68,6 +71,54 @@ type TokenLightweightPlotProps = {
   fitNonce?: number;
   onHover: (bar: ChartBar | null) => void;
 };
+
+type LegendOhlc = { open: number; high: number; low: number; close: number };
+
+function formatLegendPrice(val: number): string {
+  if (!Number.isFinite(val)) return "0.00";
+  if (val === 0) return "0.00";
+  const abs = Math.abs(val);
+  if (abs < 0.00001) return val.toFixed(9);
+  if (abs < 1) return val.toFixed(6);
+  return val.toFixed(2);
+}
+
+function isLegendOhlc(value: unknown): value is LegendOhlc {
+  if (!value || typeof value !== "object") return false;
+  const bar = value as Partial<LegendOhlc>;
+  return (
+    typeof bar.open === "number" &&
+    typeof bar.high === "number" &&
+    typeof bar.low === "number" &&
+    typeof bar.close === "number"
+  );
+}
+
+function escapeLegendHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function legendInnerHtml(symbol: string, interval: string, bar: LegendOhlc): string {
+  const bullish = bar.close >= bar.open;
+  const color = bullish ? LEGEND_UP : LEGEND_DOWN;
+  const diff = bar.close - bar.open;
+  const pct = bar.open > 0 ? (diff / bar.open) * 100 : 0;
+  const sign = diff >= 0 ? "+" : "";
+  return (
+    `<span style="color:rgba(255,255,255,0.5);font-weight:500">${escapeLegendHtml(symbol)} · ${escapeLegendHtml(interval)}</span>` +
+    `<span style="color:${color};font-weight:600;margin-left:8px">` +
+    `O ${formatLegendPrice(bar.open)} ` +
+    `H ${formatLegendPrice(bar.high)} ` +
+    `L ${formatLegendPrice(bar.low)} ` +
+    `C ${formatLegendPrice(bar.close)} ` +
+    `${sign}${formatLegendPrice(diff)} (${sign}${pct.toFixed(2)}%)` +
+    `</span>`
+  );
+}
 
 type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Area">;
 
@@ -357,6 +408,7 @@ export function TokenLightweightPlot({
   style,
   scale,
   interval,
+  symbol = "Token/USD",
   bucketSec = 3_600,
   windowBars = CHART_WINDOW_BARS,
   anchorIndex,
@@ -365,6 +417,11 @@ export function TokenLightweightPlot({
   onHover,
 }: TokenLightweightPlotProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
+  const hoveringRef = useRef(false);
+  const hoverBarRef = useRef<LegendOhlc | null>(null);
+  const symbolRef = useRef(symbol);
+  symbolRef.current = symbol;
   const onHoverRef = useRef(onHover);
   onHoverRef.current = onHover;
   const handleRef = useRef<ChartHandle | null>(null);
@@ -381,6 +438,7 @@ export function TokenLightweightPlot({
   const bucketSecRef = useRef(bucketSec);
   const anchorIndexRef = useRef(anchorIndex);
   const intervalRef = useRef(interval);
+  intervalRef.current = interval;
   useEffect(() => {
     windowBarsRef.current = windowBars;
   }, [windowBars]);
@@ -390,11 +448,18 @@ export function TokenLightweightPlot({
   useEffect(() => {
     anchorIndexRef.current = anchorIndex;
   }, [anchorIndex]);
-  useEffect(() => {
-    intervalRef.current = interval;
-  }, [interval]);
   const rangeSigRef = useRef("");
   const tvRef = useRef<typeof import("lightweight-charts") | null>(null);
+
+  const paintLegend = (bar: LegendOhlc | null) => {
+    const el = legendRef.current;
+    if (!el) return;
+    if (!bar || !(bar.close > 0 || bar.open > 0)) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML = legendInnerHtml(symbolRef.current, intervalRef.current ?? "", bar);
+  };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -508,19 +573,34 @@ export function TokenLightweightPlot({
         anchorIndexRef.current,
       );
       appliedBarsRef.current = next;
+      paintLegend(lastRealBar(next) ?? null);
 
       chart.subscribeCrosshairMove((param) => {
+        const latest = lastRealBar(pendingBarsRef.current) ?? null;
         if (!param.time || !param.seriesData.size) {
+          hoveringRef.current = false;
+          hoverBarRef.current = null;
           onHoverRef.current(null);
+          paintLegend(latest);
           return;
         }
         const time = Number(param.time);
         const fromBars = lookupBar(pendingBarsRef.current, time);
-        if (fromBars && !isWhitespaceBar(fromBars)) {
-          onHoverRef.current(fromBars);
+        const series = handleRef.current?.price;
+        const raw = series ? param.seriesData.get(series) : undefined;
+        const fromSeries = isLegendOhlc(raw) ? raw : undefined;
+        const hovered = fromSeries ?? (fromBars && !isWhitespaceBar(fromBars) ? fromBars : undefined);
+        if (hovered && (hovered.close > 0 || hovered.open > 0)) {
+          hoveringRef.current = true;
+          hoverBarRef.current = hovered;
+          if (fromBars && !isWhitespaceBar(fromBars)) onHoverRef.current(fromBars);
+          paintLegend(hovered);
           return;
         }
+        hoveringRef.current = false;
+        hoverBarRef.current = null;
         onHoverRef.current(null);
+        paintLegend(latest);
       });
 
       let lastWidth = 0;
@@ -628,7 +708,16 @@ export function TokenLightweightPlot({
       prev,
     );
     appliedBarsRef.current = bars;
+    if (!hoveringRef.current) paintLegend(lastRealBar(bars) ?? null);
   }, [bars, lineColor, interval, windowBars, bucketSec, anchorIndex]);
+
+  useEffect(() => {
+    paintLegend(
+      hoveringRef.current
+        ? hoverBarRef.current
+        : lastRealBar(pendingBarsRef.current) ?? null,
+    );
+  }, [symbol, interval]);
 
   useEffect(() => {
     if (fitNonce === 0) return;
@@ -643,5 +732,28 @@ export function TokenLightweightPlot({
       );
   }, [fitNonce]);
 
-  return <div ref={hostRef} className="token-chart-engine absolute inset-0 z-[2]" />;
+  return (
+    <div className="token-chart-engine absolute inset-0 z-[2]">
+      <div ref={hostRef} className="absolute inset-0" />
+      <div
+        ref={legendRef}
+        className="token-chart-ohlc-legend"
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 12,
+          zIndex: 20,
+          pointerEvents: "none",
+          fontFamily: FONT,
+          fontSize: 12,
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          userSelect: "none",
+          whiteSpace: "nowrap",
+          textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+        }}
+      />
+    </div>
+  );
 }
