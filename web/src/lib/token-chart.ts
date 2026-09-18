@@ -181,7 +181,10 @@ export function aggregateBars(bars: ChartBar[], bucketSec: number): ChartBar[] {
 
 export function chartSpanSec(bars: ChartBar[], launchedAt?: number, nowSec?: number): number {
   const real = bars.filter((b) => !isWhitespaceBar(b) && b.time > 0);
-  const first = real[0]?.time ?? (isValidLaunchTimestamp(launchedAt) ? launchedAt : 0);
+  const firstTrade = real[0]?.time ?? 0;
+  const launch = isValidLaunchTimestamp(launchedAt) ? launchedAt : 0;
+  const first =
+    firstTrade > 0 && launch > 0 ? Math.min(firstTrade, launch) : firstTrade || launch;
   const last = real[real.length - 1]?.time ?? first;
   const now = nowSec ?? Math.floor(Date.now() / 1000);
   if (!(first > 0)) return 0;
@@ -249,17 +252,11 @@ export function fdvStepBar(bar: ChartBar, prevClose?: number): boolean {
   return Math.abs(bar.close - prevClose) / mid > FDV_STEP_EPS;
 }
 
-/** Defined/DexScreener: thin dash when FDV is flat and the bucket has no volume. */
+/** Flat bucket: natural doji, no invented 0.012% body floor. */
 export function flatFdvCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   const mid = bar.close || bar.open;
   if (!(mid > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  const half = mid * 0.00012;
-  return {
-    open: mid,
-    high: mid + half,
-    low: Math.max(mid - half, 0),
-    close: mid,
-  };
+  return { open: mid, high: mid, low: mid, close: mid };
 }
 
 /** Small doji for a flat print that still had swap volume — visible but not a fat block. */
@@ -377,10 +374,9 @@ export function repriceBarsWithQuoteFx(bars: ChartBar[], fx: ChartBar[], liveQuo
   });
 }
 
-/** Stair-step only across adjacent buckets. A time gap keeps its own open (isolated spike). */
-export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
+/** Each real bar opens at the previous real close so gaps do not become isolated spikes. */
+export function linkBarOpens(bars: ChartBar[], _bucketSec?: number): ChartBar[] {
   let prevClose: number | undefined;
-  let prevTime: number | undefined;
   const out: ChartBar[] = [];
   for (const bar of bars) {
     if (isWhitespaceBar(bar)) {
@@ -391,16 +387,9 @@ export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
       out.push({ ...bar });
       continue;
     }
-    const adjacent =
-      prevClose !== undefined &&
-      prevTime !== undefined &&
-      bucketSec !== undefined &&
-      bucketSec > 0 &&
-      bar.time === prevTime + bucketSec;
-    if (!adjacent || prevClose === undefined) {
+    if (prevClose === undefined) {
       out.push({ ...bar });
       prevClose = bar.close;
-      prevTime = bar.time;
       continue;
     }
     const open = prevClose;
@@ -412,7 +401,6 @@ export function linkBarOpens(bars: ChartBar[], bucketSec?: number): ChartBar[] {
       low: Math.min(lowBase, open, bar.close),
     });
     prevClose = bar.close;
-    prevTime = bar.time;
   }
   return out;
 }
@@ -717,19 +705,22 @@ export function chartVisibleLogicalRange(
   paneWidthPx = 720,
   windowBars = CHART_WINDOW_BARS,
   rightOffset = CHART_RIGHT_OFFSET,
+  anchorIndex?: number,
 ): { from: number; to: number; barSpacing: number } | null {
   if (barCount <= 0) return null;
   const width = Math.max(paneWidthPx, CHART_MIN_BAR_SPACING * 12);
   const slots = Math.max(windowBars, 1) + rightOffset;
   const barSpacing = Math.min(Math.max(width / slots, CHART_MIN_BAR_SPACING), CHART_MAX_BAR_SPACING);
   const visible = Math.max(Math.floor(width / barSpacing), 12);
-  const to = barCount - 1 + rightOffset + 0.5;
+  const pin =
+    anchorIndex != null ? Math.min(Math.max(anchorIndex, 0), barCount - 1) : barCount - 1;
+  const to = pin + rightOffset + 0.5;
   return { from: to - visible, to, barSpacing };
 }
 
-/** TradingView pane: 16% headroom so micro-moves do not crush against the rails. */
-export const CHART_SCALE_MARGIN_TOP = 0.16;
-export const CHART_SCALE_MARGIN_BOTTOM = 0.16;
+/** TradingView pane: 20% headroom so micro-moves do not crush against the rails. */
+export const CHART_SCALE_MARGIN_TOP = 0.2;
+export const CHART_SCALE_MARGIN_BOTTOM = 0.2;
 export const CHART_VOLUME_MARGIN_TOP = 0.84;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 

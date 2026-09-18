@@ -22,6 +22,7 @@ import {
   chartFitWindowBars,
   chartFitFirstRealIndex,
   chartPriceBand,
+  chartSpanSec,
   candlePlotBar,
   candleSeriesData,
   chartRenderableCandle,
@@ -326,13 +327,12 @@ test("chartPriceBand pads the visible range like TradingView auto-scale", () => 
   assert.equal(chartPriceBand(0, 0), null);
 });
 
-test("flatFdvCandleOhlc draws a thin visible dash when FDV is unchanged", () => {
+test("flatFdvCandleOhlc is a natural doji with no invented 0.012% floor", () => {
   const dash = flatFdvCandleOhlc({ time: 1, open: 5000, high: 5000, low: 5000, close: 5000, volume: 0 });
   assert.equal(dash.open, 5000);
   assert.equal(dash.close, 5000);
-  assert.ok(dash.high > dash.close);
-  assert.ok(dash.low < dash.open);
-  assert.ok(dash.high - dash.low < 5000 * 0.001);
+  assert.equal(dash.high, 5000);
+  assert.equal(dash.low, 5000);
 });
 
 test("chartRenderableCandle uses a true doji for flat FDV carry and real wicks for moves", () => {
@@ -469,14 +469,47 @@ test("linkBarOpens chains each print to the previous close", () => {
   assert.equal(linked[1]!.low, 11);
 });
 
-test("linkBarOpens keeps its own open across a time gap", () => {
+test("linkBarOpens opens at the previous close across a time gap", () => {
   const bars = [
     { time: 60, open: 10, high: 12, low: 9, close: 11, volume: 1 },
     { time: 600, open: 20, high: 22, low: 19, close: 21, volume: 1 },
   ];
-  const linked = linkBarOpens(bars, 60);
-  assert.equal(linked[1]!.open, 20);
+  const linked = linkBarOpens(bars);
+  assert.equal(linked[1]!.open, 11);
+  assert.equal(linked[1]!.high, 22);
+  assert.equal(linked[1]!.low, 11);
   assert.equal(linked[1]!.close, 21);
+});
+
+test("carryQuoteFxBars rolls every printed FX bar without a 12-bar cap", () => {
+  const bars = [{ time: 0, open: 1000, high: 1000, low: 1000, close: 1000, volume: 5 }];
+  const fx = Array.from({ length: 20 }, (_, i) => ({
+    time: i * 300,
+    open: 100 + i,
+    high: 101 + i,
+    low: 99 + i,
+    close: 100 + i,
+    volume: 1,
+  }));
+  const carried = carryQuoteFxBars(bars, fx, 100, 300, 19 * 300);
+  assert.equal(carried.length, 20);
+  assert.equal(carried[1]!.open, 1000);
+  assert.equal(carried[19]!.open, carried[18]!.close);
+});
+
+test("chartVisibleLogicalRange pins to the last real bar not trailing whitespace", () => {
+  const range = chartVisibleLogicalRange(100, 720, 16, 5, 10);
+  assert.ok(range);
+  assert.equal(range.to, 10 + CHART_RIGHT_OFFSET + 0.5);
+});
+
+test("chartSpanSec uses launch time so ALL is not a 1m clone on a young tape", () => {
+  const now = 1_700_014_400;
+  const bars = [{ time: now - 600, open: 1, high: 1, low: 1, close: 1, volume: 1 }];
+  const span = chartSpanSec(bars, now - 4 * 3_600, now);
+  assert.equal(span, 4 * 3_600);
+  assert.equal(intervalBucketSec("ALL", span), 300);
+  assert.notEqual(intervalBucketSec("ALL", span), intervalBucketSec("1m"));
 });
 
 test("carryQuoteFxBars only marks buckets where quote FX printed", () => {
@@ -798,10 +831,10 @@ test("definedFdvTape then linkBarOpens builds an AllonSol staircase", () => {
   assert.equal(sell?.low, 4_950);
 });
 
-test("micro-cap price scale uses 8-decimal minMove and 16% pane margins", () => {
+test("micro-cap price scale uses 8-decimal minMove and 20% pane margins", () => {
   assert.equal(CHART_PRICE_MIN_MOVE, 1e-8);
-  assert.equal(CHART_SCALE_MARGIN_TOP, 0.16);
-  assert.equal(CHART_SCALE_MARGIN_BOTTOM, 0.16);
+  assert.equal(CHART_SCALE_MARGIN_TOP, 0.2);
+  assert.equal(CHART_SCALE_MARGIN_BOTTOM, 0.2);
   assert.equal(CHART_MIN_BAR_SPACING, 4);
 });
 
