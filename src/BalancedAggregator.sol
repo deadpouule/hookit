@@ -434,7 +434,9 @@ contract BalancedAggregator is IUnlockCallback {
     }
 
     function _sumLegInputs(RouteLeg[] memory legs) internal pure returns (uint256 sum) {
-        for (uint256 i; i < legs.length; ++i) sum += legs[i].amountIn;
+        for (uint256 i; i < legs.length; ++i) {
+            sum += legs[i].amountIn;
+        }
     }
 
     function _quoteCurrency(PoolKey memory key, address token) internal pure returns (Currency) {

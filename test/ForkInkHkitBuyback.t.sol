@@ -55,9 +55,7 @@ contract ForkInkHkitBuybackTest is InkForkTestBase {
         _routerBuy(trader, hkitKey, hkit, 1 ether);
 
         assertEq(escrow.balanceOf(deployer, Currency.wrap(address(0))), escrowBefore);
-        assertTrue(
-            IERC20(hkit).totalSupply() < supplyBefore || hook.pendingAutoBurn(hkitKey.toId()) > 0, "auto-burn"
-        );
+        assertTrue(IERC20(hkit).totalSupply() < supplyBefore || hook.pendingAutoBurn(hkitKey.toId()) > 0, "auto-burn");
         assertTrue(
             manager.getLiquidity(hkitKey.toId()) > seedLiq || hook.pendingDeepenLps(hkitKey.toId()) > 0, "deepen"
         );
