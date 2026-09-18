@@ -358,9 +358,10 @@
     gap: 0.65rem;
   }
 
+  .launch-wizard-master-badge .token-type-badge-glyph.category-owl-totem,
   .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
-    width: 1.25rem;
-    font-size: 0.4rem;
+    width: auto;
+    height: 1.25rem;
     color: #c084fc;
   }
 
@@ -693,9 +694,10 @@
       0 0 18px rgb(149 20 209 / 0.28);
   }
 
-  .launch-mode-toggle__glyph.category-hook-glyph {
-    font-size: 11px;
-    line-height: 1;
+  .launch-mode-toggle__glyph.category-hook-glyph,
+  .launch-mode-toggle__glyph.category-owl-totem {
+    width: auto;
+    height: 16px;
   }
 
   .launch-mode-toggle__glyph.category-single-pair-glyph {
@@ -1597,9 +1599,10 @@
     text-transform: none;
   }
 
+  .token-hooks-panel .token-hooks-master-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-panel .token-hooks-master-badge .token-type-badge-glyph.category-hook-glyph {
-    width: 1.05rem;
-    font-size: 0.34rem;
+    width: auto;
+    height: 1.2rem;
   }
 
   .token-hooks-panel .token-hooks-summary-badge {
@@ -1618,10 +1621,11 @@
     text-align: left;
   }
 
+  .token-hooks-panel .token-hooks-summary-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-panel .token-hooks-summary-badge .token-type-badge-glyph.category-hook-glyph {
-    width: 1.05rem;
+    width: auto;
+    height: 1.2rem;
     margin-top: 1px;
-    font-size: 0.34rem;
   }
 
   .token-hooks-count-badge {
@@ -1638,9 +1642,10 @@
     text-transform: none;
   }
 
+  .token-hooks-count-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-count-badge .token-type-badge-glyph.category-hook-glyph {
-    width: 1.05rem;
-    font-size: 0.34rem;
+    width: auto;
+    height: 1.2rem;
   }
 
   .token-hooks-list {
@@ -4068,6 +4073,21 @@
     color: var(--muted-foreground);
   }
 
+  .token-hero-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .token-hero-ca {
+    margin: 0;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .token-hero-sub {
     display: flex;
     flex-wrap: wrap;
@@ -4452,9 +4472,13 @@
     grid-area: links;
   }
 
-  .token-hero-links--inline {
+  .token-hero-links--socials {
+    width: auto;
+    margin: 0;
+  }
+
+  .token-hero-links--meta {
     margin-left: 0;
-    gap: 6px;
   }
 
   .token-hero-links--inline .token-hero-link {
@@ -4468,9 +4492,9 @@
     height: 16px;
   }
 
-  .token-hero-links--inline .token-hero-hook-glyph.category-hook-glyph {
-    width: 1.15rem;
-    font-size: 0.34rem;
+  .token-hero-links--inline .token-hero-hook-glyph {
+    width: auto;
+    height: 16px;
   }
 
   html[data-device="phone"] .token-hero-head {
@@ -4565,10 +4589,9 @@
     display: none;
   }
 
-  .token-hero-hook-glyph.category-hook-glyph {
-    width: 1.45rem;
-    font-size: 0.42rem;
-    line-height: 1.05;
+  .token-hero-hook-glyph {
+    width: auto;
+    height: 1.25rem;
     color: #e4e4e7;
   }
 
@@ -4582,9 +4605,9 @@
       gap: 10px;
     }
 
-    .token-hero-hook-glyph.category-hook-glyph {
-      width: 1.75rem;
-      font-size: 0.52rem;
+    .token-hero-hook-glyph {
+      width: auto;
+      height: 1.35rem;
     }
 
     .token-hero-explorer {
@@ -4642,9 +4665,9 @@
       height: 16px;
     }
 
-    .token-hero-links--inline .token-hero-hook-glyph.category-hook-glyph {
-      width: 1.15rem;
-      font-size: 0.34rem;
+    .token-hero-links--inline .token-hero-hook-glyph {
+      width: auto;
+      height: 16px;
     }
   }
 
@@ -4681,16 +4704,17 @@
     }
   }
 
+  .token-hero-card .token-type-badge-glyph.category-owl-totem,
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
-    width: 1.05rem;
-    font-size: 0.34rem;
+    width: auto;
+    height: 1.2rem;
   }
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
   .token-hero-card .token-type-badge-glyph.category-rwa-icon,
   .token-hero-card .token-type-badge-glyph.category-multi-pair-icon {
-    width: 1.08rem;
-    height: 1.08rem;
+    width: 1.2rem;
+    height: 1.2rem;
   }
 
   .token-hero-card .token-type-badge-glyph.category-quotrons-logo {
@@ -7886,9 +7910,17 @@
     color: #c4b5fd;
   }
 
+  .category-owl-totem {
+    display: inline-block;
+    width: auto;
+    height: 1.125rem;
+    aspect-ratio: auto;
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+
   svg.category-hook-glyph,
-  svg.filter-hook-glyph,
-  .category-chef-hat {
+  svg.filter-hook-glyph {
     height: auto;
   }
 
@@ -7939,9 +7971,10 @@
     filter: drop-shadow(0 0 4px rgb(56 189 248 / 0.5));
   }
 
+  .token-type-badge-glyph.category-owl-totem,
   .token-type-badge-glyph.category-hook-glyph {
-    width: 0.72rem;
-    font-size: 0.24rem;
+    width: auto;
+    height: 0.85rem;
   }
 
   .token-type-badge-glyph.category-customs-icon,
@@ -8582,9 +8615,10 @@
     line-height: 1.45;
   }
 
+  .mobile-token-row-badges .token-type-badge-glyph.category-owl-totem,
   .mobile-token-row-badges .token-type-badge-glyph.category-hook-glyph {
-    width: 0.85rem;
-    font-size: 0.26rem;
+    width: auto;
+    height: 0.85rem;
   }
 
   @media (min-width: 640px) {
