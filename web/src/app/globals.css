@@ -3961,7 +3961,11 @@
   }
 
   .token-chart-engine a[href*="tradingview"] {
-    display: none !important;
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    z-index: 4;
+    opacity: 0.85;
   }
 
   .token-hero-card {

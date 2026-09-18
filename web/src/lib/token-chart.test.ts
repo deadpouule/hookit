@@ -18,6 +18,7 @@ import {
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
+  CHART_VOLUME_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
   chartFitWindowBars,
@@ -51,6 +52,7 @@ import {
   isSyntheticBar,
   isWhitespaceBar,
   pickChartBars,
+  openFirstTradeFromLaunch,
   pinLiveMcap,
   priceBarsToMcap,
   scaleBars,
@@ -58,7 +60,10 @@ import {
   ticksToBars,
   tradesOnBars,
   visibleCandleOhlc,
+  volumeHistogramData,
   volumeSma,
+  VOLUME_DOWN,
+  VOLUME_UP,
 } from "./token-chart";
 import { TOTAL_SUPPLY } from "./token-live";
 import type { LiveCandle } from "./token-live";
@@ -199,7 +204,7 @@ test("pickChartBars keeps the house tape even when Gecko is denser", () => {
   assert.ok(houseOnly.every((b) => b.close === 1));
 });
 
-test("pinLiveMcap pins carry slots after the last trade without rewriting history", () => {
+test("pinLiveMcap only rewrites the current bar so the plateau stays at last trade", () => {
   const bars = [
     { time: 1, open: 10, high: 12, low: 9, close: 11, volume: 4 },
     { time: 2, open: 11, high: 11, low: 11, close: 11, volume: 0 },
@@ -208,8 +213,11 @@ test("pinLiveMcap pins carry slots after the last trade without rewriting histor
   assert.equal(isSyntheticBar(bars[1]!), true);
   const pinned = pinLiveMcap(bars, 15);
   assert.equal(pinned[0]!.close, 11);
-  assert.equal(pinned[1]!.close, 15);
+  assert.equal(pinned[1]!.close, 11);
+  assert.equal(pinned[2]!.open, 11);
   assert.equal(pinned[2]!.close, 15);
+  assert.equal(pinned[2]!.high, 15);
+  assert.equal(pinned[2]!.low, 11);
 });
 
 test("chartHudBar prefers the last traded bar over a trailing fill", () => {
@@ -347,8 +355,10 @@ test("chartRenderableCandle uses a true doji for flat FDV carry and real wicks f
     { time: 2, open: 5000, high: 5200, low: 4900, close: 5100, volume: 0 },
     5000,
   );
-  assert.equal(drift.high, drift.low);
+  assert.equal(drift.open, 5000);
   assert.equal(drift.close, 5100);
+  assert.equal(drift.high, 5200);
+  assert.equal(drift.low, 4900);
   const traded = chartRenderableCandle(
     { time: 3, open: 5000, high: 5200, low: 4900, close: 5100, volume: 4 },
     5000,
@@ -394,17 +404,18 @@ test("candleSeriesData draws thin maintenance dashes across flat FDV carry", () 
   assert.equal(carrySpan, 0);
 });
 
-test("pinLiveMcap leaves seed bars alone when there is no trade yet", () => {
+test("pinLiveMcap leaves earlier seed bars at last close and stretches only the live bar", () => {
   const bars = [
     { time: 1, open: 5300, high: 5300, low: 5300, close: 5300, volume: 0 },
     { time: 2, open: 5300, high: 5310, low: 5300, close: 5310, volume: 0 },
   ];
   const pinned = pinLiveMcap(bars, 5310);
-  assert.equal(pinned[0]!.close, 5310);
+  assert.equal(pinned[0]!.close, 5300);
+  assert.equal(pinned[1]!.open, 5300);
   assert.equal(pinned[1]!.close, 5310);
 });
 
-test("in-progress buckets without volume render as thin FDV dashes not fat blocks", () => {
+test("in-progress buckets without volume keep a live open-to-close body", () => {
   const live = chartRenderableCandle({
     time: 2,
     open: 5224,
@@ -413,8 +424,11 @@ test("in-progress buckets without volume render as thin FDV dashes not fat block
     close: 5320,
     volume: 0,
   });
-  assert.equal(live.high, live.low);
+  assert.equal(live.open, 5224);
   assert.equal(live.close, 5320);
+  assert.equal(live.high, 5320);
+  assert.equal(live.low, 5224);
+  assert.ok(live.high > live.low);
 });
 
 test("carryFdvTape fills empty buckets with last FDV instead of whitespace", () => {
@@ -734,16 +748,59 @@ test("applyTicksToBuckets opens a 1m slot instead of smearing onto the previous 
   assert.equal(next[1]!.volume, 2);
 });
 
-test("ensureCurrentBar draws the in-progress bucket at the live price", () => {
+test("ensureCurrentBar draws the in-progress bucket from previous close to live", () => {
   const bars = [{ time: 1_700_000_040, open: 10, high: 11, low: 9, close: 10.5, volume: 4 }];
   const cur = ensureCurrentBar(bars, 60, 1_700_000_130, 12);
   assert.equal(cur.length, 2);
   assert.equal(cur[1]!.time, 1_700_000_100);
-  assert.equal(cur[1]!.open, 12);
+  assert.equal(cur[1]!.open, 10.5);
   assert.equal(cur[1]!.high, 12);
-  assert.equal(cur[1]!.low, 12);
+  assert.equal(cur[1]!.low, 10.5);
   assert.equal(cur[1]!.close, 12);
   assert.equal(cur[1]!.volume, 0);
+});
+
+test("ensureCurrentBar stretches a red live candle down to the current price", () => {
+  const bars = [
+    { time: 1_700_000_040, open: 5130, high: 5140, low: 5120, close: 5130, volume: 20 },
+    { time: 1_700_000_100, open: 5130, high: 5130, low: 5130, close: 5130, volume: 0 },
+  ];
+  const cur = ensureCurrentBar(bars, 60, 1_700_000_130, 5070);
+  assert.equal(cur.length, 2);
+  assert.equal(cur[1]!.open, 5130);
+  assert.equal(cur[1]!.close, 5070);
+  assert.equal(cur[1]!.high, 5130);
+  assert.equal(cur[1]!.low, 5070);
+  const drawn = chartRenderableCandle(cur[1]!);
+  assert.equal(drawn.open, 5130);
+  assert.equal(drawn.close, 5070);
+  assert.ok(drawn.high > drawn.low);
+});
+
+test("openFirstTradeFromLaunch turns a Hooktest single buy into a green candle", () => {
+  const bars = [{ time: 60, open: 81.6, high: 81.6, low: 81.6, close: 81.6, volume: 40 }];
+  const opened = openFirstTradeFromLaunch(bars, 40, "buy");
+  assert.equal(opened[0]!.open, 40);
+  assert.equal(opened[0]!.close, 81.6);
+  assert.equal(opened[0]!.high, 81.6);
+  assert.equal(opened[0]!.low, 40);
+  const filled = forwardFillContinuous(opened, 60, 180);
+  assert.equal(filled[0]!.open, 40);
+  assert.equal(filled[0]!.close, 81.6);
+  assert.ok(filled.slice(1).every((b) => b.open === 81.6 && b.close === 81.6 && b.volume === 0));
+});
+
+test("volumeHistogramData colors up and down bars for the overlay pane", () => {
+  const data = volumeHistogramData([
+    { time: 1, open: 10, high: 12, low: 9, close: 11, volume: 4 },
+    { time: 2, open: 11, high: 11, low: 10, close: 10, volume: 2 },
+    { time: 3, open: 10, high: 10, low: 10, close: 10, volume: 0 },
+  ]);
+  assert.equal(data[0]!.value, 4);
+  assert.equal(data[0]!.color, VOLUME_UP);
+  assert.equal(data[1]!.value, 2);
+  assert.equal(data[1]!.color, VOLUME_DOWN);
+  assert.equal(data[2]!.value, 0);
 });
 
 test("Defined auto-fit keeps 5m at 72-bar pitch instead of squeezing the whole life", () => {
@@ -870,6 +927,7 @@ test("micro-cap price scale uses 9-decimal minMove and 20% pane margins", () => 
   assert.equal(CHART_PRICE_MIN_MOVE, 1e-9);
   assert.equal(CHART_SCALE_MARGIN_TOP, 0.2);
   assert.equal(CHART_SCALE_MARGIN_BOTTOM, 0.2);
+  assert.equal(CHART_VOLUME_MARGIN_TOP, 0.8);
   assert.equal(CHART_BAR_SPACING, 9);
   assert.equal(CHART_MIN_BAR_SPACING, 0.5);
   assert.equal(CHART_RIGHT_OFFSET, 8);
