@@ -8116,12 +8116,12 @@
     width: auto;
     flex: 1;
     min-width: 0;
-    justify-content: flex-start;
+    justify-content: stretch;
     margin-left: 0;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    padding: 0.18rem 0.55rem 0.18rem 0.26rem;
+    padding: 0.18rem 0.28rem;
   }
 
   html[data-device="phone"] .market-toolbar-actions::-webkit-scrollbar {
@@ -8133,9 +8133,11 @@
   }
 
   html[data-device="phone"] .market-toolbar-group--sort {
+    width: 100%;
     min-width: max-content;
+    justify-content: space-between;
+    gap: 0.12rem;
     overflow: visible;
-    gap: 0.05rem;
   }
 
   html[data-device="phone"] .market-toolbar-group--sort .market-filter-pill {
