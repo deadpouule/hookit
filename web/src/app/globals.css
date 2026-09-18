@@ -4773,6 +4773,32 @@
     order: 2;
   }
 
+  .token-multi-pool-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    line-height: 1.45;
+  }
+
+  .token-multi-pool-note__leg {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .token-multi-pool-note__plus {
+    color: #71717a;
+    font-weight: 500;
+  }
+
+  .token-multi-pool-note .pick-logo--sm,
+  .token-multi-pool-note img {
+    height: 16px;
+    width: 16px;
+  }
+
   .token-desk-chart {
     min-width: 0;
   }
