@@ -6,7 +6,7 @@ import { formatTvPrice } from "@/lib/tv-chart";
 /** Native resolution is 1m - same as Sentry's subgraph resample. */
 export const NATIVE_CANDLE_SEC = 60;
 
-export const CHART_TIMEFRAMES = ["1m", "5m", "10m", "15m", "1h", "4h", "1D", "ALL"] as const;
+export const CHART_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "D"] as const;
 export type ChartInterval = (typeof CHART_TIMEFRAMES)[number];
 export type ChartScale = "mcap" | "price";
 export type ChartStyle = "candles" | "line";
@@ -94,18 +94,14 @@ export function buildContinuousOhlcv(
   return result;
 }
 
-const INTERVAL_BUCKET_SEC: Record<Exclude<ChartInterval, "ALL">, number> = {
+const INTERVAL_BUCKET_SEC: Record<ChartInterval, number> = {
   "1m": 60,
   "5m": 300,
-  "10m": 600,
   "15m": 900,
   "1h": 3_600,
   "4h": 14_400,
-  "1D": 86_400,
+  D: 86_400,
 };
-
-/** ALL picks the finest step that fits the token's whole life inside CHART_WINDOW_BARS. */
-const ALL_BUCKET_STEPS = [60, 300, 900, 3_600, 14_400, 86_400] as const;
 
 function finitePos(n: number): boolean {
   return Number.isFinite(n) && n > 0;
@@ -191,18 +187,12 @@ export function chartSpanSec(bars: ChartBar[], launchedAt?: number, nowSec?: num
   return Math.max(last, now) - first;
 }
 
-export function intervalBucketSec(interval: ChartInterval, spanSec?: number): number {
-  if (interval !== "ALL") return INTERVAL_BUCKET_SEC[interval];
-  const span = spanSec ?? 0;
-  if (!(span > 0)) return ALL_BUCKET_STEPS[ALL_BUCKET_STEPS.length - 1]!;
-  for (const step of ALL_BUCKET_STEPS) {
-    if (span / step <= CHART_WINDOW_BARS) return step;
-  }
-  return ALL_BUCKET_STEPS[ALL_BUCKET_STEPS.length - 1]!;
+export function intervalBucketSec(interval: ChartInterval, _spanSec?: number): number {
+  return INTERVAL_BUCKET_SEC[interval];
 }
 
-export function barsForInterval(bars: ChartBar[], interval: ChartInterval, spanSec?: number): ChartBar[] {
-  return aggregateBars(bars, intervalBucketSec(interval, spanSec));
+export function barsForInterval(bars: ChartBar[], interval: ChartInterval, _spanSec?: number): ChartBar[] {
+  return aggregateBars(bars, intervalBucketSec(interval));
 }
 
 export function hasChartVolume(bars: ChartBar[]): boolean {
@@ -567,12 +557,14 @@ export function ticksToBars(ticks: ChartTick[], bucketSec = NATIVE_CANDLE_SEC): 
 export const CHART_WINDOW_BARS = 72;
 /** @deprecated Defined does not shrink the window on young tokens. Kept for callers. */
 export const CHART_MIN_WINDOW_BARS = 72;
-/** TV default `rightOffset` — room for the last-value tag after the last candle. */
-export const CHART_RIGHT_OFFSET = 5;
-export const CHART_MIN_BAR_SPACING = 4;
-/** Lightweight Charts price precision for micro-caps (0.00005010). */
-export const CHART_PRICE_DECIMALS = 8;
-export const CHART_PRICE_MIN_MOVE = 1e-8;
+/** Room for the last-value tag after the last candle. */
+export const CHART_RIGHT_OFFSET = 8;
+/** Adjacent dojis at this pitch visually join into a flat staircase step. */
+export const CHART_BAR_SPACING = 9;
+export const CHART_MIN_BAR_SPACING = 0.5;
+/** Lightweight Charts price precision for micro-caps ($0.0000000816). */
+export const CHART_PRICE_DECIMALS = 9;
+export const CHART_PRICE_MIN_MOVE = 1e-9;
 /** Cap candle width — TradingView rarely exceeds ~32px even on young tokens. */
 export const CHART_MAX_BAR_SPACING = 32;
 /** Defined "auto" — hug a quiet tape so 2–4 prints stay fat, like Codex 5m. */
@@ -708,9 +700,9 @@ export function chartVisibleLogicalRange(
   anchorIndex?: number,
 ): { from: number; to: number; barSpacing: number } | null {
   if (barCount <= 0) return null;
-  const width = Math.max(paneWidthPx, CHART_MIN_BAR_SPACING * 12);
-  const slots = Math.max(windowBars, 1) + rightOffset;
-  const barSpacing = Math.min(Math.max(width / slots, CHART_MIN_BAR_SPACING), CHART_MAX_BAR_SPACING);
+  const width = Math.max(paneWidthPx, CHART_BAR_SPACING * 12);
+  const barSpacing = CHART_BAR_SPACING;
+  void windowBars;
   const visible = Math.max(Math.floor(width / barSpacing), 12);
   const pin =
     anchorIndex != null ? Math.min(Math.max(anchorIndex, 0), barCount - 1) : barCount - 1;
@@ -956,9 +948,11 @@ export function fillEmptyBars(
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
   const sorted = mergeBars(
     [...bars]
-      .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec }))
+      .filter((b) => !isWhitespaceBar(b) && b.close > 0 && b.time > 0)
+      .map((b) => ({ ...b, time: Math.floor(b.time / bucketSec) * bucketSec, whitespace: false }))
       .sort((a, b) => a.time - b.time),
   );
+  if (sorted.length === 0) return [];
   const last = sorted[sorted.length - 1]!;
   const end = Math.floor((nowSec && nowSec > last.time ? nowSec : last.time) / bucketSec) * bucketSec;
   const span = Math.floor((end - sorted[0]!.time) / bucketSec) + 1;
@@ -984,6 +978,18 @@ export function fillEmptyBars(
     });
   }
   return out;
+}
+
+/**
+ * Gapless staircase: one bar for every bucket from the first print to now.
+ * Quiet buckets are pure dojis (O=H=L=C=previous close, volume=0).
+ */
+export function forwardFillContinuous(
+  bars: ChartBar[],
+  bucketSec: number,
+  nowSec?: number,
+): ChartBar[] {
+  return fillEmptyBars(bars, bucketSec, nowSec);
 }
 
 /**

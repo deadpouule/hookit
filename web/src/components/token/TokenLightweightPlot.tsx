@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import {
+  CHART_BAR_SPACING,
   CHART_MAX_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
   CHART_PRICE_DECIMALS,
@@ -33,12 +34,10 @@ import {
   TV_CHART_SCALE_TEXT,
   TV_CROSSHAIR,
   TV_CROSSHAIR_LABEL,
-  TV_MONO_BORDER_DOWN,
-  TV_MONO_BORDER_UP,
-  TV_MONO_DOWN,
-  TV_MONO_UP,
-  TV_MONO_WICK_DOWN,
-  TV_MONO_WICK_UP,
+  TV_STAIR_DOWN,
+  TV_STAIR_UP,
+  TV_STAIR_WICK_DOWN,
+  TV_STAIR_WICK_UP,
   tvAreaGradient,
 } from "@/lib/tv-chart";
 import type {
@@ -49,8 +48,8 @@ import type {
   UTCTimestamp,
 } from "lightweight-charts";
 
-const UP = TV_MONO_UP;
-const DOWN = TV_MONO_DOWN;
+const UP = TV_STAIR_UP;
+const DOWN = TV_STAIR_DOWN;
 const SURFACE = TV_CHART_BG;
 const GRID = TV_CHART_GRID;
 const AXIS = TV_CHART_SCALE_TEXT;
@@ -167,13 +166,11 @@ async function attachPriceSeries(
   }
 
   return chart.addSeries(tv.CandlestickSeries, {
-    upColor: TV_MONO_UP,
-    downColor: TV_MONO_DOWN,
-    wickUpColor: TV_MONO_WICK_UP,
-    wickDownColor: TV_MONO_WICK_DOWN,
-    borderVisible: true,
-    borderUpColor: TV_MONO_BORDER_UP,
-    borderDownColor: TV_MONO_BORDER_DOWN,
+    upColor: TV_STAIR_UP,
+    downColor: TV_STAIR_DOWN,
+    wickUpColor: TV_STAIR_WICK_UP,
+    wickDownColor: TV_STAIR_WICK_DOWN,
+    borderVisible: false,
     priceLineVisible: true,
     lastValueVisible: true,
     priceLineWidth: 1,
@@ -213,7 +210,11 @@ function fitChartView(
     anchor,
   );
   if (!range) return;
-  timeScale.applyOptions({ barSpacing: range.barSpacing, rightOffset: CHART_RIGHT_OFFSET });
+  timeScale.applyOptions({
+    barSpacing: CHART_BAR_SPACING,
+    minBarSpacing: CHART_MIN_BAR_SPACING,
+    rightOffset: CHART_RIGHT_OFFSET,
+  });
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
@@ -398,9 +399,11 @@ export function TokenLightweightPlot({
           borderVisible: false,
           timeVisible: true,
           secondsVisible: false,
+          barSpacing: CHART_BAR_SPACING,
           rightOffset: CHART_RIGHT_OFFSET,
           minBarSpacing: CHART_MIN_BAR_SPACING,
           maxBarSpacing: CHART_MAX_BAR_SPACING,
+          fixLeftEdge: true,
           fixRightEdge: false,
           lockVisibleTimeRangeOnResize: false,
           shiftVisibleRangeOnNewBar: true,

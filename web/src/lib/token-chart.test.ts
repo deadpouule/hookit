@@ -9,8 +9,9 @@ import {
   barsForInterval,
   buildContinuousOhlcv,
   carryQuoteFxBars,
-  CHART_MAX_BAR_SPACING,
+  CHART_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
+  CHART_PRICE_DECIMALS,
   CHART_FIT_PAD_BARS,
   CHART_MIN_VISIBLE_BARS,
   CHART_PRICE_MIN_MOVE,
@@ -41,6 +42,7 @@ import {
   definedWhitespaceTape,
   ensureCurrentBar,
   fillEmptyBars,
+  forwardFillContinuous,
   formatChartAxis,
   formatChartUsd,
   formatLastCandleUtc,
@@ -106,18 +108,20 @@ test("aggregateBars rolls 5m into 1h OHLC + volume", () => {
   assert.equal(hourly[1]!.volume, 4);
 });
 
-test("intervalBucketSec ALL picks a step that fits the token life in 72 bars", () => {
-  assert.equal(intervalBucketSec("ALL", 3_600), 60);
-  assert.equal(intervalBucketSec("ALL", 72 * 3_600), 3_600);
-  assert.equal(intervalBucketSec("ALL", 72 * 86_400), 86_400);
+test("intervalBucketSec maps standard timeframes including D", () => {
+  assert.equal(intervalBucketSec("1m"), 60);
+  assert.equal(intervalBucketSec("5m"), 300);
+  assert.equal(intervalBucketSec("15m"), 900);
+  assert.equal(intervalBucketSec("1h"), 3_600);
+  assert.equal(intervalBucketSec("4h"), 14_400);
+  assert.equal(intervalBucketSec("D"), 86_400);
 });
 
-test("barsForInterval ALL rolls into the resolved ALL bucket", () => {
+test("barsForInterval rolls 5m prints into a 1h candle", () => {
   const bars = [
     { time: 0, open: 1, high: 1, low: 1, close: 1, volume: 1 },
     { time: 300, open: 1, high: 2, low: 1, close: 2, volume: 1 },
   ];
-  assert.equal(barsForInterval(bars, "ALL", 3_600).length, 2);
   assert.equal(barsForInterval(bars, "1h").length, 1);
 });
 
@@ -138,7 +142,7 @@ test("barsForInterval rolls 5m into 15m and 4h", () => {
   assert.equal(barsForInterval(bars, "4h").length, 1);
 });
 
-test("1m 10m 15m keep different bucket counts on a sparse tape", () => {
+test("1m 5m 15m keep different bucket counts on a sparse tape", () => {
   const bars = [0, 60, 300, 600, 900].map((time, i) => ({
     time,
     open: 10 + i,
@@ -148,9 +152,9 @@ test("1m 10m 15m keep different bucket counts on a sparse tape", () => {
     volume: 1,
   }));
   assert.equal(barsForInterval(bars, "1m").length, 5);
-  assert.equal(barsForInterval(bars, "10m").length, 2);
+  assert.equal(barsForInterval(bars, "5m").length, 4);
   assert.equal(barsForInterval(bars, "15m").length, 2);
-  assert.notEqual(barsForInterval(bars, "1m")[1]!.close, barsForInterval(bars, "10m")[0]!.close);
+  assert.notEqual(barsForInterval(bars, "1m").length, barsForInterval(bars, "5m").length);
 });
 
 test("scaleBars converts market cap to per-token price", () => {
@@ -181,7 +185,7 @@ test("pickChartBars keeps the house tape even when Gecko is denser", () => {
   const fromHouse = pickChartBars(indexer, gecko, "5m");
   assert.equal(fromHouse.length, 1);
   assert.equal(fromHouse[0]!.close, 1);
-  assert.equal(pickChartBars([], gecko, "ALL")[0]!.close, 2);
+  assert.equal(pickChartBars([], gecko, "D")[0]!.close, 2);
   const houseTape = Array.from({ length: 12 }, (_, i) => ({
     time: i,
     open: 1,
@@ -293,21 +297,16 @@ test("opening window is wider on 1m/5m so thin books keep their spikes", () => {
   assert.equal(chartWindowBars(), CHART_WINDOW_BARS);
 });
 
-test("candles stretch a 72-bar Defined window across the pane", () => {
+test("candles keep a 9px pitch so adjacent dojis join into a step", () => {
   const fresh = chartVisibleLogicalRange(1, 364, CHART_WINDOW_BARS);
   assert.ok(fresh);
   assert.equal(fresh.to, 0 + CHART_RIGHT_OFFSET + 0.5);
-  const slots = CHART_WINDOW_BARS + CHART_RIGHT_OFFSET;
-  assert.equal(fresh.barSpacing, Math.max(364 / slots, CHART_MIN_BAR_SPACING));
-  assert.equal(fresh.to - fresh.from, Math.floor(364 / fresh.barSpacing));
+  assert.equal(fresh.barSpacing, CHART_BAR_SPACING);
+  assert.equal(fresh.to - fresh.from, Math.floor(364 / CHART_BAR_SPACING));
   const desk = chartVisibleLogicalRange(120, 1038, CHART_WINDOW_BARS);
   assert.ok(desk);
   assert.equal(desk.to, 119 + CHART_RIGHT_OFFSET + 0.5);
-  assert.equal(desk.barSpacing, 1038 / slots);
-  assert.equal(desk.to - desk.from, Math.floor(1038 / desk.barSpacing));
-  const wide = chartVisibleLogicalRange(1, 1400, CHART_WINDOW_BARS);
-  assert.ok(wide);
-  assert.equal(wide.barSpacing, Math.min(1400 / slots, CHART_MAX_BAR_SPACING));
+  assert.equal(desk.barSpacing, CHART_BAR_SPACING);
   assert.equal(chartVisibleLogicalRange(0), null);
 });
 
@@ -498,18 +497,53 @@ test("carryQuoteFxBars rolls every printed FX bar without a 12-bar cap", () => {
 });
 
 test("chartVisibleLogicalRange pins to the last real bar not trailing whitespace", () => {
-  const range = chartVisibleLogicalRange(100, 720, 16, 5, 10);
+  const range = chartVisibleLogicalRange(100, 720, 16, CHART_RIGHT_OFFSET, 10);
   assert.ok(range);
   assert.equal(range.to, 10 + CHART_RIGHT_OFFSET + 0.5);
 });
 
-test("chartSpanSec uses launch time so ALL is not a 1m clone on a young tape", () => {
+test("chartSpanSec uses launch time for the token lifetime", () => {
   const now = 1_700_014_400;
   const bars = [{ time: now - 600, open: 1, high: 1, low: 1, close: 1, volume: 1 }];
   const span = chartSpanSec(bars, now - 4 * 3_600, now);
   assert.equal(span, 4 * 3_600);
-  assert.equal(intervalBucketSec("ALL", span), 300);
-  assert.notEqual(intervalBucketSec("ALL", span), intervalBucketSec("1m"));
+});
+
+test("forwardFillContinuous writes a doji for every quiet 1m bucket", () => {
+  const filled = forwardFillContinuous(
+    [
+      { time: 1_700_000_000, open: 10, high: 12, low: 9, close: 11, volume: 4 },
+      { time: 1_700_000_600, open: 14, high: 15, low: 13, close: 14.5, volume: 2 },
+    ],
+    60,
+    1_700_000_600,
+  );
+  assert.equal(filled.length, 11);
+  assert.equal(filled[0]!.close, 11);
+  for (let i = 1; i <= 9; i++) {
+    assert.equal(filled[i]!.open, 11);
+    assert.equal(filled[i]!.high, 11);
+    assert.equal(filled[i]!.low, 11);
+    assert.equal(filled[i]!.close, 11);
+    assert.equal(filled[i]!.volume, 0);
+  }
+  const linked = linkBarOpens(filled);
+  assert.equal(linked[10]!.open, 11);
+  assert.equal(linked[10]!.close, 14.5);
+  assert.equal(linked[10]!.low, 11);
+});
+
+test("micro-cap prices stay above 1e-9 and are not rounded to zero", () => {
+  const px = 0.0000000816;
+  const bars = [{ time: 60, open: px, high: px, low: px, close: px, volume: 1 }];
+  const ohlc = chartRenderableCandle(bars[0]!);
+  assert.equal(ohlc.close, px);
+  assert.ok(ohlc.close > 0);
+  assert.ok(ohlc.close > CHART_PRICE_MIN_MOVE);
+  const band = chartPriceBand(px, px);
+  assert.ok(band);
+  assert.ok(band.minValue > 0);
+  assert.ok(band.maxValue > px);
 });
 
 test("carryQuoteFxBars only marks buckets where quote FX printed", () => {
@@ -831,11 +865,14 @@ test("definedFdvTape then linkBarOpens builds an AllonSol staircase", () => {
   assert.equal(sell?.low, 4_950);
 });
 
-test("micro-cap price scale uses 8-decimal minMove and 20% pane margins", () => {
-  assert.equal(CHART_PRICE_MIN_MOVE, 1e-8);
+test("micro-cap price scale uses 9-decimal minMove and 20% pane margins", () => {
+  assert.equal(CHART_PRICE_DECIMALS, 9);
+  assert.equal(CHART_PRICE_MIN_MOVE, 1e-9);
   assert.equal(CHART_SCALE_MARGIN_TOP, 0.2);
   assert.equal(CHART_SCALE_MARGIN_BOTTOM, 0.2);
-  assert.equal(CHART_MIN_BAR_SPACING, 4);
+  assert.equal(CHART_BAR_SPACING, 9);
+  assert.equal(CHART_MIN_BAR_SPACING, 0.5);
+  assert.equal(CHART_RIGHT_OFFSET, 8);
 });
 
 test("chartHudBar ignores whitespace slots", () => {

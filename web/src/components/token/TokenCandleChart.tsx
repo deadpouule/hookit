@@ -8,19 +8,17 @@ import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
 import { formatPercent } from "@/lib/format";
-import { TV_MONO_DOWN, TV_MONO_UP, TV_MONO_WICK_DOWN } from "@/lib/tv-chart";
+import { TV_STAIR_DOWN, TV_STAIR_UP } from "@/lib/tv-chart";
 import {
   CHART_TIMEFRAMES,
   applyTicksToBuckets,
   barChangePct,
   barsForInterval,
-  carryQuoteFxBars,
   chartFitAnchorIndex,
   chartHudBar,
   chartWindowBars,
-  chartSpanSec,
-  definedFdvTape,
   ensureCurrentBar,
+  forwardFillContinuous,
   formatChartUsd,
   formatLastCandleUtc,
   intervalBucketSec,
@@ -49,12 +47,10 @@ export type { ChartInterval };
 const TF_LABEL: Record<ChartInterval, string> = {
   "1m": "1m",
   "5m": "5m",
-  "10m": "10m",
   "15m": "15m",
   "1h": "1h",
   "4h": "4h",
-  "1D": "D",
-  ALL: "ALL",
+  D: "D",
 };
 
 const STYLE_KEY = "hookit_chart_style";
@@ -221,11 +217,6 @@ export function TokenCandleChart({
     return pickChartBars(seeded, geckoMcap);
   }, [candles, swaps, selectedPoolId, nowSec, marketCap, gecko.data?.bars, launchedAt]);
 
-  const spanSec = useMemo(
-    () => chartSpanSec(source, launchedAt, nowSec),
-    [source, launchedAt, nowSec],
-  );
-
   const chartMcap = useMemo(() => {
     if (!(marketCap && marketCap > 0)) return marketCap;
     return Math.round(marketCap);
@@ -233,8 +224,8 @@ export function TokenCandleChart({
 
   const buildBars = useCallback(
     (iv: ChartInterval, sc: ChartScale) => {
-      const bucket = intervalBucketSec(iv, spanSec);
-      const display = barsForInterval(source, iv, spanSec);
+      const bucket = intervalBucketSec(iv);
+      const display = barsForInterval(source, iv);
       const withTicks = applySwapTicks(display, swaps, bucket, selectedPoolId);
       const fx = rollQuoteFxBars(quoteFx.data?.bars ?? [], bucket);
       const liveFx =
@@ -242,23 +233,19 @@ export function TokenCandleChart({
       const repriced =
         liveFx > 0 && fx.length > 0 ? repriceBarsWithQuoteFx(withTicks, fx, liveFx) : withTicks;
       const linked = linkBarOpens(repriced);
-      const carried =
-        liveFx > 0 && fx.length > 0
-          ? carryQuoteFxBars(linked, fx, liveFx, bucket, nowSec)
-          : linked;
-      const tape = definedFdvTape(carried, bucket, nowSec, chartWindowBars(bucket));
-      const pinned = pinLiveMcap(tape, chartMcap);
+      const filled = forwardFillContinuous(linked, bucket, nowSec);
+      const pinned = pinLiveMcap(filled, chartMcap);
       const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
-      return scaleBars(current, sc);
+      return scaleBars(linkBarOpens(current), sc);
     },
-    [source, swaps, selectedPoolId, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd, spanSec],
+    [source, swaps, selectedPoolId, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);
   const realBars = useMemo(() => bars.filter((b) => !isWhitespaceBar(b)), [bars]);
 
   const hasData = realBars.length > 0;
-  const bucketSec = intervalBucketSec(interval, spanSec);
+  const bucketSec = intervalBucketSec(interval);
   const anchorIndex = chartFitAnchorIndex(bars);
   const windowBars = chartWindowBars(bucketSec);
   const open = realBars[0]?.open ?? 0;
@@ -382,7 +369,7 @@ export function TokenCandleChart({
           <div className="token-chart-stats-side">
             <span
               className="token-chart-stats-chg"
-              style={{ color: hudUp ? TV_MONO_UP : TV_MONO_WICK_DOWN }}
+              style={{ color: hudUp ? TV_STAIR_UP : TV_STAIR_DOWN }}
             >
               {formatPercent(hudPct, true)}
             </span>
@@ -433,7 +420,7 @@ export function TokenCandleChart({
             bucketSec={bucketSec}
             windowBars={windowBars}
             anchorIndex={anchorIndex}
-            lineColor={up ? TV_MONO_UP : TV_MONO_DOWN}
+            lineColor={up ? TV_STAIR_UP : TV_STAIR_DOWN}
             fitNonce={fitNonce}
             onHover={setHover}
           />
