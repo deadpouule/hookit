@@ -20,7 +20,7 @@
     "GraduatedFeeHook": "0x63e84dbefabeae32c45cb5f7aee0bf1bdb26e088",
     "BondingLaunchFactory": "0x4536b2fa48e6f81cda1296ae87f288d20df610a4",
     "HookitSwapRouter": "0xf94e301607344b1b10ed1fe1a5099e92cb76f362",
-    "BalancedAggregator": "0x787226725e37017799b1edf6e944309a05607fe5",
+    "BalancedAggregator": "0x1000a009827db593c417b980e5aeb32498094858",
     "V4ClaimsRedeemer": "0x85065220ea534d999203bac08ee506067b98eaf5",
     "FeeEthRail": "0x75aa6b3e66b289132cdec80a27a5a14f0c9403ff",
     "HkitBuyback": "0x72b798f9ab2545d476424a8870ab13f59aee669b",
@@ -58,6 +58,7 @@
       "0x10d0350b143b40509c7c5461d66ba28c5ad4b24f"
     ],
     "BalancedAggregators": [
+      "0x787226725e37017799b1edf6e944309a05607fe5",
       "0x5be5e0c91b8c3cfef969c82e02776c6e3f92bc98"
     ],
     "HkitBuybacks": [

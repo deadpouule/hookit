@@ -361,13 +361,10 @@ export function buildDocsSections(): DocsSection[] {
         {
           type: "ul",
           items: [
-            "Reads every canonical launch pool registered for the project token.",
-            "Quotes the required USDG ↔ wStock V4 conversion and the wStock ↔ project-token V4 leg.",
-            "Rejects unsupported markets and routes with more than 15% live V4 price impact.",
-            "Compares the best single pool with discrete multi-pool allocations. Uses a split only when the extra output covers the extra gas.",
+            "Quotes every canonical launch pool: project token → wStock on the launch V4 book, then wStock → USDG on Quotrons. The AAPL (or deepest) pool is used when it is the best fill; USDG is that hop, not a different dump.",
+            "Compares the best single pool with discrete multi-pool allocations. Splits across books when that output matches or beats the single pool, so impact is spread and prices stay aligned.",
             "Applies per-leg minimums plus an aggregate minimum, then re-quotes and simulates immediately before wallet signing.",
-            "Never silently falls back to a selected pool. If no safe USDG route can be built, the interface reports the failure and you can pick a market ticker.",
-            "At most five unique launch-pool legs. The contract reconstructs and verifies every pool key against LaunchFactory.",
+            "If the aggregator cannot simulate a split, the desk still executes the winning single route (token → best stock → USDG) through HookitSwapRouter. Picking a ticker trades that pool directly and skips the USDG hop.",
           ],
         },
         {

@@ -1,14 +1,12 @@
 import { type Address, type Hex, type PublicClient, zeroAddress } from "viem";
 
-import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
 import { launchFactoryAbi } from "@/lib/contracts/launch-factory-abi";
 import { resolveMasterLaunch } from "@/lib/launches";
 import { v4QuoterAbi } from "@/lib/contracts/swap-abi";
 import { poolQuoteLabel, type PaymentAsset } from "@/lib/payment-assets";
 import { isMultiPool, poolMarkets } from "@/lib/pool-active-market";
-import { poolIdFromKey, poolKeyForQuote, poolKeyFromLaunch, type V4PoolKey } from "@/lib/pool-key";
-import { STATE_VIEW_ADDRESS, stateViewAbi } from "@/lib/pool-price";
-import { quoteFromTokenWei } from "@/lib/quote-usd";
+import { poolKeyForQuote, poolKeyFromLaunch, type V4PoolKey } from "@/lib/pool-key";
 import type { SwapAsset } from "@/lib/swap-assets";
 import { isStableSwapAsset } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
@@ -66,6 +64,7 @@ export type BestBuyPlan = {
   legs: BestBuyLeg[];
   amountOut: bigint;
   routeLabel: string;
+  bestSingle?: BestBuyLeg;
 };
 
 export type BestSellLeg = BestSellRoute & { amountIn: bigint };
@@ -89,12 +88,10 @@ const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
 const MARKET_LEGS_TTL_MS = 20_000;
 const QUOTE_TIMEOUT_MS = 5_000;
+/** Hook dump + Quotrons hop; do not wrap this in another 5s or USDG quotes die. */
+const HOOK_AND_BRIDGE_MS = 12_000;
 /** Fat per-pool dumps hang the V4 quoter; give up and retry at half size. */
 const SLICE_PROBE_MS = 3_000;
-/** Same cap as BalancedAggregator.MAX_PRICE_IMPACT_BPS — reject at quote time. */
-const MAX_ROUTE_IMPACT_BPS = 1_500n;
-/** Split must beat the best single by this much (gas of extra legs). */
-const SPLIT_MIN_IMPROVE_BPS = 30n;
 const QUOTE_TIMED_OUT = Symbol("quote-timeout");
 
 type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
@@ -167,38 +164,7 @@ async function quoteExactInOnKey(
   );
   if (!raced || raced === QUOTE_TIMED_OUT) return null;
   const amountOut = raced.result[0] as bigint;
-  if (amountOut <= 0n) return null;
-  if (!(await routeImpactOk(client, hookKey, token, side, amountIn, amountOut))) return null;
-  return amountOut;
-}
-
-async function routeImpactOk(
-  client: PublicClient,
-  hookKey: V4PoolKey,
-  token: Address,
-  side: "buy" | "sell",
-  amountIn: bigint,
-  quotedOut: bigint,
-): Promise<boolean> {
-  try {
-    const slot = (await client.readContract({
-      address: STATE_VIEW_ADDRESS,
-      abi: stateViewAbi,
-      functionName: "getSlot0",
-      args: [poolIdFromKey(hookKey)],
-    })) as readonly [bigint, number, number, number] | { sqrtPriceX96?: bigint };
-    const sqrt = Array.isArray(slot) ? slot[0] : (slot as { sqrtPriceX96?: bigint }).sqrtPriceX96;
-    if (typeof sqrt !== "bigint" || sqrt < MIN_SQRT_PRICE || sqrt > MAX_SQRT_PRICE) return true;
-    const tokenIs0 = hookKey.currency0.toLowerCase() === token.toLowerCase();
-    const spotOut =
-      side === "sell"
-        ? quoteFromTokenWei(amountIn, sqrt, tokenIs0)
-        : quoteFromTokenWei(amountIn, sqrt, !tokenIs0);
-    if (spotOut <= quotedOut || spotOut === 0n) return true;
-    return ((spotOut - quotedOut) * 10_000n) / spotOut <= MAX_ROUTE_IMPACT_BPS;
-  } catch {
-    return true;
-  }
+  return amountOut > BigInt(0) ? amountOut : null;
 }
 
 /** Prefer on-chain PoolKeys from the factory - reconstructed keys often miss the fee flag. */
@@ -469,16 +435,12 @@ function pickBetterSellPlan(
   if (aSplit !== bSplit) {
     const single = aSplit ? b : a;
     const split = aSplit ? a : b;
-    return splitBeatsSingle(single.amountOut, split.amountOut) ? split : single;
+    // Split when it is not worse: spreads impact across books without shrinking USDG out.
+    return split.amountOut >= single.amountOut ? split : single;
   }
 
   if (a.amountOut !== b.amountOut) return a.amountOut > b.amountOut ? a : b;
   return bFill > aFill ? b : a;
-}
-
-function splitBeatsSingle(singleOut: bigint, splitOut: bigint): boolean {
-  if (splitOut <= singleOut) return false;
-  return (splitOut - singleOut) * 10_000n >= singleOut * SPLIT_MIN_IMPROVE_BPS;
 }
 
 /**
@@ -497,9 +459,10 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan. Aggregator: quote every viable route (one pool, equal
- * split, 60/40 on the top two) and keep the max USDG out. Split only when
- * it beats a single pool — never because it is the default.
+ * Best sell plan. Quote every launch pool (token → wStock → USDG), then
+ * discrete splits. Keep the max USDG out. A split wins when it matches or
+ * beats the best single pool — that is how impact is spread without shrinking
+ * the fill.
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -524,7 +487,7 @@ export async function quoteBestSellPlan(
   const quoteFullSingles = async (): Promise<BestSellLeg[]> => {
     const results = await Promise.all(
       legs.map(async (leg) => {
-        const one = await withQuoteTimeout(quoteLeg(leg, amountIn), QUOTE_TIMEOUT_MS);
+        const one = await withQuoteTimeout(quoteLeg(leg, amountIn), HOOK_AND_BRIDGE_MS);
         if (!one || one === QUOTE_TIMED_OUT) return null;
         return one;
       }),
@@ -548,7 +511,7 @@ export async function quoteBestSellPlan(
 
     // A full single-pool dump (the AAPL path) is already a valid quote.
     // Only spend a short budget trying to beat it with splits.
-    const splitMs = bestPlan && planFilledIn(bestPlan) >= amountIn - 1n ? 2_000 : QUOTE_TIMEOUT_MS;
+    const splitMs = bestPlan && planFilledIn(bestPlan) >= amountIn - 1n ? 4_000 : HOOK_AND_BRIDGE_MS;
     const equalLegs = await withQuoteTimeout(
       quoteEqualSplitOnLegs(quoteLeg, amountIn, legs),
       splitMs,
@@ -643,8 +606,8 @@ export async function quoteBestSellPlan(
 }
 
 /**
- * Best buy plan: try each market at 100%, then optionally split size across the top two
- * routes when a split yields more tokens than any single pool.
+ * Best buy plan: quote USDG → wStock → token on every market, then split
+ * across the top two when that yields at least as many tokens.
  */
 export async function quoteBestBuyPlan(
   client: PublicClient,
@@ -662,7 +625,7 @@ export async function quoteBestBuyPlan(
     legs.map(async (leg) => {
       const quoted = await withQuoteTimeout(
         quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient),
-        QUOTE_TIMEOUT_MS,
+        HOOK_AND_BRIDGE_MS,
       );
       if (quoted && quoted !== QUOTE_TIMED_OUT) singles.push(quoted);
     }),
@@ -676,6 +639,7 @@ export async function quoteBestBuyPlan(
     legs: [bestSingle],
     amountOut: bestSingle.amountOut,
     routeLabel: bestSingle.routeLabel,
+    bestSingle,
   };
 
   if (singles.length < 2) return bestPlan;
@@ -701,6 +665,7 @@ export async function quoteBestBuyPlan(
           legs: [legA, legB],
           amountOut: legA.amountOut + legB.amountOut,
           routeLabel: `Split ${Math.round(bps / 100)}/${100 - Math.round(bps / 100)}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+          bestSingle,
         } satisfies BestBuyPlan;
       }),
     ),
@@ -708,7 +673,7 @@ export async function quoteBestBuyPlan(
   );
   if (splitPlans && splitPlans !== QUOTE_TIMED_OUT) {
     for (const plan of splitPlans) {
-      if (plan && splitBeatsSingle(bestPlan.amountOut, plan.amountOut)) bestPlan = plan;
+      if (plan && plan.amountOut >= bestPlan.amountOut) bestPlan = plan;
     }
   }
 

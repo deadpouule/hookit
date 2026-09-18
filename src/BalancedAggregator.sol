@@ -9,7 +9,6 @@ import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 
 import {LaunchFactory} from "./LaunchFactory.sol";
@@ -26,10 +25,8 @@ contract BalancedAggregator is IUnlockCallback {
     using CurrencyLibrary for Currency;
     using CurrencySettler for Currency;
     using PoolIdLibrary for PoolKey;
-    using StateLibrary for IPoolManager;
     using TransientStateLibrary for IPoolManager;
 
-    uint16 public constant MAX_PRICE_IMPACT_BPS = 1_500;
     uint256 public constant MAX_DEADLINE_WINDOW = 1 days;
 
     IPoolManager public immutable poolManager;
@@ -72,7 +69,6 @@ contract BalancedAggregator is IUnlockCallback {
     error PoolKeyMismatch();
     error UnsupportedQuote();
     error InsufficientOutput();
-    error PriceImpactTooHigh();
     error UnauthorizedBridgeHook();
 
     constructor(IPoolManager manager_, LaunchFactory factory_) {
@@ -224,7 +220,6 @@ contract BalancedAggregator is IUnlockCallback {
         bool bridgeZfo = QuotronBridge.zeroForOne(Currency.unwrap(quote), Currency.unwrap(usdg));
         bool hookZfo = !_tokenIsCurrency0(hookKey, token);
 
-        (uint160 sqrtBefore,,,) = poolManager.getSlot0(bridgeKey.toId());
         poolManager.swap(
             bridgeKey,
             SwapParams({
@@ -234,8 +229,6 @@ contract BalancedAggregator is IUnlockCallback {
             }),
             ""
         );
-        (uint160 sqrtAfter,,,) = poolManager.getSlot0(bridgeKey.toId());
-        _enforceImpact(sqrtBefore, sqrtAfter);
 
         Currency bridgeIn = bridgeZfo ? bridgeKey.currency0 : bridgeKey.currency1;
         int256 bridgeInDelta = poolManager.currencyDelta(address(this), bridgeIn);
@@ -250,7 +243,6 @@ contract BalancedAggregator is IUnlockCallback {
         uint256 quoteIn = uint256(poolManager.currencyDelta(address(this), quote));
         if (quoteIn == 0) revert InsufficientOutput();
 
-        (sqrtBefore,,,) = poolManager.getSlot0(hookKey.toId());
         poolManager.swap(
             hookKey,
             SwapParams({
@@ -260,8 +252,6 @@ contract BalancedAggregator is IUnlockCallback {
             }),
             abi.encode(recipient)
         );
-        (sqrtAfter,,,) = poolManager.getSlot0(hookKey.toId());
-        _enforceImpact(sqrtBefore, sqrtAfter);
 
         int256 d0 = poolManager.currencyDelta(address(this), hookKey.currency0);
         int256 d1 = poolManager.currencyDelta(address(this), hookKey.currency1);
@@ -300,7 +290,6 @@ contract BalancedAggregator is IUnlockCallback {
         bool hookZfo = _tokenIsCurrency0(hookKey, token);
         Currency tokenCur = Currency.wrap(token);
 
-        (uint160 sqrtBefore,,,) = poolManager.getSlot0(hookKey.toId());
         poolManager.swap(
             hookKey,
             SwapParams({
@@ -310,8 +299,6 @@ contract BalancedAggregator is IUnlockCallback {
             }),
             abi.encode(recipient)
         );
-        (uint160 sqrtAfter,,,) = poolManager.getSlot0(hookKey.toId());
-        _enforceImpact(sqrtBefore, sqrtAfter);
 
         int256 tokenDelta = poolManager.currencyDelta(address(this), tokenCur);
         if (tokenDelta < 0) {
@@ -327,7 +314,6 @@ contract BalancedAggregator is IUnlockCallback {
 
         bool bridgeBuyZfo = QuotronBridge.zeroForOne(Currency.unwrap(quote), Currency.unwrap(usdg));
         bool bridgeSellZfo = !bridgeBuyZfo;
-        (sqrtBefore,,,) = poolManager.getSlot0(bridgeKey.toId());
         poolManager.swap(
             bridgeKey,
             SwapParams({
@@ -337,8 +323,6 @@ contract BalancedAggregator is IUnlockCallback {
             }),
             ""
         );
-        (sqrtAfter,,,) = poolManager.getSlot0(bridgeKey.toId());
-        _enforceImpact(sqrtBefore, sqrtAfter);
 
         int256 quoteLeft = poolManager.currencyDelta(address(this), quote);
         if (quoteLeft < 0) {
@@ -372,7 +356,6 @@ contract BalancedAggregator is IUnlockCallback {
     ) internal returns (uint256 amountOut) {
         bool zeroForOne = buy ? !_tokenIsCurrency0(hookKey, token) : _tokenIsCurrency0(hookKey, token);
 
-        (uint160 sqrtBefore,,,) = poolManager.getSlot0(hookKey.toId());
         poolManager.swap(
             hookKey,
             SwapParams({
@@ -382,8 +365,6 @@ contract BalancedAggregator is IUnlockCallback {
             }),
             abi.encode(recipient)
         );
-        (uint160 sqrtAfter,,,) = poolManager.getSlot0(hookKey.toId());
-        _enforceImpact(sqrtBefore, sqrtAfter);
 
         int256 d0 = poolManager.currencyDelta(address(this), hookKey.currency0);
         int256 d1 = poolManager.currencyDelta(address(this), hookKey.currency1);
@@ -408,14 +389,6 @@ contract BalancedAggregator is IUnlockCallback {
         if (delta > 0) {
             currency.take(poolManager, recipient, uint256(delta), false);
         }
-    }
-
-    function _enforceImpact(uint160 sqrtBefore, uint160 sqrtAfter) internal pure {
-        if (sqrtBefore == 0 || sqrtAfter == 0) return;
-        uint256 hi = sqrtBefore > sqrtAfter ? sqrtBefore : sqrtAfter;
-        uint256 lo = sqrtBefore > sqrtAfter ? sqrtAfter : sqrtBefore;
-        uint256 impactBps = (hi - lo) * ProtocolConstants.BPS_DENOMINATOR / lo;
-        if (impactBps > MAX_PRICE_IMPACT_BPS) revert PriceImpactTooHigh();
     }
 
     function _refund(Currency currency, address to) internal {

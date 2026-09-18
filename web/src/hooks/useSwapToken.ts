@@ -62,6 +62,8 @@ import {
   quoteBestSellPlan,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
+  type BestBuyPlan,
+  type BestSellPlan,
 } from "@/lib/multi-pool-route";
 import { resolveMasterLaunch } from "@/lib/launches";
 import { quoteHookLeg, quotePoolSwapWithMeta } from "@/lib/swap-quote";
@@ -164,7 +166,7 @@ export function useSwapToken(pool: TokenPool) {
       }
       const bps = Math.min(5_000, Math.max(1, Math.round(slippagePct * 100)));
 
-      // Multi-pool sell aggregator: quote all Hookit legs (+ optional bridge) and execute best.
+      // Multi-pool USDG sell: best token → stock pool, then stock → USDG.
       if (side === "sell" && receiveAsset && shouldAggregateMultiSell(pool, receiveAsset)) {
         const plan = await quoteBestSellPlan(
           publicClient,
@@ -173,122 +175,231 @@ export function useSwapToken(pool: TokenPool) {
           receiveAsset,
           address,
         );
+        if (!plan) {
+          throw new Error(
+            "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
+          );
+        }
         const aggregator = getBalancedAggregatorAddress();
         const receiveAddr = receiveAsset.isNative ? zeroAddress : (receiveAsset.address ?? zeroAddress);
         const resolved = await resolveMasterLaunch(publicClient, token);
         const launchId = resolved?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
-        if (
-          aggregator &&
-          plan &&
-          canUseBalancedAggregatorSell(receiveAddr as Address) &&
-          sellPlanCanUseBalancedAggregator(plan) &&
-          launchId != null &&
-          launchId > BigInt(0)
-        ) {
-          const legs = balancedSellLegsFromPlan(pool, plan, bps);
-          if (legs.length > 0) {
-            const sellIn = planFilledIn(plan);
-            const args = [
-              launchId,
-              token,
-              sellIn,
-              balancedMinTotalOut(legs),
-              legs,
-              address,
-              balancedDeadlineSec(),
-            ] as const;
-            await ensureErc20Allowance(token, aggregator, sellIn);
-            let aggregatorReady = false;
-            try {
-              await publicClient.simulateContract({
-                address: aggregator,
-                abi: balancedAggregatorAbi,
-                functionName: "sellExactInput",
-                args,
-                account: address,
-              });
-              aggregatorReady = true;
-            } catch {
-              aggregatorReady = false;
-            }
-            if (aggregatorReady) {
-              const hash = await writeContractAsync({
-                address: aggregator,
-                abi: balancedAggregatorAbi,
-                functionName: "sellExactInput",
-                args,
-              });
-              await publicClient.waitForTransactionReceipt({ hash });
-              return hash;
-            }
-            throw new Error(
-              "No safe USDG route for this size. Pick a stock ticker to trade that pool directly.",
-            );
+
+        const runSellAggregator = async (usePlan: BestSellPlan): Promise<`0x${string}` | null> => {
+          if (
+            !aggregator ||
+            !canUseBalancedAggregatorSell(receiveAddr as Address) ||
+            !sellPlanCanUseBalancedAggregator(usePlan) ||
+            launchId == null ||
+            launchId <= BigInt(0)
+          ) {
+            return null;
           }
+          const legs = balancedSellLegsFromPlan(pool, usePlan, bps);
+          if (legs.length === 0) return null;
+          const sellIn = planFilledIn(usePlan);
+          const args = [
+            launchId,
+            token,
+            sellIn,
+            balancedMinTotalOut(legs),
+            legs,
+            address,
+            balancedDeadlineSec(),
+          ] as const;
+          await ensureErc20Allowance(token, aggregator, sellIn);
+          try {
+            await publicClient.simulateContract({
+              address: aggregator,
+              abi: balancedAggregatorAbi,
+              functionName: "sellExactInput",
+              args,
+              account: address,
+            });
+          } catch {
+            return null;
+          }
+          const hash = await writeContractAsync({
+            address: aggregator,
+            abi: balancedAggregatorAbi,
+            functionName: "sellExactInput",
+            args,
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        };
+
+        const splitHash = await runSellAggregator(plan);
+        if (splitHash) return splitHash;
+        if (plan.legs.length > 1) {
+          const singlePlan: BestSellPlan = {
+            legs: [plan.bestSingle],
+            amountOut: plan.bestSingle.amountOut,
+            routeLabel: plan.bestSingle.routeLabel,
+            bestSingle: plan.bestSingle,
+          };
+          const singleHash = await runSellAggregator(singlePlan);
+          if (singleHash) return singleHash;
+        }
+
+        const best = plan.bestSingle;
+        const hookitRouter = getHookitSwapRouterAddress();
+        if (best.kind === "composite" && hookitRouter && supportsCompositeSwap()) {
+          const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
+          const minOut =
+            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(token, hookitRouter, best.amountIn);
+          const hash = await writeContractAsync({
+            address: hookitRouter,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactInCompositeSell",
+            args: [
+              best.bridge.key,
+              best.bridge.zeroForOne,
+              best.amountIn,
+              best.hookKey,
+              hookZeroForOne,
+              best.marketQuote,
+              minOut,
+              sqrtLimit(best.bridge.zeroForOne),
+              sqrtLimit(hookZeroForOne),
+            ],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        }
+        if (best.kind === "direct") {
+          const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
+          const minOut =
+            (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(token, router, best.amountIn);
+          const hash = await writeContractAsync({
+            address: router,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactIn",
+            args: [best.hookKey, zeroForOne, best.amountIn, minOut, sqrtLimit(zeroForOne)],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
         }
         throw new Error(
-          "No safe USDG route. Pick a stock ticker to trade that pool directly.",
+          "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
         );
       }
 
-      // Multi-pool buy aggregator (+ optional split across pools).
+      // Multi-pool USDG buy: USDG → best stock book(s) → project token.
       if (side === "buy" && shouldAggregateMultiBuy(pool, payment)) {
         const plan = await quoteBestBuyPlan(publicClient, pool, payment, amountIn, address);
+        if (!plan) {
+          throw new Error(
+            "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
+          );
+        }
         const aggregator = getBalancedAggregatorAddress();
         const resolvedBuy = await resolveMasterLaunch(publicClient, token);
         const buyLaunchId =
           resolvedBuy?.launchId ?? (pool.launchId != null ? BigInt(pool.launchId) : null);
-        if (
-          plan &&
-          aggregator &&
-          supportsBalancedAggregator() &&
-          canUseBalancedAggregatorBuy(payment.address) &&
-          planCanUseBalancedAggregator(plan) &&
-          buyLaunchId != null &&
-          buyLaunchId > BigInt(0)
-        ) {
-          const legs = balancedBuyLegsFromPlan(pool, plan, bps);
-          if (legs.length === plan.legs.length) {
-            const args = [
-              buyLaunchId,
-              token,
-              amountIn,
-              balancedMinTotalOut(legs),
-              legs,
-              address,
-              balancedDeadlineSec(),
-            ] as const;
-            await ensureErc20Allowance(payment.address, aggregator, amountIn);
-            let aggregatorReady = false;
-            try {
-              await publicClient.simulateContract({
-                address: aggregator,
-                abi: balancedAggregatorAbi,
-                functionName: "buyExactInput",
-                args,
-                account: address,
-              });
-              aggregatorReady = true;
-            } catch {
-              aggregatorReady = false;
-            }
-            if (aggregatorReady) {
-              const hash = await writeContractAsync({
-                address: aggregator,
-                abi: balancedAggregatorAbi,
-                functionName: "buyExactInput",
-                args,
-              });
-              await publicClient.waitForTransactionReceipt({ hash });
-              return hash;
-            }
-            throw new Error(
-              "No safe USDG route for this size. Pick a stock ticker to trade that pool directly.",
-            );
+
+        const runBuyAggregator = async (usePlan: BestBuyPlan): Promise<`0x${string}` | null> => {
+          if (
+            !aggregator ||
+            !supportsBalancedAggregator() ||
+            !canUseBalancedAggregatorBuy(payment.address) ||
+            !planCanUseBalancedAggregator(usePlan) ||
+            buyLaunchId == null ||
+            buyLaunchId <= BigInt(0)
+          ) {
+            return null;
           }
+          const legs = balancedBuyLegsFromPlan(pool, usePlan, bps);
+          if (legs.length !== usePlan.legs.length) return null;
+          const buyIn = usePlan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
+          const args = [
+            buyLaunchId,
+            token,
+            buyIn,
+            balancedMinTotalOut(legs),
+            legs,
+            address,
+            balancedDeadlineSec(),
+          ] as const;
+          await ensureErc20Allowance(payment.address, aggregator, buyIn);
+          try {
+            await publicClient.simulateContract({
+              address: aggregator,
+              abi: balancedAggregatorAbi,
+              functionName: "buyExactInput",
+              args,
+              account: address,
+            });
+          } catch {
+            return null;
+          }
+          const hash = await writeContractAsync({
+            address: aggregator,
+            abi: balancedAggregatorAbi,
+            functionName: "buyExactInput",
+            args,
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        };
+
+        const splitHash = await runBuyAggregator(plan);
+        if (splitHash) return splitHash;
+        const bestBuy = plan.bestSingle ?? plan.legs[0];
+        if (plan.legs.length > 1 && bestBuy) {
+          const singlePlan: BestBuyPlan = {
+            legs: [bestBuy],
+            amountOut: bestBuy.amountOut,
+            routeLabel: bestBuy.routeLabel,
+            bestSingle: bestBuy,
+          };
+          const singleHash = await runBuyAggregator(singlePlan);
+          if (singleHash) return singleHash;
+        }
+
+        const hookitRouter = getHookitSwapRouterAddress();
+        if (bestBuy?.kind === "composite" && hookitRouter && supportsCompositeSwap()) {
+          const hookZeroForOne = hookSwapDirection(bestBuy.hookKey, token, "buy");
+          const minOut =
+            (bestBuy.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(payment.address, hookitRouter, bestBuy.amountIn);
+          const hash = await writeContractAsync({
+            address: hookitRouter,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactInComposite",
+            args: [
+              bestBuy.bridge.key,
+              bestBuy.bridge.zeroForOne,
+              bestBuy.amountIn,
+              bestBuy.hookKey,
+              hookZeroForOne,
+              bestBuy.marketQuote,
+              minOut,
+              sqrtLimit(bestBuy.bridge.zeroForOne),
+              sqrtLimit(hookZeroForOne),
+            ],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
+        }
+        if (bestBuy?.kind === "direct") {
+          const zeroForOne = hookSwapDirection(bestBuy.hookKey, token, "buy");
+          const minOut =
+            (bestBuy.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          await ensureErc20Allowance(payment.address, router, bestBuy.amountIn);
+          const hash = await writeContractAsync({
+            address: router,
+            abi: hookitSwapRouterAbi,
+            functionName: "swapExactIn",
+            args: [bestBuy.hookKey, zeroForOne, bestBuy.amountIn, minOut, sqrtLimit(zeroForOne)],
+          });
+          await publicClient.waitForTransactionReceipt({ hash });
+          return hash;
         }
         throw new Error(
-          "No safe USDG route. Pick a stock ticker to trade that pool directly.",
+          "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
         );
       }
 

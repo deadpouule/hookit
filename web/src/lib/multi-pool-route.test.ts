@@ -367,7 +367,7 @@ test("MAX still quotes when a full-size dump never returns", async () => {
   );
 });
 
-test("does not split when the extra output does not cover extra gas", async () => {
+test("splits when a split produces more USDG even by a little", async () => {
   const pool = poolFor([STOCK_A, STOCK_B]);
   const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
     if (isQuotronBridge(key)) return amount;
@@ -387,8 +387,8 @@ test("does not split when the extra output does not cover extra gas", async () =
   );
 
   assert.ok(plan);
-  assert.equal(plan.legs.length, 1);
-  assert.equal(plan.amountOut, 10_000n);
+  assert.equal(plan.legs.length, 2);
+  assert.ok(plan.amountOut > 10_000n);
 });
 
 test("sell aggregator splits when smaller clips beat a single dump", async () => {
