@@ -6,12 +6,10 @@ import { geckoOhlcvPath, parseOhlcvList, pickGeckoPoolForToken } from "./geckote
 test("geckoOhlcvPath matches Sentry GeckoTerminal buckets", () => {
   assert.deepEqual(geckoOhlcvPath("1m"), { timeframe: "minute", aggregate: 1 });
   assert.deepEqual(geckoOhlcvPath("5m"), { timeframe: "minute", aggregate: 5 });
-  assert.deepEqual(geckoOhlcvPath("10m"), { timeframe: "minute", aggregate: 10 });
   assert.deepEqual(geckoOhlcvPath("15m"), { timeframe: "minute", aggregate: 15 });
   assert.deepEqual(geckoOhlcvPath("1h"), { timeframe: "hour", aggregate: 1 });
   assert.deepEqual(geckoOhlcvPath("4h"), { timeframe: "hour", aggregate: 4 });
-  assert.deepEqual(geckoOhlcvPath("1D"), { timeframe: "day", aggregate: 1 });
-  assert.equal(geckoOhlcvPath("ALL"), null);
+  assert.deepEqual(geckoOhlcvPath("D"), { timeframe: "day", aggregate: 1 });
 });
 
 test("parseOhlcvList sorts newest-first rows and merges duplicate buckets", () => {

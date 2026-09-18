@@ -19,15 +19,13 @@ export function geckoOhlcvPath(interval: ChartInterval): GeckoOhlcvPath | null {
       return { timeframe: "minute", aggregate: 1 };
     case "5m":
       return { timeframe: "minute", aggregate: 5 };
-    case "10m":
-      return { timeframe: "minute", aggregate: 10 };
     case "15m":
       return { timeframe: "minute", aggregate: 15 };
     case "1h":
       return { timeframe: "hour", aggregate: 1 };
     case "4h":
       return { timeframe: "hour", aggregate: 4 };
-    case "1D":
+    case "D":
       return { timeframe: "day", aggregate: 1 };
     default:
       return null;
