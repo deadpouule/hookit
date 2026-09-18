@@ -360,8 +360,8 @@
 
   .launch-wizard-master-badge .token-type-badge-glyph.category-owl-totem,
   .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1.7rem;
+    height: 1.7rem;
     color: #c084fc;
   }
 
@@ -696,8 +696,8 @@
 
   .launch-mode-toggle__glyph.category-hook-glyph,
   .launch-mode-toggle__glyph.category-owl-totem {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
   }
 
   .launch-mode-toggle__glyph.category-single-pair-glyph {
@@ -4482,8 +4482,8 @@
   }
 
   .token-hero-links--inline .token-hero-link {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
   }
 
@@ -4493,8 +4493,8 @@
   }
 
   .token-hero-links--inline .token-hero-hook-glyph {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
   }
 
   html[data-device="phone"] .token-hero-head {
@@ -4655,8 +4655,8 @@
     }
 
     .token-hero-links--inline .token-hero-link {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
     }
 
@@ -4666,8 +4666,8 @@
     }
 
     .token-hero-links--inline .token-hero-hook-glyph {
-      width: 22px;
-      height: 22px;
+      width: 28px;
+      height: 28px;
     }
   }
 
@@ -4706,8 +4706,8 @@
 
   .token-hero-card .token-type-badge-glyph.category-owl-totem,
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 2rem;
+    height: 2rem;
   }
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
@@ -7913,8 +7913,8 @@
   .category-owl-totem {
     position: relative;
     display: inline-block;
-    width: 1.35rem;
-    height: 1.35rem;
+    width: 1.5rem;
+    height: 1.5rem;
     aspect-ratio: 1;
     flex-shrink: 0;
     overflow: visible;
@@ -8004,8 +8004,8 @@
 
   .token-type-badge-glyph.category-owl-totem,
   .token-type-badge-glyph.category-hook-glyph {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .token-type-badge-glyph.category-customs-icon,
