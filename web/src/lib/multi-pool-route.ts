@@ -421,6 +421,89 @@ export function planFilledIn(plan: BestSellPlan): bigint {
   return plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n);
 }
 
+/** Tiny probe so empty books (wGOOGLx / wNVDAx) are skipped before a binary search. */
+function probeSellAmount(amountIn: bigint): bigint {
+  if (amountIn <= 1n) return amountIn;
+  const oneToken = 10n ** 18n;
+  if (amountIn > oneToken) return oneToken;
+  const tenth = amountIn / 10n;
+  return tenth > 0n ? tenth : 1n;
+}
+
+async function maxFillableOnLeg(
+  quoteLeg: QuoteSellLeg,
+  leg: MarketLeg,
+  cap: bigint,
+): Promise<bigint> {
+  if (cap <= 0n) return 0n;
+  if (await quoteIsolatedSellLeg(quoteLeg, leg, cap)) return cap;
+  let lo = 0n;
+  let hi = cap;
+  for (let i = 0; i < 16; i++) {
+    const mid = (lo + hi) / 2n;
+    if (mid <= lo) break;
+    if (await quoteIsolatedSellLeg(quoteLeg, leg, mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * No book can absorb 100% alone (MAX on a thin launch). Fill the original
+ * size by packing each live book up to its quoter limit — e.g. ~74% wAAPL
+ * + ~26% wAMZN. Never shrink the user's MAX; never return a 50% clip.
+ */
+async function greedyFillSellPlan(
+  quoteLeg: QuoteSellLeg,
+  legs: MarketLeg[],
+  amountIn: bigint,
+  pool: TokenPool,
+): Promise<BestSellPlan | null> {
+  if (legs.length === 0 || amountIn <= 0n) return null;
+  const probeAmt = probeSellAmount(amountIn);
+  const probed = await Promise.allSettled(
+    legs.map(async (leg) => {
+      const quoted = await quoteIsolatedSellLeg(quoteLeg, leg, probeAmt);
+      return quoted && quoted.amountOut > 0n ? { leg, probeOut: quoted.amountOut } : null;
+    }),
+  );
+  const live = probed
+    .map((r) => (r.status === "fulfilled" ? r.value : null))
+    .filter((x): x is { leg: MarketLeg; probeOut: bigint } => x != null);
+  live.sort((a, b) => (a.probeOut > b.probeOut ? -1 : 1));
+  if (live.length === 0) return null;
+
+  let remaining = amountIn;
+  const allocated: BestSellLeg[] = [];
+  for (const { leg } of live) {
+    if (remaining <= 1n) break;
+    const fill = await maxFillableOnLeg(quoteLeg, leg, remaining);
+    if (fill <= 0n) continue;
+    const quoted = await quoteIsolatedSellLeg(quoteLeg, leg, fill);
+    if (!quoted || quoted.amountOut <= 0n) continue;
+    allocated.push(quoted);
+    remaining -= quoted.amountIn;
+  }
+  if (allocated.length === 0) return null;
+  if (remaining > 1n) return null;
+
+  allocated.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
+  const bestSingle = allocated[0]!;
+  if (allocated.length === 1) {
+    return {
+      legs: [bestSingle],
+      amountOut: bestSingle.amountOut,
+      routeLabel: bestSingle.routeLabel,
+      bestSingle,
+    };
+  }
+  return splitSellPlan(
+    allocated,
+    `Split · ${allocated.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
+    bestSingle,
+  );
+}
+
 function pickBetterSellPlan(
   amountIn: bigint,
   a: BestSellPlan | null,
@@ -466,7 +549,9 @@ export async function quoteBestSellRoute(
  * Best sell plan. Quote 100% of `amountIn` on every launch pool
  * (token → wStock → USDG). A split is evaluated only when at least two books
  * return a viable full-size quote, and is kept only when it strictly beats
- * that best single. Input size is never halved.
+ * that best single. If no book can take 100% alone, pack live books up to
+ * their quoter limit so MAX still fills (wAAPL + wAMZN) instead of
+ * "No safe route".
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -495,7 +580,9 @@ export async function quoteBestSellPlan(
     .filter((q): q is BestSellLeg => q != null && q.amountOut > 0n);
   singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
 
-  if (!singles[0]) return null;
+  if (!singles[0]) {
+    return splitToStable ? greedyFillSellPlan(quoteLeg, legs, amountIn, pool) : null;
+  }
   const bestSingle = singles[0];
   let bestPlan: BestSellPlan = {
     legs: [bestSingle],

@@ -225,7 +225,7 @@ test("sell aggregator picks the highest USDG composite output", async () => {
   assert.equal(best.intermediateOut, 3_000n);
 });
 
-test("sell aggregator does not clip MAX when every full-size dump reverts", async () => {
+test("sell aggregator packs live books when no pool can take MAX alone", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
   const quotes = [STOCK_A, STOCK_B, stockC, stockD];
@@ -247,7 +247,10 @@ test("sell aggregator does not clip MAX when every full-size dump reverts", asyn
     TOKEN,
   );
 
-  assert.equal(plan, null);
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 4);
+  assert.equal(plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n), 1_000n);
+  assert.equal(plan.amountOut, 2_000n);
 });
 
 test("sell aggregator keeps a single pool when it beats an equal split", async () => {
@@ -302,6 +305,34 @@ test("USDG sell reuses a full-size stock dump that already quotes", async () => 
   assert.equal(plan.bestSingle.marketQuote, STOCK_A);
 });
 
+test("sell aggregator fills MAX across two books that cannot take 100% alone", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    const quote = quoteSide(key);
+    if (quote.toLowerCase() === STOCK_A.toLowerCase()) {
+      return amount <= 750n ? amount * 2n : null;
+    }
+    if (quote.toLowerCase() === STOCK_B.toLowerCase()) {
+      return amount <= 300n ? amount : null;
+    }
+    return null;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n), 1_000n);
+  assert.equal(plan.legs.length, 2);
+  assert.ok(plan.amountOut > 0n);
+});
+
 test("sell aggregator never halves MAX when only a smaller clip would quote", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
@@ -312,7 +343,7 @@ test("sell aggregator never halves MAX when only a smaller clip would quote", as
     (key, amount) => {
       if (isQuotronBridge(key)) return amount;
       if (quoteSide(key).toLowerCase() !== STOCK_A.toLowerCase()) return null;
-      if (amount >= 1000n) return null;
+      if (amount > 500n) return null;
       return amount;
     },
   );
