@@ -8133,15 +8133,17 @@
   }
 
   html[data-device="phone"] .market-toolbar-group--sort {
-    width: 100%;
-    min-width: max-content;
-    justify-content: space-between;
-    gap: 0.12rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: stretch;
+    gap: 0.08rem;
     overflow: visible;
   }
 
   html[data-device="phone"] .market-toolbar-group--sort .market-filter-pill {
-    flex-shrink: 0;
+    flex: 1 0 auto;
+    min-width: 0;
+    justify-content: center;
   }
 
   html[data-device="phone"] .market-toolbar-group--sort .market-filter-pill svg {

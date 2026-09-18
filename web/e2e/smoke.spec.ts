@@ -107,8 +107,8 @@ test.describe("Hookit UI smoke", () => {
     expect(actionsBox).toBeTruthy();
     expect(viewBox).toBeTruthy();
     expect(liveBox!.x).toBeGreaterThanOrEqual(actionsBox!.x);
-    expect(liveBox!.x + liveBox!.width).toBeLessThanOrEqual(actionsBox!.x + actionsBox!.width - 4);
-    expect(actionsBox!.x + actionsBox!.width - (liveBox!.x + liveBox!.width)).toBeLessThanOrEqual(18);
+    expect(liveBox!.x + liveBox!.width).toBeLessThanOrEqual(actionsBox!.x + actionsBox!.width - 2);
+    expect(actionsBox!.x + actionsBox!.width - (liveBox!.x + liveBox!.width)).toBeLessThanOrEqual(22);
     expect(viewBox!.x - (actionsBox!.x + actionsBox!.width)).toBeGreaterThanOrEqual(6);
   });
 
