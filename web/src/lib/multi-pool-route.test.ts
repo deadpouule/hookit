@@ -328,6 +328,33 @@ test("sell aggregator never halves MAX when only a smaller clip would quote", as
   assert.equal(plan, null);
 });
 
+test("USDG MAX quotes after a slow hook when the Quotrons hop still fits", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  let hookCalls = 0;
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    if (quoteSide(key).toLowerCase() !== STOCK_A.toLowerCase()) return null;
+    hookCalls += 1;
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(amount), 2_800);
+    });
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.legs[0]!.amountIn, 1_000n);
+  assert.equal(plan.amountOut, 1_000n);
+  assert.equal(hookCalls, 1);
+});
+
 test("MAX USDG keeps 100% on the live book when dead pools hang", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;

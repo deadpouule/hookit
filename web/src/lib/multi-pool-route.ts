@@ -87,7 +87,9 @@ type MarketLeg = {
 const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
 const MARKET_LEGS_TTL_MS = 20_000;
-/** Isolated Uniswap V4 quoter budget per market. Dead books return 0, never abort the plan. */
+/** Launch-hook dump. MAX fills can be slow; sibling legs still run in parallel. */
+const HOOK_LEG_QUOTE_TIMEOUT_MS = 12_000;
+/** @deprecated Use HOOK_LEG_QUOTE_TIMEOUT_MS — kept for tests that simulate hung books. */
 export const INDIVIDUAL_LEG_TIMEOUT_MS = 3_000;
 const QUOTE_TIMED_OUT = Symbol("quote-timeout");
 
@@ -158,6 +160,7 @@ async function quoteExactInOnKey(
         },
       ],
     }),
+    HOOK_LEG_QUOTE_TIMEOUT_MS,
   );
   if (!raced || raced === QUOTE_TIMED_OUT) return null;
   const amountOut = raced.result[0] as bigint;
@@ -362,9 +365,10 @@ async function quoteIsolatedSellLeg(
   leg: MarketLeg,
   amountIn: bigint,
 ): Promise<BestSellLeg | null> {
-  const raced = await withQuoteTimeout(quoteLeg(leg, amountIn), INDIVIDUAL_LEG_TIMEOUT_MS);
-  if (!raced || raced === QUOTE_TIMED_OUT) return null;
-  return raced;
+  // Hook + Quotrons bridge each have their own timeout. A 3s outer cap here
+  // killed USDG MAX: the launch dump used the full budget and the wStock→USDG
+  // hop never ran, while a direct AAPL sell (hook only) still quoted.
+  return quoteLeg(leg, amountIn);
 }
 
 /** Equal N-way split of the full input. Time out each book in isolation; never shrink S. */
@@ -561,11 +565,8 @@ export async function quoteBestBuyPlan(
 
   await Promise.all(
     legs.map(async (leg) => {
-      const quoted = await withQuoteTimeout(
-        quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient),
-        INDIVIDUAL_LEG_TIMEOUT_MS,
-      );
-      if (quoted && quoted !== QUOTE_TIMED_OUT) singles.push(quoted);
+      const quoted = await quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient);
+      if (quoted) singles.push(quoted);
     }),
   );
 
@@ -594,23 +595,10 @@ export async function quoteBestBuyPlan(
       const amountB = amountIn - amountA;
       if (amountA <= 0n || amountB <= 0n) return null;
       const [legA, legB] = await Promise.all([
-        withQuoteTimeout(
-          quoteBuyLegWithKey(client, pool, payment, amountA, legAMeta, recipient),
-          INDIVIDUAL_LEG_TIMEOUT_MS,
-        ),
-        withQuoteTimeout(
-          quoteBuyLegWithKey(client, pool, payment, amountB, legBMeta, recipient),
-          INDIVIDUAL_LEG_TIMEOUT_MS,
-        ),
+        quoteBuyLegWithKey(client, pool, payment, amountA, legAMeta, recipient),
+        quoteBuyLegWithKey(client, pool, payment, amountB, legBMeta, recipient),
       ]);
-      if (
-        !legA ||
-        legA === QUOTE_TIMED_OUT ||
-        !legB ||
-        legB === QUOTE_TIMED_OUT
-      ) {
-        return null;
-      }
+      if (!legA || !legB) return null;
       const splitOut = legA.amountOut + legB.amountOut;
       if (splitOut <= bestSingle.amountOut) return null;
       return {
