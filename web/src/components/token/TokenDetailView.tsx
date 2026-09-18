@@ -304,7 +304,16 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
                 Born {formatAge(ageSeconds)} ago
               </span>
             )}
-            <div className="token-hero-links token-hero-links--trade">
+            <div className="token-hero-links token-hero-links--inline">
+              <HeroLink href={twitterUrl} label="X">
+                <XGlyph className="h-[15px] w-[15px]" />
+              </HeroLink>
+              <HeroLink href={websiteUrl} label="Website">
+                <Globe className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </HeroLink>
+              <HeroLink href={githubUrl} label="GitHub">
+                <GithubGlyph className="h-3.5 w-3.5" />
+              </HeroLink>
               <HeroLink href={explorerUrl} label="Explorer">
                 <ExternalLink className="token-hero-explorer" />
               </HeroLink>
@@ -330,18 +339,6 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             {description ?? "No description yet."}
           </p>
         </div>
-
-        <div className="token-hero-links token-hero-links--social">
-          <HeroLink href={twitterUrl} label="X">
-            <XGlyph className="h-[16px] w-[16px]" />
-          </HeroLink>
-          <HeroLink href={websiteUrl} label="Website">
-            <Globe className="h-4 w-4" strokeWidth={1.75} />
-          </HeroLink>
-          <HeroLink href={githubUrl} label="GitHub">
-            <GithubGlyph className="h-4 w-4" />
-          </HeroLink>
-        </div>
       </div>
 
       <TokenLiveTicker live={live} loading={liveLoading} />
@@ -359,57 +356,59 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
       </Link>
 
       <div className={cn("token-desk mt-4", isClassicDesk ? "token-desk--wide" : "token-desk--hooks")}>
-        <div className="token-desk-hero min-w-0">{heroCard}</div>
+        <div className="token-desk-main min-w-0">
+          <div className="token-desk-hero min-w-0">{heroCard}</div>
 
-        <div className="token-desk-chart min-w-0 space-y-3">
-          {multi && (
-            <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
-              This token trades on <strong className="text-foreground">{markets.length} pools</strong>
-              {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
-              pool tab on the chart or swap to trade that quote.
-            </p>
-          )}
-          <TokenCandleChart
-            candles={live.candles}
-            swaps={live.swaps}
-            isLoading={liveLoading}
-            interval={chartInterval}
-            onInterval={setInterval}
-            marketCap={live.marketCap}
-            launchMcap={poolLaunchMcapUsd(activePool)}
-            tokenAddress={contractAddress}
-            ticker={pool.ticker}
-            name={pool.name}
-            launchedAt={pool.launchedAt}
-            quoteAddress={activePool.quoteAddress}
-            quoteUsd={activePool.quoteUsd}
-            marketLegs={multi ? marketLegs : undefined}
-            activePoolId={activePool.poolId}
-            activeMarketIndex={marketIndex}
-            onMarketIndex={multi ? setMarketIndex : undefined}
-            onBeFirstBuy={beFirstBuy}
-          />
-        </div>
-
-        <aside className="token-desk-side">
-          <div className="token-desk-hooks space-y-3">
-            {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+          <div className="token-desk-chart min-w-0 space-y-3">
+            {multi && (
+              <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
+                This token trades on <strong className="text-foreground">{markets.length} pools</strong>
+                {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
+                pool tab on the chart or swap to trade that quote.
+              </p>
+            )}
+            <TokenCandleChart
+              candles={live.candles}
+              swaps={live.swaps}
+              isLoading={liveLoading}
+              interval={chartInterval}
+              onInterval={setInterval}
+              marketCap={live.marketCap}
+              launchMcap={poolLaunchMcapUsd(activePool)}
+              tokenAddress={contractAddress}
+              ticker={pool.ticker}
+              name={pool.name}
+              launchedAt={pool.launchedAt}
+              quoteAddress={activePool.quoteAddress}
+              quoteUsd={activePool.quoteUsd}
+              marketLegs={multi ? marketLegs : undefined}
+              activePoolId={activePool.poolId}
+              activeMarketIndex={marketIndex}
+              onMarketIndex={multi ? setMarketIndex : undefined}
+              onBeFirstBuy={beFirstBuy}
+            />
           </div>
-          {!isClassicDesk ? <HookPulseCard pool={pool} /> : null}
-          <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
-            <CreatorActions pool={activePool} />
-          </div>
-        </aside>
 
-        <div className="token-desk-tx-col min-w-0">
-          <TokenTxTable
-            tab={tab}
-            onTab={setTab}
-            swaps={live.swaps}
-            holders={live.holderRows}
-            ticker={pool.ticker}
-            className="token-desk-tx"
-          />
+          <aside className="token-desk-side">
+            <div className="token-desk-hooks space-y-3">
+              {isClassicDesk ? <BondingProgress pool={pool} /> : <ActiveHooksPanel pool={pool} />}
+            </div>
+            {!isClassicDesk ? <HookPulseCard pool={pool} /> : null}
+            <div className={cn("token-desk-fees", isClassicDesk && "token-desk-fees--classic")}>
+              <CreatorActions pool={activePool} />
+            </div>
+          </aside>
+
+          <div className="token-desk-tx-col min-w-0">
+            <TokenTxTable
+              tab={tab}
+              onTab={setTab}
+              swaps={live.swaps}
+              holders={live.holderRows}
+              ticker={pool.ticker}
+              className="token-desk-tx"
+            />
+          </div>
         </div>
 
         <aside className="token-desk-swap space-y-3">

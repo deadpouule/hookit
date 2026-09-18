@@ -4116,8 +4116,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "desc"
-      "links";
+      "desc";
     align-items: center;
     gap: 8px 20px;
     padding: 0 12px 10px;
@@ -4141,31 +4140,31 @@
     }
 
     .token-hero-logo {
-      height: 104px;
-      width: 104px;
-      border-radius: 14px;
+      height: 72px;
+      width: 72px;
+      border-radius: 12px;
     }
 
     .token-hero-logo-letter {
-      font-size: 2.25rem;
+      font-size: 1.85rem;
     }
 
     .token-hero-name {
-      font-size: 2.25rem;
+      font-size: 1.45rem;
     }
 
     .token-hero-ticker {
-      font-size: 1.125rem;
+      font-size: 0.95rem;
     }
 
     .token-hero-about {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        "desc links";
-      align-items: end;
+        "desc";
+      align-items: start;
       justify-items: stretch;
-      gap: 10px 16px;
-      padding: 4px 20px 12px;
+      gap: 8px;
+      padding: 2px 16px 10px;
     }
 
     .token-hero-about-desc {
@@ -4266,7 +4265,7 @@
     align-items: stretch;
     gap: 0;
     margin: 0;
-    padding: 8px 12px 12px;
+    padding: 6px 12px 10px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
@@ -4291,9 +4290,10 @@
   }
 
   .token-live-tick dt {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.01em;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: #6b6b73;
     white-space: nowrap;
   }
@@ -4301,10 +4301,10 @@
   .token-live-tick dd {
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
     min-width: 0;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 650;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -4378,14 +4378,14 @@
 
   html[data-device="desktop"] {
     .token-live-ticker {
-      padding: 6px 20px 16px;
+      padding: 6px 16px 10px;
       overflow: visible;
       justify-content: space-between;
     }
 
     .token-live-tick {
       flex: 1 1 0;
-      padding-right: 20px;
+      padding-right: 12px;
     }
 
     .token-live-tick:last-child {
@@ -4393,16 +4393,16 @@
     }
 
     .token-live-tick dt {
-      font-size: 12px;
+      font-size: 11px;
     }
 
     .token-live-tick dd {
-      font-size: 18px;
-      gap: 10px;
+      font-size: 14px;
+      gap: 8px;
     }
 
     .token-live-tick-chg {
-      font-size: 13px;
+      font-size: 11px;
     }
   }
 
@@ -4452,9 +4452,29 @@
     grid-area: links;
   }
 
-  .token-hero-links--trade {
-    margin-left: auto;
-    gap: 8px;
+  .token-hero-links--inline {
+    margin-left: 0;
+    gap: 6px;
+  }
+
+  .token-hero-links--inline .token-hero-link {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .token-hero-links--inline .token-hero-explorer {
+    width: 16px;
+    height: 16px;
+  }
+
+  .token-hero-links--inline .token-hero-hook-glyph.category-hook-glyph {
+    width: 1.15rem;
+    font-size: 0.34rem;
+  }
+
+  html[data-device="phone"] .token-hero-about {
+    display: none;
   }
 
   .token-hero-hook-glyph.category-hook-glyph {
@@ -4521,6 +4541,22 @@
       width: 48px;
       height: 48px;
       border-radius: 12px;
+    }
+
+    .token-hero-links--inline .token-hero-link {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .token-hero-links--inline .token-hero-explorer {
+      width: 16px;
+      height: 16px;
+    }
+
+    .token-hero-links--inline .token-hero-hook-glyph.category-hook-glyph {
+      width: 1.15rem;
+      font-size: 0.34rem;
     }
   }
 
@@ -4603,6 +4639,13 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .token-desk-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
   }
 
   .token-desk-hero {
@@ -4886,7 +4929,16 @@
   html[data-device="desktop"] {
     .token-desk {
       display: grid;
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px 20px;
+      align-items: start;
+      overflow: visible;
+    }
+
+    @media (min-width: 1280px) {
+      .token-desk {
+        grid-template-columns: minmax(0, 1fr) 390px;
+      }
     }
 
     .token-desk-hero,
@@ -4899,36 +4951,20 @@
       order: initial;
     }
 
+    .token-desk-main {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
     .token-desk-side {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      align-self: start;
-      min-width: 0;
-      overflow-x: hidden;
-    }
-
-    .token-desk--hooks {
-      grid-template-columns: minmax(0, 3fr) minmax(0, 11fr) minmax(260px, 4fr);
-      grid-template-rows: auto auto minmax(12rem, 1fr);
-      grid-template-areas:
-        "hero  hero  hero"
-        "side  chart swap"
-        "tx    tx    swap";
-      align-items: stretch;
-      align-content: start;
-    }
-
-    .token-desk--hooks .token-desk-hero {
-      grid-area: hero;
-    }
-
-    .token-desk--hooks .token-desk-side {
-      grid-area: side;
       align-self: stretch;
-      min-height: 100%;
+      min-width: 0;
       overflow: visible;
-      gap: 10px;
     }
 
     .token-desk--hooks .token-desk-hooks {
@@ -4958,7 +4994,6 @@
     }
 
     .token-desk--hooks .token-desk-chart {
-      grid-area: chart;
       align-self: stretch;
       display: flex;
       flex-direction: column;
@@ -4979,40 +5014,7 @@
       min-height: 460px;
     }
 
-    .token-desk--hooks .token-desk-tx-col {
-      grid-area: tx;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    .token-desk--wide {
-      grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
-      grid-template-rows: auto auto auto minmax(12rem, 1fr);
-      grid-template-areas:
-        "hero  swap"
-        "chart swap"
-        "side  swap"
-        "tx    swap";
-      align-items: stretch;
-      align-content: start;
-    }
-
-    .token-desk--wide .token-desk-hero {
-      grid-area: hero;
-    }
-
-    .token-desk--wide .token-desk-chart {
-      grid-area: chart;
-      align-self: start;
-    }
-
-    .token-desk--wide .token-desk-side {
-      grid-area: side;
-    }
-
-    .token-desk--wide .token-desk-tx-col {
-      grid-area: tx;
+    .token-desk-tx-col {
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -5020,8 +5022,11 @@
 
     .token-desk-swap {
       display: block;
-      grid-area: swap;
+      position: sticky;
+      top: 1rem;
       align-self: start;
+      width: 100%;
+      z-index: 4;
     }
 
     .token-desk-tx {
@@ -5039,6 +5044,7 @@
   .token-detail-shell {
     padding-bottom: 1rem;
     background: #000;
+    overflow: visible;
   }
 
   .token-detail-shell .desk-card {

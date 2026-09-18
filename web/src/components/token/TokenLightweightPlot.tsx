@@ -57,7 +57,6 @@ const CROSS_LABEL = TV_CROSSHAIR_LABEL;
 const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 const LEGEND_UP = "#10B981";
 const LEGEND_DOWN = "#EF4444";
-const VOLUME_SMA = "#F59E0B";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
@@ -72,7 +71,7 @@ type TokenLightweightPlotProps = {
 };
 
 type LegendOhlc = { open: number; high: number; low: number; close: number };
-type LegendSma = { value: number };
+type SmaTape = { last: number | null; at: (time: number) => number | null };
 
 function formatLegendPrice(val: number): string {
   if (!Number.isFinite(val)) return "0.00";
@@ -99,10 +98,6 @@ function isLegendOhlc(value: unknown): value is LegendOhlc {
     typeof bar.low === "number" &&
     typeof bar.close === "number"
   );
-}
-
-function isLegendSma(value: unknown): value is LegendSma {
-  return !!value && typeof value === "object" && typeof (value as LegendSma).value === "number";
 }
 
 function escapeLegendHtml(value: string): string {
@@ -135,7 +130,6 @@ type ChartHandle = {
   chart: IChartApi;
   price: ISeriesApi<"Candlestick">;
   volume?: ISeriesApi<"Histogram">;
-  volumeSma?: ISeriesApi<"Line">;
 };
 
 function visibleLogicalRangeOf(chart: IChartApi | null) {
@@ -286,11 +280,17 @@ function volumePoint(bar: ChartBar) {
   return { time: point.time as UTCTimestamp, value: point.value, color: point.color };
 }
 
-function volumeSmaPoints(bars: ChartBar[]) {
-  return calculateVolumeSma(bars, CHART_VOLUME_SMA_PERIOD).map((point) => ({
-    time: point.time as UTCTimestamp,
-    value: point.value,
-  }));
+function smaTapeFor(bars: ChartBar[]): SmaTape {
+  const points = calculateVolumeSma(bars, CHART_VOLUME_SMA_PERIOD);
+  const last = points[points.length - 1]?.value ?? null;
+  const byTime = new Map(points.map((point) => [point.time, point.value]));
+  return {
+    last,
+    at: (time) => {
+      const hit = byTime.get(time);
+      return hit != null ? hit : last;
+    },
+  };
 }
 
 function attachVolumeSeries(
@@ -311,21 +311,6 @@ function attachVolumeSeries(
   return volume;
 }
 
-function attachVolumeSmaSeries(
-  chart: IChartApi,
-  tv: typeof import("lightweight-charts"),
-): ISeriesApi<"Line"> {
-  return chart.addSeries(tv.LineSeries, {
-    priceScaleId: "volume",
-    color: VOLUME_SMA,
-    lineWidth: 1,
-    priceFormat: { type: "volume" },
-    crosshairMarkerVisible: false,
-    lastValueVisible: false,
-    priceLineVisible: false,
-  });
-}
-
 function applyBars(
   handle: ChartHandle,
   next: ChartBar[],
@@ -338,7 +323,6 @@ function applyBars(
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
   const liveBar = !refit && prev ? lastBarOnlyUpdate(prev, next) : null;
-  const sma = volumeSmaPoints(next);
 
   const candles = handle.price;
   candles.applyOptions({
@@ -374,28 +358,12 @@ function applyBars(
     }
   }
 
-  if (handle.volumeSma) {
-    const lastSma = sma[sma.length - 1];
-    if (liveBar && lastSma) {
-      handle.volumeSma.update({ time: lastSma.time, value: lastSma.value });
-    } else {
-      handle.volumeSma.setData(sma);
-    }
-  }
-
   resizeChartToHost(handle.chart, handle.chart.chartElement());
   if (refit) fitChartView(handle.chart, next, windowBars, bucketSec, anchorIndex);
 
   handle.price.priceScale().applyOptions({
     scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
   });
-
-  return lastSmaValue(sma);
-}
-
-function lastSmaValue(sma: Array<{ value: number }>): number | null {
-  const last = sma[sma.length - 1];
-  return last && Number.isFinite(last.value) ? last.value : null;
 }
 
 const noopHover = (_bar: ChartBar | null) => {};
@@ -416,7 +384,8 @@ export function TokenLightweightPlot({
   const volumeLegendRef = useRef<HTMLDivElement>(null);
   const hoveringRef = useRef(false);
   const hoverBarRef = useRef<LegendOhlc | null>(null);
-  const latestSmaValueRef = useRef<number | null>(null);
+  const smaTapeRef = useRef<SmaTape>({ last: null, at: () => null });
+  smaTapeRef.current = smaTapeFor(bars);
   const symbolRef = useRef(symbol);
   symbolRef.current = symbol;
   const onHoverRef = useRef(onHover);
@@ -454,16 +423,17 @@ export function TokenLightweightPlot({
     el.innerHTML = legendInnerHtml(symbolRef.current, intervalRef.current ?? "", bar);
   };
 
-  const paintVolumeLegend = (val: number | null) => {
+  const paintVolumeLegend = (val: number | null, bullish: boolean) => {
     const el = volumeLegendRef.current;
     if (!el) return;
     if (val == null || !Number.isFinite(val)) {
       el.innerHTML = "";
       return;
     }
+    const color = bullish ? LEGEND_UP : LEGEND_DOWN;
     el.innerHTML =
       `<span style="color:rgba(255,255,255,0.4)">Volume SMA</span>` +
-      `<span style="color:${VOLUME_SMA};font-weight:600">${formatVolumeNumber(val)}</span>`;
+      `<span style="color:${color};font-weight:600">${formatVolumeNumber(val)}</span>`;
   };
 
   useEffect(() => {
@@ -550,18 +520,16 @@ export function TokenLightweightPlot({
       );
       const price = attachPriceSeries(chart, tv, scaleRef.current, priceAutoscale);
       const volume = attachVolumeSeries(chart, tv);
-      const volumeSma = attachVolumeSmaSeries(chart, tv);
       const handle: ChartHandle = {
         chart,
         price,
         volume,
-        volumeSma,
       };
       handleRef.current = handle;
       resizeChartToHost(chart, hostRef.current);
       const next = pendingBarsRef.current;
       rangeSigRef.current = chartRangeSignature(next, interval, windowBarsRef.current);
-      const latestSma = applyBars(
+      applyBars(
         handle,
         next,
         windowBarsRef.current,
@@ -569,20 +537,19 @@ export function TokenLightweightPlot({
         anchorIndexRef.current,
       );
       appliedBarsRef.current = next;
-      latestSmaValueRef.current = latestSma;
-      paintLegend(lastRealBar(next) ?? null);
-      paintVolumeLegend(latestSma);
+      const latest = lastRealBar(next) ?? null;
+      paintLegend(latest);
+      paintVolumeLegend(smaTapeRef.current.last, latest ? latest.close >= latest.open : true);
 
       chart.subscribeCrosshairMove((param) => {
-        const latest = lastRealBar(pendingBarsRef.current) ?? null;
-        const smaSeries = handleRef.current?.volumeSma;
-        const smaRaw = smaSeries ? param.seriesData.get(smaSeries) : undefined;
+        const latestBar = lastRealBar(pendingBarsRef.current) ?? null;
+        const tape = smaTapeRef.current;
         if (!param.time || !param.seriesData.size) {
           hoveringRef.current = false;
           hoverBarRef.current = null;
           onHoverRef.current(null);
-          paintLegend(latest);
-          paintVolumeLegend(latestSmaValueRef.current);
+          paintLegend(latestBar);
+          paintVolumeLegend(tape.last, latestBar ? latestBar.close >= latestBar.open : true);
           return;
         }
         const time = Number(param.time);
@@ -596,13 +563,14 @@ export function TokenLightweightPlot({
           hoverBarRef.current = hovered;
           if (fromBars && !isWhitespaceBar(fromBars)) onHoverRef.current(fromBars);
           paintLegend(hovered);
-        } else {
-          hoveringRef.current = false;
-          hoverBarRef.current = null;
-          onHoverRef.current(null);
-          paintLegend(latest);
+          paintVolumeLegend(tape.at(time), hovered.close >= hovered.open);
+          return;
         }
-        paintVolumeLegend(isLegendSma(smaRaw) ? smaRaw.value : latestSmaValueRef.current);
+        hoveringRef.current = false;
+        hoverBarRef.current = null;
+        onHoverRef.current(null);
+        paintLegend(latestBar);
+        paintVolumeLegend(tape.last, latestBar ? latestBar.close >= latestBar.open : true);
       });
 
       let lastWidth = 0;
@@ -666,7 +634,7 @@ export function TokenLightweightPlot({
     const refit = rangeSigRef.current !== signature;
     const prev = appliedBarsRef.current;
     rangeSigRef.current = signature;
-    const latestSma = applyBars(
+    applyBars(
       handle,
       bars,
       windowBars,
@@ -676,10 +644,10 @@ export function TokenLightweightPlot({
       prev,
     );
     appliedBarsRef.current = bars;
-    latestSmaValueRef.current = latestSma;
     if (!hoveringRef.current) {
-      paintLegend(lastRealBar(bars) ?? null);
-      paintVolumeLegend(latestSma);
+      const latest = lastRealBar(bars) ?? null;
+      paintLegend(latest);
+      paintVolumeLegend(smaTapeRef.current.last, latest ? latest.close >= latest.open : true);
     }
   }, [bars, interval, windowBars, bucketSec, anchorIndex]);
 
