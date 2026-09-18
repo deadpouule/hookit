@@ -100,7 +100,7 @@ export function TokenProSwap({
   onSellAsset: (asset: SwapAsset) => void;
   onBuyAsset: (asset: SwapAsset) => void;
   sellAmount: string;
-  onSellAmount: (value: string) => void;
+  onSellAmount: (value: string, raw?: bigint) => void;
   onInvert: () => void;
   receiveAmount?: string;
   slippagePct: number;
@@ -171,7 +171,7 @@ export function TokenProSwap({
     if (spendableRaw !== undefined) {
       const part = (spendableRaw * BigInt(pct)) / 100n;
       if (part <= 0n) return;
-      onSellAmount(formatUnits(part, sellAsset.decimals));
+      onSellAmount(formatUnits(part, sellAsset.decimals), part);
       return;
     }
     if (sellBalance <= 0) return;
@@ -180,7 +180,7 @@ export function TokenProSwap({
 
   const applyMax = () => {
     if (spendableRaw !== undefined && spendableRaw > 0n) {
-      onSellAmount(formatUnits(spendableRaw, sellAsset.decimals));
+      onSellAmount(formatUnits(spendableRaw, sellAsset.decimals), spendableRaw);
       return;
     }
     if (sellBalance <= 0) return;
@@ -199,6 +199,8 @@ export function TokenProSwap({
 
   const priceImpactLabel =
     quoteMeta?.priceImpactPct != null ? `${quoteMeta.priceImpactPct.toFixed(2)}%` : "·";
+  const highImpact =
+    quoteMeta?.priceImpactPct != null && quoteMeta.priceImpactPct >= 15;
 
   return (
     <div className="mt-3">
@@ -293,7 +295,10 @@ export function TokenProSwap({
 
       <dl className="market-details">
         <Detail label="Minimum received" value={minReceivedLabel} />
-        <Detail label="Price impact" value={priceImpactLabel} />
+        <Detail
+          label="Price impact"
+          value={highImpact ? `${priceImpactLabel} · high slippage` : priceImpactLabel}
+        />
         <Detail label="Max slippage" value={`${slippagePct}%`} />
       </dl>
 

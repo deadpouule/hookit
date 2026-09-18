@@ -488,6 +488,83 @@ test("sell aggregator uses a direct market when receiving that quote", async () 
   assert.equal(best.amountOut, 2_000n);
 });
 
+test("USDG MAX still quotes when only wAAPL's hook dump works and the Quoter hop uses slot0", async () => {
+  const stockC = INK_QUOTRON_STOCKS[2]!.address;
+  const stockD = INK_QUOTRON_STOCKS[3]!.address;
+  const quotes = [STOCK_A, STOCK_B, stockC, stockD];
+  const pool = poolFor(quotes);
+  let aaplHook = 0;
+  const client = {
+    readContract: async ({ functionName }: { functionName?: string }) => {
+      if (functionName === "getSlot0") return [2n ** 96n, 0, 0, 0];
+      return 1n;
+    },
+    multicall: async () => quotes.map((q) => ({ status: "success" as const, result: keyFor(q) })),
+    simulateContract: async ({ args }: { args: readonly unknown[] }) => {
+      const params = args[0] as {
+        poolKey: V4PoolKey;
+        exactAmount: bigint;
+      };
+      if (isQuotronBridge(params.poolKey)) {
+        throw new Error("tick walk");
+      }
+      if (quoteSide(params.poolKey).toLowerCase() !== STOCK_A.toLowerCase()) {
+        throw new Error("empty book");
+      }
+      aaplHook += 1;
+      return { result: [params.exactAmount, 0n] };
+    },
+  } as unknown as PublicClient;
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.legs[0]!.amountIn, 1_000n);
+  assert.equal(plan.amountOut, 1_000n);
+  assert.equal(plan.bestSingle.marketQuote, STOCK_A);
+  assert.equal(plan.bestSingle.kind, "composite");
+  assert.equal(aaplHook, 1);
+  if (plan.bestSingle.kind === "composite") {
+    assert.equal(plan.bestSingle.estimated, true);
+  }
+});
+
+test("secondary pool throws do not cancel a live wAAPL USDG route", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) {
+      if (quoteSide(key).toLowerCase() === STOCK_B.toLowerCase()) {
+        throw new Error("RPC saturated");
+      }
+      return amount;
+    }
+    if (quoteSide(key).toLowerCase() === STOCK_B.toLowerCase()) {
+      throw new Error("empty AMZN");
+    }
+    return amount * 2n;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
+  );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.bestSingle.marketQuote, STOCK_A);
+  assert.equal(plan.amountOut, 2_000n);
+});
+
 test("returns null when no market or bridge can produce output", async () => {
   const pool = poolFor([STOCK_A, STOCK_B]);
   const client = mockClient(

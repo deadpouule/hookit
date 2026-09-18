@@ -141,6 +141,7 @@ export function useSwapToken(pool: TokenPool) {
       paymentId: PaymentAssetId = "ETH",
       receiveAsset?: SwapAsset,
       payAsset?: SwapAsset,
+      amountInRaw?: bigint,
     ) => {
       setError(null);
       if (!publicClient || !address) throw new Error("Connect wallet");
@@ -158,7 +159,10 @@ export function useSwapToken(pool: TokenPool) {
 
       const payDecimals =
         side === "buy" ? (payAsset?.decimals ?? payment.decimals) : 18;
-      const amountIn = parseUnits(amountHuman, payDecimals);
+      const amountIn =
+        amountInRaw != null && amountInRaw > 0n
+          ? amountInRaw
+          : parseUnits(amountHuman, payDecimals);
       if (amountIn <= BigInt(0)) throw new Error("Enter an amount");
 
       let router: Address;

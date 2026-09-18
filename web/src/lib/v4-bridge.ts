@@ -4,20 +4,26 @@ import {
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
   STABLE_QUOTE_ADDRESS,
+  STATE_VIEW_ADDRESS,
   V4_QUOTER_ADDRESS,
 } from "@/lib/contracts/config";
 import { v4QuoterAbi } from "@/lib/contracts/swap-abi";
 import { sortV4Currencies, type PaymentAsset } from "@/lib/payment-assets";
-import type { V4PoolKey } from "@/lib/pool-key";
+import { poolIdFromKey, type V4PoolKey } from "@/lib/pool-key";
+import { stateViewAbi } from "@/lib/pool-price";
 import {
   INK_QUOTRON_STOCKS,
   QUOTRONS_DYNAMIC_FEE,
   QUOTRONS_HOOK,
+  type QuotronStockListing,
 } from "@/lib/xstocks";
 
 const ZERO_HOOKS = "0x0000000000000000000000000000000000000000" as Address;
 /** Isolated Uniswap V4 quoter budget. Illiquid Quotrons books return 0 instead of hanging RPC. */
 const BRIDGE_QUOTE_TIMEOUT_MS = 3_000;
+/** Uniswap V4 `uint128` exact-in cap. Larger MAX dumps skip the Quoter and use slot0. */
+export const UINT128_MAX = (1n << 128n) - 1n;
+const Q96 = 2n ** 96n;
 /** Uniswap V4 dynamic-fee flag used by every Quotrons wStock/USDG pool. */
 export const QUOTRONS_V4_FEE = QUOTRONS_DYNAMIC_FEE;
 export const QUOTRONS_V4_TICK_SPACING = 60;
@@ -36,6 +42,8 @@ export type BridgeRoute = {
   key: V4PoolKey;
   zeroForOne: boolean;
   amountOut: bigint;
+  /** True when slot0 sqrtPriceX96 was used because the on-chain Quoter failed. */
+  estimated?: boolean;
 };
 
 export type BridgeAmountOut = {
@@ -68,12 +76,88 @@ export function currencyDecimalsForBridge(currency: Address): number {
     : TOKEN_AND_WSTOCK_DECIMALS;
 }
 
+/**
+ * Deterministic exact-in conversion from Uniswap V4 `sqrtPriceX96`.
+ * `zeroForOne` sells currency0 for currency1.
+ */
+export function spotExactInFromSqrt(
+  amountIn: bigint,
+  sqrtPriceX96: bigint,
+  zeroForOne: boolean,
+): bigint {
+  if (amountIn <= 0n || sqrtPriceX96 <= 0n) return 0n;
+  try {
+    if (zeroForOne) {
+      const step = (amountIn * sqrtPriceX96) / Q96;
+      return (step * sqrtPriceX96) / Q96;
+    }
+    const priceX192 = sqrtPriceX96 * sqrtPriceX96;
+    if (priceX192 === 0n) return 0n;
+    return (amountIn * Q96 * Q96) / priceX192;
+  } catch {
+    return 0n;
+  }
+}
+
+function slot0SqrtFromResult(raw: unknown): bigint | null {
+  if (raw == null) return null;
+  // A lone bigint is not a StateView tuple (tests stub readContract with 1n).
+  if (typeof raw === "bigint") return null;
+  if (Array.isArray(raw)) {
+    const sqrt = raw[0];
+    return typeof sqrt === "bigint" && sqrt > 0n ? sqrt : null;
+  }
+  if (typeof raw === "object") {
+    const rec = raw as { sqrtPriceX96?: unknown; 0?: unknown };
+    const sqrt = rec.sqrtPriceX96 ?? rec[0];
+    return typeof sqrt === "bigint" && sqrt > 0n ? sqrt : null;
+  }
+  return null;
+}
+
+async function readQuotronSlot0Sqrt(
+  client: PublicClient,
+  key: V4PoolKey,
+  listing: QuotronStockListing,
+): Promise<bigint | null> {
+  const ids = [poolIdFromKey(key)];
+  if (listing.quotronPoolId.toLowerCase() !== ids[0]!.toLowerCase()) {
+    ids.push(listing.quotronPoolId);
+  }
+  for (const poolId of ids) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const raced = await Promise.race([
+        client
+          .readContract({
+            address: STATE_VIEW_ADDRESS,
+            abi: stateViewAbi,
+            functionName: "getSlot0",
+            args: [poolId],
+          })
+          .then((value) => value, () => null),
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), BRIDGE_QUOTE_TIMEOUT_MS);
+        }),
+      ]);
+      const sqrt = slot0SqrtFromResult(raced);
+      if (sqrt) return sqrt;
+    } catch {
+      // Dead or uninitialized books stay at 0 so sibling legs can still quote.
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+  return null;
+}
+
 async function quoteBridge(
   client: PublicClient,
   key: V4PoolKey,
   zeroForOne: boolean,
   amountIn: bigint,
 ): Promise<bigint | null> {
+  if (amountIn <= 0n || amountIn > UINT128_MAX) return null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const quoted = client.simulateContract({
@@ -142,12 +226,24 @@ export async function findBridgeRoute(
   // Prefer Quotrons wStock/USDG markets when either leg is USDG and the other is a wrapped equity.
   // Listed stocks use the canonical PoolKey only — never fall through to uncapped generic pools.
   if (stock) {
-    const key = quotronKeyForStock(stock, usdg);
-    if (key) {
+    const listing = INK_QUOTRON_STOCKS.find(
+      (s) => s.address.toLowerCase() === stock.toLowerCase(),
+    );
+    const key = listing ? quotronKeyForStock(stock, usdg) : null;
+    if (listing && key) {
       const zeroForOne = quotronZeroForOne(currencyIn, stock, usdg);
       const amountOut = await quoteBridge(client, key, zeroForOne, amountIn);
       if (amountOut != null) {
         return { key, zeroForOne, amountOut };
+      }
+      // MAX dumps can revert the V4 Quoter (tick walk / uint128). Spot from
+      // slot0 still lets the UI show a quote instead of "No safe route".
+      const sqrt = await readQuotronSlot0Sqrt(client, key, listing);
+      if (sqrt) {
+        const spotOut = spotExactInFromSqrt(amountIn, sqrt, zeroForOne);
+        if (spotOut > 0n) {
+          return { key, zeroForOne, amountOut: spotOut, estimated: true };
+        }
       }
       return null;
     }
