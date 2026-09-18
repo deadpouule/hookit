@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLiveToken } from "@/hooks/useLiveToken";
 import { copyToClipboard } from "@/lib/clipboard";
+import { TARGET_LAUNCH_MCAP_USD } from "@/lib/constants";
 import { BLOCK_EXPLORER_URL } from "@/lib/contracts/config";
 import { isPhoneDocument } from "@/lib/device";
 import {
@@ -34,6 +35,7 @@ import {
   poolMarkets,
   poolWithMarket,
 } from "@/lib/pool-active-market";
+import { resolveQuoteKind } from "@/lib/quote-usd";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import {
   resolveMediaUrl,
@@ -54,6 +56,16 @@ const TokenSwapCard = dynamic(
     ssr: false,
   },
 );
+
+function poolLaunchMcapUsd(pool: TokenPool): number | undefined {
+  const human = pool.launchMcapQuoteHuman;
+  if (!(human && human > 0)) return undefined;
+  const kind = resolveQuoteKind(pool.quoteAddress, pool.quoteAsset);
+  if (kind === "rwa") return TARGET_LAUNCH_MCAP_USD;
+  const qUsd = pool.quoteUsd && pool.quoteUsd > 0 ? pool.quoteUsd : kind === "stable" ? 1 : 0;
+  if (!(qUsd > 0)) return undefined;
+  return human * qUsd;
+}
 
 function HeaderTip({ tip, children }: { tip: string; children: ReactNode }) {
   return (
@@ -371,6 +383,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             interval={chartInterval}
             onInterval={setInterval}
             marketCap={live.marketCap}
+            launchMcap={poolLaunchMcapUsd(activePool)}
             tokenAddress={contractAddress}
             ticker={pool.ticker}
             name={pool.name}

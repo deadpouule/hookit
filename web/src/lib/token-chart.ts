@@ -275,17 +275,20 @@ export function chartRenderableCandle(
   _prevClose?: number,
 ): Pick<ChartBar, "open" | "high" | "low" | "close"> {
   if (!(bar.close > 0)) return { open: 0, high: 0, low: 0, close: 0 };
-  // Quiet minutes: true AllonSol doji (O=H=L=C) — a horizontal dash, not a fake wick.
-  if (!isTradedBar(bar)) {
+  const high = Math.max(bar.high || 0, bar.open, bar.close);
+  const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
+  const low = Math.min(lowBase, bar.open, bar.close);
+  const hasBody = bar.open !== bar.close || high > low;
+  // Quiet minutes stay a true doji dash. A live open→close move (even with
+  // volume=0) must keep its body so a sell from 5.13k to 5.07k draws red.
+  if (!isTradedBar(bar) && !hasBody) {
     const px = bar.close || bar.open;
     return { open: px, high: px, low: px, close: px };
   }
-  const high = Math.max(bar.high, bar.open, bar.close);
-  const lowBase = bar.low > 0 ? bar.low : Math.min(bar.open, bar.close);
   return {
     open: bar.open,
     high,
-    low: Math.min(lowBase, bar.open, bar.close),
+    low,
     close: bar.close,
   };
 }
@@ -473,29 +476,114 @@ export function visibleCandleOhlc(bar: ChartBar): Pick<ChartBar, "open" | "high"
   };
 }
 
+function lastRealIndex(bars: ChartBar[]): number {
+  for (let i = bars.length - 1; i >= 0; i--) {
+    if (!isWhitespaceBar(bars[i]!) && bars[i]!.close > 0) return i;
+  }
+  return -1;
+}
+
+function prevRealClose(bars: ChartBar[], before: number): number | undefined {
+  for (let i = before - 1; i >= 0; i--) {
+    if (!isWhitespaceBar(bars[i]!) && bars[i]!.close > 0) return bars[i]!.close;
+  }
+  return undefined;
+}
+
+function liveConnectedBar(bar: ChartBar, open: number, live: number): ChartBar {
+  const high = Math.max(bar.high || 0, open, live, bar.open || 0);
+  const lowBase = bar.low > 0 ? bar.low : Math.min(open, live);
+  return {
+    ...bar,
+    open,
+    high,
+    low: Math.min(lowBase, open, live),
+    close: live,
+  };
+}
+
+/**
+ * Live FDV belongs on the current bar only. The trailing quiet plateau stays at
+ * the last trade close so a drop from 5.13k to 5.07k is one red candle, not a
+ * dashed line that jumps the whole tape.
+ */
 export function pinLiveMcap(bars: ChartBar[], liveMcap?: number): ChartBar[] {
   if (!(liveMcap && liveMcap > 0) || bars.length === 0) return bars;
+  const lastIdx = lastRealIndex(bars);
+  if (lastIdx < 0) return bars;
+  const last = bars[lastIdx]!;
+  const open = prevRealClose(bars, lastIdx) ?? last.open;
   const next = bars.map((b) => ({ ...b }));
-  let lastTrade = -1;
-  for (let i = next.length - 1; i >= 0; i--) {
-    if (isTradedBar(next[i]!)) {
-      lastTrade = i;
-      break;
+  next[lastIdx] = liveConnectedBar(last, open, liveMcap);
+  return next;
+}
+
+/**
+ * First print on a one-trade tape (Hooktest): open at launch / curve start so a
+ * lone $40 buy is a tall green candle instead of a flat dash.
+ */
+export function openFirstTradeFromLaunch(
+  bars: ChartBar[],
+  launchMcap?: number,
+  firstSide?: "buy" | "sell",
+): ChartBar[] {
+  if (bars.length === 0) return bars;
+  let firstIdx = bars.findIndex((b) => isTradedBar(b));
+  if (firstIdx < 0) firstIdx = bars.findIndex((b) => !isWhitespaceBar(b) && b.close > 0);
+  if (firstIdx < 0) return bars;
+  const first = bars[firstIdx]!;
+  if (!(first.close > 0) || first.open !== first.close) return bars;
+
+  const close = first.close;
+  const side =
+    firstSide ??
+    (launchMcap && launchMcap > 0 && launchMcap < close
+      ? "buy"
+      : launchMcap && launchMcap > close
+        ? "sell"
+        : undefined);
+
+  let open = 0;
+  if (launchMcap && launchMcap > 0) {
+    const rel = Math.abs(launchMcap - close) / close;
+    if (rel > FDV_STEP_EPS) {
+      if (side === "buy" && launchMcap < close) open = launchMcap;
+      else if (side === "sell" && launchMcap > close) open = launchMcap;
+      else if (!side) open = launchMcap;
     }
   }
-  const start = lastTrade >= 0 ? lastTrade + 1 : 0;
-  for (let i = start; i < next.length; i++) {
-    if (isWhitespaceBar(next[i]!)) continue;
-    next[i] = {
-      ...next[i]!,
-      open: liveMcap,
-      high: liveMcap,
-      low: liveMcap,
-      close: liveMcap,
-      volume: 0,
-    };
+  const singlePrint = bars.filter((b) => isTradedBar(b)).length <= 1;
+  if (!(open > 0) && singlePrint && side === "buy") {
+    const inferred = first.volume > 0 && first.volume < close ? close - first.volume : close * 0.35;
+    open = inferred > 0 && inferred < close ? inferred : close * 0.35;
+  } else if (!(open > 0) && singlePrint && side === "sell") {
+    const inferred = first.volume > 0 ? close + first.volume : close / 0.65;
+    open = inferred > close ? inferred : close / 0.65;
   }
+  if (!(open > 0) || open === close) return bars;
+
+  const next = bars.map((b) => ({ ...b }));
+  next[firstIdx] = {
+    ...first,
+    open,
+    high: Math.max(first.high, open, close),
+    low: Math.min(first.low > 0 ? first.low : Math.min(open, close), open, close),
+    close,
+  };
   return next;
+}
+
+export const VOLUME_UP = "rgba(16, 185, 129, 0.5)";
+export const VOLUME_DOWN = "rgba(239, 68, 68, 0.5)";
+
+export function volumeHistogramData(
+  bars: ChartBar[],
+): Array<{ time: number; value: number; color: string }> {
+  return bars.map((bar) => ({
+    time: bar.time,
+    value: isWhitespaceBar(bar) || !(bar.volume > 0) ? 0 : bar.volume,
+    color: bar.close >= bar.open ? VOLUME_UP : VOLUME_DOWN,
+  }));
 }
 
 export function chartHudBar(bars: ChartBar[], hover: ChartBar | null): ChartBar | null {
@@ -713,7 +801,7 @@ export function chartVisibleLogicalRange(
 /** TradingView pane: 20% headroom so micro-moves do not crush against the rails. */
 export const CHART_SCALE_MARGIN_TOP = 0.2;
 export const CHART_SCALE_MARGIN_BOTTOM = 0.2;
-export const CHART_VOLUME_MARGIN_TOP = 0.84;
+export const CHART_VOLUME_MARGIN_TOP = 0.8;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 
 /** TradingView default Volume SMA (period 20) for the Defined overlay. */
@@ -918,18 +1006,27 @@ export function ensureCurrentBar(
 ): ChartBar[] {
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
   const cur = Math.floor(nowSec / bucketSec) * bucketSec;
-  const last = [...bars].reverse().find((b) => !isWhitespaceBar(b));
-  if (last && last.time === cur) return bars;
-  const px = liveValue && liveValue > 0 ? liveValue : last?.close;
-  if (!(px && px > 0)) return bars;
+  const lastIdx = lastRealIndex(bars);
+  const last = lastIdx >= 0 ? bars[lastIdx] : undefined;
+  const live = liveValue && liveValue > 0 ? liveValue : last?.close;
+  if (!(live && live > 0)) return bars;
+
+  if (last && last.time === cur) {
+    const open = prevRealClose(bars, lastIdx) ?? last.open;
+    const next = bars.map((b) => ({ ...b }));
+    next[lastIdx] = liveConnectedBar(last, open, live);
+    return next;
+  }
+
+  const open = last?.close && last.close > 0 ? last.close : live;
   return [
     ...bars,
     {
       time: cur,
-      open: px,
-      high: px,
-      low: px,
-      close: px,
+      open,
+      high: Math.max(open, live),
+      low: Math.min(open, live),
+      close: live,
       volume: 0,
     },
   ].sort((a, b) => a.time - b.time);

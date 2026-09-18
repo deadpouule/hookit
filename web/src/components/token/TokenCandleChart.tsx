@@ -26,8 +26,8 @@ import {
   linkBarOpens,
   liveCandlesToBars,
   mergeChartSeries,
+  openFirstTradeFromLaunch,
   pickChartBars,
-  pinLiveMcap,
   priceBarsToMcap,
   repriceBarsWithQuoteFx,
   rollQuoteFxBars,
@@ -139,6 +139,7 @@ export function TokenCandleChart({
   interval,
   onInterval,
   marketCap,
+  launchMcap,
   tokenAddress,
   launchedAt,
   quoteAddress,
@@ -160,6 +161,7 @@ export function TokenCandleChart({
   interval: ChartInterval;
   onInterval: (next: ChartInterval) => void;
   marketCap?: number;
+  launchMcap?: number;
   tokenAddress?: string;
   ticker?: string;
   name?: string;
@@ -212,10 +214,10 @@ export function TokenCandleChart({
         .map((s) => ({ t: s.t!, price: s.marketCap, volume: s.totalUsd })),
     );
     const house = mergeChartSeries(fromCandles, fromSwaps);
-    const seeded = house.length ? house : seedLaunchBars(launchedAt, marketCap ?? 0);
+    const seeded = house.length ? house : seedLaunchBars(launchedAt, launchMcap ?? marketCap ?? 0);
     const geckoMcap = priceBarsToMcap(gecko.data?.bars ?? []);
     return pickChartBars(seeded, geckoMcap);
-  }, [candles, swaps, selectedPoolId, nowSec, marketCap, gecko.data?.bars, launchedAt]);
+  }, [candles, swaps, selectedPoolId, nowSec, marketCap, launchMcap, gecko.data?.bars, launchedAt]);
 
   const chartMcap = useMemo(() => {
     if (!(marketCap && marketCap > 0)) return marketCap;
@@ -232,13 +234,16 @@ export function TokenCandleChart({
         quoteUsd && quoteUsd > 0 ? quoteUsd : fx.length ? fx[fx.length - 1]!.close : 0;
       const repriced =
         liveFx > 0 && fx.length > 0 ? repriceBarsWithQuoteFx(withTicks, fx, liveFx) : withTicks;
-      const linked = linkBarOpens(repriced);
+      const firstSwap = swapsForPool(swaps, selectedPoolId)
+        .filter((s) => s.t != null && s.t > 0)
+        .sort((a, b) => (a.t ?? 0) - (b.t ?? 0))[0];
+      const opened = openFirstTradeFromLaunch(repriced, launchMcap, firstSwap?.side);
+      const linked = linkBarOpens(opened);
       const filled = forwardFillContinuous(linked, bucket, nowSec);
-      const pinned = pinLiveMcap(filled, chartMcap);
-      const current = ensureCurrentBar(pinned, bucket, nowSec, chartMcap);
+      const current = ensureCurrentBar(filled, bucket, nowSec, chartMcap);
       return scaleBars(linkBarOpens(current), sc);
     },
-    [source, swaps, selectedPoolId, chartMcap, nowSec, quoteFx.data?.bars, quoteUsd],
+    [source, swaps, selectedPoolId, chartMcap, launchMcap, nowSec, quoteFx.data?.bars, quoteUsd],
   );
 
   const bars = useMemo(() => buildBars(interval, scale), [buildBars, interval, scale]);

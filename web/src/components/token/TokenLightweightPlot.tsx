@@ -11,6 +11,7 @@ import {
   CHART_RIGHT_OFFSET,
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
+  CHART_VOLUME_MARGIN_TOP,
   CHART_WINDOW_BARS,
   chartFitAnchorIndex,
   chartFitWindowBars,
@@ -18,11 +19,10 @@ import {
   chartStructureSignature,
   candleSeriesData,
   chartVisibleLogicalRange,
-  isCandleBar,
   formatChartAxis,
   isWhitespaceBar,
-  visibleExtremes,
   visiblePriceBand,
+  volumeHistogramData,
   type ChartBar,
   type ChartInterval,
   type ChartScale,
@@ -43,7 +43,6 @@ import {
 import type {
   AutoscaleInfoProvider,
   IChartApi,
-  IPriceLine,
   ISeriesApi,
   UTCTimestamp,
 } from "lightweight-charts";
@@ -75,8 +74,7 @@ type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Area">;
 type ChartHandle = {
   chart: IChartApi;
   price: PriceSeries;
-  athLine: IPriceLine | null;
-  atlLine: IPriceLine | null;
+  volume?: ISeriesApi<"Histogram">;
   style: ChartStyle;
 };
 
@@ -218,60 +216,78 @@ function fitChartView(
   timeScale.setVisibleLogicalRange({ from: range.from, to: range.to });
 }
 
-function fdvBarsInView(bars: ChartBar[], from?: number, to?: number): number {
-  const start = Math.max(0, Math.floor(from ?? 0));
-  const end = Math.min(bars.length - 1, Math.ceil(to ?? bars.length - 1));
-  let n = 0;
-  for (let i = start; i <= end; i++) {
-    if (isCandleBar(bars[i]!)) n++;
+function lastBarOnlyUpdate(prev: ChartBar[], next: ChartBar[]): ChartBar | null {
+  if (prev.length === 0 || next.length === 0 || prev.length !== next.length) return null;
+  for (let i = 0; i < next.length - 1; i++) {
+    const a = prev[i]!;
+    const b = next[i]!;
+    if (
+      a.time !== b.time ||
+      a.open !== b.open ||
+      a.high !== b.high ||
+      a.low !== b.low ||
+      a.close !== b.close ||
+      a.volume !== b.volume ||
+      a.whitespace !== b.whitespace
+    ) {
+      return null;
+    }
   }
-  return n;
+  const last = next[next.length - 1]!;
+  const old = prev[prev.length - 1]!;
+  if (last.time !== old.time || isWhitespaceBar(last)) return null;
+  return last;
 }
 
-function applyAthAtl(
-  handle: ChartHandle,
-  tv: typeof import("lightweight-charts"),
-  bars: ChartBar[],
-) {
-  if (handle.athLine) {
-    handle.price.removePriceLine(handle.athLine);
-    handle.athLine = null;
-  }
-  if (handle.atlLine) {
-    handle.price.removePriceLine(handle.atlLine);
-    handle.atlLine = null;
-  }
-  const vis = visibleLogicalRangeOf(handle.chart);
-  if (fdvBarsInView(bars, vis?.from, vis?.to) < 2) return;
-  const ext = visibleExtremes(bars, vis?.from, vis?.to);
-  if (!ext) return;
-  const { ath, atl } = ext;
-  const mid = (ath + atl) / 2;
-  if (!(mid > 0) || (ath - atl) / mid < 0.008) return;
-  const style = {
-    color: "rgba(255, 255, 255, 0.22)",
-    lineWidth: 1 as const,
-    lineStyle: tv.LineStyle.Dotted,
-    axisLabelVisible: true,
+function candlePoint(bar: ChartBar) {
+  const point = candleSeriesData([bar])[0];
+  if (!point || point.open == null) return { time: bar.time as UTCTimestamp };
+  return {
+    time: point.time as UTCTimestamp,
+    open: point.open,
+    high: point.high!,
+    low: point.low!,
+    close: point.close!,
   };
-  handle.athLine = handle.price.createPriceLine({ ...style, price: ath, title: "H" });
-  if (atl < ath) {
-    handle.atlLine = handle.price.createPriceLine({ ...style, price: atl, title: "L" });
-  }
+}
+
+function volumePoint(bar: ChartBar) {
+  const point = volumeHistogramData([bar])[0]!;
+  return { time: point.time as UTCTimestamp, value: point.value, color: point.color };
+}
+
+function attachVolumeSeries(
+  chart: IChartApi,
+  tv: typeof import("lightweight-charts"),
+): ISeriesApi<"Histogram"> {
+  const volume = chart.addSeries(tv.HistogramSeries, {
+    priceFormat: { type: "volume" },
+    priceScaleId: "volume",
+    lastValueVisible: false,
+    priceLineVisible: false,
+  });
+  chart.priceScale("volume").applyOptions({
+    scaleMargins: { top: CHART_VOLUME_MARGIN_TOP, bottom: 0 },
+    borderVisible: false,
+    visible: false,
+  });
+  return volume;
 }
 
 function applyBars(
   handle: ChartHandle,
-  tv: typeof import("lightweight-charts") | null,
+  _tv: typeof import("lightweight-charts") | null,
   next: ChartBar[],
   lineColor: string,
   windowBars: number,
   bucketSec: number,
   anchorIndex?: number,
   refit = true,
+  prev?: ChartBar[],
 ) {
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
+  const liveBar = !refit && prev ? lastBarOnlyUpdate(prev, next) : null;
 
   if (handle.style === "line") {
     const series = handle.price as ISeriesApi<"Area">;
@@ -283,33 +299,53 @@ function applyBars(
       priceLineColor: grad.line,
       crosshairMarkerBorderColor: grad.line,
     });
-    series.setData(
-      next.map((b) =>
-        isWhitespaceBar(b) ? { time: asTime(b) } : { time: asTime(b), value: b.close },
-      ),
-    );
+    if (liveBar) {
+      series.update({ time: asTime(liveBar), value: liveBar.close });
+    } else {
+      series.setData(
+        next.map((b) =>
+          isWhitespaceBar(b) ? { time: asTime(b) } : { time: asTime(b), value: b.close },
+        ),
+      );
+    }
   } else {
-    (handle.price as ISeriesApi<"Candlestick">).applyOptions({
+    const candles = handle.price as ISeriesApi<"Candlestick">;
+    candles.applyOptions({
       priceLineColor: line,
     });
-    (handle.price as ISeriesApi<"Candlestick">).setData(
-      candleSeriesData(next).map((point) =>
-        point.open == null
-          ? { time: point.time as UTCTimestamp }
-          : {
-              time: point.time as UTCTimestamp,
-              open: point.open,
-              high: point.high!,
-              low: point.low!,
-              close: point.close!,
-            },
-      ),
-    );
+    if (liveBar) {
+      candles.update(candlePoint(liveBar));
+    } else {
+      candles.setData(
+        candleSeriesData(next).map((point) =>
+          point.open == null
+            ? { time: point.time as UTCTimestamp }
+            : {
+                time: point.time as UTCTimestamp,
+                open: point.open,
+                high: point.high!,
+                low: point.low!,
+                close: point.close!,
+              },
+        ),
+      );
+    }
+  }
+
+  if (handle.volume) {
+    if (liveBar) {
+      handle.volume.update(volumePoint(liveBar));
+    } else {
+      handle.volume.setData(volumeHistogramData(next).map((point) => ({
+        time: point.time as UTCTimestamp,
+        value: point.value,
+        color: point.color,
+      })));
+    }
   }
 
   resizeChartToHost(handle.chart, handle.chart.chartElement());
   if (refit) fitChartView(handle.chart, next, windowBars, bucketSec, anchorIndex);
-  if (tv) applyAthAtl(handle, tv, next);
 
   handle.price.priceScale().applyOptions({
     scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
@@ -334,6 +370,7 @@ export function TokenLightweightPlot({
   const handleRef = useRef<ChartHandle | null>(null);
   const pendingBarsRef = useRef(bars);
   pendingBarsRef.current = bars;
+  const appliedBarsRef = useRef<ChartBar[]>([]);
   const styleRef = useRef(style);
   styleRef.current = style;
   const scaleRef = useRef(scale);
@@ -380,7 +417,7 @@ export function TokenLightweightPlot({
           textColor: AXIS,
           fontFamily: FONT,
           fontSize: 11,
-          attributionLogo: false,
+          attributionLogo: true,
         },
         grid: {
           vertLines: { color: GRID, style: tv.LineStyle.Solid, visible: false },
@@ -450,11 +487,11 @@ export function TokenLightweightPlot({
         priceAutoscale,
       );
 
+      const volume = attachVolumeSeries(chart, tv);
       const handle: ChartHandle = {
         chart,
         price,
-        athLine: null,
-        atlLine: null,
+        volume,
         style: styleRef.current,
       };
       handleRef.current = handle;
@@ -470,13 +507,7 @@ export function TokenLightweightPlot({
         bucketSecRef.current,
         anchorIndexRef.current,
       );
-
-      chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-        const live = handleRef.current;
-        const lib = tvRef.current;
-        if (!live || !lib) return;
-        applyAthAtl(live, lib, pendingBarsRef.current);
-      });
+      appliedBarsRef.current = next;
 
       chart.subscribeCrosshairMove((param) => {
         if (!param.time || !param.seriesData.size) {
@@ -538,8 +569,6 @@ export function TokenLightweightPlot({
     const tv = tvRef.current;
     if (!handle || !tv) return;
     if (handle.style === style) return;
-    handle.athLine = null;
-    handle.atlLine = null;
     handle.chart.removeSeries(handle.price);
     void attachPriceSeries(
       handle.chart,
@@ -585,6 +614,7 @@ export function TokenLightweightPlot({
     if (!handle) return;
     const signature = chartStructureSignature(bars, interval, windowBars);
     const refit = rangeSigRef.current !== signature;
+    const prev = appliedBarsRef.current;
     rangeSigRef.current = signature;
     applyBars(
       handle,
@@ -595,7 +625,9 @@ export function TokenLightweightPlot({
       bucketSec,
       anchorIndex,
       refit,
+      prev,
     );
+    appliedBarsRef.current = bars;
   }, [bars, lineColor, interval, windowBars, bucketSec, anchorIndex]);
 
   useEffect(() => {
