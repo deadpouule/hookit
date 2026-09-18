@@ -357,7 +357,7 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
 
       <div
         className={cn(
-          "token-desk mt-4 grid grid-cols-1 items-start gap-5 desk:grid-cols-[minmax(0,1fr)_340px] desk:xl:grid-cols-[minmax(0,1fr)_360px]",
+          "token-desk mt-4 grid grid-cols-1 items-start gap-3.5 desk:grid-cols-[minmax(0,1fr)_310px] desk:xl:grid-cols-[minmax(0,1fr)_315px]",
           isClassicDesk ? "token-desk--wide" : "token-desk--hooks",
         )}
       >
