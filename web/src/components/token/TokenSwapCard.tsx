@@ -499,7 +499,7 @@ export function TokenSwapCard({
   })();
 
   return (
-    <div className={cn(variant === "sheet" ? "token-swap-sheet-body" : "desk-card p-4")}>
+    <div className={cn(variant === "sheet" ? "token-swap-sheet-body" : "desk-card px-3.5 py-4")}>
       {variant === "sheet" ? (
         <>
           <h2 className="sr-only">Swap {ticker}</h2>
