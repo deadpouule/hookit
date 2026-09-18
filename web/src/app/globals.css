@@ -362,7 +362,6 @@
   .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
     width: 1.7rem;
     height: 1.7rem;
-    color: #c084fc;
   }
 
   @media (max-width: 640px) {
@@ -4704,6 +4703,13 @@
     }
   }
 
+  .token-hero-card .token-type-badge--master {
+    border-radius: 0;
+    border-color: #fff;
+    background: #000;
+    color: #fff;
+  }
+
   .token-hero-card .token-type-badge-glyph.category-owl-totem,
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
     width: 2rem;
@@ -8969,9 +8975,10 @@
   }
 
   .token-type-badge--master {
-    border-color: rgb(149 20 209 / 0.45);
-    background: rgb(149 20 209 / 0.14);
-    color: #e9d5ff;
+    border-radius: 0;
+    border-color: #fff;
+    background: #000;
+    color: #fff;
     text-transform: capitalize;
   }
 
