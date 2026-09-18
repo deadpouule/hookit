@@ -193,9 +193,11 @@ export async function quotePoolSwapWithMeta(
         route = plan.routeLabel;
         const filled = planFilledIn(plan);
         if (filled > 0n) amountInUsed = filled;
+        estimated = plan.legs.some((leg) => leg.kind === "composite" && leg.estimated === true);
       }
-      // A 100% dump into the default pool hangs the V4 quoter on MAX. Aggregator
-      // already tried every market at fillable clips — do not fall through.
+      // Aggregator already tried every market. Do not fall through to a
+      // wStock-as-USDG spot crumb. High price impact is displayed, never a
+      // hard "No safe route" block when amountOut > 0.
     } else if (amountOut == null) {
       // Prefer a direct market leg when the receive asset is one of this launch's quotes.
       const directKeyQuote =

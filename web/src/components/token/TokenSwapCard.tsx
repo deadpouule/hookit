@@ -165,10 +165,16 @@ export function TokenSwapCard({
   const [sellAsset, setSellAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, initialSide).sell);
   const [buyAsset, setBuyAsset] = useState<SwapAsset>(() => defaultSwapPair(pool, initialSide).buy);
   const [amount, setAmount] = useState("");
+  const [amountRaw, setAmountRaw] = useState<bigint | null>(null);
   const [slippagePct] = useState(5);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rawBalances, setRawBalances] = useState<RawBalances>(ZERO_BALANCES);
+
+  const setSellAmount = useCallback((value: string, raw?: bigint) => {
+    setAmount(value);
+    setAmountRaw(raw !== undefined ? raw : null);
+  }, []);
 
   const refreshBalances = useCallback(async () => {
     if (!walletReady) {
@@ -213,16 +219,16 @@ export function TokenSwapCard({
       setSide(nextSide);
       setSellAsset(pair.sell);
       setBuyAsset(pair.buy);
-      setAmount("");
+      setSellAmount("");
     },
-    [pool],
+    [pool, setSellAmount],
   );
 
   useEffect(() => {
     const buy = searchParams.get("buy");
     const sideParam = searchParams.get("side");
     if (buy && Number(buy) > 0) {
-      setAmount(buy);
+      setSellAmount(buy);
       applySide("buy");
     } else if (sideParam === "buy" || sideParam === "sell") {
       applySide(sideParam);
@@ -233,7 +239,7 @@ export function TokenSwapCard({
     const pair = defaultSwapPair(pool, side);
     setSellAsset(pair.sell);
     setBuyAsset(pair.buy);
-    setAmount("");
+    setSellAmount("");
     // Reset pair when navigating to a different token, not when a multi-pool
     // quote tab or live poolId refresh changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,7 +248,7 @@ export function TokenSwapCard({
   useEffect(() => {
     if (!buyPrefill) return;
     applySide("buy");
-    setAmount(buyPrefill);
+    setSellAmount(buyPrefill);
     onBuyPrefillConsumed?.();
   }, [buyPrefill, applySide, onBuyPrefillConsumed]);
 
@@ -273,6 +279,7 @@ export function TokenSwapCard({
     pool,
     side,
     amount,
+    amountInRaw: amountRaw,
     payWith: effectivePayWith,
     receiveAsset: buyAsset,
     payAsset: side === "buy" ? sellAsset : undefined,
@@ -349,7 +356,7 @@ export function TokenSwapCard({
     setSellAsset(nextSell);
     setBuyAsset(nextBuy);
     setSide(deriveSide(nextSell, nextBuy, pool));
-    setAmount("");
+    setSellAmount("");
   };
 
   const handleSellAsset = (asset: SwapAsset) => {
@@ -359,13 +366,13 @@ export function TokenSwapCard({
         : asset;
     setSellAsset(next);
     setSide(deriveSide(next, buyAsset, pool));
-    setAmount("");
+    setSellAmount("");
   };
 
   const handleBuyAsset = (asset: SwapAsset) => {
     setBuyAsset(asset);
     setSide(deriveSide(sellAsset, asset, pool));
-    setAmount("");
+    setSellAmount("");
   };
 
   const submit = async () => {
@@ -436,6 +443,7 @@ export function TokenSwapCard({
         effectivePayWith,
         buyAsset,
         side === "buy" ? sellAsset : undefined,
+        amountRaw ?? undefined,
       );
       toast.dismiss(loadingId);
       if (hash) {
@@ -486,7 +494,7 @@ export function TokenSwapCard({
         onSellAsset={handleSellAsset}
         onBuyAsset={handleBuyAsset}
         sellAmount={amount}
-        onSellAmount={setAmount}
+        onSellAmount={setSellAmount}
         onInvert={handleInvert}
         receiveAmount={quotedReceive}
         slippagePct={slippagePct}

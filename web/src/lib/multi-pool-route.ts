@@ -37,6 +37,7 @@ export type BestSellRoute =
       intermediateOut: bigint;
       routeLabel: string;
       marketIndex?: number;
+      estimated?: boolean;
     };
 
 export type BestBuyLeg =
@@ -355,6 +356,7 @@ async function quoteSellLegWithKey(
     intermediateOut: amountOut,
     routeLabel: `${pool.ticker} → ${midLabel} → ${receive.symbol}`,
     marketIndex,
+    estimated: bridge.estimated,
   };
 }
 
@@ -365,10 +367,15 @@ async function quoteIsolatedSellLeg(
   leg: MarketLeg,
   amountIn: bigint,
 ): Promise<BestSellLeg | null> {
-  // Hook + Quotrons bridge each have their own timeout. A 3s outer cap here
-  // killed USDG MAX: the launch dump used the full budget and the wStock→USDG
-  // hop never ran, while a direct AAPL sell (hook only) still quoted.
-  return quoteLeg(leg, amountIn);
+  // Isolate each book. A revert/timeout on wNVDA/wAMZN must not reject the
+  // Promise.all that is quoting wAAPL. Hook + Quotrons each have their own
+  // timeout; do not wrap both in a 3s outer cap (that killed USDG MAX: the
+  // launch dump used the budget and the wStock→USDG hop never ran).
+  try {
+    return await quoteLeg(leg, amountIn);
+  } catch {
+    return null;
+  }
 }
 
 /** Equal N-way split of the full input. Time out each book in isolation; never shrink S. */
@@ -482,8 +489,10 @@ export async function quoteBestSellPlan(
   const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
 
   const singles = (
-    await Promise.all(legs.map((leg) => quoteIsolatedSellLeg(quoteLeg, leg, amountIn)))
-  ).filter((q): q is BestSellLeg => q != null);
+    await Promise.allSettled(legs.map((leg) => quoteIsolatedSellLeg(quoteLeg, leg, amountIn)))
+  )
+    .map((result) => (result.status === "fulfilled" ? result.value : null))
+    .filter((q): q is BestSellLeg => q != null && q.amountOut > 0n);
   singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
 
   if (!singles[0]) return null;
@@ -565,8 +574,12 @@ export async function quoteBestBuyPlan(
 
   await Promise.all(
     legs.map(async (leg) => {
-      const quoted = await quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient);
-      if (quoted) singles.push(quoted);
+      try {
+        const quoted = await quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient);
+        if (quoted && quoted.amountOut > 0n) singles.push(quoted);
+      } catch {
+        // Illiquid books stay at 0 so a live market can still fill.
+      }
     }),
   );
 

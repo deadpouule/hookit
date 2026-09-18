@@ -14,6 +14,8 @@ export function usePoolSwapQuote(opts: {
   pool: TokenPool;
   side: SwapSide;
   amount: string;
+  /** Exact wei from MAX / presets. Preferred over parsing `amount`. */
+  amountInRaw?: bigint | null;
   payWith: PaymentAssetId;
   receiveAsset: SwapAsset;
   payAsset?: SwapAsset;
@@ -41,7 +43,10 @@ export function usePoolSwapQuote(opts: {
     const handle = window.setTimeout(() => {
       void (async () => {
         try {
-          const amountIn = parseUnits(opts.amount.trim().replace(",", "."), opts.decimalsIn);
+          const amountIn =
+            opts.amountInRaw != null && opts.amountInRaw > 0n
+              ? opts.amountInRaw
+              : parseUnits(opts.amount.trim().replace(",", "."), opts.decimalsIn);
 
           const result = await quotePoolSwapWithMeta(
             publicClient,
@@ -85,6 +90,7 @@ export function usePoolSwapQuote(opts: {
     publicClient,
     opts.pool,
     opts.amount,
+    opts.amountInRaw,
     opts.side,
     opts.payWith,
     opts.receiveAsset,

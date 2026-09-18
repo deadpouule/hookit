@@ -11,7 +11,9 @@ import {
   QUOTRONS_V4_TICK_SPACING,
   quotronKeyForStock,
   quotronZeroForOne,
+  spotExactInFromSqrt,
   TOKEN_AND_WSTOCK_DECIMALS,
+  UINT128_MAX,
   USDG_DECIMALS,
 } from "@/lib/v4-bridge";
 import { INK_QUOTRON_STOCKS, QUOTRONS_HOOK } from "@/lib/xstocks";
@@ -101,4 +103,54 @@ test("listed Quotrons stocks do not fall through to uncapped generic pools", asy
   const route = await findBridgeRoute(client, STOCK, USDG, 1_000n);
   assert.equal(route, null);
   assert.equal(calls, 1);
+});
+
+test("spotExactInFromSqrt is 1:1 when sqrtPriceX96 is 2^96", () => {
+  const sqrt = 2n ** 96n;
+  assert.equal(spotExactInFromSqrt(1_000n, sqrt, true), 1_000n);
+  assert.equal(spotExactInFromSqrt(1_000n, sqrt, false), 1_000n);
+  assert.equal(spotExactInFromSqrt(0n, sqrt, true), 0n);
+});
+
+test("findBridgeRoute falls back to slot0 when the Quoter reverts on a large size", async () => {
+  let quoterCalls = 0;
+  let slotCalls = 0;
+  const client = {
+    simulateContract: async () => {
+      quoterCalls += 1;
+      throw new Error("UnexpectedCall");
+    },
+    readContract: async ({ functionName }: { functionName: string }) => {
+      assert.equal(functionName, "getSlot0");
+      slotCalls += 1;
+      return [2n ** 96n, 0, 0, 0];
+    },
+  } as unknown as PublicClient;
+
+  const route = await findBridgeRoute(client, STOCK, USDG, 10_000n);
+  assert.ok(route);
+  assert.equal(route.estimated, true);
+  assert.equal(route.amountOut, 10_000n);
+  assert.equal(quoterCalls, 1);
+  assert.ok(slotCalls >= 1);
+  assert.equal(route.key.fee, 0x800000);
+  assert.equal(route.key.tickSpacing, 60);
+});
+
+test("findBridgeRoute skips the Quoter when amountIn exceeds uint128 and uses slot0", async () => {
+  let quoterCalls = 0;
+  const client = {
+    simulateContract: async () => {
+      quoterCalls += 1;
+      throw new Error("should not quote uint128 overflow");
+    },
+    readContract: async () => [2n ** 96n, 0, 0, 0],
+  } as unknown as PublicClient;
+
+  const amountIn = UINT128_MAX + 1n;
+  const route = await findBridgeRoute(client, STOCK, USDG, amountIn);
+  assert.ok(route);
+  assert.equal(route.estimated, true);
+  assert.equal(route.amountOut, amountIn);
+  assert.equal(quoterCalls, 0);
 });
