@@ -16,7 +16,8 @@ export function isBalancedAggregatorQuote(quote: Address): boolean {
 
 /**
  * UI `pool.markets` is sorted by bps in the indexer, not factory order.
- * Do not use this for execution; prefer on-chain `marketIndex` from `loadMarketLegs`.
+ * Never pass this index to BalancedAggregator; execution uses the sequential
+ * `marketIndex` from `LaunchFactory.poolKeyOfMarket(launchId, index)`.
  */
 export function marketIndexForQuote(pool: TokenPool, quote: Address): number | null {
   const markets = poolMarkets(pool);

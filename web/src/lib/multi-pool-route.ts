@@ -87,11 +87,8 @@ type MarketLeg = {
 const SPLIT_BPS = [3_000, 4_000, 5_000, 6_000, 7_000] as const;
 const UINT128_MAX = (1n << 128n) - 1n;
 const MARKET_LEGS_TTL_MS = 20_000;
-const QUOTE_TIMEOUT_MS = 5_000;
-/** Hook dump + Quotrons hop; do not wrap this in another 5s or USDG quotes die. */
-const HOOK_AND_BRIDGE_MS = 12_000;
-/** Fat per-pool dumps hang the V4 quoter; give up and retry at half size. */
-const SLICE_PROBE_MS = 3_000;
+/** Isolated Uniswap V4 quoter budget per market. Dead books return 0, never abort the plan. */
+export const INDIVIDUAL_LEG_TIMEOUT_MS = 3_000;
 const QUOTE_TIMED_OUT = Symbol("quote-timeout");
 
 type CachedMarketLegs = { expires: number; legs: MarketLeg[] };
@@ -123,7 +120,7 @@ function marketQuoteFromKey(hookKey: V4PoolKey, token: Address): Address {
 
 async function withQuoteTimeout<T>(
   work: Promise<T>,
-  ms: number = QUOTE_TIMEOUT_MS,
+  ms: number = INDIVIDUAL_LEG_TIMEOUT_MS,
 ): Promise<T | null | typeof QUOTE_TIMED_OUT> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<typeof QUOTE_TIMED_OUT>((resolve) => {
@@ -358,13 +355,19 @@ async function quoteSellLegWithKey(
   };
 }
 
-function pickBestSellLeg(legs: BestSellLeg[]): BestSellLeg {
-  return [...legs].sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1))[0]!;
-}
-
 type QuoteSellLeg = (leg: MarketLeg, amountIn: bigint) => Promise<BestSellLeg | null>;
 
-/** Equal N-way clip. Probe one pool first — a hanging slice means the size is too fat. */
+async function quoteIsolatedSellLeg(
+  quoteLeg: QuoteSellLeg,
+  leg: MarketLeg,
+  amountIn: bigint,
+): Promise<BestSellLeg | null> {
+  const raced = await withQuoteTimeout(quoteLeg(leg, amountIn), INDIVIDUAL_LEG_TIMEOUT_MS);
+  if (!raced || raced === QUOTE_TIMED_OUT) return null;
+  return raced;
+}
+
+/** Equal N-way split of the full input. Time out each book in isolation; never shrink S. */
 async function quoteEqualSplitOnLegs(
   quoteLeg: QuoteSellLeg,
   amountIn: bigint,
@@ -375,20 +378,10 @@ async function quoteEqualSplitOnLegs(
   const slice = amountIn / n;
   if (slice <= 0n) return null;
 
-  const first = legs[0];
-  if (!first) return null;
-  const probed = await withQuoteTimeout(quoteLeg(first, slice), SLICE_PROBE_MS);
-  if (probed === QUOTE_TIMED_OUT) {
-    const half = amountIn / 2n;
-    if (half <= 0n || half === amountIn) return null;
-    return quoteEqualSplitOnLegs(quoteLeg, half, legs);
-  }
-
   const quoted = await Promise.all(
     legs.map((leg, i) => {
-      if (i === 0) return Promise.resolve(probed);
       const amt = i === legs.length - 1 ? amountIn - slice * (n - 1n) : slice;
-      return quoteLeg(leg, amt);
+      return quoteIsolatedSellLeg(quoteLeg, leg, amt);
     }),
   );
   if (quoted.every((q): q is BestSellLeg => q != null)) return quoted;
@@ -435,8 +428,8 @@ function pickBetterSellPlan(
   if (aSplit !== bSplit) {
     const single = aSplit ? b : a;
     const split = aSplit ? a : b;
-    // Split when it is not worse: spreads impact across books without shrinking USDG out.
-    return split.amountOut >= single.amountOut ? split : single;
+    // Non-regressive: a split is kept only when it strictly beats the best single book.
+    return split.amountOut > single.amountOut ? split : single;
   }
 
   if (a.amountOut !== b.amountOut) return a.amountOut > b.amountOut ? a : b;
@@ -459,10 +452,10 @@ export async function quoteBestSellRoute(
 }
 
 /**
- * Best sell plan. Quote every launch pool (token → wStock → USDG), then
- * discrete splits. Keep the max USDG out. A split wins when it matches or
- * beats the best single pool — that is how impact is spread without shrinking
- * the fill.
+ * Best sell plan. Quote 100% of `amountIn` on every launch pool
+ * (token → wStock → USDG). A split is evaluated only when at least two books
+ * return a viable full-size quote, and is kept only when it strictly beats
+ * that best single. Input size is never halved.
  */
 export async function quoteBestSellPlan(
   client: PublicClient,
@@ -484,130 +477,75 @@ export async function quoteBestSellPlan(
 
   const splitToStable = want.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase();
 
-  const quoteFullSingles = async (): Promise<BestSellLeg[]> => {
-    const results = await Promise.all(
-      legs.map(async (leg) => {
-        const one = await withQuoteTimeout(quoteLeg(leg, amountIn), HOOK_AND_BRIDGE_MS);
-        if (!one || one === QUOTE_TIMED_OUT) return null;
-        return one;
-      }),
-    );
-    const singles = results.filter((q): q is BestSellLeg => q != null);
-    singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
-    return singles;
+  const singles = (
+    await Promise.all(legs.map((leg) => quoteIsolatedSellLeg(quoteLeg, leg, amountIn)))
+  ).filter((q): q is BestSellLeg => q != null);
+  singles.sort((a, b) => (a.amountOut > b.amountOut ? -1 : 1));
+
+  if (!singles[0]) return null;
+  const bestSingle = singles[0];
+  let bestPlan: BestSellPlan = {
+    legs: [bestSingle],
+    amountOut: bestSingle.amountOut,
+    routeLabel: bestSingle.routeLabel,
+    bestSingle,
   };
 
-  if (splitToStable && legs.length >= 2) {
-    const singles = await quoteFullSingles();
-    let bestPlan: BestSellPlan | null = null;
-    if (singles[0]) {
-      bestPlan = {
-        legs: [singles[0]],
-        amountOut: singles[0].amountOut,
-        routeLabel: singles[0].routeLabel,
-        bestSingle: singles[0],
-      };
-    }
+  if (!splitToStable || singles.length < 2) return bestPlan;
 
-    // A full single-pool dump (the AAPL path) is already a valid quote.
-    // Only spend a short budget trying to beat it with splits.
-    const splitMs = bestPlan && planFilledIn(bestPlan) >= amountIn - 1n ? 4_000 : HOOK_AND_BRIDGE_MS;
-    const equalLegs = await withQuoteTimeout(
-      quoteEqualSplitOnLegs(quoteLeg, amountIn, legs),
-      splitMs,
-    );
-    if (equalLegs && equalLegs !== QUOTE_TIMED_OUT) {
-      bestPlan = pickBetterSellPlan(
-        amountIn,
-        bestPlan,
-        splitSellPlan(
-          equalLegs,
-          `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
-          pickBestSellLeg(equalLegs),
-        ),
-      );
-    }
-
-    const pairA =
-      singles.length >= 2
-        ? legs.find((l) => l.marketQuote.toLowerCase() === singles[0]!.marketQuote.toLowerCase())
-        : legs.length === 2
-          ? legs[0]
-          : undefined;
-    const pairB =
-      singles.length >= 2
-        ? legs.find((l) => l.marketQuote.toLowerCase() === singles[1]!.marketQuote.toLowerCase())
-        : legs.length === 2
-          ? legs[1]
-          : undefined;
-
-    if (
-      pairA &&
-      pairB &&
-      bestPlan &&
-      planFilledIn(bestPlan) >= amountIn - 1n
-    ) {
-      const pairPlans = await withQuoteTimeout(
-        Promise.all(
-          SPLIT_BPS.map(async (bps) => {
-            const amountA = (amountIn * BigInt(bps)) / 10_000n;
-            const amountB = amountIn - amountA;
-            if (amountA <= 0n || amountB <= 0n) return null;
-            const [legA, legB] = await Promise.all([
-              quoteLeg(pairA, amountA),
-              quoteLeg(pairB, amountB),
-            ]);
-            if (!legA || !legB) return null;
-            const pctA = Math.round(bps / 100);
-            return splitSellPlan(
-              [legA, legB],
-              `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
-              pickBestSellLeg([legA, legB]),
-            );
-          }),
-        ),
-        splitMs,
-      );
-      if (pairPlans && pairPlans !== QUOTE_TIMED_OUT) {
-        for (const plan of pairPlans) {
-          bestPlan = pickBetterSellPlan(amountIn, bestPlan, plan);
-        }
-      }
-    }
-
-    if (!bestPlan) {
-      const clip = amountIn / 2n;
-      if (clip > 0n) {
-        for (const leg of legs) {
-          const one = await withQuoteTimeout(quoteLeg(leg, clip), SLICE_PROBE_MS);
-          if (!one || one === QUOTE_TIMED_OUT) continue;
-          bestPlan = {
-            legs: [one],
-            amountOut: one.amountOut,
-            routeLabel: one.routeLabel,
-            bestSingle: one,
-          };
-          break;
-        }
-      }
-    }
-
-    return bestPlan;
+  const viableLegs = legs.filter((leg) =>
+    singles.some((s) => s.marketQuote.toLowerCase() === leg.marketQuote.toLowerCase()),
+  );
+  const equalLegs = await quoteEqualSplitOnLegs(quoteLeg, amountIn, viableLegs);
+  if (equalLegs) {
+    bestPlan = pickBetterSellPlan(
+      amountIn,
+      bestPlan,
+      splitSellPlan(
+        equalLegs,
+        `Split equal · ${equalLegs.map((l) => quoteLabel(pool, l.marketQuote)).join(" + ")}`,
+        bestSingle,
+      ),
+    )!;
   }
 
-  const singles = await quoteFullSingles();
-  if (!singles[0]) return null;
-  return {
-    legs: [singles[0]],
-    amountOut: singles[0].amountOut,
-    routeLabel: singles[0].routeLabel,
-    bestSingle: singles[0],
-  };
+  const pairA = legs.find(
+    (l) => l.marketQuote.toLowerCase() === singles[0]!.marketQuote.toLowerCase(),
+  );
+  const pairB = legs.find(
+    (l) => l.marketQuote.toLowerCase() === singles[1]!.marketQuote.toLowerCase(),
+  );
+  if (pairA && pairB) {
+    const pairPlans = await Promise.all(
+      SPLIT_BPS.map(async (bps) => {
+        const amountA = (amountIn * BigInt(bps)) / 10_000n;
+        const amountB = amountIn - amountA;
+        if (amountA <= 0n || amountB <= 0n) return null;
+        const [legA, legB] = await Promise.all([
+          quoteIsolatedSellLeg(quoteLeg, pairA, amountA),
+          quoteIsolatedSellLeg(quoteLeg, pairB, amountB),
+        ]);
+        if (!legA || !legB) return null;
+        const pctA = Math.round(bps / 100);
+        return splitSellPlan(
+          [legA, legB],
+          `Split ${pctA}/${100 - pctA}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+          bestSingle,
+        );
+      }),
+    );
+    for (const plan of pairPlans) {
+      bestPlan = pickBetterSellPlan(amountIn, bestPlan, plan)!;
+    }
+  }
+
+  return bestPlan;
 }
 
 /**
- * Best buy plan: quote USDG → wStock → token on every market, then split
- * across the top two when that yields at least as many tokens.
+ * Best buy plan: quote 100% of USDG on every market (USDG → wStock → token).
+ * A split is kept only when at least two books quote and it strictly beats
+ * the best single. Input size is never halved.
  */
 export async function quoteBestBuyPlan(
   client: PublicClient,
@@ -625,7 +563,7 @@ export async function quoteBestBuyPlan(
     legs.map(async (leg) => {
       const quoted = await withQuoteTimeout(
         quoteBuyLegWithKey(client, pool, payment, amountIn, leg, recipient),
-        HOOK_AND_BRIDGE_MS,
+        INDIVIDUAL_LEG_TIMEOUT_MS,
       );
       if (quoted && quoted !== QUOTE_TIMED_OUT) singles.push(quoted);
     }),
@@ -650,31 +588,41 @@ export async function quoteBestBuyPlan(
   const legBMeta = legs.find((l) => l.marketQuote.toLowerCase() === b.marketQuote.toLowerCase());
   if (!legAMeta || !legBMeta) return bestPlan;
 
-  const splitPlans = await withQuoteTimeout(
-    Promise.all(
-      SPLIT_BPS.map(async (bps) => {
-        const amountA = (amountIn * BigInt(bps)) / 10_000n;
-        const amountB = amountIn - amountA;
-        if (amountA <= 0n || amountB <= 0n) return null;
-        const [legA, legB] = await Promise.all([
+  const splitPlans = await Promise.all(
+    SPLIT_BPS.map(async (bps) => {
+      const amountA = (amountIn * BigInt(bps)) / 10_000n;
+      const amountB = amountIn - amountA;
+      if (amountA <= 0n || amountB <= 0n) return null;
+      const [legA, legB] = await Promise.all([
+        withQuoteTimeout(
           quoteBuyLegWithKey(client, pool, payment, amountA, legAMeta, recipient),
+          INDIVIDUAL_LEG_TIMEOUT_MS,
+        ),
+        withQuoteTimeout(
           quoteBuyLegWithKey(client, pool, payment, amountB, legBMeta, recipient),
-        ]);
-        if (!legA || !legB) return null;
-        return {
-          legs: [legA, legB],
-          amountOut: legA.amountOut + legB.amountOut,
-          routeLabel: `Split ${Math.round(bps / 100)}/${100 - Math.round(bps / 100)}% · ${legA.routeLabel} + ${legB.routeLabel}`,
-          bestSingle,
-        } satisfies BestBuyPlan;
-      }),
-    ),
-    2_000,
+          INDIVIDUAL_LEG_TIMEOUT_MS,
+        ),
+      ]);
+      if (
+        !legA ||
+        legA === QUOTE_TIMED_OUT ||
+        !legB ||
+        legB === QUOTE_TIMED_OUT
+      ) {
+        return null;
+      }
+      const splitOut = legA.amountOut + legB.amountOut;
+      if (splitOut <= bestSingle.amountOut) return null;
+      return {
+        legs: [legA, legB],
+        amountOut: splitOut,
+        routeLabel: `Split ${Math.round(bps / 100)}/${100 - Math.round(bps / 100)}% · ${legA.routeLabel} + ${legB.routeLabel}`,
+        bestSingle,
+      } satisfies BestBuyPlan;
+    }),
   );
-  if (splitPlans && splitPlans !== QUOTE_TIMED_OUT) {
-    for (const plan of splitPlans) {
-      if (plan && plan.amountOut >= bestPlan.amountOut) bestPlan = plan;
-    }
+  for (const plan of splitPlans) {
+    if (plan && plan.amountOut > bestPlan.amountOut) bestPlan = plan;
   }
 
   return bestPlan;

@@ -16,10 +16,17 @@ import {
 } from "@/lib/xstocks";
 
 const ZERO_HOOKS = "0x0000000000000000000000000000000000000000" as Address;
+/** Isolated Uniswap V4 quoter budget. Illiquid Quotrons books return 0 instead of hanging RPC. */
+const BRIDGE_QUOTE_TIMEOUT_MS = 3_000;
+/** Uniswap V4 dynamic-fee flag used by every Quotrons wStock/USDG pool. */
+export const QUOTRONS_V4_FEE = QUOTRONS_DYNAMIC_FEE;
+export const QUOTRONS_V4_TICK_SPACING = 60;
+export const USDG_DECIMALS = 6;
+export const TOKEN_AND_WSTOCK_DECIMALS = 18;
 
 const BRIDGE_CANDIDATES: { fee: number; tickSpacing: number }[] = [
   { fee: 0, tickSpacing: 60 },
-  { fee: 0x80_0000, tickSpacing: 60 }, // Hookit / Quotrons dynamic fee pools
+  { fee: QUOTRONS_DYNAMIC_FEE, tickSpacing: QUOTRONS_V4_TICK_SPACING },
   { fee: 500, tickSpacing: 10 },
   { fee: 3000, tickSpacing: 60 },
   { fee: 500, tickSpacing: 50 },
@@ -36,17 +43,29 @@ export type BridgeAmountOut = {
   routeLabel?: string;
 };
 
-function quotronKeyForStock(stock: Address, usdg: Address): V4PoolKey | null {
+export function quotronKeyForStock(stock: Address, usdg: Address): V4PoolKey | null {
   const listing = INK_QUOTRON_STOCKS.find((s) => s.address.toLowerCase() === stock.toLowerCase());
   if (!listing) return null;
   const [currency0, currency1] = sortV4Currencies(stock, usdg);
   return {
     currency0,
     currency1,
-    fee: QUOTRONS_DYNAMIC_FEE,
-    tickSpacing: 60,
+    fee: QUOTRONS_V4_FEE,
+    tickSpacing: QUOTRONS_V4_TICK_SPACING,
     hooks: QUOTRONS_HOOK,
   };
+}
+
+/** Uniswap V4 `zeroForOne` for a Quotrons wStock/USDG hop. */
+export function quotronZeroForOne(currencyIn: Address, wStock: Address, usdg: Address): boolean {
+  const sellingStock = currencyIn.toLowerCase() === wStock.toLowerCase();
+  return sellingStock ? BigInt(wStock) < BigInt(usdg) : BigInt(usdg) < BigInt(wStock);
+}
+
+export function currencyDecimalsForBridge(currency: Address): number {
+  return currency.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase()
+    ? USDG_DECIMALS
+    : TOKEN_AND_WSTOCK_DECIMALS;
 }
 
 async function quoteBridge(
@@ -55,6 +74,7 @@ async function quoteBridge(
   zeroForOne: boolean,
   amountIn: bigint,
 ): Promise<bigint | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const quoted = client.simulateContract({
       address: V4_QUOTER_ADDRESS,
@@ -72,7 +92,7 @@ async function quoteBridge(
     const raced = await Promise.race([
       quoted.then((value) => value, () => null),
       new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), 5_000);
+        timer = setTimeout(() => resolve(null), BRIDGE_QUOTE_TIMEOUT_MS);
       }),
     ]);
     if (!raced) return null;
@@ -80,6 +100,8 @@ async function quoteBridge(
     return amountOut > BigInt(0) ? amountOut : null;
   } catch {
     return null;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 
@@ -118,14 +140,16 @@ export async function findBridgeRoute(
   const stock = inIsUsdg ? currencyOut : outIsUsdg ? currencyIn : null;
 
   // Prefer Quotrons wStock/USDG markets when either leg is USDG and the other is a wrapped equity.
+  // Listed stocks use the canonical PoolKey only — never fall through to uncapped generic pools.
   if (stock) {
     const key = quotronKeyForStock(stock, usdg);
     if (key) {
-      const zeroForOne = currencyIn.toLowerCase() === key.currency0.toLowerCase();
+      const zeroForOne = quotronZeroForOne(currencyIn, stock, usdg);
       const amountOut = await quoteBridge(client, key, zeroForOne, amountIn);
       if (amountOut != null) {
         return { key, zeroForOne, amountOut };
       }
+      return null;
     }
   }
 
