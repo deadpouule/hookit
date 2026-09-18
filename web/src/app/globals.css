@@ -13748,15 +13748,22 @@ html[data-device="phone"] .docs-pipe-item .docs-point-arrow svg {
   }
 }
 
-/* Wallet connect modals - stay within mobile viewport (in-app browsers) */
+/* RainbowKit's [role=dialog][aria-labelledby] node is the full-screen overlay
+   (position:fixed with a -200px inset / 200px padding trick). Capping its
+   width left a half-screen slab on iPhone with the token page still visible.
+   Keep the overlay unbounded; the inner bottom sheet is already 100vw. */
 @media (max-width: 767px) {
-  [data-rk] [role="dialog"] {
-    max-height: min(100dvh, 100%) !important;
+  [data-rk] [role="dialog"][aria-modal="true"] {
+    max-width: none !important;
+    max-height: none !important;
+    width: auto !important;
   }
+}
 
-  [data-rk] [aria-labelledby] {
-    max-width: min(100vw - 1rem, 28rem) !important;
-  }
+html[data-device="phone"] [data-rk] [role="dialog"][aria-modal="true"] {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto !important;
 }
 
 .legal-doc {

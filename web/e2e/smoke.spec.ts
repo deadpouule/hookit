@@ -112,6 +112,28 @@ test.describe("Hookit UI smoke", () => {
     });
   });
 
+  test("Mobile continue-with-wallet opens a full-width RainbowKit sheet", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile", "mobile project only");
+    await openApp(page, "/");
+    await page.getByRole("button", { name: /Connect/i }).first().click();
+    await expect(page.getByRole("heading", { name: "Welcome to Hookit" })).toBeVisible();
+    await page.getByRole("button", { name: "Continue with a wallet" }).click();
+    await expect(page.getByRole("heading", { name: "Welcome to Hookit" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Select your wallet" })).toHaveCount(0);
+    await expect(
+      page.getByText(/Connect a [Ww]allet|Connecter un portefeuille/i).first(),
+    ).toBeVisible();
+
+    const overlay = page.locator('[data-rk] [role="dialog"][aria-modal="true"]').first();
+    await expect(overlay).toBeVisible();
+    const box = await overlay.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).toBeTruthy();
+    expect(viewport).toBeTruthy();
+    expect(box!.x).toBeLessThanOrEqual(8);
+    expect(box!.x + box!.width).toBeGreaterThanOrEqual(viewport!.width - 8);
+  });
+
   test("API launches returns pools", async ({ request }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "once per run");
     const res = await request.get("/api/launches");

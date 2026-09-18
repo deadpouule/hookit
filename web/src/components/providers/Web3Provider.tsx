@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 
 import { PrivySessionBridge } from "@/components/wallet/PrivySessionBridge";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { getActiveChain } from "@/lib/chains";
 import { isPrivyConfigured, PRIVY_APP_ID, privyConfig } from "@/lib/privy";
 import { wagmiConfig } from "@/lib/wagmi";
@@ -20,10 +21,11 @@ const hookitTheme = darkTheme({
 });
 
 function RainbowTree({ children }: { children: ReactNode }) {
+  const isPhone = useIsMobile();
   return (
     <RainbowKitProvider
       theme={hookitTheme}
-      modalSize="wide"
+      modalSize={isPhone ? "compact" : "wide"}
       initialChain={getActiveChain()}
       appInfo={{
         appName: "hook it",
