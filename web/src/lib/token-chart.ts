@@ -348,7 +348,7 @@ export function getQuoteFxBar(
   return bar;
 }
 
-/** ETH / wStock FX breathes; USDG/USDC at ~$1 stays a flat carry. */
+/** True when quote FX has a real range (ETH / wStock). USDG ~$1 is still marked, just tiny. */
 export function isVolatileQuoteFx(fx: ChartBar[]): boolean {
   let min = Infinity;
   let max = -Infinity;
@@ -1130,7 +1130,7 @@ export function fillEmptyBars(
   const start =
     span > maxBars ? end - (Math.max(maxBars, 1) - 1) * bucketSec : sorted[0]!.time;
   const byTime = new Map(sorted.map((bar) => [bar.time, bar]));
-  const quoteFx = fx && fx.length > 0 && isVolatileQuoteFx(fx) ? fx : undefined;
+  const quoteFx = fx && fx.length > 0 ? fx : undefined;
   const fxMaxAge = Math.max(QUOTE_FX_MAX_AGE_SEC, bucketSec);
   const out: ChartBar[] = [];
   let prev = sorted.find((bar) => bar.time <= start) ?? sorted[0]!;
@@ -1167,8 +1167,8 @@ export function fillEmptyBars(
 
 /**
  * Gapless staircase: one bar for every bucket from the first print to now.
- * Quiet buckets mark to quote FX (micro-wicks) when the quote is volatile;
- * otherwise they stay pure dojis (O=H=L=C=previous close, volume=0).
+ * Quiet buckets mark to quote FX (ETH, wStock, or USDG 1m USD). A perfect $1
+ * peg still draws a doji; any USDG high/low becomes a micro-wick.
  */
 export function forwardFillContinuous(
   bars: ChartBar[],

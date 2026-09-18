@@ -974,7 +974,7 @@ test("quiet buckets with volatile quote FX render micro-wicks instead of a flatl
   assert.equal(linked[3]!.open, filled[2]!.close);
 });
 
-test("stable 1:1 quote FX still forward-fills as a flat doji", () => {
+test("USDG quote FX marks quiet buckets from the 1m USDG/USD tape", () => {
   const t0 = 1_700_000_040;
   const bars = [{ time: t0, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
   const fx = [
@@ -985,12 +985,27 @@ test("stable 1:1 quote FX still forward-fills as a flat doji", () => {
   assert.equal(isVolatileQuoteFx(fx), false);
   const filled = forwardFillContinuous(bars, 60, t0 + 120, fx);
   assert.equal(filled.length, 3);
+  assert.equal(filled[1]!.volume, 0);
+  assert.equal(filled[1]!.open, 5000);
+  assert.equal(filled[1]!.close, 5000);
+  assert.equal(filled[1]!.high, 5001);
+  assert.equal(filled[1]!.low, 4999);
+});
+
+test("a perfect $1 USDG peg still forward-fills as a doji", () => {
+  const t0 = 1_700_000_040;
+  const bars = [{ time: t0, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
+  const fx = [
+    { time: t0, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+    { time: t0 + 60, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+    { time: t0 + 120, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+  ];
+  const filled = forwardFillContinuous(bars, 60, t0 + 120, fx);
   assert.equal(filled[1]!.open, 5000);
   assert.equal(filled[1]!.high, 5000);
   assert.equal(filled[1]!.low, 5000);
   assert.equal(filled[1]!.close, 5000);
   assert.equal(filled[1]!.volume, 0);
-  assert.equal(filled[1]!.high, filled[1]!.low);
 });
 
 test("chartHudBar ignores whitespace slots", () => {
