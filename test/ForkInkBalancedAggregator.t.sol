@@ -213,12 +213,8 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         uint256 bought = _buySplit(launchId, token, _twoWay(50e6, 50e6));
         assertGt(bought, 0);
 
-        assertTrue(
-            IERC20(token).totalSupply() < supplyBefore || hook.pendingAutoBurn(key0.toId()) > 0, "burn idle"
-        );
-        assertTrue(
-            manager.getLiquidity(key0.toId()) > seedLiq || hook.pendingDeepenLps(key0.toId()) > 0, "deepen idle"
-        );
+        assertTrue(IERC20(token).totalSupply() < supplyBefore || hook.pendingAutoBurn(key0.toId()) > 0, "burn idle");
+        assertTrue(manager.getLiquidity(key0.toId()) > seedLiq || hook.pendingDeepenLps(key0.toId()) > 0, "deepen idle");
         assertGt(airdrops.potOf(token, _quoteCurrency(key0, token)), 0, "airdrop pot");
     }
 
@@ -282,9 +278,8 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         vm.startPrank(trader);
         IERC20(token).approve(address(aggregator), sellAmt);
         uint256 usdgBefore = IERC20(Currency.unwrap(usdg)).balanceOf(trader);
-        uint256 usdgOut = aggregator.sellExactInput(
-            launchId, token, sellAmt, 1, sellLegs, trader, block.timestamp + 600
-        );
+        uint256 usdgOut =
+            aggregator.sellExactInput(launchId, token, sellAmt, 1, sellLegs, trader, block.timestamp + 600);
         vm.stopPrank();
         assertGt(usdgOut, 0, "split sell");
         assertEq(IERC20(Currency.unwrap(usdg)).balanceOf(trader), usdgBefore + usdgOut, "sell credit");
@@ -316,9 +311,8 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         vm.startPrank(trader);
         IERC20(token).approve(address(aggregator), sellAmt);
         uint256 usdgBefore = IERC20(Currency.unwrap(usdg)).balanceOf(trader);
-        uint256 usdgOut = aggregator.sellExactInput(
-            launchId, token, sellAmt, 1, sellLegs, trader, block.timestamp + 600
-        );
+        uint256 usdgOut =
+            aggregator.sellExactInput(launchId, token, sellAmt, 1, sellLegs, trader, block.timestamp + 600);
         vm.stopPrank();
         assertGt(usdgOut, 0, "4-way sell");
         assertEq(IERC20(Currency.unwrap(usdg)).balanceOf(trader), usdgBefore + usdgOut, "sell credit");
@@ -334,9 +328,8 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         IERC20(Currency.unwrap(usdg)).approve(address(aggregator), 30e6);
         uint256 traderTok = IERC20(token).balanceOf(trader);
         uint256 opsTok = IERC20(token).balanceOf(ops);
-        uint256 bought = aggregator.buyExactInput(
-            launchId, token, 30e6, 1, _twoWay(20e6, 10e6), ops, block.timestamp + 600
-        );
+        uint256 bought =
+            aggregator.buyExactInput(launchId, token, 30e6, 1, _twoWay(20e6, 10e6), ops, block.timestamp + 600);
         vm.stopPrank();
 
         assertGt(bought, 0);
@@ -397,8 +390,7 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
 
         BalancedAggregator.RouteLeg[] memory usdgLeg = new BalancedAggregator.RouteLeg[](1);
         usdgLeg[0] = BalancedAggregator.RouteLeg({marketIndex: 1, amountIn: 10e6, minAmountOut: 1});
-        uint256 bought =
-            aggregator.buyExactInput(launchId, token, 10e6, 1, usdgLeg, trader, block.timestamp + 600);
+        uint256 bought = aggregator.buyExactInput(launchId, token, 10e6, 1, usdgLeg, trader, block.timestamp + 600);
         vm.stopPrank();
         assertGt(bought, 0, "USDG leg of mixed launch");
     }
@@ -470,7 +462,9 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         returns (uint256 bought)
     {
         uint256 usdgIn;
-        for (uint256 i; i < legs.length; ++i) usdgIn += legs[i].amountIn;
+        for (uint256 i; i < legs.length; ++i) {
+            usdgIn += legs[i].amountIn;
+        }
         vm.startPrank(trader);
         IERC20(Currency.unwrap(usdg)).approve(address(aggregator), usdgIn);
         bought = aggregator.buyExactInput(launchId, token, usdgIn, 1, legs, trader, block.timestamp + 600);
@@ -482,7 +476,9 @@ contract ForkInkBalancedAggregatorTest is InkForkTestBase {
         returns (uint256 bought)
     {
         uint256 usdgIn;
-        for (uint256 i; i < legs.length; ++i) usdgIn += legs[i].amountIn;
+        for (uint256 i; i < legs.length; ++i) {
+            usdgIn += legs[i].amountIn;
+        }
         vm.startPrank(trader);
         IERC20(Currency.unwrap(usdg)).approve(address(aggregator), usdgIn);
         try aggregator.buyExactInput(launchId, token, usdgIn, 1, legs, trader, block.timestamp + 600) returns (

@@ -93,9 +93,8 @@ contract SmokeLaunchMultiInkScript is Script {
         uint256 launchId = vm.envUint("MULTI_LAUNCH_ID");
 
         PoolKey memory key = factory.poolKeyOf(launchId);
-        address token = Currency.unwrap(key.currency0) == USDG
-            ? Currency.unwrap(key.currency1)
-            : Currency.unwrap(key.currency0);
+        address token =
+            Currency.unwrap(key.currency0) == USDG ? Currency.unwrap(key.currency1) : Currency.unwrap(key.currency0);
 
         uint256 tokenBal = IERC20(token).balanceOf(user);
         require(tokenBal > 0, "no tokens");
