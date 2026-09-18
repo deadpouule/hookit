@@ -398,12 +398,15 @@ function WelcomeConnectModalView({
               className="welcome-connect__row"
               disabled={busy}
               onClick={() => {
-                if (openConnectModal) {
-                  onClose();
-                  window.setTimeout(() => openConnectModal(), 40);
+                if (!openConnectModal) {
+                  goToWallets();
                   return;
                 }
-                goToWallets();
+                onClose();
+                const open = () => openConnectModal();
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(open);
+                });
               }}
               {...TOOLBAR_BUTTON_PROPS}
             >
