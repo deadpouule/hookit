@@ -1590,7 +1590,7 @@
 
   .token-hooks-panel .token-hooks-master-badge {
     gap: 6px;
-    border-radius: 2px;
+    border-radius: 0;
     padding: 5px 11px;
     font-size: 13px;
     font-weight: 600;
@@ -4703,7 +4703,7 @@
     }
   }
 
-  .token-hero-card .token-type-badge--master {
+  .token-hero-card .token-type-badge.token-type-badge--master {
     border-radius: 0;
     border-color: #fff;
     background: #000;
