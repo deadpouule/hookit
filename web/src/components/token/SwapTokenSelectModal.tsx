@@ -25,13 +25,9 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { formatCompactUsd, formatTokenAmount } from "@/lib/format";
 import { shortAddress } from "@/lib/master-hooks";
 import {
-  NATIVE_ETH_ASSET,
-  allowEthInSwapPicker,
   isStableSwapAsset,
-  poolQuoteSwapAsset,
   poolToSwapAsset,
-  sellReceiveAssets,
-  STABLE_SWAP_ASSET,
+  swapPickerQuoteAssets,
   type SwapAsset,
 } from "@/lib/swap-assets";
 import type { TokenPool } from "@/lib/types";
@@ -103,7 +99,7 @@ function TokenSelectBody({
   selectedKey,
   onSelect,
   stickySearch,
-  listHeading = "Your tokens",
+  listHeading = "Tokens",
 }: {
   title: string;
   query: string;
@@ -121,7 +117,7 @@ function TokenSelectBody({
       <div
         className={cn(
           "flex flex-row items-center justify-between gap-3 border-b border-white/8 px-5 py-4",
-          stickySearch && "sticky top-0 z-10 bg-[#141416]",
+          stickySearch && "sticky top-0 z-10 bg-black",
         )}
       >
         <p className="text-base font-semibold text-white">{title}</p>
@@ -138,7 +134,7 @@ function TokenSelectBody({
       <div
         className={cn(
           "border-b border-white/5 px-5 py-3",
-          stickySearch && "sticky top-[3.75rem] z-10 bg-[#141416]",
+          stickySearch && "sticky top-[3.75rem] z-10 bg-black",
         )}
       >
         <label className="swap-token-search">
@@ -202,10 +198,6 @@ function TokenSelectBody({
             </li>
           ))}
       </ul>
-
-      <p className="border-t border-white/8 px-5 py-3 text-[10px] uppercase tracking-wide text-zinc-600">
-        Available on Hookit
-      </p>
     </>
   );
 }
@@ -236,8 +228,24 @@ export function SwapTokenSelectModal({
   const [walletRows, setWalletRows] = useState<WalletSwapRow[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const listedRows = useMemo<WalletSwapRow[]>(() => {
+    const quotes = swapPickerQuoteAssets(currentPool).map((asset) => ({
+      ...asset,
+      balance: 0,
+      valueUsd: 0,
+    }));
+    const token = poolToSwapAsset(currentPool);
+    const page: WalletSwapRow = { ...token, balance: 0, valueUsd: 0, pool: currentPool };
+    if (side === "buy") return [page, ...quotes];
+    return [...quotes, page];
+  }, [currentPool, side]);
+
   useEffect(() => {
-    if (!open || !address || !publicClient) return;
+    if (!open || !address || !publicClient) {
+      setWalletRows([]);
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -256,95 +264,41 @@ export function SwapTokenSelectModal({
         currentPool,
       );
 
-      try {
-        const ethBal = await publicClient.getBalance({ address });
-        const ethAmount = Number(formatUnits(ethBal, 18));
-        const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
-        // Hide ETH only for stock-only singles (no ETH market). Multi always keeps ETH.
-        if (allowEthInSwapPicker(currentPool)) {
-          rows.push({
-            ...NATIVE_ETH_ASSET,
-            balance: ethAmount,
-            valueUsd: ethAmount * ethUsd,
-          });
-        }
-      } catch {
-        /* ignore */
-      }
+      const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
 
-      try {
-        const usdgBal = (await publicClient.readContract({
-          address: STABLE_SWAP_ASSET.address!,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [address],
-        })) as bigint;
-        const usdgAmount = Number(formatUnits(usdgBal, 6));
-        rows.push({
-          ...STABLE_SWAP_ASSET,
-          balance: usdgAmount,
-          valueUsd: usdgAmount,
-        });
-      } catch {
-        /* ignore */
-      }
-
-      // Always surface every multi-pool quote leg (and USDG/ETH) when picking receive on sell.
-      if (side === "buy") {
-        const ethUsd = resolveEthUsd(currentPool, liveEthUsd);
-        for (const dest of sellReceiveAssets(currentPool)) {
-          if (rows.some((r) => r.key === dest.key)) continue;
-          let balance = 0;
-          let valueUsd = 0;
-          try {
-            if (dest.isNative) {
-              const ethBal = await publicClient.getBalance({ address });
-              balance = Number(formatUnits(ethBal, 18));
-              valueUsd = balance * ethUsd;
-            } else if (dest.address) {
-              const bal = (await publicClient.readContract({
-                address: dest.address,
-                abi: erc20Abi,
-                functionName: "balanceOf",
-                args: [address],
-              })) as bigint;
-              balance = Number(formatUnits(bal, dest.decimals));
-              valueUsd = isStableSwapAsset(dest)
-                ? balance
-                : balance * (currentPool.quoteUsd ?? 0);
-            }
-          } catch {
-            /* keep zero */
-          }
-          rows.push({ ...dest, balance, valueUsd });
-        }
-      }
-
-      const quoteAsset = poolQuoteSwapAsset(currentPool);
-      if (!quoteAsset.isNative && !isStableSwapAsset(quoteAsset) && quoteAsset.address) {
-        if (!rows.some((r) => r.key === quoteAsset.key)) {
-          try {
-            const quoteBal = (await publicClient.readContract({
-              address: quoteAsset.address,
+      const pushBalance = async (asset: SwapAsset) => {
+        if (rows.some((r) => r.key === asset.key)) return;
+        let balance = 0;
+        let valueUsd = 0;
+        try {
+          if (asset.isNative) {
+            const ethBal = await publicClient.getBalance({ address });
+            balance = Number(formatUnits(ethBal, 18));
+            valueUsd = balance * ethUsd;
+          } else if (asset.address) {
+            const bal = (await publicClient.readContract({
+              address: asset.address,
               abi: erc20Abi,
               functionName: "balanceOf",
               args: [address],
             })) as bigint;
-            const quoteAmount = Number(formatUnits(quoteBal, quoteAsset.decimals));
-            rows.push({
-              ...quoteAsset,
-              balance: quoteAmount,
-              valueUsd: quoteAmount * (currentPool.quoteUsd ?? 0),
-            });
-          } catch {
-            rows.push({
-              ...quoteAsset,
-              balance: 0,
-              valueUsd: 0,
-            });
+            balance = Number(formatUnits(bal, asset.decimals));
+            valueUsd = isStableSwapAsset(asset)
+              ? balance
+              : asset.isNative
+                ? balance * ethUsd
+                : balance * (currentPool.quoteUsd ?? 0);
           }
+        } catch {
+          /* keep zero */
         }
+        rows.push({ ...asset, balance, valueUsd });
+      };
+
+      for (const asset of swapPickerQuoteAssets(currentPool)) {
+        await pushBalance(asset);
       }
+      await pushBalance(poolToSwapAsset(currentPool));
 
       const candidates = Array.from(poolByAddress.values())
         .filter((p) => p.contractAddress)
@@ -369,6 +323,7 @@ export function SwapTokenSelectModal({
       for (const { pool, amount } of balances) {
         if (amount <= 0) continue;
         const asset = poolToSwapAsset(pool);
+        if (rows.some((r) => r.key === asset.key)) continue;
         rows.push({
           ...asset,
           balance: amount,
@@ -376,20 +331,6 @@ export function SwapTokenSelectModal({
           pool,
         });
       }
-
-      if (side === "buy") {
-        const pageAsset = poolToSwapAsset(currentPool);
-        if (!rows.some((r) => r.key === pageAsset.key)) {
-          rows.push({
-            ...pageAsset,
-            balance: 0,
-            valueUsd: 0,
-            pool: currentPool,
-          });
-        }
-      }
-
-      rows.sort((a, b) => b.valueUsd - a.valueUsd);
 
       if (!cancelled) {
         setWalletRows(rows);
@@ -400,10 +341,22 @@ export function SwapTokenSelectModal({
     return () => {
       cancelled = true;
     };
-  }, [open, address, publicClient, pools, currentPool, side, liveEthUsd]);
+  }, [open, address, publicClient, pools, currentPool, liveEthUsd]);
 
   const filtered = useMemo(() => {
-    const rows = address && publicClient ? walletRows : [];
+    const byKey = new Map(listedRows.map((row) => [row.key, row]));
+    for (const row of walletRows) {
+      const existing = byKey.get(row.key);
+      if (existing) {
+        byKey.set(row.key, { ...existing, ...row });
+      } else if (row.balance > 0) {
+        byKey.set(row.key, row);
+      }
+    }
+    const extras = walletRows.filter(
+      (row) => !listedRows.some((listed) => listed.key === row.key) && row.balance > 0,
+    );
+    const rows = [...listedRows.map((row) => byKey.get(row.key)!), ...extras];
     const q = query.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(
@@ -412,7 +365,7 @@ export function SwapTokenSelectModal({
         row.name.toLowerCase().includes(q) ||
         row.address?.toLowerCase().includes(q),
     );
-  }, [walletRows, query, address, publicClient]);
+  }, [listedRows, walletRows, query]);
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setQuery("");
@@ -425,12 +378,12 @@ export function SwapTokenSelectModal({
       query={query}
       onQueryChange={setQuery}
       onClose={() => handleOpenChange(false)}
-      loading={loading}
+      loading={Boolean(address && loading && filtered.length === 0)}
       filtered={filtered}
       selectedKey={selectedKey}
       onSelect={onSelect}
       stickySearch={isMobile}
-      listHeading={side === "buy" ? "Receive" : "Your tokens"}
+      listHeading="Tokens"
     />
   );
 
@@ -440,7 +393,7 @@ export function SwapTokenSelectModal({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="flex h-[min(92dvh,720px)] flex-col gap-0 overflow-hidden rounded-t-2xl border border-white/10 bg-[#141416] p-0 pb-[env(safe-area-inset-bottom)]"
+          className="flex h-[min(92dvh,720px)] flex-col gap-0 overflow-hidden rounded-t-2xl border border-white/10 bg-black p-0 pb-[env(safe-area-inset-bottom)]"
         >
           <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-white/20" aria-hidden />
           <SheetHeader className="sr-only">
@@ -456,7 +409,8 @@ export function SwapTokenSelectModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="swap-token-modal max-h-[min(640px,90dvh)] overflow-hidden border border-white/10 bg-[#141416] p-0 sm:max-w-md"
+        overlayClassName="bg-black/80"
+        className="swap-token-modal max-h-[min(640px,90dvh)] overflow-hidden border border-white/10 bg-black p-0 sm:max-w-md"
       >
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>

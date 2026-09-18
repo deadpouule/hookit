@@ -125,6 +125,40 @@ export function allowEthInSwapPicker(pool: TokenPool): boolean {
   return !isStockQuotedPool(pool);
 }
 
+/**
+ * Quotes always listed in the token picker, even with a disconnected wallet.
+ * USDG first, then ETH when this pool actually has an ETH market (or is a
+ * single ETH-quoted launch), then each multi-pool stock.
+ */
+export function swapPickerQuoteAssets(pool: TokenPool): SwapAsset[] {
+  const out: SwapAsset[] = [];
+  const seen = new Set<string>();
+  const push = (asset: SwapAsset) => {
+    if (seen.has(asset.key)) return;
+    seen.add(asset.key);
+    out.push(asset);
+  };
+
+  push(STABLE_SWAP_ASSET);
+
+  const hasEthMarket = poolHasQuoteMarket(pool, zeroAddress);
+  if (hasEthMarket || (!isMultiPool(pool) && !isStockQuotedPool(pool))) {
+    push(NATIVE_ETH_ASSET);
+  }
+
+  for (const market of pool.markets?.length ? pool.markets : []) {
+    const quote = marketQuoteSwapAsset(pool, market.quoteAddress);
+    if (quote.isNative || isStableSwapAsset(quote)) continue;
+    push(quote);
+  }
+  if (!pool.markets?.length) {
+    const quote = poolQuoteSwapAsset(pool);
+    if (!quote.isNative && !isStableSwapAsset(quote)) push(quote);
+  }
+
+  return out;
+}
+
 /** True when this asset is the selected pool’s quote (ETH, USDG, or wStock). */
 export function isPoolQuoteAsset(pool: TokenPool, asset: SwapAsset): boolean {
   const quote = poolQuoteAddress(pool);

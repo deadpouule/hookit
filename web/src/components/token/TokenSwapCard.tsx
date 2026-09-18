@@ -20,14 +20,12 @@ import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
 import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
-import { isDirectBuy, paymentAssetById, type PaymentAssetId } from "@/lib/payment-assets";
+import { type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
-  isDirectPoolReceive,
   isPoolQuoteAsset,
   isStableSwapAsset,
   isStockQuotedPool,
-  needsCompositeSell,
   poolQuoteSwapAsset,
   poolToSwapAsset,
   STABLE_SWAP_ASSET,
@@ -484,20 +482,6 @@ export function TokenSwapCard({
           ? `Buy ${ticker}`
           : `Sell ${ticker}`;
 
-  const routeLabel = (() => {
-    if (swapQuoteMeta?.route) return swapQuoteMeta.route;
-    if (side === "buy") {
-      if (isPoolQuoteAsset(pool, payAsset) || isDirectBuy(pool, paymentAssetById(effectivePayWith))) {
-        return `${payAsset.symbol} → ${ticker}`;
-      }
-      return `${payAsset.symbol} → ${poolQuote.symbol} → ${ticker}`;
-    }
-    if (needsCompositeSell(pool, buyAsset) || !isDirectPoolReceive(pool, buyAsset)) {
-      return `${ticker} → ${poolQuote.symbol} → ${buyAsset.symbol}`;
-    }
-    return `${ticker} → ${buyAsset.symbol}`;
-  })();
-
   return (
     <div className={cn(variant === "sheet" ? "token-swap-sheet-body" : "desk-card px-3.5 py-4")}>
       {variant === "sheet" ? (
@@ -508,7 +492,6 @@ export function TokenSwapCard({
       ) : (
         <div className="flex items-center justify-between gap-2">
           <h2 className="swap-card-title">Swap</h2>
-          <span className="font-mono text-[11px] text-zinc-500">{routeLabel}</span>
         </div>
       )}
 
