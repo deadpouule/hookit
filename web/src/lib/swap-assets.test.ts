@@ -3,7 +3,7 @@ import test from "node:test";
 import { zeroAddress } from "viem";
 
 import { STABLE_QUOTE_ADDRESS } from "./contracts/config";
-import { swapPickerQuoteAssets } from "./swap-assets";
+import { defaultSwapPair, swapPickerQuoteAssets } from "./swap-assets";
 import type { TokenPool } from "./types";
 import { INK_QUOTRON_STOCKS } from "./xstocks";
 
@@ -64,4 +64,23 @@ test("USDG always has its pairing logo", () => {
   const usdg = swapPickerQuoteAssets(poolStub())[0];
   assert.equal(usdg?.address?.toLowerCase(), STABLE_QUOTE_ADDRESS.toLowerCase());
   assert.equal(usdg?.imageUrl, "/pairing/usdg.png");
+});
+
+test("multi-pool buy spends USDG and sell dumps the token for USDG", () => {
+  const aapl = INK_QUOTRON_STOCKS[0]!;
+  const pool = poolStub({
+    quoteAsset: "wAAPLx",
+    quoteAddress: aapl.address,
+    marketCount: 2,
+    markets: [
+      { quoteAddress: aapl.address, quoteAsset: "wAAPLx", bps: 5_000, poolId: "0xaaa" },
+      { quoteAddress: INK_QUOTRON_STOCKS[1]!.address, quoteAsset: "wAMZNx", bps: 5_000, poolId: "0xbbb" },
+    ],
+  });
+  const buy = defaultSwapPair(pool, "buy");
+  assert.equal(buy.sell.address?.toLowerCase(), STABLE_QUOTE_ADDRESS.toLowerCase());
+  assert.equal(buy.buy.symbol, "HTEST");
+  const sell = defaultSwapPair(pool, "sell");
+  assert.equal(sell.sell.symbol, "HTEST");
+  assert.equal(sell.buy.address?.toLowerCase(), STABLE_QUOTE_ADDRESS.toLowerCase());
 });

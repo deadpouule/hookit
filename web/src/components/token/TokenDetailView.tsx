@@ -13,6 +13,7 @@ import { CreatorActions } from "@/components/token/CreatorActions";
 import { HookPulseCard } from "@/components/token/HookPulseCard";
 import { TokenCandleChart, type ChartInterval } from "@/components/token/TokenCandleChart";
 import { TokenLiveTicker } from "@/components/token/TokenLiveTicker";
+import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenTxTable } from "@/components/token/TokenTxTable";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,6 +37,7 @@ import {
   poolWithMarket,
 } from "@/lib/pool-active-market";
 import { resolveQuoteKind } from "@/lib/quote-usd";
+import { stableQuoteLabel } from "@/lib/payment-assets";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import {
   resolveMediaUrl,
@@ -398,16 +400,23 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               )}
             >
               {multi && (
-                <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300 desk:block hidden">
-                  This token trades on <strong className="text-foreground">{markets.length} pools</strong>
-                  {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
-                  pool tab on the chart or swap to trade that quote.
-                </p>
-              )}
-              {multi && (
-                <p className="phone:block hidden rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[11px] text-zinc-300">
-                  {markets.length} pools · pick a quote tab to trade
-                </p>
+                <div className="token-multi-pool-note rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300">
+                  <span>
+                    This token trades on{" "}
+                    <strong className="text-foreground">{markets.length} pools</strong>
+                    {" "}(
+                  </span>
+                  {marketLegs.map((leg, i) => (
+                    <span key={`${leg.quoteAddress}-${i}`} className="token-multi-pool-note__leg">
+                      {i > 0 ? <span className="token-multi-pool-note__plus">+</span> : null}
+                      <PoolQuoteMark quoteAddress={leg.quoteAddress} quoteAsset={leg.quoteAsset} />
+                      <span className="text-foreground">{leg.label}</span>
+                    </span>
+                  ))}
+                  <span>
+                    ). {stableQuoteLabel()} buys and sells route across them automatically.
+                  </span>
+                </div>
               )}
               <TokenCandleChart
                 candles={live.candles}

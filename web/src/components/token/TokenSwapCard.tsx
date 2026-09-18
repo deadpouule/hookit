@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
-import { PoolMarketMark } from "@/components/token/PoolQuoteMark";
 import { TokenProSwap } from "@/components/token/TokenProSwap";
 import { ConnectButton, useWalletReady } from "@/components/wallet/ConnectButton";
 import { useBondingQuote } from "@/hooks/useBondingQuote";
@@ -19,7 +18,6 @@ import { erc20Abi } from "@/lib/contracts/erc20-abi";
 import { STABLE_QUOTE_ADDRESS } from "@/lib/contracts/config";
 import { isValidLaunchTimestamp } from "@/lib/format";
 import { resolveTokenModules } from "@/lib/launch-module-summary";
-import { marketLegLabel, marketSharePct } from "@/lib/pool-active-market";
 import { type PaymentAssetId } from "@/lib/payment-assets";
 import {
   defaultSwapPair,
@@ -32,7 +30,7 @@ import {
   type SwapAsset,
 } from "@/lib/swap-assets";
 import { toast } from "@/lib/toast";
-import type { TokenPool, TokenPoolMarket } from "@/lib/types";
+import type { TokenPool } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Side = "buy" | "sell";
@@ -119,9 +117,6 @@ function SwapSideTabs({
 
 export function TokenSwapCard({
   pool,
-  markets,
-  marketIndex = 0,
-  onMarketIndex,
   buyPrefill,
   onBuyPrefillConsumed,
   initialSide = "buy",
@@ -130,7 +125,7 @@ export function TokenSwapCard({
 }: {
   pool: TokenPool;
   ticker?: string;
-  markets?: TokenPoolMarket[];
+  markets?: unknown;
   marketIndex?: number;
   onMarketIndex?: (index: number) => void;
   buyPrefill?: string | null;
@@ -239,9 +234,10 @@ export function TokenSwapCard({
     setSellAsset(pair.sell);
     setBuyAsset(pair.buy);
     setAmount("");
-    // Reset pair when navigating to a different token / market leg.
+    // Reset pair when navigating to a different token, not when a multi-pool
+    // quote tab or live poolId refresh changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool.id, pool.contractAddress, pool.quoteAddress, pool.poolId]);
+  }, [pool.id, pool.contractAddress]);
 
   useEffect(() => {
     if (!buyPrefill) return;
@@ -262,7 +258,7 @@ export function TokenSwapCard({
   const effectivePayWith = paymentIdFromAsset(payAsset);
   const onBonding = pool.rail === "classic" && pool.bondingPhase === 0;
   const bonding = getBondingFactoryAddress();
-  const payDecimals = side === "buy" ? payAsset.decimals : 18;
+  const payDecimals = sellAsset.decimals;
   const quoteDecimals =
     !pool.quoteAddress || pool.quoteAddress === zeroAddress
       ? 18
@@ -298,20 +294,6 @@ export function TokenSwapCard({
 
   const quotedReceive = onBonding ? bondingQuote.receiveAmount : poolSwapQuote.receiveAmount;
   const swapQuoteMeta = onBonding ? bondingQuote.quote : poolSwapQuote.quote;
-
-  useEffect(() => {
-    if (side !== "sell" || onBonding) return;
-    const used = poolSwapQuote.quote?.amountInUsed;
-    if (used == null || used <= 0n || !amount) return;
-    let requested: bigint;
-    try {
-      requested = parseUnits(amount.trim().replace(",", "."), payDecimals);
-    } catch {
-      return;
-    }
-    if (used >= requested || requested - used <= 1n) return;
-    setAmount(formatUnits(used, payDecimals));
-  }, [amount, onBonding, payDecimals, side, poolSwapQuote.quote?.amountInUsed]);
 
   const hasAmount = !!amount && Number(amount) > 0;
 
@@ -494,33 +476,6 @@ export function TokenSwapCard({
           <h2 className="swap-card-title">Swap</h2>
         </div>
       )}
-
-      {markets && markets.length > 1 && onMarketIndex ? (
-        <div className="mt-3">
-          <p className="mb-1.5 text-[11px] text-zinc-500">Trade on pool</p>
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Quote pools">
-            {markets.map((m, i) => (
-              <button
-                key={`${m.quoteAddress}-${i}`}
-                type="button"
-                role="tab"
-                aria-selected={marketIndex === i}
-                onClick={() => onMarketIndex(i)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition",
-                  marketIndex === i
-                    ? "border-[#9514d1] bg-[#9514d1]/15 text-foreground"
-                    : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-foreground",
-                )}
-              >
-                <PoolMarketMark market={m} />
-                {marketLegLabel(m)}
-                <span className="opacity-60">{marketSharePct(m)} liq</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       {variant === "card" ? <SwapSideTabs side={side} onSide={applySide} variant="card" /> : null}
 
