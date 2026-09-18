@@ -179,13 +179,12 @@ export function TokenProSwap({
   };
 
   const applyMax = () => {
-    if (spendableRaw !== undefined) {
-      if (spendableRaw <= 0n) return;
+    if (spendableRaw !== undefined && spendableRaw > 0n) {
       onSellAmount(formatUnits(spendableRaw, sellAsset.decimals));
       return;
     }
     if (sellBalance <= 0) return;
-    onSellAmount(sellBalance < 1 ? sellBalance.toFixed(6) : String(sellBalance));
+    onSellAmount(sellBalance < 1 ? sellBalance.toFixed(Math.min(6, sellAsset.decimals)) : String(sellBalance));
   };
 
   const minReceivedLabel = (() => {
@@ -248,7 +247,11 @@ export function TokenProSwap({
           <button
             type="button"
             onClick={applyMax}
-            disabled={spendableRaw !== undefined ? spendableRaw <= 0n : sellBalance <= 0}
+            disabled={
+              spendableRaw !== undefined
+                ? spendableRaw <= 0n && sellBalance <= 0
+                : sellBalance <= 0
+            }
             className="market-preset-btn market-preset-btn--max"
           >
             MAX

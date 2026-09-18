@@ -36,6 +36,7 @@ import {
   poolWithMarket,
 } from "@/lib/pool-active-market";
 import { resolveQuoteKind } from "@/lib/quote-usd";
+import { stableQuoteLabel } from "@/lib/payment-assets";
 import { rememberSwapHref, tokenHref } from "@/lib/routes";
 import {
   resolveMediaUrl,
@@ -400,13 +401,12 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               {multi && (
                 <p className="rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[12px] text-zinc-300 desk:block hidden">
                   This token trades on <strong className="text-foreground">{markets.length} pools</strong>
-                  {" "}({marketLegs.map((l) => l.label).join(" + ")}). Supply is split across them. pick a
-                  pool tab on the chart or swap to trade that quote.
+                  {" "}({marketLegs.map((l) => l.label).join(" + ")}). {stableQuoteLabel()} buys and sells route across them automatically.
                 </p>
               )}
               {multi && (
                 <p className="phone:block hidden rounded-lg border border-[#9514d1]/25 bg-[#9514d1]/10 px-3 py-2 text-[11px] text-zinc-300">
-                  {markets.length} pools · pick a quote tab to trade
+                  {markets.length} pools · {stableQuoteLabel()} routes automatically
                 </p>
               )}
               <TokenCandleChart
