@@ -239,7 +239,7 @@ export function TokenCandleChart({
         .sort((a, b) => (a.t ?? 0) - (b.t ?? 0))[0];
       const opened = openFirstTradeFromLaunch(repriced, launchMcap, firstSwap?.side);
       const linked = linkBarOpens(opened);
-      const filled = forwardFillContinuous(linked, bucket, nowSec);
+      const filled = forwardFillContinuous(linked, bucket, nowSec, fx);
       const current = ensureCurrentBar(filled, bucket, nowSec, chartMcap);
       return scaleBars(linkBarOpens(current), sc);
     },

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { normalizeTokenAddress } from "@/lib/dexscreener";
 import { geckoOhlcvPath } from "@/lib/geckoterminal";
 import type { ChartBar, ChartInterval } from "@/lib/token-chart";
+export { getQuoteFxBar } from "@/lib/token-chart";
 
 async function fetchBars(
   token: string,
@@ -17,6 +18,7 @@ async function fetchBars(
   });
   if (quoteAddress) params.set("quote", quoteAddress);
   const res = await fetch(`/api/geckoterminal/ohlcv?${params.toString()}`, { cache: "no-store" });
+  // 429 / network errors must throw so React Query keeps the last 1m FX tape.
   if (!res.ok) {
     throw new Error(`GeckoTerminal OHLCV ${res.status}`);
   }
