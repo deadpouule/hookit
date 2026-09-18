@@ -70,6 +70,9 @@ import { quoteHookLeg, quotePoolSwapWithMeta } from "@/lib/swap-quote";
 
 export type SwapSide = import("@/lib/swap-quote").SwapSide;
 
+const USDG_ROUTE_REVERT =
+  "Slippage or liquidity depth exceeded. Try reducing size or trading the direct wStock pair.";
+
 export function useSwapToken(pool: TokenPool) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -180,6 +183,9 @@ export function useSwapToken(pool: TokenPool) {
             "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
           );
         }
+        if (planFilledIn(plan) < amountIn - 1n) {
+          throw new Error(USDG_ROUTE_REVERT);
+        }
         const aggregator = getBalancedAggregatorAddress();
         const receiveAddr = receiveAsset.isNative ? zeroAddress : (receiveAsset.address ?? zeroAddress);
         const resolved = await resolveMasterLaunch(publicClient, token);
@@ -231,39 +237,53 @@ export function useSwapToken(pool: TokenPool) {
 
         const splitHash = await runSellAggregator(plan);
         if (splitHash) return splitHash;
-        if (plan.legs.length > 1) {
+
+        const best = plan.bestSingle;
+        const isSplit = plan.legs.length > 1;
+        if (isSplit && best.amountIn >= amountIn - 1n) {
           const singlePlan: BestSellPlan = {
-            legs: [plan.bestSingle],
-            amountOut: plan.bestSingle.amountOut,
-            routeLabel: plan.bestSingle.routeLabel,
-            bestSingle: plan.bestSingle,
+            legs: [best],
+            amountOut: best.amountOut,
+            routeLabel: best.routeLabel,
+            bestSingle: best,
           };
           const singleHash = await runSellAggregator(singlePlan);
           if (singleHash) return singleHash;
         }
 
-        const best = plan.bestSingle;
         const hookitRouter = getHookitSwapRouterAddress();
         if (best.kind === "composite" && hookitRouter && supportsCompositeSwap()) {
           const hookZeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
             (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          const args = [
+            best.bridge.key,
+            best.bridge.zeroForOne,
+            best.amountIn,
+            best.hookKey,
+            hookZeroForOne,
+            best.marketQuote,
+            minOut,
+            sqrtLimit(best.bridge.zeroForOne),
+            sqrtLimit(hookZeroForOne),
+          ] as const;
           await ensureErc20Allowance(token, hookitRouter, best.amountIn);
+          try {
+            await publicClient.simulateContract({
+              address: hookitRouter,
+              abi: hookitSwapRouterAbi,
+              functionName: "swapExactInCompositeSell",
+              args,
+              account: address,
+            });
+          } catch {
+            throw new Error(USDG_ROUTE_REVERT);
+          }
           const hash = await writeContractAsync({
             address: hookitRouter,
             abi: hookitSwapRouterAbi,
             functionName: "swapExactInCompositeSell",
-            args: [
-              best.bridge.key,
-              best.bridge.zeroForOne,
-              best.amountIn,
-              best.hookKey,
-              hookZeroForOne,
-              best.marketQuote,
-              minOut,
-              sqrtLimit(best.bridge.zeroForOne),
-              sqrtLimit(hookZeroForOne),
-            ],
+            args,
           });
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
@@ -272,19 +292,35 @@ export function useSwapToken(pool: TokenPool) {
           const zeroForOne = hookSwapDirection(best.hookKey, token, "sell");
           const minOut =
             (best.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          const args = [
+            best.hookKey,
+            zeroForOne,
+            best.amountIn,
+            minOut,
+            sqrtLimit(zeroForOne),
+          ] as const;
           await ensureErc20Allowance(token, router, best.amountIn);
+          try {
+            await publicClient.simulateContract({
+              address: router,
+              abi: hookitSwapRouterAbi,
+              functionName: "swapExactIn",
+              args,
+              account: address,
+            });
+          } catch {
+            throw new Error(USDG_ROUTE_REVERT);
+          }
           const hash = await writeContractAsync({
             address: router,
             abi: hookitSwapRouterAbi,
             functionName: "swapExactIn",
-            args: [best.hookKey, zeroForOne, best.amountIn, minOut, sqrtLimit(zeroForOne)],
+            args,
           });
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
         }
-        throw new Error(
-          "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
-        );
+        throw new Error(USDG_ROUTE_REVERT);
       }
 
       // Multi-pool USDG buy: USDG → best stock book(s) → project token.
@@ -348,7 +384,7 @@ export function useSwapToken(pool: TokenPool) {
         const splitHash = await runBuyAggregator(plan);
         if (splitHash) return splitHash;
         const bestBuy = plan.bestSingle ?? plan.legs[0];
-        if (plan.legs.length > 1 && bestBuy) {
+        if (plan.legs.length > 1 && bestBuy && bestBuy.amountIn >= amountIn - 1n) {
           const singlePlan: BestBuyPlan = {
             legs: [bestBuy],
             amountOut: bestBuy.amountOut,
@@ -364,22 +400,34 @@ export function useSwapToken(pool: TokenPool) {
           const hookZeroForOne = hookSwapDirection(bestBuy.hookKey, token, "buy");
           const minOut =
             (bestBuy.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          const args = [
+            bestBuy.bridge.key,
+            bestBuy.bridge.zeroForOne,
+            bestBuy.amountIn,
+            bestBuy.hookKey,
+            hookZeroForOne,
+            bestBuy.marketQuote,
+            minOut,
+            sqrtLimit(bestBuy.bridge.zeroForOne),
+            sqrtLimit(hookZeroForOne),
+          ] as const;
           await ensureErc20Allowance(payment.address, hookitRouter, bestBuy.amountIn);
+          try {
+            await publicClient.simulateContract({
+              address: hookitRouter,
+              abi: hookitSwapRouterAbi,
+              functionName: "swapExactInComposite",
+              args,
+              account: address,
+            });
+          } catch {
+            throw new Error(USDG_ROUTE_REVERT);
+          }
           const hash = await writeContractAsync({
             address: hookitRouter,
             abi: hookitSwapRouterAbi,
             functionName: "swapExactInComposite",
-            args: [
-              bestBuy.bridge.key,
-              bestBuy.bridge.zeroForOne,
-              bestBuy.amountIn,
-              bestBuy.hookKey,
-              hookZeroForOne,
-              bestBuy.marketQuote,
-              minOut,
-              sqrtLimit(bestBuy.bridge.zeroForOne),
-              sqrtLimit(hookZeroForOne),
-            ],
+            args,
           });
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
@@ -388,19 +436,35 @@ export function useSwapToken(pool: TokenPool) {
           const zeroForOne = hookSwapDirection(bestBuy.hookKey, token, "buy");
           const minOut =
             (bestBuy.amountOut * BigInt(10_000 - bps)) / BigInt(10_000) || BigInt(1);
+          const args = [
+            bestBuy.hookKey,
+            zeroForOne,
+            bestBuy.amountIn,
+            minOut,
+            sqrtLimit(zeroForOne),
+          ] as const;
           await ensureErc20Allowance(payment.address, router, bestBuy.amountIn);
+          try {
+            await publicClient.simulateContract({
+              address: router,
+              abi: hookitSwapRouterAbi,
+              functionName: "swapExactIn",
+              args,
+              account: address,
+            });
+          } catch {
+            throw new Error(USDG_ROUTE_REVERT);
+          }
           const hash = await writeContractAsync({
             address: router,
             abi: hookitSwapRouterAbi,
             functionName: "swapExactIn",
-            args: [bestBuy.hookKey, zeroForOne, bestBuy.amountIn, minOut, sqrtLimit(zeroForOne)],
+            args,
           });
           await publicClient.waitForTransactionReceipt({ hash });
           return hash;
         }
-        throw new Error(
-          "No USDG route for this size. Pick a stock ticker to trade that pool directly.",
-        );
+        throw new Error(USDG_ROUTE_REVERT);
       }
 
       // Prefer the market matching payment (buy) or receive asset (sell) on multi launches.

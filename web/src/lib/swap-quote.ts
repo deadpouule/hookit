@@ -27,8 +27,10 @@ import {
   findBridgeAmountOut,
   hookRecipientData,
   hookSwapDirection,
+  TOKEN_AND_WSTOCK_DECIMALS,
+  USDG_DECIMALS,
 } from "@/lib/v4-bridge";
-import { V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
+import { STABLE_QUOTE_ADDRESS, V4_QUOTER_ADDRESS } from "@/lib/contracts/config";
 import { v4QuoterAbi } from "@/lib/contracts/swap-abi";
 
 export type SwapSide = "buy" | "sell";
@@ -240,7 +242,8 @@ export async function quotePoolSwapWithMeta(
       } else {
         const bridge = await findBridgeAmountOut(client, payAddress, poolQuote, amountIn);
         if (!bridge) {
-          amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, 18);
+          if (payDecimals === USDG_DECIMALS) return null;
+          amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, TOKEN_AND_WSTOCK_DECIMALS);
           if (!amountOut) return null;
           route = `${payLabel} → ${pool.ticker} (est.)`;
           estimated = true;
@@ -250,7 +253,8 @@ export async function quotePoolSwapWithMeta(
             `${payLabel} → ${poolQuoteLabel(pool)} → ${pool.ticker}`;
           amountOut = await quoteHookLeg(client, pool, "buy", bridge.amountOut, recipient);
           if (!amountOut) {
-            amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, 18);
+            if (payDecimals === USDG_DECIMALS) return null;
+            amountOut = spotQuoteFallback(pool, side, amountIn, payDecimals, TOKEN_AND_WSTOCK_DECIMALS);
             if (!amountOut) return null;
             route = `${payLabel} → ${pool.ticker} (est.)`;
             estimated = true;
@@ -265,20 +269,25 @@ export async function quotePoolSwapWithMeta(
     // 6-decimal USDG quote turns a MAX dump into literal crumbs on screen, and a
     // USDG buy into a fake "$20 in, $20 out" that execution cannot match.
     if (receiveAsset && isStableSwapAsset(receiveAsset)) return null;
-    if (side === "buy" && payAsset && isStableSwapAsset(payAsset)) return null;
-    const decimalsIn = side === "buy" ? payDecimals : 18;
-    const decimalsOut = side === "buy" ? 18 : receiveAsset?.decimals ?? payment.decimals;
+    if (
+      side === "buy" &&
+      (payment.address.toLowerCase() === STABLE_QUOTE_ADDRESS.toLowerCase() ||
+        (payAsset && isStableSwapAsset(payAsset)))
+    ) {
+      return null;
+    }
+    const decimalsIn = side === "buy" ? payDecimals : TOKEN_AND_WSTOCK_DECIMALS;
+    const decimalsOut =
+      side === "buy" ? TOKEN_AND_WSTOCK_DECIMALS : receiveAsset?.decimals ?? payment.decimals;
     amountOut = spotQuoteFallback(pool, side, amountIn, decimalsIn, decimalsOut);
     if (!amountOut) return null;
     estimated = true;
     route = side === "buy" ? `Spot est. · ${pool.ticker}` : `Spot est. · ${poolQuoteLabel(pool)}`;
   }
 
-  const decimalsIn = side === "buy" ? payDecimals : 18;
+  const decimalsIn = side === "buy" ? payDecimals : TOKEN_AND_WSTOCK_DECIMALS;
   const decimalsOut =
-    side === "buy"
-      ? 18
-      : receiveAsset?.decimals ?? payment.decimals;
+    side === "buy" ? TOKEN_AND_WSTOCK_DECIMALS : receiveAsset?.decimals ?? payment.decimals;
 
   const amountInHuman = Number(formatUnits(amountIn, decimalsIn));
   const amountOutHuman = Number(formatUnits(amountOut, decimalsOut));

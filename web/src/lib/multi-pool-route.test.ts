@@ -14,6 +14,7 @@ import {
   quoteBestSellRoute,
   shouldAggregateMultiBuy,
   shouldAggregateMultiSell,
+  INDIVIDUAL_LEG_TIMEOUT_MS,
 } from "@/lib/multi-pool-route";
 import { paymentAssetById } from "@/lib/payment-assets";
 import {
@@ -224,7 +225,7 @@ test("sell aggregator picks the highest USDG composite output", async () => {
   assert.equal(best.intermediateOut, 3_000n);
 });
 
-test("sell aggregator still splits when every full-size dump reverts", async () => {
+test("sell aggregator does not clip MAX when every full-size dump reverts", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
   const quotes = [STOCK_A, STOCK_B, stockC, stockD];
@@ -246,14 +247,7 @@ test("sell aggregator still splits when every full-size dump reverts", async () 
     TOKEN,
   );
 
-  assert.ok(plan);
-  assert.equal(plan.legs.length, 4);
-  assert.equal(
-    plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n),
-    1_000n,
-  );
-  assert.equal(plan.amountOut, 2_000n);
-  assert.match(plan.routeLabel, /Split equal/);
+  assert.equal(plan, null);
 });
 
 test("sell aggregator keeps a single pool when it beats an equal split", async () => {
@@ -308,7 +302,7 @@ test("USDG sell reuses a full-size stock dump that already quotes", async () => 
   assert.equal(plan.bestSingle.marketQuote, STOCK_A);
 });
 
-test("sell aggregator quotes a 50% clip when a full MAX dump reverts", async () => {
+test("sell aggregator never halves MAX when only a smaller clip would quote", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
   const quotes = [STOCK_A, STOCK_B, stockC, stockD];
@@ -331,13 +325,10 @@ test("sell aggregator quotes a 50% clip when a full MAX dump reverts", async () 
     TOKEN,
   );
 
-  assert.ok(plan);
-  assert.equal(plan.legs.length, 1);
-  assert.equal(plan.legs[0]!.amountIn, 500n);
-  assert.equal(plan.amountOut, 500n);
+  assert.equal(plan, null);
 });
 
-test("MAX still quotes when a full-size dump never returns", async () => {
+test("MAX USDG keeps 100% on the live book when dead pools hang", async () => {
   const stockC = INK_QUOTRON_STOCKS[2]!.address;
   const stockD = INK_QUOTRON_STOCKS[3]!.address;
   const quotes = [STOCK_A, STOCK_B, stockC, stockD];
@@ -346,7 +337,11 @@ test("MAX still quotes when a full-size dump never returns", async () => {
     quotes.map(keyFor),
     (key, amount) => {
       if (isQuotronBridge(key)) return amount;
-      if (amount > 125n) return new Promise(() => {});
+      if (quoteSide(key).toLowerCase() !== STOCK_A.toLowerCase()) {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve(null), INDIVIDUAL_LEG_TIMEOUT_MS + 250);
+        });
+      }
       return amount;
     },
   );
@@ -360,11 +355,32 @@ test("MAX still quotes when a full-size dump never returns", async () => {
   );
 
   assert.ok(plan);
-  assert.equal(plan.legs.length, 4);
-  assert.equal(
-    plan.legs.reduce((sum, leg) => sum + leg.amountIn, 0n),
-    500n,
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.legs[0]!.amountIn, 1_000n);
+  assert.equal(plan.amountOut, 1_000n);
+  assert.equal(plan.bestSingle.marketQuote, STOCK_A);
+  assert.equal(plan.bestSingle.marketIndex, 0);
+});
+
+test("sell aggregator keeps the single route when a split only ties", async () => {
+  const pool = poolFor([STOCK_A, STOCK_B]);
+  const client = mockClient([keyFor(STOCK_A), keyFor(STOCK_B)], (key, amount) => {
+    if (isQuotronBridge(key)) return amount;
+    return amount;
+  });
+
+  const plan = await quoteBestSellPlan(
+    client,
+    pool,
+    1_000n,
+    STABLE_SWAP_ASSET,
+    TOKEN,
   );
+
+  assert.ok(plan);
+  assert.equal(plan.legs.length, 1);
+  assert.equal(plan.legs[0]!.amountIn, 1_000n);
+  assert.equal(plan.amountOut, 1_000n);
 });
 
 test("splits when a split produces more USDG even by a little", async () => {
