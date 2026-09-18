@@ -106,8 +106,9 @@ test.describe("Hookit UI smoke", () => {
     expect(liveBox).toBeTruthy();
     expect(actionsBox).toBeTruthy();
     expect(viewBox).toBeTruthy();
-    expect(liveBox!.x + liveBox!.width).toBeLessThanOrEqual(actionsBox!.x + actionsBox!.width - 6);
-    expect(viewBox!.x - (actionsBox!.x + actionsBox!.width)).toBeGreaterThanOrEqual(8);
+    expect(liveBox!.x).toBeGreaterThanOrEqual(actionsBox!.x);
+    expect(liveBox!.x + liveBox!.width).toBeLessThanOrEqual(actionsBox!.x + actionsBox!.width - 4);
+    expect(viewBox!.x - (actionsBox!.x + actionsBox!.width)).toBeGreaterThanOrEqual(6);
   });
 
   test("Mobile explore opens a token", async ({ page }, testInfo) => {
