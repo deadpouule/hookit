@@ -12,7 +12,9 @@ import {
   CHART_SCALE_MARGIN_BOTTOM,
   CHART_SCALE_MARGIN_TOP,
   CHART_VOLUME_MARGIN_TOP,
+  CHART_VOLUME_SMA_PERIOD,
   CHART_WINDOW_BARS,
+  calculateVolumeSma,
   chartFitAnchorIndex,
   chartFitWindowBars,
   chartRangeSignature,
@@ -26,7 +28,6 @@ import {
   type ChartBar,
   type ChartInterval,
   type ChartScale,
-  type ChartStyle,
 } from "@/lib/token-chart";
 import {
   TV_CHART_BG,
@@ -38,7 +39,6 @@ import {
   TV_STAIR_UP,
   TV_STAIR_WICK_DOWN,
   TV_STAIR_WICK_UP,
-  tvAreaGradient,
 } from "@/lib/tv-chart";
 import type {
   AutoscaleInfoProvider,
@@ -57,22 +57,22 @@ const CROSS_LABEL = TV_CROSSHAIR_LABEL;
 const FONT = "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 const LEGEND_UP = "#10B981";
 const LEGEND_DOWN = "#EF4444";
+const VOLUME_SMA = "#F59E0B";
 
 type TokenLightweightPlotProps = {
   bars: ChartBar[];
-  style: ChartStyle;
   scale: ChartScale;
   interval?: ChartInterval;
   symbol?: string;
   bucketSec?: number;
   windowBars?: number;
   anchorIndex?: number;
-  lineColor?: string;
   fitNonce?: number;
-  onHover: (bar: ChartBar | null) => void;
+  onHover?: (bar: ChartBar | null) => void;
 };
 
 type LegendOhlc = { open: number; high: number; low: number; close: number };
+type LegendSma = { value: number };
 
 function formatLegendPrice(val: number): string {
   if (!Number.isFinite(val)) return "0.00";
@@ -81,6 +81,13 @@ function formatLegendPrice(val: number): string {
   if (abs < 0.00001) return val.toFixed(9);
   if (abs < 1) return val.toFixed(6);
   return val.toFixed(2);
+}
+
+function formatVolumeNumber(num: number): string {
+  if (!Number.isFinite(num)) return "0.00";
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
+  return num.toFixed(2);
 }
 
 function isLegendOhlc(value: unknown): value is LegendOhlc {
@@ -92,6 +99,10 @@ function isLegendOhlc(value: unknown): value is LegendOhlc {
     typeof bar.low === "number" &&
     typeof bar.close === "number"
   );
+}
+
+function isLegendSma(value: unknown): value is LegendSma {
+  return !!value && typeof value === "object" && typeof (value as LegendSma).value === "number";
 }
 
 function escapeLegendHtml(value: string): string {
@@ -120,13 +131,11 @@ function legendInnerHtml(symbol: string, interval: string, bar: LegendOhlc): str
   );
 }
 
-type PriceSeries = ISeriesApi<"Candlestick"> | ISeriesApi<"Area">;
-
 type ChartHandle = {
   chart: IChartApi;
-  price: PriceSeries;
+  price: ISeriesApi<"Candlestick">;
   volume?: ISeriesApi<"Histogram">;
-  style: ChartStyle;
+  volumeSma?: ISeriesApi<"Line">;
 };
 
 function visibleLogicalRangeOf(chart: IChartApi | null) {
@@ -178,42 +187,12 @@ function priceFormatFor(scale: ChartScale) {
   };
 }
 
-function asTime(bar: ChartBar): UTCTimestamp {
-  return bar.time as UTCTimestamp;
-}
-
-async function attachPriceSeries(
+function attachPriceSeries(
   chart: IChartApi,
   tv: typeof import("lightweight-charts"),
-  style: ChartStyle,
   scale: ChartScale,
-  lineColor: string,
   autoscale: AutoscaleInfoProvider,
-): Promise<PriceSeries> {
-  const priceFormat = priceFormatFor(scale);
-
-  if (style === "line") {
-    const grad = tvAreaGradient(lineColor === UP);
-    return chart.addSeries(tv.AreaSeries, {
-      lineColor: grad.line,
-      topColor: grad.top,
-      bottomColor: grad.bottom,
-      lineWidth: 2,
-      lineType: tv.LineType.WithSteps,
-      priceLineVisible: true,
-      lastValueVisible: true,
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: grad.line,
-      crosshairMarkerBackgroundColor: TV_CHART_BG,
-      priceLineColor: grad.line,
-      priceLineWidth: 1,
-      priceLineStyle: tv.LineStyle.Dotted,
-      priceFormat,
-      autoscaleInfoProvider: autoscale,
-    });
-  }
-
+): ISeriesApi<"Candlestick"> {
   return chart.addSeries(tv.CandlestickSeries, {
     upColor: TV_STAIR_UP,
     downColor: TV_STAIR_DOWN,
@@ -224,7 +203,7 @@ async function attachPriceSeries(
     lastValueVisible: true,
     priceLineWidth: 1,
     priceLineStyle: tv.LineStyle.Dotted,
-    priceFormat,
+    priceFormat: priceFormatFor(scale),
     autoscaleInfoProvider: autoscale,
   });
 }
@@ -307,6 +286,13 @@ function volumePoint(bar: ChartBar) {
   return { time: point.time as UTCTimestamp, value: point.value, color: point.color };
 }
 
+function volumeSmaPoints(bars: ChartBar[]) {
+  return calculateVolumeSma(bars, CHART_VOLUME_SMA_PERIOD).map((point) => ({
+    time: point.time as UTCTimestamp,
+    value: point.value,
+  }));
+}
+
 function attachVolumeSeries(
   chart: IChartApi,
   tv: typeof import("lightweight-charts"),
@@ -325,11 +311,24 @@ function attachVolumeSeries(
   return volume;
 }
 
+function attachVolumeSmaSeries(
+  chart: IChartApi,
+  tv: typeof import("lightweight-charts"),
+): ISeriesApi<"Line"> {
+  return chart.addSeries(tv.LineSeries, {
+    priceScaleId: "volume",
+    color: VOLUME_SMA,
+    lineWidth: 1,
+    priceFormat: { type: "volume" },
+    crosshairMarkerVisible: false,
+    lastValueVisible: false,
+    priceLineVisible: false,
+  });
+}
+
 function applyBars(
   handle: ChartHandle,
-  _tv: typeof import("lightweight-charts") | null,
   next: ChartBar[],
-  lineColor: string,
   windowBars: number,
   bucketSec: number,
   anchorIndex?: number,
@@ -339,48 +338,28 @@ function applyBars(
   const up = lastBarUp(next);
   const line = up ? UP : DOWN;
   const liveBar = !refit && prev ? lastBarOnlyUpdate(prev, next) : null;
+  const sma = volumeSmaPoints(next);
 
-  if (handle.style === "line") {
-    const series = handle.price as ISeriesApi<"Area">;
-    const grad = tvAreaGradient(lineColor === UP);
-    series.applyOptions({
-      lineColor: grad.line,
-      topColor: grad.top,
-      bottomColor: grad.bottom,
-      priceLineColor: grad.line,
-      crosshairMarkerBorderColor: grad.line,
-    });
-    if (liveBar) {
-      series.update({ time: asTime(liveBar), value: liveBar.close });
-    } else {
-      series.setData(
-        next.map((b) =>
-          isWhitespaceBar(b) ? { time: asTime(b) } : { time: asTime(b), value: b.close },
-        ),
-      );
-    }
+  const candles = handle.price;
+  candles.applyOptions({
+    priceLineColor: line,
+  });
+  if (liveBar) {
+    candles.update(candlePoint(liveBar));
   } else {
-    const candles = handle.price as ISeriesApi<"Candlestick">;
-    candles.applyOptions({
-      priceLineColor: line,
-    });
-    if (liveBar) {
-      candles.update(candlePoint(liveBar));
-    } else {
-      candles.setData(
-        candleSeriesData(next).map((point) =>
-          point.open == null
-            ? { time: point.time as UTCTimestamp }
-            : {
-                time: point.time as UTCTimestamp,
-                open: point.open,
-                high: point.high!,
-                low: point.low!,
-                close: point.close!,
-              },
-        ),
-      );
-    }
+    candles.setData(
+      candleSeriesData(next).map((point) =>
+        point.open == null
+          ? { time: point.time as UTCTimestamp }
+          : {
+              time: point.time as UTCTimestamp,
+              open: point.open,
+              high: point.high!,
+              low: point.low!,
+              close: point.close!,
+            },
+      ),
+    );
   }
 
   if (handle.volume) {
@@ -395,31 +374,49 @@ function applyBars(
     }
   }
 
+  if (handle.volumeSma) {
+    const lastSma = sma[sma.length - 1];
+    if (liveBar && lastSma) {
+      handle.volumeSma.update({ time: lastSma.time, value: lastSma.value });
+    } else {
+      handle.volumeSma.setData(sma);
+    }
+  }
+
   resizeChartToHost(handle.chart, handle.chart.chartElement());
   if (refit) fitChartView(handle.chart, next, windowBars, bucketSec, anchorIndex);
 
   handle.price.priceScale().applyOptions({
     scaleMargins: { top: CHART_SCALE_MARGIN_TOP, bottom: CHART_SCALE_MARGIN_BOTTOM },
   });
+
+  return lastSmaValue(sma);
 }
+
+function lastSmaValue(sma: Array<{ value: number }>): number | null {
+  const last = sma[sma.length - 1];
+  return last && Number.isFinite(last.value) ? last.value : null;
+}
+
+const noopHover = (_bar: ChartBar | null) => {};
 
 export function TokenLightweightPlot({
   bars,
-  style,
   scale,
   interval,
   symbol = "Token/USD",
   bucketSec = 3_600,
   windowBars = CHART_WINDOW_BARS,
   anchorIndex,
-  lineColor = UP,
   fitNonce = 0,
-  onHover,
+  onHover = noopHover,
 }: TokenLightweightPlotProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
+  const volumeLegendRef = useRef<HTMLDivElement>(null);
   const hoveringRef = useRef(false);
   const hoverBarRef = useRef<LegendOhlc | null>(null);
+  const latestSmaValueRef = useRef<number | null>(null);
   const symbolRef = useRef(symbol);
   symbolRef.current = symbol;
   const onHoverRef = useRef(onHover);
@@ -428,12 +425,8 @@ export function TokenLightweightPlot({
   const pendingBarsRef = useRef(bars);
   pendingBarsRef.current = bars;
   const appliedBarsRef = useRef<ChartBar[]>([]);
-  const styleRef = useRef(style);
-  styleRef.current = style;
   const scaleRef = useRef(scale);
   scaleRef.current = scale;
-  const lineColorRef = useRef(lineColor);
-  lineColorRef.current = lineColor;
   const windowBarsRef = useRef(windowBars);
   const bucketSecRef = useRef(bucketSec);
   const anchorIndexRef = useRef(anchorIndex);
@@ -459,6 +452,18 @@ export function TokenLightweightPlot({
       return;
     }
     el.innerHTML = legendInnerHtml(symbolRef.current, intervalRef.current ?? "", bar);
+  };
+
+  const paintVolumeLegend = (val: number | null) => {
+    const el = volumeLegendRef.current;
+    if (!el) return;
+    if (val == null || !Number.isFinite(val)) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML =
+      `<span style="color:rgba(255,255,255,0.4)">Volume SMA</span>` +
+      `<span style="color:${VOLUME_SMA};font-weight:600">${formatVolumeNumber(val)}</span>`;
   };
 
   useEffect(() => {
@@ -543,45 +548,41 @@ export function TokenLightweightPlot({
         () => pendingBarsRef.current,
         () => chart,
       );
-      const price = await attachPriceSeries(
-        chart,
-        tv,
-        styleRef.current,
-        scaleRef.current,
-        lineColorRef.current,
-        priceAutoscale,
-      );
-
+      const price = attachPriceSeries(chart, tv, scaleRef.current, priceAutoscale);
       const volume = attachVolumeSeries(chart, tv);
+      const volumeSma = attachVolumeSmaSeries(chart, tv);
       const handle: ChartHandle = {
         chart,
         price,
         volume,
-        style: styleRef.current,
+        volumeSma,
       };
       handleRef.current = handle;
       resizeChartToHost(chart, hostRef.current);
       const next = pendingBarsRef.current;
       rangeSigRef.current = chartRangeSignature(next, interval, windowBarsRef.current);
-      applyBars(
+      const latestSma = applyBars(
         handle,
-        tv,
         next,
-        lineColorRef.current,
         windowBarsRef.current,
         bucketSecRef.current,
         anchorIndexRef.current,
       );
       appliedBarsRef.current = next;
+      latestSmaValueRef.current = latestSma;
       paintLegend(lastRealBar(next) ?? null);
+      paintVolumeLegend(latestSma);
 
       chart.subscribeCrosshairMove((param) => {
         const latest = lastRealBar(pendingBarsRef.current) ?? null;
+        const smaSeries = handleRef.current?.volumeSma;
+        const smaRaw = smaSeries ? param.seriesData.get(smaSeries) : undefined;
         if (!param.time || !param.seriesData.size) {
           hoveringRef.current = false;
           hoverBarRef.current = null;
           onHoverRef.current(null);
           paintLegend(latest);
+          paintVolumeLegend(latestSmaValueRef.current);
           return;
         }
         const time = Number(param.time);
@@ -595,12 +596,13 @@ export function TokenLightweightPlot({
           hoverBarRef.current = hovered;
           if (fromBars && !isWhitespaceBar(fromBars)) onHoverRef.current(fromBars);
           paintLegend(hovered);
-          return;
+        } else {
+          hoveringRef.current = false;
+          hoverBarRef.current = null;
+          onHoverRef.current(null);
+          paintLegend(latest);
         }
-        hoveringRef.current = false;
-        hoverBarRef.current = null;
-        onHoverRef.current(null);
-        paintLegend(latest);
+        paintVolumeLegend(isLegendSma(smaRaw) ? smaRaw.value : latestSmaValueRef.current);
       });
 
       let lastWidth = 0;
@@ -646,38 +648,6 @@ export function TokenLightweightPlot({
 
   useEffect(() => {
     const handle = handleRef.current;
-    const tv = tvRef.current;
-    if (!handle || !tv) return;
-    if (handle.style === style) return;
-    handle.chart.removeSeries(handle.price);
-    void attachPriceSeries(
-      handle.chart,
-      tv,
-      style,
-      scale,
-      lineColor,
-      visiblePriceAutoscale(
-        () => pendingBarsRef.current,
-        () => handle.chart,
-      ),
-    ).then((price) => {
-      if (handleRef.current !== handle) return;
-      handle.price = price;
-      handle.style = style;
-      applyBars(
-        handle,
-        tv,
-        pendingBarsRef.current,
-        lineColor,
-        windowBarsRef.current,
-        bucketSecRef.current,
-        anchorIndexRef.current,
-      );
-    });
-  }, [style, scale, lineColor]);
-
-  useEffect(() => {
-    const handle = handleRef.current;
     if (!handle) return;
     handle.chart.applyOptions({
       localization: {
@@ -696,11 +666,9 @@ export function TokenLightweightPlot({
     const refit = rangeSigRef.current !== signature;
     const prev = appliedBarsRef.current;
     rangeSigRef.current = signature;
-    applyBars(
+    const latestSma = applyBars(
       handle,
-      tvRef.current,
       bars,
-      lineColor,
       windowBars,
       bucketSec,
       anchorIndex,
@@ -708,8 +676,12 @@ export function TokenLightweightPlot({
       prev,
     );
     appliedBarsRef.current = bars;
-    if (!hoveringRef.current) paintLegend(lastRealBar(bars) ?? null);
-  }, [bars, lineColor, interval, windowBars, bucketSec, anchorIndex]);
+    latestSmaValueRef.current = latestSma;
+    if (!hoveringRef.current) {
+      paintLegend(lastRealBar(bars) ?? null);
+      paintVolumeLegend(latestSma);
+    }
+  }, [bars, interval, windowBars, bucketSec, anchorIndex]);
 
   useEffect(() => {
     paintLegend(
@@ -751,6 +723,25 @@ export function TokenLightweightPlot({
           alignItems: "center",
           userSelect: "none",
           whiteSpace: "nowrap",
+          textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+        }}
+      />
+      <div
+        ref={volumeLegendRef}
+        className="token-chart-volume-legend"
+        style={{
+          position: "absolute",
+          bottom: "calc(20% + 18px)",
+          left: 12,
+          zIndex: 15,
+          pointerEvents: "none",
+          fontFamily: FONT,
+          fontSize: 11,
+          color: "rgba(255, 255, 255, 0.7)",
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          userSelect: "none",
           textShadow: "0 1px 2px rgba(0,0,0,0.8)",
         }}
       />

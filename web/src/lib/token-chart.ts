@@ -332,6 +332,38 @@ function quoteFxAt(fx: ChartBar[], time: number): ChartBar | undefined {
   return fx[Math.max(0, hi)];
 }
 
+/** Nearest preceding 1m (or rolled) quote FX bar, or undefined if older than maxAge. */
+export const QUOTE_FX_MAX_AGE_SEC = 5 * 60;
+
+export function getQuoteFxBar(
+  fx: ChartBar[],
+  timestampSec: number,
+  maxAgeSec = QUOTE_FX_MAX_AGE_SEC,
+): ChartBar | undefined {
+  if (fx.length === 0 || !(timestampSec > 0)) return undefined;
+  if (timestampSec < fx[0]!.time) return undefined;
+  const bar = quoteFxAt(fx, timestampSec);
+  if (!bar || !(bar.close > 0) || bar.time > timestampSec) return undefined;
+  if (maxAgeSec > 0 && timestampSec - bar.time > maxAgeSec) return undefined;
+  return bar;
+}
+
+/** ETH / wStock FX breathes; USDG/USDC at ~$1 stays a flat carry. */
+export function isVolatileQuoteFx(fx: ChartBar[]): boolean {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const bar of fx) {
+    if (isWhitespaceBar(bar) || !(bar.close > 0)) continue;
+    max = Math.max(max, bar.high > 0 ? bar.high : bar.close);
+    min = Math.min(min, bar.low > 0 ? bar.low : bar.close);
+  }
+  if (!(min > 0) || !(max > 0)) return false;
+  const mid = (min + max) / 2;
+  const span = (max - min) / mid;
+  if (Math.abs(mid - 1) <= 0.02 && span < 0.015) return false;
+  return span > 0.0003;
+}
+
 /** Roll 1m quote FX onto the chart bucket so carry/reprice share one series. */
 export function rollQuoteFxBars(fx: ChartBar[], bucketSec: number): ChartBar[] {
   if (!(bucketSec > 0) || fx.length === 0) return fx;
@@ -804,21 +836,37 @@ export const CHART_SCALE_MARGIN_BOTTOM = 0.2;
 export const CHART_VOLUME_MARGIN_TOP = 0.8;
 export const CHART_VOLUME_SMA_PERIOD = 20;
 
+export interface SmaPoint {
+  time: number;
+  value: number;
+}
+
 /** TradingView default Volume SMA (period 20) for the Defined overlay. */
-export function volumeSma(
-  bars: ChartBar[],
+export function calculateVolumeSma(
+  bars: Array<{ time: number; volume: number }>,
   period = CHART_VOLUME_SMA_PERIOD,
-): { time: number; value: number }[] {
+): SmaPoint[] {
   if (period <= 0 || bars.length === 0) return [];
-  const out: { time: number; value: number }[] = [];
+  const result: SmaPoint[] = [];
   let sum = 0;
   for (let i = 0; i < bars.length; i++) {
     sum += bars[i]!.volume;
     if (i >= period) sum -= bars[i - period]!.volume;
-    const n = Math.min(i + 1, period);
-    out.push({ time: bars[i]!.time, value: sum / n });
+    const count = Math.min(i + 1, period);
+    const avg = sum / count;
+    result.push({
+      time: bars[i]!.time,
+      value: Number(avg.toFixed(2)),
+    });
   }
-  return out;
+  return result;
+}
+
+export function volumeSma(
+  bars: ChartBar[],
+  period = CHART_VOLUME_SMA_PERIOD,
+): SmaPoint[] {
+  return calculateVolumeSma(bars, period);
 }
 
 /**
@@ -1036,11 +1084,37 @@ export function ensureCurrentBar(
  * Carry the last close across empty time buckets so a few swaps still draw a
  * full tape (DexScreener / Defined style) instead of one lonely spike.
  */
+function quotePriceInQuote(bar: ChartBar, fx: ChartBar[], maxAgeSec: number): number {
+  const q = getQuoteFxBar(fx, bar.time, maxAgeSec);
+  if (!q || !(q.close > 0) || !(bar.close > 0)) return 0;
+  return bar.close / q.close;
+}
+
+function markQuietBarFromQuoteFx(
+  time: number,
+  lastPriceInQuote: number,
+  fxBar: ChartBar,
+): ChartBar {
+  const open = lastPriceInQuote * fxBar.open;
+  const close = lastPriceInQuote * fxBar.close;
+  const highRaw = fxBar.high > 0 ? fxBar.high : Math.max(fxBar.open, fxBar.close);
+  const lowRaw = fxBar.low > 0 ? fxBar.low : Math.min(fxBar.open, fxBar.close);
+  return {
+    time,
+    open,
+    high: lastPriceInQuote * highRaw,
+    low: lastPriceInQuote * lowRaw,
+    close,
+    volume: 0,
+  };
+}
+
 export function fillEmptyBars(
   bars: ChartBar[],
   bucketSec: number,
   nowSec?: number,
   maxBars = 2_000,
+  fx?: ChartBar[],
 ): ChartBar[] {
   if (bars.length === 0 || !(bucketSec > 0)) return bars;
   const sorted = mergeBars(
@@ -1056,13 +1130,27 @@ export function fillEmptyBars(
   const start =
     span > maxBars ? end - (Math.max(maxBars, 1) - 1) * bucketSec : sorted[0]!.time;
   const byTime = new Map(sorted.map((bar) => [bar.time, bar]));
+  const quoteFx = fx && fx.length > 0 && isVolatileQuoteFx(fx) ? fx : undefined;
+  const fxMaxAge = Math.max(QUOTE_FX_MAX_AGE_SEC, bucketSec);
   const out: ChartBar[] = [];
   let prev = sorted.find((bar) => bar.time <= start) ?? sorted[0]!;
+  let lastPriceInQuote = quoteFx ? quotePriceInQuote(prev, quoteFx, fxMaxAge) : 0;
   for (let time = start; time <= end; time += bucketSec) {
     const real = byTime.get(time);
     if (real) {
       out.push({ ...real });
       prev = real;
+      if (quoteFx) {
+        const px = quotePriceInQuote(real, quoteFx, fxMaxAge);
+        if (px > 0) lastPriceInQuote = px;
+      }
+      continue;
+    }
+    const fxBar = quoteFx && lastPriceInQuote > 0 ? getQuoteFxBar(quoteFx, time, fxMaxAge) : undefined;
+    if (fxBar) {
+      const marked = markQuietBarFromQuoteFx(time, lastPriceInQuote, fxBar);
+      out.push(marked);
+      prev = marked;
       continue;
     }
     out.push({
@@ -1079,14 +1167,16 @@ export function fillEmptyBars(
 
 /**
  * Gapless staircase: one bar for every bucket from the first print to now.
- * Quiet buckets are pure dojis (O=H=L=C=previous close, volume=0).
+ * Quiet buckets mark to quote FX (micro-wicks) when the quote is volatile;
+ * otherwise they stay pure dojis (O=H=L=C=previous close, volume=0).
  */
 export function forwardFillContinuous(
   bars: ChartBar[],
   bucketSec: number,
   nowSec?: number,
+  fx?: ChartBar[],
 ): ChartBar[] {
-  return fillEmptyBars(bars, bucketSec, nowSec);
+  return fillEmptyBars(bars, bucketSec, nowSec, 2_000, fx);
 }
 
 /**

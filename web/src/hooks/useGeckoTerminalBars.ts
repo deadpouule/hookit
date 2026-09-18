@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { normalizeTokenAddress } from "@/lib/dexscreener";
 import { geckoOhlcvPath } from "@/lib/geckoterminal";
 import type { ChartBar, ChartInterval } from "@/lib/token-chart";
+export { getQuoteFxBar } from "@/lib/token-chart";
 
 async function fetchBars(
   token: string,

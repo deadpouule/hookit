@@ -8,6 +8,7 @@ import {
   barChangePct,
   barsForInterval,
   buildContinuousOhlcv,
+  calculateVolumeSma,
   carryQuoteFxBars,
   CHART_BAR_SPACING,
   CHART_MIN_BAR_SPACING,
@@ -44,6 +45,8 @@ import {
   ensureCurrentBar,
   fillEmptyBars,
   forwardFillContinuous,
+  getQuoteFxBar,
+  isVolatileQuoteFx,
   formatChartAxis,
   formatChartUsd,
   formatLastCandleUtc,
@@ -621,11 +624,12 @@ test("volumeSma is the TradingView 20-period overlay", () => {
     close: 1,
     volume,
   }));
-  const sma = volumeSma(bars, 2);
+  const sma = calculateVolumeSma(bars, 2);
   assert.equal(sma.length, 3);
   assert.equal(sma[0]!.value, 10);
   assert.equal(sma[1]!.value, 15);
   assert.equal(sma[2]!.value, 25);
+  assert.deepEqual(volumeSma(bars, 2), sma);
 });
 
 test("tradesOnBars snaps swaps onto the candle they print in", () => {
@@ -931,6 +935,62 @@ test("micro-cap price scale uses 9-decimal minMove and 20% pane margins", () => 
   assert.equal(CHART_BAR_SPACING, 9);
   assert.equal(CHART_MIN_BAR_SPACING, 0.5);
   assert.equal(CHART_RIGHT_OFFSET, 8);
+});
+
+test("getQuoteFxBar returns the nearest preceding 1m bar within 5 minutes", () => {
+  const fx = [
+    { time: 1_700_000_040, open: 100, high: 101, low: 99, close: 100, volume: 1 },
+    { time: 1_700_000_100, open: 100, high: 102, low: 99, close: 101, volume: 1 },
+  ];
+  assert.equal(getQuoteFxBar(fx, 1_700_000_100)?.close, 101);
+  assert.equal(getQuoteFxBar(fx, 1_700_000_160)?.close, 101);
+  assert.equal(getQuoteFxBar(fx, 1_700_000_100 + 301), undefined);
+  assert.equal(getQuoteFxBar(fx, 1_700_000_000), undefined);
+});
+
+test("quiet buckets with volatile quote FX render micro-wicks instead of a flatline", () => {
+  const t0 = 1_700_000_040;
+  const bars = [{ time: t0, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
+  const fx = [
+    { time: t0, open: 100, high: 100, low: 100, close: 100, volume: 1 },
+    { time: t0 + 60, open: 100, high: 102, low: 99, close: 101, volume: 1 },
+    { time: t0 + 120, open: 101, high: 103, low: 100, close: 102, volume: 1 },
+  ];
+  assert.equal(isVolatileQuoteFx(fx), true);
+  const filled = forwardFillContinuous(bars, 60, t0 + 120, fx);
+  assert.equal(filled.length, 3);
+  assert.equal(filled[0]!.volume, 10);
+  assert.equal(filled[1]!.volume, 0);
+  assert.equal(filled[1]!.open, 5000);
+  assert.equal(filled[1]!.high, 5100);
+  assert.equal(filled[1]!.low, 4950);
+  assert.equal(filled[1]!.close, 5050);
+  assert.ok(filled[1]!.high > filled[1]!.low);
+  assert.ok(filled[2]!.high > filled[2]!.low);
+  const linked = linkBarOpens([
+    ...filled,
+    { time: t0 + 180, open: 5200, high: 5200, low: 5180, close: 5190, volume: 4 },
+  ]);
+  assert.equal(linked[3]!.open, filled[2]!.close);
+});
+
+test("stable 1:1 quote FX still forward-fills as a flat doji", () => {
+  const t0 = 1_700_000_040;
+  const bars = [{ time: t0, open: 5000, high: 5000, low: 5000, close: 5000, volume: 10 }];
+  const fx = [
+    { time: t0, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+    { time: t0 + 60, open: 1, high: 1.0002, low: 0.9998, close: 1, volume: 1 },
+    { time: t0 + 120, open: 1, high: 1, low: 1, close: 1, volume: 1 },
+  ];
+  assert.equal(isVolatileQuoteFx(fx), false);
+  const filled = forwardFillContinuous(bars, 60, t0 + 120, fx);
+  assert.equal(filled.length, 3);
+  assert.equal(filled[1]!.open, 5000);
+  assert.equal(filled[1]!.high, 5000);
+  assert.equal(filled[1]!.low, 5000);
+  assert.equal(filled[1]!.close, 5000);
+  assert.equal(filled[1]!.volume, 0);
+  assert.equal(filled[1]!.high, filled[1]!.low);
 });
 
 test("chartHudBar ignores whitespace slots", () => {

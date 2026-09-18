@@ -1,4 +1,4 @@
-import { getAddress, isAddress } from "viem";
+import { getAddress, isAddress, zeroAddress } from "viem";
 
 import { resolveHookitChainKey } from "@/lib/chains";
 import type { ChartBar, ChartInterval } from "@/lib/token-chart";
@@ -6,6 +6,18 @@ import type { ChartBar, ChartInterval } from "@/lib/token-chart";
 const GT_API = "https://api.geckoterminal.com/api/v2";
 const GT_ACCEPT = "application/json;version=20230203";
 const GT_LIMIT = 500;
+
+/** Canonical Ink WETH (OP-stack predeploy). Native ETH quotes resolve here for Gecko FX. */
+export const INK_WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
+
+/** Native ETH (zero address) maps to WETH so ETH-quoted tokens still get 1m USD FX. */
+export function geckoQuoteTokenAddress(quoteAddress?: string | null): string | undefined {
+  if (!quoteAddress) return undefined;
+  const trimmed = quoteAddress.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.toLowerCase() === zeroAddress) return INK_WETH_ADDRESS;
+  return trimmed;
+}
 
 export type GeckoOhlcvPath = {
   timeframe: "minute" | "hour" | "day";

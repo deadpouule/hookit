@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { geckoOhlcvPath, parseOhlcvList, pickGeckoPoolForToken } from "./geckoterminal";
+import { geckoOhlcvPath, geckoQuoteTokenAddress, INK_WETH_ADDRESS, parseOhlcvList, pickGeckoPoolForToken } from "./geckoterminal";
+import { zeroAddress } from "viem";
+
+test("geckoQuoteTokenAddress maps native ETH to Ink WETH", () => {
+  assert.equal(geckoQuoteTokenAddress(zeroAddress), INK_WETH_ADDRESS);
+  assert.equal(
+    geckoQuoteTokenAddress("0x1111111111111111111111111111111111111111"),
+    "0x1111111111111111111111111111111111111111",
+  );
+  assert.equal(geckoQuoteTokenAddress(undefined), undefined);
+});
 
 test("geckoOhlcvPath matches Sentry GeckoTerminal buckets", () => {
   assert.deepEqual(geckoOhlcvPath("1m"), { timeframe: "minute", aggregate: 1 });

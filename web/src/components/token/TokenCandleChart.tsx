@@ -2,25 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RotateCcw } from "lucide-react";
-import { zeroAddress } from "viem";
 
 import { PoolQuoteMark } from "@/components/token/PoolQuoteMark";
 import { TokenLightweightPlot } from "@/components/token/TokenLightweightPlot";
 import { useGeckoTerminalBars } from "@/hooks/useGeckoTerminalBars";
-import { formatPercent } from "@/lib/format";
-import { TV_STAIR_DOWN, TV_STAIR_UP } from "@/lib/tv-chart";
+import { geckoQuoteTokenAddress } from "@/lib/geckoterminal";
+import { definedChartUrl } from "@/lib/token-metadata";
 import {
   CHART_TIMEFRAMES,
   applyTicksToBuckets,
-  barChangePct,
   barsForInterval,
   chartFitAnchorIndex,
-  chartHudBar,
   chartWindowBars,
   ensureCurrentBar,
   forwardFillContinuous,
-  formatChartUsd,
-  formatLastCandleUtc,
   intervalBucketSec,
   isWhitespaceBar,
   linkBarOpens,
@@ -37,7 +32,6 @@ import {
   type ChartBar,
   type ChartInterval,
   type ChartScale,
-  type ChartStyle,
 } from "@/lib/token-chart";
 import type { LiveCandle, LiveSwap } from "@/lib/token-live";
 import { cn } from "@/lib/utils";
@@ -53,7 +47,6 @@ const TF_LABEL: Record<ChartInterval, string> = {
   D: "D",
 };
 
-const STYLE_KEY = "hookit_chart_style";
 const SCALE_KEY = "hookit_chart_scale_v4";
 
 function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
@@ -73,19 +66,6 @@ function writeStored(key: string, value: string) {
   } catch {
     /* private mode */
   }
-}
-
-function changeForInterval(open: number, close: number): number {
-  return open > 0 && Number.isFinite(close) ? ((close - open) / open) * 100 : 0;
-}
-
-function formatDayClock(ts: number): string {
-  return new Date(ts * 1000).toLocaleString([], {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function swapsForPool(swaps: LiveSwap[], poolId?: string): LiveSwap[] {
@@ -179,21 +159,17 @@ export function TokenCandleChart({
 }) {
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [scale, setScale] = useState<ChartScale>("mcap");
-  const [style, setStyle] = useState<ChartStyle>("candles");
   const [fitNonce, setFitNonce] = useState(0);
-  const [hover, setHover] = useState<ChartBar | null>(null);
   const selectedPoolId = activePoolId ?? marketLegs?.[activeMarketIndex]?.poolId;
-  const geckoQuote = (() => {
-    const selected = marketLegs?.[activeMarketIndex]?.quoteAddress;
-    const candidates = [selected, quoteAddress];
-    return candidates.find((addr) => addr && addr.toLowerCase() !== zeroAddress);
-  })();
+  const geckoQuote = geckoQuoteTokenAddress(
+    marketLegs?.[activeMarketIndex]?.quoteAddress ?? quoteAddress,
+  );
   const gecko = useGeckoTerminalBars(tokenAddress, "1m", geckoQuote);
   const quoteFx = useGeckoTerminalBars(geckoQuote, "1m");
+  const definedUrl = definedChartUrl(tokenAddress);
 
   useEffect(() => {
     setScale(readStored(SCALE_KEY, ["mcap", "price"] as const, "mcap"));
-    setStyle(readStored(STYLE_KEY, ["candles", "line"] as const, "candles"));
   }, []);
 
   useEffect(() => {
@@ -239,7 +215,7 @@ export function TokenCandleChart({
         .sort((a, b) => (a.t ?? 0) - (b.t ?? 0))[0];
       const opened = openFirstTradeFromLaunch(repriced, launchMcap, firstSwap?.side);
       const linked = linkBarOpens(opened);
-      const filled = forwardFillContinuous(linked, bucket, nowSec);
+      const filled = forwardFillContinuous(linked, bucket, nowSec, fx);
       const current = ensureCurrentBar(filled, bucket, nowSec, chartMcap);
       return scaleBars(linkBarOpens(current), sc);
     },
@@ -253,21 +229,10 @@ export function TokenCandleChart({
   const bucketSec = intervalBucketSec(interval);
   const anchorIndex = chartFitAnchorIndex(bars);
   const windowBars = chartWindowBars(bucketSec);
-  const open = realBars[0]?.open ?? 0;
-  const close = realBars.length ? realBars[realBars.length - 1]!.close : 0;
-  const pct = changeForInterval(open, close);
-  const up = pct >= 0;
-  const hud = chartHudBar(bars, hover);
-  const hudPct = hud ? barChangePct(hud) : 0;
-  const hudUp = hudPct >= 0;
 
   const setChartScale = (next: ChartScale) => {
     setScale(next);
     writeStored(SCALE_KEY, next);
-  };
-  const setChartStyle = (next: ChartStyle) => {
-    setStyle(next);
-    writeStored(STYLE_KEY, next);
   };
 
   return (
@@ -318,15 +283,19 @@ export function TokenCandleChart({
               { id: "mcap", label: "Market cap" },
             ]}
           />
-          <ChartToggle
-            value={style}
-            onChange={setChartStyle}
-            ariaLabel="Chart type"
-            options={[
-              { id: "candles", label: "Candles" },
-              { id: "line", label: "Line" },
-            ]}
-          />
+          {definedUrl ? (
+            <a
+              href={definedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="token-chart-defined"
+              title="Open chart on Defined"
+              aria-label="Open chart on Defined"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/defined-mark.png" alt="" className="token-chart-defined-mark" />
+            </a>
+          ) : null}
           <button
             type="button"
             onClick={() => setFitNonce((n) => n + 1)}
@@ -338,50 +307,6 @@ export function TokenCandleChart({
           </button>
         </div>
       </div>
-
-      {hasData && hud ? (
-        <div className="token-chart-stats" aria-live="polite">
-          <div className="token-chart-stats-main">
-            <span className="token-chart-stats-id">
-              {ticker || name || "Token"}
-              <span className="token-chart-stats-tf">{TF_LABEL[interval]}</span>
-              <span className="token-chart-stats-unit">{scale === "mcap" ? "USD" : "PRICE"}</span>
-            </span>
-            <span className="token-chart-last-candle">
-              last candle {formatLastCandleUtc(hud.time)}
-            </span>
-            {hover ? (
-              <div className="token-chart-stats-ohlc">
-                <span className="token-chart-stat">
-                  <span className="token-chart-legend-k">O</span>
-                  <span className="token-chart-stat-v">{formatChartUsd(hud.open, scale)}</span>
-                </span>
-                <span className="token-chart-stat token-chart-stat--high">
-                  <span className="token-chart-legend-k">H</span>
-                  <span className="token-chart-stat-v">{formatChartUsd(hud.high, scale)}</span>
-                </span>
-                <span className="token-chart-stat token-chart-stat--low">
-                  <span className="token-chart-legend-k">L</span>
-                  <span className="token-chart-stat-v">{formatChartUsd(hud.low, scale)}</span>
-                </span>
-                <span className="token-chart-stat token-chart-stat--close">
-                  <span className="token-chart-legend-k">C</span>
-                  <span className="token-chart-stat-v">{formatChartUsd(hud.close, scale)}</span>
-                </span>
-              </div>
-            ) : null}
-          </div>
-          <div className="token-chart-stats-side">
-            <span
-              className="token-chart-stats-chg"
-              style={{ color: hudUp ? TV_STAIR_UP : TV_STAIR_DOWN }}
-            >
-              {formatPercent(hudPct, true)}
-            </span>
-            {hover ? <span className="token-chart-stats-time">{formatDayClock(hover.time)}</span> : null}
-          </div>
-        </div>
-      ) : null}
 
       <div
         className={cn(
@@ -419,16 +344,13 @@ export function TokenCandleChart({
         ) : (
           <TokenLightweightPlot
             bars={bars}
-            style={style}
             scale={scale}
             interval={interval}
             symbol={`${ticker || name || "Token"}/${marketLegs?.[activeMarketIndex]?.quoteAsset || "USD"}`}
             bucketSec={bucketSec}
             windowBars={windowBars}
             anchorIndex={anchorIndex}
-            lineColor={up ? TV_STAIR_UP : TV_STAIR_DOWN}
             fitNonce={fitNonce}
-            onHover={setHover}
           />
         )}
       </div>
