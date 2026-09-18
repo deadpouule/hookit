@@ -38,11 +38,11 @@ export const HOOK_MODULE_ACCENTS = {
   backedFloor: {
     id: "backed-floor",
     label: "Backed Floor",
-    color: "#713600",
-    glow: "rgba(113, 54, 0, 0.5)",
-    bg: "bg-[#713600]/18",
-    border: "border-[#713600]/45",
-    text: "text-[#e8c9a0]",
+    color: "#c45c00",
+    glow: "rgba(196, 92, 0, 0.6)",
+    bg: "bg-[#c45c00]/18",
+    border: "border-[#c45c00]/50",
+    text: "text-[#ffd4a8]",
     icon: TrendingUp,
   },
   antiMev: {

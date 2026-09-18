@@ -272,12 +272,12 @@ function FloorLoopDiagram() {
         <path
           d="M16 96 L70 96 L70 78 L140 78 L140 56 L220 56 L220 34 L344 34"
           fill="none"
-          stroke="#713600"
+          stroke="#c45c00"
           strokeWidth="2.2"
         />
         <path
           d="M16 96 L70 96 L70 78 L140 78 L140 56 L220 56 L220 34 L344 34 L344 110 L16 110 Z"
-          fill="rgb(113 54 0 / 0.32)"
+          fill="rgb(196 92 0 / 0.28)"
         />
         <text x="16" y="16" fill="#71717a" fontSize="10">
           P_floor
@@ -285,7 +285,7 @@ function FloorLoopDiagram() {
         <text x="16" y="118" fill="#52525b" fontSize="9">
           volume
         </text>
-        <text x="250" y="28" fill="#e8c9a0" fontSize="9">
+        <text x="250" y="28" fill="#ffd4a8" fontSize="9">
           never down
         </text>
       </svg>
