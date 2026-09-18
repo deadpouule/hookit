@@ -286,25 +286,8 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
             )}
           </div>
 
-          <div className="token-hero-sub">
-            <button
-              type="button"
-              onClick={copyAddress}
-              className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:text-xs"
-            >
-              <span className="sm:hidden">
-                ${pool.ticker} {shortenAddress(pool.address)}
-              </span>
-              <span className="hidden sm:inline">{pool.address}</span>
-              <Copy className="h-3 w-3" />
-              {copied && <span className="text-[#10b981]">Copied</span>}
-            </button>
-            {ageSeconds != null && (
-              <span className="token-page-badge rounded-[2px] bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
-                Born {formatAge(ageSeconds)} ago
-              </span>
-            )}
-            <div className="token-hero-links token-hero-links--inline">
+          <div className="token-hero-identity">
+            <div className="token-hero-links token-hero-links--inline token-hero-links--socials">
               <HeroLink href={twitterUrl} label="X">
                 <XGlyph className="h-[15px] w-[15px]" />
               </HeroLink>
@@ -314,6 +297,28 @@ export function TokenDetailView({ pool, isOriginal, isCopycat }: TokenDetailView
               <HeroLink href={githubUrl} label="GitHub">
                 <GithubGlyph className="h-3.5 w-3.5" />
               </HeroLink>
+            </div>
+            <button
+              type="button"
+              onClick={copyAddress}
+              className="token-hero-ca inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition hover:text-foreground sm:text-xs"
+            >
+              <span className="sm:hidden">
+                ${pool.ticker} {shortenAddress(pool.address)}
+              </span>
+              <span className="hidden sm:inline">{pool.address}</span>
+              <Copy className="h-3 w-3" />
+              {copied && <span className="text-[#10b981]">Copied</span>}
+            </button>
+          </div>
+
+          <div className="token-hero-sub">
+            {ageSeconds != null && (
+              <span className="token-page-badge rounded-[2px] bg-[#10b981]/15 px-2 py-0.5 text-[10px] font-medium text-[#10b981] sm:px-2.5 sm:text-[11px]">
+                Born {formatAge(ageSeconds)} ago
+              </span>
+            )}
+            <div className="token-hero-links token-hero-links--inline token-hero-links--meta">
               <HeroLink href={explorerUrl} label="Explorer">
                 <ExternalLink className="token-hero-explorer" />
               </HeroLink>
