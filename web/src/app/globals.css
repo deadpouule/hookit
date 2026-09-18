@@ -360,8 +360,8 @@
 
   .launch-wizard-master-badge .token-type-badge-glyph.category-owl-totem,
   .launch-wizard-master-badge .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 1.25rem;
+    width: 1.45rem;
+    height: 1.45rem;
     color: #c084fc;
   }
 
@@ -696,8 +696,8 @@
 
   .launch-mode-toggle__glyph.category-hook-glyph,
   .launch-mode-toggle__glyph.category-owl-totem {
-    width: auto;
-    height: 16px;
+    width: 22px;
+    height: 22px;
   }
 
   .launch-mode-toggle__glyph.category-single-pair-glyph {
@@ -1601,8 +1601,8 @@
 
   .token-hooks-panel .token-hooks-master-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-panel .token-hooks-master-badge .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 1.2rem;
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .token-hooks-panel .token-hooks-summary-badge {
@@ -1623,8 +1623,8 @@
 
   .token-hooks-panel .token-hooks-summary-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-panel .token-hooks-summary-badge .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 1.2rem;
+    width: 1.4rem;
+    height: 1.4rem;
     margin-top: 1px;
   }
 
@@ -1644,8 +1644,8 @@
 
   .token-hooks-count-badge .token-type-badge-glyph.category-owl-totem,
   .token-hooks-count-badge .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 1.2rem;
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .token-hooks-list {
@@ -4493,8 +4493,8 @@
   }
 
   .token-hero-links--inline .token-hero-hook-glyph {
-    width: auto;
-    height: 16px;
+    width: 22px;
+    height: 22px;
   }
 
   html[data-device="phone"] .token-hero-head {
@@ -4590,8 +4590,8 @@
   }
 
   .token-hero-hook-glyph {
-    width: auto;
-    height: 1.25rem;
+    width: 1.45rem;
+    height: 1.45rem;
     color: #e4e4e7;
   }
 
@@ -4606,8 +4606,8 @@
     }
 
     .token-hero-hook-glyph {
-      width: auto;
-      height: 1.35rem;
+      width: 1.55rem;
+      height: 1.55rem;
     }
 
     .token-hero-explorer {
@@ -4666,8 +4666,8 @@
     }
 
     .token-hero-links--inline .token-hero-hook-glyph {
-      width: auto;
-      height: 16px;
+      width: 22px;
+      height: 22px;
     }
   }
 
@@ -4706,8 +4706,8 @@
 
   .token-hero-card .token-type-badge-glyph.category-owl-totem,
   .token-hero-card .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 1.2rem;
+    width: 1.45rem;
+    height: 1.45rem;
   }
 
   .token-hero-card .token-type-badge-glyph.category-customs-icon,
@@ -7910,14 +7910,44 @@
     color: #c4b5fd;
   }
 
-  /* White owl totem: height-matched to Quotrons / Multi-pair badges. */
   .category-owl-totem {
+    position: relative;
     display: inline-block;
-    width: auto;
-    height: 1.125rem;
-    aspect-ratio: auto;
+    width: 1.35rem;
+    height: 1.35rem;
+    aspect-ratio: 1;
     flex-shrink: 0;
+    overflow: visible;
+    pointer-events: none;
+    animation: none;
+  }
+
+  .category-owl-totem__owl {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 48%;
+    height: auto;
+    transform: translate(-50%, -50%);
     object-fit: contain;
+    pointer-events: none;
+  }
+
+  .category-owl-totem__mark {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 22%;
+    height: 22%;
+    transform: translate(-50%, -50%);
+    animation: none;
+    transition: none;
+    pointer-events: none;
+  }
+
+  .category-owl-totem__mark .hook-logo {
+    width: 100%;
+    height: 100%;
   }
 
   svg.category-hook-glyph,
@@ -7974,8 +8004,8 @@
 
   .token-type-badge-glyph.category-owl-totem,
   .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 0.85rem;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   .token-type-badge-glyph.category-customs-icon,
@@ -8618,8 +8648,8 @@
 
   .mobile-token-row-badges .token-type-badge-glyph.category-owl-totem,
   .mobile-token-row-badges .token-type-badge-glyph.category-hook-glyph {
-    width: auto;
-    height: 0.85rem;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   @media (min-width: 640px) {
